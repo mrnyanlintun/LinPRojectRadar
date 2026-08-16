@@ -224,6 +224,16 @@ RUN12_SCOPED_FILES = {
     "server/app/documents.py",
 }
 
+# RUN 30, the Category 6 and 7 canonical remediation. Same construction as every scoped list
+# above: the owner's supplied Run-30 supervisory contract authorises these files and no others,
+# and each is declared in server/tools/run30_production_changes.py and covered by the
+# superseding production-tree freeze.
+RUN30_SCOPED_FILES = {
+    "server/app/simulation/canonical_v5.py",
+    "server/app/simulation/models_gov.py",
+    "server/app/project_data.py",
+}
+
 #: RUN 14 adds its own authorised production scope on the same footing, and it is the two files
 #: that hold the numeric contract plus the model files carrying the eight corrections Run 13's
 #: evidence required. The upper end of a field's domain is a property of the field, so it is
@@ -404,7 +414,8 @@ _prod = [p for p in _diff
          and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES
          and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES
          and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES
-         and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES]
+         and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
+         and p not in RUN30_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"

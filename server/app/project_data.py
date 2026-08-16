@@ -60,6 +60,14 @@ def governed_structure_keys() -> set[str]:
     `canonical_v3.py`, so reading only the v3 map would have built an intake path that could not
     reach them and left the same defect standing under a different file name.
 
+    RUN 30 ADDS THE v5 MAP for the same reason again. The nineteen Category-6 and -7 structures
+    Run 30 supplies -- the mass functions, the decision table, the fuzzy and linguistic
+    assessments, the belief rule base, the maximum-entropy problem, the possibility distribution
+    and the one shared alternatives-and-criteria object -- are governed by `canonical_v5.py`, and
+    reading only the earlier three maps would have built an intake path that could not reach a
+    single one of them. That is the defect Run 28's closure found and section 11 of the Run-30
+    contract forbids repeating, so the vocabulary is the union of all four maps.
+
     RUN 29 ADDS THE v4 MAP for the same reason. The eighteen Category-4 and Category-5 structures
     supplied by Run 29 are governed by `canonical_v4.py`, and reading only the earlier two maps
     would have built an intake path that could not reach a single one of them, leaving eighteen
@@ -70,8 +78,9 @@ def governed_structure_keys() -> set[str]:
     from .simulation.canonical import CANONICAL_STRUCTURE_KEYS
     from .simulation.canonical_v3 import V3_STRUCTURE_KEYS
     from .simulation.canonical_v4 import V4_STRUCTURE_KEYS
+    from .simulation.canonical_v5 import V5_STRUCTURE_KEYS
     return (set(V3_STRUCTURE_KEYS.values()) | set(CANONICAL_STRUCTURE_KEYS.values())
-            | set(V4_STRUCTURE_KEYS.values()))
+            | set(V4_STRUCTURE_KEYS.values()) | set(V5_STRUCTURE_KEYS.values()))
 
 
 #: The document path assembles these two itself, from evidence the corpus already holds. They

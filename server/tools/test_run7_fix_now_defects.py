@@ -178,7 +178,7 @@ check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
 # sim-2026.08-v2, it is imported and EXECUTED by this suite, and every comparison below runs the
 # old code and the new code side by side on identical inputs. A frozen record that could not be
 # executed would not be evidence of anything.
-check(SIMULATION_VERSION == "sim-2026.08-v14",
+check(SIMULATION_VERSION == "sim-2026.08-v15",
       "and this branch is stamped at Run 28's version, so results computed before and after "
       "each run are distinguishable in the data. Every earlier stamp from sim-2026.07-v1 "
       "onward is preserved in the version history rather than overwritten",
@@ -1086,8 +1086,20 @@ RUN28_CORRECTED = {"A1.3", "A1.4", "A1.5", "A1.6", "A1.9", "A1.10", "A1.11",
 # authorisation joins the six above rather than replacing any of them.
 RUN29_CORRECTED = {"A4.4", "A4.5", "A4.6", "A4.7", "A4.8", "A4.9", "A4.10",
                    "A5.2", "A5.3", "A5.4", "A5.5", "A5.8"}
+# RUN 30, THE CATEGORY 6 AND 7 CANONICAL REMEDIATION. The three Category-6 comparison ensembles
+# stopped voting the whole simulation signal array -- transformations of the same four assembled
+# arms, which section 3 of the supplied contract states are not independent project facts -- and
+# started synthesising the independent GOVERNED SIGNALS with duplicate lineage collapsed. On a
+# fully reported project all three move: B1.2 abstains for want of a governed weighting policy
+# (the four literal weights it applied had no authority behind them anywhere in this
+# repository), B1.3 counts one vote per independent body instead of one per registered module,
+# and B1.4 reports the frozen Worst-2 mean statistic and asserts no band, because the boundaries
+# that would turn it into a state do not exist and Run 33 owns them. B1.1 is NOT in this list:
+# Run 20 cycle 9 made it a genuine maximum over the signal bands and Run 30 did not touch it.
+RUN30_CORRECTED = {"B1.2", "B1.3", "B1.4"}
 check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
-                      | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED),
+                      | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED
+                      | RUN30_CORRECTED),
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "one of the later runs' corrected lists",
       str(sorted(set(_moved) - (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED

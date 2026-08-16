@@ -251,7 +251,21 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: this successor names it as its parent and carries its digest in
 #: research/freeze/RUN29_CLOSURE_FREEZE_2026-08-16.json. The guard was turned red first and
 #: observed reporting the four changed files.
-PINNED = ROOT / "code_audit" / "run29_closure_production_tree.sha256"
+#: RUN 30. Repointed again, by the same discipline and for the same kind of reason: the owner's
+#: Run-30 supervisory contract authorises modification of Category-6/7 analytical production
+#: code, of evidence and data contracts, and the addition of the epistemic and decision
+#: structures those methods are defined on. One production file moved -- models_gov.py, where the
+#: three Category-6 comparison ensembles stopped voting the whole module array and started
+#: synthesising the independent governed signals -- one was extended (project_data.py, the intake
+#: vocabulary) and one was created (canonical_v5.py, the v5 canonical layer). The run29 closure
+#: manifest is NOT rewritten: it stays exactly as that closure wrote it, as that release's
+#: historical record, and this successor names it as its parent and carries its digest in
+#: research/freeze/RUN30_CANONICAL_CAT6_7_FREEZE_2026-08-16.json. The guard was turned red first
+#: and observed reporting the added file and the changed one.
+PINNED = ROOT / "code_audit" / "run30_production_tree.sha256"
+#: The Run-29 closure manifest, the immediate parent of the current one, kept addressable so a
+#: guard can prove the supersession is a real change and not a silent rewrite.
+PINNED_RUN29_CLOSURE = ROOT / "code_audit" / "run29_closure_production_tree.sha256"
 #: The Run-29 canonical manifest, the immediate parent of the current one, kept addressable so a
 #: guard can prove the supersession is a real change and not a silent rewrite.
 PINNED_RUN29 = ROOT / "code_audit" / "run29_production_tree.sha256"

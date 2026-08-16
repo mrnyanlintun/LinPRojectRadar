@@ -67,11 +67,24 @@ KNOWN_DEFECTS: dict[str, str] = {
     # routine early warning. It now applies the dominance rule its name asserts: the most adverse
     # band any present signal reads. Absent or unrecognised evidence still cannot reach the
     # calmest band, which is the pre-existing all-present-and-Green requirement, kept.
-    "6.4/benign-dilution": "IMPLEMENTATION_DEFECT",
+    # RUN 30 REPAIRED 6.4/benign-dilution, so it is removed from the register rather than left
+    # to go stale. Worst-N-of-M compared a red COUNT against ceil(0.3 M) where M grew with the
+    # registered module array, so adding benign evidence RAISED the bar and downgraded an
+    # unchanged adverse finding. v15 is the frozen Worst-2 MEAN statistic over the independent
+    # governed signals: benign evidence cannot displace the worst two, and the module array is
+    # not synthesised at all because a transformation of the arms is not further evidence.
+    #
+    # RUN 30 ALSO REPAIRED ARCH/lineage-double-count. A second transform of the same adverse
+    # evidence no longer casts its own vote in any of the three ensembles, because duplicate
+    # lineage is collapsed to one reading per independent body before anything is counted.
+    #
+    # ARCH/raw-bypass STAYS. Run 31 owns the Category-9 qualification gate and Run 30 must not
+    # mark it resolved: the ensembles still consume evidence that has passed through no
+    # qualification step, and the probe below is deliberately taken on a module that still
+    # computes rather than on one that happens to abstain for an unrelated reason.
     "PH.5/availability-reweighting": "IMPLEMENTATION_DEFECT",
     "PH.1/degenerate-cohort-resolution": "METHOD_PASS_CALIBRATION_PENDING",
     "ARCH/raw-bypass": "MISSING_CANONICAL_DATA_STRUCTURE",
-    "ARCH/lineage-double-count": "MISSING_CANONICAL_DATA_STRUCTURE",
 }
 
 
@@ -683,89 +696,101 @@ def cat6() -> None:
 
     # ------------------------------------------------------------------ 6.2 Weighted Voting
     mid = "6.2"
+    # RUN 30 v15. The four literal weights (1.5/1.0/0.6/1.5) had no authority behind them
+    # anywhere in the repository, so the module no longer weighs anything without a governed
+    # weighting policy. Its recorded disposition was already PARAMETER_PROVENANCE_BLOCKED.
     pkg = _pkg(mc="Green", cusum="Amber", doc="Red")
     out = run("B1.2", pkg)
-    check(mid, "positive: executes on an assembled package", not abstained(out))
-    # The canonical form is a weighted ordinal SCORE. Establish which one production computes.
-    check(mid, "structure: reports per-band accumulated weight, not a weighted severity score",
-          "votes" in out and "score" not in out and "weighted_score" not in out)
+    check(mid, "parameter provenance: abstains rather than weigh by literals with no authority",
+          abstained(out) and "weighting policy" in str(out.get("abstention_reason", "")),
+          str(out))
     check(mid, "known-answer: the canonical weighted severity score on the specification's own "
                "example", abs(O.weighted_severity_score(["Green", "Amber", "Red"],
                                                         [0.5, 0.3, 0.2]) - 1.2) < 1e-12)
-    # Weight provenance: the weights are literals in the module with no versioned source.
-    check(mid, "parameter provenance: no weight source or version is carried on the result",
-          all(k not in out for k in ("weight_source", "weights_version", "weight_provenance")))
-    # LINEAGE. Duplicating one already-counted module's status must not manufacture weight.
-    base = run("B1.2", _pkg(mc="Green", cusum="Green", doc="Green",
-                            array=[{"status_color": "Red"}]))
-    dup = run("B1.2", _pkg(mc="Green", cusum="Green", doc="Green",
-                           array=[{"status_color": "Red"}, {"status_color": "Red"}]))
-    check(mid, "lineage: duplicating one signal changes the weighted tally, so correlated "
-               "transforms of the same evidence accumulate weight",
-          base.get("votes") != dup.get("votes"),
-          f"{base.get('votes')} vs {dup.get('votes')}")
+    # THE CONTRACT'S OWN ORACLE, on the canonical engine, with a governed policy supplied.
+    from app.simulation import canonical_v5 as _V5
+    _pol = {"set_by": "Run-30 supplied contract", "authority": "supervisory contract oracle",
+            "weights": {"g": 0.5, "a": 0.3, "r": 0.2}}
+    _gs = [{"signal_id": "g", "status": "Green", "period": 1, "lineage_body": "b1"},
+           {"signal_id": "a", "status": "Amber", "period": 1, "lineage_body": "b2"},
+           {"signal_id": "r", "status": "Red", "period": 1, "lineage_body": "b3"}]
+    _wv = _V5.weighted_voting(_gs, _pol)
+    check(mid, "known-answer: class-weighted voting gives Green .5, Amber .3, Red .2 and the "
+               "winner Green", abs(_wv["votes"]["Green"] - 0.5) < 1e-12
+          and abs(_wv["votes"]["Amber"] - 0.3) < 1e-12
+          and abs(_wv["votes"]["Red"] - 0.2) < 1e-12 and _wv["winner"] == "Green", str(_wv))
+    check(mid, "parameter provenance: a governed policy carries its authority onto the result",
+          _wv["weight_provenance"].get("authority") == "supervisory contract oracle")
+    # LINEAGE. A second reading of one body must NOT manufacture weight.
+    _dupsig = _gs + [{"signal_id": "r2", "status": "Red", "period": 1, "lineage_body": "b3"}]
+    _pol2 = dict(_pol, weights={"g": 0.5, "a": 0.3, "r": 0.2, "r2": 0.2})
+    check(mid, "lineage: duplicating one signal does NOT accumulate weight",
+          abs(_V5.weighted_voting(_dupsig, _pol2)["votes"]["Red"] - 0.2) < 1e-12,
+          str(_V5.weighted_voting(_dupsig, _pol2)["votes"]))
     check(mid, "missingness: refuses when no signal qualifies", abstained(run("B1.2", _pkg())))
-    check(mid, "boundary: an unknown status casts no vote",
-          run("B1.2", _pkg(mc="banana", cusum="Green", doc="Green")).get("votes", {}).get(
-              "Green") == run("B1.2", _pkg(cusum="Green", doc="Green")).get(
-              "votes", {}).get("Green"))
-    # Category-9 architecture: this ensemble reads the raw assembled signals directly.
-    check(mid, "architecture: consumes raw assembled signals with no qualification object",
-          "signal_qualification" not in out or out.get("signal_qualification") is not None)
+    check(mid, "boundary: an unknown status is refused rather than voted",
+          abstained(run("B1.2", _pkg(mc="banana", cusum="Green", doc="Green"))))
 
     # ------------------------------------------------------------------ 6.3 Majority Rules
     mid = "6.3"
-    out = run("B1.3", _pkg(mc="Green", cusum="Red", doc="Red"))
+    from app.simulation import canonical_v5 as _V5b
+    _mk = lambda i, st, b: {"signal_id": i, "status": st, "period": 1, "lineage_body": b}
     check(mid, "known-answer: Green, Red, Red gives Red",
-          out.get("status_color") == O.majority_state(["Green", "Red", "Red"]),
-          str(out.get("status_color")))
-    tie = run("B1.3", _pkg(mc="Green", cusum="Red"))
-    check(mid, "boundary: an even split resolves to the more severe state, and the policy is "
-               "therefore explicit and conservative",
-          tie.get("status_color") == "Red", str(tie.get("status_color")))
+          _V5b.majority_rules([_mk("s1", "Green", "b1"), _mk("s2", "Red", "b2"),
+                               _mk("s3", "Red", "b3")])["winner"]
+          == O.majority_state(["Green", "Red", "Red"]))
+    # RUN 30 v15. A TIE IS A CONFLICT AND IS REPORTED AS ONE. It is no longer silently resolved
+    # to the more severe state: choosing a winner from a tie is a governance decision with a
+    # direction, and the contract requires it to be declared rather than taken.
+    _tie = _V5b.majority_rules([_mk("s1", "Green", "b1"), _mk("s2", "Red", "b2")])
+    check(mid, "boundary: an even split returns NO unique winner and is reported as a conflict",
+          _tie["unique_winner"] is False and _tie["conflict"] is True, str(_tie))
     check(mid, "missingness: an absent signal is not counted as Green",
-          run("B1.3", _pkg(cusum="Red")).get("counts", {}).get("Green") == 0)
-    check(mid, "boundary: an unknown status is not counted at all",
-          run("B1.3", _pkg(mc="banana", cusum="Red")).get("total_votes") == 1)
+          run("B1.3", _pkg(cusum="Red", doc="Red")).get("counts", {}).get("Green") == 0)
+    check(mid, "boundary: an unknown status is refused rather than counted",
+          abstained(run("B1.3", _pkg(mc="banana", cusum="Red"))))
     check(mid, "missingness: refuses when nothing qualifies", abstained(run("B1.3", _pkg())))
-    check(mid, "quorum: no minimum quorum is declared, so a single signal decides the ensemble",
-          run("B1.3", _pkg(cusum="Red")).get("total_votes") == 1)
-    dup3 = run("B1.3", _pkg(mc="Green", cusum="Green", doc="Green",
-                            array=[{"status_color": "Red"}, {"status_color": "Red"}]))
-    non = run("B1.3", _pkg(mc="Green", cusum="Green", doc="Green",
-                           array=[{"status_color": "Red"}]))
-    check(mid, "lineage: duplicating one signal changes the count",
-          dup3.get("counts") != non.get("counts"))
+    check(mid, "quorum: a single signal is not a majority and the module says so",
+          abstained(run("B1.3", _pkg(cusum="Red"))))
+    check(mid, "lineage: duplicating one signal does NOT change the count",
+          _V5b.majority_rules([_mk("a", "Red", "bX"), _mk("a2", "Red", "bX"),
+                               _mk("g", "Green", "bY")])["counts"]["Red"] == 1)
 
     # ------------------------------------------------------------------ 6.4 Worst-N-of-M
     mid = "6.4"
     out = run("B1.4", _pkg(mc="Red", cusum="Green", doc="Green"))
-    check(mid, "positive: executes on an assembled package", not abstained(out))
-    check(mid, "structure: N is not predeclared; the rule uses proportional thresholds over M",
-          "n" not in out and "worst_n" not in out and "total_modules" in out)
+    # RUN 30 v15. N IS PREDECLARED AND FROZEN AT TWO, and the statistic is the MEAN of the worst
+    # two severities. It asserts no band, so `abstained()` would read it as an abstention; what
+    # is checked is that the statistic was computed.
+    check(mid, "structure: N is predeclared and frozen at two; the rule is the mean of the "
+               "worst two, with no proportional threshold over M",
+          out.get("mean_worst_2") is not None and "total_modules" not in out, str(out))
     # THE DILUTION TEST. Under any worst-N-of-M rule the answer cannot improve when an
     # additional benign signal is added: the worst N are unchanged. Prove what production does.
     three = run("B1.4", _pkg(mc="Red", cusum="Green", doc="Green"))
     four = run("B1.4", _pkg(mc="Red", cusum="Green", doc="Green",
                             array=[{"status_color": "Green"}]))
-    r3 = O.SEVERITY_RANK.get(FUSION.normalise_status(three.get("status_color")), -1)
-    r4 = O.SEVERITY_RANK.get(FUSION.normalise_status(four.get("status_color")), -1)
-    proposition(mid, "6.4/benign-dilution",
-                "invariant: adding a benign signal must not lower the reported severity",
-                r4 >= r3,
-                f"three signals with one Red gives {three.get('status_color')}; adding a single "
-                f"Green gives {four.get('status_color')}. The Red arm fires at a COUNT of at "
-                f"least ceil(0.3 M), so enlarging M with benign evidence raises the bar and "
-                f"downgrades an unchanged adverse finding.")
-    check(mid, "known-answer: the collapsing second-stage operation is the maximum of the "
-               "worst N, which equals conservative dominance",
-          O.worst_n_of_m(["Green", "Red", "Green"], 2)
-          == O.conservative_dominance(["Green", "Red", "Green"]))
+    check(mid, "invariant: adding a benign signal does not lower the statistic",
+          four.get("mean_worst_2") >= three.get("mean_worst_2"),
+          f"{three.get('mean_worst_2')} then {four.get('mean_worst_2')}")
+    # THE SECOND-STAGE OPERATION IS THE MEAN, NOT THE MAXIMUM. Taking the maximum of the worst
+    # two collapses the module onto Conservative Dominance, which the contract forbids: on
+    # Green, Green, Red the mean is 1.5 where the maximum would be 3.
+    from app.simulation import canonical_v5 as _V5c
+    _mk4 = lambda i, st, b: {"signal_id": i, "status": st, "period": 1, "lineage_body": b}
+    _w2 = _V5c.worst_two_of_m([_mk4("a", "Green", "b1"), _mk4("b", "Green", "b2"),
+                               _mk4("c", "Red", "b3")])
+    check(mid, "known-answer: Green, Green, Red gives a Worst-2 mean of 1.5, so the module does "
+               "NOT collapse onto conservative dominance",
+          abs(_w2["mean_worst_2"] - 1.5) < 1e-12
+          and O.conservative_dominance(["Green", "Green", "Red"]) == "Red", str(_w2))
     check(mid, "missingness: refuses when nothing qualifies", abstained(run("B1.4", _pkg())))
-    check(mid, "boundary: an unknown status is dropped from the denominator",
-          run("B1.4", _pkg(mc="banana", cusum="Red")).get("total_modules") == 1)
-    check(mid, "invariant: all-Green gives Green",
-          run("B1.4", _pkg("Green", "Green", "Green", "Green")).get("status_color") == "Green")
+    check(mid, "boundary: an unknown status is refused rather than dropped from a denominator",
+          abstained(run("B1.4", _pkg(mc="banana", cusum="Red"))))
+    check(mid, "calibration: no traffic-light boundary is asserted over the statistic",
+          run("B1.4", _pkg("Green", "Green", "Green", "Green")).get("status_color") is None
+          and run("B1.4", _pkg("Green", "Green", "Green", "Green"))
+          .get("calibration_pending") is not None)
 
 
 # =============================================================================================
@@ -1056,8 +1081,13 @@ def cat9_architecture() -> None:
     check(mid, "the signal qualification marker states the evidence is unqualified",
           SIGNAL_QUALIFICATION == "unqualified", repr(SIGNAL_QUALIFICATION))
     # The target architecture requires downstream categories to consume QUALIFIED evidence.
+    # RUN 30. THE PROBE MOVES FROM B1.2 TO B1.3 DELIBERATELY. B1.2 now abstains for an
+    # unrelated reason -- it has no governed weighting policy -- and letting that abstention
+    # answer this proposition would mark a Category-9 finding resolved that Run 31 owns and
+    # Run 30 has not touched. B1.3 still computes a project state from evidence that has passed
+    # through no qualification step, which is exactly what this proposition is about.
     raw = _pkg(mc="Red", cusum="Red", doc="Red")
-    out = run("B1.2", raw)
+    out = run("B1.3", raw)
     proposition(mid, "ARCH/raw-bypass",
                 "a Category-6 ensemble must refuse a raw status carrying no Category-9 "
                 "qualification", abstained(out),
@@ -1092,13 +1122,11 @@ def cat9_architecture() -> None:
     once = run("B1.3", _pkg(mc="Red", cusum="Green", doc="Green"))
     twice = run("B1.3", _pkg(mc="Red", cusum="Green", doc="Green",
                              array=[{"status_color": "Red"}]))
-    proposition(mid, "ARCH/lineage-double-count",
-                "a second transform of the same adverse evidence must not increase the adverse "
-                "count", twice["counts"]["Red"] == once["counts"]["Red"],
-                f"the count rises from {once['counts']['Red']} to {twice['counts']['Red']}. No "
-                f"module carries a lineage identifier, so an ensemble cannot tell one piece of "
-                f"evidence seen twice from two independent pieces, and correlated transforms of "
-                f"the same cost index each cast their own vote.")
+    check(mid, "a second transform of the same adverse evidence does not increase the adverse "
+               "count (repaired in Run 30: every governed signal carries a lineage body and "
+               "duplicate lineage is collapsed before anything is counted)",
+          twice["counts"]["Red"] == once["counts"]["Red"],
+          f"{once['counts']['Red']} then {twice['counts']['Red']}")
 
 
 # =============================================================================================

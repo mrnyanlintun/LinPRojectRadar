@@ -240,7 +240,14 @@ _computed_ids = {m["module_id"] for m in res["modules"]}
 _voting_seats = sum(c["module_count"] for c in res["category_statuses"].values())
 check("many other modules computed on this run and appear on the ledger, so the vote is a "
       "restriction of a real population rather than a run in which only two modules existed",
-      len(_computed_ids) > 20 and not {"A2.1", "A4.10"} <= set(res["voting_module_ids"]),
+      # RUN 30. The floor is expressed as a RELATION to the voting pair rather than as the bare
+      # literal 20 it used to be. Run 30's v15 made B1.2 Weighted Voting abstain without a
+      # governed weighting policy, which took the population on this fixture from twenty-one to
+      # twenty, and a literal chosen when the population happened to be twenty-one would have
+      # gone red for a correct abstention. What the check is actually about is that the vote is
+      # a restriction of a much larger computed population, so that is what it now says.
+      len(_computed_ids) >= 10 * len(res["voting_module_ids"])
+      and not {"A2.1", "A4.10"} <= set(res["voting_module_ids"]),
       f"{len(_computed_ids)} computed")
 check("and the seats in the whole category rollup number exactly two, so no computed module "
       "outside the voting pair contributed a status to any category that votes",

@@ -153,7 +153,12 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         "run28_production_tree.sha256",
                         "run28_closure_production_tree.sha256",
                         "run29_production_tree.sha256",
-                        "run29_closure_production_tree.sha256"),
+                        "run29_closure_production_tree.sha256",
+                        # RUN 30 supersedes it once more: the Category-6/7 canonical remediation
+                        # added canonical_v5.py, moved models_gov.py and extended
+                        # project_data.py. The Run-29 closure manifest is kept addressable as
+                        # this one's parent rather than rewritten.
+                        "run30_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

@@ -1,0 +1,40 @@
+fault,name,result,detail
+1,Conservative Dominance averages away a Red,RED_THEN_GREEN,baseline='Red' injected='Yellow' restored='Red' injection_applied=True
+2,Weighted Voting consumes raw cpi/spi rather than governed states,RED_THEN_GREEN,baseline=['mc'] injected=['cpi'] restored=['mc'] injection_applied=True
+3,Weighted Voting same-lineage duplicate gains weight,RED_THEN_GREEN,baseline=0.25 injected=0.4 restored=0.25 injection_applied=True
+4,Majority Rules unknown label becomes Green,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+5,Majority Rules same-lineage duplicate gains a vote,RED_THEN_GREEN,baseline=1 injected=2 restored=1 injection_applied=True
+6,Worst-N uses max and collapses to Conservative Dominance,RED_THEN_GREEN,baseline=1.5 injected=3 restored=1.5 injection_applied=True
+7,Worst-N duplicate lineage occupies both worst positions,RED_THEN_GREEN,baseline=1.5 injected=3.0 restored=1.5 injection_applied=True
+8,Dempster-Shafer treats ignorance as conflict,RED_THEN_GREEN,baseline=0 injected=0.6 restored=0 injection_applied=True
+9,Dempster-Shafer total conflict divides by zero or fabricates a verdict,RED_THEN_GREEN,baseline='TOTAL_CONFLICT' injected='COMBINED' restored='TOTAL_CONFLICT' injection_applied=True
+10,Dempster-Shafer same-lineage masses combine as independent,RED_THEN_GREEN,baseline='DEPENDENCE_UNRESOLVED' injected='COMBINED' restored='DEPENDENCE_UNRESOLVED' injection_applied=True
+11,Rough Sets executes without a decision table,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+12,Neutrosophic indeterminacy is silently defined as 1-T-F,RED_THEN_GREEN,baseline=0.8 injected=0.20000000000000004 restored=0.8 injection_applied=True
+13,Invalid Interval Fuzzy bounds are accepted,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+14,Z-number missing reliability becomes full reliability,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+15,PLTS probabilities not summing to one are accepted,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+16,Plithogenic becomes operational,RED_THEN_GREEN,baseline=False injected=True restored=False injection_applied=True
+17,Belief Rule Base invalid belief distribution is accepted,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+18,archived Quantum becomes operational/runnable,RED_THEN_GREEN,"baseline=(False, False, False) injected=(True, True, True) restored=(False, False, False) injection_applied=True"
+19,invalid Pythagorean tuple accepted,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+20,invalid Picture tuple accepted,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+21,Hesitant empty set becomes favourable,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+22,Type-2 inference collapses to the interval midpoint,RED_THEN_GREEN,baseline=None injected=0.5 restored=None injection_applied=True
+23,Maximum Entropy merely calculates the entropy of a supplied vector,RED_THEN_GREEN,baseline=0.5 injected=1.0 restored=0.5 injection_applied=True
+24,Maximum Entropy runs with no state space or constraints,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+25,Possibility violates maxitivity,RED_THEN_GREEN,baseline=0.0 injected=0.4 restored=0.0 injection_applied=True
+26,Possibility is normalised as though it were a probability,RED_THEN_GREEN,baseline=1.4 injected=1.0 restored=1.4 injection_applied=True
+27,invalid Spherical tuple accepted,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+28,invalid Fermatean tuple accepted,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+29,MARCOS treats criteria as alternatives,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+30,MARCOS accepts one project state as an alternatives problem,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+31,CRITIC-TOPSIS accepts one project row,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+32,CRITIC-TOPSIS zero-variance criterion silently divides,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
+33,Hypersoft missing Cartesian tuple defaults to a favourable value,RED_THEN_GREEN,"baseline=(False, [['a2', 'b2']]) injected=(True, []) restored=(False, [['a2', 'b2']]) injection_applied=True"
+34,an orphan canonical structure has no production path,RED_THEN_GREEN,baseline=True injected=False restored=True injection_applied=True
+35,a corpus-present structure is disconnected from its module,RED_THEN_GREEN,baseline='Red' injected=None restored='Red' injection_applied=True
+36,a duplicate simulation-version stamp,RED_THEN_GREEN,baseline=True injected=False restored=True injection_applied=True
+37,archived Quantum appears on the current operational surface,RED_THEN_GREEN,baseline=True injected=False restored=True injection_applied=True
+38,disabled Plithogenic becomes active,RED_THEN_GREEN,baseline=True injected=False restored=True injection_applied=True
+39,disabled Hypersoft becomes active,RED_THEN_GREEN,"baseline=(False, 'DISABLED_FUTURE_RESEARCH') injected=(True, 'ACTIVE') restored=(False, 'DISABLED_FUTURE_RESEARCH') injection_applied=True"

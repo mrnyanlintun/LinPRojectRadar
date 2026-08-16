@@ -100,39 +100,56 @@ assembled = {
     "simulationSignals": {"signal_array": [{"status_color": "Green"} for _ in range(40)]},
 }
 b11 = VALIDATED["B1.1"][1](assembled, lambda: 0.5, None)["status_color"]
-b14 = VALIDATED["B1.4"][1](assembled, lambda: 0.5, None)["status_color"]
+# RUN 30 v15. B1.4 IS THE FROZEN WORST-2 MEAN STATISTIC AND ASSERTS NO BAND, so the comparison
+# is between a state and a statistic rather than between two states. The Run-27 finding stands:
+# the two rules are NOT redundant, and one adverse primary signal among forty calm module
+# signals still separates them.
+_b14 = VALIDATED["B1.4"][1](assembled, lambda: 0.5, "2026-06-30")
+b14 = _b14.get("mean_worst_2")
 check("a single adverse primary signal among forty calm module signals separates the two rules",
-      b11 != b14, f"B1.1={b11}, B1.4={b14}")
+      b11 == "Red" and b14 is not None and b14 < 3.0, f"B1.1={b11}, B1.4 mean={b14}")
 check("and the dominance rule is the more adverse of the two, which is what conservatism means",
-      (b11, b14) == ("Red", "Green"), f"B1.1={b11}, B1.4={b14}")
+      b11 == "Red" and b14 == 1.5, f"B1.1={b11}, B1.4 mean={b14}")
 record("Worst-N-of-M vs Conservative Dominance",
        "the two are redundant",
        "counterexample over the live functions on one assembled project",
        "REFUTED",
-       f"one Red primary signal plus forty Green module signals gives B1.1={b11} and B1.4={b14}. "
-       "They read different input sets (B1.1 reads four primary signals, B1.4 reads the primary "
-       "signals AND the whole simulation signal array) and apply different aggregations (maximum "
-       "versus a proportional count). Keep both.")
+       f"one Red primary signal plus forty Green module signals gives B1.1={b11} and a B1.4 "
+       f"Worst-2 mean of {b14}. B1.1 takes the maximum severity; B1.4 averages the worst two, so "
+       "a lone adverse signal cannot carry the statistic to its ceiling. Keep both.")
 
-# The structural defect of B1.4 that IS established: its denominator grows with the registry.
-small = dict(assembled)
+# ---------------------------------------------------------------------------------------------
+# RUN 30 REPAIRED THE STRUCTURAL DEFECT RUN 27 ESTABLISHED HERE, and the proof is kept and
+# INVERTED rather than deleted, so the repair is evidenced rather than asserted.
+#
+# THE DEFECT AS RUN 27 FOUND IT: B1.4 compared a red COUNT against ceil(0.3 * M) where M was the
+# number of banded statuses INCLUDING every entry of the simulation signal array, so identical
+# adverse evidence read Red beside a three-module array and Yellow beside a sixty-three-module
+# array. Registering more modules diluted the adverse fraction.
+#
+# THE v15 RULE: the module synthesises the independent GOVERNED SIGNALS -- the assembled arms,
+# with duplicate lineage collapsed -- and takes the mean of the worst two severities. The module
+# array is a set of transformations of those same arms and is not synthesised at all, so there
+# is no denominator that can grow with the registry.
 small = {"signals": assembled["signals"],
          "simulationSignals": {"signal_array": [{"status_color": "Red"} for _ in range(3)]}}
 big = {"signals": assembled["signals"],
        "simulationSignals": {"signal_array": [{"status_color": "Red"} for _ in range(3)]
                              + [{"status_color": "Green"} for _ in range(60)]}}
-b14_small = VALIDATED["B1.4"][1](small, lambda: 0.5, None)["status_color"]
-b14_big = VALIDATED["B1.4"][1](big, lambda: 0.5, None)["status_color"]
-check("B1.4's proportional threshold makes its verdict depend on how many modules are registered",
-      b14_small != b14_big, f"same three adverse module signals: {b14_small} with a "
-                            f"3-module array, {b14_big} with a 63-module array")
+b14_small = VALIDATED["B1.4"][1](small, lambda: 0.5, "2026-06-30").get("mean_worst_2")
+b14_big = VALIDATED["B1.4"][1](big, lambda: 0.5, "2026-06-30").get("mean_worst_2")
+check("B1.4's verdict no longer depends on how many modules are registered",
+      b14_small == b14_big and b14_small is not None,
+      f"same three adverse module signals: {b14_small} with a "
+      f"3-module array, {b14_big} with a 63-module array")
 record("Worst-N-of-M denominator",
        "B1.4's verdict is invariant to the size of the module registry",
-       "same adverse evidence evaluated against two signal-array lengths",
-       "REFUTED",
-       f"identical primary signals and three Red module signals give {b14_small} when the array "
-       f"holds three modules and {b14_big} when it holds sixty-three. Registering more modules "
-       "dilutes the adverse fraction. This is structural, not a calibration gap.")
+       "same adverse evidence evaluated against two signal-array lengths, re-run against v15",
+       "HOLDS (repaired in Run 30)",
+       f"identical primary signals give a Worst-2 mean of {b14_small} with a three-module array "
+       f"and {b14_big} with a sixty-three-module array. Run 27 measured Red and Yellow for the "
+       "same comparison against the v14 proportional-count rule; the v15 statistic has no "
+       "denominator that grows with the registry.")
 
 # ================================================ 2. Constraint Satisfaction Analysis
 section("2. CONSTRAINT SATISFACTION ANALYSIS (B4.3)")

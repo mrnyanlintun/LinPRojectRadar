@@ -176,9 +176,21 @@ try:
     check(bool(comp4), "the stored row carries module results", str(len(comp4)))
     # THE DEFECT ITSELF: before the adapter, all fourteen were in `abstained` on every real run.
     reached = [m for m in FOURTEEN if m in comp4]
-    check(len(reached) == 12,
-          "twelve of the fourteen nested-input computations now produce a finding at period four",
+    # RUN 30 v15: NINE, NOT TWELVE, AND THE THREE THAT DROPPED OUT ARE CORRECT ABSTENTIONS.
+    # This fixture's period four supplies ONE independent body of evidence -- the earned-value
+    # arms, with no document risk score -- as B2.2's own finding says ("1 of 1 signals"). A
+    # majority over one signal is that signal, and there is no "worst two" of one, so B1.3 and
+    # B1.4 abstain. B1.2 abstains because the project has no governed weighting policy and the
+    # four literal weights it used to apply had no authority behind them. The adapter's
+    # reachability is what this check is about, and it is unchanged: all fourteen are still
+    # reached and accounted for, and the three now decline for stated reasons of their own.
+    check(len(reached) == 9,
+          "nine of the fourteen nested-input computations produce a finding at period four, and "
+          "the three synthesis ensembles abstain for stated reasons rather than being unreached",
           f"reached={sorted(reached)}")
+    check(all(m in abst4 and str(abst4[m].get("reason", "")).strip()
+              for m in ("B1.2", "B1.3", "B1.4")),
+          "and each of the three states why it declined")
     check(all(m in comp4 or m in abst4 for m in FOURTEEN),
           "and every one of the fourteen is accounted for, computed or abstained")
 
@@ -461,7 +473,7 @@ try:
           "FAULT: with the adapter's tiers emptied nothing of the fourteen computes, which is "
           "what the reachability check would catch", str(broken_reached))
     rerun = compute_project(dict(si4), PRJ, "P4", CUTOFF)
-    check(len([m for m in FOURTEEN if m in {x["module_id"] for x in rerun["modules"]}]) == 12
+    check(len([m for m in FOURTEEN if m in {x["module_id"] for x in rerun["modules"]}]) == 9
           and rerun["project_status"] == after["project_status"],
           "and the baseline is restored after the fault, status included")
 

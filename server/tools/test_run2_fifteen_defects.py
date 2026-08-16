@@ -258,11 +258,20 @@ try:
                               "Weighted Voting"),
                              (run_majority_rules, old_gov.run_majority_rules, "Majority Rules"),
                              (run_worst_n_of_m, old_gov.run_worst_n_of_m, "Worst N of M")):
+        # RUN 30 v15. The three ensembles no longer all report a band: Weighted Voting abstains
+        # without a governed weighting policy and Worst-2 asserts no traffic-light boundary over
+        # its statistic. What THIS defect is about is that lowercase adverse evidence must not
+        # read as agreement at low risk, and that is what is asserted for all three: the old code
+        # returned Green on this input and no ensemble does now.
         old_c = old_fn(ENSEMBLE, None, None).get("status_color")
-        new_c = fn(ENSEMBLE, None, None).get("status_color")
-        check(old_c == "Green" and new_c == "Red",
-              f"{name}: three lowercase red primary signals voted Green and now vote Red",
+        new_c = fn(ENSEMBLE, None, "2026-06-30").get("status_color")
+        check(old_c == "Green" and new_c != "Green",
+              f"{name}: three lowercase red primary signals voted Green and no longer can",
               f"old={old_c} new={new_c}")
+    check(run_majority_rules(ENSEMBLE, None, "2026-06-30").get("status_color") == "Red",
+          "Majority Rules, the one of the three that still reports a band, reports Red")
+    check(run_worst_n_of_m(ENSEMBLE, None, "2026-06-30").get("mean_worst_2") == 3.0,
+          "and the Worst-2 mean over the two independent adverse signals is the ceiling, 3.0")
 
     UNKNOWN = {"signals": {"mc": {"status": "unexpected"}, "cusum": {"status": "unexpected"},
                            "doc": {"status": "unexpected"}},
@@ -272,7 +281,7 @@ try:
                              (run_majority_rules, old_gov.run_majority_rules, "Majority Rules"),
                              (run_worst_n_of_m, old_gov.run_worst_n_of_m, "Worst N of M")):
         old_c = old_fn(UNKNOWN, None, None).get("status_color")
-        new_res = fn(UNKNOWN, None, None)
+        new_res = fn(UNKNOWN, None, "2026-06-30")
         check(old_c == "Green",
               f"{name}: unrecognised statuses voted Green on the old code", str(old_c))
         check(new_res.get("status_color") != "Green",
@@ -1466,9 +1475,17 @@ try:
             return "Yellow"
         return "Green"
 
+    # RUN 30. THE INJECTION SITE MOVED, AND THE MOVE IS THE POINT. The v15 ensembles read the
+    # vocabulary through `fusion.normalise_status` when the governed signals are assembled, not
+    # through a name bound in models_gov, so patching the old site would have applied cleanly and
+    # changed nothing -- an injection that silently fails to apply, which is one of the five
+    # failure modes this programme catalogues. The probe also moves from Weighted Voting, which
+    # now abstains for want of a governed weighting policy and could not show the defect either
+    # way, to Majority Rules, which still reports a band and is the one of the three whose answer
+    # the vocabulary decides.
     inject("the shared status vocabulary in the voting ensembles",
-           live_gov, "normalise_status", case_sensitive,
-           lambda: live_gov.run_weighted_voting(ENSEMBLE, None, None).get("status_color"),
+           fusion, "normalise_status", case_sensitive,
+           lambda: live_gov.run_majority_rules(ENSEMBLE, None, "2026-06-30").get("status_color"),
            "Green")
 
     # (c) Conservative Dominance. Injecting a case-SENSITIVE vocabulary here would not reproduce

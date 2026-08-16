@@ -47,6 +47,7 @@ from .models import (
 )
 from .models_ext import _derived, _js_str
 from .rng import js_round, round1, round2
+from .signal_package import SIGNAL_QUALIFICATION
 
 _round3 = lambda v: js_round(v * 1000) / 1000  # noqa: E731
 
@@ -299,126 +300,133 @@ def _vote_bucket(status) -> str | None:
     return normalise_status(status)
 
 
+# ---------------------------------------------------------------------------------------------
+# RUN 30, v15. THE THREE COMPARISON ENSEMBLES NOW SYNTHESISE GOVERNED SIGNALS.
+#
+# WHAT CHANGED AND WHY, stated once for all three because it is one change.
+#
+# The v14 ensembles voted the three primary signals PLUS every entry of
+# `simulationSignals.signal_array` -- every other module this run had already computed. Those
+# entries are not further evidence about the project. They are further TRANSFORMATIONS of the
+# same four assembled arms, and a transformation retains the lineage of what produced it. Voting
+# them made the COUNT OF REGISTERED MODULES an input to the answer:
+#
+#   * Worst-N-of-M compared a red COUNT against `ceil(0.3 * M)` where M grew with the array, so
+#     Run 27 measured identical adverse evidence reading RED beside a three-module array and
+#     YELLOW beside a sixty-three-module array. Registering a module diluted the evidence.
+#   * Weighted Voting gave every array entry a 0.6 weight taken from a literal in this file with
+#     no provenance anywhere, so the same duplication decided the winner.
+#   * Majority Rules counted each transformation as a separate voter.
+#
+# The v15 rule is the contract's: synthesise the governed signals, one per independent body of
+# evidence, with duplicate lineage collapsed. `canonical_v5.governed_signals_from_project` builds
+# them from the arms the signal package already carries and the lineage `arm_lineage` already
+# declares. NOTHING IS WEIGHTED, DISCOUNTED OR TUNED to compensate for the removal.
+#
+# Weighted Voting now requires a GOVERNED WEIGHTING POLICY and abstains without one, because the
+# four literals it used had no authority behind them and section 14 forbids inventing weights.
+# Its scientific disposition was already PARAMETER_PROVENANCE_BLOCKED; the code now says so.
+#
+# Worst-N-of-M is the frozen Worst-2 MEAN statistic and asserts NO traffic-light boundary,
+# because the contract forbids inventing one and Run 33 owns the mapping.
+#
+# All three remain ADVISORY_ONLY and non-voting. Voting is exactly A1.7 and A1.8.
+# ---------------------------------------------------------------------------------------------
+
+def _governed(si, period_cutoff):
+    from .canonical_v5 import governed_signals_from_project
+    return governed_signals_from_project(si or {}, period_cutoff)
+
+
+def _synthesis_lineage(out: dict) -> dict[str, Any]:
+    """The audit trail every one of the three carries, so a reader can see what was synthesised
+    and what was set aside as the same evidence read twice."""
+    return {
+        "duplicate_lineage_suppressed": out.get("duplicate_lineage_suppressed", []),
+        "abstaining_signals": [
+            {"signal_id": s["signal_id"], "reason": s.get("abstention_reason")}
+            for s in out.get("abstaining", [])],
+        "signal_qualification": SIGNAL_QUALIFICATION,
+        "synthesis_role": "comparison and sensitivity regime; not an independent project fact "
+                          "and not a voter",
+    }
+
+
 def run_weighted_voting(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    project = si or {}
-    s = project.get("signals") or {}
-    sim = (project.get("simulationSignals") or {}).get("signal_array") or []
-    votes = {"Green": 0, "Yellow": 0, "Amber": 0, "Red": 0}
-    weights = {"cat1": 1.5, "cat4": 1.0, "cat7": 0.6, "cat9": 1.5}
-
-    def add_vote(status, w):
-        b = _vote_bucket(status)
-        if not b:
-            return
-        votes[b] += w
-
-    if s.get("mc") is not None:
-        add_vote(s["mc"].get("status"), weights["cat1"])
-    if s.get("cusum") is not None:
-        add_vote(s["cusum"].get("status"), weights["cat1"])
-    if s.get("doc") is not None:
-        add_vote(s["doc"].get("status"), weights["cat4"])
-    for m in sim:
-        add_vote(m.get("status_color"), weights["cat7"])
-    if s.get("decision") is not None:
-        add_vote(s["decision"].get("state"), weights["cat9"])
-
-    total = sum(votes[k] for k in votes)  # insertion order; do not sort
-    if total == 0:
-        return insufficient("Weighted_Voting")
-    dominant = "Green"
-    for b in list(votes)[1:]:  # JS reduce with `>` keeps the LATER key on ties
-        dominant = dominant if votes[dominant] > votes[b] else b
-    pct = int(js_round((votes[dominant] / total) * 100))
+    from .canonical import StructureAbsent
+    from .canonical_v5 import SignalNotEligible, weighted_voting
+    try:
+        out = weighted_voting(_governed(si, period_cutoff), (si or {}).get("signalWeightPolicy"))
+    except (SignalNotEligible, StructureAbsent) as exc:
+        return dict(insufficient("Weighted_Voting"), abstention_reason=str(exc))
+    if not out.get("estimable"):
+        return dict(insufficient("Weighted_Voting"), abstention_reason=out.get("reason"))
     return {
         "method_class": "Weighted_Voting",
-        "status_color": dominant,
-        "votes": votes,
-        "dominant_pct": pct,
-        "evidence_metric": f"Weighted vote: {dominant} ({pct}% of weighted signals)",
+        "status_color": out["winner"],
+        "votes": out["votes"],
+        "unique_winner": out["unique_winner"],
+        "tied_classes": out["tied_classes"],
+        "tie_policy": out["tie_policy"],
+        "normalised_weights": out["normalised_weights"],
+        "weight_provenance": out["weight_provenance"],
+        "lineage": _synthesis_lineage(out),
+        "evidence_metric": (
+            f"Weighted vote: {out['winner']}" if out["unique_winner"]
+            else "Weighted vote: no single state carries most of the weight"),
     }
 
 
 def run_majority_rules(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    project = si or {}
-    s = project.get("signals") or {}
-    sim = (project.get("simulationSignals") or {}).get("signal_array") or []
-    counts = {"Green": 0, "Yellow": 0, "Amber": 0, "Red": 0}
-
-    def count(status):
-        b = _vote_bucket(status)
-        if not b:
-            return
-        counts[b] += 1
-
-    if s.get("mc") is not None:
-        count(s["mc"].get("status"))
-    if s.get("cusum") is not None:
-        count(s["cusum"].get("status"))
-    if s.get("doc") is not None:
-        count(s["doc"].get("status"))
-    for m in sim:
-        count(m.get("status_color"))
-
-    total = sum(counts[k] for k in counts)
-    if total == 0:
-        return insufficient("Majority_Rules")
-    majority = "Green"
-    for b in list(counts)[1:]:
-        majority = majority if counts[majority] > counts[b] else b
-    pct = int(js_round((counts[majority] / total) * 100))
+    from .canonical import StructureAbsent
+    from .canonical_v5 import SignalNotEligible, majority_rules
+    try:
+        out = majority_rules(_governed(si, period_cutoff))
+    except (SignalNotEligible, StructureAbsent) as exc:
+        return dict(insufficient("Majority_Rules"), abstention_reason=str(exc))
+    if not out.get("estimable"):
+        return dict(insufficient("Majority_Rules"), abstention_reason=out.get("reason"))
+    counts = out["counts"]
     return {
         "method_class": "Majority_Rules",
-        "status_color": majority,
+        "status_color": out["winner"],
         "counts": counts,
-        "majority_pct": pct,
-        "total_votes": total,
+        "total_votes": out["voters"],
+        "quorum": out["quorum"],
+        "unique_winner": out["unique_winner"],
+        "tied_classes": out["tied_classes"],
+        "conflict": out["conflict"],
+        "lineage": _synthesis_lineage(out),
         "evidence_metric": (
-            f"{majority} by majority ({counts[majority]} of {total} modules, {pct}%)"
-        ),
+            f"{out['winner']} by majority ({counts[out['winner']]} of {out['voters']} "
+            f"independent signals)" if out["unique_winner"]
+            else "No single state holds a majority of the independent signals"),
     }
 
 
 def run_worst_n_of_m(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    project = si or {}
-    s = project.get("signals") or {}
-    sim = (project.get("simulationSignals") or {}).get("signal_array") or []
-    all_statuses: list = []
-    if s.get("mc") is not None:
-        all_statuses.append(s["mc"].get("status"))
-    if s.get("cusum") is not None:
-        all_statuses.append(s["cusum"].get("status"))
-    if s.get("doc") is not None:
-        all_statuses.append(s["doc"].get("status"))
-    for m in sim:
-        if m.get("status_color"):
-            all_statuses.append(m["status_color"])
-    # Defect 1 again, third of the three ensembles. `"Red" in st` and `st == "Amber"` are the
-    # same capitalised comparisons _vote_bucket carried, applied directly here: the lowercase
-    # primary signals counted as neither red nor amber and simply vanished from both tallies
-    # while still inflating the denominator. Every status is banded first, and one outside the
-    # vocabulary is dropped from the denominator too rather than diluting the red fraction.
-    bands = [b for b in (normalise_status(st) for st in all_statuses) if b]
-    if not bands:
-        return insufficient("Worst_N_of_M")
-    red_count = sum(1 for b in bands if b == "Red")
-    amber_count = sum(1 for b in bands if b == "Amber")
-    m_total = len(bands)
-    if red_count >= math.ceil(m_total * 0.3):
-        status = "Red"
-    elif amber_count >= math.ceil(m_total * 0.4):
-        status = "Amber"
-    elif red_count >= 1:
-        status = "Yellow"
-    else:
-        status = "Green"
+    from .canonical import StructureAbsent
+    from .canonical_v5 import SignalNotEligible, worst_two_of_m
+    try:
+        out = worst_two_of_m(_governed(si, period_cutoff))
+    except (SignalNotEligible, StructureAbsent) as exc:
+        return dict(insufficient("Worst_N_of_M"), abstention_reason=str(exc))
+    if not out.get("estimable"):
+        return dict(insufficient("Worst_N_of_M"), abstention_reason=out.get("reason"))
+    a, b = out["selected"]
     return {
         "method_class": "Worst_N_of_M",
-        "status_color": status,
-        "red_count": red_count,
-        "amber_count": amber_count,
-        "total_modules": m_total,
-        "evidence_metric": f"{red_count} Red + {amber_count} Amber of {m_total} total modules",
+        # NO BAND. The statistic has no calibrated boundaries and none is invented here.
+        "status_color": None,
+        "mean_worst_2": out["mean_worst_2"],
+        "selected_signals": out["selected"],
+        "independent_signals": out["m"],
+        "classification": out["classification"],
+        "calibration_pending": out["classification_blocked"],
+        "lineage": _synthesis_lineage(out),
+        "evidence_metric": (
+            f"Worst two of {out['m']} independent signals: {a['status']} and {b['status']}, "
+            f"mean severity {out['mean_worst_2']:g} (of a possible 3)"),
     }
 
 

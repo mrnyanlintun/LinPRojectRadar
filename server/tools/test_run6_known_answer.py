@@ -457,7 +457,20 @@ RUN29_SCOPED_FILES = {
     "server/app/documents.py",
 }
 
-_unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
+# RUN 30. THE CATEGORY 6 AND 7 CANONICAL REMEDIATION, on the owner's supervisory instruction and
+# named on the same footing as every scope above it and no wider. What is in scope: the v5
+# canonical method layer in canonical_v5.py, which is NEW; the three Category-6 comparison
+# ensembles in models_gov.py, which stopped voting the whole simulation module array and started
+# synthesising the independent governed signals; and the intake vocabulary in project_data.py, so
+# the nineteen new structures are writable rather than merely describable in a test. B1.1
+# Conservative Dominance, A1.7 and A1.8 are untouched.
+RUN30_SCOPED_FILES = {
+    "server/app/simulation/canonical_v5.py",
+    "server/app/simulation/models_gov.py",
+    "server/app/project_data.py",
+}
+
+_unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
                    - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
                    - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES - RUN23_SCOPED_FILES
@@ -522,7 +535,7 @@ check(_prod, "the guard is live: it does see the files this run did change", str
 # baseline for the results already collected under it. The history is asserted as a whole rather
 # than one stamp at a time, so a run that overwrote an earlier stamp instead of appending would
 # turn this red.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v14",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v15",
       "the analytical layer is stamped at Run 28's version",
       registry.SIMULATION_VERSION)
 from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH  # noqa: E402
@@ -530,7 +543,7 @@ check(_SVH == ("sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.0
                "sim-2026.08-v5", "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8",
                "sim-2026.08-v9", "sim-2026.08-v10", "sim-2026.08-v11",
                "sim-2026.08-v12", "sim-2026.08-v13",
-               "sim-2026.08-v14"),
+               "sim-2026.08-v14", "sim-2026.08-v15"),
       "every earlier stamp remains recorded as a historical audit baseline, in order, and none "
       "was overwritten or re-used", str(_SVH))
 check(_SVH[-1] == registry.SIMULATION_VERSION and len(set(_SVH)) == len(_SVH),
@@ -1505,26 +1518,49 @@ _ARRAY = [{"module_id": "X1", "method_class": "X1", "status_color": "Red"},
 _PKG_V = package(_FLAT_RED, _MC_RED, _CU_RED, array=_ARRAY,
                  decision={"state": "Red-review", "conflict": "Multi-signal red-review"})
 
-# HAND, weighted voting: forecast red 1.5, trend red 1.5, document red 1.0, the three array rows
-# at 0.6 each (one Red, one Green, one Amber) and the decision state Red-review at 1.5.
-# Red = 1.5+1.5+1.0+0.6+1.5 = 6.1, Green = 0.6, Amber = 0.6, Yellow = 0. Total 7.3.
-# The dominant share is 6.1/7.3 = 83.56 per cent, rounding to 84.
+# RUN 30, v15. THE THREE ENSEMBLES SYNTHESISE GOVERNED SIGNALS, NOT THE MODULE ARRAY.
+#
+# HAND, the governed signal list. Four assembled arms are present and all four read red. The
+# index arm, the forecast arm and the trend arm are ONE earned-value body (arm_lineage), so they
+# collapse to one signal -- the most adverse reading of that body, ties going to the earliest arm
+# in evaluation order, which is the index arm. The document arm is a second, independent body.
+# TWO independent signals, both Red. The three array rows X1/X2/X3 are transformations of these
+# same arms and are no longer voted at all, which is the whole v15 change here.
+#
+# HAND, weighted voting: there is no governed weighting policy on this package, and the four
+# literal weights the v14 module carried had no authority behind them, so the module ABSTAINS
+# rather than weighing anything. This is the module's own recorded disposition made executable.
 r = registry.run_module("B1.2", _PKG_V, NOOP, "2025-06-30")
-ka(r["votes"], {"Green": 0.6, "Yellow": 0, "Amber": 0.6, "Red": 6.1},
-   "weighted voting: the weighted tally")
-ka((band(r), r["dominant_pct"]), ("Red", 84), "weighted voting: band and dominant share")
+check(abstains(r) and "weighting policy" in str(r.get("abstention_reason", "")),
+      "weighted voting: abstains with no governed weighting policy, inventing no weight",
+      str(r))
 
-# HAND, majority rules: the same sources without the decision state and unweighted.
-# Red 4, Amber 1, Green 1, total 6; 4/6 rounds to 67 per cent.
+# HAND, majority rules: two independent signals, both Red, so Red 2 of 2, and the two readings
+# of the earned-value body that were set aside are named rather than silently dropped.
 r = registry.run_module("B1.3", _PKG_V, NOOP, "2025-06-30")
-ka(r["counts"], {"Green": 1, "Yellow": 0, "Amber": 1, "Red": 4}, "majority rules: the tally")
-ka(r["evidence_metric"], "Red by majority (4 of 6 modules, 67%)", "majority rules: finding")
+ka(r["counts"], {"Green": 0, "Yellow": 0, "Amber": 0, "Red": 2}, "majority rules: the tally")
+ka(r["total_votes"], 2, "majority rules: two independent signals, not six voters")
+ka(sorted(r["lineage"]["duplicate_lineage_suppressed"]), ["cusum", "mc"],
+   "majority rules: the two further readings of the earned-value body are named as suppressed")
+ka(r["evidence_metric"], "Red by majority (2 of 2 independent signals)",
+   "majority rules: finding")
 
-# HAND, worst N of M: six banded statuses, four Red and one Amber. The Red trigger is
-# ceil(6*0.3) = 2, and 4 is at least 2, so Red.
+# HAND, worst 2 of M: the two independent signals are Red (severity 3) and Red (severity 3), so
+# MeanWorst2 = (3+3)/2 = 3.0. NO BAND IS ASSERTED over it: the boundaries do not exist.
 r = registry.run_module("B1.4", _PKG_V, NOOP, "2025-06-30")
-ka((r["red_count"], r["amber_count"], r["total_modules"]), (4, 1, 6), "worst n of m: the counts")
-ka(r["evidence_metric"], "4 Red + 1 Amber of 6 total modules", "worst n of m: finding")
+ka((r["mean_worst_2"], r["independent_signals"]), (3.0, 2), "worst 2 of m: the statistic")
+ka(band(r), None, "worst 2 of m: no traffic-light boundary is invented")
+ka(r["evidence_metric"],
+   "Worst two of 2 independent signals: Red and Red, mean severity 3 (of a possible 3)",
+   "worst 2 of m: finding")
+# AND THE v14 DILUTION DEFECT IS GONE: adding sixty more module rows to the array changes
+# nothing at all, where v14 would have moved the answer.
+_PKG_BIG = package(_FLAT_RED, _MC_RED, _CU_RED,
+                   array=_ARRAY + [{"module_id": f"Z{i}", "method_class": f"Z{i}",
+                                    "status_color": "Green"} for i in range(60)],
+                   decision={"state": "Red-review", "conflict": "Multi-signal red-review"})
+ka(registry.run_module("B1.4", _PKG_BIG, NOOP, "2025-06-30")["mean_worst_2"], 3.0,
+   "worst 2 of m: sixty further module rows do not dilute identical adverse evidence")
 
 print("\n-- The two of the fourteen that are disabled refuse before their input is read --")
 for mid, name in (("B2.7", "Plithogenic Sets"), ("B2.9", "Quantum Probability")):
@@ -2097,8 +2133,10 @@ _perm_stable = True
 for perm in itertools.permutations(_ARRAY):
     p = package(_FLAT_RED, _MC_RED, _CU_RED, array=list(perm),
                 decision={"state": "Red-review", "conflict": "x"})
-    if registry.run_module("B1.3", p, NOOP, "x")["counts"] != {"Green": 1, "Yellow": 0,
-                                                               "Amber": 1, "Red": 4}:
+    # v15: the array rows are no longer voted, so the majority rests on the two independent
+    # governed signals and cannot move with the array's order at all.
+    if registry.run_module("B1.3", p, NOOP, "x")["counts"] != {"Green": 0, "Yellow": 0,
+                                                               "Amber": 0, "Red": 2}:
         _perm_stable = False
 check(_perm_stable, "majority rules: invariant to the order of the results array, exhausted over "
                     "all six permutations")

@@ -71,10 +71,11 @@ def git_show(path: str, rev: str = V13_COMMIT) -> str:
 head("1. THE STAMP AND ITS HISTORY")
 # =================================================================================================
 
-check(SIMULATION_VERSION == "sim-2026.08-v14",
-      "the analytical layer is stamped sim-2026.08-v14", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v13",
-      "and names sim-2026.08-v13 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY RUN 30: this suite exists to prove the v13-to-v14 boundary, and it still does.
+check(SIMULATION_VERSION == "sim-2026.08-v15",
+      "the analytical layer is stamped sim-2026.08-v15", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v14",
+      "and names sim-2026.08-v14 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "EVERY SIMULATION IDENTIFIER IS UNIQUE: no historical stamp has been re-used",
       str([v for v in SIMULATION_VERSION_HISTORY
@@ -90,8 +91,8 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"the history recorded at commit {V13_COMMIT} is a strict PREFIX of the history now, read "
       f"out of git rather than out of a note, so this closure appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
-check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v14",),
-      "and it grew by exactly the one stamp this closure is authorised to add",
+check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v14", "sim-2026.08-v15"),
+      "and it grew by the one stamp this closure added and the one Run 30 added after it",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v13",
       "and the line this closure supersedes is the line that commit shipped", str(_old_stamps[-1]))

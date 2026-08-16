@@ -340,15 +340,20 @@ check("and goes green again once it is restored",
       all(ML.method_label(m) is not None for m in MISMATCH_23_STILL_LABELLED))
 
 # 7e. The participant-leak check must catch a truthful name written into a ledger key.
-_probe = dict(_by_id[LABELLED_PROBE])
-_probe["evidence_metric"] = ML.method_label(LABELLED_PROBE).truthful + " reading"
-_fired = any(ML.method_label(LABELLED_PROBE).truthful in _probe[k]
+# RUN 30. The leak probe must be taken on a module that ACTUALLY COMPUTED on this run.
+# LABELLED_PROBE is chosen from the label table alone, and Run 30's v15 made B1.2 abstain
+# without a governed weighting policy, so it no longer appears among the computed rows at all.
+# Taking the probe from the computed rows keeps the guard exercising a real ledger record.
+_LEAK_PROBE = next(m for m in MISMATCH_23_STILL_LABELLED if m in _by_id)
+_probe = dict(_by_id[_LEAK_PROBE])
+_probe["evidence_metric"] = ML.method_label(_LEAK_PROBE).truthful + " reading"
+_fired = any(ML.method_label(_LEAK_PROBE).truthful in _probe[k]
              for k in _ledger_keys if isinstance(_probe.get(k), str))
 check("the participant-leak guard FIRES when a truthful name is deliberately written into a "
       "ledger key", _fired)
 check("and the real record does not trip it",
-      not any(ML.method_label(LABELLED_PROBE).truthful in _by_id[LABELLED_PROBE][k]
-              for k in _ledger_keys if isinstance(_by_id[LABELLED_PROBE].get(k), str)))
+      not any(ML.method_label(_LEAK_PROBE).truthful in _by_id[_LEAK_PROBE][k]
+              for k in _ledger_keys if isinstance(_by_id[_LEAK_PROBE].get(k), str)))
 
 # 7f. The attachment itself must be capable of NOT firing, or section 3's last check is vacuous.
 _v: dict = {}
