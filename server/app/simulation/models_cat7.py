@@ -60,6 +60,9 @@ from typing import Any, Callable
 from . import canonical_v5 as V5
 from .canonical import StructureAbsent
 from .canonical_v5 import V5_STRUCTURE_KEYS, V5_STRUCTURE_WORDS, v5_structure
+from .lineage import (
+    evidence_body_of, independence_established, lineage_status,
+)
 from .models import ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_STRUCTURE_ABSENT
 from .signal_package import SIGNAL_QUALIFICATION
 
@@ -74,6 +77,44 @@ DISPOSITION_STRUCTURE_ABSENT = "NOT_ESTIMABLE_STRUCTURE_ABSENT"
 DISPOSITION_OPERATOR_BLOCKED = "OPERATOR_BLOCKED"
 DISPOSITION_DISABLED = "DISABLED"
 DISPOSITION_ARCHIVED = "ARCHIVED"
+
+
+def _lineage_block(module_id: str, structure: Any, *, applicable: bool) -> dict[str, Any]:
+    """
+    THE ROW'S LINEAGE STATE, SAID RATHER THAN LEFT BLANK.
+
+    Run 30's closure removed eleven Category-7 lineage declarations whose content had become
+    false, and deliberately did NOT replace them with invented independent bodies. That left the
+    right facts and the wrong representation: a row with no lineage record was indistinguishable
+    from a row whose independence had been established, because both carried nothing.
+
+    Every row now carries the state explicitly, DERIVED from the shipped declaration table by
+    `lineage.lineage_status`. There is no branch anywhere in this file that can put
+    LINEAGE_ESTABLISHED_INDEPENDENT on a row whose declaration does not say so.
+
+    SOURCE PROVENANCE AND EVIDENCE INDEPENDENCE ARE KEPT APART, which is the distinction the
+    closure instruction turns on. A row may know exactly where its structure came from -- who
+    assessed it, which document, which period -- and still have UNRESOLVED independence, because
+    knowing the source of a structure is not knowing what the assessor themselves read. Both are
+    reported, side by side, and neither is inferred from the other.
+    """
+    status = lineage_status(module_id, applicable=applicable)
+    return {
+        "lineage_status": status,
+        "independence_established": independence_established(status),
+        "evidence_body": evidence_body_of(module_id, status),
+        "source_provenance": _provenance_of(structure),
+        "derived_from": V5_STRUCTURE_WORDS.get(module_id),
+        "qualification": SIGNAL_QUALIFICATION,
+        "transformation_note":
+            "this measure is a representation of evidence supplied for this project and is "
+            "not a further independent reading of the project's condition",
+        "unresolved_note":
+            "no body of evidence has been established for this reading: what its assessors "
+            "themselves read is not known to this platform. That is not independence, and "
+            "nothing may corroborate through it"
+        if status == "LINEAGE_UNRESOLVED" else None,
+    }
 
 
 def _provenance_of(structure: Any) -> dict[str, Any]:
@@ -110,13 +151,7 @@ def _abstain(method_class: str, module_id: str, sentence: str, disposition: str,
         "structure_provenance": _provenance_of(structure),
         "abstention_reason": sentence,
         "signal_qualification": SIGNAL_QUALIFICATION,
-        "lineage": {
-            "derived_from": V5_STRUCTURE_WORDS.get(module_id),
-            "qualification": SIGNAL_QUALIFICATION,
-            "transformation_note":
-                "this measure is a representation of evidence supplied for this project and is "
-                "not a further independent reading of the project's condition",
-        },
+        "lineage": _lineage_block(module_id, structure, applicable=True),
         "evidence_metric": sentence,
     }
 
@@ -135,13 +170,7 @@ def _computed(method_class: str, module_id: str, structure: Any, sentence: str,
         "canonical_structure": V5_STRUCTURE_KEYS.get(module_id),
         "structure_provenance": _provenance_of(structure),
         "signal_qualification": SIGNAL_QUALIFICATION,
-        "lineage": {
-            "derived_from": V5_STRUCTURE_WORDS.get(module_id),
-            "qualification": SIGNAL_QUALIFICATION,
-            "transformation_note":
-                "this measure is a representation of evidence supplied for this project and is "
-                "not a further independent reading of the project's condition",
-        },
+        "lineage": _lineage_block(module_id, structure, applicable=True),
         "evidence_metric": sentence,
     }
     row.update(payload)
@@ -220,6 +249,10 @@ def _refuse(module_id: str, method_class: str, disposition: str,
             "canonical_structure": V5_STRUCTURE_KEYS.get(module_id),
             "operational": False,
             "abstention_reason": sentence,
+            # A disabled or archived identity produces no analytical reading, so there is no
+            # signal for a lineage statement to be about. NOT_APPLICABLE says that, and is
+            # distinct from UNRESOLVED, which describes a reading that exists.
+            "lineage": _lineage_block(module_id, None, applicable=False),
             "evidence_metric": sentence,
         }
 

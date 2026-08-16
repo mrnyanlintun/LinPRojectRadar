@@ -113,6 +113,49 @@ DEPENDENT_RELATIONSHIPS: frozenset[str] = frozenset({
 })
 
 
+# ------------------------------------------------------------------- THE FOUR LINEAGE STATES
+#
+# RUN 30 FINAL CLOSURE. The nine relationships above answer "what is this signal's relation to the
+# evidence body it belongs to". They presuppose that a body has been ESTABLISHED. They have no way
+# to say "no body has been established for this signal", and until now that condition was
+# represented by `lineage_for` returning None -- a blank whose meaning a reader had to know rather
+# than read.
+#
+# THAT BLANK IS THE DEFECT THIS VOCABULARY CLOSES, and the closure that created it is why. Run 30
+# removed eleven Category-7 lineage declarations because their content had become false: every one
+# said the reading rested on the two performance indices and the document risk score, and the
+# canonical routes read none of the three. They were NOT replaced with eleven newly invented
+# independent bodies, because what a governed epistemic structure rests on is whatever its
+# assessor read, and this platform does not know that. Inventing a body per module id would
+# manufacture exactly the independence this file exists to stop being assumed. So the honest state
+# is "not established", and it must be SAYABLE.
+#
+# NOTHING HERE IS A NEW SEMANTIC. `fusion.py` already implements this state as its FUSION.1
+# decision of Run 20 cycle 9: an undeclared signal is placed in one shared UNRESOLVED body, is not
+# combined as independent, and is reported through `unresolved_module_ids`. What is added is a
+# NAME for that state on the row itself, so a consumer -- Run 31's qualification gate above all --
+# reads it instead of inferring it from a missing key.
+
+#: A body of evidence has been established for this signal and it rests on its own. The ONLY
+#: state that may corroborate another signal.
+LINEAGE_ESTABLISHED_INDEPENDENT = "LINEAGE_ESTABLISHED_INDEPENDENT"
+#: A body has been established and this signal shares it with, or derives from, another.
+LINEAGE_ESTABLISHED_DEPENDENT = "LINEAGE_ESTABLISHED_DEPENDENT"
+#: NO body has been established. THIS IS NOT INDEPENDENCE AND IT IS NOT A DEFECT IN THE ROW: it
+#: is the truthful state of a governed structure whose assessor's own sources are unknown to this
+#: platform. Independence is NOT established, so nothing may corroborate through it.
+LINEAGE_UNRESOLVED = "LINEAGE_UNRESOLVED"
+#: The module produces no analytical reading at all -- it is disabled or archived -- so there is
+#: no signal for a lineage statement to be about. Distinct from UNRESOLVED, which describes a
+#: signal that exists.
+LINEAGE_NOT_APPLICABLE = "LINEAGE_NOT_APPLICABLE"
+
+LINEAGE_STATES: tuple[str, ...] = (
+    LINEAGE_ESTABLISHED_INDEPENDENT, LINEAGE_ESTABLISHED_DEPENDENT,
+    LINEAGE_UNRESOLVED, LINEAGE_NOT_APPLICABLE,
+)
+
+
 class LineageError(ValueError):
     """An evidence relationship outside the vocabulary, which is never a silent default."""
 
@@ -978,3 +1021,50 @@ def lineage_for(module_id: str) -> dict[str, Any] | None:
     """
     rec = MODULE_LINEAGE.get(module_id)
     return dict(rec) if rec else None
+
+
+def lineage_status(module_id: str, *, applicable: bool = True) -> str:
+    """
+    The module's lineage STATE, derived from the shipped declaration table and never asserted.
+
+    `applicable=False` is for a module that produces no analytical reading at all. A caller passes
+    it from the module's own activation state rather than from a list kept here, so a module that
+    is enabled or disabled later cannot leave this answer stale.
+
+    THE DERIVATION IS THE WHOLE POINT. An undeclared module returns UNRESOLVED, not INDEPENDENT,
+    and a declared one is independent only if its own declaration says INDEPENDENT. There is no
+    branch that can return ESTABLISHED_INDEPENDENT for a module that has not declared it.
+    """
+    if not applicable:
+        return LINEAGE_NOT_APPLICABLE
+    rec = MODULE_LINEAGE.get(module_id)
+    if rec is None:
+        return LINEAGE_UNRESOLVED
+    relationship = rec.get("evidence_relationship")
+    if relationship == INDEPENDENT:
+        return LINEAGE_ESTABLISHED_INDEPENDENT
+    return LINEAGE_ESTABLISHED_DEPENDENT
+
+
+def independence_established(status: str) -> bool:
+    """True only for the one state that establishes it. Every other state, including the absence
+    of a declaration, answers False."""
+    if status not in LINEAGE_STATES:
+        raise LineageError(
+            f"{status!r} is not a lineage state; the four states are {LINEAGE_STATES}")
+    return status == LINEAGE_ESTABLISHED_INDEPENDENT
+
+
+def evidence_body_of(module_id: str, status: str) -> str | None:
+    """
+    The established evidence body, or None where none is established.
+
+    None here is unambiguous BECAUSE the status field beside it says which of the four states
+    produced it. A body identifier is never synthesised from a module id: if the declaration does
+    not name one, this returns None and the status says UNRESOLVED.
+    """
+    if status not in (LINEAGE_ESTABLISHED_INDEPENDENT, LINEAGE_ESTABLISHED_DEPENDENT):
+        return None
+    rec = MODULE_LINEAGE.get(module_id) or {}
+    groups = tuple(rec.get("lineage_group_ids") or ())
+    return "+".join(sorted(groups)) if groups else None

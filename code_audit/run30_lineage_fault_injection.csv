@@ -1,0 +1,5 @@
+fault,result,detail
+FAULT A: an UNRESOLVED lineage state is declared ESTABLISHED_INDEPENDENT without evidence,RED_THEN_GREEN,baseline='ALL_STATES_SOUND' injected='INDEPENDENCE_WITHOUT_DECLARATION' restored='ALL_STATES_SOUND' injection_applied=True
+FAULT B: the lineage status is removed from a Category-7 ledger row,RED_THEN_GREEN,baseline='ALL_STATES_SOUND' injected='BLANK_OR_INVALID_STATE' restored='ALL_STATES_SOUND' injection_applied=True
+FAULT C: two transformations of one established body get different invented body ids,RED_THEN_GREEN,baseline='SHARED_BODY_PRESERVED' injected='SPLIT_INTO_INVENTED_BODIES' restored='SHARED_BODY_PRESERVED' injection_applied=True
+FAULT D: UNRESOLVED is treated as eligible independent evidence in the fusion path,RED_THEN_GREEN,"baseline=(0, 3, 0.7) injected=(3, 0, 0.9861) restored=(0, 3, 0.7) injection_applied=True"

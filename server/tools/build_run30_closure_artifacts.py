@@ -54,6 +54,17 @@ _sig, _ = SP.build_signals(FLAT, [
 NESTED = SP.adapt(FLAT, _sig, decision={"state": "Amber"}, signal_array=[])
 
 
+def _lineage_state(rid: str, disabled: bool) -> str:
+    """RUN 30 FINAL CLOSURE: the row's lineage state, derived from the shipped table."""
+    from app.simulation.lineage import lineage_status
+    return lineage_status(rid, applicable=not disabled)
+
+
+def _independence(rid: str, disabled: bool) -> str:
+    from app.simulation.lineage import independence_established
+    return "yes" if independence_established(_lineage_state(rid, disabled)) else "no"
+
+
 def write(name: str, header: list[str], rows: list[list]) -> None:
     path = OUT / name
     with path.open("w", encoding="utf-8", newline="\n") as fh:
@@ -159,6 +170,7 @@ def main() -> None:
             corpus[cid]["parameter_provenance"],
             "yes" if disabled else "no",
             "yes",
+            _lineage_state(rid, disabled), _independence(rid, disabled),
             r["remaining_run31_work"], r["remaining_run33_work"],
             "DISABLED_UNSAFE" if disabled else "ADVISORY_ONLY",
             r["current_scientific_disposition"],
@@ -177,6 +189,7 @@ def main() -> None:
            "oracle_through_production_pass", "invalid_admissibility_pass",
            "operational_result", "abstains", "parameter_provenance",
            "disabled_or_archive", "lineage",
+           "lineage_status", "independence_established",
            "run31_pending", "run33_pending", "activation", "final_disposition"], rows)
 
     cat7_rows = [r for r in rows if r[1].startswith("B2.")]

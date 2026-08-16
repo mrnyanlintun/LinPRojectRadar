@@ -271,7 +271,14 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: successor names it as its parent and carries its digest in
 #: research/freeze/RUN30_CLOSURE_FREEZE_2026-08-16.json. The guard was turned red first and
 #: observed reporting the added file and the four changed ones.
-PINNED = ROOT / "code_audit" / "run30_closure_production_tree.sha256"
+#: RUN 30 FINAL CLOSURE. Repointed once more. The closure named a lineage state on every
+#: Category-7 ledger row, which touched lineage.py and models_cat7.py. The run30 closure manifest
+#: is NOT rewritten: it stays as that release wrote it, and this successor names it as its parent
+#: and carries its digest in research/freeze/RUN30_FINAL_CLOSURE_FREEZE_2026-08-16.json.
+PINNED = ROOT / "code_audit" / "run30_final_closure_production_tree.sha256"
+#: The Run-30 closure manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN30_CLOSURE = ROOT / "code_audit" / "run30_closure_production_tree.sha256"
 #: The Run-30 canonical manifest, the immediate parent of the current one, kept addressable so a
 #: guard can prove the supersession is a real change and not a silent rewrite.
 PINNED_RUN30 = ROOT / "code_audit" / "run30_production_tree.sha256"
