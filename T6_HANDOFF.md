@@ -10687,3 +10687,20 @@ defensibility evidence object is GENERATED from the registry, so its bytes moved
 ---
 
 *(End of the Run-29 report reproduced verbatim.)*
+
+### Run 29 final-head record
+
+- Analytical line: **`sim-2026.08-v13`**.
+- Freeze identifier: **`OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-16-RUN29-CANONICAL-CAT4-5-V13-1`**,
+  superseding `OPUS-GUBERNATIO-RESEARCH-INSTRUMENT-2026-08-14-RUN28-CLOSURE-V12-2`.
+- Freeze manifest: `research/freeze/RUN29_CANONICAL_CAT4_5_FREEZE_2026-08-16.json`,
+  sha256 `a833a3b805fbdb4f4f2f1d0bb8520ff73f753d0b06720c148c8e9b7f7472e684`,
+  stage-1 commit `0a4e862aafa011b4d08e2fdd63c7ddaa9b47816f`.
+- Production tree manifest: `code_audit/run29_production_tree.sha256`, 229 files.
+- Participant package: **`og-participant-2026.08-v4`**,
+  `code_audit/run29_participant_package_v4_checksums.sha256`, 70 files. v1, v2 and v3 preserved;
+  v3 pinned to `01e943e` and NOT regenerated.
+- Freeze chain: RUN22, POSTRUN22-UI-1, RUN24, RUN25, RUN26, RUN28-CANONICAL-CAT1-3-V11-1,
+  RUN28-CLOSURE-V11-2, RUN28-CLOSURE-V12-1, RUN28-CLOSURE-V12-2, **RUN29-CANONICAL-CAT4-5-V13-1**.
+- **The complete suite result from the exact final head is recorded in the finalisation commit
+  message.**
