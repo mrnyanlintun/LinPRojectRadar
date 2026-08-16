@@ -10704,3 +10704,37 @@ defensibility evidence object is GENERATED from the registry, so its bytes moved
   RUN28-CLOSURE-V11-2, RUN28-CLOSURE-V12-1, RUN28-CLOSURE-V12-2, **RUN29-CANONICAL-CAT4-5-V13-1**.
 - **The complete suite result from the exact final head is recorded in the finalisation commit
   message.**
+
+---
+
+## RUN 30 CLOSURE — Category 6/7 canonical remediation, sim-2026.08-v15
+
+Report: `REPORT_2026-08-16_run30-cat6-7-canonical-remediation-v15.md`.
+Freeze: `research/freeze/RUN30_CANONICAL_CAT6_7_FREEZE_2026-08-16.json`
+(identifier `...-RUN30-CANONICAL-CAT6-7-V15-1`, superseding `...-RUN29-CLOSURE-V14-1`).
+
+Scope: 24 targets, mechanically reconciled — Category 6 = 4 (B1.1–B1.4), Category 7 = 20
+(B2.1–B2.20).
+
+**What moved in production.** `server/app/simulation/canonical_v5.py` is new: nineteen governed
+structures and the canonical mathematics of every supplied Category-6/7 contract, reading no crisp
+KPI anywhere. `models_gov.py`: B1.2 abstains without a governed weighting policy; B1.3 counts one
+vote per independent evidence body with an explicit tie and quorum policy; B1.4 is the frozen
+Worst-2 mean and asserts no band. `project_data.py`: the intake vocabulary reads the v5 map.
+`models.py`: `sim-2026.08-v15`, appended. B1.1 and B2.1 are untouched.
+
+**What is still open, and it is the largest item.** The twenty Category-7 *runners* still execute
+their v14 proxy arithmetic on the operational path. The canonical layer is correct, oracled,
+fault-injected and reachable through the governed intake, but it is not yet what the Category-7
+ledger rows are computed from. Repointing them is the next piece of Category-7 work and no run
+currently owns it.
+
+**Deliberately left open for Run 31.** The Category-9 qualification gate. Every Category-6/7 input
+still carries `signal_qualification = "unqualified"`. The Run-17 register entry `ARCH/raw-bypass`
+is kept, and its probe was moved from B1.2 to B1.3 so an unrelated abstention cannot answer it.
+
+**Four operators are blocked because no formulation is frozen** in the supervisory artifacts (they
+carry DOI citations only): Karnik-Mendel type reduction, RIMER/ER multi-rule aggregation, the
+Z-number reduction and the plithogenic operator.
+
+Suite on the final head: **141 suites, 11867/11867 checks, all green.**
