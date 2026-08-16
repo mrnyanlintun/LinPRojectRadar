@@ -174,11 +174,22 @@ _v3_retired("A2.11", run_critical_path_index, [
     {"spi": s, "plannedPctComplete": 50.0, "actualPctComplete": 45.0}
     for s in (0.95, 0.0, -1.0)])
 
+# SUPERSEDED BY RUN 29, observed red against the v13 build before being rewritten. Run 10 closed
+# the schedule index domain on the throughput index. The supplied Run-29 contract states that a
+# progress or schedule index algebraic index is not a discrete event simulation, so the index is
+# not an input this module has and the domain cannot be reached at all.
+from run29_fixtures import des_model as _des_fixture  # noqa: E402
 DES = {"spi": 0.95, "cpi": 0.95, "plannedPctComplete": 50.0, "actualPctComplete": 45.0}
-check("A5.8 computes on a valid state", banded(run_discrete_event_sim(dict(DES), None, None)))
-for bad in (0.0, -1.0):
-    check(f"A5.8 refuses an index of {bad}",
-          abstained(run_discrete_event_sim(dict(DES, spi=bad), None, None)))
+_v3_retired("A5.8", run_discrete_event_sim,
+            [dict(DES, spi=v) for v in (0.95, 0.0, -1.0)])
+_des = run_discrete_event_sim({"desProcessModel": _des_fixture()}, None, None)
+check("A5.8 computes on its governed event model", banded_or_pending(_des))
+check("A5.8 reproduces the supplied contract's own answer: a mean wait of a half",
+      _des["mean_wait"] == 0.5)
+check("A5.8 refuses an entity served for a negative length of time",
+      abstained(run_discrete_event_sim({"desProcessModel": dict(
+          _des_fixture(), entities=[{"entity_id": "A", "entity_type": "INSPECTION",
+                                     "arrival_time": 0.0, "service_time": -1.0}])}, None, None)))
 
 _FLOAT_NET = _net([{"activity_id": "A", "predecessors": [], "current_duration": 3,
                     "baseline_total_float": 5},
@@ -216,14 +227,24 @@ for bad in (-1.0, -500.0):
     check(f"A2.9 refuses a demand of {bad}", abstained(r))
     check(f"A2.9 publishes no ratio at a demand of {bad}", "peak_load_ratio" not in r)
 
+# SUPERSEDED BY RUN 29, observed red against the v13 build before being rewritten. Run 10's
+# finding here was an OPEN INPUT DOMAIN: the document risk score is a share and lives in nought
+# to one, and a value outside it was multiplied through into a density. The supplied Run-29
+# contract removes the expression entirely -- `docRiskScore * sqrt(RFI count)` is not conflict
+# density, in the contract's own words -- so neither field is an input this module has, and the
+# domain Run 10 closed cannot be reached because the door is gone. The property is asserted in
+# the stronger form the new quantity allows, and the module's own out-of-domain refusals on its
+# governed register are asserted beside it.
+from run29_fixtures import conflict_register as _cr_fixture  # noqa: E402
 SPEC = {"docRiskScore": 0.3, "rfiCount": 16}
-check("A4.10 computes on a valid pair", banded(run_spec_conflict_density(dict(SPEC), None, None)))
-for bad in (-0.2, 1.4, 12.0):
-    check(f"A4.10 refuses a document risk score of {bad}",
-          abstained(run_spec_conflict_density(dict(SPEC, docRiskScore=bad), None, None)))
-for edge in (0.0, 1.0):
-    check(f"A4.10 accepts a document risk score of {edge}",
-          banded(run_spec_conflict_density(dict(SPEC, docRiskScore=edge), None, None)))
+check("A4.10 computes on its governed conflict register",
+      banded_or_pending(run_spec_conflict_density(
+          {"specificationConflictRegister": _cr_fixture()}, None, None)))
+_v3_retired("A4.10", run_spec_conflict_density,
+            [dict(SPEC, docRiskScore=v) for v in (0.3, -0.2, 1.4, 12.0, 0.0, 1.0)])
+check("A4.10 refuses a register that declares no exposure to count its conflicts over",
+      abstained(run_spec_conflict_density(
+          {"specificationConflictRegister": _cr_fixture(exposure=0.0)}, None, None)))
 
 QC = {"qualityDeficienciesNoted": 3, "qualityAuditScore": 92.0}
 check("A6.1 computes on a valid score", banded(run_quality_compliance(dict(QC), None, None)))
@@ -280,29 +301,33 @@ _v3_retired("A3.6", run_cost_risk, [
     for c in (1.4, 0.8, 0.0, -0.5)])
 
 # ================================================ CLASS 2: absence of evidence must not help
+# SUPERSEDED BY RUN 29 FOR A5.5, observed red against the v13 build before being rewritten. Run
+# 10's finding was that an ABSENT term in the weighted rework index contributed exactly zero,
+# which is the same contribution a perfect term makes, so a project improved by withholding its
+# request log and its change order log. Run 10 required both counts. The supplied Run-29 contract
+# removes the composite: a weighted CPI, request and change-order score is not a feedback loop,
+# and the method is a stock and flow model stepped through time. So the three fields are not
+# inputs this module has, and no subset of them can be better than any other because none of them
+# produces a reading at all. That is asserted over ALL EIGHT combinations rather than the three
+# strict subsets Run 10 could exhaust.
+from run29_fixtures import system_dynamics_model as _sd_fixture  # noqa: E402
 FULL = {"cpi": 0.95, "rfiCount": 10, "changeOrderCount": 4}
-full_r = run_rework_feedback(dict(FULL), None, None)
-check("A5.5 computes on the complete evidence set", banded(full_r))
-required = ("rfiCount", "changeOrderCount")
-# EXHAUSTIVE over every strict subset of the required evidence, not a sample of them.
-subsets = 0
-for k in range(len(required)):
-    for keep in itertools.combinations(required, k):
-        si = {"cpi": 0.95}
-        si.update({key: FULL[key] for key in keep})
-        r = run_rework_feedback(si, None, None)
-        subsets += 1
-        check(f"A5.5 abstains on the evidence subset {keep}", abstained(r))
-        check(f"A5.5 returns no index on the subset {keep}", "rework_index" not in r)
-check("A5.5 exhausted every strict subset of the required evidence", subsets == 3)
-check("A5.5 refuses a negative request count",
-      abstained(run_rework_feedback(dict(FULL, rfiCount=-1), None, None)))
-check("A5.5 refuses a negative change order count",
-      abstained(run_rework_feedback(dict(FULL, changeOrderCount=-3), None, None)))
-zero_counts = run_rework_feedback({"cpi": 0.95, "rfiCount": 0, "changeOrderCount": 0}, None, None)
-check("A5.5 reads a reported nought as a measurement", banded(zero_counts))
-check("A5.5 does not renormalise away the missing high-risk terms",
-      zero_counts["rework_index"] <= full_r["rework_index"])
+_any = 0
+for k in range(len(FULL) + 1):
+    for keep in itertools.combinations(sorted(FULL), k):
+        r = run_rework_feedback({key: FULL[key] for key in keep}, None, None)
+        _any += 0 if abstained(r) else 1
+        check(f"A5.5 produces no reading from the retired evidence subset {keep}", abstained(r))
+check("A5.5 exhausted all eight combinations of the retired inputs", _any == 0)
+_sd = run_rework_feedback({"systemDynamicsModel": _sd_fixture()}, None, None)
+check("A5.5 computes on its governed stock and flow model", banded_or_pending(_sd))
+check("A5.5 reproduces the supplied contract's own answer: a backlog of ten, five arriving, "
+      "eight completed at an error rate of a quarter closes at nine",
+      _sd["final_backlog"] == 9.0 and _sd["trace"][0]["rework_generated"] == 2.0)
+check("A5.5 refuses a model that completes more work than the backlog held",
+      abstained(run_rework_feedback({"systemDynamicsModel": dict(
+          _sd_fixture(), steps=[{"step": 0, "new_work": 5.0, "work_completed": 99.0,
+                                 "error_rate": 0.25}])}, None, None)))
 
 SAFE_REPORTED = {"safetyIncidentsDiscussed": 0, "oshaIncidentRate": 0.0}
 r = run_safety_performance(dict(SAFE_REPORTED), None, None)

@@ -50,7 +50,7 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v3",
         "code_audit/run28_closure_v3_participant_package_checksums.sha256",
-        None,
+        "01e943ef71689c468dd343695fbc89901bc02964",
         "The Run-28 closure's SECOND pass applied the owner's A1.1 decision -- Monte Carlo EAC "
         "becomes Monte Carlo EAC Forecast -- to the naming authority and re-propagated it. Eleven "
         "package files carry that name and their bytes moved after the v2 record was taken. The "
@@ -58,10 +58,60 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "made a record describe the tree rather than the package it names; the v2 record has been "
         "restored to its frozen bytes and this is the successor that should have been created.",
     ),
+    Package(
+        "og-participant-2026.08-v4",
+        "code_audit/run29_participant_package_v4_checksums.sha256",
+        None,
+        "RUN 29 removed six proxy qualifiers from the registry, because the six modules they "
+        "described -- Weather Day Impact, Change Order Frequency, Dispute Escalation Index, "
+        "Subcontractor Performance, Sensitivity Analysis and Tornado Risk Ranking -- now carry "
+        "out the canonical method their registered names claim. The defensibility evidence "
+        "object served to participants is GENERATED from the registry, so its bytes moved with "
+        "them. ONE package file changed and the change is the DELETION of six sentences that "
+        "would now be false; no name, no threshold, no sequence step and no behaviour moved. The "
+        "v3 record is NOT regenerated: it is pinned to the commit whose blobs it describes, "
+        "which is the defect the Run-28 closure had to correct in the v2 record.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v3 and v4, and the ONLY change permitted in them: the
+#: deletion of the six proxy-qualifier sentences the Run-29 remediation made false. The
+#: normalisation below maps a current file back to its v3-era text by restoring those six
+#: sentences; byte identity after it is the proof that nothing else moved.
+V3_TO_V4_CHANGED = (
+    "assets/js/ds_defensibility_evidence.js",
+)
+
+#: (module id, the qualifier sentence that was deleted). Restoring them reconstructs the v3 text.
+_RESTORED_QUALIFIERS = (
+    ("A4.5", "a lost-days over available-float ratio with ungoverned bands, computed only from "
+             "verified lost days and a reported float figure"),
+    ("A4.6", "contract growth plus a raw count; no time or exposure denominator"),
+    ("A4.7", "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated"),
+    ("A4.8", "a precomputed compliance score; provenance and construction unvalidated"),
+    ("A5.2", "local CPI perturbation plus deviations, not calibrated multivariate sensitivity"),
+    ("A5.3", "a ranking of four present-state deviations; no outcome-response ranges estimated"),
+)
+
+_QUALIFICATION_TAIL = ("No empirical evidence of predictive performance is held for this "
+                       "module.")
+
+
+def to_v3_era(text: str) -> str:
+    """Map a current package file back to its v3-era text by restoring the six qualifiers."""
+    for mid, qualifier in _RESTORED_QUALIFIERS:
+        marker = f'"{mid}": {{ name: '
+        head, sep, rest = text.partition(marker)
+        if not sep:
+            continue
+        line, nl, tail = rest.partition("\n")
+        line = line.replace(_QUALIFICATION_TAIL,
+                            f"{_QUALIFICATION_TAIL} Stated proxy: {qualifier}.", 1)
+        text = head + marker + line + nl + tail
+    return text
 
 #: The files whose bytes moved between v2 and v3, and the ONLY change permitted in them: the
 #: owner's A1.1 rename. Every one is a display surface. The normalisation below maps a current

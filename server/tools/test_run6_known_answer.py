@@ -443,11 +443,25 @@ RUN28_CLOSURE_SCOPED_FILES = {
     "assets/js/recommendation_options.js",
 }
 
+#: RUN 29's AUTHORISED SCOPE: the Category 4 and 5 canonical remediation, declared in
+#: server/tools/run29_production_changes.py with a reason for each path.
+RUN29_SCOPED_FILES = {
+    "server/app/simulation/canonical_v4.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models.py",
+    "server/app/simulation/lineage.py",
+    "server/app/simulation/method_labels.py",
+    "server/app/simulation/parameters.py",
+    "server/app/simulation/registry.py",
+    "server/app/project_data.py",
+    "server/app/documents.py",
+}
+
 _unscoped = sorted(set(_prod) - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
                    - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
                    - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES - RUN23_SCOPED_FILES
-                   - RUN28_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES)
+                   - RUN28_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES - RUN29_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",
@@ -508,14 +522,14 @@ check(_prod, "the guard is live: it does see the files this run did change", str
 # baseline for the results already collected under it. The history is asserted as a whole rather
 # than one stamp at a time, so a run that overwrote an earlier stamp instead of appending would
 # turn this red.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v12",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v13",
       "the analytical layer is stamped at Run 28's version",
       registry.SIMULATION_VERSION)
 from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH  # noqa: E402
 check(_SVH == ("sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4",
                "sim-2026.08-v5", "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8",
                "sim-2026.08-v9", "sim-2026.08-v10", "sim-2026.08-v11",
-               "sim-2026.08-v12"),
+               "sim-2026.08-v12", "sim-2026.08-v13"),
       "every earlier stamp remains recorded as a historical audit baseline, in order, and none "
       "was overwritten or re-used", str(_SVH))
 check(_SVH[-1] == registry.SIMULATION_VERSION and len(set(_SVH)) == len(_SVH),
@@ -1059,91 +1073,44 @@ check(abstains(run_inflation_adjustment({"materialCostBaseline": 2000000,
       "inflation adjustment: with no governed external index the answer is not estimable, and "
       "the project's own material price movement is not used in its place")
 
-print("\n-- Weather Day Impact (A4.5): lost days over available float --")
-# HAND: 6 lost days against 20 days of float is a ratio of 0.30; lost is not zero, and
-# 0.30 > 0.20 and <= 0.50, so Amber. The finding reports Math.round(30) = 30 per cent.
-r = run_weather_impact({"weatherDaysLost": 6, "floatRemaining": 20}, NOOP, "2025-06-30")
-ka(r["weather_ratio"], 30, "weather impact: 30 per cent of float consumed")
-ka(band(r), "Amber", "weather impact: band")
-ka(r["evidence_metric"], "6 weather days lost, 30% of available float consumed",
-   "weather impact: finding")
-
-print("\n-- Change Order Frequency (A4.6): contract growth plus a raw count --")
-# HAND: growth = (11,500,000 - 10,000,000)/10,000,000 * 100 = 15 per cent, count 8.
-# The Green arm needs growth <= 5 AND count <= 3: false. Yellow needs <= 10 and <= 6: false.
-# Amber needs <= 20 and <= 10: true. So Amber.
-r = run_co_frequency({"changeOrderCount": 8, "baselineContractSum": 10000000,
-                      "revisedContractSum": 11500000}, NOOP, "2025-06-30")
-ka((r["co_count"], r["scope_growth_pct"]), (8, 15), "change order frequency: 8 orders, 15 per cent")
-ka(band(r), "Amber", "change order frequency: band")
-ka(r["evidence_metric"], "8 change orders, scope growth: +15%", "change order frequency: finding")
-
-print("\n-- Dispute Escalation Index (A4.7): an ad hoc 0.3 / 0.3 / 0.4 weighted sum --")
-# HAND: min(10/20, 1) * 0.3 = 0.15; min(5/10, 1) * 0.3 = 0.15; 0.5 * 0.4 = 0.20. Sum 0.50.
-# 0.50 > 0.40 and <= 0.65, so Amber.
-r = run_dispute_escalation({"rfiCount": 10, "changeOrderCount": 5, "docRiskScore": 0.5},
-                           NOOP, "2025-06-30")
-ka(r["escalation_index"], 0.5, "dispute escalation: 0.5")
-ka(band(r), "Amber", "dispute escalation: band")
-# THE WEIGHTS ARE THE ONES THE QUALIFIER NAMES, asserted by isolating each term.
-# RUN 7. These three cases used to isolate a term by OMITTING the other two, which is the very
-# thing Run 6 found wrong with this module: an omitted source scored zero instead of being
-# absent, so the reading improved when evidence was withheld. All three sources are now
-# required and a reported zero is a reported zero, so each term is isolated by REPORTING the
-# other two as zero. The weights, the saturation points and the expected values are unchanged,
-# and each is still derived by hand from the module's own formula.
-ka(run_dispute_escalation({"rfiCount": 0, "changeOrderCount": 0, "docRiskScore": 1.0},
-                          NOOP, "x")["escalation_index"], 0.4,
-   "dispute escalation: the document-risk term carries exactly 0.4")
-ka(run_dispute_escalation({"rfiCount": 20, "changeOrderCount": 0, "docRiskScore": 0.0},
-                          NOOP, "x")["escalation_index"], 0.3,
-   "dispute escalation: the request term carries exactly 0.3 and saturates at twenty")
-ka(run_dispute_escalation({"rfiCount": 0, "changeOrderCount": 10, "docRiskScore": 0.0},
-                          NOOP, "x")["escalation_index"], 0.3,
-   "dispute escalation: the change-order term carries exactly 0.3 and saturates at ten")
-# AND THE FINDING TEXT NAMES WHAT THE MODULE COMPUTES. It used to say "RFI velocity" of a raw
-# count capped at twenty and "CO frequency" of a raw count capped at ten. Neither term has a
-# time or exposure denominator, so neither was a velocity or a frequency.
-ka(r["evidence_metric"],
-   "Dispute escalation index: 0.5 (document risk, request count and change order count "
-   "combined)",
-   "dispute escalation: finding names the counts it actually uses")
-
-print("\n-- Subcontractor Performance (A4.8): a precomputed compliance score --")
-# HAND: the score is carried through and multiplied by a hundred: 0.72 -> 72.
-# 72 >= 70 and < 85, so Yellow. Document risk of 0.40 is above 0.30, so it is named as a signal.
-r = run_subcontractor_performance({"subcontractorComplianceScore": 0.72, "docRiskScore": 0.40},
-                                  NOOP, "2025-06-30")
-ka(r["compliance_score"], 72, "subcontractor performance: 72 per cent")
-ka(band(r), "Yellow", "subcontractor performance: band")
-ka(r["evidence_metric"],
-   "Subcontractor compliance: 72% (elevated document risk (40%)), "
-   "from subcontractor performance report",
-   "subcontractor performance: finding")
-
-print("\n-- Sensitivity Analysis (A5.2): local CPI perturbation plus deviations --")
-# HAND: base forecast 1,000,000/0.90 = 1,111,111.11. The cost term perturbs the index by 0.05
-# either way: |1e6/0.85 - 1e6/0.95| / 1,111,111.11 = |1,176,470.59 - 1,052,631.58| / 1,111,111.11
-# = 123,839.01/1,111,111.11 = 0.11146. The schedule term is |0.95-1|*0.5 = 0.025 and the document
-# term is 0.10, so the cost term is the top driver. 0.11146 > 0.10 and <= 0.20, so Yellow, and the
-# reported percentage is Math.round(11.146) = 11.
-r = run_sensitivity_analysis({"bac": 1000000, "ev": 400000, "ac": 450000, "pv": 500000,
-                              "cpi": 0.90, "spi": 0.95, "docRiskScore": 0.10},
-                             NOOP, "2025-06-30")
-ka(r["top_driver"], "CPI", "sensitivity analysis: the cost index is the top driver")
-ka(r["top_sensitivity"], 11, "sensitivity analysis: 11 per cent")
-ka(band(r), "Yellow", "sensitivity analysis: band")
-
-print("\n-- Tornado Risk Ranking (A5.3): four present-state deviations --")
-# HAND: cost |1-0.90|*100 = 10; schedule |1-0.95|*100 = 5; document 0.20*100 = 20;
-# progress |40-50| = 10. The largest is document risk at 20. The composite is
-# (10+5+20+10)/4 = 11.25, which rounds to 11.3 and is above 10 and at or below 20, so Amber.
-r = run_tornado_diagram({"cpi": 0.90, "spi": 0.95, "docRiskScore": 0.20,
-                         "actualPctComplete": 40, "plannedPctComplete": 50}, NOOP, "2025-06-30")
-ka(r["top_risk"], "Document Risk", "tornado: the top risk is document risk")
-ka((r["top_impact"], r["composite_score"]), (20, 11.3), "tornado: 20 impact, 11.3 composite")
-ka(band(r), "Amber", "tornado: band")
-ka(r["evidence_metric"], "Top risk: Document Risk (20% impact)", "tornado: finding")
+# =================================================================================================
+# RUN 29 REPLACED THE SIX KNOWN ANSWERS THAT USED TO SIT HERE.
+#
+# Weather Day Impact, Change Order Frequency, Dispute Escalation, Subcontractor Performance,
+# Sensitivity Analysis and Tornado Risk Ranking each computed a different quantity under the same
+# name at v12, and the six hand-derived answers recorded here were hand-derived from THOSE
+# quantities: a ratio of lost days to a float figure, a count banded jointly with contract growth,
+# a 0.3/0.3/0.4 sum over a request count and a document risk score, a precomputed compliance
+# score, an elasticity of `bac / cpi`, and the mean of four present-state deviations. Run 29's
+# supplied contract names five of those six as not being the method the module is named for, so
+# the answers are not restated here under the new arithmetic -- they are replaced by the answers
+# the SUPPLIED CONTRACT itself states, which live in test_run29_canonical_oracles.py with the
+# contract's own numbers beside each one.
+#
+# WHAT IS KEPT HERE is the property this suite exists to hold: each of the six ABSTAINS when its
+# defining structure is absent, and does not fall back to the quantity it used to report. That is
+# a known answer too, and it is the one that would have caught the fallback.
+print("\n-- Run 29: the six replaced Category 4 and 5 modules abstain without their structure --")
+for _fn, _si, _label in (
+        (run_weather_impact, {"weatherDaysLost": 6, "floatRemaining": 20},
+         "weather day impact does not report lost days over a float figure"),
+        (run_co_frequency, {"changeOrderCount": 8, "baselineContractSum": 10000000,
+                            "revisedContractSum": 11500000},
+         "change order frequency does not report a count banded with contract growth"),
+        (run_dispute_escalation, {"rfiCount": 10, "changeOrderCount": 5, "docRiskScore": 0.5},
+         "dispute escalation does not report a weighted sum of two counts and a document score"),
+        (run_subcontractor_performance, {"subcontractorComplianceScore": 0.72,
+                                         "docRiskScore": 0.40},
+         "subcontractor performance does not report an opaque precomputed compliance score"),
+        (run_sensitivity_analysis, {"bac": 1000000, "ev": 400000, "ac": 450000, "pv": 500000,
+                                    "cpi": 0.90, "spi": 0.95, "docRiskScore": 0.10},
+         "sensitivity analysis does not report an elasticity of a hard-coded response"),
+        (run_tornado_diagram, {"cpi": 0.90, "spi": 0.95, "docRiskScore": 0.20,
+                               "actualPctComplete": 40, "plannedPctComplete": 50},
+         "tornado risk ranking does not report the mean of four present-state deviations")):
+    _out = _fn(dict(_si), NOOP, "2025-06-30")
+    check(abstains(_out), f"Run 29: {_label} when its defining structure is absent",
+          str(_out.get("status_color")))
 
 print("\n-- The eight fuzzy-extension proxies (B2.10 to B2.17) --")
 _FZ = {"cpi": 0.95, "spi": 0.92, "docRiskScore": 0.20}
@@ -2097,32 +2064,32 @@ check(_scale_stable,
 print("\n-- Adding evidence should not improve a composite index --")
 # HAND: Run 6 found that the dispute index added a term per source and never renormalised, so a
 # project reporting a request log and a change order log scored 0.8 while the identical project
-# reporting neither scored 0.2. Three bands better for withholding the evidence.
+# reporting neither scored 0.2. Three bands better for withholding the evidence. Run 7 required
+# all three sources, which removed the reward for silence but left the composite in place.
 #
-# Run 7 required all three sources. The project that reports them all is measured on the same
-# weighted sum with the same weights and the same bands, and 0.8 is re-derived by hand here:
-# min(20/20,1)*0.3 + min(10/10,1)*0.3 + 0.5*0.4 = 0.3 + 0.3 + 0.2 = 0.8. The project that
-# withholds a source abstains, so it cannot read better, and that is asserted over EVERY strict
-# subset of the three inputs rather than on the one the finding used.
-_with = run_dispute_escalation({"rfiCount": 20, "changeOrderCount": 10, "docRiskScore": 0.5},
-                               NOOP, "x")
-ka(_with["escalation_index"], 0.8,
-   "dispute escalation: the project that reports every source still scores 0.8")
+# RUN 29 REMOVED THE COMPOSITE. Its supplied contract states that a request count does not prove
+# a dispute, a change order count does not prove a dispute and a document risk score does not
+# prove a dispute, and that the 0.3/0.3/0.4 generic KPI composite is not to be preserved as the
+# canonical result. The property Run 6 was defending is now held by a stronger fact than
+# renormalisation: THERE IS NO READING AT ALL from those three fields, in any combination, so no
+# combination of them can be better than any other. That is asserted over all eight combinations
+# of the three fields, present and absent, rather than over the seven strict subsets.
 _FULL_DISPUTE = {"rfiCount": 20, "changeOrderCount": 10, "docRiskScore": 0.5}
-_improved_by_withholding = []
-for _r in range(3):
+_any_reading = []
+for _r in range(4):
     for _keep in itertools.combinations(sorted(_FULL_DISPUTE), _r):
         _sub = {k: _FULL_DISPUTE[k] for k in _keep}
         _out = run_dispute_escalation(_sub, NOOP, "x")
-        if _out.get("status_color") is not None:
-            _improved_by_withholding.append(sorted(_sub))
-ka(_improved_by_withholding, [],
-   "dispute escalation: every strict subset of the three sources abstains, so removing evidence "
-   "cannot produce any reading at all, let alone a better one (seven subsets exhausted)")
+        if _out.get("status_color") is not None or not _out.get("insufficient_data"):
+            _any_reading.append(sorted(_sub))
+ka(_any_reading, [],
+   "dispute escalation: no combination of a request count, a change order count and a document "
+   "risk score produces any reading, so none of them can be improved by withholding another "
+   "(all eight combinations exhausted)")
 ka(run_dispute_escalation({"rfiCount": 0, "changeOrderCount": 0, "docRiskScore": 0.5},
-                          NOOP, "x")["escalation_index"], 0.2,
-   "dispute escalation: a REPORTED zero on both logs is evidence and still computes, at 0.2, "
-   "which is the reading the withheld project used to get for free")
+                          NOOP, "x").get("escalation_index"), None,
+   "dispute escalation: a REPORTED zero on both logs does not compute either, because the fields "
+   "are not dispute evidence whether they are reported or withheld")
 
 print("\n-- Reordering the sources must not change a majority --")
 _perm_stable = True
@@ -2135,15 +2102,26 @@ for perm in itertools.permutations(_ARRAY):
 check(_perm_stable, "majority rules: invariant to the order of the results array, exhausted over "
                     "all six permutations")
 
-print("\n-- Scaling every count must not change a proportion --")
-_ratio_stable = True
+print("\n-- Translating every date must not change a slack --")
+# RUN 29 REPLACED THE SCALING PROPERTY THAT USED TO SIT HERE. It asserted that the weighted
+# count ratio over the long-lead set was 0.65 at every multiple of the audit's counts. That
+# ratio is gone: the supplied contract states that a count ratio alone is not the canonical
+# item-level monitor, and the module now reports the slack between the date an item is required
+# and the date it is forecast for. The equivalent invariant of the NEW quantity is that a slack
+# is a DIFFERENCE, so moving both dates by the same amount must not move it, which is asserted
+# here over the same number of cases the scaling property used.
+from run29_fixtures import procurement_items as _pi  # noqa: E402
+_slack_stable = True
 for k in range(1, 25):
-    rr = run_procurement_lead_time({"longLeadItemsTotal": 10 * k, "longLeadAtRisk": 8 * k,
-                                    "longLeadDelayed": 5 * k}, NOOP, "x")
-    if rr["risk_ratio"] != 0.65:
-        _ratio_stable = False
-check(_ratio_stable, "procurement lead time: the weighted disruption ratio is 0.65 for every "
-                     "multiple of the audit's own counts, exhausted over 24 scalings")
+    rr = run_procurement_lead_time(
+        {"procurementItems": _pi(required=100.0 + 10 * k, forecast=110.0 + 10 * k)}, NOOP, "x")
+    if rr.get("minimum_slack_days") != -10.0:
+        _slack_stable = False
+check(_slack_stable, "procurement lead time: the slack is minus ten days at every translation of "
+                     "both dates, exhausted over 24 shifts")
+check(run_procurement_lead_time({"longLeadItemsTotal": 10, "longLeadAtRisk": 8,
+                                 "longLeadDelayed": 5}, NOOP, "x").get("insufficient_data") is True,
+      "procurement lead time: and the long-lead counts alone no longer produce any ratio")
 
 print("\n-- A constant series must smooth to the constant --")
 # SUPERSEDED BY RUN 28: the series now arrives on the governed state-space model rather than as

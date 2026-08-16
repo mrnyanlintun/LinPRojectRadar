@@ -74,10 +74,13 @@ def git_show(rel: str, rev: str = V11_COMMIT) -> str:
 head("1. THE STAMP AND ITS HISTORY")
 # =================================================================================================
 
-check(SIMULATION_VERSION == "sim-2026.08-v12",
-      "the analytical layer is stamped sim-2026.08-v12", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v11",
-      "and names sim-2026.08-v11 as the line it supersedes, so a reader can see which stamp the "
+# RESTATED BY RUN 29. Run 28 established v12; Run 29 appends v13 and this suite keeps proving
+# that v12 was not overwritten to make room for it. The stamp assertion follows the current line,
+# and the history assertion below still names every earlier stamp in order.
+check(SIMULATION_VERSION == "sim-2026.08-v13",
+      "the analytical layer is stamped sim-2026.08-v13", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v12",
+      "and names sim-2026.08-v12 as the line it supersedes, so a reader can see which stamp the "
       "immediately preceding audit baseline is", SIMULATION_VERSION_SUPERSEDED)
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "EVERY SIMULATION IDENTIFIER IS UNIQUE: no historical stamp has been re-used",
@@ -88,7 +91,7 @@ check(SIMULATION_VERSION_HISTORY[-1] == SIMULATION_VERSION,
 check(SIMULATION_VERSION_HISTORY == (
       "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
       "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
-      "sim-2026.08-v11", "sim-2026.08-v12"),
+      "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13"),
       "and the whole sequence is APPENDED to, never rewritten: every stamp from v1 onward is "
       "still there in order", str(SIMULATION_VERSION_HISTORY))
 
@@ -103,8 +106,19 @@ check(_old_stamps and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _old_stam
       f"the history recorded at commit {V11_COMMIT} is a strict PREFIX of the history now, read "
       f"out of git rather than out of a note, so this run appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
-check(len(SIMULATION_VERSION_HISTORY) == len(_old_stamps) + 1,
-      "and it grew by exactly one stamp", str(len(SIMULATION_VERSION_HISTORY)))
+# RESTATED BY RUN 29. The original assertion was that the history had grown by exactly one stamp
+# since the v11 commit, which was true while v12 was the current line. Run 29 appends v13, so the
+# distance from the v11 commit is now two, and pinning it at one would fail this suite for the
+# correct behaviour. What matters -- and what the check above already proves against git -- is
+# that the earlier tuple is a strict PREFIX. This restates the growth check as MONOTONE GROWTH BY
+# AT LEAST ONE, and adds the stamps the growth consists of so a reader sees them rather than a
+# count.
+check(len(SIMULATION_VERSION_HISTORY) > len(_old_stamps),
+      "and it grew: every stamp added since that commit is an append onto the end",
+      str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
+check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v12", "sim-2026.08-v13"),
+      "and the stamps added since the v11 commit are exactly v12 and v13, in that order",
+      str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 
 # =================================================================================================
 head("2. THE v11 LINE, EXTRACTED FROM GIT AND EXECUTED")

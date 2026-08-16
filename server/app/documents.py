@@ -1293,6 +1293,47 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     if _supplied:
         si["projectDataStructures"] = _supplied
 
+    # RUN 29, A4.1 DOCUMENT RISK SCORE: THE GOVERNED EVIDENCE OUTRANKS THE OPAQUE SCALAR.
+    #
+    # The supplied contract for A4.1 states that there is no universal scalar document risk score
+    # and that a defensible implementation needs a governed risk taxonomy, the source document
+    # type, the evidence span, the candidate finding, a severity, a confidence, the evidence
+    # coverage, a transparent aggregation rule, the model or rule version and the source
+    # provenance. What the extraction pipeline supplies is a single number per document with none
+    # of those, and no amount of correct arithmetic downstream can make an unsourced number
+    # traceable.
+    #
+    # So where a project supplies the governed document risk evidence, the score every downstream
+    # module reads is RE-DERIVED from it by the canonical aggregation, the derivation is recorded
+    # on the row, and the evidence travels with it. Where no such evidence exists the extraction
+    # scalar is left exactly as it was and NOTHING here changes: this run does not fabricate
+    # provenance for a number that has none, and section 9 of the contract leaves the empirical
+    # precision and recall of the extraction itself as Run 33's work.
+    _dre = si.get("documentRiskEvidence")
+    if isinstance(_dre, dict):
+        from .simulation.canonical import StructureAbsent
+        from .simulation.canonical_v4 import document_risk_evidence
+        try:
+            _reading = document_risk_evidence(_dre)
+        except StructureAbsent as _absent:
+            si["docRiskScoreDerivation"] = {
+                "derived": False, "reason": _absent.sentence,
+                "empirical_validation": "PENDING_RUN_33"}
+        else:
+            si["docRiskScore"] = _reading["risk_score"]
+            si["docRiskScoreDerivation"] = {
+                "derived": True,
+                "aggregation_rule": _reading["aggregation_rule"],
+                "classifier_version": _reading["classifier_version"],
+                "taxonomy_id": _reading["taxonomy_id"],
+                "coverage": _reading["coverage"],
+                "finding_count": _reading["finding_count"],
+                "documents_cited": _reading["documents_cited"],
+                "risk_classes": _reading["risk_classes"],
+                "source": _reading["source"],
+                "empirical_validation": _reading["empirical_validation"],
+            }
+
     # `milestoneHistory`, served for the first time. Milestone Trend Analysis has never
     # computed: its input was declared UNSERVABLE and was, correctly, because the extraction
     # returned the source table's own headings and its dates parsed with nothing. Both gaps are

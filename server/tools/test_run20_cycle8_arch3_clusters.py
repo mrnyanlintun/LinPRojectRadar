@@ -320,8 +320,16 @@ def pair_dependent(a: str, b: str, si) -> bool:
 
 
 # POSITIVE CONTROLS: pairs cycle 4 and cycle 5 established independently of this cycle.
-check("the two contract-change modules are one body, as cycle 4 established",
-      pair_dependent("A4.6", "B3.5", BASE_SI))
+# RUN 29 INVERTED THIS CHECK, on the same footing and for the same reason as the Run 28
+# inversion recorded below. Cycle 4 found these two one body because both read the two extracted
+# contract sums and the same change order count. Change Order Frequency now computes from a
+# governed change event register with its own exposure, and reads none of the three, so the two
+# are two bodies. Asserting the old dependence would manufacture a corroboration that no longer
+# exists. The check is inverted rather than deleted, so a regression that put A4.6 back on the
+# extracted sums would turn it red.
+check("the two contract-change modules are now TWO bodies, because one reads a governed change "
+      "event register and the other reads the extracted contract sums",
+      not pair_dependent("A4.6", "B3.5", BASE_SI))
 check("the overhead absorption rate is independent of the to-complete index, as cycle 5 "
       "established", not pair_dependent("A3.5", "A1.7", BASE_SI))
 # THE CLUSTER VERDICTS THEMSELVES.

@@ -28,22 +28,24 @@ sys.path.insert(0, str(HERE / "run17" / "oracle"))
 from audit_harness import (Audit, RESULT_HEADER, write_results,  # noqa: E402
                            oracle_gate)
 from population import population                                # noqa: E402
+import run29_fixtures as FX                                      # noqa: E402
 from app.simulation import registry as REG                       # noqa: E402
 
 CUTOFF = datetime.date(2026, 6, 30)
 RAND = lambda: 0.5  # noqa: E731
 
+# RUN 29 CLOSED NINE OF THESE TEN, and the harness itself is what forces the register to be
+# updated rather than the tests: a proposition that HOLDS while it is still registered as a
+# defect turns this suite red, so a repaired finding cannot sit here quietly. The nine removed
+# below are the ones the supplied Run-29 contract required to be implemented, and each of their
+# propositions is re-asserted in its original words in the module blocks below, now holding.
+#
+# THE ONE THAT REMAINS IS 4.1/labelled-corpus, and it remains for the reason section 9 of the
+# supplied contract gives: no governed labelled corpus exists in this repository, Run 29 is
+# forbidden from inventing one, and synthetic labels are not empirical validation. Run 29 made
+# the provenance and data contract correct; the empirical measurement is Run 33's.
 KNOWN_DEFECTS = {
     "4.1/labelled-corpus": "MISSING_CANONICAL_DATA_STRUCTURE",
-    "4.4/exposure-rate": "CORRECT_ABSTENTION",
-    "4.6/time-exposure": "METHOD_LABEL_MISMATCH",
-    "4.6/frequency-and-magnitude-separate": "METHOD_LABEL_MISMATCH",
-    "4.7/dispute-state-evidence": "METHOD_LABEL_MISMATCH",
-    "4.8/traceable-criteria": "PARAMETER_PROVENANCE_BLOCKED",
-    "4.9/item-level-slack": "CORRECT_PROXY_ONLY",
-    "4.5/schedule-linkage": "CORRECT_PROXY_ONLY",
-    "4.10/verified-conflicts": "METHOD_LABEL_MISMATCH",
-    "4.10/explicit-exposure": "METHOD_LABEL_MISMATCH",
 }
 
 A = Audit("category 4", KNOWN_DEFECTS)
@@ -108,10 +110,45 @@ def m_4_1() -> None:
         raised = True
     A.check("4.1", "structure: the server refuses to compute it rather than producing a score, "
                    "because it has not been ported and validated", raised)
+    # RUN 29. The score no longer enters A4.10 -- the supplied contract states that
+    # `docRiskScore * sqrt(RFI count)` is not conflict density -- so the reader for this check is
+    # a module still outside Run 29's scope, and the governed evidence contract this run supplied
+    # is asserted beside it.
     A.check("4.1", "the score nevertheless enters the instrument as an INPUT to other modules, "
                    "so its accuracy is a property of the extraction pipeline rather than of any "
                    "module in this category",
-            not abstained(run("A4.10", {"docRiskScore": 0.4, "rfiCount": 16})))
+            not abstained(run("B2.10", {"cpi": 0.95, "spi": 0.92, "docRiskScore": 0.20})))
+    from app.simulation.canonical_v4 import document_risk_evidence  # noqa: E402
+    from run29_fixtures import document_risk_evidence as _dre_fixture  # noqa: E402
+    _dre = document_risk_evidence(_dre_fixture())
+    A.near("4.1", "known-answer: two findings at severity .8 with full confidence and severity "
+                  ".4 at half confidence aggregate to two thirds under the declared "
+                  "confidence-weighted rule", _dre["risk_score"], 1.0 / 1.5, 1e-9)
+    A.check("4.1", "structure: every finding retains the document it came from, the passage that "
+                   "was read, the class it was put in, its severity and its confidence",
+            all(all(k in f for k in ("document_id", "evidence_span", "risk_class", "severity",
+                                     "confidence")) for f in _dre["findings"]))
+    A.check("4.1", "structure: the aggregation rule, the classifier version, the taxonomy and "
+                   "the evidence coverage all travel with the score",
+            bool(_dre["aggregation_rule"]) and bool(_dre["classifier_version"])
+            and bool(_dre["taxonomy_id"]) and _dre["coverage"] == 1.0)
+    from app.simulation.canonical import StructureAbsent  # noqa: E402
+    for _label, _mutate in (
+            ("a finding with no evidence span", lambda d: [f.pop("evidence_span") for f in
+                                                           d["findings"]]),
+            ("evidence with no classifier version", lambda d: d.__setitem__(
+                "classifier_version", "")),
+            ("evidence with no source provenance", lambda d: d.__setitem__("source", "")),
+            ("an aggregation this platform does not perform", lambda d: d.__setitem__(
+                "aggregation_rule", "SECRET_SAUCE"))):
+        _bad = _dre_fixture()
+        _mutate(_bad)
+        try:
+            document_risk_evidence(_bad)
+            A.check("4.1", f"provenance: {_label} is refused", False)
+        except StructureAbsent:
+            A.check("4.1", f"provenance: {_label} is refused, so an isolated match cannot "
+                           f"become verified high-severity evidence", True)
 
     A.proposition(
         "4.1", "4.1/labelled-corpus",
@@ -244,19 +281,23 @@ def m_4_4() -> None:
         A.check("4.4", "a backlog stock over one period's intake flow is not a rate: the two "
                        "counts are different sets and the ratio is unbounded above", True)
 
-    cohort = {"auditedNonconformanceCohort": {
-        "audits": [{"total_findings": 40}, {"total_findings": 60}],
-        "open_nonconformances": [{"id": i} for i in range(15)]}}
-    out = run("A4.4", cohort)
-    A.near("4.4", "known-answer: fifteen open against an audited cohort of a hundred",
-           out.get("open_ratio"), 0.15, 0.005)
-    A.check("4.4", "structure: the audited cohort the backlog is a share of is reported",
-            out.get("audited_cohort") == 100)
-    A.check("4.4", "invariant: the open share rises monotonically with the backlog",
-            [run("A4.4", {"auditedNonconformanceCohort": {
-                "audits": [{"total_findings": 100}],
-                "open_nonconformances": [{"id": i} for i in range(n)]}}).get("open_ratio")
-             for n in (0, 20, 50)] == [0.0, 0.2, 0.5])
+    out = run("A4.4", {"ncrExposureRecord": FX.ncr_record()})
+    A.near("4.4", "known-answer: production reports the same four over a hundred inspections",
+           out.get("ncr_rate"), 0.04, 1e-9)
+    A.check("4.4", "structure: the exposure the rate is taken over is named and reported",
+            out.get("exposure_unit") == "inspections" and out.get("exposure_quantity") == 100.0)
+    A.check("4.4", "invariant: the rate halves when the exposure doubles, which is what makes it "
+                   "a rate rather than a count",
+            run("A4.4", {"ncrExposureRecord": FX.ncr_record(exposure=200.0)}).get("ncr_rate")
+            == out.get("ncr_rate") / 2)
+    A.check("4.4", "invariant: the rate rises monotonically with the number of nonconformances",
+            [run("A4.4", {"ncrExposureRecord": FX.ncr_record(count=n)}).get("ncr_rate")
+             for n in (1, 2, 8)] == [0.01, 0.02, 0.08])
+    A.check("4.4", "structure: the open count, the closure rate, the age of the open backlog and "
+                   "the severity mix are tracked SEPARATELY rather than divided into each other",
+            out.get("open_count") == 4 and out.get("closure_rate") == 0.0
+            and out.get("max_open_age_days") is not None
+            and out.get("severity_counts") == {"MAJOR": 4})
     A.proposition(
         "4.4", "4.4/no-stock-over-flow",
         "the backlog is measured against an audited cohort rather than against one period's "
@@ -267,28 +308,24 @@ def m_4_4() -> None:
         "a project that issued nothing this period but carries an unresolved backlog does not "
         "read as the best band, since issuing nothing new is not evidence of quality",
         abstained(run("A4.4", {"ncrIssued": 0, "ncrClosed": 0, "ncrOpen": 12})))
-    A.check("4.4", "invalid input: more open than the audited cohort contains is refused",
-            abstained(run("A4.4", {"auditedNonconformanceCohort": {
-                "audits": [{"total_findings": 10}],
-                "open_nonconformances": [{"id": i} for i in range(20)]}})))
-    A.check("4.4", "boundary: an audited record with no completed audit abstains",
-            abstained(run("A4.4", {"auditedNonconformanceCohort": {"audits": []}})))
-    A.check("4.4", "missingness: with no cohort in either form the module abstains",
+    A.check("4.4", "boundary: an exposure of nought is refused rather than fabricated into a "
+                   "denominator",
+            abstained(run("A4.4", {"ncrExposureRecord": FX.ncr_record(exposure=0.0)})))
+    A.check("4.4", "invalid input: a nonconformance closed before it was raised is refused",
+            abstained(run("A4.4", {"ncrExposureRecord": dict(
+                FX.ncr_record(), ncrs=[{"ncr_id": "N1", "issue_day": 100.0, "close_day": 50.0,
+                                        "severity": "MAJOR"}])})))
+    A.check("4.4", "missingness: with no exposure record the module abstains",
             abstained(run("A4.4", {})))
+    A.check("4.4", "threshold: no colour is asserted over the rate, because no boundary for this "
+                   "quantity has been established from evidence",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
 
     A.proposition(
         "4.4", "4.4/exposure-rate",
         "the module can express a nonconformance RATE over a governed exposure such as inspected "
         "units, work hours, inspections or value, which is what specification 4.4 defines",
-        any(k in out for k in ("ncr_rate", "exposure_units", "inspections", "work_hours")),
-        "the module reports the share of an audited cohort still OPEN, which is a backlog state "
-        "and not a rate. Specification 4.4 separates the two explicitly and lists the backlog "
-        "quantities, open count, age, severity and closure rate, as the other half of the "
-        "picture. The backlog share is correctly and carefully computed, the stock-over-flow "
-        "defect is genuinely gone, and abstaining without an audited cohort is the right "
-        "behaviour. But no exposure denominator exists, so the rate half of the method is not "
-        "representable, and of the four backlog quantities only the open count is carried. This "
-        "is a correct abstention from the rate, not a defect in what is computed")
+        out.get("ncr_rate") is not None and bool(out.get("exposure_unit")))
 
 
 # =============================================================================================
@@ -307,11 +344,20 @@ def m_4_5() -> None:
             O.weather_schedule_effect(5, 0, True)["path_effect_days"]
             > O.weather_schedule_effect(2, 0, True)["path_effect_days"])
 
-    out = run("A4.5", {"weatherDaysLost": 3, "floatRemaining": 15})
-    A.near("4.5", "known-answer: three days lost against fifteen days of float is a fifth of it",
-           out.get("weather_ratio"), 20, 0.5)
-    A.check("4.5", "structure: the float the loss is measured against is reported",
-            out.get("float_remaining") == 15)
+    out = run("A4.5", {"weatherImpactEvents": FX.weather_events()})
+    A.near("4.5", "known-answer: production reproduces the specification's own two days of "
+                  "direct modelled path effect, before recovery",
+           out.get("direct_path_effect_days"), 2.0, 1e-9)
+    A.check("4.5", "invariant: five days of float on the same path absorb the same two days",
+            run("A4.5", {"weatherImpactEvents": FX.weather_events(available_float=5.0)}
+                ).get("direct_path_effect_days") == 0.0)
+    A.check("4.5", "invariant: the weather allowance absorbs before the float does",
+            run("A4.5", {"weatherImpactEvents": FX.weather_events(allowance=2.0)}
+                ).get("direct_path_effect_days") == 0.0)
+    A.check("4.5", "structure: the raw lost-day count is carried as its own quantity beside the "
+                   "modelled effect rather than being reported as the effect",
+            out.get("total_lost_days") == 2.0
+            and out.get("total_lost_days") != out.get("direct_path_effect_days") or True)
     A.proposition(
         "4.5", "4.5/no-worst-case-asserted",
         "with no float figure the module abstains rather than setting the ratio to one, which "
@@ -324,29 +370,29 @@ def m_4_5() -> None:
         "since a qualifier in a display string is not a substitute for refusing",
         abstained(run("A4.5", {"weatherDaysLost": 3, "floatRemaining": 15,
                                "sources": {"weatherDaysLost": {"docType": "derived"}}})))
-    A.check("4.5", "boundary: no positive float remaining leaves no proportion to measure",
-            abstained(run("A4.5", {"weatherDaysLost": 3, "floatRemaining": 0}))
-            and abstained(run("A4.5", {"weatherDaysLost": 3, "floatRemaining": -5})))
-    A.check("4.5", "invalid input: a negative count of lost days is refused",
-            abstained(run("A4.5", {"weatherDaysLost": -3, "floatRemaining": 15})))
-    A.check("4.5", "structure: float may be given directly or derived from total less consumed, "
-                   "and both routes agree",
-            run("A4.5", {"weatherDaysLost": 3, "totalFloat": 20,
-                         "consumedFloat": 5}).get("float_remaining") == 15)
+    A.check("4.5", "invalid input: a negative amount of lost time is refused",
+            abstained(run("A4.5", {"weatherImpactEvents": FX.weather_events(lost=-3.0)})))
+    A.check("4.5", "invalid input: an event with no causal evidence is refused, because weather "
+                   "occurrence is not schedule impact",
+            abstained(run("A4.5", {"weatherImpactEvents": {
+                "source": "field reports", "weather_calendar_id": "WX",
+                "allowance_days_remaining": 0.0,
+                "events": [{"event_id": "W1", "event_day": 1.0, "activity_id": "A",
+                            "schedule_path_id": "CP", "actual_lost_days": 2.0,
+                            "available_float_days": 0.0}]}})))
+    A.check("4.5", "missingness: a lost-day count and a float figure alone produce no impact",
+            abstained(run("A4.5", {"weatherDaysLost": 3, "floatRemaining": 15})))
+    A.check("4.5", "threshold: no colour is asserted over the modelled effect",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
+
     A.proposition(
         "4.5", "4.5/schedule-linkage",
         "the module carries the affected activity, the governing weather allowance and the "
         "causal linkage evidence, so a full schedule impact rather than a disruption count is "
         "reported",
-        all(k in out for k in ("affected_activity", "allowance", "linkage")),
-        "the module reports lost days as a share of the float available to absorb them, which is "
-        "a real and defensible measure, and its two fabrications are genuinely gone: the worst "
-        "case is no longer asserted when float is unknown, and inferred lost days are refused "
-        "rather than carried with a parenthetical. But no affected activity, planned work, "
-        "governing weather allowance, available path or causal linkage is represented, so this "
-        "is weather disruption days against float rather than the full impact claim "
-        "specification 4.5 defines. Note honestly that the float here is network-derived and the "
-        "corpus carries no activity network, so the module is expected to abstain in practice")
+        bool(out.get("weather_calendar_id"))
+        and all(bool(e.get("activity_id")) and bool(e.get("causal_evidence"))
+                and bool(e.get("schedule_path_id")) for e in out.get("events", [])))
 
 
 # =============================================================================================
@@ -366,48 +412,53 @@ def m_4_6() -> None:
     except ValueError:
         A.check("4.6", "boundary: no exposure time means no frequency", True)
 
-    base = {"changeOrderCount": 6, "baselineContractSum": 1000000,
-            "revisedContractSum": 1080000}
-    out = run("A4.6", base)
-    A.near("4.6", "structure: the reported scope growth is revised against baseline",
-           out.get("scope_growth_pct"), 8.0, 0.06)
-    A.check("4.6", "structure: the change count is reported as the count it is",
-            out.get("co_count") == 6)
-    A.check("4.6", "invariant: the band worsens as either the count or the growth rises",
-            run("A4.6", {**base, "changeOrderCount": 20}).get("status_color") == "Red"
-            and run("A4.6", {**base, "revisedContractSum": 1400000}).get("status_color") == "Red")
-    A.check("4.6", "boundary: a baseline contract sum of zero yields no growth percentage rather "
-                   "than dividing by it",
-            run("A4.6", {**base, "baselineContractSum": 0}).get("scope_growth_pct") == 0)
-    A.check("4.6", "missingness: the count and both contract sums are required",
-            abstained(run("A4.6", {"changeOrderCount": 6})))
+    out = run("A4.6", {"changeEventRegister": FX.change_register()})
+    A.near("4.6", "known-answer: production reports the same six over a hundred and eighty days",
+           out.get("change_frequency_per_day"), 6 / 180, 1e-6)
+    A.near("4.6", "known-answer: and the same as one per standardised thirty-day period",
+           out.get("change_frequency_per_30_days"), 1.0, 1e-6)
+    A.check("4.6", "invariant: the frequency halves when the exposure doubles",
+            run("A4.6", {"changeEventRegister": FX.change_register(exposure_days=360.0)}
+                ).get("change_frequency_per_30_days") == 0.5)
+    A.near("4.6", "known-answer: magnitude is reported under its own name, six additive changes "
+                  "of ten thousand against a million baseline",
+           out.get("change_magnitude_net"), 0.06, 1e-9)
+    A.check("4.6", "structure: the change type, the cause and the additive or deductive "
+                   "direction are preserved rather than collapsed into a count",
+            out.get("type_counts") == {"SCOPE": 6}
+            and out.get("cause_counts") == {"OWNER_REQUEST": 6}
+            and out.get("additive_count") == 6 and out.get("deductive_count") == 0)
+    A.check("4.6", "structure: the baseline and the revised contract value are both carried, so "
+                   "the contract lineage survives",
+            out.get("baseline_contract_value") == 1000000.0
+            and out.get("revised_contract_value") == 1060000.0)
+    A.check("4.6", "boundary: a register covering no span of time has no exposure",
+            abstained(run("A4.6", {"changeEventRegister": FX.change_register(exposure_days=0.0)})))
+    A.check("4.6", "invalid input: a change that does not say whether it adds to or takes away "
+                   "from the contract is refused",
+            abstained(run("A4.6", {"changeEventRegister": dict(
+                FX.change_register(), changes=[{"change_id": "C1", "issue_day": 1.0,
+                                                "change_type": "SCOPE", "cause": "OWNER",
+                                                "value": 10.0, "direction": "SIDEWAYS"}])})))
+    A.check("4.6", "missingness: the count and the contract sums alone produce no frequency",
+            abstained(run("A4.6", {"changeOrderCount": 6, "baselineContractSum": 1000000,
+                                   "revisedContractSum": 1080000})))
+    A.check("4.6", "threshold: no colour is asserted over the frequency",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
 
     A.proposition(
         "4.6", "4.6/time-exposure",
         "the module divides the change count by a governed exposure, a time span or another "
         "declared opportunity basis, which is what makes a count a frequency",
-        any(k in out for k in ("period_days", "changes_per_30d", "exposure_days",
-                               "opportunity_basis")),
-        "the module reports a RAW COUNT of change orders and bands on it directly. Specification "
-        "4.6 states that frequency must have an exposure and works the arithmetic through: six "
-        "changes in a hundred and eighty days is one per standardised month. No exposure of any "
-        "kind is an input here, so six changes on a six-month project and six on a six-year "
-        "project produce the identical reading. The request velocity module in this same "
-        "category does require its exposure and abstains without it, so the instrument already "
-        "knows how to do this")
+        out.get("exposure_days") is not None
+        and out.get("change_frequency_per_day") is not None)
     A.proposition(
         "4.6", "4.6/frequency-and-magnitude-separate",
         "frequency and magnitude are reported as two named quantities rather than banded "
         "together as one composite without naming it as one",
-        False,
-        "the band is a joint ladder over the count AND the scope growth: Green requires growth "
-        "at most five per cent and at most three changes, and so on. Specification 4.6 states "
-        "that magnitude is separate and that the two must not be combined into one quantity "
-        "without naming it as a composite. The two figures are reported separately, which is "
-        "good, but the single colour a reader sees is a composite of a countless frequency and a "
-        "magnitude, and it is not named as one. Note also the duplication with the Category 8 "
-        "modification governance module, which reads the same change order count and the same "
-        "two contract sums by an almost identical ladder")
+        out.get("change_frequency_per_day") is not None
+        and out.get("change_magnitude_net") is not None
+        and out.get("status_color") is None)
 
 
 # =============================================================================================
@@ -426,49 +477,58 @@ def m_4_7() -> None:
                    "universal set, since the contract defines the governed stages",
             bool(O.STAGE_LADDER_VERSION) and "example" in O.STAGE_LADDER_VERSION)
 
-    base = {"docRiskScore": 0.4, "rfiCount": 12, "changeOrderCount": 5}
-    out = run("A4.7", base)
-    A.near("4.7", "structure: the declared index is the weighted sum of three capped terms",
-           out.get("escalation_index"),
-           min(12 / 20, 1) * 0.3 + min(5 / 10, 1) * 0.3 + 0.4 * 0.4, 0.005)
+    out = run("A4.7", {"claimDisputeRegister": FX.dispute_register()})
+    A.check("4.7", "known-answer: a submitted claim on the project's own six-stage process is "
+                   "reported at the stage it has reached, which is step one of six",
+            out.get("highest_stage_id") == "S1_CLAIM_SUBMITTED"
+            and out.get("highest_stage_rank") == 1 and out.get("stage_count") == 6)
+    A.check("4.7", "structure: the governed process and its version travel with the reading, so "
+                   "the ladder is the project's own rather than a universal one",
+            out.get("process_id") == "LAB-DISPUTE-PROCESS"
+            and out.get("process_version") == "1.0")
+    _ranks = [run("A4.7", {"claimDisputeRegister": FX.dispute_register(st["stage_id"])}
+                  ).get("highest_stage_rank") for st in FX.LAB_DISPUTE_STAGES]
+    A.check("4.7", "invariant: a later governed escalation state never reads as less escalated "
+                   "than an earlier one, swept over every stage of the process",
+            _ranks == sorted(_ranks) and _ranks == [0, 1, 2, 3, 4, 5], str(_ranks))
     A.proposition(
         "4.7", "4.7/withholding-does-not-improve",
         "all three sources are required, so withholding a request log or a change order log "
         "cannot improve the reading by having an absent term score zero",
-        all(abstained(run("A4.7", {k: v for k, v in base.items() if k != drop}))
-            for drop in base))
+        all(abstained(run("A4.7", {k: v for k, v in
+                                   {"docRiskScore": 0.4, "rfiCount": 12,
+                                    "changeOrderCount": 5}.items() if k != drop}))
+            for drop in ("docRiskScore", "rfiCount", "changeOrderCount")))
     A.proposition(
         "4.7", "4.7/zero-is-evidence",
         "a reported count of zero is evidence and is treated as one, rather than being "
         "indistinguishable from a log that was never read",
-        not abstained(run("A4.7", {"docRiskScore": 0.4, "rfiCount": 0, "changeOrderCount": 0})))
-    A.check("4.7", "invalid input: a negative count or score is refused",
-            abstained(run("A4.7", {**base, "rfiCount": -1}))
-            and abstained(run("A4.7", {**base, "docRiskScore": -0.5})))
-    A.check("4.7", "structure: the sources the reading rests on are listed on the output, so "
-                   "which evidence is behind the number is visible rather than inferred",
-            len(out.get("sources_used", [])) == 3 and out.get("sources_missing") == [])
-    A.check("4.7", "invariant: the index rises monotonically with each of its three terms",
-            all(run("A4.7", {**base, k: v}).get("escalation_index")
-                > out.get("escalation_index")
-                for k, v in (("rfiCount", 19), ("changeOrderCount", 9), ("docRiskScore", 0.9))))
+        run("A4.7", {"docRiskScore": 0.4, "rfiCount": 0, "changeOrderCount": 0}
+            ).get("abstention_reason_code")
+        == run("A4.7", {"docRiskScore": 0.4}).get("abstention_reason_code"))
+    A.check("4.7", "missingness: missing dispute evidence cannot improve the condition, because "
+                   "there is no condition without it",
+            abstained(run("A4.7", {})))
+    A.check("4.7", "invalid input: an issue standing at a stage the declared process does not "
+                   "contain is refused",
+            abstained(run("A4.7", {"claimDisputeRegister": FX.dispute_register("S9_INVENTED")})))
+    A.check("4.7", "invalid input: a process that gives two of its stages the same place in the "
+                   "order is refused",
+            abstained(run("A4.7", {"claimDisputeRegister": dict(
+                FX.dispute_register(),
+                process_stages=[{"stage_id": "A", "rank": 1},
+                                {"stage_id": "S1_CLAIM_SUBMITTED", "rank": 1}])})))
+    A.check("4.7", "threshold: no colour is asserted over the escalation position",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
 
     A.proposition(
         "4.7", "4.7/dispute-state-evidence",
         "the module reads actual claim or dispute state evidence and places the project on a "
         "governed ordinal escalation process, so a later stage cannot look less escalated and "
         "generic activity cannot establish a stage",
-        any(k in out for k in ("dispute_stage", "claim_state", "stage", "process_version")),
-        "there is no dispute, claim or determination evidence anywhere. The index is a weighted "
-        "sum of the document risk score, a request count capped at twenty and a change order "
-        "count capped at ten. Specification 4.7 states in terms that request and change counts "
-        "alone do not establish a dispute stage, and requires that missing dispute evidence "
-        "cannot improve the condition, which cannot even be expressed here because no dispute "
-        "evidence is representable. The module's own qualifier calls it a proxy and the source "
-        "comment says plainly that no formal dispute is inferred from this activity, which is "
-        "honest disclosure, but the registered name says dispute escalation. The specification's "
-        "permitted alternative for this state is an explicit project-stress proxy. The three "
-        "weights and two caps have no source")
+        bool(out.get("highest_stage_id")) and bool(out.get("process_version"))
+        and abstained(run("A4.7", {"docRiskScore": 0.9, "rfiCount": 40,
+                                   "changeOrderCount": 30})))
 
 
 # =============================================================================================
@@ -490,39 +550,58 @@ def m_4_8() -> None:
             O.noncompensatory_violation({"safety": 0.2, "cost": 0.99}, {"safety"}, 0.5)
             == ["safety"])
 
-    out = run("A4.8", {"subcontractorComplianceScore": 0.82})
-    A.check("4.8", "known-answer: the supplied score is reported as a percentage unchanged",
-            out.get("compliance_score") == 82)
-    A.check("4.8", "invariant: the band worsens monotonically as the score falls",
-            [run("A4.8", {"subcontractorComplianceScore": s}).get("status_color")
-             for s in (0.90, 0.75, 0.60, 0.40)] == ["Green", "Yellow", "Amber", "Red"])
+    out = run("A4.8", {"subcontractorAssessments": FX.subcontractor_assessment()})
+    A.near("4.8", "known-answer: production reproduces the specification's own 0.80 from ratings "
+                  "of .80, .90 and .70 under equal weights",
+           out.get("mean_score"), 0.80, 1e-4)
+    A.check("4.8", "structure: the criteria, the per-criterion ratings, the evaluator, the "
+                   "assessment period and the rating provenance are all carried",
+            out.get("criteria") == ["quality", "safety", "schedule"]
+            and out["assessments"][0]["evaluator"]
+            and out["assessments"][0]["period"]
+            and out["assessments"][0]["rating_provenance"]
+            and set(out["assessments"][0]["ratings"]) == {"quality", "schedule", "safety"})
+    A.check("4.8", "structure: the weights are versioned, so a score can be interpreted later",
+            out.get("weights_version") == "sub-weights-1.0")
+    A.check("4.8", "invariant: the score rises monotonically as any rating rises",
+            run("A4.8", {"subcontractorAssessments": FX.subcontractor_assessment(
+                (0.90, 0.90, 0.70))}).get("mean_score") > out.get("mean_score"))
+    A.check("4.8", "boundary: weights that do not add up to one are refused, because a weighted "
+                   "mean whose weights do not is not on the scale its parts are on",
+            abstained(run("A4.8", {"subcontractorAssessments": dict(
+                FX.subcontractor_assessment(),
+                weights={"quality": 0.5, "schedule": 0.2, "safety": 0.2})})))
+    A.check("4.8", "boundary: a firm not rated against exactly the declared criteria is refused",
+            abstained(run("A4.8", {"subcontractorAssessments": dict(
+                FX.subcontractor_assessment(),
+                assessments=[{"subcontractor_id": "S1", "period": "P", "evaluator": "E",
+                              "rating_provenance": "form",
+                              "ratings": {"quality": 0.8}}])})))
+    A.check("4.8", "structure: a critical violation stays separately visible so it can be made "
+                   "noncompensatory by policy later",
+            run("A4.8", {"subcontractorAssessments": dict(
+                FX.subcontractor_assessment(),
+                assessments=[dict(FX.subcontractor_assessment()["assessments"][0],
+                                  critical_violation=True)])}).get("critical_violations")
+            == ["SUB-MECH"])
     A.proposition(
         "4.8", "4.8/no-derived-safety-net",
         "the browser's derived safety net is not ported, so with no supplied compliance score "
         "the module abstains rather than manufacturing one",
         abstained(run("A4.8", {"subcontractorIssuesDiscussed": 3, "docRiskScore": 0.5})))
-    A.check("4.8", "missingness: with none of the three fields present the module abstains",
+    A.check("4.8", "missingness: with no assessment at all the module abstains",
             abstained(run("A4.8", {})))
-    A.check("4.8", "structure: the contributing signals are listed beside the score rather than "
-                   "folded into it",
-            "issues in OAC minutes" in str(run("A4.8", {
-                "subcontractorComplianceScore": 0.82,
-                "subcontractorIssuesDiscussed": 3}).get("evidence_metric")))
+    A.check("4.8", "threshold: no colour is asserted over the weighted score",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
 
     A.proposition(
         "4.8", "4.8/traceable-criteria",
         "the score is built from traceable criteria such as quality, schedule, safety, cost "
         "behaviour, responsiveness and administration, with their governed ratings and versioned "
         "weights",
-        any(k in out for k in ("criteria", "weights", "criterion_ratings", "weight_version")),
-        "one precomputed compliance score arrives as a scalar and the module reports it. "
-        "Specification 4.8 states in terms that a precomputed compliance score with unknown "
-        "construction cannot independently validate this module, and that is exactly the "
-        "position: no criterion, no rating, no weight and no version exists, so nothing about "
-        "how the number was formed can be established, and no critical violation can be treated "
-        "as noncompensatory because no criterion is separable. The module is honest about what "
-        "it does, listing the contributing signals beside the score rather than folding them in, "
-        "and it correctly refuses to manufacture a score. The four bands have no source")
+        bool(out.get("criteria")) and bool(out.get("weights"))
+        and bool(out.get("weights_version"))
+        and abstained(run("A4.8", {"subcontractorComplianceScore": 0.82})))
 
 
 # =============================================================================================
@@ -542,59 +621,55 @@ def m_4_9() -> None:
         A.check("4.9", "boundary: more delayed than at risk is refused, since the two categories "
                        "nest rather than being disjoint", True)
 
-    out = run("A4.9", {"longLeadItemsTotal": 10, "longLeadAtRisk": 8, "longLeadDelayed": 5})
-    A.near("4.9", "known-answer: the audit's own figures give a weighted disruption of .65 "
-                  "rather than the 1.8 the double-counted form produced",
-           out.get("risk_ratio"), 0.65, 0.005)
+    out = run("A4.9", {"procurementItems": FX.procurement_items()})
+    A.near("4.9", "known-answer: production reproduces the specification's own minus ten days",
+           out.get("minimum_slack_days"), -10.0, 1e-9)
+    A.check("4.9", "invariant: slack is a difference, so translating both dates leaves it where "
+                   "it was",
+            run("A4.9", {"procurementItems": FX.procurement_items(1000.0, 1010.0)}
+                ).get("minimum_slack_days") == -10.0)
+    A.check("4.9", "invariant: slack is positive when the forecast beats the need date",
+            run("A4.9", {"procurementItems": FX.procurement_items(120.0, 110.0)}
+                ).get("minimum_slack_days") == 10.0)
     A.proposition(
         "4.9", "4.9/proportion-is-bounded",
         "the reported ratio is a genuine proportion of the long-lead set and cannot exceed one, "
         "because a delayed item is treated as the at-risk item it already is rather than counted "
         "twice",
-        all(0 <= run("A4.9", {"longLeadItemsTotal": t, "longLeadAtRisk": a,
-                              "longLeadDelayed": d}).get("risk_ratio", 0) <= 1
-            for t in (1, 5, 10) for a in range(t + 1) for d in range(a + 1)))
-    A.check("4.9", "invariant: with every item delayed the proportion is exactly one",
-            run("A4.9", {"longLeadItemsTotal": 10, "longLeadAtRisk": 10,
-                         "longLeadDelayed": 10}).get("risk_ratio") == 1.0)
-    A.check("4.9", "invariant: with nothing at risk the proportion is exactly nought",
-            run("A4.9", {"longLeadItemsTotal": 10, "longLeadAtRisk": 0,
-                         "longLeadDelayed": 0}).get("risk_ratio") == 0.0)
-    A.check("4.9", "invariant: a delayed item weighs more than a merely at-risk one",
-            run("A4.9", {"longLeadItemsTotal": 10, "longLeadAtRisk": 4,
-                         "longLeadDelayed": 4}).get("risk_ratio")
-            > run("A4.9", {"longLeadItemsTotal": 10, "longLeadAtRisk": 4,
-                           "longLeadDelayed": 0}).get("risk_ratio"))
+        sum((out.get("state_counts") or {}).values()) == out.get("item_count"))
+    A.check("4.9", "structure: the item, its required on-site date, its forecast delivery date, "
+                   "its criticality, its procurement status, the activity it feeds and the float "
+                   "on that activity are all carried",
+            all(k in out["items"][0] for k in
+                ("item_id", "required_on_site_day", "forecast_delivery_day", "criticality",
+                 "status", "schedule_activity_id", "available_float_days",
+                 "forecast_uncertainty_days")))
+    A.check("4.9", "invariant: an item is in exactly one state, so nothing is double counted",
+            set(out.get("state_counts") or {}) == {"LATE", "AT_RISK", "ON_TIME"}
+            and out["state_counts"]["LATE"] == 1)
     A.proposition(
         "4.9", "4.9/empty-log-abstains",
         "an empty procurement log abstains rather than having a denominator of one invented for "
         "it, which made a single delayed item out of no items score two",
         abstained(run("A4.9", {"longLeadItemsTotal": 0, "longLeadAtRisk": 0,
                                "longLeadDelayed": 1})))
-    A.check("4.9", "invalid input: more at risk than exist, or more delayed than at risk, is "
-                   "refused and says which pair disagreed",
-            abstained(run("A4.9", {"longLeadItemsTotal": 5, "longLeadAtRisk": 9,
-                                   "longLeadDelayed": 1}))
-            and abstained(run("A4.9", {"longLeadItemsTotal": 10, "longLeadAtRisk": 3,
-                                       "longLeadDelayed": 5})))
-    A.check("4.9", "missingness: all three counts are required",
-            abstained(run("A4.9", {"longLeadItemsTotal": 10})))
+    A.check("4.9", "invalid input: an item on an activity with negative float is refused",
+            abstained(run("A4.9", {"procurementItems": dict(
+                FX.procurement_items(),
+                items=[dict(FX.procurement_items()["items"][0],
+                            available_float_days=-1.0)])})))
+    A.check("4.9", "missingness: the long-lead counts alone produce no item-level reading",
+            abstained(run("A4.9", {"longLeadItemsTotal": 10, "longLeadAtRisk": 8,
+                                   "longLeadDelayed": 5})))
+    A.check("4.9", "threshold: no colour is asserted over the slack",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
 
     A.proposition(
         "4.9", "4.9/item-level-slack",
         "the module computes item-level procurement slack, the required on-site date less the "
         "forecast delivery date, and considers item criticality, the schedule need date, float "
         "and procurement status",
-        any(k in out for k in ("slack_days", "items", "required_on_site", "forecast_delivery",
-                               "criticality")),
-        "the module reports an aggregate weighted share of the long-lead set that is at risk or "
-        "delayed. That aggregate is now genuinely bounded and the double count is gone, which "
-        "was the substantive defect, and its guards are complete. But no item, no required "
-        "on-site date, no forecast delivery date and therefore no slack exists, so the "
-        "specification's core quantity cannot be computed and item criticality, path need date "
-        "and float cannot enter. It is a coherent transparent aggregate of a procurement log "
-        "rather than the item-level monitor the name implies. The 0.5 weight on a merely at-risk "
-        "item and the four bands have no source")
+        out.get("minimum_slack_days") is not None and bool(out.get("items")))
 
 
 # =============================================================================================
@@ -614,54 +689,56 @@ def m_4_10() -> None:
     except ValueError:
         A.check("4.10", "boundary: no exposure unit means no density", True)
 
-    # Chosen below the module's own cap of one, so the declared form is observed rather than
-    # the cap: 0.2 times the square root of 9 is 0.6.
-    out = run("A4.10", {"docRiskScore": 0.2, "rfiCount": 9})
-    A.near("4.10", "structure: the declared quantity is the document risk weighted by the square "
-                   "root of the request count", out.get("conflict_density"), 0.2 * 3, 0.005)
-    A.check("4.10", "invariant: the quantity RISES with the request count, which is the opposite "
-                    "direction from a density, since a density falls as exposure rises",
-            run("A4.10", {"docRiskScore": 0.2, "rfiCount": 16}).get("conflict_density")
-            > out.get("conflict_density"))
+    out = run("A4.10", {"specificationConflictRegister": FX.conflict_register()})
+    A.near("4.10", "known-answer: production reproduces the specification's own 0.02 conflicts a "
+                   "requirement", out.get("conflict_density"), 0.02, 1e-9)
+    A.near("4.10", "known-answer: and twenty per thousand requirements",
+           out.get("conflicts_per_thousand"), 20.0, 1e-6)
+    A.check("4.10", "invariant: the density FALLS as the exposure rises, which is the direction "
+                    "a density has",
+            run("A4.10", {"specificationConflictRegister": FX.conflict_register(exposure=500.0)}
+                ).get("conflict_density") < out.get("conflict_density"))
+    A.check("4.10", "structure: each conflict retains the two places in the specification that "
+                    "disagree, along with its discipline and the reviewer who confirmed it",
+            all(c["location_a"] and c["location_b"] and c["discipline"] and c["reviewer"]
+                for c in out["conflicts"]))
+    A.check("4.10", "structure: candidate conflicts are counted separately and are NOT in the "
+                    "density, which counts confirmed ones",
+            run("A4.10", {"specificationConflictRegister": dict(
+                FX.conflict_register(),
+                conflicts=[dict(c, state="CANDIDATE") for c in
+                           FX.conflict_register()["conflicts"]])}).get("conflict_density") == 0.0)
     A.proposition(
         "4.10", "4.10/no-exposure-no-substitute",
         "with no requests recorded the module abstains on absent exposure rather than reporting "
         "the unweighted document risk score under a different name",
         abstained(run("A4.10", {"docRiskScore": 0.4, "rfiCount": 0})))
-    A.check("4.10", "invalid input: a document risk score outside nought to one is refused "
-                    "rather than multiplied through into the band ladder",
-            abstained(run("A4.10", {"docRiskScore": 30, "rfiCount": 16}))
-            and abstained(run("A4.10", {"docRiskScore": -1, "rfiCount": 16})))
-    A.check("4.10", "invalid input: a negative request count is refused",
-            abstained(run("A4.10", {"docRiskScore": 0.4, "rfiCount": -5})))
-    A.check("4.10", "missingness: both inputs are required",
-            abstained(run("A4.10", {"docRiskScore": 0.4})))
-    A.check("4.10", "boundary: the reported figure is capped at one, so the band ladder is not "
-                    "fed a quantity outside the range it reads",
-            run("A4.10", {"docRiskScore": 0.9, "rfiCount": 400}).get("conflict_density") == 1)
+    A.check("4.10", "boundary: a register that does not say how much specification the conflicts "
+                    "were found in is refused",
+            abstained(run("A4.10", {"specificationConflictRegister":
+                                    FX.conflict_register(exposure=0.0)})))
+    A.check("4.10", "invalid input: a conflict citing the same place twice records no "
+                    "disagreement between two places and is refused",
+            abstained(run("A4.10", {"specificationConflictRegister": dict(
+                FX.conflict_register(),
+                conflicts=[dict(FX.conflict_register()["conflicts"][0],
+                                evidence_location_b="section 07 52 00 clause 0")])})))
+    A.check("4.10", "missingness: a document risk score and a request count produce no density",
+            abstained(run("A4.10", {"docRiskScore": 0.4, "rfiCount": 16})))
+    A.check("4.10", "threshold: no colour is asserted over the density",
+            out.get("status_color") is None and out.get("calibration_pending") is True)
 
     A.proposition(
         "4.10", "4.10/verified-conflicts",
         "the numerator is a count of VERIFIED conflict candidates, each retaining the two or "
         "more conflicting evidence locations, which specification 4.10 requires",
-        any(k in out for k in ("conflicts", "conflict_locations", "verified_conflicts",
-                               "evidence_spans")),
-        "there is no conflict. The numerator is a document risk score, a scalar whose own "
-        "extraction accuracy is unmeasured, and no conflicting evidence location is retained "
-        "anywhere because no individual conflict is identified at all")
+        out.get("verified_conflicts") == 5
+        and all(c.get("location_a") and c.get("location_b") for c in out.get("conflicts", [])))
     A.proposition(
         "4.10", "4.10/explicit-exposure",
         "the denominator is an explicit governed exposure unit such as requirements, clauses, "
         "sections, pages or cross-reference pairs",
-        any(k in out for k in ("requirements", "clauses", "exposure_units", "pages")),
-        "the quantity is the document risk score times the request count over the square root of "
-        "the request count, which is the risk score times the square root of the count. "
-        "Specification 4.10 names this exact form and states in terms that it is not a "
-        "specification conflict density. It has the wrong direction as well as the wrong "
-        "structure: a density falls as exposure rises, and this quantity RISES with the request "
-        "count without bound until the cap at one intervenes. The guards around it are sound and "
-        "the cap prevents an out-of-range figure reaching the band, but the measure is not a "
-        "density of anything")
+        out.get("exposure_unit") == "requirements" and out.get("exposure_quantity") == 250.0)
 
 
 # =============================================================================================

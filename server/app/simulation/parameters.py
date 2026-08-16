@@ -329,6 +329,14 @@ _LADDER_ONLY = (
     # carry a simulation trial count and a governed percentile, and neither number is calibrated
     # against anything in this repository. They join the sweep rather than being excused from it.
     "A2.1", "A3.1",
+    # RUN 29. A5.1 abstained unconditionally from Run 7 until Run 29 gave it the dependency
+    # matrix it was waiting for, so it carried no tunable value and needed no entry. It does
+    # now: the propagation rounds the rework it reports to a fixed number of places, and the
+    # stopping rule's tolerance is read from the model rather than fixed here but the rounding
+    # is not. Neither is calibrated against anything in this repository, so it joins the sweep
+    # rather than being excused from it. No band ladder is attached to it: A5.1 asserts no
+    # colour, so what is unsourced is the presentation constant and not a boundary.
+    "A5.1",
     "C1.1", "C1.2", "C1.4", "C1.5", "C1.6", "C1.7",
     "D1.1", "D1.2", "D1.3", "D1.4",
 )

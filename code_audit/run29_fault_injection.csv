@@ -1,0 +1,22 @@
+fault,name,module,vehicle,injection_confirmed,guard,green_before,red_under_fault,red_reason,green_after_restore,crash_accepted_as_red
+1,Document Risk Score with no evidence provenance,A4.1,structure documentRiskEvidence,yes,canonical_v4.document_risk_evidence provenance guard,yes,yes,provenance absent,yes,no
+2,RFI cumulative-register revision double-counted,A4.2,structure rfiEventLog,yes,identity de-duplication in rfi_velocity,yes,yes,repeated identities collapsed; conflicting dates refused,yes,no
+3,submittal rejected greater than assessed,A4.3,extracted totals and a duplicated register row,yes,run_submittal_rejection domain guard,yes,yes,rejected outside the total,yes,no
+4,NCR numerator with no exposure denominator claimed as a normalised rate,A4.4,structure ncrExposureRecord,yes,canonical_v4.ncr_rate's exposure guard,yes,yes,canonical_structure_absent,yes,no
+5,a weather day with no schedule linkage claimed as impact,A4.5,structure weatherImpactEvents,yes,canonical_v4.weather_day_impact's linkage guard,yes,yes,canonical_structure_absent,yes,no
+6,change frequency with no exposure,A4.6,structure changeEventRegister,yes,canonical_v4.change_frequency's exposure guard,yes,yes,canonical_structure_absent,yes,no
+7,dispute status inferred from RFI and change counts,A4.7,generic KPI fields with no dispute structure,yes,require_v4_structure for A4.7,yes,yes,canonical_structure_absent,yes,no
+8,opaque subcontractor score with no component provenance,A4.8,precomputed scalar and a version-less structure,yes,subcontractor_performance provenance guard,yes,yes,canonical_structure_absent,yes,no
+9,delayed procurement item double-counted inside at-risk,A4.9,structure procurementItems,yes,procurement_slack identity and state guards,yes,yes,canonical_structure_absent,yes,no
+10,specification conflict density with no denominator,A4.10,structure specificationConflictRegister,yes,canonical_v4.specification_conflict_density's exposure guard,yes,yes,canonical_structure_absent,yes,no
+11,DSM edge removed and reversed,A5.1,structure dsmDependencyModel,yes,dsm_rework_propagation matrix assembly under the declared orientation,yes,yes,propagated rework falls to nought,yes,no
+12,a sensitivity result without input perturbation,A5.2,structure sensitivityModel,yes,canonical_v4.sensitivity_analysis's perturbation guard,yes,yes,canonical_structure_absent,yes,no
+13,tornado treated as an independent evidence body,A5.3,structure sensitivityModel,yes,tornado_ranking takes the A5.2 result only,yes,yes,the bars move with the sensitivity,yes,no
+14,an inconsistent scenario state,A5.4,structure scenarioSet,yes,canonical_v4.scenario_modeling's consistency-constraint guard,yes,yes,canonical_structure_absent,yes,no
+15,a broken system-dynamics accounting identity,A5.5,structure systemDynamicsModel,yes,canonical_v4.rework_feedback_loop's accounting guard,yes,yes,canonical_structure_absent,yes,no
+16,unstable queue returning a reassuring steady state,A5.6,structure queueModel,yes,queue_model stability condition,yes,yes,"canonical_structure_absent, no steady state",yes,no
+17,an agent-based model with no agents or rules,A5.7,structure agentSupplyChainModel,yes,canonical_v4.agent_supply_chain's agent guard,yes,yes,canonical_structure_absent,yes,no
+17,an agent-based model whose agents carry no rule,A5.7,structure agentSupplyChainModel,yes,canonical_v4.agent_supply_chain's rule guard,yes,yes,canonical_structure_absent,yes,no
+18,"a DES model with no event, clock, queue or resource structure",A5.8,structure desProcessModel,yes,canonical_v4.des_process_model's resource guard,yes,yes,canonical_structure_absent,yes,no
+19,orphan canonical structure with no production supply path,supply-path guard,"governed_structure_keys, in memory",yes,test_run29_supply_path_guard section 1,yes,yes,orphan structure named,yes,no
+20,duplicate simulation version stamp,version boundary,"SIMULATION_VERSION_HISTORY, in memory",yes,test_run29_version_boundary section 1 uniqueness and prefix checks,yes,yes,duplicate identifier; broken append-only prefix,yes,no

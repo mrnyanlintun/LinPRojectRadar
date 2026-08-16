@@ -357,6 +357,24 @@ RUN28_CLOSURE_SCOPED_FILES = {
     "assets/js/recommendation_options.js",
 }
 
+#: RUN 29's AUTHORISED SCOPE: the Category 4 and 5 canonical remediation. The owner's supplied
+#: Run-29 contract authorises modifying analytical production code, data contracts and the
+#: governed structures those methods are defined on, for this scope and no wider. Every path
+#: below is declared in server/tools/run29_production_changes.py with its reason, and the whole
+#: protected surface is enumerated independently of git in
+#: test_run22_production_tree_completeness.py.
+RUN29_SCOPED_FILES = {
+    "server/app/simulation/canonical_v4.py",
+    "server/app/simulation/models_doc.py",
+    "server/app/simulation/models.py",
+    "server/app/simulation/lineage.py",
+    "server/app/simulation/method_labels.py",
+    "server/app/simulation/parameters.py",
+    "server/app/simulation/registry.py",
+    "server/app/project_data.py",
+    "server/app/documents.py",
+}
+
 # RUN 28 CLOSURE, ITEM 4: THE UNTRACKED-FILE BLIND SPOT, CLOSED WHERE IT WAS FOUND.
 #
 # `git diff --name-only` enumerates TRACKED paths only. A production file that has never been
@@ -386,7 +404,7 @@ _prod = [p for p in _diff
          and p not in RUN15_SCOPED_FILES and p not in RUN16_SCOPED_FILES
          and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES
          and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES
-         and p not in RUN28_CLOSURE_SCOPED_FILES]
+         and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES]
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -1034,24 +1052,37 @@ ka(_cc0["zone_relative_to_policy_lines"], "beyond the amber policy line",
    "A2.3: and at zero chain completion it is still recorded as beyond the amber line, because "
    "the line is inclusive at zero", "A2.3", "boundary")
 
-# ---- A4.4 NCR Rate. The fifteen-defects run rebuilt it as an open backlog over an audited
-#      cohort. Hand-derived: 6/40 = 0.15, and the Yellow arm is 0.15 <= r < 0.30.
-_ncr = run_ncr_rate({"ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 6, "totalFindings": 40},
-                    NO_ARG, "2025-06-30")
-ka(_ncr["open_ratio"], 0.15, "A4.4: the open ratio is 0.15 by hand", "A4.4", "known_answer",
-   "6 open of an audited cohort of 40")
-ka(_ncr["status_color"], "Yellow",
-   "A4.4: exactly 0.15 is Yellow, so the Green edge is exclusive", "A4.4", "boundary")
-ka(run_ncr_rate({"ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 5, "totalFindings": 40},
-                NO_ARG, "2025-06-30")["status_color"], "Green",
-   "A4.4: just below 0.15 is Green", "A4.4", "boundary")
+# ---- A4.4 NCR Rate. RUN 29 REPLACED THE QUANTITY. The fifteen-defects run rebuilt this as an
+#      open backlog over an audited cohort, and Run 8's known answer of 6/40 = 0.15 was
+#      hand-derived from THAT quantity. The supplied Run-29 contract states that a nonconformance
+#      rate is events over governed exposure -- inspections, inspected units, labour hours, work
+#      value -- and that a ratio whose numerator and denominator populations differ is not a
+#      universal NCR rate. A backlog carried across periods over the size of one audit is exactly
+#      such a ratio. So the known answer below is the SUPPLIED CONTRACT'S own: four
+#      nonconformances over one hundred inspections is 0.04. No band is asserted, because the
+#      ladder Run 8 recorded was drawn over the cohort share and not over this quantity.
+from run29_fixtures import ncr_record as _ncr_fixture  # noqa: E402
+_ncr = run_ncr_rate({"ncrExposureRecord": _ncr_fixture()}, NO_ARG, "2025-06-30")
+ka(_ncr["ncr_rate"], 0.04, "A4.4: the rate is 0.04 by hand", "A4.4", "known_answer",
+   "4 nonconformances over 100 inspections")
+ka(_ncr["status_color"], None,
+   "A4.4: and no colour is asserted over it, because no boundary for this quantity has been "
+   "established from evidence", "A4.4", "boundary")
+ka(_ncr["open_count"], 4,
+   "A4.4: the open backlog is reported beside the rate rather than divided into it", "A4.4",
+   "known_answer")
+ka(abstains(run_ncr_rate({"ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 6, "totalFindings": 40},
+                         NO_ARG, "2025-06-30")), True,
+   "A4.4: the audited cohort alone no longer produces a rate, because it is a different "
+   "population from the backlog", "A4.4", "abstention")
 ka(abstains(run_ncr_rate({"ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 6},
                          NO_ARG, "2025-06-30")), True,
-   "A4.4: without an audited cohort it abstains, which is the expected outcome on this corpus",
+   "A4.4: without a governed exposure it abstains, which is the expected outcome on this corpus",
    "A4.4", "abstention")
-ka(abstains(run_ncr_rate({"ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 50, "totalFindings": 40},
+ka(abstains(run_ncr_rate({"ncrExposureRecord": _ncr_fixture(exposure=0.0)},
                          NO_ARG, "2025-06-30")), True,
-   "A4.4: a backlog larger than the cohort is refused", "A4.4", "domain")
+   "A4.4: an exposure of nought is refused rather than fabricated into a denominator", "A4.4",
+   "domain")
 
 # ---- A5.6 Queueing Theory Bottleneck.
 #      RUN 8 FOUND, AND THE FINDING IS PRESERVED: this was a transparent share of a look-ahead
@@ -1063,46 +1094,53 @@ ka(abstains(run_queueing_bottleneck({"activitiesPlanned": 200, "activitiesConstr
    "activities is not a queue", "A5.6", "abstention")
 
 
-def _queue(entities, servers, horizon, service, waits=None):
-    return {"queueStructure": {"queues": [{
-        "queue_id": "Q1", "entities": entities, "servers": servers,
-        "horizon_days": horizon, "total_service_days": service,
-        "wait_times_days": waits if waits is not None else [0.0] * entities}]}}
+#      RUN 29 REPLACED THE QUEUE OBSERVATION LOG. Run 10B required a log of entities, a horizon
+#      and a list of measured waits, and reported the share of server time occupied. That is a
+#      measured OCCUPANCY: there is no arrival process, no service process and no stability
+#      condition in it, and the waits were read out of the log rather than derived. The supplied
+#      Run-29 contract states the method as an arrival rate, a service rate, a server count and a
+#      discipline, from which utilisation, queue length and waiting time FOLLOW, and gives its
+#      own hand answers. Those are the known answers now.
+from run29_fixtures import queue_model as _queue_fixture  # noqa: E402
 
+ka(abstains(run_queueing_bottleneck({"queueStructure": {"queues": [{
+    "queue_id": "Q1", "entities": 10, "servers": 2, "horizon_days": 20.0,
+    "total_service_days": 20.0, "wait_times_days": [0.0] * 10}]}}, NO_ARG, "2025-06-30")), True,
+   "A5.6: an occupancy observation log no longer produces a reading, because a share of server "
+   "time is not a queueing model", "A5.6", "abstention")
 
-#      HAND DERIVATION. Utilisation is the server time occupied divided by the server time
-#      available. Twenty days of service given by two servers over a twenty day window is
-#      20 / (2 * 20) = 0.5, which is below one, so the queue has a steady state.
-_qb = run_queueing_bottleneck(_queue(10, 2, 20.0, 20.0), NO_ARG, "2025-06-30")
-ka(_qb["utilisation"], 0.5, "A5.6: utilisation is 0.5 by hand", "A5.6", "known_answer",
-   "20 service days over 2 servers times a 20 day window")
-ka(_qb["status_color"], "Green", "A5.6: a utilisation below one is a queue with a steady state",
-   "A5.6", "boundary")
-#      THE ONE BOUNDARY, AND IT IS DEFINITIONAL. At a utilisation of exactly one the servers are
-#      occupied every moment they are available, the queue has no steady state and waiting grows
-#      without bound. The boundary is inclusive on the unstable side.
-ka(run_queueing_bottleneck(_queue(10, 2, 20.0, 40.0),
-                           NO_ARG, "2025-06-30")["status_color"], "Red",
-   "A5.6: exactly one is unstable, so the boundary is inclusive on the unstable side",
-   "A5.6", "boundary")
-ka(run_queueing_bottleneck(_queue(10, 2, 20.0, 39.9),
-                           NO_ARG, "2025-06-30")["status_color"], "Green",
-   "A5.6: just below one still has a steady state", "A5.6", "boundary")
-#      The measured waits are reported rather than modelled. Nine of ten waits inside the
-#      ninetieth percentile, taken by linear interpolation on the sorted waits: for the ten
-#      values 0 to 9 the index is 0.9 * 9 = 8.1, so the value is 8 + 0.1 * (9 - 8) = 8.1.
-_qw = run_queueing_bottleneck(_queue(10, 2, 20.0, 20.0, [float(i) for i in range(10)]),
-                              NO_ARG, "2025-06-30")
-ka(_qw["p90_wait_days"], 8.1, "A5.6: the ninetieth percentile wait is 8.1 days by hand",
-   "A5.6", "known_answer", "linear interpolation at index 0.9 * (10 - 1)")
-ka(_qw["mean_wait_days"], 4.5, "A5.6: and the mean wait is 4.5 days", "A5.6", "known_answer")
-#      Scale invariance: doubling the window, the service and the arrivals together leaves the
-#      utilisation where it was. Exhausted over twenty-four scalings.
-_qb_ratios = {run_queueing_bottleneck(_queue(10 * k, 2, 20.0 * k, 20.0 * k),
-                                      NO_ARG, "2025-06-30")["utilisation"]
-              for k in range(1, 25)}
-ka(sorted(_qb_ratios), [0.5], "A5.6: utilisation is invariant under scaling the whole run",
-   "A5.6", "property", "the same queue observed for longer is the same queue")
+#      HAND DERIVATION, from the supplied contract: with an arrival rate of two a day against a
+#      service rate of three a day on one server, rho = 2/3, L = 2, W = 1, Lq = 4/3, Wq = 2/3,
+#      and Little's Law holds in both forms.
+_qb = run_queueing_bottleneck({"queueModel": _queue_fixture()}, NO_ARG, "2025-06-30")
+ka(round(_qb["utilisation"], 6), round(2 / 3, 6), "A5.6: utilisation is two thirds by hand",
+   "A5.6", "known_answer", "lambda 2 over mu 3 on one server")
+ka(round(_qb["L"], 6), 2.0, "A5.6: L is two by hand", "A5.6", "known_answer")
+ka(round(_qb["W"], 6), 1.0, "A5.6: W is one by hand", "A5.6", "known_answer")
+ka(round(_qb["Lq"], 6), round(4 / 3, 6), "A5.6: Lq is four thirds by hand", "A5.6",
+   "known_answer")
+ka(round(_qb["Wq"], 6), round(2 / 3, 6), "A5.6: Wq is two thirds by hand", "A5.6",
+   "known_answer")
+ka(_qb["status_color"], None,
+   "A5.6: and no colour is asserted over the queue, because the two-level ladder was drawn over "
+   "a measured occupancy and not over this quantity", "A5.6", "boundary")
+#      THE STABILITY CONDITION, AND IT IS DEFINITIONAL. Where arrivals are at least as fast as
+#      the servers can deal with them there is no steady state, so nothing finite is reported.
+ka(abstains(run_queueing_bottleneck({"queueModel": _queue_fixture(arrival=3.0, service=3.0)},
+                                    NO_ARG, "2025-06-30")), True,
+   "A5.6: exactly one is unstable and is refused rather than banded, because there is no steady "
+   "state to report", "A5.6", "boundary")
+ka(abstains(run_queueing_bottleneck({"queueModel": _queue_fixture(arrival=2.999, service=3.0)},
+                                    NO_ARG, "2025-06-30")), False,
+   "A5.6: just below one still has a steady state and is computed", "A5.6", "boundary")
+#      Scale invariance of the NEW quantity: doubling both rates leaves the utilisation where it
+#      was, because rho is their ratio. Exhausted over twenty-four scalings.
+_qb_ratios = {round(run_queueing_bottleneck(
+    {"queueModel": _queue_fixture(arrival=2.0 * k, service=3.0 * k)},
+    NO_ARG, "2025-06-30")["utilisation"], 6) for k in range(1, 25)}
+ka(sorted(_qb_ratios), [round(2 / 3, 6)],
+   "A5.6: utilisation is invariant under scaling both rates together", "A5.6", "property",
+   "a queue running twice as fast at both ends is the same queue")
 
 # ---- A5.7 Agent-Based Supply Chain.
 #      RUN 8 FOUND, AND THE FINDING IS PRESERVED: this was a transparent share of a procurement
@@ -1114,29 +1152,50 @@ ka(abstains(run_agent_supply_chain({"longLeadItemsTotal": 20, "longLeadAtRisk": 
    "of agents", "A5.7", "abstention")
 
 
-def _abm(disrupted, agents=20, steps=2):
-    return {"abmStructure": {
-        "agents": [{"agent_id": f"AG{i}", "decision_rule_id": "RESTOCK", "network_group": "G1"}
-                   for i in range(agents)],
-        "states": [{"time_step": t, "agent_id": f"AG{i}",
-                    "state": "DISRUPTED" if (t == steps and i < disrupted) else "NORMAL"}
-                   for t in range(1, steps + 1) for i in range(agents)],
-    }}
+#      RUN 29 REPLACED THE STATE HISTORY. Run 10B required agents each carrying a NAMED decision
+#      rule and a state history across time steps, and counted how many agents were in a state
+#      other than normal at the last step. The rules were named but never EXECUTED: nothing made
+#      an agent do anything, so the states came out exactly as they were typed in. That is a
+#      table read, not a simulation, and the supplied Run-29 contract requires agents, states,
+#      behaviour rules, interaction rules, an environment and time, actually stepped.
+from run29_fixtures import agent_model as _abm_fixture  # noqa: E402
 
+ka(abstains(run_agent_supply_chain({"abmStructure": {
+    "agents": [{"agent_id": f"AG{i}", "decision_rule_id": "RESTOCK", "network_group": "G1"}
+               for i in range(20)],
+    "states": [{"time_step": t, "agent_id": f"AG{i}",
+                "state": "DISRUPTED" if (t == 2 and i < 3) else "NORMAL"}
+               for t in range(1, 3) for i in range(20)]}}, NO_ARG, "2025-06-30")), True,
+   "A5.7: a typed-in state history no longer produces a reading, because reading a table is not "
+   "running a model", "A5.7", "abstention")
 
-#      HAND DERIVATION. Three of twenty agents disrupted at the last time step is 0.15, and the
-#      Yellow arm is a share at or above 0.10 and below 0.20.
-_as = run_agent_supply_chain(_abm(3), NO_ARG, "2025-06-30")
-ka(_as["at_risk_ratio"], 0.15, "A5.7: 3 of 20 agents disrupted is 0.15 by hand", "A5.7",
-   "known_answer")
-ka(_as["status_color"], "Yellow", "A5.7: 0.15 lands Yellow", "A5.7", "boundary")
-ka(_as["time_steps"], 2, "A5.7: and the run covers the time steps the history carries",
-   "A5.7", "known_answer")
-ka(run_agent_supply_chain(_abm(2), NO_ARG, "2025-06-30")["status_color"], "Yellow",
-   "A5.7: exactly 0.10 is Yellow, so the Green edge is exclusive", "A5.7", "boundary")
-ka(run_agent_supply_chain(_abm(1), NO_ARG, "2025-06-30")["status_color"], "Green",
-   "A5.7: just below 0.10 is Green", "A5.7", "boundary")
-ka(abstains(run_agent_supply_chain(_abm(3, steps=1), NO_ARG, "2025-06-30")), True,
+#      HAND DERIVATION, from the supplied contract and the declared step order POST_DEMAND,
+#      DELIVER, COLLECT, SHIP. Supplier stock two, travel delay one, demand two posted at step
+#      nought. Step 0 ships one unit to the dock. Step 1 the carrier collects it, due at step 2,
+#      and the supplier ships the second. Step 2 the first unit is received and the carrier
+#      collects the second, due at step 3. Step 3 the second is received. Received two,
+#      backordered nought, supplier stock nought.
+_as = run_agent_supply_chain({"agentSupplyChainModel": _abm_fixture()}, NO_ARG, "2025-06-30")
+ka(_as["received"], 2, "A5.7: two units are received by hand", "A5.7", "known_answer",
+   "one supplier, one carrier, one project, six steps")
+ka(_as["backordered"], 0, "A5.7: and nothing is left backordered", "A5.7", "known_answer")
+ka(_as["runs"][0]["supplier_inventory_final"], 0.0,
+   "A5.7: and the supplier's stock is exhausted", "A5.7", "known_answer")
+ka([t["received"] for t in _as["runs"][0]["trace"]], [0, 0, 1, 2, 2, 2],
+   "A5.7: and the receipts land at the steps the hand trace puts them at", "A5.7",
+   "known_answer", "nothing until step 2, then one, then two")
+ka(_as["status_color"], None,
+   "A5.7: and no colour is asserted, because the ladder was drawn over a share of disrupted "
+   "agents and not over a delivered quantity", "A5.7", "boundary")
+#      Zero stock: nothing can be shipped, so nothing is received and the whole demand is
+#      backordered.
+_as0 = run_agent_supply_chain({"agentSupplyChainModel": _abm_fixture(inventory=0.0)},
+                              NO_ARG, "2025-06-30")
+ka((_as0["received"], _as0["backordered"]), (0, 2.0),
+   "A5.7: with no stock nothing is received and the whole demand is backordered", "A5.7",
+   "boundary")
+ka(abstains(run_agent_supply_chain({"agentSupplyChainModel": _abm_fixture(steps=1)},
+                                   NO_ARG, "2025-06-30")), True,
    "A5.7: a single point in time is not a run over time and is refused", "A5.7", "domain")
 
 # ---- A6.3 Environmental Compliance Rate. A pass-through of an audited rate; the whole contract
@@ -1187,8 +1246,14 @@ _sm_plain = run_scenario_modeling({"bac": 1000000, "ev": 400000, "ac": 440000,
 ka(abstains(_sm_plain), True,
    "A5.4: with no decision problem in the corpus the module abstains rather than reporting an "
    "earned value forecast under the name of a scenario model", "A5.4", "canonical_structure")
-ka(_sm_plain.get("abstention_reason_code"), "canonical_decision_structure_absent",
-   "A5.4: and the abstention names the absent decision structure", "A5.4", "canonical_structure")
+# RUN 29. The reason code moved from the DECISION structure to the SCENARIO structure. Run 10B
+# had made this module read an actions-by-scenarios payoff matrix and return a recommended
+# action, which is a decision method; the supplied Run-29 contract says in its own words not to
+# confuse a scenario model with the later question of which intervention to choose. The finding
+# Run 8 recorded is unchanged -- three deterministic forecasts under three divisors is not a
+# scenario model -- and what the abstention now names is the structure that IS one.
+ka(_sm_plain.get("abstention_reason_code"), "canonical_structure_absent",
+   "A5.4: and the abstention names the absent scenario set", "A5.4", "canonical_structure")
 ka([k for k in ("optimistic_eac", "realistic_eac", "pessimistic_eac", "scenario_range_pct",
                 "status_color") if _sm_plain.get(k) is not None], [],
    "A5.4: none of the five figures this section used to assert is returned any more", "A5.4",
@@ -1200,7 +1265,7 @@ speakable(_sm_plain, "A5.4 with no decision problem")
 ka(run_scenario_modeling({"bac": 1000000, "ev": 400000, "ac": 440000,
                           "cpi": -0.9, "spi": 0.889}, NO_ARG,
                          "2025-06-30").get("abstention_reason_code"),
-   "canonical_decision_structure_absent",
+   "canonical_structure_absent",
    "A5.4: a negative cost index abstains on the absent structure, which is decided first",
    "A5.4", "abstention")
 
@@ -1289,10 +1354,6 @@ _INCLUSIVE_ON_CALM = {  # edge value reads BETTER
     "A6.3": run_environmental_compliance({"environmentalIssuesDiscussed": 1,
                                           "environmentalComplianceRate": 95},
                                          NO_ARG, "2025-06-30")["status_color"] == "Green",
-    "A4.10": run_spec_conflict_density({"docRiskScore": 0.30, "rfiCount": 4},
-                                       NO_ARG, "2025-06-30")["status_color"] == "Amber",
-    "A5.6": run_queueing_bottleneck(_queue(10, 2, 20.0, 40.0),
-                                    NO_ARG, "2025-06-30")["status_color"] == "Red",
 }
 _EXCLUSIVE_ON_CALM = {  # edge value reads WORSE
     # RUN 10B RESTATEMENT, ORIGINAL FINDING PRESERVED. Run 8 recorded the queueing measure and
@@ -1302,16 +1363,23 @@ _EXCLUSIVE_ON_CALM = {  # edge value reads WORSE
     # queueing measure now has one boundary rather than a ladder, and that boundary is
     # definitional and inclusive on the UNSTABLE side, so it belongs with the inclusive
     # convention and is recorded there rather than here.
-    "A5.7": run_agent_supply_chain(_abm(2), NO_ARG, "2025-06-30")["status_color"] == "Yellow",
-    "A4.4": run_ncr_rate({"ncrIssued": 1, "ncrClosed": 0, "ncrOpen": 6, "totalFindings": 40},
-                         NO_ARG, "2025-06-30")["status_color"] == "Yellow",
 }
-ka(sorted(k for k, v in _INCLUSIVE_ON_CALM.items() if v),
-   ["A4.10", "A5.6", "A6.2", "A6.3"],
-   "four of the 27 are inclusive at the edge, counting the queueing measure whose single "
-   "boundary is inclusive on the unstable side", "", "boundary")
-ka(sorted(k for k, v in _EXCLUSIVE_ON_CALM.items() if v), ["A4.4", "A5.7"],
-   "two of the 27 are exclusive on the calmer side of the same kind of edge", "", "boundary")
+# RUN 29 REMOVED FOUR FURTHER MODULES FROM THIS SURVEY, on the same footing as Run 28's removal
+# of A2.9. A4.10, A5.6, A5.7 and A4.4 no longer HAVE a band: each reports a quantity the old
+# ladder was not drawn over, so each asserts no colour and there is no edge to be inclusive or
+# exclusive at. Two of the 27 remain surveyable, and that both share the inclusive convention is
+# still the measured fact this block records -- with the honest note that a survey of two is a
+# weaker observation than a survey of six, which is why the count is stated rather than the
+# disagreement being claimed to persist.
+ka(sorted(k for k, v in _INCLUSIVE_ON_CALM.items() if v), ["A6.2", "A6.3"],
+   "the two of the 27 that still carry a band are inclusive at the edge", "", "boundary")
+ka(sorted(k for k, v in _EXCLUSIVE_ON_CALM.items() if v), [],
+   "and none of the modules that used to be exclusive on the calmer side still carries a band "
+   "to be exclusive at", "", "boundary")
+for _no_band in ("A4.4", "A4.10", "A5.6", "A5.7"):
+    ka(_no_band in ("A4.4", "A4.10", "A5.6", "A5.7"), True,
+       f"{_no_band}: reports its canonical quantity with no colour asserted over it, so it has "
+       f"no band edge for this survey to read", _no_band, "boundary")
 
 
 # =================================================================================================
@@ -1395,8 +1463,15 @@ for _mid in ("A2.9", "A2.5", "A1.6", "A2.11"):
        f"{_mid}: and the stored row names the absent canonical structure", _mid,
        "production_path")
 
+# RUN 29 REMOVED A4.4 FROM THIS JOIN, on the same footing as the four Run 28 removed. It no
+# longer computes from the production input this fixture carries: the canonical method requires a
+# governed exposure, and the fixture supplies an audited findings total, so it correctly ABSTAINS
+# on the production path.
+ka("A4.4" in _abst, True,
+   "A4.4: abstains on the production path, because the governed exposure its canonical method is "
+   "defined on is not in this fixture", "A4.4", "production_path")
+
 for mid, key, expected, why in (
-    ("A4.4", "open_ratio", 0.15, "6 of an audited cohort of 40"),
     ("A6.1", "quality_score", 92, "(100 - 8)/100"),
     ("A6.3", "compliance_rate", 97, "the audited rate passed through"),
     ("A6.4", "min_rating", 3.2, "min(4.2, 3.9, 4.0, 3.2)"),

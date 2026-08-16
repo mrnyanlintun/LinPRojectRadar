@@ -178,7 +178,7 @@ check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
 # sim-2026.08-v2, it is imported and EXECUTED by this suite, and every comparison below runs the
 # old code and the new code side by side on identical inputs. A frozen record that could not be
 # executed would not be evidence of anything.
-check(SIMULATION_VERSION == "sim-2026.08-v12",
+check(SIMULATION_VERSION == "sim-2026.08-v13",
       "and this branch is stamped at Run 28's version, so results computed before and after "
       "each run are distinguishable in the data. Every earlier stamp from sim-2026.07-v1 "
       "onward is preserved in the version history rather than overwritten",
@@ -336,21 +336,16 @@ check(set(ZERO_CASE_DISPOSITIONS) == {"RETURN_ZERO_TRUE_ZERO", "ABSTAIN_NO_EXPOS
 # instead of substituting -- is preserved for all four and is asserted directly below, alongside
 # the canonical answer on the v3 structure. The four were observed red in this table against the
 # v3 build before being moved.
-_G3 = [
-    ("A5.8", "discrete event simulation", run_discrete_event_sim, old_doc.run_discrete_event_sim,
-     {"spi": 0.9, "cpi": 0.9, "plannedPctComplete": 0, "actualPctComplete": 0},
-     ABSTAIN_INVALID_DENOMINATOR,
-     # HAND: progress 50/50 = 1, so the first interruption term is 0; the index is 1.0 so the
-     # second is 0 too. Throughput is 1/(1+0) = 1.0.
-     {"spi": 1.0, "cpi": 1.0, "plannedPctComplete": 50, "actualPctComplete": 50}, 1.0,
-     "throughput_index"),
-    ("A4.10", "specification conflict density", run_spec_conflict_density,
-     old_doc.run_spec_conflict_density, {"docRiskScore": 0.2, "rfiCount": 0},
-     ABSTAIN_NO_EXPOSURE,
-     # HAND: risk times count over the square root of the count is risk times the square root of
-     # the count: 0.2 * 3 = 0.6 at nine requests.
-     {"docRiskScore": 0.2, "rfiCount": 9}, 0.6, "conflict_density"),
-]
+# RUN 29 EMPTIED THIS TABLE. Both of its remaining rows -- A5.8 Discrete Event Simulation and
+# A4.10 Specification Conflict Density -- no longer compute the quantity Run 7 corrected. The
+# supplied Run-29 contract states that a progress and schedule index algebraic index is not a
+# discrete event simulation, and that `docRiskScore * sqrt(RFI count)` is not conflict density,
+# so the "valid case" inputs Run 7 used now produce an abstention and there is no v2 arithmetic
+# left for the generic comparison below to make. Run 7's PROPERTY -- that the zero case refuses
+# instead of substituting -- is preserved for both and is asserted directly below, alongside the
+# supplied contract's own hand-checked canonical answer. Both were observed red in this table
+# against the v13 build before being moved.
+_G3: list = []
 
 for mid, name, new_fn, old_fn, zero_si, code, valid_si, expected, key in _G3:
     print(f"\n-- {name} --")
@@ -369,6 +364,47 @@ for mid, name, new_fn, old_fn, zero_si, code, valid_si, expected, key in _G3:
           f"formula", f"expected {expected} got {got.get(key)}")
     check(got.get("status_color") is not None,
           f"{name}: which still bands, so the correction removed a refusal case and no more")
+
+print("\n-- the two Run-7 rows Run 29 replaced with the canonical method --")
+from run29_fixtures import conflict_register, des_model  # noqa: E402
+for _name, _fn, _old_fn, _zero_si, _retired_si in (
+        ("discrete event simulation", run_discrete_event_sim, old_doc.run_discrete_event_sim,
+         {"spi": 0.9, "cpi": 0.9, "plannedPctComplete": 0, "actualPctComplete": 0},
+         {"spi": 1.0, "cpi": 1.0, "plannedPctComplete": 50, "actualPctComplete": 50}),
+        ("specification conflict density", run_spec_conflict_density,
+         old_doc.run_spec_conflict_density, {"docRiskScore": 0.2, "rfiCount": 0},
+         {"docRiskScore": 0.2, "rfiCount": 9})):
+    check(_old_fn(dict(_zero_si), NOOP, CUTOFF).get("status_color") is not None,
+          f"{_name}: the v12 code returned a band on the zero case Run 7 corrected")
+    _now_zero = _fn(dict(_zero_si), NOOP, CUTOFF)
+    check(abstains(_now_zero),
+          f"{_name}: this branch still refuses that input rather than substituting", str(band(_now_zero)))
+    _now_retired = _fn(dict(_retired_si), NOOP, CUTOFF)
+    check(abstains(_now_retired)
+          and _now_retired.get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
+          f"{_name}: and the v2 inputs that used to band produce no reading at all now, because "
+          f"they are not the structure this method is named for",
+          str(_now_retired.get("abstention_reason_code")))
+    speakable(_now_retired, _name)
+
+# HAND, from the supplied contract 5.8: one server, job A arriving at 0 with a service of 2 and
+# job B arriving at 1 with a service of 2. A starts at 0 and ends at 2 having waited 0; B starts
+# at 2 and ends at 4 having waited 1; the mean wait is 0.5.
+_des = run_discrete_event_sim({"desProcessModel": des_model()}, NOOP, CUTOFF)
+_ent = {e["entity_id"]: e for e in _des.get("entities", [])}
+check(_des.get("mean_wait") == 0.5
+      and (_ent["A"]["start"], _ent["A"]["end"], _ent["A"]["wait"]) == (0, 2, 0)
+      and (_ent["B"]["start"], _ent["B"]["end"], _ent["B"]["wait"]) == (2, 4, 1),
+      "discrete event simulation: with the governed event model present the supplied contract's "
+      "own answer is reproduced exactly", str(_des.get("mean_wait")))
+
+# HAND, from the supplied contract 4.10: five verified conflicts over two hundred and fifty
+# requirements is a density of 0.02 a requirement, or twenty per thousand.
+_scd = run_spec_conflict_density({"specificationConflictRegister": conflict_register()},
+                                 NOOP, CUTOFF)
+check(_scd.get("conflict_density") == 0.02 and _scd.get("conflicts_per_thousand") == 20.0,
+      "specification conflict density: with the governed register present the supplied "
+      "contract's own answer is reproduced exactly", str(_scd.get("conflict_density")))
 
 print("\n-- the four Run-7 rows Run 28 replaced with the canonical method --")
 # For each: the zero case Run 7 corrected must STILL refuse rather than substitute, the retired
@@ -557,8 +593,21 @@ for _name, _fn, _si in (
 
 print("\n-- the malformed and out-of-domain cases the modules now own --")
 for name, fn, si, code in (
+        # RUN 29. Specification conflict density no longer reads a document risk score or a
+        # request count at all, so a negative request count is not an input it has. The
+        # malformed case it DOES own is stated on its own register instead: a conflict that
+        # cites the same place in the specification twice records no disagreement between two
+        # places. The reason codes stay distinct, which is what this block exists to prove.
         ("specification conflict density", run_spec_conflict_density,
-         {"docRiskScore": 0.2, "rfiCount": -3}, ABSTAIN_MALFORMED_INPUT),
+         {"specificationConflictRegister": {
+             "source": "review", "specification_document_id": "SP",
+             "specification_revision": "R1", "exposure_unit": "requirements",
+             "exposure_quantity": 250.0,
+             "conflicts": [{"conflict_id": "SC-1", "evidence_location_a": "section 03 30 00",
+                            "evidence_location_b": "section 03 30 00", "state": "CONFIRMED",
+                            "reviewer": "the specification writer",
+                            "discipline": "STRUCTURAL"}]}},
+         ABSTAIN_STRUCTURE_ABSENT),
         # RUN 28. Both of these modules now read a schedule network rather than dates, a
         # schedule index and two progress percentages, so a reversed baseline pair and a missing
         # progress figure are no longer inputs either of them has. The malformed and missing
@@ -615,54 +664,62 @@ check(band(_was_none) == "Green" and band(_was_full) == "Red",
       "which is three bands better for withholding the evidence",
       f"{band(_was_none)} vs {band(_was_full)}")
 
-# HAND: min(20/20,1)*0.3 + min(10/10,1)*0.3 + 0.5*0.4 = 0.3 + 0.3 + 0.2 = 0.8, and 0.8 > 0.65,
-# so Red. The weights, the saturation points and the bands are all unchanged by this run.
+# RUN 29 REPLACED WHAT FOLLOWED. Run 7 corrected the missingness semantics of the composite and
+# kept the composite: all three sources required, the same 0.3 / 0.3 / 0.4 weights, the same
+# bands. Run 29's supplied contract removes the composite outright -- a request count does not
+# prove a dispute, a change order count does not prove a dispute, a document risk score does not
+# prove a dispute, and the generic KPI composite is not to be preserved as the canonical result.
+#
+# THE PROPERTY RUN 7 WAS DEFENDING IS NOW HELD BY A STRONGER FACT. Run 7 had to prove that no
+# strict subset of the three fields read better than the full set. There is now no reading from
+# ANY combination of them, the full set included, so the ordering the defect exploited does not
+# exist. That is asserted over all eight combinations rather than the seven strict subsets, and
+# the v12 behaviour above is still executed from git so the defect itself stays reproducible.
 _now_full = run_dispute_escalation(dict(_FULL), NOOP, CUTOFF)
-check(_now_full["escalation_index"] == 0.8 and band(_now_full) == "Red",
-      "the project that reports every source is measured on the same weighted sum, at 0.8 and Red",
-      f"{_now_full['escalation_index']} / {band(_now_full)}")
-_improved = []
-for _r in range(3):
+check(abstains(_now_full),
+      "the project that reports every one of the three generic sources gets no reading at all, "
+      "because none of the three is dispute evidence", str(band(_now_full)))
+_any_reading = []
+for _r in range(4):
     for _keep in itertools.combinations(sorted(_FULL), _r):
         _sub = {k: _FULL[k] for k in _keep}
         _out = run_dispute_escalation(dict(_sub), NOOP, CUTOFF)
         if not abstains(_out):
-            _improved.append(sorted(_sub))
-check(_improved == [],
-      "and every strict subset of the three sources abstains, so removing evidence cannot "
-      "produce a reading at all, let alone a better one (all seven subsets exhausted)",
-      str(_improved))
-# HAND: a reported zero on both logs contributes zero to each capped term, so the index is the
-# document-risk term alone: 0.5 * 0.4 = 0.2, which is Green. A reported zero is evidence.
+            _any_reading.append(sorted(_sub))
+check(_any_reading == [],
+      "and no combination of the three produces a reading, so removing evidence cannot improve "
+      "one that does not exist (all eight combinations exhausted)", str(_any_reading))
 _zeros = run_dispute_escalation({"rfiCount": 0, "changeOrderCount": 0, "docRiskScore": 0.5},
                                 NOOP, CUTOFF)
-check(_zeros["escalation_index"] == 0.2 and band(_zeros) == "Green",
-      "a REPORTED zero on both logs is evidence and computes, at the document-risk term alone",
-      f"{_zeros['escalation_index']} / {band(_zeros)}")
+check(abstains(_zeros),
+      "a REPORTED zero on both logs does not compute either: whether the counts were measured or "
+      "withheld, they are not evidence of a dispute", str(band(_zeros)))
 _missing = run_dispute_escalation({"docRiskScore": 0.5}, NOOP, CUTOFF)
-check(abstains(_missing) and _missing.get("abstention_reason_code") == ABSTAIN_MISSING_INPUT,
-      "while the identical project that reported neither log abstains, so a zero that was "
-      "measured and a zero that was assumed are no longer the same reading",
+check(abstains(_missing)
+      and _missing.get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
+      "and the reason names the missing canonical structure rather than a missing input, because "
+      "what is absent is the claim register and not a figure",
       str(_missing.get("abstention_reason_code")))
-check("requests for information" in str(_missing.get("evidence_metric"))
-      and "change orders" in str(_missing.get("evidence_metric")),
-      "and the abstention names the missing sources, so they stay visible rather than silent",
-      str(_missing.get("evidence_metric"))[:120])
 speakable(_missing, "dispute escalation")
-check(_now_full.get("sources_used") and _now_full.get("sources_missing") == [],
-      "a reading that computed carries the trace of what it rests on",
-      str(_now_full.get("sources_used")))
-check("velocity" not in _now_full["evidence_metric"]
-      and "frequency" not in _now_full["evidence_metric"],
-      "the finding text no longer names a velocity or a frequency, neither of which the module "
-      "computes: both terms are raw counts with no time or exposure denominator",
-      _now_full["evidence_metric"])
+check("claim" in str(_missing.get("evidence_metric")).lower(),
+      "and the abstention says a claim record is what it is waiting for",
+      str(_missing.get("evidence_metric"))[:120])
 check("velocity" in _was_full["evidence_metric"],
-      "where the shipped text did name one", _was_full["evidence_metric"])
-_neg = run_dispute_escalation({"rfiCount": -1, "changeOrderCount": 0, "docRiskScore": 0.5},
-                              NOOP, CUTOFF)
-check(abstains(_neg) and _neg.get("abstention_reason_code") == ABSTAIN_MALFORMED_INPUT,
-      "a negative count is refused as malformed", str(_neg.get("abstention_reason_code")))
+      "where the shipped v12 text named a velocity the module did not compute",
+      _was_full["evidence_metric"])
+
+# AND THE CANONICAL METHOD COMPUTES WHERE THE GOVERNED PROCESS IS PRESENT. A claim standing at
+# the second stage of a six stage process is reported as that stage, and the reading is monotone
+# in the declared order: a later stage never reads as less escalated than an earlier one.
+from run29_fixtures import LAB_DISPUTE_STAGES, dispute_register  # noqa: E402
+_ranks = []
+for _stage in [st["stage_id"] for st in LAB_DISPUTE_STAGES]:
+    _out = run_dispute_escalation({"claimDisputeRegister": dispute_register(_stage)},
+                                  NOOP, CUTOFF)
+    _ranks.append(_out.get("highest_stage_rank"))
+check(_ranks == [0, 1, 2, 3, 4, 5],
+      "with the governed process present the method reads the stage each claim has reached, and "
+      "a later governed stage never reads as less escalated than an earlier one", str(_ranks))
 
 
 # =================================================================================================
@@ -1018,11 +1075,24 @@ RUN20_CYCLE9_CORRECTED = {"A5.2", "B2.10", "B2.15"}
 RUN28_CORRECTED = {"A1.3", "A1.4", "A1.5", "A1.6", "A1.9", "A1.10", "A1.11",
                    "A2.4", "A2.5", "A2.6", "A2.7", "A2.8", "A2.9", "A2.10", "A2.11",
                    "A3.2", "A3.3", "A3.5", "A3.6", "A3.7", "A3.9"}
+# RUN 29, THE CATEGORY 4 AND 5 CANONICAL REMEDIATION. Sixteen further modules stopped computing
+# a transparent proxy and started computing the canonical method the owner's supplied Run-29
+# contract states, from a governed structure that did not exist in this platform before. On a
+# fully reported project that carries none of those new structures every one of them now
+# ABSTAINS where it used to band. A4.2 and A4.3 are NOT in it: Run 27 recorded both as method
+# passes, each already computed exactly the formula the contract states, and each keeps its
+# extracted-totals path, so neither moved. A5.1, A5.6 and A5.7 are not in it either, because all
+# three abstained before Run 29 and still abstain on a project carrying no structure. The
+# authorisation joins the six above rather than replacing any of them.
+RUN29_CORRECTED = {"A4.4", "A4.5", "A4.6", "A4.7", "A4.8", "A4.9", "A4.10",
+                   "A5.2", "A5.3", "A5.4", "A5.5", "A5.8"}
 check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
-                      | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED),
+                      | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED),
       "every module whose result moved on a fully reported project is in the fix-now list or "
-      "Run 10's corrected list",
-      str(sorted(set(_moved) - FIX_NOW)))
+      "one of the later runs' corrected lists",
+      str(sorted(set(_moved) - (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
+                                | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED
+                                | RUN29_CORRECTED))))
 check(_moved, "and the comparison is live: some modules DID move", str(sorted(_moved)))
 
 

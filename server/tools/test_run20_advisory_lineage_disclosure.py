@@ -40,6 +40,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
 from app.simulation import fusion, lineage, registry  # noqa: E402
+sys.path.insert(0, str(HERE))
+import run29_fixtures as FX  # noqa: E402
 
 
 # RUN 20 CYCLE 6 UPDATED THIS SUITE AND DID NOT DELETE IT. The owner decision that followed
@@ -139,7 +141,15 @@ THROUGH_RATIO = {
     },
 }
 
-PAIRS = (("A4.6", "B3.5"), ("A5.2", "A5.3"))
+# RUN 29 BROKE ONE OF THE TWO PAIRS, and breaking it is the correction rather than a loss.
+# Change Order Frequency now computes from a governed change event register -- each change with
+# its own identity, dates, type, cause, value and direction, over a declared exposure -- while
+# Contract Modification Frequency still reads the two extracted contract sums and a count. They
+# are no longer two readings of one body, so declaring them one would manufacture a
+# corroboration that has stopped existing, which is the error Run 20 cycle 5 recorded in its
+# other direction. The pair is asserted as SEPARATE below, with the reason, rather than dropped.
+PAIRS = (("A5.2", "A5.3"),)
+SEPARATED_BY_RUN_29 = (("A4.6", "B3.5"),)
 FOUR = ("A4.6", "B3.5", "A5.2", "A5.3")
 
 
@@ -178,47 +188,62 @@ def sig(mid, status):
 
 print("== the four modules read exactly what they read before the declaration ==")
 
-_a46 = run("A4.6", FIXTURE)
-check("A4.6 still bands Yellow on the fixture", _a46["status_color"] == "Yellow", str(_a46.get("status_color")))
-check("A4.6 still reports six change orders", _a46["co_count"] == 6, str(_a46.get("co_count")))
-near("A4.6 still reports eight per cent scope growth", _a46["scope_growth_pct"], 8.0)
-check("A4.6 evidence sentence unchanged",
-      _a46["evidence_metric"] == "6 change orders, scope growth: +8%", _a46["evidence_metric"])
+# RUN 29 REPLACED THE PINS FOR THREE OF THE FOUR, and the reason is the same one cycle 9 gave
+# when it replaced them for A5.2: THIS SECTION PROVES THAT A LINEAGE DECLARATION NEVER MOVES A
+# BAND, and it still proves exactly that. What moved these numbers is not a declaration but the
+# owner's supplied Run-29 contract replacing three computations outright. A4.6 no longer bands a
+# raw count jointly with contract growth, A5.2 no longer perturbs a hard-coded response, and
+# A5.3 no longer ranks four present-state deviations. The pins are re-taken against the corrected
+# modules, on the structures they now read, and still pin them.
+_a46 = run("A4.6", {**FIXTURE, "changeEventRegister": FX.change_register()})
+check("A4.6 asserts no colour on the fixture, because the frequency it now reports is not the "
+      "quantity the old joint ladder was drawn over",
+      _a46["status_color"] is None and _a46["calibration_pending"] is True,
+      str(_a46.get("status_color")))
+near("A4.6 reports one change per standardised thirty day period",
+     _a46["change_frequency_per_30_days"], 1.0)
+near("A4.6 reports the magnitude separately, at six per cent of the baseline contract",
+     _a46["change_magnitude_net"], 0.06)
+check("A4.6 produces no reading at all from the fixture's extracted contract sums",
+      run("A4.6", FIXTURE).get("insufficient_data") is True)
 
 _b35 = run("B3.5", FIXTURE)
 check("B3.5 still bands Amber on the fixture", _b35["status_color"] == "Amber", str(_b35.get("status_color")))
 check("B3.5 still reports six modifications", _b35["co_count"] == 6, str(_b35.get("co_count")))
 near("B3.5 still reports eight per cent scope growth", _b35["scope_growth_pct"], 8.0)
 
-# RUN 20 CYCLE 9 CHANGED A5.2, AND THESE THREE PINS ARE UPDATED WITH THE REASON RATHER THAN
-# DELETED. This section exists to prove that a LINEAGE DECLARATION never moves a band, and it
-# still proves exactly that: cycle 4's declaration moved nothing. What moved these three numbers
-# is a different change entirely, cycle 9's repair of the module's own arithmetic. Only one of
-# the three quantities A5.2 ranked was a sensitivity: the cost index driver perturbs the index
-# and recomputes the estimate at completion. The other two were never perturbed -- the schedule
-# term is the index's distance from one, halved, and the document term is the risk score itself
-# -- and on this fixture the raw document risk score of 0.42 won the ranking outright, which is
-# why the module read Red and named DocRisk at forty-two per cent. It now reports the one driver
-# it actually perturbs. The pins are re-taken against the corrected module and still pin it.
-_a52 = run("A5.2", FIXTURE)
-check("A5.2 bands Yellow on the fixture, from the one driver it genuinely perturbs",
-      _a52["status_color"] == "Yellow", str(_a52.get("status_color")))
-check("A5.2 names CPI the top driver, because it is the only input the estimate at completion "
-      "is a function of", _a52["top_driver"] == "CPI", str(_a52.get("top_driver")))
-check("A5.2 reports the cost-index sensitivity and not the raw document risk score",
-      _a52["top_sensitivity"] == 11, str(_a52.get("top_sensitivity")))
-check("and the two quantities that are not sensitivities are still reported, under their own "
-      "names, as levels that are not ranked",
-      [x["name"] for x in _a52["levels_not_perturbed"]] == ["SPI", "DocRisk"]
-      and _a52["inputs_perturbed"] == 1,
-      str(_a52.get("levels_not_perturbed")))
+_a52 = run("A5.2", {"sensitivityModel": FX.sensitivity_model()})
+check("A5.2 asserts no colour, because a normalised sensitivity of a declared response is not "
+      "the quantity the old ladder was drawn over",
+      _a52["status_color"] is None and _a52["calibration_pending"] is True,
+      str(_a52.get("status_color")))
+near("A5.2 reproduces the supplied contract's own normalised sensitivity of 1.68",
+     _a52["inputs"][0]["normalised_sensitivity"], 1.68)
+check("A5.2 produces no reading at all from the fixture's earned-value scalars",
+      run("A5.2", FIXTURE).get("insufficient_data") is True)
 
-_a53 = run("A5.3", FIXTURE)
-check("A5.3 still bands Amber on the fixture", _a53["status_color"] == "Amber", str(_a53.get("status_color")))
-check("A5.3 still names Document Risk the top risk", _a53["top_risk"] == "Document Risk",
-      str(_a53.get("top_risk")))
-near("A5.3 still reports a composite of 14.2", _a53["composite_score"], 14.2)
-near("A5.3 still reports a top impact of 42.0", _a53["top_impact"], 42.0)
+_a53 = run("A5.3", {"sensitivityModel": FX.sensitivity_model()})
+check("A5.3 asserts no colour either", _a53["status_color"] is None
+      and _a53["calibration_pending"] is True, str(_a53.get("status_color")))
+check("A5.3 presents the swing the sensitivity analysis computed and creates no evidence of its "
+      "own", _a53["independent_evidence"] is False and _a53["derived_from"] == "A5.2"
+      and _a53["bars"][0]["response_at_low"] == _a52["inputs"][0]["response_at_low"],
+      str(_a53.get("derived_from")))
+
+# AND THE PAIR RUN 29 SEPARATED, asserted as separate with its reason rather than dropped.
+for _a, _b in SEPARATED_BY_RUN_29:
+    _fused = fusion.fuse_signals([sig(_a, "Amber"), sig(_b, "Amber")])
+    check(f"{_a} and {_b} are now two bodies of evidence, because one reads a governed change "
+          f"event register and the other reads two extracted contract sums",
+          _fused["lineage_groups"] == 2, f"lineage_groups={_fused['lineage_groups']}")
+    check(f"and the separation is declared rather than defaulted: both {_a} and {_b} carry a "
+          f"lineage record", lineage.lineage_for(_a) is not None
+          and lineage.lineage_for(_b) is not None)
+    check(f"and they name different bodies, so nothing is asserted independent by accident",
+          not (set(lineage.lineage_for(_a)["lineage_group_ids"])
+               & set(lineage.lineage_for(_b)["lineage_group_ids"])),
+          f"{lineage.lineage_for(_a)['lineage_group_ids']} vs "
+          f"{lineage.lineage_for(_b)['lineage_group_ids']}")
 
 # The four are advisory. A lineage declaration must not make any of them a voter.
 for m in FOUR:
@@ -265,28 +290,45 @@ for m in FOUR:
     check(f"{m} declares a relationship inside the vocabulary",
           rec["evidence_relationship"] in lineage.EVIDENCE_RELATIONSHIPS,
           str(rec.get("evidence_relationship")))
-    check(f"{m} does NOT claim independence, because it does not have it",
-          rec["evidence_relationship"] != lineage.INDEPENDENT,
-          str(rec.get("evidence_relationship")))
-    check(f"{m} declares a relationship that asserts dependence outright",
-          rec["evidence_relationship"] in lineage.DEPENDENT_RELATIONSHIPS,
-          str(rec.get("evidence_relationship")))
+    # RUN 29. Two of the four now genuinely DO have independence, because each is the only
+    # reader of its own governed body: A4.6 reads the change event register nothing else reads,
+    # and A5.2 reads the sensitivity model, whose only other reader is derived FROM it. Asserting
+    # dependence for those two would manufacture a corroboration that does not exist, which is
+    # the error in the other direction. So the assertion is made per module, by name, rather than
+    # over all four, and every relationship is still pinned exactly.
+    if m in ("B3.5", "A5.3"):
+        check(f"{m} does NOT claim independence, because it does not have it",
+              rec["evidence_relationship"] != lineage.INDEPENDENT,
+              str(rec.get("evidence_relationship")))
+        check(f"{m} declares a relationship that asserts dependence outright",
+              rec["evidence_relationship"] in lineage.DEPENDENT_RELATIONSHIPS,
+              str(rec.get("evidence_relationship")))
+    else:
+        check(f"{m} declares independence, and it is the only reader of its own governed body",
+              rec["evidence_relationship"] == lineage.INDEPENDENT,
+              str(rec.get("evidence_relationship")))
     check(f"{m} is project-condition evidence and not in the anti-feedback set",
           rec["evidence_relationship"] not in lineage.NON_PROJECT_EVIDENCE)
     check(f"{m} carries a derivation chain of more than the module id alone",
           len(rec["derivation_chain"]) >= 2, str(rec.get("derivation_chain")))
-    check(f"{m} rests on at least one named governed fact", len(rec["source_fact_ids"]) >= 1)
+    # RUN 29. A module reading a governed STRUCTURE rests on the structure, not on a list of
+    # scalar facts, so the requirement is that it rests on a named body OR a named fact. A
+    # record naming neither would still be caught.
+    check(f"{m} rests on at least one named governed fact or evidence body",
+          len(rec["source_fact_ids"]) >= 1 or len(rec["lineage_group_ids"]) >= 1,
+          f"facts={rec['source_fact_ids']} bodies={rec['lineage_group_ids']}")
 
 # The relationships, each asserted by name so a silent reclassification is a red.
-check("A4.6 is declared a same-source transform of the contract change record",
-      rec_of("A4.6").get("evidence_relationship") == lineage.SAME_SOURCE_TRANSFORM)
+check("A4.6 is declared independent, on the governed change event register it alone reads",
+      rec_of("A4.6").get("evidence_relationship") == lineage.INDEPENDENT)
 check("B3.5 is declared a same-source transform of the same contract change record",
       rec_of("B3.5").get("evidence_relationship") == lineage.SAME_SOURCE_TRANSFORM)
-check("A5.2 is declared a same-source transform of the earned-value and document facts",
-      rec_of("A5.2").get("evidence_relationship") == lineage.SAME_SOURCE_TRANSFORM)
-check("A5.3 is declared correlated, because it shares most of A5.2's body and adds progress "
-      "facts without being a transform of A5.2's output",
-      rec_of("A5.3").get("evidence_relationship") == lineage.CORRELATED)
+check("A5.2 is declared independent, on the governed sensitivity model it alone computes from",
+      rec_of("A5.2").get("evidence_relationship") == lineage.INDEPENDENT)
+check("A5.3 is declared DERIVED rather than correlated, because it no longer recomputes over "
+      "the same evidence: it takes A5.2's result as its only argument",
+      rec_of("A5.3").get("evidence_relationship") == lineage.DERIVED
+      and rec_of("A5.3").get("dependency_ids") == ("A5.2",))
 
 
 # ============================================================ 4. THE FACTS ARE TRUE OF THE CODE
@@ -348,8 +390,12 @@ for a, b in PAIRS:
     parts = _parts([r for r in (lineage.lineage_for(b), lineage.lineage_for(a)) if r])
     check(f"{b} and {a} partition into ONE body in the reverse order too", len(parts) == 1)
 
-check("all four together are TWO bodies and not one and not four",
-      len(_parts([r for r in (lineage.lineage_for(m) for m in FOUR) if r])) == 2,
+# RUN 29. The four are now THREE bodies, not two: the sensitivity pair is still one body, and
+# the two change-order modules are two, because they no longer read the same evidence. The count
+# is stated exactly so a silent merge or split turns this red either way.
+check("all four together are THREE bodies: the sensitivity pair is one, and the two "
+      "change-order modules are two because they no longer read the same evidence",
+      len(_parts([r for r in (lineage.lineage_for(m) for m in FOUR) if r])) == 3,
       str(_parts([r for r in (lineage.lineage_for(m) for m in FOUR) if r])))
 
 # The contract change record and the earned-value and document facts share nothing, so the two
@@ -378,25 +424,22 @@ for a, b in PAIRS:
         check(f"{a} with {b} on {band} reports the same governed status as {a} alone",
               two["status"] == one["status"], f"{two['status']} vs {one['status']}")
 
-# The two modules of a pair genuinely disagree on the same facts: on the fixture, Change Order
-# Frequency reads Yellow and Contract Modification Frequency reads Amber from the identical six
-# modifications and identical eight per cent growth. That disagreement is RECORDED and the more
-# adverse reading is taken; it is never scored as conflict between independent sources.
-_dis = fusion.fuse_signals([sig("A4.6", "Yellow"), sig("B3.5", "Amber")])
-check("a within-body disagreement between the two change-order readings is recorded",
-      any(b["disagreement"] for b in _dis["lineage_bodies"]))
-check("a within-body disagreement resolves to the more adverse of the two readings",
-      _dis["status"] == "Amber", str(_dis["status"]))
-check("a within-body disagreement is not scored as conflict between independent sources",
-      _dis["conflict_estimable"] is False)
-_dis_rev = fusion.fuse_signals([sig("B3.5", "Amber"), sig("A4.6", "Yellow")])
-check("and it resolves the same way in the reverse order", _dis_rev["status"] == "Amber",
-      str(_dis_rev["status"]))
-
+# RUN 29. The within-body disagreement this block recorded was between the two change-order
+# modules, which are no longer one body, so the demonstration moves to the pair that still IS
+# one: the sensitivity model and the ranking derived from it. The property is identical -- two
+# readings of one body disagreeing resolve to the more adverse and are never scored as conflict
+# between independent sources -- and it is asserted on the pair the property now applies to.
 _dis2 = fusion.fuse_signals([sig("A5.2", "Red"), sig("A5.3", "Amber")])
-check("the sensitivity pair also resolves to the more adverse reading", _dis2["status"] == "Red",
+check("a within-body disagreement between the sensitivity reading and the ranking derived from "
+      "it resolves to the more adverse of the two", _dis2["status"] == "Red",
       str(_dis2["status"]))
 check("and the sensitivity pair is one body", _dis2["lineage_groups"] == 1)
+check("and the disagreement is recorded rather than absorbed",
+      any(b["disagreement"] for b in _dis2["lineage_bodies"]))
+check("and it is not scored as conflict between independent sources",
+      _dis2["conflict_estimable"] is False)
+check("and it resolves the same way in the reverse order",
+      fusion.fuse_signals([sig("A5.3", "Amber"), sig("A5.2", "Red")])["status"] == "Red")
 
 
 # ============================================================ 7. THE POSITIVE CONTROL
@@ -428,9 +471,11 @@ check("and that is two bodies as well", _corr2["lineage_groups"] == 2)
 
 # And the suppression must not leak sideways: adding the duplicate to a genuinely corroborated
 # pair must leave the corroboration exactly where it was, neither strengthening nor weakening.
-_three = fusion.fuse_signals([sig("A4.6", "Amber"), sig("B3.5", "Amber"), _independent])
+# RUN 29: the duplicate reading is now A5.3 over A5.2, so the leak test uses that pair.
+_corr_sens = fusion.fuse_signals([sig("A5.2", "Amber"), _independent])
+_three = fusion.fuse_signals([sig("A5.2", "Amber"), sig("A5.3", "Amber"), _independent])
 near("adding the duplicate reading to a genuinely corroborated pair changes nothing at all",
-     _three["mass"]["Amber"], _corr["mass"]["Amber"])
+     _three["mass"]["Amber"], _corr_sens["mass"]["Amber"])
 check("and the count of bodies stays two", _three["lineage_groups"] == 2)
 
 
@@ -440,24 +485,35 @@ print("== the duplication is stated where a reader can find it ==")
 
 _a46 = rec_of("A4.6")
 _b35 = rec_of("B3.5")
-check("the two change-order modules declare the same evidence body",
-      set(_a46.get("lineage_group_ids", ())) & set(_b35.get("lineage_group_ids", ())) != set(),
+check("the two change-order modules declare DIFFERENT evidence bodies, and the separation is "
+      "stated where a reader can find it rather than being left to be inferred",
+      set(_a46.get("lineage_group_ids", ())) & set(_b35.get("lineage_group_ids", ())) == set(),
       f"{_a46.get('lineage_group_ids')} vs {_b35.get('lineage_group_ids')}")
-check("the two change-order modules declare the same governed facts",
-      set(_a46.get("source_fact_ids", ())) == set(_b35.get("source_fact_ids", ()))
-      and bool(_a46.get("source_fact_ids")),
+check("the two change-order modules declare DIFFERENT governed evidence: one names a change "
+      "event register as its body and the other names the three extracted contract facts",
+      set(_a46.get("source_fact_ids", ())) != set(_b35.get("source_fact_ids", ()))
+      and bool(_b35.get("source_fact_ids")),
       f"{_a46.get('source_fact_ids')} vs {_b35.get('source_fact_ids')}")
 
 _a52 = rec_of("A5.2")
 _a53 = rec_of("A5.3")
 check("the two sensitivity modules declare an overlapping evidence body",
       set(_a52.get("lineage_group_ids", ())) & set(_a53.get("lineage_group_ids", ())) != set())
-check("the two sensitivity modules share governed facts",
-      set(_a52.get("source_fact_ids", ())) & set(_a53.get("source_fact_ids", ())) != set())
-check("and Tornado Risk Ranking rests on facts Sensitivity Analysis does not, which is why it "
-      "is correlated rather than a transform",
-      set(_a53.get("source_fact_ids", ())) - set(_a52.get("source_fact_ids", ())) != set(),
+# RUN 29. The two used to share governed FACTS, because each recomputed over the same
+# earned-value and document scalars. They now share a governed BODY -- the sensitivity model --
+# and the ranking rests on no facts of its own at all, because it computes nothing of its own:
+# it takes the sensitivity result as its only argument. That is a stronger statement than the
+# shared-facts one it replaces, and it is what the supplied Run-29 contract required.
+check("the two sensitivity modules share a governed evidence body",
+      set(_a52.get("lineage_group_ids", ())) & set(_a53.get("lineage_group_ids", ())) != set())
+check("and Tornado Risk Ranking rests on NO facts Sensitivity Analysis does not, because it "
+      "creates no evidence of its own",
+      set(_a53.get("source_fact_ids", ())) - set(_a52.get("source_fact_ids", ())) == set(),
       f"{_a53.get('source_fact_ids')} vs {_a52.get('source_fact_ids')}")
+check("and it names the signal it is derived from, so the derivation is readable rather than "
+      "inferred", _a53.get("dependency_ids") == ("A5.2",)
+      and _a53.get("parent_signal_ids") == ("A5.2",),
+      f"{_a53.get('dependency_ids')}")
 
 # The declarations must survive a round trip through the stored compute result, which is plain
 # data. A record that only exists in memory discloses nothing to anyone reading the stored run.

@@ -48,53 +48,71 @@ def check(name: str, cond: bool, detail: str = "") -> None:
 
 # =============================================================== A5.2 SENSITIVITY ANALYSIS
 print("=== 1. A5.2: ONLY THE PERTURBED DRIVER IS A SENSITIVITY ===")
+# RUN 29 REPLACED THIS MODULE'S COMPUTATION, AND THE PROPERTY CYCLE 9 ESTABLISHED SURVIVES IN A
+# STRONGER FORM. Cycle 9's finding was that only one of three ranked quantities was a
+# sensitivity: the cost-index driver perturbed the index and recomputed the estimate, while the
+# schedule term was an index deviation and the document term was a raw risk share, ranked against
+# it on an uncited scaling. Cycle 9's fix was to rank only the perturbed driver.
+#
+# The owner's supplied Run-29 contract goes further: a sensitivity needs an explicit response
+# function, an explicit base point, an explicit input and an explicit perturbation, and the
+# response must be RECOMPUTED at the moved input. A hard-coded elasticity of `bac / cpi` has none
+# of the four declared, so the module now reads a governed sensitivity model and abstains without
+# one. Cycle 9's property -- nothing is ranked that is not perturbed and recomputed -- is
+# asserted below against every input the model declares, rather than against the one the old
+# code happened to perturb.
+from run29_fixtures import sensitivity_model as _r29_sm  # noqa: E402
+
 S = {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 500_000.0, "pv": 450_000.0,
      "cpi": 0.8, "spi": 0.89, "docRiskScore": 0.55}
-_s = run_sensitivity_analysis(dict(S), NOOP, None)
-check("exactly one driver is ranked, and it is the cost index",
-      [d["name"] for d in _s["drivers"]] == ["CPI"], str(_s["drivers"]))
-check("the two quantities that are never perturbed are reported as LEVELS, under their own names",
-      [lv["name"] for lv in _s["levels_not_perturbed"]] == ["SPI", "DocRisk"])
-check("and neither of them carries the word sensitivity",
-      all("sensitivity" not in lv for lv in _s["levels_not_perturbed"]))
-check("the counts are disclosed, so a reader is not left to infer them",
-      _s["inputs_perturbed"] == 1 and _s["inputs_reported_as_levels"] == 2)
-# THE DEFINING PROPERTY: the ranked driver RESPONDS to its own input, and the band follows it.
-_moved = run_sensitivity_analysis(dict(S, cpi=0.6), NOOP, None)
-check("the ranked driver responds when its own input moves, which is what a sensitivity is",
-      _moved["drivers"][0]["sensitivity"] != _s["drivers"][0]["sensitivity"],
-      f"{_moved['drivers'][0]['sensitivity']} vs {_s['drivers'][0]['sensitivity']}")
-# AND THE DEFECT ITSELF: the raw document risk score can no longer set the band.
-_doc_hi = run_sensitivity_analysis(dict(S, docRiskScore=0.95), NOOP, None)
-_doc_lo = run_sensitivity_analysis(dict(S, docRiskScore=0.05), NOOP, None)
-check("the raw document risk score no longer moves the band, because it is not a sensitivity",
-      _doc_hi["status_color"] == _doc_lo["status_color"] == _s["status_color"],
-      f"{_doc_hi['status_color']} {_doc_lo['status_color']}")
-check("nor the top driver", _doc_hi["top_driver"] == _doc_lo["top_driver"] == "CPI")
-check("but the score is still reported at its own value, so no information is lost",
-      _doc_hi["levels_not_perturbed"][1]["level"] == 0.95)
-print("--- A5.2 negative, boundary and missingness, all unchanged from Run 11 ---")
-check("the document risk score is still REQUIRED and its absence still abstains",
-      run_sensitivity_analysis({k: v for k, v in S.items() if k != "docRiskScore"},
-                               NOOP, None).get("insufficient_data") is True)
-check("a document risk score outside nought to one is still refused",
-      run_sensitivity_analysis(dict(S, docRiskScore=30), NOOP, None)
-      .get("insufficient_data") is True)
-check("the cost-index values at which the perturbed division is undefined are still refused",
-      all(run_sensitivity_analysis(dict(S, cpi=c), NOOP, None).get("insufficient_data") is True
-          for c in (0, 0.05, -0.05)))
-check("a budget of zero still leaves no base estimate to normalise against",
-      run_sensitivity_analysis(dict(S, bac=0), NOOP, None).get("insufficient_data") is True)
-# The band boundaries are untouched, and the sweep that shows it is over the input the band now
-# follows. The reachable set is what it is: the cost-index sensitivity is a spread of the
-# forecast over a 0.10 window, and it grows without limit as the index falls, so the calm and the
-# adverse ends are both reachable and the sweep is chosen to cross them rather than to produce a
-# tidy set of four.
-_sweep = {c: run_sensitivity_analysis(dict(S, cpi=c), NOOP, None)["status_color"]
-          for c in (2.0, 0.95, 0.60, 0.40, 0.20)}
-check("the band boundaries are untouched: the band still follows the one sensitivity and "
-      "crosses every boundary as that sensitivity grows",
-      set(_sweep.values()) == {"Green", "Yellow", "Amber", "Red"}, str(_sweep))
+_s = run_sensitivity_analysis({"sensitivityModel": _r29_sm()}, NOOP, None)
+check("every input reported is one the response was RECOMPUTED at, so nothing is ranked that "
+      "was not perturbed",
+      all(i["moved_response"] != i["base_response"] for i in _s["inputs"]),
+      str([(i["input_id"], i["base_response"], i["moved_response"]) for i in _s["inputs"]]))
+check("and each reported sensitivity is the normalised ratio of the two movements, computed "
+      "from the figures on the result itself rather than asserted",
+      all(abs(i["normalised_sensitivity"]
+              - ((i["delta_response"] / i["base_response"])
+                 / ((i["moved_value"] - i["base_value"]) / i["base_value"]))) < 1e-12
+          for i in _s["inputs"]))
+check("the method is declared LOCAL and one at a time, so it is not presented as global",
+      _s["method"] == "LOCAL_ONE_AT_A_TIME" and _s["method_scope"] == "LOCAL")
+# THE DEFINING PROPERTY: the reported sensitivity RESPONDS when the perturbation moves.
+_moved = run_sensitivity_analysis({"sensitivityModel": dict(
+    _r29_sm(), inputs=[dict(_r29_sm()["inputs"][0], perturbation_fraction=0.20)])}, NOOP, None)
+check("the reported sensitivity responds when the perturbation moves, which is what a "
+      "sensitivity is",
+      _moved["inputs"][0]["moved_response"] != _s["inputs"][0]["moved_response"],
+      f"{_moved['inputs'][0]['moved_response']} vs {_s['inputs'][0]['moved_response']}")
+# AND THE DEFECT ITSELF, in its strongest form: the raw document risk score can no longer reach
+# this module at all, so it can move neither the band nor the ranking.
+check("the raw document risk score cannot move the reading, because it is not an input this "
+      "module has", all(run_sensitivity_analysis(dict(S, docRiskScore=d), NOOP, None)
+                        .get("insufficient_data") is True for d in (0.05, 0.55, 0.95)))
+check("nor can the schedule index",
+      all(run_sensitivity_analysis(dict(S, spi=v), NOOP, None).get("insufficient_data") is True
+          for v in (0.5, 1.5)))
+print("--- A5.2 negative, boundary and missingness, under the governed model ---")
+check("the earned-value scalars produce no reading at all",
+      run_sensitivity_analysis(dict(S), NOOP, None).get("insufficient_data") is True)
+check("an input the model asks to move by nothing at all is refused",
+      run_sensitivity_analysis({"sensitivityModel": dict(
+          _r29_sm(), inputs=[dict(_r29_sm()["inputs"][0], perturbation_fraction=0.0)])},
+          NOOP, None).get("insufficient_data") is True)
+check("an input that is not part of the base state cannot be moved and is refused",
+      run_sensitivity_analysis({"sensitivityModel": dict(
+          _r29_sm(), inputs=[dict(_r29_sm()["inputs"][0], input_id="ghost")])},
+          NOOP, None).get("insufficient_data") is True)
+check("a response model with no terms computes nothing and is refused",
+      run_sensitivity_analysis({"sensitivityModel": dict(
+          _r29_sm(), response_model={"model_id": "M", "version": "1", "terms": []})},
+          NOOP, None).get("insufficient_data") is True)
+# THE BAND. There is none: the quantity reported is not the quantity the old ladder was drawn
+# over, so no colour is asserted and Run 33 owns the calibration.
+check("no colour is asserted over the sensitivity, because no boundary for this quantity has "
+      "been established from evidence",
+      _s["status_color"] is None and _s["calibration_pending"] is True)
 
 # =============================================================== B1.1 CONSERVATIVE DOMINANCE
 print("\n=== 2. B1.1: A LONE RED DOMINATES ===")
@@ -226,14 +244,18 @@ def mutation(name: str, caught: bool, by: str) -> None:
         print(f"  FAIL  mutation {name} SURVIVED")
 
 
-# M1. A5.2's document risk score restored to the ranking as a sensitivity.
+# M1. A5.2's document risk score restored to the ranking as a sensitivity. RUN 29: the score
+#     cannot reach the module at all now, so the mutation is caught at a stronger point.
 mutation("M1 the raw document risk score ranked as a sensitivity again",
-         _doc_hi["top_driver"] == "CPI" and _doc_hi["status_color"] == _s["status_color"],
-         "the raw document risk score no longer moves the band")
-# M2. A5.2's level readings relabelled as sensitivities.
+         run_sensitivity_analysis(dict(S, docRiskScore=0.95), NOOP,
+                                  None).get("insufficient_data") is True,
+         "the raw document risk score is not an input this module has")
+# M2. A5.2's level readings relabelled as sensitivities. RUN 29: there are no levels left to
+#     relabel, because every quantity reported is a recomputed response.
 mutation("M2 the level readings relabelled sensitivities",
-         all("sensitivity" not in lv for lv in _s["levels_not_perturbed"]),
-         "neither level carries the word sensitivity")
+         "levels_not_perturbed" not in _s
+         and all(i["moved_response"] != i["base_response"] for i in _s["inputs"]),
+         "every reported quantity is a response recomputed at a moved input")
 # M3. B1.1's dominance replaced by the counting rule again.
 mutation("M3 the counting rule restored, so a lone Red does not dominate",
          _lone_red["status_color"] == "Red" and _lone_red["decision_layer_state"] == "Amber",
@@ -289,9 +311,13 @@ check("the two voting modules are still exactly the two, so neither unresolved r
       == ["A1.7", "A1.8"])
 
 print("\n=== 7. GUARD NON-VACUITY ===")
-check("the A5.2 band guard reads a band that CAN move: it moves with the cost index",
-      len({run_sensitivity_analysis(dict(S, cpi=c), NOOP, None)["status_color"]
-           for c in (0.95, 0.40)}) == 2)
+# RUN 29. There is no band to move, so the non-vacuity guard reads the quantity the band used
+# to be drawn over: the reported sensitivity must MOVE when the model's own perturbation moves,
+# which is what proves the check above is not passing on a constant.
+check("the A5.2 guard reads a quantity that CAN move: it moves with the declared perturbation",
+      len({run_sensitivity_analysis({"sensitivityModel": dict(
+          _r29_sm(), inputs=[dict(_r29_sm()["inputs"][0], perturbation_fraction=f)])},
+          NOOP, None)["inputs"][0]["moved_response"] for f in (0.10, 0.20)}) == 2)
 check("the B1.1 dominance guard reads a state that CAN differ from the decision layer's",
       _lone_red["status_color"] != _lone_red["decision_layer_state"])
 check("the B2.10 identity guard is not vacuously satisfied by a zero hesitancy",

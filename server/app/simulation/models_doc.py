@@ -28,23 +28,34 @@ Porting hazards specific to this file:
 
 from __future__ import annotations
 
-import math
 from typing import Any, Callable
 
-from .canonical import (
-    StructureAbsent,
-    agent_supply_chain as canonical_agent_supply_chain,
-    queue_bottleneck as canonical_queue,
-    require_reference_object,
-    require_structure,
-    scenario_decision,
+from .canonical import StructureAbsent
+from .canonical_v4 import (
+    V4_STRUCTURE_KEYS,
+    agent_supply_chain,
+    change_frequency,
+    des_process_model,
+    dispute_escalation,
+    ncr_rate,
+    procurement_slack,
+    queue_model,
+    require_v4_structure,
+    rework_feedback_loop,
+    rfi_velocity,
+    scenario_modeling,
+    sensitivity_analysis,
+    specification_conflict_density,
+    subcontractor_performance,
+    submittal_rejection,
+    tornado_ranking,
+    weather_day_impact,
 )
 from .models import (
-    ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT,
-    ABSTAIN_MISSING_INPUT, ABSTAIN_NO_EXPOSURE, ABSTAIN_STRUCTURE_ABSENT, check_inputs, eligible,
-    insufficient, refuse,
+    ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT, ABSTAIN_STRUCTURE_ABSENT,
+    calibration_pending, check_inputs, insufficient, refuse,
 )
-from .models_ext import _derived, _js_str, _money
+from .models_ext import _derived, _js_str
 from .rng import js_round, num, round1, round2
 
 _RANK = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
@@ -57,10 +68,95 @@ def _and_list(items: list[str]) -> str:
     return ", ".join(items[:-1]) + " and " + items[-1]
 
 
+# =================================================================================================
+# RUN 29: CATEGORIES 4 AND 5 AGAINST THE SUPPLIED CANONICAL CONTRACTS.
+#
+# Every runner from A4.2 to A5.8 below reads its defining structure from `canonical_v4` and
+# computes the method the module is named for. Where the structure is absent the runner ABSTAINS.
+# Nothing below reconstructs a dispute from a request count, a conflict density from a document
+# risk score, a queue from an activity count or an event list from a progress ratio; those were
+# the Run-27 findings and they are removed rather than qualified.
+#
+# THE TWO PLACES WHERE A NON-STRUCTURE PATH SURVIVES, and why they are not proxies. Run 27
+# classified A4.2 RFI Velocity and A4.3 Submittal Rejection Rate as METHOD_PASS: each already
+# computed exactly the formula the supplied contract states -- requests over exposure time, and
+# rejected over the assessed population -- from totals extracted from a real register. Those
+# extracted totals are the SAME canonical quantity, not a substitute for it, so they remain a
+# supply path and the governed event structure is preferred over them where a project has one.
+# For every other module in this run the old computation was a different quantity under the same
+# name, and it is gone.
+#
+# THE BAND. Sixteen of the eighteen now report a quantity the old ladder was not drawn over, so
+# they assert NO colour: the figure is reported with calibration pending and Run 33 owns the
+# calibration. A4.2 and A4.3 report the identical quantity they always did and keep the ladders
+# they always carried, which are recorded as uncalibrated in registry.py and unchanged here.
+# =================================================================================================
+
+
 # ------------------------------------------------------------ A4.2 RFI Velocity
 
 
 def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    Requests for information per unit of exposure time.
+
+    SUPPLIED CONTRACT 4.2: RFI Velocity = RFI event count / exposure time, with twelve requests
+    over thirty days reading 0.4 per day or twelve per standardised thirty day period, and an
+    overdue share of overdue over relevant open where that is separately exposed. Revisions of the
+    same cumulative register are not new events.
+
+    WHERE THE GOVERNED EVENT REGISTER IS PRESENT it is used, because only the events themselves
+    can be de-duplicated: a cumulative register uploaded every month repeats every earlier row,
+    and a total extracted from the latest upload cannot tell a re-reported request from a new one.
+    Where it is absent the extracted totals are used, which are the same quantity from a thinner
+    record, and where neither is present this abstains.
+    """
+    structure = si.get(V4_STRUCTURE_KEYS["A4.2"])
+    if structure is not None:
+        try:
+            reading = rfi_velocity(require_v4_structure(si, "A4.2"))
+        except StructureAbsent as absent:
+            return insufficient("RFI_Velocity", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+        per_week = reading["rate_per_day"] * 7.0
+        vel_status = ("Green" if per_week <= 2 else "Yellow" if per_week <= 4
+                      else "Amber" if per_week <= 8 else "Red")
+        overdue_status = None
+        ratio = reading["overdue_ratio"]
+        if ratio is not None:
+            overdue_status = ("Green" if ratio < 0.10 else "Yellow" if ratio < 0.20
+                              else "Amber" if ratio < 0.35 else "Red")
+        status = (overdue_status
+                  if overdue_status and _RANK[overdue_status] > _RANK[vel_status] else vel_status)
+        evidence = (
+            f"{_js_str(reading['events_counted'])} requests for information over "
+            f"{_js_str(reading['exposure_days'])} days "
+            f"({_js_str(round2(reading['rate_per_day']))} a day, "
+            f"{_js_str(round1(reading['rate_per_30_days']))} in a standard thirty day period)")
+        if reading["duplicate_rows_collapsed"]:
+            evidence += (f", from {_js_str(reading['rows_supplied'])} register rows of which "
+                         f"{_js_str(reading['duplicate_rows_collapsed'])} repeat a request "
+                         f"already counted")
+        if ratio is not None:
+            evidence += (f", {_js_str(reading['overdue'])} of "
+                         f"{_js_str(reading['open_relevant'])} still open are overdue")
+        return {
+            "method_class": "RFI_Velocity",
+            "status_color": status,
+            "rfi_per_30d": round1(reading["rate_per_30_days"]),
+            "rfi_per_week": round1(per_week),
+            "rate_per_day": round2(reading["rate_per_day"]),
+            "total_rfis": reading["events_counted"],
+            "period_days": reading["exposure_days"],
+            "rows_supplied": reading["rows_supplied"],
+            "duplicate_rows_collapsed": reading["duplicate_rows_collapsed"],
+            "open_rfis": reading["open_relevant"],
+            "overdue_rfis": reading["overdue"],
+            "overdue_ratio": (round(ratio, 3) if ratio is not None else None),
+            "canonical_structure": "rfi_event_log",
+            "register_id": reading["register_id"],
+            "source": reading["source"],
+            "evidence_metric": evidence,
+        }
     count = si.get("rfiCount") if si.get("rfiCount") is not None else si.get("rfiNumber")
     days = si.get("rfiPeriodDays")
     if count is None:
@@ -68,10 +164,8 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     # THE ABSTENTION GUARDS. Run 4 (validate the seven). The elapsed days are the denominator of
     # a velocity, and the module's own declared input contract names them, yet an absent figure
     # was replaced by thirty and the finding then stated "over 30 days" as though the document
-    # had said so. The note that would have marked it as assumed rides on a derived-source flag
-    # that nothing on the server ever sets, so on the real path the substitution was silent. A
-    # count of requests or a span of days below zero, and an overdue count larger than the total,
-    # are outside the domain of the two ratios this module forms.
+    # had said so. A count of requests or a span of days below zero, and an overdue count larger
+    # than the total, are outside the domain of the two ratios this module forms.
     if days is None:
         return insufficient(
             "RFI_Velocity",
@@ -96,11 +190,8 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     per_week = js_round((count / days) * 70) / 10
     # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked for a source specifying two,
     # four and eight requests per week, and for one specifying ten, twenty and thirty-five per
-    # cent overdue, and found neither. Industry studies of requests for information do publish
-    # numbers -- counts per project and average response times -- but a count per project or a
-    # response time is not a per-week rate threshold, and a normalisation this module does not
-    # perform (by contract value, by trade, by phase) sits between them. The boundaries are left
-    # as they were, uncited, and this module DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
+    # cent overdue, and found neither. The boundaries are left as they were, uncited, and this
+    # module DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
     vel_status = ("Green" if per_week <= 2 else "Yellow" if per_week <= 4
                   else "Amber" if per_week <= 8 else "Red")
     overdue_ratio = None
@@ -109,7 +200,6 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         overdue_ratio = si["rfiOverdue"] / count
         overdue_status = ("Green" if overdue_ratio < 0.10 else "Yellow" if overdue_ratio < 0.20
                           else "Amber" if overdue_ratio < 0.35 else "Red")
-    # Worst of the velocity band and the overdue band.
     status = (overdue_status if overdue_status and _RANK[overdue_status] > _RANK[vel_status]
               else vel_status)
     avg_response = (si.get("rfiAvgResponseDays") if si.get("rfiAvgResponseDays") is not None
@@ -139,6 +229,7 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         "overdue_ratio": (js_round(overdue_ratio * 1000) / 1000
                           if overdue_ratio is not None else None),
         "response_time_days": avg_response if avg_response is not None else None,
+        "canonical_structure": "extracted_register_totals",
         "evidence_metric": evidence,
     }
 
@@ -147,6 +238,48 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
 
 
 def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+    """
+    Rejected submittals as a share of the assessed population.
+
+    SUPPLIED CONTRACT 4.3: RejectionRate = Rejected / AssessedPopulation, three rejected of twenty
+    assessed reading 0.15, with 0 <= Rejected <= AssessedPopulation, a governed disposition
+    taxonomy that does not silently merge approved-as-noted with revise-and-resubmit with
+    rejected, and a denominator that does not mix this period's decisions with a cumulative
+    backlog.
+
+    WHERE THE GOVERNED DECISION REGISTER IS PRESENT it is used, because only the decisions
+    themselves carry a disposition to be governed and a period to be filtered on. Where it is
+    absent the extracted totals are used, which are the same share from a thinner record.
+    """
+    structure = si.get(V4_STRUCTURE_KEYS["A4.3"])
+    if structure is not None:
+        try:
+            reading = submittal_rejection(require_v4_structure(si, "A4.3"))
+        except StructureAbsent as absent:
+            return insufficient("Submittal_Rejection", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+        rate = reading["rejection_rate"]
+        color = ("Green" if rate <= 0.05 else "Yellow" if rate <= 0.15
+                 else "Amber" if rate <= 0.25 else "Red")
+        return {
+            "method_class": "Submittal_Rejection",
+            "status_color": color,
+            "rejection_rate": round(rate, 3),
+            "rejected": reading["rejected"],
+            "total": reading["assessed"],
+            "unique_submittals": reading["unique_submittals"],
+            "resubmission_cycles": reading["resubmission_cycles"],
+            "disposition_counts": reading["disposition_counts"],
+            "taxonomy_version": reading["taxonomy_version"],
+            "canonical_structure": "submittal_decision_register",
+            "source": reading["source"],
+            "evidence_metric": (
+                f"{_js_str(reading['rejected'])} of {_js_str(reading['assessed'])} assessed "
+                f"submittal decisions were rejections "
+                f"({int(js_round(rate * 100))} per cent), from "
+                f"{_js_str(reading['unique_submittals'])} distinct submittals and "
+                f"{_js_str(reading['resubmission_cycles'])} resubmission cycles"
+            ),
+        }
     use_rfa = (si.get("rfaTotal") is not None and si.get("rfaRejected") is not None
                and si["rfaTotal"] > 0)
     total = si.get("rfaTotal") if use_rfa else si.get("submittalsTotal")
@@ -160,8 +293,7 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
             "denominator without one",
         )
     # THE ABSTENTION GUARD. Run 4 (validate the seven). A rejected count outside the total is
-    # outside the domain of a share of one in the other, and produced a rate above one, which
-    # every band above the top boundary silently absorbs into Red.
+    # outside the domain of a share of one in the other, and produced a rate above one.
     if rejected < 0 or rejected > total:
         return insufficient(
             "Submittal_Rejection",
@@ -170,11 +302,8 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
         )
     rate = js_round((rejected / total) * 1000) / 1000
     # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked for a source specifying five,
-    # fifteen and twenty-five per cent for a submittal rejection share and found none. Rejection
-    # depends on what the specification requires a submittal to contain and on the reviewer's
-    # own practice, and no recommended practice or peer-reviewed study located here states a
-    # numeric threshold for it. The boundaries are left as they were, uncited, and this module
-    # DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
+    # fifteen and twenty-five per cent for a submittal rejection share and found none. The
+    # boundaries are left as they were, uncited, and this module DOES NOT VOTE.
     color = ("Green" if rate <= 0.05 else "Yellow" if rate <= 0.15
              else "Amber" if rate <= 0.25 else "Red")
     is_derived = not use_rfa and _derived(si, "submittalsTotal")
@@ -197,6 +326,7 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
         "rejected": rejected,
         "total": total,
         "source": "rfa_log" if use_rfa else "submittals",
+        "canonical_structure": "extracted_register_totals",
         "evidence_metric": evidence,
     }
 
@@ -206,84 +336,46 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
 
 def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    THE FIFTEEN DEFECTS, defect 11, and it is one of the permanent abstentions.
+    Nonconformances per unit of governed exposure.
 
-    The ratio was open nonconformances over nonconformances ISSUED THIS PERIOD, which are not
-    one set. The open figure is a backlog, a stock carried from every period since the project
-    began; the issued figure is this period's flow. Dividing one by the other is not a rate of
-    anything, and it is unbounded above: a project that closed its intake but still carries
-    twelve open nonconformances and issued two this period scored six. `max(issued, 1)` then
-    invented a denominator of one whenever the intake was empty, so a backlog of twelve against
-    no intake at all scored twelve, and the ladder below read every one of those as Red.
+    SUPPLIED CONTRACT 4.4: NCRRate = NCR events / governed exposure, where the exposure is
+    inspections, inspected units, labour hours, work value or another explicit denominator, and
+    four nonconformances over one hundred inspections reads 0.04. Open count, age of open,
+    severity and closure rate are tracked SEPARATELY. With no exposure, no normalised rate is
+    fabricated.
 
-    The zero-intake arm was worse than unbounded, it was backwards: it returned GREEN, with the
-    finding "No NCRs issued this period", on a project that could be carrying an unresolved
-    backlog of any size. Issuing nothing new is not evidence of quality.
-
-    A backlog needs a cohort to be a rate of: the audited population of nonconformances the
-    backlog is drawn from. That is what the Quality Audit Report carries as its findings total,
-    and it is required now. No cohort, no rate: this abstains, and states that it is waiting for
-    the audited cohort rather than reporting a number built from two different sets.
-
-    The Quality Audit Report type exists for one project in the corpus today, so this
-    computation abstains on the rest until the corpus lands (remediation_decisions_answered.md
-    2.3). That is the expected outcome of this fix, not a shortfall in it.
+    WHAT v12 DID. It reported open nonconformances as a share of an audited findings cohort. That
+    is a backlog share, not a rate: the numerator is a stock carried across periods and the
+    denominator is the size of an audit, and the contract's own words are that a ratio whose
+    numerator and denominator populations differ is not a universal NCR rate. It is replaced, not
+    renamed, and the exposure is now required rather than borrowed from an audit total.
     """
-    # RUN 10B. The canonical structure this measure needs is the audited nonconformance cohort,
-    # and the fifteen-defects run already required it, so nothing about what this module computes
-    # changes here. What is added is the structured form of the same cohort: where an audited
-    # cohort arrives as a structure of audits and nonconformance events rather than as three
-    # extracted figures, the counts are taken from it at the same meaning. This is not a
-    # fallback to a different quantity; it is the same quantity from a fuller record, and when
-    # neither form is present the module abstains exactly as it did before.
-    cohort_structure = si.get("auditedNonconformanceCohort")
-    if isinstance(cohort_structure, dict):
-        si = dict(si)
-        audits = cohort_structure.get("audits")
-        events = cohort_structure.get("open_nonconformances")
-        if not isinstance(audits, list) or not audits:
-            return insufficient(
-                "NCR_Rate",
-                "Awaiting an audited nonconformance cohort: the record provided carries no "
-                "completed audit for this period, so there is no cohort for a backlog to be a "
-                "share of.",
-                ABSTAIN_STRUCTURE_ABSENT)
-        si["totalFindings"] = sum(num(a.get("total_findings"), 0) or 0 for a in audits)
-        si["ncrOpen"] = len(events) if isinstance(events, list) else num(events, 0)
-        si.setdefault("ncrIssued", 0)
-        si.setdefault("ncrClosed", 0)
-    if not check_inputs(si, ("ncrIssued", "ncrClosed", "ncrOpen")):
-        return insufficient("NCR_Rate")
-    issued = num(si.get("ncrIssued"), 0)
-    open_ = num(si.get("ncrOpen"), 0)
-    cohort = num(si.get("totalFindings"), None)
-    if cohort is None or cohort <= 0:
-        return insufficient(
-            "NCR_Rate",
-            "Awaiting an audited nonconformance cohort: the open backlog is carried across "
-            "periods and cannot be measured against one period's intake")
-    if open_ < 0:
-        return insufficient(
-            "NCR_Rate", "A negative count of open nonconformances is not a measurable backlog")
-    if open_ > cohort:
-        return insufficient(
-            "NCR_Rate",
-            f"More nonconformances are recorded open ({_js_str(open_)}) than the audited "
-            f"cohort contains ({_js_str(cohort)}), so no proportion is measurable from this pair")
-    open_ratio = open_ / cohort
-    color = ("Green" if open_ratio < 0.15 else "Yellow" if open_ratio < 0.30
-             else "Amber" if open_ratio < 0.50 else "Red")
-    return {
-        "method_class": "NCR_Rate",
-        "status_color": color,
-        "open_ratio": round2(open_ratio),
-        "audited_cohort": cohort,
-        "evidence_metric": (
-            f"{_js_str(open_)} open of an audited cohort of {_js_str(cohort)} "
-            f"nonconformances, {_js_str(issued)} issued this period "
-            f"(open ratio {_js_str(round2(open_ratio))})"
-        ),
-    }
+    try:
+        reading = ncr_rate(require_v4_structure(si, "A4.4"))
+    except StructureAbsent as absent:
+        return insufficient("NCR_Rate", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "NCR_Rate",
+        f"{_js_str(reading['ncr_count'])} nonconformances against "
+        f"{_js_str(reading['exposure_quantity'])} {reading['exposure_unit']}, a rate of "
+        f"{_js_str(round(reading['ncr_rate'], 4))} for each one. "
+        f"{_js_str(reading['open_count'])} are still open.",
+        ncr_rate=round(reading["ncr_rate"], 6),
+        ncr_count=reading["ncr_count"],
+        exposure_unit=reading["exposure_unit"],
+        exposure_quantity=reading["exposure_quantity"],
+        open_count=reading["open_count"],
+        closed_count=reading["closed_count"],
+        reopened_count=reading["reopened_count"],
+        closure_rate=(round(reading["closure_rate"], 4)
+                      if reading["closure_rate"] is not None else None),
+        mean_open_age_days=(round(reading["mean_open_age_days"], 2)
+                            if reading["mean_open_age_days"] is not None else None),
+        max_open_age_days=reading["max_open_age_days"],
+        severity_counts=reading["severity_counts"],
+        canonical_structure="ncr_exposure_record",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A4.5 Weather Day Impact
@@ -291,97 +383,88 @@ def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str
 
 def run_weather_impact(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    THE FIFTEEN DEFECTS, defect 12, and it is one of the permanent abstentions.
+    The modelled schedule consequence of verified weather events.
 
-    This computation reports lost days as a proportion of the float available to absorb them, and
-    it fabricated that proportion in two ways.
+    SUPPLIED CONTRACT 4.5: weather occurrence is not schedule impact. Full impact requires the
+    event, the affected activity, the planned work, the lost time, the governing allowance or
+    calendar, the path and its float, causal evidence and a modelled consequence. A verified event
+    causing two lost days on a zero-float critical activity with no mitigation has a direct
+    modelled path effect, before recovery logic, of two days. With no schedule linkage the answer
+    is NOT ESTIMABLE for impact, and the method is not renamed to preserve the old proxy.
 
-    When no float figure existed at all, the ratio was set to 1.0 whenever any day had been lost.
-    That is not an unknown reported as an unknown, it is the WORST case asserted as a
-    measurement: one lost day on a project with a year of float scored identically to one that
-    had none, and the ladder read it Red either way. When float was recorded as zero or negative,
-    the same line fired, so a project already behind was assigned a ratio rather than refused.
-
-    The days themselves were also allowed to be a derivation rather than a count. The field
-    report's own weather-day figure is a verified count; anything the pipeline inferred is not,
-    and the module carried the inference into the same arithmetic and appended a parenthetical
-    to the sentence. A qualifier in a display string is not a substitute for refusing.
-
-    Both are removed. Verified lost days and a positive float figure are required, and the ratio
-    is computed only from the two of them. Note the honest consequence: the float here is
-    network-derived, and the corpus does not carry an activity network, so this computation is
-    expected to abstain until it does. Abstaining is the correct outcome.
+    WHAT v12 DID. Lost days divided by a reported float figure, banded. That is a ratio of a count
+    to a number, with no activity, no path, no allowance and no causal evidence anywhere in it.
     """
-    if not check_inputs(si, ("weatherDaysLost",)):
-        return insufficient("Weather_Impact")
-    if _derived(si, "weatherDaysLost"):
-        return insufficient(
-            "Weather_Impact",
-            "Awaiting verified lost days: the weather days available were inferred rather "
-            "than counted in a field report")
-    lost = si["weatherDaysLost"]
-    if lost < 0:
-        return insufficient(
-            "Weather_Impact", "A negative count of lost days is not a measurable weather impact")
-    if si.get("floatRemaining") is not None:
-        flt = si["floatRemaining"]
-    elif si.get("totalFloat") is not None and si.get("consumedFloat") is not None:
-        flt = si["totalFloat"] - si["consumedFloat"]
-    else:
-        flt = None
-    if flt is None:
-        return insufficient(
-            "Weather_Impact",
-            "Awaiting the schedule float available to absorb the lost days: without it there "
-            "is nothing to measure the impact against")
-    if not flt > 0:
-        return insufficient(
-            "Weather_Impact",
-            "No positive float remains to absorb lost days, so no proportion of it is "
-            "measurable")
-    ratio = lost / flt
-    color = ("Green" if lost == 0 else "Yellow" if ratio <= 0.20
-             else "Amber" if ratio <= 0.50 else "Red")
-    evidence = (f"{_js_str(lost)} weather days lost, "
-                f"{int(js_round(ratio * 100))}% of available float consumed")
-    return {
-        "method_class": "Weather_Impact",
-        "status_color": color,
-        "weather_days_lost": lost,
-        "float_remaining": flt,
-        "weather_ratio": int(js_round(ratio * 100)),
-        "evidence_metric": evidence,
-    }
+    try:
+        reading = weather_day_impact(require_v4_structure(si, "A4.5"))
+    except StructureAbsent as absent:
+        return insufficient("Weather_Impact", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    paths = reading["path_effect_days"]
+    worst = max(paths, key=lambda p: (paths[p], p))
+    return calibration_pending(
+        "Weather_Impact",
+        f"{_js_str(reading['event_count'])} verified weather events lost "
+        f"{_js_str(reading['total_lost_days'])} days. After the weather allowance and the float "
+        f"on each path, the direct effect on the schedule is "
+        f"{_js_str(reading['direct_path_effect_days'])} days, on the path called {worst}.",
+        direct_path_effect_days=reading["direct_path_effect_days"],
+        path_effect_days=paths,
+        worst_path_id=worst,
+        event_count=reading["event_count"],
+        total_lost_days=reading["total_lost_days"],
+        allowance_days_remaining_after=reading["allowance_days_remaining_after"],
+        mitigation_days_reported=reading["mitigation_days_reported"],
+        events=reading["events"],
+        weather_calendar_id=reading["weather_calendar_id"],
+        canonical_structure="weather_impact_events",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A4.6 Change Order Frequency
 
 
 def run_co_frequency(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    if not check_inputs(si, ("changeOrderCount", "baselineContractSum", "revisedContractSum")):
-        return insufficient("CO_Frequency")
-    growth = (((si["revisedContractSum"] - si["baselineContractSum"])
-               / si["baselineContractSum"]) * 100 if si["baselineContractSum"] > 0 else 0)
-    co_rate = si["changeOrderCount"]
-    if growth <= 5 and co_rate <= 3:
-        color = "Green"
-    elif growth <= 10 and co_rate <= 6:
-        color = "Yellow"
-    elif growth <= 20 and co_rate <= 10:
-        color = "Amber"
-    else:
-        color = "Red"
-    is_derived = _derived(si, "changeOrderCount", "baselineContractSum")
-    return {
-        "method_class": "CO_Frequency",
-        "status_color": color,
-        "co_count": co_rate,
-        "scope_growth_pct": round1(growth),
-        "evidence_metric": (
-            f"{_js_str(co_rate)} change orders, scope growth: +{_js_str(round1(growth))}%"
-            + (" (estimated; upload Change Order log for precise figures)" if is_derived else "")
-        ),
-    }
+    """
+    Governed change events per unit of exposure time, with magnitude reported separately.
+
+    SUPPLIED CONTRACT 4.6: ChangeFrequency = governed change events / time or another declared
+    opportunity basis, six changes over one hundred and eighty days reading 0.033333... a day or
+    one per standardised thirty day period. Magnitude is a separate quantity, the sum of the
+    change values over the baseline contract value. Frequency and magnitude are not combined into
+    one unnamed composite, and the change type, cause, direction and contract lineage are kept.
+
+    WHAT v12 DID. It banded a raw count of change orders jointly with the percentage growth of the
+    contract sum: exactly the unnamed composite the contract forbids, and with no exposure of any
+    kind under the count.
+    """
+    try:
+        reading = change_frequency(require_v4_structure(si, "A4.6"))
+    except StructureAbsent as absent:
+        return insufficient("CO_Frequency", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "CO_Frequency",
+        f"{_js_str(reading['change_count'])} governed changes over "
+        f"{_js_str(reading['exposure_days'])} days, a frequency of "
+        f"{_js_str(round(reading['change_frequency_per_30_days'], 3))} in a standard thirty day "
+        f"period. Their net value is "
+        f"{_js_str(round(reading['change_magnitude_net'] * 100, 2))} per cent of the baseline "
+        f"contract, which is a separate quantity and is not combined with the frequency.",
+        change_frequency_per_day=round(reading["change_frequency_per_day"], 6),
+        change_frequency_per_30_days=round(reading["change_frequency_per_30_days"], 4),
+        change_count=reading["change_count"],
+        exposure_days=reading["exposure_days"],
+        change_magnitude_net=round(reading["change_magnitude_net"], 6),
+        change_magnitude_gross=round(reading["change_magnitude_gross"], 6),
+        baseline_contract_value=reading["baseline_contract_value"],
+        revised_contract_value=reading["revised_contract_value"],
+        additive_count=reading["additive_count"],
+        deductive_count=reading["deductive_count"],
+        type_counts=reading["type_counts"],
+        cause_counts=reading["cause_counts"],
+        canonical_structure="change_event_register",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A4.7 Dispute Escalation Index
@@ -389,79 +472,45 @@ def run_co_frequency(si: dict, rand: Callable[[], float], period_cutoff) -> dict
 
 def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. THE SIGNAL IMPROVED WHEN EVIDENCE WAS WITHHELD, AND THAT IS WHAT IS CORRECTED.
+    The state of the project's claims on the project's own governed escalation process.
 
-    The weights are 0.3 for the request term, 0.3 for the change term and 0.4 for the document
-    risk, and only the document risk was required. An absent request log and an absent change
-    order log each contributed zero to the sum rather than being absent from it, so the identical
-    project read 0.8 when it reported both logs and 0.2 when it reported neither: three bands
-    better for withholding the evidence. A composite whose missing terms score zero rewards
-    silence, and silence is the one thing a project condition must never reward.
+    SUPPLIED CONTRACT 4.7: a real dispute escalation signal requires actual claim or dispute state
+    evidence on the project's governed process. A later governed escalation state cannot look less
+    escalated because generic KPI data are missing; missing dispute evidence cannot improve the
+    condition; a request count does not prove a dispute; a change order count does not prove a
+    dispute; a document risk score does not prove a dispute. With no claim or dispute stage
+    evidence the answer is NOT ESTIMABLE. The 0.3 / 0.3 / 0.4 generic KPI composite is not
+    preserved as the canonical result.
 
-    The correction is to the missingness semantics, not to the weights and not to the method.
-    All three inputs are now required. A project that reports every source is measured on the
-    same ad hoc weighted sum it always was, with the same weights and the same bands. A project
-    that reports fewer abstains and says which source is missing, because there is no defensible
-    reading of a three-source composite from one source: renormalising the present terms would
-    still let removing a high term improve the reading, which is the same fault in a subtler
-    form.
-
-    A reported count of zero is evidence and is treated as one. The previous code tested the
-    counts for JavaScript truthiness, so a log that had been read and recorded no entries was
-    indistinguishable from a log that had never been read.
-
-    The finding text named two quantities the module does not compute. It said "RFI velocity"
-    where the term is a raw request count capped at twenty, and "CO frequency" where the term is
-    a raw change order count capped at ten. Neither has a time or exposure denominator, so
-    neither is a velocity or a frequency, and the text now names the counts it actually uses.
-
-    No dispute document, claim register or new corpus is introduced by this run, and no formal
-    dispute is inferred from this activity: the module stays the advisory, non-voting proxy its
-    qualifier describes.
+    WHAT v12 DID. Exactly that composite: a capped request count at 0.3, a capped change order
+    count at 0.3 and the document risk score at 0.4. None of the three is dispute evidence, and
+    none of the three is read here.
     """
-    required = (
-        ("docRiskScore", "a document risk score"),
-        ("rfiCount", "a count of requests for information"),
-        ("changeOrderCount", "a count of change orders"),
+    try:
+        reading = dispute_escalation(require_v4_structure(si, "A4.7"))
+    except StructureAbsent as absent:
+        return insufficient("Dispute_Escalation", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Dispute_Escalation",
+        f"Of {_js_str(reading['issue_count'])} issues on the "
+        f"{reading['process_id']} process, the furthest has reached the stage called "
+        f"{reading['highest_stage_id']}, which is step "
+        f"{_js_str(reading['highest_stage_rank'])} of "
+        f"{_js_str(reading['stage_count'])} on that process.",
+        highest_stage_id=reading["highest_stage_id"],
+        highest_stage_rank=reading["highest_stage_rank"],
+        escalation_position=round(reading["escalation_position"], 4),
+        process_id=reading["process_id"],
+        process_version=reading["process_version"],
+        stage_count=reading["stage_count"],
+        issue_count=reading["issue_count"],
+        issues_at_highest=reading["issues_at_highest"],
+        total_claim_value=reading["total_claim_value"],
+        max_unresolved_age_days=reading["max_unresolved_age_days"],
+        issues=reading["issues"],
+        canonical_structure="claim_dispute_register",
+        source=reading["source"],
     )
-    missing = [words for key, words in required if si.get(key) is None]
-    if missing:
-        return insufficient(
-            "Dispute_Escalation",
-            "Insufficient data: this reading combines a document risk score, a count of "
-            "requests for information and a count of change orders, and it is missing "
-            + _and_list(missing)
-            + ". A reading is not offered from the remaining sources, because a source that is "
-            "absent would otherwise count as a source that is quiet.",
-            ABSTAIN_MISSING_INPUT)
-    for key, words in required:
-        if num(si.get(key), None) is None or si[key] < 0:
-            return insufficient(
-                "Dispute_Escalation",
-                f"Insufficient data: {words} was reported as a negative figure or in a form "
-                f"that is not a number.",
-                ABSTAIN_MALFORMED_INPUT)
-    rfi_w = min(si["rfiCount"] / 20, 1) * 0.3
-    co_w = min(si["changeOrderCount"] / 10, 1) * 0.3
-    doc_w = si["docRiskScore"] * 0.4
-    index = round2(rfi_w + co_w + doc_w)
-    color = ("Green" if index <= 0.20 else "Yellow" if index <= 0.40
-             else "Amber" if index <= 0.65 else "Red")
-    return {
-        "method_class": "Dispute_Escalation",
-        "status_color": color,
-        "escalation_index": index,
-        # The trace: every source this reading rests on, so which evidence is behind the number
-        # is visible rather than inferred from the number. All three are present or the module
-        # has already abstained above, and the qualification says so either way.
-        "sources_used": ["document risk score", "count of requests for information",
-                         "count of change orders"],
-        "sources_missing": [],
-        "evidence_metric": (
-            f"Dispute escalation index: {_js_str(index)} "
-            f"(document risk, request count and change order count combined)"
-        ),
-    }
 
 
 # ------------------------------------------------------------ A4.8 Subcontractor Performance
@@ -469,40 +518,42 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
 
 def run_subcontractor_performance(si: dict, rand: Callable[[], float],
                                   period_cutoff) -> dict[str, Any]:
-    if (si.get("subcontractorComplianceScore") is None
-            and si.get("subcontractorIssuesDiscussed") is None
-            and si.get("docRiskScore") is None):
-        return insufficient("Subcontractor_Performance")
-    # The browser's deriveExtendedFields safety net is not ported; the extraction pipeline
-    # supplies the score or this module abstains. See the module docstring.
-    score = si.get("subcontractorComplianceScore")
-    if score is None:
-        return insufficient("Subcontractor_Performance")
-    is_derived = _derived(si, "subcontractorComplianceScore")
-    score_pct = int(js_round(score * 100))
-    color = ("Green" if score_pct >= 85 else "Yellow" if score_pct >= 70
-             else "Amber" if score_pct >= 55 else "Red")
-    signals = []
-    if (si.get("subcontractorIssuesDiscussed") or 0) > 0:
-        signals.append(f"{_js_str(si['subcontractorIssuesDiscussed'])} issues in OAC minutes")
-    if (si.get("outstandingActionItems") or 0) > 0:
-        signals.append(f"{_js_str(si['outstandingActionItems'])} outstanding action items")
-    if (si.get("ncrOpen") or 0) > 0:
-        signals.append(f"{_js_str(si['ncrOpen'])} open NCRs")
-    if (si.get("docRiskScore") or 0) > 0.30:
-        signals.append(f"elevated document risk ({int(js_round(si['docRiskScore'] * 100))}%)")
-    return {
-        "method_class": "Subcontractor_Performance",
-        "status_color": color,
-        "compliance_score": score_pct,
-        "signals_contributing": signals,
-        "evidence_metric": (
-            f"Subcontractor compliance: {score_pct}%"
-            + (f" ({', '.join(signals)})" if signals else "")
-            + (", derived from meeting records and correspondence" if is_derived
-               else ", from subcontractor performance report")
-        ),
-    }
+    """
+    A traceable multi-criteria subcontractor assessment.
+
+    SUPPLIED CONTRACT 4.8: Score = sum(w_i * r_i) with sum(w_i) = 1, ratings 0.80, 0.90 and 0.70
+    under equal weights scoring 0.80. All weights must be versioned and provenanced. Do not
+    validate this module by consuming an opaque precomputed compliance score with no component
+    evidence.
+
+    WHAT v12 DID. It consumed exactly such a score -- a single `subcontractorComplianceScore` from
+    the extraction pipeline -- and banded it, with no criteria, no ratings, no evaluator, no
+    weights and no provenance behind it.
+    """
+    try:
+        reading = subcontractor_performance(require_v4_structure(si, "A4.8"))
+    except StructureAbsent as absent:
+        return insufficient("Subcontractor_Performance", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Subcontractor_Performance",
+        f"{_js_str(reading['subcontractor_count'])} subcontractors were assessed against "
+        f"{_and_list(reading['criteria'])}. The weighted score averages "
+        f"{_js_str(round(reading['mean_score'], 3))}, and the lowest is "
+        f"{_js_str(round(reading['lowest_score'], 3))}, for "
+        f"{reading['lowest_subcontractor']}.",
+        assessments=reading["assessments"],
+        subcontractor_count=reading["subcontractor_count"],
+        mean_score=round(reading["mean_score"], 4),
+        lowest_score=round(reading["lowest_score"], 4),
+        lowest_subcontractor=reading["lowest_subcontractor"],
+        critical_violations=reading["critical_violations"],
+        criteria=reading["criteria"],
+        weights=reading["weights"],
+        weights_version=reading["weights_version"],
+        canonical_structure="subcontractor_assessments",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A4.9 Procurement Lead Time
@@ -511,59 +562,39 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
 def run_procurement_lead_time(si: dict, rand: Callable[[], float],
                               period_cutoff) -> dict[str, Any]:
     """
-    THE FIFTEEN DEFECTS, defect 4. The weighted ratio was `(at_risk + 2 * delayed) / total`, and
-    a procurement log recording ten long-lead items of which eight are at risk and five are
-    already delayed produced 1.8: a proportion of a set, reported as one hundred and eighty per
-    cent of it.
+    Item level procurement slack.
 
-    Two errors compounded. A delayed item is an at-risk item that has already slipped, so it was
-    counted twice, once in each term. And the doubling of the delayed term put the numerator
-    above the denominator without anything noticing, because nothing bounded the result.
+    SUPPLIED CONTRACT 4.9: ProcurementSlack = RequiredOnSiteDate - ForecastDeliveryDate, a
+    required day of one hundred against a forecast of one hundred and ten reading minus ten days.
+    Delayed items are not double counted inside at-risk, and a count ratio alone is not the
+    canonical item-level monitor.
 
-    Delayed items are now treated as the subset of at-risk items they are: each delayed item
-    carries full weight, each remaining at-risk item carries half, and the ratio is a genuine
-    proportion of the long-lead set. On the audit's own figures it is 0.65 rather than 1.8.
-
-    The domain is enforced rather than assumed. `max(total, 1)` silently invented a denominator
-    of one for an empty procurement log, so a single delayed item out of no items scored 2.0;
-    an empty log now abstains. Counts that cannot describe one set (more at risk than exist, more
-    delayed than are at risk, a negative count) abstain and say which pair disagreed.
+    WHAT v12 DID. A weighted count ratio over the long-lead set: half weight for at-risk items and
+    full weight for delayed ones. There is no date in it, so there is no slack in it, and the
+    contract's own words are that a count ratio alone is not this method.
     """
-    if not check_inputs(si, ("longLeadItemsTotal", "longLeadAtRisk", "longLeadDelayed")):
-        return insufficient("Procurement_Lead_Time")
-    total = num(si.get("longLeadItemsTotal"), 0)
-    at_risk = num(si.get("longLeadAtRisk"), 0)
-    delayed = num(si.get("longLeadDelayed"), 0)
-    if total <= 0:
-        return insufficient(
-            "Procurement_Lead_Time",
-            "No long-lead items are recorded, so there is no set to measure disruption against")
-    if at_risk < 0 or delayed < 0:
-        return insufficient(
-            "Procurement_Lead_Time",
-            "A negative count of long-lead items is not a measurable procurement state")
-    if at_risk > total:
-        return insufficient(
-            "Procurement_Lead_Time",
-            f"More long-lead items are recorded at risk ({_js_str(at_risk)}) than exist "
-            f"({_js_str(total)}), so no proportion is measurable from this pair")
-    if delayed > at_risk:
-        return insufficient(
-            "Procurement_Lead_Time",
-            f"More long-lead items are recorded delayed ({_js_str(delayed)}) than at risk "
-            f"({_js_str(at_risk)}), and a delayed item is an at-risk item that has slipped")
-    risk_ratio = (delayed + 0.5 * (at_risk - delayed)) / total
-    color = ("Green" if risk_ratio < 0.15 else "Yellow" if risk_ratio < 0.30
-             else "Amber" if risk_ratio < 0.50 else "Red")
-    return {
-        "method_class": "Procurement_Lead_Time",
-        "status_color": color,
-        "risk_ratio": round2(risk_ratio),
-        "evidence_metric": (
-            f"{_js_str(at_risk)} at-risk + {_js_str(delayed)} delayed of {_js_str(total)} "
-            f"long-lead items (weighted disruption {_js_str(round2(risk_ratio))})"
-        ),
-    }
+    try:
+        reading = procurement_slack(require_v4_structure(si, "A4.9"))
+    except StructureAbsent as absent:
+        return insufficient("Procurement_Lead_Time", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    states = reading["state_counts"]
+    return calibration_pending(
+        "Procurement_Lead_Time",
+        f"Across {_js_str(reading['item_count'])} procurement items the tightest slack is "
+        f"{_js_str(reading['minimum_slack_days'])} days, on the item called "
+        f"{reading['worst_item_id']}. {_js_str(states['LATE'])} items are forecast to arrive "
+        f"after they are required, {_js_str(states['AT_RISK'])} arrive inside the float that "
+        f"protects them and {_js_str(states['ON_TIME'])} arrive with room to spare. Every item "
+        f"is counted once.",
+        items=reading["items"],
+        item_count=reading["item_count"],
+        minimum_slack_days=reading["minimum_slack_days"],
+        worst_item_id=reading["worst_item_id"],
+        mean_slack_days=round(reading["mean_slack_days"], 2),
+        state_counts=states,
+        canonical_structure="procurement_items",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A4.10 Spec Conflict Density
@@ -572,52 +603,41 @@ def run_procurement_lead_time(si: dict, rand: Callable[[], float],
 def run_spec_conflict_density(si: dict, rand: Callable[[], float],
                               period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. The density is the document risk weighted by request volume: risk times the count over
-    the square root of the count. With no requests there is no volume to weight by, and the code
-    substituted the unweighted document risk, so a project with an empty request log was assigned
-    a conflict density it had reported nothing to support and read Yellow. The substitution is
-    removed: with no requests the module abstains on no exposure rather than reporting the
-    document risk under a different name. A negative count is refused as malformed.
+    Verified specification conflicts per unit of declared specification exposure.
+
+    SUPPLIED CONTRACT 4.10: ConflictDensity = VerifiedConflictCandidates / ExposureUnit, five
+    verified conflicts over two hundred and fifty requirements reading 0.02 conflicts a
+    requirement, or twenty per thousand. Exposure must be explicit, each conflict must retain the
+    conflicting evidence locations, and `docRiskScore * sqrt(RFI count)` is not conflict density.
+    With no numerator or denominator the answer is NOT ESTIMABLE.
+
+    WHAT v12 DID. `docRiskScore * rfiCount / sqrt(rfiCount)`, capped at one and banded: the
+    expression the contract names as not being this method. Neither field is read here.
     """
-    if not check_inputs(si, ("docRiskScore", "rfiCount")):
-        return insufficient("Spec_Conflict_Density",
-                            "Insufficient data: a document risk score and a count of requests "
-                            "for information are needed, and at least one of them has not been "
-                            "reported for this period.",
-                            ABSTAIN_MISSING_INPUT)
-    if num(si.get("rfiCount"), None) is None or si["rfiCount"] < 0:
-        return insufficient("Spec_Conflict_Density",
-                            "Insufficient data: the count of requests for information was "
-                            "reported in a form that is not a count.",
-                            ABSTAIN_MALFORMED_INPUT)
-    if si["rfiCount"] == 0:
-        return insufficient("Spec_Conflict_Density",
-                            "No requests for information are recorded for this project, so "
-                            "there is no request volume for a conflict density to be measured "
-                            "over. The document risk score is not reported in its place.",
-                            ABSTAIN_NO_EXPOSURE)
-    # RUN 10, BUCKET 2. Run 7 removed the substitution and left the document risk domain open.
-    # That score is a share and lives in nought to one; a value outside it was multiplied through
-    # and the result landed inside the band ladder as though it were a density.
-    doc = num(si.get("docRiskScore"), None)
-    if doc is None or doc < 0 or doc > 1:
-        return insufficient(
-            "Spec_Conflict_Density",
-            "The document risk score falls outside the range a share can occupy, so no conflict "
-            "density is measurable from it",
-            ABSTAIN_MALFORMED_INPUT)
-    density = (si["docRiskScore"] * si["rfiCount"]) / math.sqrt(si["rfiCount"])
-    density = min(1, round2(density))
-    color = ("Green" if density <= 0.15 else "Yellow" if density <= 0.35
-             else "Amber" if density <= 0.60 else "Red")
-    return {
-        "method_class": "Spec_Conflict_Density",
-        "status_color": color,
-        "conflict_density": density,
-        "evidence_metric": (
-            f"Spec conflict density: {_js_str(density)} (doc risk weighted by RFI volume)"
-        ),
-    }
+    try:
+        reading = specification_conflict_density(require_v4_structure(si, "A4.10"))
+    except StructureAbsent as absent:
+        return insufficient("Spec_Conflict_Density", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Spec_Conflict_Density",
+        f"{_js_str(reading['verified_conflicts'])} confirmed conflicts across "
+        f"{_js_str(reading['exposure_quantity'])} {reading['exposure_unit']}, a density of "
+        f"{_js_str(round(reading['conflicts_per_thousand'], 3))} for every thousand. "
+        f"{_js_str(reading['candidate_conflicts'])} further candidates are recorded and are not "
+        f"counted in the density.",
+        conflict_density=round(reading["conflict_density"], 6),
+        conflicts_per_thousand=round(reading["conflicts_per_thousand"], 4),
+        verified_conflicts=reading["verified_conflicts"],
+        candidate_conflicts=reading["candidate_conflicts"],
+        exposure_unit=reading["exposure_unit"],
+        exposure_quantity=reading["exposure_quantity"],
+        conflicts=reading["conflicts"],
+        specification_document_id=reading["specification_document_id"],
+        specification_revision=reading["specification_revision"],
+        detection_precision_recall=reading["detection_precision_recall"],
+        canonical_structure="specification_conflict_register",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A5.2 Sensitivity Analysis
@@ -626,101 +646,48 @@ def run_spec_conflict_density(si: dict, rand: Callable[[], float],
 def run_sensitivity_analysis(si: dict, rand: Callable[[], float],
                              period_cutoff) -> dict[str, Any]:
     """
-    RUN 11, NEIGHBOUR DEFECT 5 OF 7. MISSINGNESS IMPROVING THE READING.
+    A declared response recomputed with each declared input moved.
 
-    The reproducer from the Run 10B sweep: removing the document risk score turned Red into
-    Yellow. Document risk is one of the three drivers this module ranks, and an absent score was
-    read as a sensitivity of exactly zero. Zero is not "unknown": it is the strongest possible
-    claim that this driver does not move the estimate, and it sends the driver to the bottom of
-    the ranking. When document risk was the top driver, withholding it demoted it and the band
-    was taken from a quieter driver instead.
+    SUPPLIED CONTRACT 5.2: use an explicit response Y, input Xi, base point and perturbation, with
+    S_i = (dY/Y) / (dXi/Xi). With Y = x1^2 + x2 at x1 = 2, x2 = 1 the response is 5; raising x1 by
+    ten per cent gives 5.84, so the normalised sensitivity is (0.84/5)/(0.2/2) = 1.68. Ranking
+    currently bad variables is not sensitivity. The model must perturb the input and recompute the
+    response. A one-at-a-time local method is acceptable if declared as such and not called
+    global.
 
-    The driver is required now, on the same footing as the other two. It is neither defaulted to
-    zero nor dropped from the ranking, because dropping it would be the same bargain in a
-    different shape: a module that ranks three drivers cannot rank them from two and call the
-    answer the top driver.
+    WHAT v12 DID. It perturbed the cost performance index by 0.05 either way and recomputed
+    `bac / cpi` -- a genuine elasticity of one hard-coded response to one hard-coded input -- and
+    reported the schedule index's distance from one and the document risk score itself beside it
+    as levels. There was no declared response function, no declared base state, no declared range
+    and no way for a project to name the inputs it wanted moved.
     """
-    if not check_inputs(si, ("bac", "ev", "ac", "pv", "cpi", "spi", "docRiskScore")):
-        return insufficient("Sensitivity_Analysis")
-    _doc = num(si.get("docRiskScore"), None)
-    if _doc is None or _doc < 0 or _doc > 1:
-        # Same domain as every other reader of this field: it is a share and lives in nought to
-        # one. Outside it the driver cannot be ranked against the other two.
-        return insufficient(
-            "Sensitivity_Analysis",
-            "The document risk score falls outside the range a share can occupy, so it cannot "
-            "be ranked against the cost and schedule drivers. No substitute figure is used in "
-            "its place.",
-            ABSTAIN_MALFORMED_INPUT)
-    cpi = si["cpi"]
-    if cpi == 0 or cpi == 0.05 or cpi == -0.05:
-        # JS: division by zero at these exact values → Infinity/NaN fallthrough. Refused.
-        return insufficient("Sensitivity_Analysis")
-    eac_base = si["bac"] / cpi
-    if eac_base == 0:
-        return insufficient("Sensitivity_Analysis")  # bac=0: JS NaN fallthrough, refused
-    # ---------------------------------------------------------- RUN 20 CYCLE 9, THE P1 DEFECT
-    #
-    # ONLY ONE OF THE THREE "SENSITIVITIES" WAS A SENSITIVITY, AND THE OTHER TWO WERE RANKED
-    # AGAINST IT AS THOUGH THEY WERE.
-    #
-    # A sensitivity is a response: the output is recomputed with an input moved and the movement
-    # of the output is what is reported. Exactly one of the three below did that. The cost
-    # performance index driver moves the index by 0.05 either way, RECOMPUTES the estimate at
-    # completion at each end, and reports the spread as a share of the base estimate. That is a
-    # genuine one-at-a-time sensitivity of a stated output to a stated input.
-    #
-    # The other two never recomputed anything. `abs(spi - 1.0) * 0.5` is the schedule index's
-    # DISTANCE FROM ONE, halved -- a level reading of how late the project is, not a response of
-    # anything to anything. `docRiskScore` is the document risk score ITSELF, passed through
-    # unchanged. Neither quantity is a derivative, neither is in the units of the first, and the
-    # estimate at completion is `bac / cpi`, which is not a function of the schedule index or the
-    # document risk score at all: THERE IS NO PERTURBATION OF EITHER THAT COULD MOVE IT. So the
-    # ranking was a comparison of an elasticity against two raw levels that happened to be
-    # numbers between nought and one, and `top_driver` and the band were taken from whichever
-    # number won that comparison.
-    #
-    # THE CORRECTION IS THE ONE THE FINDING ITSELF OFFERS: REPORT ONLY THE DRIVER THAT IS
-    # PERTURBED. Nothing is invented to fill the gap. No perturbation size is chosen for the
-    # other two inputs, no elasticity is manufactured for a model that does not contain them, and
-    # no weight relates a level to a response. The two level readings are still reported, because
-    # withholding them would lose information a reader may want, but they are reported UNDER
-    # THEIR OWN NAMES as levels and they are not ranked, not called sensitivities and not
-    # eligible to be the top driver or to set the band.
-    #
-    # The band, its four boundaries and the perturbation of 0.05 are all exactly as they were.
-    # What changed is which number the band is read from.
-    cpi_sens = abs(si["bac"] / (cpi - 0.05) - si["bac"] / (cpi + 0.05)) / eac_base
-    drivers = [{"name": "CPI", "sensitivity": cpi_sens,
-                "method": "the estimate at completion recomputed with the cost performance "
-                          "index moved 0.05 either way, as a share of the base estimate"}]
-    levels = [
-        {"name": "SPI", "level": abs(si["spi"] - 1.0) * 0.5,
-         "method": "the schedule index's distance from one, halved. A LEVEL, not a response: "
-                   "the estimate at completion is not a function of the schedule index"},
-        {"name": "DocRisk", "level": si["docRiskScore"],
-         "method": "the document risk score itself. A LEVEL, not a response: the estimate at "
-                   "completion is not a function of the document risk score"},
-    ]
-    top = drivers[0]
-    mx = top["sensitivity"]
-    color = ("Green" if mx <= 0.10 else "Yellow" if mx <= 0.20
-             else "Amber" if mx <= 0.35 else "Red")
-    return {
-        "method_class": "Sensitivity_Analysis",
-        "status_color": color,
-        "top_driver": top["name"],
-        "top_sensitivity": int(js_round(mx * 100)),
-        "drivers": drivers,
-        "levels_not_perturbed": levels,
-        "inputs_perturbed": 1,
-        "inputs_reported_as_levels": 2,
-        "evidence_metric": (
-            f"Sensitivity of the estimate at completion to the cost performance index: "
-            f"{int(js_round(mx * 100))}%. It is the only input the estimate is a function of, "
-            f"so it is the only one perturbed."
-        ),
-    }
+    try:
+        reading = sensitivity_analysis(require_v4_structure(si, "A5.2"))
+    except StructureAbsent as absent:
+        return insufficient("Sensitivity_Analysis", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    top = max(reading["inputs"], key=lambda r: (abs(r["normalised_sensitivity"]), r["input_id"]))
+    return calibration_pending(
+        "Sensitivity_Analysis",
+        f"The response called {reading['response_model_id']} reads "
+        f"{_js_str(round(reading['base_response'], 4))} at the state declared for it. Moving "
+        f"{top['input_id']} by "
+        f"{_js_str(round(top['perturbation_fraction'] * 100, 2))} per cent and recomputing the "
+        f"response moves it by {_js_str(round(top['delta_response'], 4))}, a normalised "
+        f"sensitivity of {_js_str(round(top['normalised_sensitivity'], 4))}. This is a local one "
+        f"at a time sensitivity and is not a global one.",
+        method=reading["method"],
+        method_scope=reading["method_scope"],
+        response_model_id=reading["response_model_id"],
+        response_model_version=reading["response_model_version"],
+        base_state=reading["base_state"],
+        base_response=reading["base_response"],
+        inputs=reading["inputs"],
+        input_count=reading["input_count"],
+        top_input=top["input_id"],
+        top_normalised_sensitivity=round(top["normalised_sensitivity"], 6),
+        canonical_structure="sensitivity_model",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A5.3 Tornado Risk Ranking
@@ -728,70 +695,58 @@ def run_sensitivity_analysis(si: dict, rand: Callable[[], float],
 
 def run_tornado_diagram(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 11, NEIGHBOUR DEFECT 6 OF 7. OUT-OF-DOMAIN BANDING.
+    The ranking layer over the sensitivity results, and NOT a second evidence body.
 
-    The reproducer from the Run 10B sweep: a document risk score of -30 turned Red into Green.
-    The score is multiplied by one hundred to form an impact, and the impacts are averaged into
-    the composite the band reads. A negative score therefore drags the composite down without
-    limit, and the band's calm end is one-sided, so the module reports the quietest reading it
-    has on the most extreme input it can be given.
+    SUPPLIED CONTRACT 5.3 AND THE RUN-29 PARSIMONY DECISION: Impact_i = Y_i(high) - Y_i(low),
+    ranked descending by absolute impact, with impacts of 30, 7 and 30 placing A and C tied above
+    B and an explicit tie policy. 5.3 ordinarily consumes the 5.2 sensitivity outputs and does not
+    recompute an independent duplicate evidence stream; its lineage must show derivation from the
+    sensitivity results.
 
-    THE DOMAINS. The document risk score is a share in nought to one, which is the domain the
-    conflict-density module already enforces on the same field. The cost and schedule performance
-    indices are ratios of value to cost and cannot be at or below zero, which is the domain the
-    variance-at-completion module already enforces on the same field. The two progress figures
-    are shares of the work. No band moved and no boundary was introduced.
+    HOW THAT IS ENFORCED RATHER THAN ASSERTED. This runner calls `sensitivity_analysis` on the
+    SAME structure A5.2 reads, then hands the RESULT to `tornado_ranking`, which takes no other
+    argument and therefore cannot reach the structure, the response model or the signal inputs.
+    The two modules cannot disagree about the evidence because there is only one computation of
+    it, and the result carries `derived_from` so a reader can see that.
+
+    WHAT v12 DID. It ranked four present-state deviations -- the distance of each index from one,
+    the document risk score and the progress variance -- and banded their mean. Not one of the
+    four was a swing in any output, nothing was recomputed at any range, and none of it came from
+    the sensitivity module.
     """
-    if not check_inputs(si, ("cpi", "spi", "docRiskScore",
-                             "actualPctComplete", "plannedPctComplete")):
-        return insufficient("Tornado_Diagram")
-    _domains = (
-        (si["docRiskScore"], lambda v: 0 <= v <= 1,
-         "the document risk score falls outside the range a share can occupy"),
-        (si["cpi"], lambda v: v > 0,
-         "the cost performance index is reported at or below zero, and it is a ratio of earned "
-         "value to actual cost"),
-        (si["spi"], lambda v: v > 0,
-         "the schedule performance index is reported at or below zero, and it is a ratio of "
-         "earned value to planned value"),
-        (si["actualPctComplete"], lambda v: 0 <= v <= 100,
-         "the reported progress falls outside nought to one hundred per cent"),
-        (si["plannedPctComplete"], lambda v: 0 <= v <= 100,
-         "the planned progress falls outside nought to one hundred per cent"),
+    try:
+        structure = require_v4_structure(si, "A5.3")
+        sensitivity = sensitivity_analysis(structure)
+        reading = tornado_ranking(sensitivity)
+    except StructureAbsent as absent:
+        return insufficient("Tornado_Diagram", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    if not reading["bars"]:
+        return insufficient(
+            "Tornado_Diagram",
+            "The sensitivity computed for this project moved no inputs, so there are no swings "
+            "for this ranking to present.",
+            ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Tornado_Diagram",
+        f"Across {_js_str(len(reading['bars']))} inputs moved through the response called "
+        f"{reading['derived_from_response_model_id']}, the widest swing belongs to "
+        f"{reading['top_input']}, at {_js_str(round(reading['top_impact'], 4))}. These swings are "
+        f"the ones the sensitivity analysis computed; this ranking presents them and computes "
+        f"nothing of its own.",
+        bars=reading["bars"],
+        ranked_inputs=reading["ranked_inputs"],
+        top_input=reading["top_input"],
+        top_impact=round(reading["top_impact"], 6),
+        distinct_ranks=reading["distinct_ranks"],
+        tie_policy=reading["tie_policy"],
+        tied_impacts=reading["tied_impacts"],
+        derived_from=reading["derived_from"],
+        derived_from_response_model_id=reading["derived_from_response_model_id"],
+        derived_from_response_model_version=reading["derived_from_response_model_version"],
+        derived_from_base_response=reading["derived_from_base_response"],
+        independent_evidence=reading["independent_evidence"],
+        canonical_structure="sensitivity_model",
     )
-    for _raw, _ok, _words in _domains:
-        _v = num(_raw, None)
-        if _v is None or not _ok(_v):
-            return insufficient(
-                "Tornado_Diagram",
-                f"No risk ranking is measurable: {_words}. No substitute figure is used in its "
-                f"place.",
-                ABSTAIN_MALFORMED_INPUT)
-    risks = sorted(
-        [
-            {"name": "Cost Performance", "impact": abs(1 - si["cpi"]) * 100},
-            {"name": "Schedule Performance", "impact": abs(1 - si["spi"]) * 100},
-            {"name": "Document Risk", "impact": si["docRiskScore"] * 100},
-            {"name": "Progress Variance",
-             "impact": abs(si["actualPctComplete"] - si["plannedPctComplete"])},
-        ],
-        key=lambda r: -r["impact"],
-    )
-    top = risks[0]
-    composite = sum(r["impact"] for r in risks) / len(risks)
-    color = ("Green" if composite <= 5 else "Yellow" if composite <= 10
-             else "Amber" if composite <= 20 else "Red")
-    return {
-        "method_class": "Tornado_Diagram",
-        "status_color": color,
-        "top_risk": top["name"],
-        "top_impact": round1(top["impact"]),
-        "composite_score": round1(composite),
-        "risks": risks,
-        "evidence_metric": (
-            f"Top risk: {top['name']} ({_js_str(round1(top['impact']))}% impact)"
-        ),
-    }
 
 
 # ------------------------------------------------------------ A5.4 Scenario Modeling
@@ -799,134 +754,90 @@ def run_tornado_diagram(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 def run_scenario_modeling(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    THE FIFTEEN DEFECTS, defect 13. The earned value domains here were guarded only at exactly
-    zero, and the guard at zero is the least of what can go wrong.
+    Named coherent multi-variable states evaluated through one governed response model.
 
-    A NEGATIVE cost or schedule index passed every check and then divided the remaining work,
-    turning a forecast into a number below the money already spent: the pessimistic case came
-    out cheaper than the optimistic one, the range went negative, and the ladder read the whole
-    thing Green because a negative pessimistic forecast is comfortably under the budget. A
-    negative budget did the same to the range, which is a percentage of it. Earned value above
-    the budget at completion made the remaining work negative, so every scenario forecast a
-    project finishing below what it had already spent.
+    SUPPLIED CONTRACT 5.4: a scenario is a coherent multi-variable state; X(s) = {x1(s), ...,
+    xp(s)} and Y(s) = f(X(s)), with a scenario id and version, a rationale, the jointly changed
+    inputs, consistency constraints, a governed response model and outputs. With Y = 2*x1 + x2 the
+    three states BASE (2, 1), ADVERSE (3, 2) and RECOVERY (1.5, 1) give 5, 8 and 4 exactly. This
+    is not Category 10: the question is what happens under this condition, not which intervention
+    to choose.
 
-    None of these is a project condition. Each is an input pair that cannot be reconciled, and
-    each abstains and says which one it was.
+    WHAT v12 DID. It read an actions-by-scenarios payoff matrix and returned a recommended action
+    and its expected cost. That is a decision method -- Category 10's question -- and the contract
+    for this module says in its own words not to confuse the two. The decision structure is no
+    longer this module's defining structure and the recommendation is no longer this module's
+    output.
     """
-    # RUN 10B, GATE 4. The canonical structure of this method is an actions-by-scenarios payoff
-    # with stated probabilities, and Run 8 recorded that three deterministic forecasts under
-    # three divisors is not that. Where a decision problem is provided this now computes the
-    # method: the probability weighted expectation of each action, the action with the smallest
-    # expected cost, and that action's worst scenario, which is the quantity the ladder below
-    # has always read. The version, the split and the self-comparison guards are applied before
-    # any of it, and a locked holdout is refused outright.
-    #
-    # The three-divisor forecast is KEPT as the behaviour when no decision problem is provided,
-    # because it is a guarded earned-value forecast in its own right and removing it is not this
-    # run's authorisation. It is reported as what it is, and it is not called a scenario model.
-    decision = si.get("scenarioDecisionStructure")
-    if decision is not None:
-        if not check_inputs(si, ("bac",)) or num(si.get("bac"), 0) <= 0:
-            return insufficient(
-                "Scenario_Modeling",
-                "No positive budget at completion is recorded to place the decision outcomes "
-                "against")
-        try:
-            obj = require_reference_object(si, "A5.4")
-            reading = scenario_decision(obj)
-        except StructureAbsent as absent:
-            return insufficient("Scenario_Modeling", absent.sentence,
-                                ABSTAIN_DECISION_STRUCTURE_ABSENT)
-        bac = num(si["bac"], 0.0)
-        pessimistic = bac + reading["worst_case_cost_delta"]
-        expected = bac + reading["expected_cost_delta"]
-        color = ("Green" if pessimistic <= bac * 1.05
-                 else "Yellow" if pessimistic <= bac * 1.10
-                 else "Amber" if pessimistic <= bac * 1.20 else "Red")
-        return {
-            "method_class": "Scenario_Modeling",
-            "status_color": color,
-            "recommended_action": reading["recommended_action"],
-            "expected_eac": int(js_round(expected)),
-            "pessimistic_eac": int(js_round(pessimistic)),
-            "scenario_range_pct": round1(
-                (reading["worst_case_cost_delta"] - reading["expected_cost_delta"]) / bac * 100),
-            "actions_considered": reading["actions"],
-            "scenarios_considered": reading["scenarios"],
-            "reference_object": str(obj.get("decision_object_id") or ""),
-            "reference_asset_version": str(obj.get("asset_version") or ""),
-            "reference_split": str(obj.get("split") or "").upper(),
-            "canonical_structure": "action_scenario_payoff",
-            "evidence_metric": (
-                f"Across {_js_str(reading['actions'])} courses of action under "
-                f"{_js_str(reading['scenarios'])} scenarios, the lowest expected cost is "
-                f"{_money(expected)}, and that choice costs {_money(pessimistic)} in its worst "
-                f"scenario"
-            ),
-        }
-    # RUN 14. THE FALLBACK IS GONE. Run 10B kept the three-divisor earned-value forecast for the
-    # case where no decision problem is provided, on the reasoning that it is a guarded forecast
-    # in its own right. Run 13 tested what a reader actually receives and recorded the mismatch:
-    # with the defining structure removed the module still returned a band, under this method's
-    # name, computed from something that is not this method. An actions-by-scenarios payoff with
-    # stated probabilities is what the named method IS, and where the corpus does not carry one
-    # there is no scenario model to report. The module abstains and says which structure is
-    # missing. The three-divisor forecast is not renamed or relocated in this run: that is a
-    # design decision for the owner, and the modules that forecast an estimate at completion
-    # from the same figures are unchanged and still report it under their own names.
-    return insufficient(
+    try:
+        reading = scenario_modeling(require_v4_structure(si, "A5.4"))
+    except StructureAbsent as absent:
+        return insufficient("Scenario_Modeling", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
         "Scenario_Modeling",
-        "No decision problem has been provided for this project, and a scenario model is a set "
-        "of courses of action costed under stated scenarios with their probabilities. Without "
-        "that structure there is nothing for this method to weigh, and no substitute forecast "
-        "is reported in its place.",
-        ABSTAIN_DECISION_STRUCTURE_ABSENT)
+        f"{_js_str(reading['scenario_count'])} coherent states were evaluated through the "
+        f"response called {reading['response_model_id']}. The response runs from "
+        f"{_js_str(round(reading['minimum_response'], 4))} to "
+        f"{_js_str(round(reading['maximum_response'], 4))} across them. No state is recommended "
+        f"over any other, because choosing between them is a different question.",
+        scenarios=reading["scenarios"],
+        scenario_count=reading["scenario_count"],
+        responses=reading["responses"],
+        minimum_response=reading["minimum_response"],
+        maximum_response=reading["maximum_response"],
+        response_model_id=reading["response_model_id"],
+        response_model_version=reading["response_model_version"],
+        constraints=reading["constraints"],
+        scenario_set_version=reading["scenario_set_version"],
+        canonical_structure="scenario_set",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A5.5 Rework Feedback Loop
 
 
 def run_rework_feedback(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    # RUN 10, BUCKET 2. This is Run 6 finding 1.4 standing in the module beside the one Run 7
-    # corrected. The index is a weighted sum of three terms and an ABSENT term contributed
-    # exactly zero, which is the same contribution a perfect term makes. So a project that had
-    # uploaded no request log and no change order log scored better than one that had uploaded
-    # both and reported a handful of each, and the improvement came from the missing evidence.
-    #
-    # Renormalising over the present terms is refused as the fix: it would rescale the remaining
-    # terms so that missing the two highest-risk sources still leaves the index reading on the
-    # strength of the cost index alone. Both counts are required instead, and the module abstains
-    # when either is absent. This holds over EVERY strict subset of the required evidence, which
-    # the suite exhausts rather than samples.
-    if not check_inputs(si, ("cpi", "rfiCount", "changeOrderCount")):
-        return insufficient(
-            "Rework_Feedback",
-            "Insufficient data: this index reads the cost performance index, the count of "
-            "requests for information and the count of change orders together, and at least one "
-            "of them has not been reported for this period. An absent count is not a count of "
-            "nought.",
-            ABSTAIN_MISSING_INPUT)
-    for key in ("rfiCount", "changeOrderCount"):
-        v = num(si.get(key), None)
-        if v is None or v < 0:
-            return insufficient(
-                "Rework_Feedback",
-                "A reported count is negative, which is not a count.",
-                ABSTAIN_MALFORMED_INPUT)
-    rfi_c = min(si["rfiCount"] / 30, 1) * 0.3
-    co_c = min(si["changeOrderCount"] / 15, 1) * 0.3
-    cpi_c = max(0, 1 - si["cpi"]) * 0.4
-    index = round2(rfi_c + co_c + cpi_c)
-    color = ("Green" if index <= 0.10 else "Yellow" if index <= 0.25
-             else "Amber" if index <= 0.45 else "Red")
-    return {
-        "method_class": "Rework_Feedback",
-        "status_color": color,
-        "rework_index": index,
-        "evidence_metric": (
-            f"Rework feedback index: {_js_str(index)} (CPI degradation + RFI + CO combined)"
-        ),
-    }
+    """
+    A genuine time-dependent stock and flow rework model.
+
+    SUPPLIED CONTRACT 5.5:
+        Backlog(t+1) = Backlog(t) + NewWork(t) + ReworkGenerated(t) - WorkCompleted(t)
+        ReworkGenerated(t) = ErrorRate(t) * WorkCompleted(t)
+    with Backlog0 = 10, NewWork = 5, WorkCompleted = 8 and ErrorRate = 0.25 giving
+    ReworkGenerated = 2 and Backlog1 = 9. A weighted CPI/RFI/change-order score is not a feedback
+    loop, and with no stock and flow model the answer is NOT ESTIMABLE.
+
+    WHAT v12 DID. Precisely that weighted score: a capped request count at 0.3, a capped change
+    order count at 0.3 and the shortfall of the cost index at 0.4. It has no stock, no flow, no
+    time and no feedback, and none of its three inputs is read here.
+    """
+    try:
+        reading = rework_feedback_loop(require_v4_structure(si, "A5.5"))
+    except StructureAbsent as absent:
+        return insufficient("Rework_Feedback", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Rework_Feedback",
+        f"Over {_js_str(reading['steps_run'])} steps the backlog moves from "
+        f"{_js_str(reading['initial_backlog'])} to {_js_str(reading['final_backlog'])}. "
+        f"{_js_str(round(reading['total_rework_generated'], 3))} of the "
+        f"{_js_str(reading['total_work_completed'])} completed came back as rework and returned "
+        f"to the backlog.",
+        time_step=reading["time_step"],
+        initial_backlog=reading["initial_backlog"],
+        final_backlog=reading["final_backlog"],
+        steps_run=reading["steps_run"],
+        trace=reading["trace"],
+        total_new_work=reading["total_new_work"],
+        total_work_completed=reading["total_work_completed"],
+        total_rework_generated=reading["total_rework_generated"],
+        rework_share_of_completed=(round(reading["rework_share_of_completed"], 4)
+                                   if reading["rework_share_of_completed"] is not None else None),
+        accounting_residual=reading["accounting_residual"],
+        model_version=reading["model_version"],
+        canonical_structure="system_dynamics_model",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A5.6 Queueing Theory Bottleneck
@@ -934,50 +845,53 @@ def run_rework_feedback(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 def run_queueing_bottleneck(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    Server utilisation of the busiest queue, measured on a queue rather than on a look-ahead share.
+    A genuine queue model: arrival rate, service rate, servers and discipline.
 
-    RUN 7 removed a fabricated denominator that let an empty look-ahead window read Green, and
-    said plainly what remained: a queueing model needs arrival rates, service rates, capacity and
-    a queue discipline, none of which were in the corpus, and that run did not invent them.
+    SUPPLIED CONTRACT 5.6: rho = lambda / mu, L = rho/(1-rho), W = 1/(mu-lambda),
+    Lq = rho^2/(1-rho), Wq = rho/(mu-lambda). With lambda = 2 and mu = 3 that is rho = 2/3, L = 2,
+    W = 1, Lq = 4/3 and Wq = 2/3, and Little's Law holds. If lambda >= mu, do not emit a
+    reassuring steady-state result. ActivitiesConstrained / ActivitiesPlanned is not queueing
+    theory.
 
-    RUN 10B REQUIRES THE QUEUE. A share of constrained activities in a look-ahead window is not a
-    queueing model however carefully it is guarded, so the defining structure is now required:
-    the entities that arrived, the service they received, the servers available to them and the
-    window they were observed over. Where it is absent this ABSTAINS. It does not fall back to
-    the look-ahead counts.
-
-    ONE BOUNDARY, AND IT IS DEFINITIONAL. At a utilisation of one or more the servers cannot keep
-    up with arrivals, the queue has no steady state and waiting grows without bound. No source
-    was found that specifies a utilisation at which a project queue becomes a warning rather than
-    a fact, so no second boundary is invented and this reports two levels rather than four. The
-    measured waits are carried on the finding so a reader sees the queue and not only a colour.
+    WHAT v12 DID. It read a queue OBSERVATION log -- entities, a horizon and a list of measured
+    waiting times -- and reported the share of server time that was occupied. That is a measured
+    occupancy, not a queueing model: there is no arrival process, no service process and no
+    stability condition in it, and the waiting times were read out of the log rather than derived.
+    An unstable queue was banded Red; it is now refused, because there is no steady state to
+    report and a colour would imply there is.
     """
     try:
-        structure = require_structure(si, "A5.6")
-        reading = canonical_queue(structure)
+        reading = queue_model(require_v4_structure(si, "A5.6"))
     except StructureAbsent as absent:
         return insufficient("Queueing_Bottleneck", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-
     worst = reading["bottleneck"]
-    rho = worst["utilisation"]
-    color = "Red" if rho >= 1.0 else "Green"
-    return {
-        "method_class": "Queueing_Bottleneck",
-        "status_color": color,
-        "utilisation": round2(rho),
-        "arrival_rate_per_day": round2(worst["arrival_rate_per_day"]),
-        "mean_wait_days": round1(worst["mean_wait_days"]),
-        "p90_wait_days": round1(worst["p90_wait_days"]),
-        "servers": worst["servers"],
-        "queues_observed": len(reading["queues"]),
-        "canonical_structure": "queue",
-        "evidence_metric": (
-            f"The busiest queue is running at {_js_str(round2(rho))} of the service its "
-            f"{_js_str(worst['servers'])} servers can give, with a mean wait of "
-            f"{_js_str(round1(worst['mean_wait_days']))} days and nine in ten waits inside "
-            f"{_js_str(round1(worst['p90_wait_days']))} days"
-        ),
-    }
+    return calibration_pending(
+        "Queueing_Bottleneck",
+        f"The busiest queue is {worst['queue_id']}, where work arrives at "
+        f"{_js_str(worst['arrival_rate'])} a day against a service rate of "
+        f"{_js_str(worst['service_rate'])} a day across "
+        f"{_js_str(worst['servers'])} servers. It runs at "
+        f"{_js_str(round(worst['utilisation'], 4))} of capacity, holds "
+        f"{_js_str(round(worst['L'], 4))} items on average and takes "
+        f"{_js_str(round(worst['W'], 4))} days to pass through.",
+        utilisation=round(worst["utilisation"], 6),
+        arrival_rate=worst["arrival_rate"],
+        service_rate=worst["service_rate"],
+        servers=worst["servers"],
+        discipline=worst["discipline"],
+        L=round(worst["L"], 6),
+        W=round(worst["W"], 6),
+        Lq=round(worst["Lq"], 6),
+        Wq=round(worst["Wq"], 6),
+        bottleneck_queue_id=worst["queue_id"],
+        queues=reading["queues"],
+        queues_observed=reading["queue_count"],
+        stability=reading["stability"],
+        model=reading["model"],
+        model_version=reading["model_version"],
+        canonical_structure="queue_model",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A5.7 Agent-Based Supply Chain
@@ -985,41 +899,52 @@ def run_queueing_bottleneck(si: dict, rand: Callable[[], float], period_cutoff) 
 
 def run_agent_supply_chain(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    The share of supply chain agents in a disrupted state at the last time step observed.
+    Agents, states, behaviour rules, interaction rules, an environment and time, actually stepped.
 
-    RUN 7 removed a fabricated denominator that let an empty procurement log read Green, and said
-    plainly what remained: agents, states, rules and interactions were not in the corpus, and a
-    share of a procurement log is not an agent-based model.
+    SUPPLIED CONTRACT 5.7: a true agent-based model requires all six. The minimum deterministic
+    laboratory model is a supplier that ships one unit when it has stock and a request is pending,
+    a carrier that collects a shipped unit and delivers it after a declared travel delay, and a
+    project with demand, received quantity and backorder. A long-lead at-risk ratio is not an
+    agent-based model, and with no agent or rule structure the answer is NOT ESTIMABLE.
 
-    RUN 10B REQUIRES THE AGENTS. The defining structure is now required: agents each carrying a
-    decision rule and an interaction group, and a state history across more than one time step.
-    Where it is absent this ABSTAINS and does not fall back to the procurement counts. The band
-    is unchanged and reads the same quantity it always read, a share of the supply chain at risk,
-    now taken from the agents rather than from a log.
+    WHAT v12 DID. It read a supplied state history and counted how many agents were in a state
+    other than normal at the last time step. The decision rules were required to be NAMED but were
+    never EXECUTED: nothing in the module made an agent do anything, so the states came out
+    exactly as they were typed in. That is a table read, not a simulation, and it is replaced.
     """
     try:
-        structure = require_structure(si, "A5.7")
-        reading = canonical_agent_supply_chain(structure)
+        reading = agent_supply_chain(require_v4_structure(si, "A5.7"))
     except StructureAbsent as absent:
         return insufficient("Agent_Supply_Chain", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-
-    ratio = reading["at_risk_ratio"]
-    color = ("Green" if ratio < 0.10 else "Yellow" if ratio < 0.20
-             else "Amber" if ratio < 0.35 else "Red")
-    return {
-        "method_class": "Agent_Supply_Chain",
-        "status_color": color,
-        "at_risk_ratio": round2(ratio),
-        "agents": reading["agents"],
-        "time_steps": reading["time_steps"],
-        "disrupted_agents": reading["disrupted_agents"],
-        "canonical_structure": "agent_based_model",
-        "evidence_metric": (
-            f"{_js_str(reading['disrupted_agents'])} of {_js_str(reading['agents'])} supply "
-            f"chain agents are disrupted at the last of {_js_str(reading['time_steps'])} time "
-            f"steps simulated, an at-risk share of {_js_str(round2(ratio))}"
-        ),
-    }
+    return calibration_pending(
+        "Agent_Supply_Chain",
+        f"Over {_js_str(reading['time_steps'])} steps, "
+        f"{_js_str(reading['agent_count'])} agents following "
+        f"{_js_str(len(reading['rules']))} rules delivered "
+        f"{_js_str(reading['received'])} of the {_js_str(reading['demand'])} units the project "
+        f"asked for, leaving {_js_str(reading['backordered'])} outstanding."
+        + (f" The run is stochastic and was repeated {_js_str(reading['replications'])} times "
+           f"from seed {_js_str(reading['seed'])}." if reading["stochastic"] else ""),
+        agents=reading["agents"],
+        agent_count=reading["agent_count"],
+        agent_types=reading["agent_types"],
+        rules=reading["rules"],
+        environment=reading["environment"],
+        time_steps=reading["time_steps"],
+        travel_delay_steps=reading["travel_delay_steps"],
+        step_order=reading["step_order"],
+        stochastic=reading["stochastic"],
+        seed=reading["seed"],
+        replications=reading["replications"],
+        runs=reading["runs"],
+        received=reading["received"],
+        backordered=reading["backordered"],
+        demand=reading["demand"],
+        model_version=reading["model_version"],
+        empirical_calibration=reading["empirical_calibration"],
+        canonical_structure="agent_supply_chain_model",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A5.8 Discrete Event Simulation
@@ -1027,51 +952,51 @@ def run_agent_supply_chain(si: dict, rand: Callable[[], float], period_cutoff) -
 
 def run_discrete_event_sim(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
-    RUN 7. Where no planned progress had been reported the progress ratio was substituted as
-    exactly 1, the value of a project running precisely to plan, which drove the interruption
-    term to zero and read Green. Planned progress is the denominator of that ratio and is now
-    required to be above zero.
+    A real discrete event simulation: entities, events, a clock, resources, queues and routing.
 
-    Events, entities, resources, queues and a clock are not in the corpus. This module is a
-    throughput index computed from two indices and a progress ratio, and the correction is to its
-    refusal behaviour only.
+    SUPPLIED CONTRACT 5.8: with one server, job A arriving at 0 with a service of 2 and job B
+    arriving at 1 with a service of 2, A starts at 0 and ends at 2 having waited 0, B starts at 2
+    and ends at 4 having waited 1, and the mean wait is 0.5. A progress or schedule index
+    algebraic index is not DES, and with no event, resource or queue structure the answer is NOT
+    ESTIMABLE.
+
+    WHAT v12 DID. It formed an interruption term from the progress shortfall and the schedule
+    index shortfall and reported the reciprocal of one plus it as a throughput index. Run 27
+    proved it a function of the schedule index and the progress ratio alone. There is no entity,
+    no event, no clock, no resource and no queue in it, and none of its inputs is read here.
     """
-    if not check_inputs(si, ("spi", "actualPctComplete", "plannedPctComplete", "cpi")):
-        return insufficient("Discrete_Event_Sim",
-                            "Insufficient data: both performance indices and both the planned "
-                            "and reported percent complete are needed, and at least one of them "
-                            "has not been reported for this period.",
-                            ABSTAIN_MISSING_INPUT)
-    # RUN 14. The reported percent complete is declared to the preflight so its upper domain is
-    # applied; Run 13 read a reported progress of ten thousand per cent as Green here.
-    verdict = eligible(si,
-                       required=(("actualPctComplete", "the reported percent complete"),),
-                       positive=(("plannedPctComplete", "the planned percent complete"),))
-    if verdict:
-        return refuse("Discrete_Event_Sim", verdict)
-    # RUN 10, BUCKET 2. The same residue as the critical path module: Run 7 guarded the
-    # denominator and left the schedule index domain open.
-    if not si["spi"] > 0:
-        return insufficient(
-            "Discrete_Event_Sim",
-            "Schedule performance is recorded as zero or below, which is not a performance "
-            "reading this throughput index can be computed from",
-            ABSTAIN_MALFORMED_INPUT)
-    progress_ratio = si["actualPctComplete"] / si["plannedPctComplete"]
-    interruption = max(0, 1 - progress_ratio) + max(0, 1 - si["spi"]) * 0.5
-    throughput = js_round((1 / (1 + interruption)) * 1000) / 1000
-    color = ("Green" if throughput >= 0.92 else "Yellow" if throughput >= 0.85
-             else "Amber" if throughput >= 0.75 else "Red")
-    return {
-        "method_class": "Discrete_Event_Sim",
-        "status_color": color,
-        "throughput_index": throughput,
-        "interruption_rate": int(js_round(interruption * 100)),
-        "evidence_metric": (
-            f"DES throughput: {_js_str(throughput)} "
-            f"({int(js_round(interruption * 100))}% interruption rate)"
-        ),
-    }
+    try:
+        reading = des_process_model(require_v4_structure(si, "A5.8"))
+    except StructureAbsent as absent:
+        return insufficient("Discrete_Event_Sim", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    return calibration_pending(
+        "Discrete_Event_Sim",
+        f"{_js_str(reading['entity_count'])} entities were run through "
+        f"{_js_str(reading['capacity'])} servers of the resource called "
+        f"{reading['resource_id']}, taking their turn in "
+        f"{reading['queue_discipline']} order. The average wait before service is "
+        f"{_js_str(round(reading['mean_wait'], 4))} and the clock finishes at "
+        f"{_js_str(round(reading['clock_end'], 4))}."
+        + (f" The run is stochastic and was repeated {_js_str(reading['replications'])} times "
+           f"from seed {_js_str(reading['seed'])}." if reading["stochastic"] else ""),
+        resource_id=reading["resource_id"],
+        capacity=reading["capacity"],
+        queue_discipline=reading["queue_discipline"],
+        event_order_policy=reading["event_order_policy"],
+        termination_condition=reading["termination_condition"],
+        entity_count=reading["entity_count"],
+        stochastic=reading["stochastic"],
+        seed=reading["seed"],
+        replications=reading["replications"],
+        runs=reading["runs"],
+        mean_wait=reading["mean_wait"],
+        entities=reading["entities"],
+        events=reading["events"],
+        clock_end=reading["clock_end"],
+        model_version=reading["model_version"],
+        canonical_structure="des_process_model",
+        source=reading["source"],
+    )
 
 
 # ------------------------------------------------------------ A6.1 Quality Compliance Index

@@ -50,8 +50,10 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE))
 
 from app.simulation import fusion, lineage, registry  # noqa: E402
+import run29_fixtures as FX  # noqa: E402
 
 
 # RUN 20 CYCLE 6 UPDATED THIS SUITE AND DID NOT DELETE IT. The owner decision that followed
@@ -347,7 +349,12 @@ _full = {"bac": 1000000.0, "ev": 500000.0, "ac": 550000.0, "pv": 520000.0,
              "scope": "construction materials and labour", "base_period": "2020-01",
              "observation_period": "2026-06", "vintage": "2026-07 release",
              "base_index_value": 200.0, "current_index_value": 220.0,
-             "cost_exposure": 500000.0}}
+             "cost_exposure": 500000.0},
+         # RUN 29. The three Category 4 and 5 structures whose modules declare a lineage record,
+         # so this check still drives every declared module to a state where it CAN emit a
+         # signal rather than excusing three of them.
+         "changeEventRegister": FX.change_register(),
+         "sensitivityModel": FX.sensitivity_model()}
 for mid in _declared:
     if mid.startswith("PH.") or mid not in _available:
         continue

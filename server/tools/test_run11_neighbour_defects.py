@@ -40,6 +40,11 @@ sys.path.insert(0, str(ROOT / "server"))
 from app.simulation import models_doc, models_evm, models_ext, models_gov  # noqa: E402
 from app.simulation.registry import CORE_VOTING_MODULES  # noqa: E402
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from run29_fixtures import (  # noqa: E402
+    sensitivity_model as _r29_sensitivity, tornado_model as _r29_tornado,
+)
+
 PASS = 0
 TOTAL = 0
 FAILURES: list[str] = []
@@ -141,24 +146,35 @@ SPECS = {
     ("A5.2", "removing evidence improves the reading"): {
         "name": "Sensitivity Analysis",
         "fn": models_doc.run_sensitivity_analysis,
-        "base": {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 500_000.0, "pv": 450_000.0,
-                 "cpi": 0.8, "spi": 0.89, "docRiskScore": 0.55},
-        "domains": {"docRiskScore": (0.0, 1.0)},
-        "required": ("docRiskScore",),
+        # RUN 29. The base is the structure this module now reads, because the six scalars are
+        # no longer inputs it has. The domain sweeps therefore run against the structure's own
+        # guards rather than against retired fields, and the in-domain case still reports.
+        "base": {"sensitivityModel": _r29_sensitivity()},
+        "domains": {},
+        "required": ("sensitivityModel",),
         "reproducer": None,
         "defect_class": "missingness improved the reading",
+        # RUN 29. The supplied contract replaced this computation: there is no declared response
+        # function, no declared base state and no declared range in a hard-coded elasticity of
+        # `bac / cpi`, and the two quantities ranked beside it were levels rather than responses.
+        # The reproducer's scalars now reach no arithmetic, so the refusal is the structural one.
+        "v3": True,
     },
     ("A5.3", "out-of-domain input reads Green"): {
         "name": "Tornado Risk Ranking",
         "fn": models_doc.run_tornado_diagram,
-        "base": {"cpi": 0.8, "spi": 0.89, "docRiskScore": 0.55,
-                 "actualPctComplete": 40.0, "plannedPctComplete": 55.0},
-        "domains": {"docRiskScore": (0.0, 1.0), "cpi": (0.0001, None), "spi": (0.0001, None),
-                    "actualPctComplete": (0.0, 100.0), "plannedPctComplete": (0.0, 100.0)},
-        "required": ("cpi", "spi", "docRiskScore", "actualPctComplete", "plannedPctComplete"),
+        # RUN 29, as above: this module ranks what the sensitivity analysis computed, so the
+        # structure it reads is the sensitivity model and the five scalars are not its inputs.
+        "base": {"sensitivityModel": _r29_tornado()},
+        "domains": {},
+        "required": ("sensitivityModel",),
         "reproducer": {"cpi": 0.8, "spi": 0.89, "docRiskScore": -30.0,
                        "actualPctComplete": 40.0, "plannedPctComplete": 55.0},
         "defect_class": "out-of-domain banding",
+        # RUN 29. The same, and more strongly: this module no longer computes anything of its
+        # own at all. It ranks what the sensitivity analysis computed, so a document risk score
+        # of minus thirty cannot reach a band because it cannot reach a computation.
+        "v3": True,
     },
     ("B3.2", "out-of-domain input reads Green"): {
         "name": "FAR Threshold Monitor",
@@ -288,12 +304,19 @@ def boundaries() -> None:
              "observation_period": "2026-06", "vintage": "2026-07 release",
              "base_index_value": 200.0, "current_index_value": 200.0,
              "cost_exposure": 500_000.0}}, True),
+        # RUN 29. These two edges are no longer inside any domain this module has: the five
+        # scalars are not inputs it reads. The expectation is inverted and the module's OWN
+        # domain edge is asserted beside it, on the structure it does read.
         ("A5.3", models_doc.run_tornado_diagram,
          {"cpi": 1.0, "spi": 1.0, "docRiskScore": 0.0, "actualPctComplete": 0.0,
-          "plannedPctComplete": 0.0}, True),
+          "plannedPctComplete": 0.0}, False),
         ("A5.3", models_doc.run_tornado_diagram,
          {"cpi": 1.0, "spi": 1.0, "docRiskScore": 1.0, "actualPctComplete": 100.0,
-          "plannedPctComplete": 100.0}, True),
+          "plannedPctComplete": 100.0}, False),
+        ("A5.3", models_doc.run_tornado_diagram,
+         {"sensitivityModel": _r29_tornado()}, True),
+        ("A5.2", models_doc.run_sensitivity_analysis,
+         {"sensitivityModel": _r29_sensitivity()}, True),
         ("B3.2", models_gov.run_far_threshold,
          {"bac": 1_000_000.0, "cpi": 1.0, "ev": 400_000.0, "ac": 400_000.0}, True),
     ]
@@ -422,23 +445,37 @@ def mutation_proofs() -> None:
           f"{with_doc_before.get('status_color')} -> {before.get('status_color')}")
     check("A5.2 missingness: corrected, the absent driver abstains",
           abstains(after), f"status {after.get('status_color')}")
+    # RUN 29. THE SECOND HALF OF THIS PROOF IS REPLACED, AND THE PROPERTY IT DEFENDED IS
+    # STRONGER RATHER THAN WEAKER. Run 11 fixed a real defect: an absent document risk score was
+    # read as a sensitivity of exactly zero, which demoted the driver and let withholding it
+    # calm the band. Run 20 cycle 9 then established that the score was never a sensitivity at
+    # all, and reported it as a level. Run 29's supplied contract removes it from this module
+    # entirely: a sensitivity is a declared response RECOMPUTED at a moved input, and neither the
+    # document risk score nor the schedule index is an input of the response this module used to
+    # evaluate. So SUPPLYING the score no longer produces a reading either, which means the
+    # ordering the defect exploited cannot exist in any direction.
     with_doc = models_doc.run_sensitivity_analysis(dict(s_base, docRiskScore=0.55), rand, None)
-    check("A5.2 missingness: corrected, the supplied driver still reports",
-          with_doc.get("status_color") is not None, "it abstained too")
-    # RUN 20 CYCLE 9. THIS CHECK'S SCIENTIFIC PREMISE IS NOW WRONG AND IS REPLACED RATHER THAN
-    # DELETED. Run 11 fixed a real defect here: an absent document risk score was read as a
-    # sensitivity of exactly zero, which demoted the driver and let withholding it calm the band.
-    # The requirement that the score be PRESENT is unchanged and is still checked immediately
-    # above. What this last check asserted -- that the document risk score can be the TOP DRIVER
-    # -- rested on the assumption that it was a sensitivity at all. It is not: it is the raw
-    # score, never perturbed, and the estimate at completion is not a function of it. So a
-    # quantity that cannot be a sensitivity cannot be the top one, and the correct assertion is
-    # the opposite: it is reported as a LEVEL, under its own name, and is not ranked.
-    check("A5.2: the document risk score is reported as a level and is not eligible to be the "
-          "top driver, because it is never perturbed",
-          with_doc.get("top_driver") == "CPI"
-          and "DocRisk" in [x["name"] for x in with_doc.get("levels_not_perturbed", [])],
-          str(with_doc.get("top_driver")))
+    check("A5.2 missingness: corrected, supplying the driver does not produce a reading either, "
+          "so no ordering between present and absent exists to be exploited",
+          abstains(with_doc), f"status {with_doc.get('status_color')}")
+    _sens = models_doc.run_sensitivity_analysis({"sensitivityModel": _r29_sensitivity()},
+                                                rand, None)
+    check("A5.2: with a governed sensitivity model the response is recomputed at a moved input "
+          "and the supplied contract's own answer of 1.68 is reproduced",
+          abs(_sens["inputs"][0]["normalised_sensitivity"] - 1.68) < 1e-9,
+          str(_sens.get("top_normalised_sensitivity")))
+    check("A5.2: and it is declared LOCAL rather than global, as the contract requires",
+          _sens.get("method_scope") == "LOCAL", str(_sens.get("method_scope")))
+    # AND THE 5.3 LINEAGE, proved by execution rather than by the label: the tornado's bars are
+    # the sensitivity's own low and high responses, so it cannot be an independent evidence body.
+    _tor = models_doc.run_tornado_diagram({"sensitivityModel": _r29_sensitivity()}, rand, None)
+    _sens_lows = {i["input_id"]: (i["response_at_low"], i["response_at_high"])
+                  for i in _sens["inputs"]}
+    check("A5.3: every bar it presents is the low and high response the sensitivity analysis "
+          "computed, so it creates no evidence of its own",
+          all((b["response_at_low"], b["response_at_high"]) == _sens_lows[b["input_id"]]
+              for b in _tor["bars"]) and _tor.get("independent_evidence") is False,
+          str(_tor.get("derived_from")))
 
 
 reconciliation()

@@ -121,65 +121,22 @@ TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
         disposition="FUTURE_RESEARCH_ONLY",
     ),
 
-    # -------------------------------------------------------------- category 4, change and claims
-    "A4.6": MethodLabel(
-        registered="Change Order Frequency",
-        truthful="Change order count with contract growth",
-        performs="bands a raw count of change orders jointly with the percentage growth from the "
-                 "baseline to the revised contract sum",
-        absent="an exposure window. A frequency is a count over a period or over an exposure "
-               "unit, and no denominator of either kind is carried, so the count is a count",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A4.7": MethodLabel(
-        registered="Dispute Escalation Index",
-        truthful="Weighted project stress composite",
-        performs="forms a fixed weighted sum of a capped request count, a capped change order "
-                 "count and the document risk score, and requires all three",
-        absent="claim and dispute state evidence on a governed escalation ladder. No notice, "
-               "claim, mediation or arbitration state is read, and no dispute is inferred",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A4.10": MethodLabel(
-        registered="Specification Conflict Density",
-        truthful="Document risk weighted by request volume",
-        performs="multiplies the document risk score by the square root of the count of requests "
-                 "for information and caps the result at one",
-        absent="identified specification conflicts and a governed exposure unit to measure them "
-               "over. No conflict is located in any document and no evidence location is "
-               "retained, so nothing is counted as a conflict",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-
-    # ------------------------------------------------------------------- category 5, simulation
-    "A5.3": MethodLabel(
-        registered="Tornado Risk Ranking",
-        truthful="Ranked present-state deviations",
-        performs="ranks four present-state deviations by magnitude and bands their mean",
-        absent="declared input ranges and a response evaluated at each low and high. A tornado "
-               "diagram ranks the swing in an output when each input is moved across its range; "
-               "no range is declared and no output is re-evaluated",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A5.5": MethodLabel(
-        registered="Rework Feedback Loop",
-        truthful="Weighted rework pressure composite",
-        performs="forms a fixed weighted sum of a capped request count, a capped change order "
-                 "count and the shortfall of the cost index",
-        absent="stocks and flows with a feedback structure: work done, work discovered "
-               "defective, work returned and the rates between them over time. Nothing "
-               "accumulates and nothing feeds back",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A5.8": MethodLabel(
-        registered="Discrete Event Simulation",
-        truthful="Throughput index from the schedule index and progress ratio",
-        performs="forms an interruption term from the progress shortfall and the schedule index "
-                 "shortfall and reports its reciprocal as a throughput index",
-        absent="an event schedule: entities, resources, queues, an event list and a simulation "
-               "clock. No event is scheduled and no clock advances",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
+    # ------------------------------------------- categories 4 and 5, change, claims, simulation
+    # RUN 29 REMOVED SIX ENTRIES FROM HERE: A4.6 Change Order Frequency, A4.7 Dispute Escalation
+    # Index, A4.10 Specification Conflict Density, A5.3 Tornado Risk Ranking, A5.5 Rework
+    # Feedback Loop and A5.8 Discrete Event Simulation.
+    #
+    # A truthful method label is a statement about what the code DOES. Each of those six now does
+    # what its registered name says, from a governed structure supplied by the owner's Run-29
+    # contract, and abstains when that structure is absent. Leaving the labels would be the same
+    # untruth this table exists to prevent, told in the other direction: a reader would be shown
+    # "Throughput index from the schedule index and progress ratio" beside a module that runs an
+    # event list with a clock, a resource and a queue, and "Ranked present-state deviations"
+    # beside a module that ranks the swings a sensitivity analysis computed.
+    #
+    # The register `test_run20_cycle10_truthful_labels.py` maintains is what forces this file to
+    # be corrected rather than left: it asserts that every labelled module still lacks the
+    # structure the label says is absent, so a label whose structure has arrived turns it red.
 
     # ------------------------------------------------------------------- category 6, ensembles
     "B1.2": MethodLabel(

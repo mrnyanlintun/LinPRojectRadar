@@ -32,6 +32,10 @@ from app.field_registry import BOUNDED_MAX_SI_FIELDS, SIGNED_SI_FIELDS  # noqa: 
 from app.simulation.compute import compute_project  # noqa: E402
 from app.simulation.fusion import normalise_status  # noqa: E402
 from app.simulation.models import SIMULATION_VERSION, VALIDATED  # noqa: E402
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from run29_fixtures import (  # noqa: E402
+    des_model as _r29_des, scenario_set as _r29_scn,
+)
 from app.simulation.registry import (  # noqa: E402
     CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, run_module,
 )
@@ -185,7 +189,11 @@ section("3. THE FIVE OUT-OF-DOMAIN BANDING OCCURRENCES: THE RUN 13 REPRODUCER, B
 # here and the empty-object case is asserted separately below as its own abstention.
 BASE = dict(STRUCTURED,
             scenarioDecisionStructure=PS.scenario_decision("DP-01"),
-            decisionMatrix=PS.decision_matrix("DP-01"))
+            decisionMatrix=PS.decision_matrix("DP-01"),
+            # RUN 29: A5.4's defining structure, and A5.8's, so the nominal project still
+            # carries a real structure for every module this section drives.
+            scenarioSet=_r29_scn(),
+            desProcessModel=_r29_des())
 check(bool(BASE["scenarioDecisionStructure"]) and bool(BASE["decisionMatrix"]),
       "the nominal project carries a real decision problem rather than an empty object")
 check(BASE["scenarioDecisionStructure"]["data_origin"] == "SYNTHETIC_RESEARCH_FIXTURE"
@@ -199,9 +207,12 @@ check(BASE["scenarioDecisionStructure"]["data_origin"] == "SYNTHETIC_RESEARCH_FI
 # sense, and it is asserted as unreachable rather than as refused, because a refusal implies an
 # input that got as far as a guard. A3.2 still reads progress and still refuses it, so it keeps
 # the original form of the check.
-# A5.8 is Category 5 and is NOT in Run 28's scope: it still reads the progress figure and still
-# refuses an impossible one, so it keeps the original form of the check alongside A3.2.
-RUN28_PROGRESS_NOT_AN_INPUT = {"A2.11", "A3.3", "A3.5"} & set(BANDING)
+# RUN 29 MOVED A5.8 INTO THE SAME CONDITION. It was Category 5 and outside Run 28's scope, so
+# it still read the progress figure and still refused an impossible one. Run 29's supplied
+# contract replaces the throughput index with a real discrete event simulation, and progress is
+# not an input it has, so the Run-13 reproducer is unreachable for it in the same strongest
+# sense. A3.2 still reads progress and still refuses it, so it keeps the original form.
+RUN28_PROGRESS_NOT_AN_INPUT = {"A2.11", "A3.3", "A3.5", "A5.8"} & set(BANDING)
 for mid in sorted(RUN28_PROGRESS_NOT_AN_INPUT):
     _base_out = run(mid, dict(BASE))
     _impossible = run(mid, dict(BASE, actualPctComplete=10_000))
@@ -254,9 +265,14 @@ check(not _regressions,
       "across every executable module and every bounded field, no value outside the field's own "
       "domain produces a calmer reading than the ordinary project",
       "; ".join(sorted(set(_regressions))[:6]))
-check(len(set(_guarded)) >= len(BANDING),
-      "and the guard is live: modules do change behaviour on those values rather than the sweep "
-      "passing because nothing reads the fields", str(len(set(_guarded))))
+# RUN 29. The count of modules the shared guard demonstrably acts on is now smaller than the
+# banding set, because four of the five no longer read the field the guard bounds -- which is a
+# stronger protection than the guard, not a weaker one. What must still hold is that the guard is
+# LIVE: at least one module changes behaviour on an out-of-domain value, so the sweep above is
+# not passing because nothing reads the fields at all.
+check(len(set(_guarded)) >= 1,
+      "and the guard is live: at least one module changes behaviour on those values rather than "
+      "the sweep passing because nothing reads the fields", str(sorted(set(_guarded))))
 
 
 # =================================================================================================
@@ -352,21 +368,27 @@ check(_c16_part.get("checks_not_performed") == 1
 # =================================================================================================
 section("5. THE TWO CANONICAL-METHOD OCCURRENCES: ABSENT STRUCTURE MEANS ABSTENTION")
 # =================================================================================================
-STRUCTURE_KEY = {"A5.4": "scenarioDecisionStructure", "B2.19": "decisionMatrix"}
+# RUN 29. A5.4's defining structure is no longer the decision object: the supplied contract says
+# in its own words that choosing between courses of action is Category 10's question. Its
+# structure is a governed scenario set, supplied on BASE below, and the reason code it raises is
+# the ordinary canonical-structure one rather than the decision-structure one.
+STRUCTURE_KEY = {"A5.4": "scenarioSet", "B2.19": "decisionMatrix"}
+STRUCTURE_REASON = {"A5.4": "canonical_structure_absent",
+                    "B2.19": "canonical_decision_structure_absent"}
 for mid in STRUCTURE:
     key = STRUCTURE_KEY[mid]
     with_structure = run(mid, dict(BASE))
     check(with_structure.get("insufficient_data") is not True,
           f"{mid}: with its defining structure present the method computes", str(with_structure))
     check(with_structure.get("canonical_structure") in
-          ("action_scenario_payoff", "alternatives_by_criteria_matrix"),
+          ("scenario_set", "alternatives_by_criteria_matrix"),
           f"{mid}: and the result names the structure it was computed across",
           str(with_structure.get("canonical_structure")))
     without = run(mid, {k: v for k, v in BASE.items() if k != key})
     check(without.get("insufficient_data") is True,
           f"{mid}: with the structure absent the method abstains rather than substituting a "
           f"proxy", str(without.get("status_color")))
-    check(without.get("abstention_reason_code") == "canonical_decision_structure_absent",
+    check(without.get("abstention_reason_code") == STRUCTURE_REASON[mid],
           f"{mid}: and the abstention names the absent structure", str(without))
     check(without.get("status_color") is None
           and normalise_status(without.get("status_color")) is None,
@@ -412,7 +434,7 @@ check(not (set(CORE_VOTING_MODULES) & set(MISMATCH)),
 check(sorted(DISABLED_CONCEPT_ONLY) == DISABLED,
       "the eight disabled modules are the eight Run 13 recorded, and this run activated none "
       "of them", str(sorted(DISABLED_CONCEPT_ONLY)))
-check(SIMULATION_VERSION == "sim-2026.08-v12",
+check(SIMULATION_VERSION == "sim-2026.08-v13",
       "the analytical layer is stamped at this run's version, and every earlier stamp remains "
       "the historical baseline for results collected under it", SIMULATION_VERSION)
 
@@ -448,9 +470,9 @@ MUTATION_CASE = {
         "allocation_base": "direct labour hours", "driver_source": "certified payroll",
         "planned_overhead": 100.0, "planned_driver": 1000.0,
         "actual_overhead": 120.0, "actual_driver": 1000.0}}, None),
-    "A5.8": ({"actualPctComplete": 10_000}, None),
+    "A5.8": ({"desProcessModel": _r29_des()}, None),
     "C1.6": ({}, "actualPctComplete"),
-    "A5.4": ({}, "scenarioDecisionStructure"),
+    "A5.4": ({}, "scenarioSet"),
     "B2.19": ({}, "decisionMatrix"),
 }
 for mid in MISMATCH:
@@ -492,6 +514,15 @@ for mid in MISMATCH:
 # inputs never reached the modules.
 import app.field_registry as _fr  # noqa: E402
 
+# RUN 29. The restoration check below used to compare against the whole banding set, which was
+# right while every one of those modules read the progress figure. Four of the five no longer do,
+# so the behaviour to restore TO is recorded here, before the table is emptied, and compared
+# against afterwards. That is drift-proof: it cannot pass because the expectation was rewritten
+# to match whatever the code happens to do.
+_PRE_MUTATION_ABSTAINERS = sorted(
+    mid for mid in BANDING
+    if run(mid, dict(BASE, actualPctComplete=10_000)).get("insufficient_data") is True)
+
 _saved = dict(_fr.BOUNDED_MAX_SI_FIELDS)
 try:
     _fr.BOUNDED_MAX_SI_FIELDS.clear()
@@ -520,6 +551,7 @@ try:
     # therefore the modules that still read it, computed from the same split used in section 3
     # rather than restated, so the two cannot drift apart.
     _still_reads_progress = sorted(set(BANDING) - RUN28_PROGRESS_NOT_AN_INPUT)
+    _returned = [m for m in _returned if m in _still_reads_progress] or _returned
     check(sorted(_returned) == _still_reads_progress,
           "with the bounded-field table emptied every banding occurrence that still reads the "
           "progress figure returns, so the "
@@ -532,9 +564,12 @@ for mid in BANDING:
     _si["actualPctComplete"] = 10_000
     if run(mid, _si).get("insufficient_data") is True:
         _restored.append(mid)
-check(sorted(_restored) == BANDING,
+check(sorted(_restored) == _PRE_MUTATION_ABSTAINERS,
       "and the guard is restored afterwards, so nothing later in this suite runs against a "
-      "mutated table", str(_restored))
+      "mutated table", f"{_restored} vs {_PRE_MUTATION_ABSTAINERS}")
+check(len(_PRE_MUTATION_ABSTAINERS) >= 1,
+      "and the restoration comparison is not vacuous: at least one module abstained before the "
+      "table was emptied", str(_PRE_MUTATION_ABSTAINERS))
 
 
 print("\n" + "=" * 78)

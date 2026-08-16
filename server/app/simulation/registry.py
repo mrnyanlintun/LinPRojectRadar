@@ -209,20 +209,13 @@ BAND_SOURCE_LIMIT: str = (
 PROXY_QUALIFIERS: dict[str, str] = {
     "A1.2": "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma "
             "floor and Amber band uncalibrated",
-    # REVISED BY THE FIFTEEN-DEFECTS RUN, and revised deliberately rather than left standing.
-    # The previous run's label named "fallback behaviour" as part of what this computation does.
-    # Defect 12 removed the fallbacks, so the label had stopped describing the module: it now
-    # requires verified lost days and a positive float figure and refuses without either, and a
-    # label that still advertised a fabrication would be inaccurate in the opposite direction
-    # from the one the labelling exercise was correcting. What remains uncalibrated is the band
-    # ladder, and that is what the qualifier now says.
-    "A4.5": "a lost-days over available-float ratio with ungoverned bands, computed only from "
-            "verified lost days and a reported float figure",
-    "A4.6": "contract growth plus a raw count; no time or exposure denominator",
-    "A4.7": "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
-    "A4.8": "a precomputed compliance score; provenance and construction unvalidated",
-    "A5.2": "local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
-    "A5.3": "a ranking of four present-state deviations; no outcome-response ranges estimated",
+    # RUN 29. SIX FURTHER ENTRIES ARE GONE, and they are gone for the same reason Run 28's
+    # eleven went: the proxy is gone. A4.5, A4.6, A4.7, A4.8, A5.2 and A5.3 now carry out the
+    # canonical method their registered name claims, from a governed structure, and abstain when
+    # that structure is absent. A qualifier saying "a lost-days over available-float ratio", "an
+    # ad hoc 0.3 / 0.3 / 0.4 weighted sum" or "a ranking of four present-state deviations" would
+    # now be false in the opposite direction: it would advertise a weakness the code no longer
+    # has, which is the error this dictionary exists to prevent in its own direction.
     "B2.10": "hard-coded transformations of raw CPI, SPI and document risk",
     "B2.11": "hard-coded memberships consuming raw metrics; no calibration evidenced",
     "B2.12": "designed perturbations, not elicited or observed hesitant assessments",

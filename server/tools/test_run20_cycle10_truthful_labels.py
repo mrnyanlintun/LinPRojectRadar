@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.simulation import method_labels as ML  # noqa: E402
+from app.simulation import registry  # noqa: E402
 from app.simulation.registry import (  # noqa: E402
     CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, DISABLED_EVIDENCE_UNDER_REVIEW,
     DISABLED_MODULES, _attach_method_label, activation_state, registry_index, run_all,
@@ -74,8 +75,22 @@ STRUCTURAL_8 = ["A1.10", "A3.9", "A4.1", "A6.3", "A6.4", "B2.18", "B4.2", "C1.4"
 #: A3.8 is NOT among them: it remains disabled and non-voting, and keeps its label.
 RESOLVED_BY_RUN_28 = ["A1.5", "A1.6", "A1.10", "A1.11", "A2.7", "A2.10", "A2.11", "A3.6",
                       "A3.9"]
-MISMATCH_23_STILL_LABELLED = [m for m in MISMATCH_23 if m not in RESOLVED_BY_RUN_28]
-STRUCTURAL_8_STILL_LABELLED = [m for m in STRUCTURAL_8 if m not in RESOLVED_BY_RUN_28]
+#: RUN 29 RESOLVED SIX MORE, by the same first resolution and for the same reason: each now
+#: performs the canonical method its registered name claims, from a governed structure the
+#: owner's supplied Run-29 contract required to be supplied, and abstains when it is absent. A
+#: label saying "Throughput index from the schedule index and progress ratio" beside a module
+#: that runs an event list with a clock, a resource and a queue would be the false claim this
+#: table exists to prevent, told in the opposite direction.
+RESOLVED_BY_RUN_29 = ["A4.6", "A4.7", "A4.10", "A5.3", "A5.5", "A5.8"]
+RESOLVED = RESOLVED_BY_RUN_28 + RESOLVED_BY_RUN_29
+MISMATCH_23_STILL_LABELLED = [m for m in MISMATCH_23 if m not in RESOLVED]
+STRUCTURAL_8_STILL_LABELLED = [m for m in STRUCTURAL_8 if m not in RESOLVED]
+#: The module this suite drives for the "label reaches the result" checks. It must be one that
+#: still carries a label, so it is derived from the list above rather than named, which stops it
+#: silently becoming a module whose label a later run removed.
+LABELLED_PROBE = next(m for m in MISMATCH_23_STILL_LABELLED
+                      if m not in registry.DISABLED_CONCEPT_ONLY
+                      and m not in registry.DISABLED_EVIDENCE_UNDER_REVIEW)
 
 
 print("=== 1. EVERY LABEL MISMATCH IS RESOLVED, AND RESOLVED BY NAME ===")
@@ -154,7 +169,7 @@ WOULD_NEED = {
     "A3.6": "riskRegisterDistributions",
     "A3.9": "externalPriceIndex",
     "A5.5": "reworkStocksAndFlows",
-    "A5.8": "eventSchedule",
+    "A5.8": "eventSchedule",  # kept for the record; A5.8's structure arrived in Run 29
     "B2.2": "informationTable",
     "B2.14": "momentConstraints",
     "B2.18": "alternativeSet",
@@ -179,15 +194,16 @@ check("every labelled module names, in plain words, the structure that is absent
 
 print("\n=== 3. THE LABEL REACHES THE RESULT, FOR A COMPUTING MODULE AND A DISABLED ONE ===")
 _e: dict = {}
-_attach_method_label(_e, "A5.8")
+_attach_method_label(_e, LABELLED_PROBE)
 check("a computing module's record carries the truthful name",
-      _e.get("truthful_method_name") == "Throughput index from the schedule index and "
-                                        "progress ratio", str(_e))
+      _e.get("truthful_method_name") == ML.method_label(LABELLED_PROBE).truthful, str(_e))
 check("and the registered name beside it, so a reader sees both claims and is never shown one "
       "while believing it is the other",
-      _e.get("registered_name") == "Discrete Event Simulation")
-check("and the absent structure", "event schedule" in _e.get("absent_canonical_structure", ""))
-check("and the disposition", _e.get("label_disposition") == "CORRECT_PROXY_ONLY")
+      _e.get("registered_name") == ML.method_label(LABELLED_PROBE).registered)
+check("and the absent structure",
+      _e.get("absent_canonical_structure", "") == ML.method_label(LABELLED_PROBE).absent)
+check("and the disposition",
+      _e.get("label_disposition") == ML.method_label(LABELLED_PROBE).disposition)
 check("and the participant surface owner decision, stated on the record itself",
       _e.get("participant_surface") == ML.PARTICIPANT_SURFACE_OWNER_DECISION)
 
@@ -287,11 +303,11 @@ print("\n=== 7. GUARD NON-VACUITY: EACH GUARD IS SHOWN TO CATCH WHAT IT PROTECTS
 # restored and required to go green again.
 
 # 7a. The registered-name check must catch a registry rename that leaves a stale claim.
-_saved_name = IDX["A5.8"]["module_name"]
-IDX["A5.8"]["module_name"] = "Something Else Entirely"
+_saved_name = IDX[LABELLED_PROBE]["module_name"]
+IDX[LABELLED_PROBE]["module_name"] = "Something Else Entirely"
 _fired = not all(IDX[m]["module_name"] == ML.method_label(m).registered
                  for m in ML.labelled_modules())
-IDX["A5.8"]["module_name"] = _saved_name
+IDX[LABELLED_PROBE]["module_name"] = _saved_name
 check("the registered-name guard FIRES on a deliberate registry rename", _fired)
 check("and goes green again once the rename is undone",
       all(IDX[m]["module_name"] == ML.method_label(m).registered
@@ -316,23 +332,23 @@ except ValueError:
 check("and REFUSES a disposition outside the permitted vocabulary", _refused)
 
 # 7d. The coverage check must catch a label removed from the table.
-_saved = ML.TRUTHFUL_METHOD_LABELS.pop("A5.8")
+_saved = ML.TRUTHFUL_METHOD_LABELS.pop(LABELLED_PROBE)
 _fired = not all(ML.method_label(m) is not None for m in MISMATCH_23_STILL_LABELLED)
-ML.TRUTHFUL_METHOD_LABELS["A5.8"] = _saved
+ML.TRUTHFUL_METHOD_LABELS[LABELLED_PROBE] = _saved
 check("the coverage guard FIRES when a label is deliberately removed from the table", _fired)
 check("and goes green again once it is restored",
       all(ML.method_label(m) is not None for m in MISMATCH_23_STILL_LABELLED))
 
 # 7e. The participant-leak check must catch a truthful name written into a ledger key.
-_probe = dict(_by_id["A5.8"])
-_probe["evidence_metric"] = ML.method_label("A5.8").truthful + " reading"
-_fired = any(ML.method_label("A5.8").truthful in _probe[k]
+_probe = dict(_by_id[LABELLED_PROBE])
+_probe["evidence_metric"] = ML.method_label(LABELLED_PROBE).truthful + " reading"
+_fired = any(ML.method_label(LABELLED_PROBE).truthful in _probe[k]
              for k in _ledger_keys if isinstance(_probe.get(k), str))
 check("the participant-leak guard FIRES when a truthful name is deliberately written into a "
       "ledger key", _fired)
 check("and the real record does not trip it",
-      not any(ML.method_label("A5.8").truthful in _by_id["A5.8"][k]
-              for k in _ledger_keys if isinstance(_by_id["A5.8"].get(k), str)))
+      not any(ML.method_label(LABELLED_PROBE).truthful in _by_id[LABELLED_PROBE][k]
+              for k in _ledger_keys if isinstance(_by_id[LABELLED_PROBE].get(k), str)))
 
 # 7f. The attachment itself must be capable of NOT firing, or section 3's last check is vacuous.
 _v: dict = {}

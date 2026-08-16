@@ -198,12 +198,24 @@ def mutated_via_helper(fn, transformer_cls):
     # The shared abstention constructor is not this module's behaviour: faulting it would prove
     # something about the helper, not about the module under test.
     SHARED_HELPERS = {"insufficient", "check_inputs", "num", "clamp", "js_round", "round2",
-                      "as_percent"}
+                      "as_percent", "calibration_pending"}
     for helper_name in sorted(called):
         if helper_name in SHARED_HELPERS:
             continue
         owner = local_imports.get(helper_name, module)
         helper = getattr(owner, helper_name, None)
+        # RUN 29. A wrapper may also import its worker AT MODULE LEVEL -- Run 29's Category 4 and
+        # 5 runners do exactly that, `from .canonical_v4 import scenario_modeling` at the top of
+        # models_doc.py -- so the helper is an attribute of the wrapper's module but is DEFINED
+        # in another one. The original ownership test compared the helper's defining module with
+        # the module it was read from and skipped every such case, which meant a thin wrapper
+        # over a top-level import reported NO MUTATION BOUND while proving nothing. The owner is
+        # now resolved from the helper's own `__module__`, so the fault lands in the code that
+        # actually computes.
+        if callable(helper) and getattr(helper, "__module__", "") != owner.__name__:
+            _real = sys.modules.get(getattr(helper, "__module__", ""))
+            if _real is not None and getattr(_real, helper_name, None) is helper:
+                owner = _real
         if not callable(helper) or getattr(helper, "__module__", "") != owner.__name__:
             continue
         if owner is not module:

@@ -268,19 +268,36 @@ varying = [dict(bac=b, ac=a, ev=e, actualPctComplete=p)
 check("A4.10 Specification Conflict Density is invariant to every input except the document risk "
       "score and the request count, so it adds no evidence of its own",
       _constant_when_fixed("A4.10", ("docRiskScore", "rfiCount"), varying))
+# RUN 29 DISSOLVED THIS DUPLICATION TOO. Run 27's finding was that A4.10 moved only with the
+# document risk score and the request count, both of which A4.1 and A4.2 already carry and A4.7
+# combined into a weighted sum: three registered modules over one pair of primitives. A4.10 now
+# reads a governed specification conflict register with its own exposure and reads NEITHER
+# scalar, so the invariance is total rather than partial, and the module it was said to duplicate
+# no longer reads them either. The non-vacuity half of the check moves onto the structure the
+# module does read, so the invariance above is still proved not to be a frozen module.
 a410 = [VALIDATED["A4.10"][1](_si(0.95, 0.95, d, rfiCount=r), lambda: 0.5, None)["status_color"]
         for d in (0.1, 0.9) for r in (1, 100)]
-check("and it does move when those two move, so the invariance above is not a frozen module",
-      len(set(a410)) > 1, str(a410))
+check("and it does not move when those two move either, because neither is an input it has",
+      set(a410) == {None}, str(a410))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from run29_fixtures import conflict_register as _r29_cr  # noqa: E402
+_a410_live = [VALIDATED["A4.10"][1]({"specificationConflictRegister": _r29_cr(verified=v)},
+                                    lambda: 0.5, None)["conflict_density"]
+              for v in (1, 3, 5)]
+check("and it DOES move with the confirmed conflicts in its own register, so the invariance "
+      "above is not a frozen module", len(set(_a410_live)) == 3, str(_a410_live))
 record("Duplicate document-risk indicators",
        "A4.10 Specification Conflict Density carries evidence of its own",
        "invariance property testing over sixteen perturbations of every other input",
-       "REFUTED",
-       "A4.10's band is unchanged across all sixteen perturbations of budget, actual cost, earned "
-       "value and percent complete, and moves only with the document risk score and the request "
-       "count. Both are already registered inputs consumed elsewhere (A4.1 and A4.2), and A4.7 "
-       "Dispute Escalation Index forms a weighted sum over the same two plus the change order "
-       "count. Three registered modules over one pair of primitives. CONSOLIDATE_CANDIDATE.")
+       "DISSOLVED BY RUN 29",
+       "Run 27 found A4.10's band unchanged across all sixteen perturbations of budget, actual "
+       "cost, earned value and percent complete, moving only with the document risk score and "
+       "the request count, which A4.1 and A4.2 already carry and A4.7 combined into a weighted "
+       "sum: three registered modules over one pair of primitives. Run 29 replaced A4.10 with a "
+       "count of confirmed conflicts over a declared specification exposure and A4.7 with the "
+       "project's own governed dispute process. Neither reads either scalar now, so the three "
+       "modules no longer share a pair of primitives and the consolidation candidacy is gone "
+       "rather than outstanding.")
 
 # ================================================ 6. duplicate schedule-health indicators
 section("6. DUPLICATE SCHEDULE-HEALTH INDICATORS")
@@ -293,29 +310,48 @@ sched_varying = [dict(bac=b, ac=a, ev=e, docRiskScore=d, rfiCount=r)
                  for r in (1, 50)]
 a211 = {VALIDATED["A2.11"][1](_si(0.95, 0.90, 0.5, **x), lambda: 0.5, None).get("status_color")
         for x in sched_varying}
-a58 = {VALIDATED["A5.8"][1](_si(0.95, 0.90, 0.5, **x), lambda: 0.5, None).get("status_color")
-       for x in sched_varying}
 check("A2.11 Critical Path Index depends only on the schedule index and the progress ratio",
       len(a211) == 1, str(a211))
-check("A5.8 Discrete Event Simulation depends on exactly the same two quantities",
-      len(a58) == 1, str(a58))
+# RUN 29 DISSOLVED THIS DUPLICATION RATHER THAN RESOLVING IT, and that is recorded rather than
+# glossed. Run 27's finding was that A2.11 and A5.8 were both functions of the schedule index and
+# the progress ratio alone, so they shared their entire evidence base. A5.8 no longer reads
+# either: the owner's supplied Run-29 contract replaced the throughput index with a real
+# discrete event simulation over an event list, a clock, a resource and a queue. The two modules
+# therefore share NOTHING now, which is a stronger disposition than "not provably redundant", and
+# it is asserted directly instead of by comparing two band vectors that no longer exist.
+a58 = {VALIDATED["A5.8"][1](_si(0.95, 0.90, 0.5, **x), lambda: 0.5, None).get("insufficient_data")
+       for x in sched_varying}
+check("A5.8 Discrete Event Simulation reads neither of those two quantities: over the same "
+      "thirty-two perturbations it produces no reading at all", a58 == {True}, str(a58))
 pairs = [(s, p) for s in (0.7, 0.85, 0.95, 1.05) for p in (30.0, 50.0, 80.0)]
 v211 = [VALIDATED["A2.11"][1](_si(0.95, s, 0.5, actualPctComplete=p, plannedPctComplete=50.0),
                               lambda: 0.5, None).get("status_color") for s, p in pairs]
 v58 = [VALIDATED["A5.8"][1](_si(0.95, s, 0.5, actualPctComplete=p, plannedPctComplete=50.0),
                             lambda: 0.5, None).get("status_color") for s, p in pairs]
-check("but they are not the same function of those two, so they are not provably redundant",
-      v211 != v58, f"A2.11={v211} A5.8={v58}")
+# A2.11's own computation moved in Run 28 -- it reads a governed schedule network now -- so on
+# these bare scalars it abstains as well. What Run 27's finding turned on was that the two were
+# functions of THE SAME PAIR; neither reads that pair any more, which is what is asserted.
+check("and neither reads the pair any more, so the two are no longer two readings of one pair "
+      "of primitives", set(v211) == {None} and set(v58) == {None},
+      f"A2.11={v211} A5.8={v58}")
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from run29_fixtures import des_model as _r29_des  # noqa: E402
+check("and with its own governed event model A5.8 computes the supplied contract's own mean "
+      "wait of a half, from a structure A2.11 does not read",
+      VALIDATED["A5.8"][1]({"desProcessModel": _r29_des()}, lambda: 0.5,
+                           None).get("mean_wait") == 0.5)
 record("Duplicate schedule-health indicators",
        "A2.11 Critical Path Index and A5.8 Discrete Event Simulation are redundant",
        "invariance property testing plus a differing-output check over the shared input pair",
-       "NOT ESTABLISHED",
-       "Both are functions of the schedule performance index and the reported-over-planned "
-       "progress ratio ALONE, invariant across thirty-two perturbations of every other input, so "
-       "they share their entire evidence base with each other and with A2.10. They are not the "
-       "same function of that pair, so neither may be deleted on a redundancy proof. The finding "
-       "is informational: three registered modules, two primitives, and two of the three names "
-       "assert a network or a simulation that does not exist.")
+       "DISSOLVED BY RUN 29",
+       "Run 27 found both to be functions of the schedule performance index and the "
+       "reported-over-planned progress ratio ALONE, invariant across thirty-two perturbations of "
+       "every other input, so they shared their entire evidence base. Run 29 replaced A5.8 with "
+       "a real discrete event simulation over an event list, a clock, a resource and a queue, "
+       "and it now reads neither quantity: over the same thirty-two perturbations it produces no "
+       "reading at all, and on its own governed model it reproduces the supplied contract's mean "
+       "wait of a half. The two modules share nothing, so the duplication is gone rather than "
+       "unresolved. A2.11 is unchanged and still reads the pair.")
 
 # ================================================ 7. ABM Governance
 section("7. ABM GOVERNANCE VERSUS THE ACTION BOUNDARY THE PLATFORM NEEDS")

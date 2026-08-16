@@ -54,6 +54,11 @@ from run28_production_changes import (  # noqa: E402
     RUN28_NEW_PRODUCTION_FILES,
     RUN28_PRODUCTION_CHANGES,
 )
+from run29_production_changes import (  # noqa: E402
+    RUN29_CHANGES_TO_POST_BASELINE_FILES,
+    RUN29_NEW_PRODUCTION_FILES,
+    RUN29_PRODUCTION_CHANGES,
+)
 from population import population  # noqa: E402
 
 ROOT = HERE.parent.parent
@@ -134,8 +139,15 @@ run26_declared = {entry[1] for entry in RUN26_PRODUCTION_CHANGES.values()}
 # code_audit/run20_anti_fossilization_register.csv.
 run28_declared = {entry[1] for entry in RUN28_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN28_NEW_PRODUCTION_FILES}
+# RUN 29, THE CATEGORY 4 AND 5 CANONICAL REMEDIATION. Same construction, same property: the union
+# of all manifests must still equal the differing set EXACTLY. models.py and documents.py are NOT
+# in it -- Run 28 already declares both -- and registry.py, method_labels.py and parameters.py
+# are not either, because Run 20 declares all three, so one change is still never counted twice.
+# The guard was observed RED against this build before these declarations were written.
+run29_declared = {entry[1] for entry in RUN29_PRODUCTION_CHANGES.values()
+                  if entry[1] not in RUN29_NEW_PRODUCTION_FILES}
 declared = (run20_declared | run21_declared | run23_declared | run25_declared
-            | run26_declared | run28_declared)
+            | run26_declared | run28_declared | run29_declared)
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",
@@ -226,17 +238,41 @@ check("an architectural entry may not name a file the module manifest already de
       "change cannot be counted as two declarations",
       not ({e[1] for e in RUN20_ARCHITECTURAL_CHANGES.values()}
            & {e[1] for e in RUN20_PRODUCTION_CHANGES.values()}))
+# RUN 29. THE NO-DUPLICATE RULE, ACROSS EVERY MANIFEST RATHER THAN WITHIN ONE. A path declared by
+# two runs would let one change be counted as two declarations and would make the union equality
+# above satisfiable by a file nobody actually touched twice.
+_by_manifest = {
+    "run20": run20_declared, "run21": run21_declared, "run23": run23_declared,
+    "run25": run25_declared, "run26": run26_declared, "run28": run28_declared,
+    "run29": run29_declared,
+}
+_dupes = sorted({p for a in _by_manifest for b in _by_manifest if a < b
+                 for p in (_by_manifest[a] & _by_manifest[b])})
+check("no production path is declared by two different runs' manifests, so one change can never "
+      "be counted as two declarations", not _dupes, str(_dupes))
+# RUN 29. THE FILES THE RUN-20 FREEZE CANNOT COVER. A file created after the freeze has no
+# baseline row, so the byte comparison above is structurally blind to a later change to it. Run
+# 29 changed three such files and declares them separately; what is asserted here is that each
+# one really is outside the baseline (so it belongs on that list rather than on the changed one),
+# that each names a real file and a reason, and that none of them is ALSO on the changed list.
+for _key, (_auth, _rel, _why) in sorted(RUN29_CHANGES_TO_POST_BASELINE_FILES.items()):
+    check(f"the post-baseline change {_key} names a real file and a reason",
+          (ROOT / _rel).is_file() and bool(_auth) and bool(_why), _rel)
+    check(f"and {_rel} really is outside the Run-20 baseline, which is why it is declared here "
+          f"rather than on the changed list", _rel not in baseline)
+    check(f"and {_rel} is not ALSO declared as a changed file, so it is counted once",
+          _rel not in declared)
 
 # NEW production files, the direction the byte comparison structurally cannot reach: a file that
 # did not exist when the freeze was taken has no baseline row to differ from.
-for rel, why in sorted(RUN28_NEW_PRODUCTION_FILES.items()):
+for rel, why in sorted({**RUN28_NEW_PRODUCTION_FILES, **RUN29_NEW_PRODUCTION_FILES}.items()):
     check(f"the declared new production file {rel} exists and states a reason",
           (ROOT / rel).is_file() and bool(why))
     check(f"and {rel} is genuinely new rather than a baseline file smuggled onto the new list",
           rel not in baseline)
     check(f"and {rel} is not ALSO declared as a changed file, so it is counted once",
           rel not in (run20_declared | run21_declared | run23_declared | run25_declared
-                      | run26_declared | run28_declared))
+                      | run26_declared | run28_declared | run29_declared))
 for rel, (cycles, why) in sorted(RUN20_NEW_PRODUCTION_FILES.items()):
     check(f"the declared new production file {rel} exists and names a cycle and a reason",
           (ROOT / rel).is_file() and bool(cycles) and bool(why))
@@ -253,7 +289,9 @@ _undeclared_new = sorted(
     # declares its own changed ones there: folding it into Run 20's list would falsify Run 20's
     # record. The check is unchanged in meaning -- a file that appears in the simulation package
     # and is declared NOWHERE is still red.
-    and str(p.relative_to(ROOT)) not in RUN28_NEW_PRODUCTION_FILES)
+    and str(p.relative_to(ROOT)) not in RUN28_NEW_PRODUCTION_FILES
+    # RUN 29 declares its own new production file in its own manifest, for the same reason.
+    and str(p.relative_to(ROOT)) not in RUN29_NEW_PRODUCTION_FILES)
 check("and no OTHER file has appeared in the simulation package undeclared, which is the check "
       "that makes the new-file list mean something",
       not _undeclared_new, str(_undeclared_new))

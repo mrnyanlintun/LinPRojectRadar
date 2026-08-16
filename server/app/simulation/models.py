@@ -153,12 +153,34 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # which structures the modules were given. A stamp identifies EXECUTABLE ANALYTICAL BEHAVIOUR,
 # and this layer's behaviour differs from v11's. Every earlier stamp, v11 included, remains the
 # historical audit baseline for the results collected under it; none is overwritten or re-used.
-SIMULATION_VERSION = "sim-2026.08-v12"
+# RUN 29 (CATEGORIES 4 AND 5 AGAINST THE SUPPLIED CANONICAL CONTRACTS) moves it to
+# sim-2026.08-v13, and sim-2026.08-v12 remains the historical audit baseline for every result
+# already collected under it. Run 29 replaces the proxy computation in sixteen Category-4 and
+# Category-5 modules with the canonical method each is named for, and supplies the eighteen
+# governed structures those methods are defined on. THE PROOF IS MECHANICAL, not rhetorical, and
+# it is the same shape Run 28's proof took: on ONE identical governed input -- a project whose
+# only Category-5 evidence is a governed queue model with an arrival rate of two and a service
+# rate of three --
+#
+#     models_doc.py as it shipped at commit 01e943e (v12)  ABSTAINS: it required a queue
+#                                                          OBSERVATION log and no observation
+#                                                          log was supplied
+#     models_doc.py after Run 29                           computes rho = 2/3, L = 2, W = 1,
+#                                                          Lq = 4/3 and Wq = 2/3
+#
+# server/tools/test_run29_version_boundary.py extracts the v12 file from that git object,
+# EXECUTES it beside the current one and asserts exactly that divergence, so the bump rests on
+# observed behaviour rather than on a claim about it. A module that could only abstain and can now
+# compute is a behaviour change, which is the lesson Run 28 recorded above. A stamp identifies
+# EXECUTABLE ANALYTICAL BEHAVIOUR, and this layer's behaviour differs from v12's. Every earlier
+# stamp, v12 included, remains the historical audit baseline for the results collected under it;
+# none is overwritten or re-used.
+SIMULATION_VERSION = "sim-2026.08-v13"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v11"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v12"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -166,7 +188,7 @@ SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v11"
 SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
-    "sim-2026.08-v11", "sim-2026.08-v12",
+    "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13",
 )
 
 
@@ -616,17 +638,52 @@ def run_dsm(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     project it read the same Amber, because nothing about a project could reach the arithmetic.
     The result had the shape of an analysis of a project and was a property of the file.
 
-    No dependency matrix is in the corpus and building one is out of scope, so there is no input
-    that would make the module eligible. It refuses and says which structure is missing. The
-    suite reads the previous arithmetic out of the pinned baseline commit rather than this file
-    keeping it as dead code.
+    No dependency matrix was in the corpus and building one was out of scope, so there was no
+    input that would make the module eligible. It refused and said which structure was missing.
+    The suite reads the previous arithmetic out of the pinned baseline commit rather than this
+    file keeping it as dead code.
+
+    RUN 29 SUPPLIES THE MATRIX, which is what the unconditional abstention was waiting for.
+
+    SUPPLIED CONTRACT 5.1: named nodes, a directed dependency matrix D, a declared matrix
+    orientation, edge strengths, a seed rework vector and a stopping or cycle policy, propagated
+    as R(k+1) = D * R(k) under the declared orientation. With D = [[0, 0.5], [0, 0]] and
+    R0 = [0, 1], R1 = [0.5, 0] and R2 = [0, 0]. With no project DSM the answer is NOT ESTIMABLE,
+    and CPI or SPI may not be substituted for dependency topology.
+
+    Where the governed dependency matrix is absent this module STILL ABSTAINS, and nothing is
+    reconstructed from an index. No band is asserted: no ladder was ever drawn over propagated
+    rework, and inventing one is Run 33's decision to make from evidence, not this run's.
     """
-    return insufficient(
+    from .canonical_v4 import dsm_rework_propagation, require_v4_structure
+    from .models_ext import _js_str
+    try:
+        reading = dsm_rework_propagation(require_v4_structure(si, "A5.1"))
+    except StructureAbsent as absent:
+        return insufficient("DSM_Rework_Cat5", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    propagated = reading["propagated_rework"]
+    worst = max(propagated, key=lambda n: (propagated[n], n))
+    return calibration_pending(
         "DSM_Rework_Cat5",
-        "Insufficient data: no dependency matrix has been established for this project, so "
-        "there is no record of which parts of the design depend on which others and a rework "
-        "wave cannot be traced through them. No multiplier is offered in its place.",
-        ABSTAIN_STRUCTURE_ABSENT)
+        f"Rework seeded in this project's dependency matrix propagates through "
+        f"{_js_str(reading['wave_count'])} waves across "
+        f"{_js_str(len(reading['nodes']))} parts of the design, and the part that receives the "
+        f"most of it is {worst}, at {_js_str(round(propagated[worst], 4))}. The propagation "
+        f"stopped because it {'converged' if reading['stopped_because'] == 'CONVERGED' else 'reached the step limit the model declares'}.",
+        nodes=reading["nodes"],
+        matrix_orientation=reading["matrix_orientation"],
+        matrix=reading["matrix"],
+        edges=reading["edges"],
+        seed_rework_vector=reading["seed_rework_vector"],
+        waves=reading["waves"],
+        wave_count=reading["wave_count"],
+        propagated_rework=propagated,
+        total_propagated_rework=round(reading["total_propagated_rework"], 6),
+        most_affected_node=worst,
+        stopped_because=reading["stopped_because"],
+        model_version=reading["model_version"],
+        canonical_structure="dsm_dependency_model",
+        source=reading["source"])
 
 
 # Validated against the JavaScript. Keyed by the registry's new id.

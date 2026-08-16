@@ -243,63 +243,63 @@ check(_size_bad == 0 and _size_n > 0,
       f"its chain's activity variances", f"{_size_bad} disagree")
 record("A2.3", "yes", "abstain", f"{_ccpm_cases} project periods agree", "advisory only")
 
-# ---- A4.4. The open backlog over the audited cohort, with the cohort taken from the audits.
-_ncr_cases = 0
-for project in PROJECTS:
-    for period in PERIODS:
-        cohort = PS.audited_nonconformance_cohort(project, period)
-        if not cohort:
-            continue
-        total = sum(a["total_findings"] for a in cohort["audits"])
-        open_ = len(cohort["open_nonconformances"])
-        got = run_module("A4.4", {"auditedNonconformanceCohort": cohort}, NOOP, CUTOFF)
-        if total <= 0:
-            continue
-        _ncr_cases += 1
-        expected = open_ / total
-        if not close(got.get("open_ratio"), expected, 0.0051):
-            check(False, f"A4.4 {project}/{period}: open ratio disagrees",
-                  f"{got.get('open_ratio')} vs {expected}")
-            break
-else:
-    check(_ncr_cases >= 30,
-          f"A4.4: over {_ncr_cases} project periods the open share is the backlog over the "
-          f"audited cohort, and neither figure is invented", str(_ncr_cases))
-record("A4.4", "yes", "abstain", f"{_ncr_cases} project periods agree", "advisory only")
+# =================================================================================================
+# RUN 29 REPLACED THE THREE BLOCKS THAT USED TO SIT HERE, AND THE REPLACEMENT COSTS SOMETHING
+# THAT IS RECORDED RATHER THAN GLOSSED.
+#
+# Run 10B integrated A4.4, A5.6 and A5.7 against the synthetic package's own structures: an
+# audited nonconformance cohort, a queue OBSERVATION log, and a typed-in agent STATE HISTORY.
+# Run 29's supplied contract states that none of the three is the method its module is named for.
+# A backlog over an audit total is a ratio of two different populations; a share of occupied
+# server time is a measured occupancy and not a queueing model; and a state history whose named
+# rules are never executed is a table read and not a simulation.
+#
+# THE HONEST CONSEQUENCE, stated plainly: the synthetic research package carries the OLD shapes,
+# so these three modules no longer have a synthetic corpus to be integrated against, and the
+# thirty-plus project periods of agreement Run 10B recorded are not replaced by an equivalent
+# number. What is asserted instead is (a) that the old structures produce NO reading, which is
+# what stops the proxy surviving under a new name, and (b) that each module reproduces the
+# supplied contract's own hand-checked answer on its governed structure. Rebuilding the synthetic
+# package in the v4 shapes is Run 30's work and is named as such in the report.
+from run29_fixtures import (  # noqa: E402
+    agent_model as _r29_abm, ncr_record as _r29_ncr, queue_model as _r29_queue,
+    scenario_set as _r29_scn,
+)
 
-# ---- A5.6. Utilisation of the busiest queue, against the package's own recorded per-server
-#      utilisations, which are computed a different way: busy time per server over the horizon.
-for project in PROJECTS:
-    structure = PS.queues(project)
-    got = run_module("A5.6", {"queueStructure": structure}, NOOP, CUTOFF)
-    truth = [g for g in FL.load_table(f"{PS.PACKAGE_A}/queue_ground_truth.csv")
-             if g["project_id"] == project]
-    mean_recorded = sum(float(truth[0][f"server_{srv}_utilization"]) for srv in (1, 2)) / 2
-    if not close(got.get("utilisation"), round(mean_recorded, 2), 0.011):
-        check(False, f"A5.6 {project}: utilisation disagrees",
-              f"{got.get('utilisation')} vs {mean_recorded}")
-        break
-else:
-    check(True, "A5.6: for every project the utilisation of the busiest queue is the mean of the "
-                "per-server utilisations the package records, which are built from the busy time "
-                "of each server rather than from the total")
-record("A5.6", "yes", "abstain", "six projects agree", "advisory only")
+for _mid, _key, _builder in (("A4.4", "auditedNonconformanceCohort",
+                              lambda: PS.audited_nonconformance_cohort(PROJECTS[0], PERIODS[0])),
+                             ("A5.6", "queueStructure", lambda: PS.queues(PROJECTS[0])),
+                             ("A5.7", "abmStructure", lambda: PS.agents(PROJECTS[0]))):
+    _structure = _builder()
+    _out = run_module(_mid, {_key: _structure}, NOOP, CUTOFF)
+    check(bool(_out.get("insufficient_data")),
+          f"{_mid}: the synthetic package's v2 structure produces no reading, because it is not "
+          f"the structure the canonical method is defined on",
+          str(_out.get("evidence_metric"))[:80])
 
-# ---- A5.7. The share of agents disrupted at the last time step, counted here from the states.
-for project in PROJECTS:
-    structure = PS.agents(project)
-    last = max(s["time_step"] for s in structure["states"])
-    final = [s for s in structure["states"] if s["time_step"] == last]
-    expected = sum(1 for s in final if s["state"] != "NORMAL") / len(final)
-    got = run_module("A5.7", {"abmStructure": structure}, NOOP, CUTOFF)
-    if not close(got.get("at_risk_ratio"), expected, 0.0051):
-        check(False, f"A5.7 {project}: at-risk share disagrees",
-              f"{got.get('at_risk_ratio')} vs {expected}")
-        break
-else:
-    check(True, "A5.7: for every project the at-risk share is the share of agents in a state "
-                "other than normal at the last time step the history covers")
-record("A5.7", "yes", "abstain", "six projects agree", "advisory only")
+_ncr_out = run_module("A4.4", {"ncrExposureRecord": _r29_ncr()}, NOOP, CUTOFF)
+check(_ncr_out.get("ncr_rate") == 0.04,
+      "A4.4: four nonconformances against one hundred inspections is a rate of 0.04, the "
+      "supplied contract's own answer", str(_ncr_out.get("ncr_rate")))
+record("A4.4", "yes", "abstain", "the supplied contract's own known answer", "advisory only")
+
+_q_out = run_module("A5.6", {"queueModel": _r29_queue()}, NOOP, CUTOFF)
+check(close(_q_out.get("utilisation"), 2 / 3, 1e-5) and close(_q_out.get("L"), 2.0, 1e-5)
+      and close(_q_out.get("W"), 1.0, 1e-5) and close(_q_out.get("Lq"), 4 / 3, 1e-5)
+      and close(_q_out.get("Wq"), 2 / 3, 1e-5),
+      "A5.6: an arrival rate of two against a service rate of three on one server gives a "
+      "utilisation of two thirds, L of two, W of one, Lq of four thirds and Wq of two thirds, "
+      "the supplied contract's own answers", str(_q_out.get("utilisation")))
+check(bool(run_module("A5.6", {"queueModel": _r29_queue(arrival=3.0, service=3.0)},
+                      NOOP, CUTOFF).get("insufficient_data")),
+      "A5.6: and an unstable queue is refused rather than given a reassuring finite steady state")
+record("A5.6", "yes", "abstain", "the supplied contract's own known answer", "advisory only")
+
+_a_out = run_module("A5.7", {"agentSupplyChainModel": _r29_abm()}, NOOP, CUTOFF)
+check(_a_out.get("received") == 2 and _a_out.get("backordered") == 0,
+      "A5.7: the one supplier, one carrier, one project model delivers both units by the fourth "
+      "step, which is the hand-computed trace", str(_a_out.get("received")))
+record("A5.7", "yes", "abstain", "the supplied contract's own known answer", "advisory only")
 
 # ---- A6.3. The share of assessed permit conditions found compliant.
 _env_cases = 0
@@ -357,18 +357,6 @@ MALFORMED = {
               "buffers": [{"chain_id": "C", "buffer_type": "PROJECT",
                            "original_buffer_days": 5, "remaining_buffer_days": 9,
                            "chain_progress_fraction": 0.3}]}],
-    "A4.4": [{}, {"audits": []}, {"audits": "not a list"}],
-    "A5.6": [{}, {"queues": []},
-             {"queues": [{"queue_id": "Q", "entities": 3, "servers": 0, "horizon_days": 5,
-                          "total_service_days": 2, "wait_times_days": [0, 0, 0]}]},
-             {"queues": [{"queue_id": "Q", "entities": 3, "servers": 1, "horizon_days": 5,
-                          "total_service_days": 2, "wait_times_days": [0]}]}],
-    "A5.7": [{}, {"agents": [], "states": []},
-             {"agents": [{"agent_id": "A", "decision_rule_id": "", "network_group": "G"}],
-              "states": [{"time_step": 1, "agent_id": "A", "state": "NORMAL"},
-                         {"time_step": 2, "agent_id": "A", "state": "NORMAL"}]},
-             {"agents": [{"agent_id": "A", "decision_rule_id": "R", "network_group": "G"}],
-              "states": [{"time_step": 1, "agent_id": "A", "state": "NORMAL"}]}],
     "A6.3": [{}, {"assessments": []}, {"assessments": "not a list"}],
 }
 for mid, cases in MALFORMED.items():
@@ -382,6 +370,29 @@ for mid, cases in MALFORMED.items():
     check(abstains(out), f"{mid}: a structure that is not a structure abstains")
     out = run_module(mid, {key: None}, NOOP, CUTOFF)
     check(abstains(out), f"{mid}: a structure reported as nothing abstains")
+
+# RUN 29. A4.4, A5.6 and A5.7 are no longer in the malformed-structure table above, because the
+# keys it drove are no longer keys they read. Their own malformed cases are asserted against the
+# structures they DO read, immediately below, so nothing is lost by the removal.
+for _mid, _key, _bad_cases in (
+        ("A4.4", "ncrExposureRecord",
+         [{}, dict(_r29_ncr(), exposure_quantity=0.0), dict(_r29_ncr(), ncrs=[]),
+          dict(_r29_ncr(), exposure_unit="")]),
+        ("A5.6", "queueModel",
+         [{}, _r29_queue(arrival=3.0, service=3.0), _r29_queue(servers=0),
+          {"source": "s", "model_version": "v", "queues": []}]),
+        ("A5.7", "agentSupplyChainModel",
+         [{}, _r29_abm(steps=1), dict(_r29_abm(), agents=[]),
+          dict(_r29_abm(), travel_delay_steps=-1)])):
+    for _i, _bad in enumerate(_bad_cases):
+        _out = run_module(_mid, {_key: _bad}, NOOP, CUTOFF)
+        check(abstains(_out),
+              f"{_mid}: malformed governed structure case {_i + 1} abstains rather than "
+              f"computing", str(_out.get("status_color")))
+    check(abstains(run_module(_mid, {_key: "not a structure at all"}, NOOP, CUTOFF)),
+          f"{_mid}: a structure that is not a structure abstains")
+    check(abstains(run_module(_mid, {_key: None}, NOOP, CUTOFF)),
+          f"{_mid}: a structure reported as nothing abstains")
 
 # The four that used to compute from a proxy name the ABSENT STRUCTURE as the reason, which is a
 # different reason from a missing figure and says so.
@@ -399,32 +410,30 @@ section("3. THE TWO REFERENCE-OBJECT MODULES, AND THE LEAKAGE CONTROLS")
 ROWS_B4: list[list] = []
 DP = "DP-01"
 
-# ---- A5.4. The probability weighted expectation of each action, derived here from the stated
-#      probabilities and outcomes, and the action chosen by that expectation.
-_scenario = PS.scenario_decision(DP)
-probability = {s["scenario_id"]: s["probability"] for s in _scenario["scenarios"]}
-expectations: dict[str, float] = {}
-for o in _scenario["outcomes"]:
-    expectations[o["action_id"]] = expectations.get(o["action_id"], 0.0) + \
-        probability[o["scenario_id"]] * o["cost_delta_usd"]
-best = min(expectations, key=lambda a: expectations[a])
-worst = max(o["cost_delta_usd"] for o in _scenario["outcomes"] if o["action_id"] == best)
+# ---- A5.4. RUN 29 MOVED THIS MODULE OFF THE DECISION OBJECT ENTIRELY.
+#      Run 10B made Scenario Modeling read an actions-by-scenarios payoff with stated
+#      probabilities and return a RECOMMENDED ACTION. The supplied Run-29 contract states in its
+#      own words that this is Category 10's question -- which management intervention should be
+#      chosen -- and that Category 5 asks what happens to the system under a condition. So the
+#      decision object is no longer this module's defining structure, it recommends nothing, and
+#      what it reads is a governed scenario set evaluated through one declared response model.
+#
+#      The leakage controls below therefore apply to B2.19 alone in this suite. That is a
+#      REDUCTION IN COVERAGE of those controls and is recorded as such: the decision object's own
+#      split, version and self-comparison guards are unchanged in `canonical.py` and are still
+#      exercised through B2.19, but one of the two modules that exercised them no longer does.
 BAC = 10_000_000.0
-got = run_module("A5.4", {"bac": BAC, "scenarioDecisionStructure": _scenario}, NOOP, CUTOFF)
-check(got.get("recommended_action") == best,
-      "A5.4: the action chosen is the one with the smallest probability weighted expected cost, "
-      "derived here from the stated distribution", f"{got.get('recommended_action')} vs {best}")
-check(close(got.get("expected_eac"), round(BAC + expectations[best]), 1.0),
-      "A5.4: and the expected outcome is the budget plus that expectation",
-      str(got.get("expected_eac")))
-check(close(got.get("pessimistic_eac"), round(BAC + worst), 1.0),
-      "A5.4: and the worst case is that action's worst scenario, not the worst of all actions",
-      str(got.get("pessimistic_eac")))
-check(got.get("reference_asset_version") == FL.PROGRAMME_VERSION,
-      "A5.4: the result records which reference material produced it",
-      str(got.get("reference_asset_version")))
-check(got.get("reference_object") == DP,
-      "A5.4: and which decision object", str(got.get("reference_object")))
+_scenario = PS.scenario_decision(DP)
+check(abstains(run_module("A5.4", {"bac": BAC, "scenarioDecisionStructure": _scenario},
+                          NOOP, CUTOFF)),
+      "A5.4: the decision object produces no reading, because choosing between courses of action "
+      "is not the question this module answers")
+_scn_out = run_module("A5.4", {"scenarioSet": _r29_scn()}, NOOP, CUTOFF)
+check(_scn_out.get("responses") == {"BASE": 5.0, "ADVERSE": 8.0, "RECOVERY": 4.0},
+      "A5.4: the three coherent states give five, eight and four through the declared response "
+      "model, which are the supplied contract's own answers", str(_scn_out.get("responses")))
+check(_scn_out.get("recommended_action") is None,
+      "A5.4: and no state is recommended over any other, because that is a different question")
 
 # ---- B2.19. CRITIC weights across the alternatives, checked against the package's recorded
 #      weights, which were produced by an independent implementation of the same definition.
@@ -452,9 +461,8 @@ check(got_ct.get("alternatives_considered") == len(_matrix["alternatives"]),
       "B2.19: over all the alternatives, not one", str(got_ct.get("alternatives_considered")))
 
 # ---- THE LEAKAGE CONTROLS, one at a time, on both modules.
-for mid, key, builder in (("A5.4", "scenarioDecisionStructure", PS.scenario_decision),
-                          ("B2.19", "decisionMatrix", PS.decision_matrix)):
-    base = {"bac": BAC} if mid == "A5.4" else {}
+for mid, key, builder in (("B2.19", "decisionMatrix", PS.decision_matrix),):
+    base = {}
 
     locked = dict(builder(DP, split="LOCKED_HOLDOUT"))
     out = run_module(mid, dict(base, **{key: locked}), NOOP, CUTOFF)
@@ -583,6 +591,12 @@ WITH_STRUCTURES = dict(
     auditedPermitCompliance=PS.audited_permit_compliance("PRJ-AIR", "P01"),
     scenarioDecisionStructure=PS.scenario_decision(DP),
     decisionMatrix=PS.decision_matrix(DP),
+    # RUN 29. The three v4 structures whose modules moved off the v2 shapes above, so the
+    # correspondence check below still asserts the full set rather than a shrunken one.
+    ncrExposureRecord=_r29_ncr(),
+    queueModel=_r29_queue(),
+    agentSupplyChainModel=_r29_abm(),
+    scenarioSet=_r29_scn(),
 )
 plain = compute_project(dict(PROJECT_SI), "S-A", "P1", CUTOFF)
 rich = compute_project(dict(WITH_STRUCTURES), "S-A", "P1", CUTOFF)
@@ -601,6 +615,11 @@ _plain_computed = {m["module_id"] for m in plain["modules"]}
 # that method) and Run 14 removed it, so those two now abstain without their structure and
 # compute with it. The set this check names is therefore the eight, and the check is stronger
 # than it was: it now asserts the full correspondence between a structure and a reading.
+# RUN 29, EXPECTATION CORRECTED WITH ITS REASON. A5.4 is no longer a reference-object module:
+# the decision object is not its defining structure and it gains its reading from the governed
+# scenario set instead, which is supplied above. B2.19 still gains from the decision matrix. So
+# the set is the six plus B2.19 plus A5.4, which is exactly what it was, reached by a different
+# structure for one of them.
 check(_rich_computed - _plain_computed == set(SIX) | set(BUCKET_4),
       "the modules that gained a reading are exactly the ones given a structure",
       str(sorted(_rich_computed - _plain_computed)))
@@ -668,17 +687,14 @@ _perturbed = {**_p, "work_packages": [
 mutation("moving the following line ten days later moves the separation by ten days",
          lambda: close(run_module("A2.2", {"lobStructure": _perturbed}, NOOP,
                                   CUTOFF)["minimum_buffer_days"], _base + 10.0, 0.11))
-mutation("claiming the queue reading is unchanged when the servers halve would fail",
-         lambda: run_module("A5.6", {"queueStructure": PS.queues("PRJ-AIR")}, NOOP,
+mutation("claiming the queue reading is unchanged when the service rate halves would fail",
+         lambda: run_module("A5.6", {"queueModel": _r29_queue()}, NOOP,
                             CUTOFF)["utilisation"]
-         != run_module("A5.6", {"queueStructure": {"queues": [
-             dict(q, servers=1) for q in PS.queues("PRJ-AIR")["queues"]]}}, NOOP,
-             CUTOFF)["utilisation"])
-_abm = PS.agents("PRJ-AIR")
-_all_disrupted = {**_abm, "states": [dict(s, state="DISRUPTED") for s in _abm["states"]]}
-mutation("marking every agent disrupted takes the at-risk share to one",
-         lambda: close(run_module("A5.7", {"abmStructure": _all_disrupted}, NOOP,
-                                  CUTOFF)["at_risk_ratio"], 1.0, 1e-9))
+         != run_module("A5.6", {"queueModel": _r29_queue(service=6.0)}, NOOP,
+                       CUTOFF)["utilisation"])
+mutation("emptying the supplier's stock leaves the whole demand backordered",
+         lambda: run_module("A5.7", {"agentSupplyChainModel": _r29_abm(inventory=0.0)}, NOOP,
+                            CUTOFF)["backordered"] == 2.0)
 _cc = PS.ccpm("PRJ-AIR", "P03")
 _spent = {**_cc, "buffers": [dict(b, remaining_buffer_days=0.0) for b in _cc["buffers"]]}
 mutation("a fully consumed buffer reads a hundred per cent consumed",
@@ -737,8 +753,14 @@ with (CODE_AUDIT / "run10b_bucket4_integration.csv").open("w", newline="",
 check((CODE_AUDIT / "run10b_bucket3_integration.csv").exists()
       and (CODE_AUDIT / "run10b_bucket4_integration.csv").exists(),
       "both audit artefacts are written")
-check(len(ROWS_B3) == 6 and len(ROWS_B4) == 2,
-      "with a row for each integrated module", f"{len(ROWS_B3)} and {len(ROWS_B4)}")
+# RUN 29. The bucket-4 artefact now carries one row rather than two, because A5.4 is no longer a
+# reference-object module: its defining structure is a governed scenario set, not a decision
+# object, so the leakage controls that produced its row are exercised through B2.19 alone. The
+# count is stated rather than the reduction being hidden behind an inequality.
+check(len(ROWS_B3) == 6 and len(ROWS_B4) == 1,
+      "with a row for each integrated module, and one row in the reference-object artefact "
+      "because Run 29 moved the other module off the decision object",
+      f"{len(ROWS_B3)} and {len(ROWS_B4)}")
 
 
 print()

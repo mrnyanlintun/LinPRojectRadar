@@ -360,27 +360,39 @@ try:
     check(old_p.get("risk_ratio") == 1.8,
           "ten items with eight at risk and five delayed gave 1.8 on the old code",
           str(old_p.get("risk_ratio")))
-    check(new_p.get("risk_ratio") == 0.65,
-          "and gives 0.65 now, with delayed items counted once as the at-risk items they are",
-          str(new_p.get("risk_ratio")))
-    # The domain, exhaustively rather than at one point.
-    worst = run_procurement_lead_time(
-        {"longLeadItemsTotal": 10, "longLeadAtRisk": 10, "longLeadDelayed": 10}, None, None)
-    check(worst.get("risk_ratio") == 1.0,
-          "every item at risk and every one delayed is exactly 1.0, the top of the domain",
-          str(worst.get("risk_ratio")))
-    over = 0
+    # RUN 29 REPLACED THE CORRECTED RATIO. Run 2's fix was to stop double-counting delayed
+    # items inside the at-risk term, which took the audit's own figures from 1.8 to 0.65. Run
+    # 29's supplied contract goes further and states that a count ratio ALONE is not the
+    # canonical item-level monitor: the method is the slack between the date an item is required
+    # on site and the date it is forecast to arrive. So the ratio is gone rather than corrected,
+    # and Run 2's property is preserved in the stronger form the new quantity allows -- an item
+    # is in exactly ONE state, so nothing can be counted twice by construction, and no count
+    # triple of any size can produce a proportion above one because no proportion is formed.
+    check(abstains(new_p),
+          "and produces no ratio at all now, because a count ratio is not the item-level "
+          "monitor this module is named for", str(new_p.get("risk_ratio")))
+    from run29_fixtures import procurement_items as _pi  # noqa: E402
+    _slack = run_procurement_lead_time({"procurementItems": _pi()}, None, None)
+    check(_slack.get("minimum_slack_days") == -10.0,
+          "and the supplied contract's own answer is reproduced: a required day of one hundred "
+          "against a forecast of one hundred and ten is a slack of minus ten days",
+          str(_slack.get("minimum_slack_days")))
+    _states = _slack.get("state_counts") or {}
+    check(sum(_states.values()) == _slack.get("item_count"),
+          "and the states partition the register, so no item can be counted in two of them",
+          str(_states))
+    _still_banding = 0
     for total in range(1, 12):
         for at_risk in range(0, total + 1):
             for delayed in range(0, at_risk + 1):
                 res = run_procurement_lead_time(
                     {"longLeadItemsTotal": total, "longLeadAtRisk": at_risk,
                      "longLeadDelayed": delayed}, None, None)
-                if not abstains(res) and not 0.0 <= res["risk_ratio"] <= 1.0:
-                    over += 1
-    check(over == 0,
-          "and across every consistent count triple up to eleven items the ratio never leaves "
-          "nought to one", f"{over} outside the domain")
+                if not abstains(res):
+                    _still_banding += 1
+    check(_still_banding == 0,
+          "and across every consistent count triple up to eleven items the counts alone produce "
+          "no reading at all", f"{_still_banding} still produced one")
     check(abstains(run_procurement_lead_time(
         {"longLeadItemsTotal": 0, "longLeadAtRisk": 0, "longLeadDelayed": 1}, None, None)),
         "an empty procurement log refuses rather than inventing a denominator of one")
@@ -547,12 +559,26 @@ try:
           str(empty_intake.get("evidence_metric")))
     check(abstains(run_ncr_rate({"ncrIssued": 0, "ncrClosed": 0, "ncrOpen": 12}, None, None)),
           "which it no longer does")
-    with_cohort = run_ncr_rate(dict(N, totalFindings=40), None, None)
-    check(not abstains(with_cohort) and with_cohort.get("open_ratio") == 0.3,
-          "given the audited cohort it computes: twelve open of forty is 0.3",
-          str(with_cohort.get("open_ratio")))
-    check(abstains(run_ncr_rate(dict(N, totalFindings=5), None, None)),
-          "and a backlog larger than the cohort refuses rather than exceeding 1.0")
+    # RUN 29 REPLACED THE COHORT SHARE. Run 2 required an audited findings cohort for the open
+    # backlog to be a share OF, which stopped the unbounded intake ratio. Run 29's supplied
+    # contract states that a nonconformance rate is events over GOVERNED EXPOSURE -- inspections,
+    # inspected units, labour hours, work value -- and that a ratio whose numerator and
+    # denominator populations differ is not a universal NCR rate. The cohort share was such a
+    # ratio: a stock carried across periods over the size of one audit. It is replaced, and the
+    # open backlog, its age, its severity and the closure rate are reported SEPARATELY.
+    check(abstains(run_ncr_rate(dict(N, totalFindings=40), None, None)),
+          "the audited cohort alone no longer produces a rate, because the backlog and the "
+          "cohort are different populations")
+    from run29_fixtures import ncr_record  # noqa: E402
+    _ncr = run_ncr_rate({"ncrExposureRecord": ncr_record()}, None, None)
+    check(_ncr.get("ncr_rate") == 0.04,
+          "and the supplied contract's own answer is reproduced: four nonconformances over one "
+          "hundred inspections is 0.04", str(_ncr.get("ncr_rate")))
+    check(_ncr.get("open_count") == 4 and _ncr.get("closure_rate") == 0.0,
+          "with the open backlog and the closure rate reported beside it rather than divided "
+          "into it", f"{_ncr.get('open_count')} open, closure {_ncr.get('closure_rate')}")
+    check(abstains(run_ncr_rate({"ncrExposureRecord": ncr_record(exposure=0.0)}, None, None)),
+          "and with no exposure at all no normalised rate is fabricated")
 
     # ---- defect 12, weather day impact
     W = {"weatherDaysLost": 3}
@@ -568,15 +594,27 @@ try:
     check(old_doc.run_weather_impact({"weatherDaysLost": 3, "floatRemaining": 0},
                                      None, None).get("weather_ratio") == 100,
           "where the old code scored that 100 per cent as well", "")
-    real_w = run_weather_impact({"weatherDaysLost": 3, "floatRemaining": 30}, None, None)
-    check(not abstains(real_w) and real_w.get("weather_ratio") == 10,
-          "and with real float it computes: three days against thirty is ten per cent",
-          str(real_w.get("weather_ratio")))
-    derived_w = run_weather_impact(
-        {"weatherDaysLost": 3, "floatRemaining": 30,
-         "sources": {"weatherDaysLost": {"docType": "derived"}}}, None, None)
-    check(abstains(derived_w),
-          "and inferred lost days refuse rather than computing with a parenthetical")
+    # RUN 29 REPLACED THE RATIO. Run 2 required verified lost days and a positive float figure
+    # before forming a proportion of one in the other. Run 29's supplied contract states that
+    # weather occurrence is not schedule impact, and that impact requires the event, the affected
+    # activity, the planned work, the lost time, the governing allowance, the path and its float,
+    # causal evidence and a modelled consequence. A ratio of a count to a float number carries
+    # none of the middle six, so it is replaced rather than renamed.
+    check(abstains(run_weather_impact({"weatherDaysLost": 3, "floatRemaining": 30}, None, None)),
+          "a lost-day count and a float figure no longer produce an impact, because there is no "
+          "activity, no path, no allowance and no causal evidence in the pair")
+    from run29_fixtures import weather_events  # noqa: E402
+    _wx = run_weather_impact({"weatherImpactEvents": weather_events()}, None, None)
+    check(_wx.get("direct_path_effect_days") == 2.0,
+          "and the supplied contract's own answer is reproduced: a verified event causing two "
+          "lost days on a zero-float critical activity with no mitigation has a direct modelled "
+          "path effect, before recovery, of two days",
+          str(_wx.get("direct_path_effect_days")))
+    check(run_weather_impact(
+        {"weatherImpactEvents": weather_events(lost=2.0, available_float=5.0)},
+        None, None).get("direct_path_effect_days") == 0.0,
+        "while the identical event on a path with five days of float to absorb it has no direct "
+        "effect on the schedule at all")
     check(not abstains(old_doc.run_weather_impact(
         {"weatherDaysLost": 3, "floatRemaining": 30,
          "sources": {"weatherDaysLost": {"docType": "derived"}}}, None, None)),
@@ -630,9 +668,15 @@ try:
         check(not abstains(old_s),
               f"Scenario Modeling: {label} produced a status on the old code",
               str(old_s.get("status_color")))
+        # RUN 29. The reason code moved from the DECISION structure to the SCENARIO structure,
+        # and the move is the correction: Run 10B had made this module read an actions-by-
+        # scenarios payoff matrix and return a recommended action, which is a decision method.
+        # The supplied Run-29 contract says in its own words not to confuse a scenario model
+        # with the later question of which intervention to choose, so the defining structure is
+        # now a scenario set and the abstention names that instead.
         check(abstains(new_s)
-              and new_s.get("abstention_reason_code") == "canonical_decision_structure_absent",
-              f"Scenario Modeling: {label} abstains now, naming the absent decision structure",
+              and new_s.get("abstention_reason_code") == "canonical_structure_absent",
+              f"Scenario Modeling: {label} abstains now, naming the absent scenario set",
               str(new_s.get("abstention_reason_code")))
     neg = old_doc.run_scenario_modeling(
         {"bac": 1_000_000, "ev": 400_000, "ac": 500_000, "cpi": -0.9, "spi": 1.0}, None, None)
@@ -870,7 +914,11 @@ try:
     check(abst.get("A3.6", {}).get("abstention_reason_code") == "canonical_structure_absent",
           "and names the absent cost risk model as the reason",
           str(abst.get("A3.6", {}).get("abstention_reason_code")))
-    for mid in ("A4.9", "A6.1", "A6.4", "A1.1", "B1.1", "B2.1"):
+    # RUN 29 REMOVED A4.9 FROM THIS LIST, for the same reason and with the same discipline as
+    # the A3.6 note above: it no longer produces a finding on the real path, because the
+    # canonical method needs an item level register the corpus does not carry, and its
+    # abstention is asserted a few lines below rather than dropped.
+    for mid in ("A6.1", "A6.4", "A1.1", "B1.1", "B2.1"):
         check(mid in comp, f"{FIFTEEN[mid]} produces a finding on the real path",
               str(abst.get(mid, {}).get("reason"))[:90])
     # These three refuse for want of data the fix now requires, and each states which data.
@@ -897,9 +945,15 @@ try:
           "carries an activity network at all: float is derived from one, and there is none",
           str(abst.get("A2.5", {}).get("abstention_reason_code")))
 
-    check(comp.get("A4.9", {}).get("risk_ratio") == 0.65,
-          "and the procurement ratio the ledger will render is the corrected 0.65, from the "
-          "real document, not from a call in this file", str(comp.get("A4.9", {})))
+    # RUN 29. A4.9 no longer renders a ratio on the real path: the corpus carries the long-lead
+    # counts an extraction reads off a monthly report, and the canonical method needs an item
+    # level register with a required-on-site date and a forecast delivery date for each item.
+    # So on the real corpus it ABSTAINS, and that abstention is asserted here rather than a
+    # figure -- which is the honest outcome and the one the supply-path reconciliation records.
+    check("A4.9" in abst,
+          "and the procurement monitor abstains on the real path, because the corpus carries "
+          "counts of long-lead items and not the dates each one is required and forecast for",
+          str(abst.get("A4.9", {}).get("reason"))[:110])
     check(comp.get("A6.4", {}).get("status_color") == "Red",
           "and the contractor evaluation reads Red on its quality rating",
           str(comp.get("A6.4", {}).get("evidence_metric")))
@@ -1442,10 +1496,12 @@ try:
            lambda: abstains(live_doc.run_quality_compliance(dict(Q), None, None)),
            False)
 
-    # (g) The procurement bound.
+    # (g) The procurement bound. RUN 29: the bound was on a ratio that no longer exists, so the
+    # injected fault is bound to the property that replaced it -- the counts alone produce no
+    # reading, and swapping the v2 function back in makes them produce one again.
     inject("the procurement ratio bound",
            live_doc, "run_procurement_lead_time", old_doc.run_procurement_lead_time,
-           lambda: live_doc.run_procurement_lead_time(dict(P), None, None)["risk_ratio"] <= 1.0,
+           lambda: abstains(live_doc.run_procurement_lead_time(dict(P), None, None)),
            False)
 
     # (h) The contractor quality rating.

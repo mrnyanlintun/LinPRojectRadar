@@ -141,9 +141,13 @@ check(pt.PINNED_RUN25.name == "run25_production_tree.sha256"
 # owner's closure instruction moved fourteen production files and created one, so the pin moves
 # to the closure manifest and the Run-28 manifest is kept addressable as its parent rather than
 # rewritten. The chain is EXTENDED, not opened; a pin at an unnamed file is still red.
+# RUN 29 extends the chain once more, for the same reason and by the same rule: the owner's
+# Run-29 contract moved eight production files and created one, so the pin moves to the Run-29
+# manifest and the closure manifest is kept addressable as its parent rather than rewritten.
 check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.sha256",
                         "run28_production_tree.sha256",
-                        "run28_closure_production_tree.sha256"),
+                        "run28_closure_production_tree.sha256",
+                        "run29_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

@@ -193,7 +193,11 @@ for order in ((B, A, C), (C, B, A), (B, C, A), (C, A, B), (A, C, B)):
 #   C = A3.5 overhead absorption rate, on the indirect cost ledger
 # A and C share NO primitive source. B touches both. On the connected-component treatment this
 # measured 1 body and 0.7000; the numbers below are the frozen correct answers.
-P_A, P_B, P_C = PROD["A1.7"], PROD["A5.3"], PROD["A3.5"]
+# RUN 29. B was the tornado ranking, which bridged the two bodies because it read the
+# earned-value indices and the progress figure. It reads neither now -- it takes the sensitivity
+# result as its only argument -- so it is no longer a bridge and the constructed bridge below is
+# what drives the control. A and C are unchanged production records.
+P_A, P_C = PROD["A1.7"], PROD["A3.5"]
 check("production precondition: the to-complete index and the overhead absorption rate share "
       "no governed fact, so this is genuinely the A, C of the oracle and not a rigged pair",
       not (set(P_A["source_fact_ids"]) & set(P_C["source_fact_ids"])),
@@ -302,20 +306,26 @@ DECN = lineage.lineage_record("SYN_DECISION", primitive_source_ids=(),
 # 1. SAME-SOURCE DUPLICATE. Production: the two voting modules, which read the same three facts.
 control("same-source duplicate (production: the two voting modules)",
         [PROD["A1.7"], PROD["A1.8"]], 1, ONE_BODY_AMBER)
-# 2. SAME-SOURCE TRANSFORM. Production: the two contract-change readings, one body, two bandings.
-control("same-source transform (production: the two contract-change readings)",
-        [PROD["A4.6"], PROD["B3.5"]], 1, ONE_BODY_AMBER)
+# 2. SAME-SOURCE TRANSFORM. RUN 29: the two contract-change readings are no longer one body --
+#    A4.6 reads a governed change event register and B3.5 reads the extracted contract sums --
+#    so the production pair that carried this control is the sensitivity model and the ranking
+#    DERIVED from it, which share one body and produce two readings of it.
+control("same-source transform (production: the sensitivity model and the ranking derived from "
+        "it)", [PROD["A5.2"], PROD["A5.3"]], 1, ONE_BODY_AMBER)
 # 3. DERIVED METRIC. A signal computed from another SIGNAL, holding no primitive of its own.
 control("derived metric computed from a signal already present", [A, DERIV], 1, ONE_BODY_AMBER)
-# 4. BRIDGING SIGNAL. Production: the tornado ranking across the two disjoint bodies.
-control("bridging signal (production: the tornado ranking across two disjoint bodies)",
-        [PROD["A1.7"], PROD["A5.3"], PROD["A3.5"]], 2, TWO_BODY_AMBER)
+# 4. BRIDGING SIGNAL. RUN 29: the tornado ranking no longer touches the earned-value body at
+#    all -- it reads A5.2's result and nothing else -- so it cannot bridge anything, and the
+#    control is driven from the constructed bridge this section already builds from the two
+#    bodies' OWN facts. Recorded rather than worked around: production now contains no bridge.
+control("bridging signal (constructed from the two production bodies' own facts, because "
+        "production contains no bridging record)", [P_A, P_B, P_C], 2, TWO_BODY_AMBER)
 # 5. TWO GENUINELY INDEPENDENT BODIES. Production, and the direction a bad fix fails.
 control("two genuinely independent evidence bodies (production: earned value and indirect cost)",
         [PROD["A1.7"], PROD["A3.5"]], 2, TWO_BODY_AMBER)
-# 6. THE THREE-BODY CASE, from the production declarations.
-control("three-signal A={X}, B={X,Y}, C={Y} (production)",
-        [PROD["A1.7"], PROD["A5.3"], PROD["A3.5"]], 2, TWO_BODY_AMBER)
+# 6. THE THREE-BODY CASE. RUN 29, as above: the middle signal is the constructed bridge.
+control("three-signal A={X}, B={X,Y}, C={Y} (constructed bridge over two production bodies)",
+        [P_A, P_B, P_C], 2, TWO_BODY_AMBER)
 # 7. SYNTHESIZED-OUTPUT REUSE. A synthesis of A and C creates no new primitive evidence and must
 #    not become a third body beside them.
 control("synthesized-output reuse beside its own constituents", [A, C, SYNTH], 2, TWO_BODY_AMBER)
@@ -386,9 +396,13 @@ ACTUAL_FACTS = {
     # RUN 28. The progress figure is gone: overhead is absorbed over an explicit allocation
     # base and nothing is scaled by progress any more.
     "A3.5": {"allocation_base_driver", "indirect_cost_actual", "indirect_cost_plan"},
-    "A4.6": {"baseline_contract_sum", "change_order_count", "revised_contract_sum"},
-    "A5.2": {"ac", "bac", "doc_risk_score", "ev", "pv"},      # bac, cpi, spi, docRiskScore
-    "A5.3": {"ac", "actual_pct_complete", "doc_risk_score", "ev", "planned_pct_complete", "pv"},
+    # RUN 29. All three now compute from a governed STRUCTURE and read none of the scalar facts
+    # transcribed here before. A record still naming those facts would declare a dependence that
+    # is not there, which is exactly what this table exists to catch, so the transcription is
+    # corrected to the empty set rather than left standing.
+    "A4.6": set(),      # the governed change event register, not the extracted contract sums
+    "A5.2": set(),      # the governed sensitivity model, not the earned-value scalars
+    "A5.3": set(),      # A5.2's result, and nothing else at all
     "B3.5": {"baseline_contract_sum", "change_order_count", "revised_contract_sum"},
     "D1.5": set(),                                            # a synthesis holds no fact itself
     # RUN 20 CYCLE 8, THE ARCH.3 CLUSTERS. These records name their DIRECT facts here and reach

@@ -54,6 +54,14 @@ V1_COMMIT = "c44e3ced94a22a9def35fa5a2be3a2268fbed6bb"
 V1_IDENTITY = "og-participant-2026.08-v1"
 V2_IDENTITY = "og-participant-2026.08-v2"
 V3_IDENTITY = "og-participant-2026.08-v3"
+#: RUN 29. The chain gained a fourth link: six proxy qualifiers were removed from the registry
+#: because the six modules they described now carry out their canonical methods, and the
+#: defensibility evidence object served to participants is GENERATED from the registry. v3 is
+#: pinned to the commit whose blobs it describes rather than regenerated, which is the defect the
+#: Run-28 closure had to correct in the v2 record and which is not repeated here.
+V4_IDENTITY = "og-participant-2026.08-v4"
+V4_RECORD = "code_audit/run29_participant_package_v4_checksums.sha256"
+V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
 V3_RECORD = "code_audit/run28_closure_v3_participant_package_checksums.sha256"
@@ -264,18 +272,29 @@ with tempfile.TemporaryDirectory(prefix="og-participant-v2-") as _td2:
           "restored byte for byte, and the v2 guard is GREEN again over all seventy")
 
 # =================================================================================================
-head("4. THE CURRENT PACKAGE v3, AND THE IDENTITY GUARD")
+head("4. THE CURRENT PACKAGE v4, AND THE IDENTITY GUARD")
 # =================================================================================================
 
 _v3 = parse((ROOT / V3_RECORD).read_text(encoding="utf-8"))
+_v4 = parse((ROOT / V4_RECORD).read_text(encoding="utf-8"))
 check(len(_v3) == 70 and set(_v3) == set(_v2),
       "the v3 record names the same seventy files", str(len(_v3)))
+check(len(_v4) == 70 and set(_v4) == set(_v3),
+      "and so does the v4 record", str(len(_v4)))
+
+# v3 IS NOW A PREDECESSOR, so the live tree is NOT its evidence. It is verified against the
+# commit whose blobs it describes, exactly as v1 and v2 are, and it must NOT match the tree.
 _v3_bad = sorted(rel for rel, digest in _v3.items()
+                 if hashlib.sha256(git_bytes(rel, V3_COMMIT) or b"").hexdigest() != digest)
+check(not _v3_bad,
+      f"every one of v3's seventy checksums holds against commit {V3_COMMIT[:7]}, which is where "
+      f"that package's bytes live now that it is a predecessor", str(_v3_bad))
+_v4_bad = sorted(rel for rel, digest in _v4.items()
                  if not (ROOT / rel).is_file()
                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
-check(not _v3_bad,
-      "and every one of its seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v3_bad))
+check(not _v4_bad,
+      "and every one of v4's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v4_bad))
 
 # THE IDENTITY GUARD, which is the one the checksum guard alone cannot be. EXACTLY ONE record in
 # the chain may describe the live tree, and it must be the one declared current. A predecessor
@@ -288,24 +307,30 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V3_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V4_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
-      == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY],
+      == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 3
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 4
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all three are present, so no link shares a record "
+      "each link has its OWN record file and all four are present, so no link shares a record "
       "with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; both predecessors name the commit their "
-      "bytes live in")
+      "and only the current link reads the working tree; all three predecessors name the commit "
+      "their bytes live in")
+# THE v3 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes commit 01e943e
+# wrote, which is what stops the Run-28 closure's own defect from recurring here.
+check(git_bytes(V3_RECORD, V3_COMMIT) == (ROOT / V3_RECORD).read_bytes(),
+      f"the v3 record in the working tree is BYTE-IDENTICAL to the one commit {V3_COMMIT[:7]} "
+      f"wrote, so this run created a successor rather than rewriting a predecessor")
 
 # =================================================================================================
-head("5. PROTOCOL INVARIANCE: ONLY DISPLAY BYTES MOVED FROM v2 TO v3")
+head("5. PROTOCOL INVARIANCE: ONLY DISPLAY BYTES MOVED FROM v2 TO v3, AND ONLY A DELETED "
+     "QUALIFIER FROM v3 TO v4")
 # =================================================================================================
 
 _changed = sorted(rel for rel in _v3 if _v3[rel] != _v2[rel])
@@ -313,33 +338,56 @@ check(_changed == sorted(PP.V2_TO_V3_CHANGED),
       "exactly eleven package files differ between v2 and v3, and they are the eleven declared",
       str(_changed))
 
-# THE PROOF THAT ONLY THE NAME MOVED. Each current file is mapped back through the rename and
-# must be BYTE-IDENTICAL to its v2-era blob. This is stronger than counting differing lines: a
-# single changed character anywhere else makes it red.
+# THE PROOF THAT ONLY THE NAME MOVED. Each v3 file is mapped back through the rename and must be
+# BYTE-IDENTICAL to its v2-era blob. This is stronger than counting differing lines: a single
+# changed character anywhere else makes it red. Read from the v3 COMMIT, because v3 is now a
+# predecessor and the live tree carries v4.
 _not_name_only = []
 for rel in _changed:
     _v2_text = (git_bytes(rel, V2_COMMIT) or b"").decode("utf-8")
-    if PP.to_v2_era((ROOT / rel).read_text(encoding="utf-8")) != _v2_text:
+    _v3_text = (git_bytes(rel, V3_COMMIT) or b"").decode("utf-8")
+    if PP.to_v2_era(_v3_text) != _v2_text:
         _not_name_only.append(rel)
 check(not _not_name_only,
       "and every one of them, mapped back through the A1.1 rename, is BYTE-IDENTICAL to its v2 "
       "bytes. ONLY THE DISPLAY NAME MOVED: no behaviour, no threshold, no sequence step, not one "
       "other character", str(_not_name_only))
 
-# THE PROTOCOL SURFACE ITSELF, byte-identical. The decision sequence, the reveal gate, the lock,
-# the randomization, the server contract and the append-only record all live in files that are
-# NOT in the changed list, and that is asserted rather than inferred from the list's shortness.
-_protocol_moved = [rel for rel in PP.PROTOCOL_SURFACE if _v3.get(rel) != _v2.get(rel)]
+# THE v3 TO v4 STEP, proved the same way and no more loosely.
+_changed4 = sorted(rel for rel in _v4 if _v4[rel] != _v3[rel])
+check(_changed4 == sorted(PP.V3_TO_V4_CHANGED),
+      "exactly one package file differs between v3 and v4, and it is the one declared",
+      str(_changed4))
+_not_qualifier_only = []
+for rel in _changed4:
+    _v3_text = (git_bytes(rel, V3_COMMIT) or b"").decode("utf-8")
+    if PP.to_v3_era((ROOT / rel).read_text(encoding="utf-8")) != _v3_text:
+        _not_qualifier_only.append(rel)
+check(not _not_qualifier_only,
+      "and restoring the six deleted proxy qualifiers to it reproduces its v3 bytes EXACTLY, so "
+      "the only change is the removal of six sentences that the Run-29 remediation made false",
+      str(_not_qualifier_only))
+check(all(f"Stated proxy: " not in (ROOT / rel).read_text(encoding="utf-8").split(
+              f'"{mid}": {{ name: ')[1].split("\n")[0]
+          for rel in _changed4 for mid in ("A4.5", "A4.6", "A4.7", "A4.8", "A5.2", "A5.3")),
+      "and the six qualifiers really are gone from the current file, so the normalisation above "
+      "is restoring something rather than matching a no-op")
+
+# THE PROTOCOL SURFACE ITSELF, byte-identical across BOTH steps. The decision sequence, the
+# reveal gate, the lock, the randomization, the server contract and the append-only record all
+# live in files that are NOT in either changed list, and that is asserted rather than inferred.
+_protocol_moved = [rel for rel in PP.PROTOCOL_SURFACE
+                   if _v3.get(rel) != _v2.get(rel) or _v4.get(rel) != _v3.get(rel)]
 check(not _protocol_moved,
       "every file carrying a step of the participant sequence -- evidence, preliminary "
       "assessment, confidence, preliminary lock, reveal, final action, final lock, next period -- "
       "and every file carrying randomization, reveal timing, lock enforcement, the server "
-      "contract, the append-only record or treatment logic is BYTE-IDENTICAL between v2 and v3",
+      "contract, the append-only record or treatment logic is BYTE-IDENTICAL across v2, v3 and v4",
       str(_protocol_moved))
-check(all(rel in _v3 for rel in PP.PROTOCOL_SURFACE),
+check(all(rel in _v4 for rel in PP.PROTOCOL_SURFACE),
       "and every one of those files is actually inside the package inventory, so the check above "
       "is over real rows rather than over names that are not there",
-      str([rel for rel in PP.PROTOCOL_SURFACE if rel not in _v3]))
+      str([rel for rel in PP.PROTOCOL_SURFACE if rel not in _v4]))
 check("assets/js/decision.js" not in _changed and "assets/js/decision-ui.js" in _changed,
       "the distinction the file names invite and the bytes settle: decision.js RUNS the sequence "
       "and did not move; decision-ui.js holds a module-id-to-display-name table and did")

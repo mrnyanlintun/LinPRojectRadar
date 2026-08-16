@@ -551,6 +551,16 @@ INDIRECT_COST_BODY = "INDIRECT_COST_LEDGER"
 #: The material cost baseline and the current material cost. Run 20 cycle 8. Its own body: the
 #: cluster it was found in has only one executable member, so it is a body of one and not a pair.
 MATERIAL_COST_BODY = "MATERIAL_COST_RECORD"
+# ---- RUN 29. The two evidence bodies the Category-4 and Category-5 rewrites read from, where a
+# declaration already existed and had to stop naming facts the module no longer touches.
+#: The governed change event register: each change with its identity, dates, type, cause, value
+#: and direction, over a declared exposure. Its own body: it is a register of events, not the two
+#: contract sums an extraction reads off a monthly report.
+CHANGE_EVENT_BODY = "CHANGE_EVENT_REGISTER"
+#: The governed sensitivity model: a named response function, a base state and the inputs to be
+#: moved with the range each moves across. ONE body serving A5.2 and A5.3, which is precisely why
+#: those two must never be fused as though they were two independent readings.
+SENSITIVITY_MODEL_BODY = "SENSITIVITY_MODEL"
 # ---------------------------------------------------------------------------------------------
 # RUN 28. SIX DECLARATIONS BELOW WERE REWRITTEN, BECAUSE THE FACTS THEY NAMED ARE NO LONGER THE
 # FACTS THOSE MODULES READ. The owner's supplied Run-28 contract replaced each of the six
@@ -738,14 +748,23 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     #      contract sums, and report the same change count. They differ only in the thresholds
     #      they band it with, which is why on one and the same project they can and do return
     #      different colours: two readings of one body of evidence, not two bodies.
+    # RUN 29 REWROTE THIS DECLARATION, because the facts it named are no longer the facts this
+    # module reads. Change Order Frequency now computes from the governed change event register --
+    # each change with its own identity, issue date, type, cause, value and direction, over a
+    # declared exposure -- and no longer from the two extracted contract sums and a count. The
+    # pair with Contract Modification Frequency is therefore no longer a pair: B3.5 still reads
+    # the extracted sums, this one reads the register, and declaring them a transform of one body
+    # would assert a corroboration that has stopped existing. That is the error Run 20 cycle 5
+    # recorded in its other direction, and it is corrected here rather than left standing.
     "A4.6": lineage_record(  # Change Order Frequency
         "A4.6",
-        source_fact_ids=("baseline_contract_sum", "change_order_count", "revised_contract_sum"),
-        lineage_group_ids=(CONTRACT_CHANGE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("change order log", "count of change orders",
-                          "scope growth = (revised contract sum - baseline contract sum) "
-                          "/ baseline contract sum")),
+        lineage_group_ids=(CHANGE_EVENT_BODY,),
+        evidence_relationship=INDEPENDENT,
+        derivation_chain=("the governed change event register with its declared exposure",
+                          "change frequency = governed change events / exposure days",
+                          "change magnitude = summed signed change value / baseline "
+                          "contract value, reported separately and never combined with the "
+                          "frequency")),
     "B3.5": lineage_record(  # Contract Modification Frequency
         "B3.5",
         source_fact_ids=("baseline_contract_sum", "change_order_count", "revised_contract_sum"),
@@ -754,33 +773,40 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
         derivation_chain=("change order log", "count of contract modifications",
                           "scope growth = (revised contract sum - baseline contract sum) "
                           "/ baseline contract sum")),
-    #      The second pair. Sensitivity Analysis perturbs the cost index and ranks three drivers;
-    #      Tornado Risk Ranking ranks four present-state deviations built from the same indices
-    #      and the same document risk score, plus the two progress figures. The overlap is most
-    #      of the body, so it is CORRELATED rather than a transform of the other's output: it is
-    #      not computed FROM the sensitivity signal, it recomputes over the same evidence. The
-    #      partition does not depend on that distinction -- the shared facts settle it -- and the
-    #      label is recorded because a label is a claim, and a claim is not evidence.
+    #      The second pair, AS RUN 29 LEFT IT. Run 20 cycle 4 declared Sensitivity Analysis and
+    #      Tornado Risk Ranking CORRELATED, because each recomputed over the same earned-value
+    #      and document evidence rather than one reading the other's output. Run 29's supplied
+    #      contract makes that architecture the defect: 5.3 "should ordinarily consume the 5.2
+    #      sensitivity outputs", "does not create a second independent analytical evidence body",
+    #      and "its lineage must show derivation from the sensitivity results".
+    #
+    #      So the architecture was corrected and the declaration follows it. There is now exactly
+    #      ONE computation of the evidence -- `canonical_v4.sensitivity_analysis` over the
+    #      governed sensitivity model -- and `canonical_v4.tornado_ranking` takes that result
+    #      dictionary as its ONLY argument. It cannot reach the structure, the response model or
+    #      the signal inputs, so it cannot form an independent body even by accident. The
+    #      relationship is DERIVED, and the dependency names the signal it is derived from.
     "A5.2": lineage_record(  # Sensitivity Analysis
-        "A5.2", source_fact_ids=("ac", "bac", "doc_risk_score", "ev", "pv"),
-        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("bac,ev,ac,pv and the document risk score",
-                          "cost performance index = ev / ac",
-                          "estimate at completion = bac / cost performance index",
-                          "one-at-a-time perturbation of the cost index by plus and minus 0.05",
-                          "ranked driver swings")),
+        "A5.2",
+        lineage_group_ids=(SENSITIVITY_MODEL_BODY,),
+        evidence_relationship=INDEPENDENT,
+        derivation_chain=("the governed sensitivity model: a named response function, the base "
+                          "state it is evaluated at, and the inputs to be moved",
+                          "the response evaluated at the base state",
+                          "the response RECOMPUTED with one input moved by its declared "
+                          "perturbation, one input at a time",
+                          "normalised sensitivity = (change in response / response) / "
+                          "(change in input / input)")),
     "A5.3": lineage_record(  # Tornado Risk Ranking
-        "A5.3", source_fact_ids=("ac", "actual_pct_complete", "doc_risk_score", "ev",
-                                 "planned_pct_complete", "pv"),
-        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("ev,ac,pv, the document risk score and the two progress figures",
-                          "cost performance index = ev / ac",
-                          "schedule performance index = ev / pv",
-                          "absolute deviation of each index from one",
-                          "absolute progress shortfall",
-                          "ranked present-state deviations")),
+        "A5.3",
+        dependency_ids=("A5.2",),
+        parent_signal_ids=("A5.2",),
+        lineage_group_ids=(SENSITIVITY_MODEL_BODY,),
+        evidence_relationship=DERIVED,
+        derivation_chain=("the sensitivity result computed by A5.2, and nothing else",
+                          "impact of each input = its response at its declared high end minus "
+                          "its response at its declared low end",
+                          "ranked descending by absolute impact, equal impacts sharing a rank")),
     # ---- RUN 20 CYCLE 8. THE ARCH.3 CLUSTERS.
     #
     # WHAT WAS ACTUALLY ESTABLISHED, AND HOW. ARCH.3 was found by grouping modules by the exact
