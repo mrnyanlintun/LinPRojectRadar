@@ -77,10 +77,13 @@ head("1. THE STAMP AND ITS HISTORY")
 # RESTATED BY RUN 29. Run 28 established v12; Run 29 appends v13 and this suite keeps proving
 # that v12 was not overwritten to make room for it. The stamp assertion follows the current line,
 # and the history assertion below still names every earlier stamp in order.
-check(SIMULATION_VERSION == "sim-2026.08-v13",
-      "the analytical layer is stamped sim-2026.08-v13", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v12",
-      "and names sim-2026.08-v12 as the line it supersedes, so a reader can see which stamp the "
+# RESTATED BY RUN 29's CLOSURE, for the third time and by the same rule: this suite exists to
+# prove the v11-to-v12 boundary and that v11 was not overwritten, and it still proves exactly
+# that. The current stamp assertion follows the live line.
+check(SIMULATION_VERSION == "sim-2026.08-v14",
+      "the analytical layer is stamped sim-2026.08-v14", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v13",
+      "and names sim-2026.08-v13 as the line it supersedes, so a reader can see which stamp the "
       "immediately preceding audit baseline is", SIMULATION_VERSION_SUPERSEDED)
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "EVERY SIMULATION IDENTIFIER IS UNIQUE: no historical stamp has been re-used",
@@ -91,7 +94,7 @@ check(SIMULATION_VERSION_HISTORY[-1] == SIMULATION_VERSION,
 check(SIMULATION_VERSION_HISTORY == (
       "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
       "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
-      "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13"),
+      "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14"),
       "and the whole sequence is APPENDED to, never rewritten: every stamp from v1 onward is "
       "still there in order", str(SIMULATION_VERSION_HISTORY))
 
@@ -116,8 +119,9 @@ check(_old_stamps and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _old_stam
 check(len(SIMULATION_VERSION_HISTORY) > len(_old_stamps),
       "and it grew: every stamp added since that commit is an append onto the end",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
-check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v12", "sim-2026.08-v13"),
-      "and the stamps added since the v11 commit are exactly v12 and v13, in that order",
+check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v12", "sim-2026.08-v13",
+                                                        "sim-2026.08-v14"),
+      "and the stamps added since the v11 commit are exactly v12, v13 and v14, in that order",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 
 # =================================================================================================

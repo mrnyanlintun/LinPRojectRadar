@@ -1289,6 +1289,64 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     # identical, which is the same acceptance condition the schedule snapshots are held to.
     # THE KEY IS ABSENT WHERE NOTHING WAS SUPPLIED, so a project with no governed data object
     # stores exactly the record it stored before this existed and no module sees a new empty key.
+    # RUN 29 CLOSURE, THE ONE REAL CORPUS-TO-STRUCTURE WIRING GAP.
+    #
+    # Run 29 reported `real_corpus_populated = no` for all seventeen Category-4 and -5
+    # structures. The closure decomposed that single sentence, which was covering two very
+    # different cases: a structure whose defining fields are genuinely ABSENT from the corpus,
+    # and a structure whose defining fields ARE present, already extracted, and simply never
+    # wired to a module. Sixteen are the first case. THIS ONE IS THE SECOND, and it is the same
+    # class of gap Run 28 found for A2.7, where baseline finish dates were already extracted and
+    # reached no module.
+    #
+    # WHAT IS ALREADY IN THE CORPUS. `ncr_log` yields `ncr_issued`, a COUNT of nonconformances
+    # raised in the reporting period, and `inspection_report` yields `items_inspected`, which is
+    # a governed exposure in the supplied contract's own words -- its worked example is four
+    # nonconformances over one hundred inspections. Both are extracted today and both reach these
+    # signal inputs. Nothing is inferred: the numerator is a count that was extracted as a count
+    # and the denominator is an inspection total that was extracted as an inspection total.
+    #
+    # WHAT IS NOT INVENTED. No per-nonconformance identity, date or severity is fabricated to
+    # make a list out of a number. The assembled record uses the COUNT form, which reports the
+    # quantities that need events as absent and says so on the result. The open and closed counts
+    # are carried where they were extracted, beside the rate and never divided into it.
+    #
+    # ASSEMBLED BEFORE the governed project-data merge, so a structure a project typed in never
+    # displaces evidence read from the project's own documents. That is rule 5 of project_data.py
+    # applied here rather than restated.
+    _ncr_issued = si.get("ncrIssued")
+    _inspected = si.get("itemsInspected")
+    if (_ncr_issued is not None and _inspected is not None
+            and si.get("ncrExposureRecord") is None):
+        try:
+            _n = float(_ncr_issued)
+            _x = float(_inspected)
+        except (TypeError, ValueError):
+            _n = _x = -1.0
+        if _n >= 0 and _x > 0 and _n == int(_n):
+            si["ncrExposureRecord"] = {
+                "source": ("the nonconformance log and the inspection report for this "
+                           "reporting period"),
+                "exposure_unit": "inspections",
+                "exposure_quantity": _x,
+                "ncr_count": int(_n),
+                "ncr_count_basis": "nonconformances raised in the reporting period",
+                "open_count": si.get("ncrOpen"),
+                "closed_count": si.get("ncrClosed"),
+                "assembled_by": "document extraction",
+            }
+            si["ncrExposureRecordDerivation"] = {
+                "derived": True,
+                "numerator_field": "ncrIssued",
+                "numerator_document_type": "ncr_log",
+                "denominator_field": "itemsInspected",
+                "denominator_document_type": "inspection_report",
+                "event_detail_available": False,
+                "not_fabricated":
+                    "no nonconformance identity, date or severity was invented; the count form "
+                    "reports the quantities that need events as absent",
+            }
+
     _supplied = apply_to_signal_inputs(si, project.doc, period)
     if _supplied:
         si["projectDataStructures"] = _supplied

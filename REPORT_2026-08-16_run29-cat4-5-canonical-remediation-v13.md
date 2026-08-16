@@ -614,3 +614,118 @@ defensibility evidence object is GENERATED from the registry, so its bytes moved
 HEAD == main == origin/main == `5f8c40991d18ee03864492ee98334d2fdc3d8c39`, working tree clean.
 Complete suite on that exact commit, run after it was the last commit: **134 suites,
 11281/11281 checks, all suites green.** Nothing inherited from an earlier commit.
+
+---
+
+# RUN 29 CLOSURE — sim-2026.08-v14
+
+This section is the closure of Run 29, not a new run. It closes the eight gaps the owner's
+closure instruction names. Starting head verified as `9cc6793a998fdd9d6ec3693035bb4826bed4e117`,
+tree clean, `SIMULATION_VERSION = "sim-2026.08-v13"`.
+
+## 1. The suite was re-taken on the true final head
+
+The 134-suite result recorded above was taken on `5f8c409`, before the supervising session landed
+this report at `9cc6793`. Nothing is inherited from it. The complete suite is re-run on the exact
+final closure commit and its total is recorded in the finalisation commit message and below.
+
+## 2. Three stale synthetic fixtures replaced
+
+Each was RUN FIRST, to establish on the record what it actually supplied, before anything changed.
+
+| target | what the fixture supplied BEFORE | what it supplies NOW |
+|---|---|---|
+| A4.4 NCR Rate | an audited findings cohort and a backlog count — no exposure, no events. The canonical method could take **no reading at all** from it. | real nonconformance events with an explicit governed exposure. PRJ-AIR: 6 nonconformances over 180 inspections. Known-answer table: **4 / 100 = 0.04**, the supplied contract's own worked figure. |
+| A5.6 Queueing | an occupancy log — no arrival process, no service process, no server count, no discipline. **No reading.** | arrival rate from entities over span, service rate from mean service time, server count and FIFO discipline. PRJ-AIR: λ≈0.380, μ≈0.392, 2 servers. Known answer at **λ=2, μ=3, one server: ρ=2/3, L=2, W=1**, plus two unstable cases (λ≥μ) which the model **refuses** rather than reporting a finite queue. |
+| A5.7 ABM | a typed-in state history with no `agent_type` and no behaviour rule. **No reading.** | the deterministic one-supplier / one-carrier / one-project fixture, trace `[0, 0, 1, 2, 2, 2]` under the fixed step order POST_DEMAND → DELIVER → COLLECT → SHIP. Recorded honestly: OG-SYNTH-0.3 cannot express this model, because all forty-eight of its agents are of type SUPPLIER. |
+
+Delivered as **successor package OG-SYNTH-0.4**. Every predecessor build sits in the tree
+untouched and its own record still verifies. The three replaced importers are KEPT, because the
+Run-19 and Run-10B suites read them as the record of what the previous line was integrated
+against. The chain is declared once in `server/tools/synthetic_packages.py` and guarded by
+`test_run29_synthetic_packages.py`, including the masquerade rule: no file outside a
+predecessor's own record may carry that predecessor's programme version.
+
+## 3. The too-broad claim decomposed — and one real wiring gap closed
+
+`real_corpus_populated = no` covered two very different cases. All seventeen structures are
+decomposed against `_EXTRACTION_FIELDS` and `SIGNAL_INPUT_KEYS` in
+`code_audit/run29_real_corpus_structure_reconciliation.csv`.
+
+**One structure was unwired but present:** `ncrExposureRecord`. `ncr_issued` (from the
+nonconformance log) and `items_inspected` (from the inspection report) were both already
+extracted and both already reached `signalInputs`; neither reached a module. `documents.py` now
+assembles the governed record from exactly those two fields, records the derivation on the stored
+row, and fabricates no identity, date or severity. `canonical_v4.ncr_rate` gained a COUNT form
+which reports `event_detail_available: False` and leaves severities, closure rate and open ages
+**absent rather than invented**.
+
+**The other sixteen are genuinely absent**, each with its reason stated against the extraction
+registry rather than against prose. Nothing was inferred: a cost index does not manufacture a
+dependency matrix, an activity count does not manufacture a queue, a procurement ratio does not
+manufacture an agent population, a progress percentage does not manufacture a discrete-event
+trace. `rfiEventLog` and `submittalDecisionRegister` are classified separately — per-event rows
+are absent, and the canonical quantity is already computed by the extracted-totals path.
+
+**Acceptance: structures whose defining fields exist in the corpus but remain unwired = 0.**
+
+## 4. The A5.4 leakage guard
+
+`test_run29_a54_leakage.py` proves Scenario Modeling cannot emit a recommended action, a
+preferred option, a decision ranking, an optimization result or a participant recommendation, on
+any input — 20 forbidden output keys and 5 forbidden structure keys, checked by a recursive
+walker over the whole emitted object. Non-vacuity is proved by executing mutated copies of the
+runner that emit each forbidden shape in turn, confirming the injection from disk, observing the
+guard go red for the intended reason, restoring, and observing green.
+
+## 5. The eighteen-row closure table
+
+`code_audit/run29_closure_18_target_table.csv` is REGENERATED from the registry and the Run-29
+scope file, not written by hand. 18 rows, 18 unique identities, unaccounted = 0.
+
+## 6. The version identity: v14, settled by execution
+
+The closure wired production corpus-to-structure assembly, so v13 no longer describes the
+executable behaviour. This is not argued, it is executed: the v13 analytical package is extracted
+from git object `9cc6793`, imported, and run beside the current one on the identical assembled
+record. **v13 ABSTAINS** (it required a list of events; a count extracted as a count is not a
+list). **v14 reports 0.04.** Same input, different emitted result. On a record carrying real
+nonconformance EVENTS both lines agree exactly, so this closure widened what can be read rather
+than changing what was already readable. Stated honestly: that suite proves one divergence, which
+is all a version boundary needs; it does not claim to enumerate every divergence.
+
+`SIMULATION_VERSION = "sim-2026.08-v14"`, superseding `sim-2026.08-v13`, with the history
+asserted to be a strict append against the tuple read out of git object `9cc6793`.
+
+## 7. Package preservation
+
+- **Simulation:** history append-only, proved as a strict prefix read from git.
+- **Synthetic:** OG-SYNTH-0.1 (no record, declared as having none), 0.2, 0.3 preserved untouched
+  and still verifying; 0.4 is the current successor.
+- **Participant:** v1 (`c44e3ce`), v2 (`0293dc5`), v3 (pinned `01e943e`), v4 current —
+  **unchanged by this closure**, because it removed no registry qualifier and moved no
+  participant-facing byte.
+- **Freeze:** successor `…-RUN29-CLOSURE-V14-1` extends the chain past
+  `…-RUN29-CANONICAL-CAT4-5-V13-1`, with a new pinned production manifest
+  `code_audit/run29_closure_production_tree.sha256`. The Run-29 manifest is repointed from, never
+  rewritten.
+
+**The one field deliberately NOT reconciled.** Run 29's stage-1 freeze recorded
+`report_present_in_tree: false`, which was true of the tree at the moment it was taken. The
+supervising session then landed the report. Editing a sealed predecessor to agree with a later
+world is the exact move this chain exists to forbid, so the parent record and its stage-2
+companion are untouched and the successor states the current fact in
+`parent_report_field_reconciliation`. Both records are true of their own moment.
+
+## 8. Declared production changes
+
+Four production files changed: `documents.py`, `canonical_v4.py`, `models_doc.py`, `models.py`.
+**No new declared-changes manifest was written**, and that is the guard working rather than a
+gap: all four are already declared — `models_doc.py` by Run 20, `models.py` and `documents.py` by
+Run 28, `canonical_v4.py` by Run 29 as new production code. No path may appear in two manifests.
+
+## Expectations moved, each with its reason recorded
+
+`test_run2_fifteen_defects.py` asserted that A4.4 abstains on the real path. It now computes,
+because the wiring works. The expectation was moved with its reason written into the file rather
+than silently rewritten — the same discipline applied to the A3.6 and A4.9 moves recorded above.

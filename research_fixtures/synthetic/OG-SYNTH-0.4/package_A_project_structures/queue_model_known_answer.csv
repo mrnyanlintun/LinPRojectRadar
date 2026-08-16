@@ -1,0 +1,4 @@
+case_id,queue_id,arrival_rate,service_rate,servers,discipline,stability,expected_rho,expected_L,expected_W,expected_Lq,expected_Wq,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation
+QUEUE-KA-STABLE,KA-RFI-REVIEW,2.0,3.0,1,FIFO,STABLE,0.6666666666666666,2.0,1.0,1.3333333333333333,0.6666666666666666,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True
+QUEUE-KA-UNSTABLE,KA-RFI-REVIEW,3.0,3.0,1,FIFO,UNSTABLE,,,,,,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True
+QUEUE-KA-OVERLOADED,KA-RFI-REVIEW,4.0,3.0,1,FIFO,UNSTABLE,,,,,,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True

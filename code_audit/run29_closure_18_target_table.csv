@@ -1,0 +1,19 @@
+canonical_id,registered_name,canonical_method_implemented,canonical_supply_path_present,structure_key,real_corpus_provides_defining_evidence,computes_on_real_corpus,abstains_on_real_corpus,synthetic_canonical_fixture_current,cal_pending,validate_pending,lineage_qualification_pending_run31,final_disposition
+A4.1,Document Risk Score,yes,yes,documentRiskEvidence,no,no,yes,yes,yes,yes,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A4.2,RFI Velocity,yes,yes,rfiEventLog,no,yes,no,yes,no,no,yes,CANONICAL_METHOD_COMPUTING_ON_REAL_CORPUS
+A4.3,Submittal Rejection Rate,yes,yes,submittalDecisionRegister,no,yes,no,yes,no,no,yes,CANONICAL_METHOD_COMPUTING_ON_REAL_CORPUS
+A4.4,NCR Rate,yes,yes,ncrExposureRecord,yes,yes,no,yes,yes,no,yes,CANONICAL_METHOD_COMPUTING_ON_REAL_CORPUS
+A4.5,Weather Day Impact,yes,yes,weatherImpactEvents,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A4.6,Change Order Frequency,yes,yes,changeEventRegister,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A4.7,Dispute Escalation Index,yes,yes,claimDisputeRegister,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A4.8,Subcontractor Performance,yes,yes,subcontractorAssessments,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A4.9,Procurement Lead Time Monitor,yes,yes,procurementItems,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A4.10,Specification Conflict Density,yes,yes,specificationConflictRegister,no,no,yes,yes,yes,yes,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.1,DSM Rework Propagation,yes,yes,dsmDependencyModel,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.2,Sensitivity Analysis,yes,yes,sensitivityModel,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.3,Tornado Risk Ranking,yes,yes,sensitivityModel,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.4,Scenario Modeling,yes,yes,scenarioSet,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.5,Rework Feedback Loop,yes,yes,systemDynamicsModel,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.6,Queueing Theory Bottleneck,yes,yes,queueModel,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.7,Agent-Based Supply Chain,yes,yes,agentSupplyChainModel,no,no,yes,yes,yes,yes,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS
+A5.8,Discrete Event Simulation,yes,yes,desProcessModel,no,no,yes,yes,yes,no,yes,CANONICAL_METHOD_CORRECTLY_ABSTAINING_ON_REAL_CORPUS

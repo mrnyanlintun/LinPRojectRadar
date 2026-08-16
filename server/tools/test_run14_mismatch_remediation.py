@@ -434,7 +434,7 @@ check(not (set(CORE_VOTING_MODULES) & set(MISMATCH)),
 check(sorted(DISABLED_CONCEPT_ONLY) == DISABLED,
       "the eight disabled modules are the eight Run 13 recorded, and this run activated none "
       "of them", str(sorted(DISABLED_CONCEPT_ONLY)))
-check(SIMULATION_VERSION == "sim-2026.08-v13",
+check(SIMULATION_VERSION == "sim-2026.08-v14",
       "the analytical layer is stamped at this run's version, and every earlier stamp remains "
       "the historical baseline for results collected under it", SIMULATION_VERSION)
 

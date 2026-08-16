@@ -242,7 +242,19 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: wrote it, as that release's historical record, and this successor names it as its parent and
 #: carries its digest in research/freeze/RUN29_CANONICAL_CAT4_5_FREEZE_2026-08-16.json. The guard
 #: was turned red first and observed reporting the eight changed files and the one added one.
-PINNED = ROOT / "code_audit" / "run29_production_tree.sha256"
+#: RUN 29 CLOSURE. Repointed once more, and again NOT by regenerating its parent. The closure
+#: decomposed Run 29's own too-broad `real_corpus_populated = no` claim and found ONE structure
+#: whose defining fields the corpus already extracted and which no production code assembled:
+#: `ncrExposureRecord`. Wiring it is production corpus-to-structure assembly, so it moved the
+#: analytical line to sim-2026.08-v14 and four production files changed. The run29 manifest is
+#: NOT rewritten: it stays exactly as Run 29 wrote it, as that release's historical record, and
+#: this successor names it as its parent and carries its digest in
+#: research/freeze/RUN29_CLOSURE_FREEZE_2026-08-16.json. The guard was turned red first and
+#: observed reporting the four changed files.
+PINNED = ROOT / "code_audit" / "run29_closure_production_tree.sha256"
+#: The Run-29 canonical manifest, the immediate parent of the current one, kept addressable so a
+#: guard can prove the supersession is a real change and not a silent rewrite.
+PINNED_RUN29 = ROOT / "code_audit" / "run29_production_tree.sha256"
 #: The Run-28 closure manifest, the immediate parent of the current one, kept addressable so a
 #: guard can prove the supersession is a real change and not a silent rewrite.
 PINNED_RUN28 = ROOT / "code_audit" / "run28_production_tree.sha256"

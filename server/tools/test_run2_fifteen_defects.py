@@ -921,8 +921,23 @@ try:
     for mid in ("A6.1", "A6.4", "A1.1", "B1.1", "B2.1"):
         check(mid in comp, f"{FIFTEEN[mid]} produces a finding on the real path",
               str(abst.get(mid, {}).get("reason"))[:90])
-    # These three refuse for want of data the fix now requires, and each states which data.
-    for mid in ("A4.4", "A4.5", "A6.3"):
+    # RUN 29 CLOSURE REMOVED A4.4 FROM THIS LIST, and the reason is recorded rather than the
+    # expectation being quietly rewritten. Run 29 reported that no Category-4 or -5 canonical
+    # structure was populated from the real corpus. That single sentence covered two different
+    # cases, and the closure decomposed it: sixteen of the seventeen structures are genuinely
+    # absent, but `ncrExposureRecord` was not. The nonconformance log already yielded the count
+    # of nonconformances raised in the period and the inspection report already yielded the
+    # number of items inspected; both reached signalInputs and neither reached a module. The
+    # closure wired them, so the nonconformance rate now COMPUTES on the real path from evidence
+    # that was already being extracted, and it is asserted as computing here. The quantities that
+    # genuinely need per-event detail -- severities, closure rate, open ages -- are still reported
+    # absent rather than invented, which is checked in the closure's own suites.
+    check("A4.4" in comp,
+          f"{FIFTEEN['A4.4']} produces a finding on the real path, because the closure wired the "
+          f"nonconformance count and the inspected quantity the corpus already extracted",
+          str(abst.get("A4.4", {}).get("reason"))[:120])
+    # These two refuse for want of data the fix now requires, and each states which data.
+    for mid in ("A4.5", "A6.3"):
         rsn = str(abst.get(mid, {}).get("reason") or "")
         check(mid in abst, f"{FIFTEEN[mid]} abstains on the real path, correctly", str(rsn)[:90])
         check(rsn.startswith("Awaiting"),

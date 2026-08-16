@@ -175,12 +175,38 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # EXECUTABLE ANALYTICAL BEHAVIOUR, and this layer's behaviour differs from v12's. Every earlier
 # stamp, v12 included, remains the historical audit baseline for the results collected under it;
 # none is overwritten or re-used.
-SIMULATION_VERSION = "sim-2026.08-v13"
+# RUN 29's CLOSURE moves it to sim-2026.08-v14, and the reasoning is the one this programme has
+# already got wrong once by being too narrow. The closure's own instruction is explicit: a run
+# that only touches tests, reports and synthetic packages keeps its stamp, and a run that wires
+# real corpus fields into canonical structures does not, because a module that abstained on the
+# real corpus will now compute on it.
+#
+# THAT IS WHAT HAPPENED. The closure decomposed Run 29's claim that no real corpus populates any
+# of the seventeen Category-4 and -5 structures, and found the claim false for one of them: the
+# nonconformance log already yields a COUNT of nonconformances raised in the period and the
+# inspection report already yields the number of items inspected, which is a governed exposure in
+# the supplied contract's own words. Both were extracted and neither reached a module.
+# `documents.py` now assembles `ncrExposureRecord` from the two, and `canonical_v4.ncr_rate`
+# gained a count numerator form that fabricates no identity, date or severity.
+#
+# THE PROOF IS MECHANICAL, not rhetorical. On ONE identical governed input -- the assembled
+# record of four nonconformances against one hundred inspections --
+#
+#     models_doc.py as it shipped at commit 9cc6793 (v13)  ABSTAINS: it required a list of
+#                                                          nonconformance EVENTS and a count is
+#                                                          not a list
+#     models_doc.py after this closure                     reports a rate of 0.04
+#
+# server/tools/test_run29_closure_version_boundary.py extracts the v13 package from that git
+# object, EXECUTES it beside the current one and asserts exactly that divergence. Every earlier
+# stamp, v13 included, remains the historical audit baseline for the results collected under it;
+# none is overwritten or re-used.
+SIMULATION_VERSION = "sim-2026.08-v14"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v12"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v13"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -188,7 +214,7 @@ SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v12"
 SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
-    "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13",
+    "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
 )
 
 

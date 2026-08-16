@@ -496,6 +496,25 @@ def ncr_rate(structure: dict) -> dict[str, Any]:
     Open count, age of open, severity and closure are tracked SEPARATELY and are not divided by
     each other, which is the defect the previous implementation was corrected for in an earlier
     run and which is not reintroduced here in a new shape.
+
+    TWO NUMERATOR FORMS, AND WHY THE SECOND EXISTS. Run 29's closure decomposed the claim that no
+    real corpus populates this structure, and found it false for this one measure: the
+    nonconformance log already yields a COUNT of nonconformances raised in the period, and the
+    inspection report already yields the number of items inspected, which is a governed exposure
+    in the contract's own words. Both are extracted today and both reach the signal inputs. So a
+    record may carry either
+
+        `ncrs`      -- a list of nonconformance EVENTS, each with an identity, dates and a
+                       severity, from which the count, the open backlog, the ages, the severity
+                       mix and the closure rate are all derived; or
+        `ncr_count` -- a COUNT that was extracted as a count, with no per-event detail.
+
+    THE COUNT FORM FABRICATES NOTHING. It does not invent identities or dates to make a list out
+    of a number: the quantities that need events are reported as ABSENT, `event_detail_available`
+    is False, and the reader is told which. It is the same canonical quantity -- events over
+    governed exposure -- from a thinner record, which is exactly the position Run 27 recorded for
+    A4.2 and A4.3 and the position section 3 of the closure contract requires be taken wherever
+    the corpus really holds the defining figures.
     """
     words = V4_STRUCTURE_WORDS["A4.4"]
     prov = _provenance(structure, words, "source")
@@ -505,21 +524,54 @@ def ncr_rate(structure: dict) -> dict[str, Any]:
         raise StructureAbsent(
             "The nonconformance record provided for this project reports no exposure to measure "
             "its nonconformances against, so no rate is formed from it.")
-    events = _rows(structure, "ncrs", words)
     as_of = _f(structure, "as_of_day", words) if structure.get("as_of_day") is not None else None
+
+    if structure.get("ncrs") is None and structure.get("ncr_count") is not None:
+        # ---- THE COUNT FORM.
+        count = _f(structure, "ncr_count", words)
+        if count < 0 or count != int(count):
+            raise StructureAbsent(
+                "The nonconformance record provided for this project reports a count of "
+                "nonconformances that is not a whole number at or above nought, so no rate is "
+                "formed from it.")
+        basis = _text(structure, "ncr_count_basis", words)
+        open_ = num(structure.get("open_count"), None)
+        closed = num(structure.get("closed_count"), None)
+        if open_ is not None and open_ < 0:
+            raise StructureAbsent(
+                "A negative count of open nonconformances is not a measurable backlog, so no "
+                "reading is taken from the record provided for this project.")
+        return {
+            "ncr_rate": int(count) / quantity,
+            "ncr_count": int(count),
+            "ncr_count_basis": basis,
+            "event_detail_available": False,
+            "exposure_unit": unit,
+            "exposure_quantity": quantity,
+            "open_count": int(open_) if open_ is not None else None,
+            "closed_count": int(closed) if closed is not None else None,
+            "reopened_count": None,
+            "closure_rate": None,
+            "mean_open_age_days": None,
+            "max_open_age_days": None,
+            "severity_counts": {},
+            "source": prov["source"],
+        }
+
+    events = _rows(structure, "ncrs", words)
     prepared = []
     for e in events:
         issued = _day(e, "issue_day", "issue_date", words)
-        closed = (_day(e, "close_day", "close_date", words)
-                  if (e.get("close_day") is not None or e.get("close_date")) else None)
-        if closed is not None and closed < issued:
+        closed_day = (_day(e, "close_day", "close_date", words)
+                      if (e.get("close_day") is not None or e.get("close_date")) else None)
+        if closed_day is not None and closed_day < issued:
             raise StructureAbsent(
                 "A nonconformance in the record provided for this project is closed before it "
                 "was raised, so the record does not describe one history and no rate is formed.")
         prepared.append({
             "ncr_id": _text(e, "ncr_id", words),
             "issue_day": issued,
-            "close_day": closed,
+            "close_day": closed_day,
             "reopened": bool(e.get("reopened")),
             "severity": _text(e, "severity", words).upper(),
             "reporting_period": e.get("reporting_period"),
@@ -534,6 +586,8 @@ def ncr_rate(structure: dict) -> dict[str, Any]:
     return {
         "ncr_rate": len(prepared) / quantity,
         "ncr_count": len(prepared),
+        "ncr_count_basis": "nonconformance events carried on the record",
+        "event_detail_available": True,
         "exposure_unit": unit,
         "exposure_quantity": quantity,
         "open_count": len(open_),

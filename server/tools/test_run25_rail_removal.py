@@ -144,10 +144,16 @@ check(pt.PINNED_RUN25.name == "run25_production_tree.sha256"
 # RUN 29 extends the chain once more, for the same reason and by the same rule: the owner's
 # Run-29 contract moved eight production files and created one, so the pin moves to the Run-29
 # manifest and the closure manifest is kept addressable as its parent rather than rewritten.
+# THE RUN-29 CLOSURE extends it once more. The closure wired one canonical structure --
+# `ncrExposureRecord` -- out of corpus fields the extraction pipeline already produced, which is
+# production corpus-to-structure assembly and moved the analytical line to sim-2026.08-v14. Four
+# production files changed, so the pin moves to the closure manifest and the Run-29 manifest is
+# kept addressable as its parent rather than rewritten.
 check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.sha256",
                         "run28_production_tree.sha256",
                         "run28_closure_production_tree.sha256",
-                        "run29_production_tree.sha256"),
+                        "run29_production_tree.sha256",
+                        "run29_closure_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)
@@ -231,6 +237,33 @@ if pt.PINNED.name != "run25_production_tree.sha256":
               "and every file whose bytes moved across the closure is declared by the Run-28 "
               "manifest or was already declared by an earlier run",
               str(sorted(set(_moved28) - (_declared_28 | _already))))
+
+    # RUN 29 -> RUN 29 CLOSURE. Asserted on its own terms, with the Run-29 manifest addressed
+    # directly rather than through the moving pin, so a later run cannot dilute Run 29's record.
+    # The closure ADDED no production file and REMOVED none: it changed four that were already
+    # declared -- models_doc.py and registry.py by Run 20, models.py and documents.py by Run 28,
+    # and canonical_v4.py by Run 29 as new production code -- which is why there is no fresh
+    # declared-changes manifest for it, and why the assertion below is that the file LIST is
+    # identical and only declared files moved bytes.
+    if pt.PINNED.name == "run29_closure_production_tree.sha256":
+        _p29 = {ln.split("  ", 1)[1]: ln.split("  ", 1)[0]
+                for ln in pt.PINNED_RUN29.read_text(encoding="utf-8").splitlines() if ln.strip()}
+        check(pt.PINNED_RUN29.is_file() and set(_p26) <= set(_p29),
+              "the Run-29 manifest is still present and addressable after being superseded, and "
+              "still covers everything the Run-26 one did",
+              str(sorted(set(_p26) - set(_p29))))
+        check(set(_p29) == set(_now),
+              "the closure manifest covers exactly the same production surface, so the freeze "
+              "was neither narrowed nor widened: the closure created no production file",
+              str(sorted(set(_p29) ^ set(_now))))
+        _moved29 = sorted(k for k in _p29 if _p29[k] != _now[k])
+        check(_moved29 == ["server/app/documents.py",
+                           "server/app/simulation/canonical_v4.py",
+                           "server/app/simulation/models.py",
+                           "server/app/simulation/models_doc.py"],
+              "and exactly the four files the closure changed moved bytes: the corpus-to-"
+              "structure assembler, the canonical layer that gained the count form, the runner "
+              "that reads it, and the version stamp", str(_moved29))
 
 check(pt.PINNED_RUN24.name == "run24_production_tree.sha256",
       "and the Run-24 manifest is kept addressable, so the supersession is provable")

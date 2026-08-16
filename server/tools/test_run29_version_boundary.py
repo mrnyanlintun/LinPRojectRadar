@@ -71,10 +71,14 @@ def git_show(path: str, rev: str = V12_COMMIT) -> str:
 head("1. THE STAMP AND ITS HISTORY")
 # =================================================================================================
 
-check(SIMULATION_VERSION == "sim-2026.08-v13",
-      "the analytical layer is stamped sim-2026.08-v13", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v12",
-      "and names sim-2026.08-v12 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY RUN 29's CLOSURE. This suite proves the v12-to-v13 boundary and that v12 was not
+# overwritten to make room for it, and it still proves exactly that. The closure appended v14, so
+# the current stamp assertion follows the live line and the growth assertion below names every
+# stamp added since the v12 commit rather than pinning the distance at one.
+check(SIMULATION_VERSION == "sim-2026.08-v14",
+      "the analytical layer is stamped sim-2026.08-v14", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v13",
+      "and names sim-2026.08-v13 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "EVERY SIMULATION IDENTIFIER IS UNIQUE: no historical stamp has been re-used",
       str([v for v in SIMULATION_VERSION_HISTORY
@@ -91,8 +95,8 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"the history recorded at commit {V12_COMMIT} is a strict PREFIX of the history now, read "
       f"out of git rather than out of a note, so Run 29 appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
-check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v13",),
-      "and it grew by exactly the one stamp this run is authorised to add",
+check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v13", "sim-2026.08-v14"),
+      "and the stamps added since the v12 commit are exactly v13 and the closure's v14",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v12",
       "and the line this run supersedes is the line that commit shipped", str(_old_stamps[-1]))

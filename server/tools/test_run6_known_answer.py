@@ -522,14 +522,15 @@ check(_prod, "the guard is live: it does see the files this run did change", str
 # baseline for the results already collected under it. The history is asserted as a whole rather
 # than one stamp at a time, so a run that overwrote an earlier stamp instead of appending would
 # turn this red.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v13",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v14",
       "the analytical layer is stamped at Run 28's version",
       registry.SIMULATION_VERSION)
 from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH  # noqa: E402
 check(_SVH == ("sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4",
                "sim-2026.08-v5", "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8",
                "sim-2026.08-v9", "sim-2026.08-v10", "sim-2026.08-v11",
-               "sim-2026.08-v12", "sim-2026.08-v13"),
+               "sim-2026.08-v12", "sim-2026.08-v13",
+               "sim-2026.08-v14"),
       "every earlier stamp remains recorded as a historical audit baseline, in order, and none "
       "was overwritten or re-used", str(_SVH))
 check(_SVH[-1] == registry.SIMULATION_VERSION and len(set(_SVH)) == len(_SVH),

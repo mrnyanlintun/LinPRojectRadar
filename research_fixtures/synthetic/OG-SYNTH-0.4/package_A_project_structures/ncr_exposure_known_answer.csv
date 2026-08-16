@@ -1,0 +1,5 @@
+case_id,ncr_id,issue_day,close_day,severity,reopened,exposure_unit,exposure_quantity,as_of_day,expected_ncr_rate,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation
+NCR-KA-1,KA-NCR-000,100,,MAJOR,False,inspections,100,200,0.04,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True
+NCR-KA-1,KA-NCR-001,101,,MAJOR,False,inspections,100,200,0.04,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True
+NCR-KA-1,KA-NCR-002,102,,MAJOR,False,inspections,100,200,0.04,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True
+NCR-KA-1,KA-NCR-003,103,,MAJOR,False,inspections,100,200,0.04,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True

@@ -1,0 +1,9 @@
+# OPUS GUBERNATIO SYNTHETIC PACKAGE OG-SYNTH-0.4
+# Successor to OG-SYNTH-0.3, whose own CHECKSUMS.sha256 is preserved unchanged.
+# Every path below is relative to the repository root.
+#
+1651d5642fca2230241c28b7e301d2bca03313c6da3c95b8df0473af7d288101  research_fixtures/synthetic/OG-SYNTH-0.4/README.md
+dbfcb386d4dd3a2ed52f6ea808df8e848458daf16d63289e8aee98d71a135438  research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/abm_agents_known_answer.csv
+26fb346de015e719aeab4af6efee7226018d82c0641f65f12a573ffba5abed72  research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/abm_environment_known_answer.csv
+c7621b6398958039f047559d1b3f0caf4c11c01753b72f79745523a2ce2e429a  research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/ncr_exposure_known_answer.csv
+5ffbe6d1de0e088d36397a1e573729939b1b88ceea28e87f31e94c4cae342ffa  research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/queue_model_known_answer.csv

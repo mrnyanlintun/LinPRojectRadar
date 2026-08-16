@@ -1,0 +1,3 @@
+case_id,environment,time_steps,travel_delay_steps,disruption_probability,expected_received,expected_backordered,expected_receipt_trace,data_origin,programme_version,package_version,generator_version,random_seed,not_for_empirical_validation
+ABM-KA-1,a single delivery lane between one supplier and site,6,1,0.0,2,0,0|0|1|2|2|2,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True
+ABM-KA-ZEROSTOCK,a single delivery lane between one supplier and site,6,1,0.0,0,2,0|0|0|0|0|0,SYNTHETIC_RESEARCH_FIXTURE,OG-SYNTH-0.4,A-0.4,run29_closure_canonical_cat45@0.4,20260816,True

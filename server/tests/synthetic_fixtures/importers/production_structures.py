@@ -222,3 +222,212 @@ def decision_matrix(decision_problem_id: str, split: str = "DEVELOPMENT") -> dic
         "alternatives": [{"alternative_id": m["action_id"],
                           "values": {n: _f(m, column[n]) for n in names}} for m in matrix],
     }
+
+
+# =================================================================================================
+# RUN 29 CLOSURE: THE CANONICAL CATEGORY-4 AND CATEGORY-5 SHAPES.
+#
+# The three importers above -- `audited_nonconformance_cohort`, `queues` and `agents` -- shape the
+# OG-SYNTH-0.3 tables into the forms the PREVIOUS analytical line read. Run 29's supplied
+# contracts name all three as not being the method:
+#
+#   a backlog over an audited findings total is a ratio of two different populations, not a rate
+#   over a governed exposure; a share of occupied server time is a measurement, not a queueing
+#   model; and a state history whose decision rules are named and never executed is a table read,
+#   not a simulation.
+#
+# They are KEPT, unchanged, because Run-19 and Run-10B suites read them as the historical record
+# of what the previous line was integrated against, and rewriting them would destroy that record.
+# The importers below are the canonical successors, and they read the SAME OG-SYNTH-0.3 tables:
+# the package already carried real nonconformance events, real inspection totals and real queue
+# events with arrival times, service durations, servers and a discipline. Nothing is invented
+# here, and nothing in OG-SYNTH-0.3 is modified.
+#
+# WHAT THE PACKAGE COULD NOT SUPPLY, stated rather than worked around: its forty-eight agents are
+# every one of them of type SUPPLIER, under a single decision rule, with no carrier and no project
+# agent, so it cannot express the one-supplier / one-carrier / one-project model the supplied
+# contract defines. That model, and the contract's own known-answer figures for all three
+# measures, live in the successor package OG-SYNTH-0.4 and are read by `known_answer_*` below.
+# =================================================================================================
+
+KA_PACKAGE_ROOT = (FL.FIXTURE_ROOT / "OG-SYNTH-0.4" / "package_A_project_structures")
+KA_PROGRAMME_VERSION = "OG-SYNTH-0.4"
+
+
+def _ka_rows(name: str) -> list[dict]:
+    """Read a successor known-answer table, refusing anything not marked synthetic."""
+    import csv
+    path = (KA_PACKAGE_ROOT / name).resolve()
+    if not str(path).startswith(str(KA_PACKAGE_ROOT.resolve())):
+        raise FL.FixtureError(f"{name} escapes the successor package root")
+    with path.open(encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    for r in rows:
+        if r.get("data_origin") != ORIGIN or r.get("not_for_empirical_validation") != "True":
+            raise FL.FixtureError(
+                f"{name} carries a row that is not marked as a synthetic research fixture")
+        if r.get("programme_version") != KA_PROGRAMME_VERSION:
+            raise FL.FixtureError(
+                f"{name} carries a row stamped {r.get('programme_version')!r}, which is not this "
+                f"package's own programme version: a current file may not carry a predecessor id")
+    return rows
+
+
+def ncr_exposure_record(project_id: str, period_id: str) -> dict:
+    """
+    The canonical A4.4 shape: nonconformance EVENTS over a governed exposure.
+
+    Both halves are real columns of OG-SYNTH-0.3. The events are `ncr_events.csv`, each with its
+    own identity, issue date, close date and severity. The exposure is `inspections_completed`
+    from `quality_audits.csv`, which is a governed exposure in the supplied contract's own words
+    and is the same unit its worked example uses. Nothing is derived from anything else.
+    """
+    events = [e for e in FL.load_table(f"{PACKAGE_A}/ncr_events.csv")
+              if e["project_id"] == project_id and e["issue_period_id"] <= period_id]
+    audits = [a for a in FL.load_table(f"{PACKAGE_A}/quality_audits.csv")
+              if a["project_id"] == project_id and a["period_id"] <= period_id]
+    if not events or not audits:
+        return {}
+    exposure = sum(_f(a, "inspections_completed") for a in audits)
+    if exposure <= 0:
+        return {}
+    origin = min(e["issue_date"] for e in events)
+
+    def _day(value: str) -> float:
+        import datetime as _dt
+        return float((_dt.date.fromisoformat(value) - _dt.date.fromisoformat(origin)).days)
+
+    return {
+        "data_origin": ORIGIN,
+        "not_for_empirical_validation": True,
+        "asset_version": FL.PROGRAMME_VERSION,
+        "source": "the synthetic programme's nonconformance log and its quality audit records",
+        "exposure_unit": "inspections",
+        "exposure_quantity": exposure,
+        "as_of_day": max(_day(e["issue_date"]) for e in events) + 1.0,
+        "ncrs": [{
+            "ncr_id": e["ncr_id"],
+            "issue_day": _day(e["issue_date"]),
+            "close_day": _day(e["close_date"]) if e["close_date"] else None,
+            "severity": e["severity"],
+            "reporting_period": e["issue_period_id"],
+        } for e in events],
+    }
+
+
+def queue_model(project_id: str) -> dict:
+    """
+    The canonical A5.6 shape: an arrival process, a service process, servers and a discipline.
+
+    The rates are the textbook estimators taken from the SAME `queue_events.csv` rows the
+    occupancy importer reads: lambda is the number of entities that arrived divided by the span
+    between the first arrival and the last service end, and mu is the reciprocal of the mean
+    service duration. Both are estimates OF THE PROCESSES THE LOG OBSERVED, which is what a
+    queueing model is fitted from; neither is a different quantity wearing the name of a rate.
+    The server count and the discipline are columns, not estimates.
+    """
+    events = [e for e in FL.load_table(f"{PACKAGE_A}/queue_events.csv")
+              if e["project_id"] == project_id]
+    if not events:
+        return {}
+    by_queue: dict[str, list] = {}
+    for e in events:
+        by_queue.setdefault(e["queue_id"], []).append(e)
+    out = []
+    for qid, rows in sorted(by_queue.items()):
+        first = min(_f(r, "arrival_time_day") for r in rows)
+        last = max(_f(r, "service_end_day") for r in rows)
+        span = last - first
+        mean_service = sum(_f(r, "service_duration_days") for r in rows) / len(rows)
+        if span <= 0 or mean_service <= 0:
+            continue
+        out.append({
+            "queue_id": qid,
+            "arrival_rate": len(rows) / span,
+            "service_rate": 1.0 / mean_service,
+            "servers": len({r["server_id"] for r in rows}),
+            "discipline": "FIFO" if rows[0]["queue_discipline"] == "FCFS"
+                          else rows[0]["queue_discipline"],
+        })
+    if not out:
+        return {}
+    return {
+        "data_origin": ORIGIN,
+        "not_for_empirical_validation": True,
+        "asset_version": FL.PROGRAMME_VERSION,
+        "source": "arrival and service processes estimated from the synthetic programme's own "
+                  "queue event log",
+        "model_version": "OG-SYNTH-0.3 queue events",
+        "queues": out,
+    }
+
+
+def known_answer_ncr_exposure_record() -> dict:
+    """The supplied contract's own worked example: four nonconformances over one hundred."""
+    rows = _ka_rows("ncr_exposure_known_answer.csv")
+    first = rows[0]
+    return {
+        "data_origin": ORIGIN, "not_for_empirical_validation": True,
+        "asset_version": KA_PROGRAMME_VERSION,
+        "source": "the OG-SYNTH-0.4 canonical known-answer table for nonconformance rate",
+        "exposure_unit": first["exposure_unit"],
+        "exposure_quantity": float(first["exposure_quantity"]),
+        "as_of_day": float(first["as_of_day"]),
+        "ncrs": [{"ncr_id": r["ncr_id"], "issue_day": float(r["issue_day"]),
+                  "close_day": float(r["close_day"]) if r["close_day"] else None,
+                  "severity": r["severity"], "reopened": r["reopened"] == "True"}
+                 for r in rows],
+    }
+
+
+def known_answer_queue_model(case_id: str = "QUEUE-KA-STABLE") -> dict:
+    """The supplied contract's own M/M/1 case, or one of its two unstable cases."""
+    rows = [r for r in _ka_rows("queue_model_known_answer.csv") if r["case_id"] == case_id]
+    if not rows:
+        raise FL.FixtureError(f"no queue known-answer case named {case_id!r}")
+    return {
+        "data_origin": ORIGIN, "not_for_empirical_validation": True,
+        "asset_version": KA_PROGRAMME_VERSION,
+        "source": "the OG-SYNTH-0.4 canonical known-answer table for the queueing measure",
+        "model_version": KA_PROGRAMME_VERSION,
+        "queues": [{"queue_id": r["queue_id"], "arrival_rate": float(r["arrival_rate"]),
+                    "service_rate": float(r["service_rate"]), "servers": int(r["servers"]),
+                    "discipline": r["discipline"]} for r in rows],
+    }
+
+
+def known_answer_agent_supply_chain_model(case_id: str = "ABM-KA-1") -> dict:
+    """The supplied contract's deterministic one supplier, one carrier, one project model."""
+    agents_rows = [r for r in _ka_rows("abm_agents_known_answer.csv")
+                   if r["case_id"] == case_id]
+    env_rows = [r for r in _ka_rows("abm_environment_known_answer.csv")
+                if r["case_id"] == case_id]
+    if not agents_rows or not env_rows:
+        raise FL.FixtureError(f"no agent known-answer case named {case_id!r}")
+    env = env_rows[0]
+    built = []
+    for r in agents_rows:
+        agent = {"agent_id": r["agent_id"], "agent_type": r["agent_type"], "state": r["state"],
+                 "behaviour_rule": r["behaviour_rule"],
+                 "interaction_links": r["interaction_links"].split("|")}
+        if r["inventory"]:
+            agent["inventory"] = float(r["inventory"])
+        if r["demand"]:
+            agent["demand"] = float(r["demand"])
+        built.append(agent)
+    return {
+        "data_origin": ORIGIN, "not_for_empirical_validation": True,
+        "asset_version": KA_PROGRAMME_VERSION,
+        "source": "the OG-SYNTH-0.4 canonical known-answer table for the agent based model",
+        "model_version": KA_PROGRAMME_VERSION,
+        "environment": env["environment"],
+        "time_steps": int(env["time_steps"]),
+        "travel_delay_steps": int(env["travel_delay_steps"]),
+        "disruption_probability": float(env["disruption_probability"]),
+        "agents": built,
+    }
+
+
+def known_answer_expectations(name: str) -> list[dict]:
+    """The expected figures the successor package records beside each known-answer case."""
+    return _ka_rows(name)

@@ -354,13 +354,16 @@ def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str
         reading = ncr_rate(require_v4_structure(si, "A4.4"))
     except StructureAbsent as absent:
         return insufficient("NCR_Rate", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
+    _open = (f" {_js_str(reading['open_count'])} are still open."
+             if reading["open_count"] is not None else "")
     return calibration_pending(
         "NCR_Rate",
         f"{_js_str(reading['ncr_count'])} nonconformances against "
         f"{_js_str(reading['exposure_quantity'])} {reading['exposure_unit']}, a rate of "
-        f"{_js_str(round(reading['ncr_rate'], 4))} for each one. "
-        f"{_js_str(reading['open_count'])} are still open.",
+        f"{_js_str(round(reading['ncr_rate'], 4))} for each one." + _open,
         ncr_rate=round(reading["ncr_rate"], 6),
+        ncr_count_basis=reading["ncr_count_basis"],
+        event_detail_available=reading["event_detail_available"],
         ncr_count=reading["ncr_count"],
         exposure_unit=reading["exposure_unit"],
         exposure_quantity=reading["exposure_quantity"],
