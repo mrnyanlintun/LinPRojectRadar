@@ -151,36 +151,17 @@ TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
     ),
 
     # ---------------------------------------------------------------- category 7, soft computing
-    "B2.2": MethodLabel(
-        registered="Rough Sets",
-        truthful="Supermajority band classification over bodies of evidence",
-        performs="assigns each body of evidence a band, and calls a band definite when it holds "
-                 "more than three quarters of the bodies, borderline otherwise",
-        absent="an information table: real objects described by real attributes, from which "
-               "indiscernibility classes and then the lower and upper approximations are "
-               "derived. There are no objects here, only this project's own signals",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "B2.14": MethodLabel(
-        registered="Maximum Entropy",
-        truthful="Entropy of a designed band lookup",
-        performs="reads a fixed four-way probability vector from the worse of the two "
-                 "performance indices, adjusts two of its entries by the document risk score, "
-                 "renormalises and reports the normalised Shannon entropy",
-        absent="moment constraints and a maximisation subject to them. Nothing is maximised: "
-               "the distribution is looked up, so the entropy measures the lookup table",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "B2.18": MethodLabel(
-        registered="MARCOS Ranking",
-        truthful="Single-project criterion scoring against designed reference points",
-        performs="scores this one project against designed ideal and anti-ideal reference points",
-        absent="a real set of alternatives to rank. A ranking method over one alternative "
-               "returns that alternative, and the reference points are designed rather than "
-               "derived from the alternative set as the method requires",
-        disposition="OWNER_DECISION_REQUIRED",
-    ),
-
+    #
+    # RUN 30 CLOSURE. THREE LABELS REMOVED: B2.2, B2.14 and B2.18. A truthful method label is a
+    # statement about what the code DOES, and all three now do what their registered names say.
+    # B2.2 computes lower and upper approximations over a governed decision table rather than
+    # banding bodies of evidence by a supermajority; B2.14 solves a constrained entropy
+    # maximisation through the convex dual rather than reading a lookup indexed by the worse
+    # index; B2.18 ranks an explicit set of alternatives rather than scoring one project against
+    # designed reference points. Each abstains when its defining structure is absent. Leaving
+    # these labels standing would be the same untruth this table exists to prevent, told in the
+    # other direction, which is precisely why Run 28 removed nine and Run 29 removed six.
+    #
     # ------------------------------------------------------------------- category 8, governance
     "B3.1": MethodLabel(
         registered="ABM Governance Layer",

@@ -57,9 +57,18 @@ def build() -> str:
                  "run11_neighbour_defects_fixed.csv"):
         boundary |= _csv_ids(audit / name)
 
-    canonical_src = (ROOT / "server" / "app" / "simulation" / "canonical.py").read_text(
-        encoding="utf-8")
-    canonical_ids = set(re.findall(r'"([A-D]\d+\.\d+)"', canonical_src))
+    # RUN 30 CLOSURE. THE MAP IS READ FROM THE ANALYTICAL LAYER, NOT FROM ONE FILE OF IT. This
+    # scanned canonical.py alone, so the eighteen Category-6 and -7 identities whose defining
+    # structures live in canonical_v5.py were being described to a reader as "not required by
+    # this module" on the very day their production routes started requiring one. The keys are
+    # taken from the structure maps themselves rather than by pattern-matching a source file, so
+    # a structure added to any layer cannot leave this statement stale.
+    from app.simulation.canonical import CANONICAL_STRUCTURE_KEYS                # noqa: E402
+    from app.simulation.canonical_v3 import V3_STRUCTURE_KEYS                    # noqa: E402
+    from app.simulation.canonical_v4 import V4_STRUCTURE_KEYS                    # noqa: E402
+    from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS                    # noqa: E402
+    canonical_ids = (set(CANONICAL_STRUCTURE_KEYS) | set(V3_STRUCTURE_KEYS)
+                     | set(V4_STRUCTURE_KEYS) | set(V5_STRUCTURE_KEYS))
 
     lines = [
         "/* GENERATED FILE. Do not edit by hand.",

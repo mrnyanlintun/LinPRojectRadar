@@ -65,10 +65,25 @@ def section(title: str) -> None:
     print(f"\n== {title}")
 
 
+# RUN 30 CLOSURE. THIS SUITE EXAMINES WHAT THE DISABLED MODULES' IMPLEMENTATIONS ACTUALLY DO, and
+# for the three Category-7 identities among the eight -- B2.7 Plithogenic, B2.9 Quantum and B2.20
+# Hypersoft -- the registry now resolves to the thin refusing runner in models_cat7.py rather
+# than to the implementation. That refusal is the OPERATIONAL guarantee and is asserted through
+# the registry above; what this suite is for is the implementation behind it, which is preserved.
+# The legacy table is read live from the legacy modules' own extension dictionaries, so a
+# renamed or removed implementation breaks this suite rather than silently resolving elsewhere.
+from app.simulation.models_evc import EVC_EXTENSIONS               # noqa: E402
+from app.simulation.models_fuzzy import FUZZY_EXTENSIONS           # noqa: E402
+
+LEGACY_CAT7 = {k: v[1] for k, v in {**EVC_EXTENSIONS, **FUZZY_EXTENSIONS}.items()
+               if k.startswith("B2.")}
+
+
 def call(mid: str, si: dict):
     """The module's own function, called directly. The registry is not asked to run it."""
     try:
-        return VALIDATED[mid][1](dict(si), NOOP, CUTOFF)
+        fn = LEGACY_CAT7.get(mid) or VALIDATED[mid][1]
+        return fn(dict(si), NOOP, CUTOFF)
     except Exception as exc:                                          # noqa: BLE001
         return {"raised": type(exc).__name__, "detail": str(exc)[:80]}
 
@@ -79,7 +94,9 @@ def abstains(r: dict) -> bool:
 
 def mutation_binds(mid: str, si: dict) -> str:
     """Inject a fault into an isolated copy of the module's own source; report what bound."""
-    fn = VALIDATED[mid][1]
+    # RUN 30 CLOSURE: the same resolution `call` uses, for the same reason. Mutating the thin
+    # refusing runner would prove nothing about the implementation this section examines.
+    fn = LEGACY_CAT7.get(mid) or VALIDATED[mid][1]
     live = fn(dict(si), NOOP, CUTOFF)
     bound = []
     for cls, name in ((FlipCompare, "every ordering comparison reversed"),

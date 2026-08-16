@@ -708,8 +708,13 @@ non_voting_count = sum(1 for r in comp.values() if not r.get("votes"))
 # those modules abstain here instead of computing a proxy. They are still non-voting; they are no
 # longer counted here because they no longer compute at all. The RATIO is what the finding is
 # about, so the check is stated as a ratio and additionally pins the arithmetic identity.
+# RUN 30 CLOSURE. The floor moves again, for the same kind of reason and recorded the same way:
+# the twenty Category-7 identities now hold their defining epistemic structure before they
+# compute, and this project's corpus carries none of them, so they abstain here instead of
+# computing a proxy. Twenty computed rows on this fixture, of which eighteen do not vote. The
+# RATIO is what the finding is about and the arithmetic identity is still pinned exactly.
 check(non_voting_count >= len(comp) - 2 and non_voting_count == len(comp) - len(voting_ids)
-      and len(comp) > 25,
+      and len(comp) >= 18,
       "and the ones that do not vote are the bulk of the platform, computed and stored as "
       "before: every computed module except the two voters",
       f"{non_voting_count} non-voting of {len(comp)} computed")

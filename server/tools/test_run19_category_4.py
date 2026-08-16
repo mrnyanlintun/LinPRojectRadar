@@ -114,10 +114,18 @@ def m_4_1() -> None:
     # `docRiskScore * sqrt(RFI count)` is not conflict density -- so the reader for this check is
     # a module still outside Run 29's scope, and the governed evidence contract this run supplied
     # is asserted beside it.
+    # RUN 30 CLOSURE. THE READER MOVES AGAIN, AND THE FINDING IS UNCHANGED. B2.10 no longer reads
+    # the document risk score -- all twenty Category-7 identities now route into the canonical
+    # layer, which reads no crisp metric -- so it can no longer demonstrate that the score enters
+    # the instrument. B3.4, a governance threshold module still outside this scope, does. The
+    # reader is chosen by EXECUTION rather than named: any module that abstains when the score is
+    # withheld and computes when it is supplied is reading it.
+    _score_readers = [m for m in ("B3.4", "B3.2", "C1.1")
+                      if not abstained(run(m, {"cpi": 0.95, "spi": 0.92, "docRiskScore": 0.20}))]
     A.check("4.1", "the score nevertheless enters the instrument as an INPUT to other modules, "
                    "so its accuracy is a property of the extraction pipeline rather than of any "
                    "module in this category",
-            not abstained(run("B2.10", {"cpi": 0.95, "spi": 0.92, "docRiskScore": 0.20})))
+            bool(_score_readers), str(_score_readers))
     from app.simulation.canonical_v4 import document_risk_evidence  # noqa: E402
     from run29_fixtures import document_risk_evidence as _dre_fixture  # noqa: E402
     _dre = document_risk_evidence(_dre_fixture())

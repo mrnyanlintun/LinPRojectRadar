@@ -262,7 +262,19 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: historical record, and this successor names it as its parent and carries its digest in
 #: research/freeze/RUN30_CANONICAL_CAT6_7_FREEZE_2026-08-16.json. The guard was turned red first
 #: and observed reporting the added file and the changed one.
-PINNED = ROOT / "code_audit" / "run30_production_tree.sha256"
+#: RUN 30 CLOSURE. Repointed once more, and NOT by regenerating its parent. Run 30's own report
+#: disclosed that the twenty Category-7 operational runners still executed v14 proxy arithmetic
+#: while the canonical layer sat unreached; the closure repoints all twenty through
+#: models_cat7.py, which is new production code, and removes the eight proxy qualifiers and three
+#: truthful method labels that repointing made false. The run30 manifest is NOT rewritten: it
+#: stays exactly as Run 30's first pass wrote it, as that release's historical record, and this
+#: successor names it as its parent and carries its digest in
+#: research/freeze/RUN30_CLOSURE_FREEZE_2026-08-16.json. The guard was turned red first and
+#: observed reporting the added file and the four changed ones.
+PINNED = ROOT / "code_audit" / "run30_closure_production_tree.sha256"
+#: The Run-30 canonical manifest, the immediate parent of the current one, kept addressable so a
+#: guard can prove the supersession is a real change and not a silent rewrite.
+PINNED_RUN30 = ROOT / "code_audit" / "run30_production_tree.sha256"
 #: The Run-29 closure manifest, the immediate parent of the current one, kept addressable so a
 #: guard can prove the supersession is a real change and not a silent rewrite.
 PINNED_RUN29_CLOSURE = ROOT / "code_audit" / "run29_closure_production_tree.sha256"

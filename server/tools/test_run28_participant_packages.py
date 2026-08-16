@@ -61,6 +61,13 @@ V3_IDENTITY = "og-participant-2026.08-v3"
 #: Run-28 closure had to correct in the v2 record and which is not repeated here.
 V4_IDENTITY = "og-participant-2026.08-v4"
 V4_RECORD = "code_audit/run29_participant_package_v4_checksums.sha256"
+#: RUN 30 CLOSURE. The chain gained a fifth link. Repointing the twenty Category-7 identities
+#: deleted eight proxy qualifiers, and the generator was corrected to read the structure map from
+#: all four canonical layers rather than from canonical.py alone. Both changes reach the served
+#: defensibility evidence object. v4 is pinned to the commit whose blobs it describes.
+V5_IDENTITY = "og-participant-2026.08-v5"
+V5_RECORD = "code_audit/run30_participant_package_v5_checksums.sha256"
+V4_COMMIT = "ce03eb1f297d9615a9eac7dea34356a69846e5a3"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -289,11 +296,18 @@ _v3_bad = sorted(rel for rel, digest in _v3.items()
 check(not _v3_bad,
       f"every one of v3's seventy checksums holds against commit {V3_COMMIT[:7]}, which is where "
       f"that package's bytes live now that it is a predecessor", str(_v3_bad))
+# RUN 30 CLOSURE: v4 IS NOW A PREDECESSOR TOO, so the live tree is not its evidence either.
 _v4_bad = sorted(rel for rel, digest in _v4.items()
+                 if hashlib.sha256(git_bytes(rel, V4_COMMIT) or b"").hexdigest() != digest)
+check(not _v4_bad,
+      f"every one of v4's seventy checksums holds against commit {V4_COMMIT[:7]}, which is where "
+      f"that package's bytes live now that it is a predecessor", str(_v4_bad))
+_v5 = parse((ROOT / V5_RECORD).read_text(encoding="utf-8"))
+_v5_bad = sorted(rel for rel, digest in _v5.items()
                  if not (ROOT / rel).is_file()
                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
-check(not _v4_bad,
-      "and every one of v4's seventy checksums holds against the LIVE TREE, which is where the "
+check(not _v5_bad,
+      "and every one of v5's seventy checksums holds against the LIVE TREE, which is where the "
       "current package correctly lives", str(_v4_bad))
 
 # THE IDENTITY GUARD, which is the one the checksum guard alone cannot be. EXACTLY ONE record in
@@ -307,16 +321,16 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V4_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V5_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
-      == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY],
+      == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 4
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 5
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all four are present, so no link shares a record "
+      "each link has its OWN record file and all five are present, so no link shares a record "
       "with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
@@ -354,6 +368,19 @@ check(not _not_name_only,
       "other character", str(_not_name_only))
 
 # THE v3 TO v4 STEP, proved the same way and no more loosely.
+_changed5 = sorted(rel for rel in _v5 if _v5[rel] != _v4[rel])
+check(_changed5 == sorted(PP.V4_TO_V5_CHANGED),
+      "exactly one package file differs between v4 and v5, and it is the one declared",
+      str(_changed5))
+_not_corrections_only = []
+for rel in _changed5:
+    _v4_text = (git_bytes(rel, V4_COMMIT) or b"").decode("utf-8")
+    if PP.to_v4_era((ROOT / rel).read_text(encoding="utf-8"), ROOT) != _v4_text:
+        _not_corrections_only.append(rel)
+check(not _not_corrections_only,
+      "and restoring the eight deleted proxy qualifiers and the pre-closure structure statement "
+      "reproduces its v4 bytes EXACTLY, so the only changes are the two corrections declared",
+      str(_not_corrections_only))
 _changed4 = sorted(rel for rel in _v4 if _v4[rel] != _v3[rel])
 check(_changed4 == sorted(PP.V3_TO_V4_CHANGED),
       "exactly one package file differs between v3 and v4, and it is the one declared",
@@ -361,7 +388,9 @@ check(_changed4 == sorted(PP.V3_TO_V4_CHANGED),
 _not_qualifier_only = []
 for rel in _changed4:
     _v3_text = (git_bytes(rel, V3_COMMIT) or b"").decode("utf-8")
-    if PP.to_v3_era((ROOT / rel).read_text(encoding="utf-8")) != _v3_text:
+    # RUN 30 CLOSURE: the v3 comparison starts from the v4 BYTES IN GIT, not from the live tree,
+    # because the tree has moved on to v5. The chain is walked one link at a time.
+    if PP.to_v3_era((git_bytes(rel, V4_COMMIT) or b"").decode("utf-8")) != _v3_text:
         _not_qualifier_only.append(rel)
 check(not _not_qualifier_only,
       "and restoring the six deleted proxy qualifiers to it reproduces its v3 bytes EXACTLY, so "

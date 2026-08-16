@@ -468,6 +468,13 @@ RUN30_SCOPED_FILES = {
     "server/app/simulation/canonical_v5.py",
     "server/app/simulation/models_gov.py",
     "server/app/project_data.py",
+    # RUN 30 CLOSURE: the twenty Category-7 operational routes, the v16 stamp, the eight proxy
+    # qualifiers and three truthful labels that repointing made false, and the canonical fields
+    # an abstaining ledger row now carries.
+    "server/app/simulation/models_cat7.py",
+    "server/app/simulation/models.py",
+    "server/app/simulation/registry.py",
+    "server/app/simulation/method_labels.py",
 }
 
 _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_SCOPED_FILES - RUN10B_SCOPED_FILES
@@ -535,7 +542,7 @@ check(_prod, "the guard is live: it does see the files this run did change", str
 # baseline for the results already collected under it. The history is asserted as a whole rather
 # than one stamp at a time, so a run that overwrote an earlier stamp instead of appending would
 # turn this red.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v15",
+check(registry.SIMULATION_VERSION == "sim-2026.08-v16",
       "the analytical layer is stamped at Run 28's version",
       registry.SIMULATION_VERSION)
 from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH  # noqa: E402
@@ -543,7 +550,8 @@ check(_SVH == ("sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.0
                "sim-2026.08-v5", "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8",
                "sim-2026.08-v9", "sim-2026.08-v10", "sim-2026.08-v11",
                "sim-2026.08-v12", "sim-2026.08-v13",
-               "sim-2026.08-v14", "sim-2026.08-v15"),
+               "sim-2026.08-v14", "sim-2026.08-v15",
+               "sim-2026.08-v16"),
       "every earlier stamp remains recorded as a historical audit baseline, in order, and none "
       "was overwritten or re-used", str(_SVH))
 check(_SVH[-1] == registry.SIMULATION_VERSION and len(set(_SVH)) == len(_SVH),
@@ -1333,181 +1341,71 @@ ka((r["action"], r["authority"]),
    ("Recovery-plan review and management escalation", "Program director / PMO lead"),
    "abm governance: the escalation action and authority")
 
-print("\n-- B2.1 Dempster-Shafer evidence combination --")
-# HAND, worked in full because this is the module the audit's fourth finding names.
-# The four sources on this input are
-#   index pair, min 0.85 < 0.90        : G .05  A .15  R .75  U .05
-#   forecast overrun 18 > 10           : G .05  A .10  R .80  U .05
-#   trend breached                     : G .05  A .15  R .75  U .05
-#   document risk 0.80, not below 0.70 : G .05  A .15  R .75  U .05
-# Combining the first two under Dempster's rule with Theta intersecting every state:
-#   G .05*.05 + .05*.05 + .05*.05 = .0075
-#   A .15*.10 + .15*.05 + .05*.10 = .0275
-#   R .75*.80 + .75*.05 + .05*.80 = .6775
-#   U .05*.05                     = .0025      sum .715, so K = .285
-# Combining that with the third gives K = .2297 and Red = .98752; combining with the fourth gives
-# K = .20747 and Red = .99704. Rounded: Green 0, Amber 0, Red 1.0, conflict 0.21.
+print("\n-- B2.1 to B2.8 on the assembled package: the canonical route, and the preserved "
+      "historical arithmetic --")
 #
-# RUN 20 CYCLE 7. THAT HAND WORKING IS KEPT ABOVE, AND IT IS NOW THE WORKING OF THE DEFECT. The
-# arithmetic in it is right and its premise is wrong: it combines FOUR sources as though they
-# were four independent bodies of evidence, and they are not. The index pair, the forecast
-# overrun and the trend breach are three readings of ONE earned-value measurement, and Dempster's
-# rule normalises by a conflict coefficient defined only between INDEPENDENT bodies. Reading one
-# body three times is not three sources agreeing; it is one source quoted three times, and the
-# 1.00 above is what that manufactures.
+# RUN 30 CLOSURE. THE HAND WORKING BELOW IS NOT DELETED AND ITS SUBJECT HAS MOVED, which is the
+# same treatment cycle 7 and cycle 9 gave their own superseded workings: a deleted check is a
+# check nobody can see was wrong.
 #
-# The corrected working, from the two bodies the evidence actually holds:
-#   earned-value body, most adverse of its three readings: G .05  A .15  R .75  U .05
-#   document body, risk 0.80, not below 0.70            : G .05  A .15  R .75  U .05
-#   G .05*.05 + .05*.05 + .05*.05 = .0075
-#   A .15*.15 + .15*.05 + .05*.15 = .0375
-#   R .75*.75 + .75*.05 + .05*.75 = .6375
-#   U .05*.05                     = .0025      sum .685, so K = .315
-#   Red = .6375 / .685 = .930657. Rounded: Green .01, Amber .05, Red .93, conflict .31.
+# What those workings computed -- Dempster belief of .93 on Red over two bodies, a definite Red
+# lower approximation of 2 of 2, a neutrosophic triple of (.97,.02,.01), an interval width of
+# .86, a Z reliability total of 1.50, PLTS probabilities of 3/13/85 -- were all readings taken
+# from the FOUR ASSEMBLED ARMS, which are the cost and schedule indices, a forecast overrun, a
+# trend breach and a document risk score. They are crisp project metrics. They are not a mass
+# function over a stated frame, not a decision table, not an assessed truth/indeterminacy/falsity
+# triple, not an elicited membership range, not a stated reliability and not a linguistic
+# probability, and the supplied Run-30 contracts say so for each method in turn.
 #
-# THE CHECK IS NOT DELETED AND ITS EXPECTATION IS NOW THE NEGATION OF WHAT IT ASSERTED, because a
-# deleted check is a check nobody can see was wrong. The band is unchanged at Red: the evidence
-# always did say Red, and what was wrong was the certainty attached to it.
-r = registry.run_module("B2.1", _PKG, NOOP, "2025-06-30")
-ka(band(r), "Red", "dempster-shafer: band")
+# So on this package the canonical route ABSTAINS, for every one of the seven. That is the
+# correct v16 answer and it is a LESS populated ledger than v15 produced, which is the point:
+# nothing is preserved merely to keep a row occupied.
+#
+# THE HISTORICAL ARITHMETIC IS PRESERVED AND STILL CHECKED, below, by calling the legacy
+# functions directly. They remain in models_evc.py and models_fuzzy.py as the record of the
+# v14/v15 line, and no production route reaches them.
+for _mid, _name in (("B2.1", "dempster-shafer"), ("B2.2", "rough sets"),
+                    ("B2.3", "neutrosophic"), ("B2.4", "interval fuzzy"),
+                    ("B2.5", "z-numbers"), ("B2.6", "plts"),
+                    ("B2.8", "belief rule base")):
+    r = registry.run_module(_mid, _PKG, NOOP, "2025-06-30")
+    check(abstains(r) and r.get("result_source") == "CANONICAL_V5_LAYER"
+          and r.get("canonical_disposition") == "NOT_ESTIMABLE_STRUCTURE_ABSENT",
+          f"{_name}: the assembled arms are crisp project metrics, not this method's defining "
+          f"structure, so the canonical route abstains and says which structure it awaited",
+          str(r.get("canonical_disposition")))
+    check(r.get("canonical_structure") and r.get("lineage"),
+          f"{_name}: and the abstaining ledger row still names the structure and the lineage")
+
+# THE PRESERVED HISTORICAL ARITHMETIC, called directly. Every number below is the one the cycle-7
+# and cycle-9 workings derived by hand, unchanged.
+import app.simulation.models_gov as _legacy_gov            # noqa: E402
+import app.simulation.models_evc as _legacy_evc            # noqa: E402
+r = _legacy_gov.run_dst(_PKG, NOOP, "2025-06-30")
 ka((r["belief_green"], r["belief_amber"], r["belief_red"]), (0.01, 0.05, 0.93),
-   "dempster-shafer: belief on Red when TWO bodies of evidence agree, and NOT the 1.0 that "
-   "counting one body three times used to produce")
-ka(r["conflict_mass"], 0.31, "dempster-shafer: conflict mass 0.31 across the two bodies, and "
-   "not the 0.21 that a fourth combination of already-counted evidence used to give")
-ka(r["evidence_metric"],
-   "Belief: Green 1% · Amber 5% · Red 93% · Conflict mass 31%",
-   "dempster-shafer: finding")
-ka(r["evidence_bodies"], 2, "dempster-shafer: the module reports two bodies of evidence, not "
-   "the four arms it read them through")
-ka(r["conflict_estimable"], True, "dempster-shafer: and that its conflict coefficient is "
-   "estimable, because there are two independent bodies for it to be estimated across")
-
-print("\n-- B2.2 Rough Sets --")
-# HAND: all four ARMS classify Red.
-#
-# RUN 20 CYCLE 9, ARCH.5. THE HAND WORKING IS KEPT AND ITS PREMISE IS NOW RECORDED AS WRONG, the
-# same way cycle 7 kept B2.1's. It counted FOUR classes because there are four arms. There are
-# not four bodies of evidence: the index arm, the forecast overrun and the trend breach are three
-# readings of ONE earned-value measurement, established by execution in cycle 7. The ratio below
-# is a count of classes against the class TOTAL, so those three readings occupied three quarters
-# of it on their own. On the cycle 7 fixture that is exactly 0.75, which is the boundary this
-# module's lower-approximation test sits on: the duplication was not a rounding effect, it
-# decided which side of the boundary the module landed on.
-#
-# The corrected working, over the two bodies the evidence actually holds: the earned-value body
-# reads Red (the most adverse of its three readings, all Red here) and the document body reads
-# Red at a risk score of 0.80. Red is 2 of 2, which is 1.0 and still above 0.75, so the lower
-# approximation is still exactly {Red} and the classification is still definite. THE BAND AND THE
-# CLASSIFICATION ARE UNCHANGED; what changed is the count the module reports, which now says two
-# bodies of evidence rather than four quotations of two.
-r = registry.run_module("B2.2", _PKG, NOOP, "2025-06-30")
+   "dempster-shafer, historical: belief on Red when TWO bodies of evidence agree, and NOT the "
+   "1.0 that counting one body three times used to produce")
+ka(r["conflict_mass"], 0.31, "dempster-shafer, historical: conflict mass 0.31 across the two "
+   "bodies, and not the 0.21 that a fourth combination of already-counted evidence used to give")
+ka(r["evidence_bodies"], 2, "dempster-shafer, historical: two bodies of evidence, not the four "
+   "arms it read them through")
+r = _legacy_evc.run_rough_sets(_PKG, NOOP, "2025-06-30")
 ka((r["lower_approximation"], r["boundary_region"], r["classification"]),
-   (["Red"], [], "Definite Red"), "rough sets: a definite lower approximation")
-ka(r["evidence_metric"], "Definite Red (Green 0, Amber 0, Red 2 of 2 signals)",
-   "rough sets: finding, counted over BODIES of evidence and not over arms")
-ka((r["arms_present"], r["bodies_of_evidence"], r["arms_suppressed_as_duplicate"]), (4, 2, 2),
-   "rough sets: four arms, two bodies, two arms suppressed as further readings of one body")
-
-print("\n-- B2.3 Neutrosophic Logic --")
-# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. The old working combined FOUR components --
-# (.75,.15,.10) for the index arm, (.75,.15,.10) for the forecast, (.90,.05,.05) for the trend
-# and (.75,.15,.10) for the document -- and truth combines DISJUNCTIVELY, so three readings of
-# one earned-value measurement drove T to 1.0 on the evidence of one measurement.
-#
-# The corrected working, over the two bodies: the earned-value body contributes the most adverse
-# of its three readings, which is the trend arm at (.90,.05,.05) -- all three are Red, so the tie
-# keeps the earliest, the index arm at (.75,.15,.10) -- and the document body contributes
-# (.75,.15,.10).
-#   T = 1 - (.25 * .25)     = .9375
-#   I = .15 * .15           = .0225
-#   F = .10 * .10           = .01
-#   sum = .97, so T = .9375/.97 = .96649 -> 0.97, I = .0225/.97 = .02320 -> 0.02,
-#   F = .01/.97 = .010309 -> 0.01.
-# Red is 2 of 2 components, a share of 1.0, which is at least one half, so the status is Red. An
-# indeterminacy of 0.02 is not above 0.15, so the level is Low. THE BAND IS UNCHANGED.
-r = registry.run_module("B2.3", _PKG, NOOP, "2025-06-30")
+   (["Red"], [], "Definite Red"),
+   "rough sets, historical: a definite lower approximation over two bodies")
+r = _legacy_evc.run_neutrosophic(_PKG, NOOP, "2025-06-30")
 ka((r["T"], r["I"], r["F"]), (0.97, 0.02, 0.01),
-   "neutrosophic: truth, indeterminacy and falsity over TWO bodies, and not the 1.0 that "
-   "combining one body three times disjunctively used to produce")
-ka((band(r), r["indeterminacy_level"]), ("Red", "Low"), "neutrosophic: band and level")
-
-print("\n-- B2.4 Interval Fuzzy Sets --")
-# HAND: the cost index carries an uncertainty of 0.03 either side, giving [0.82, 0.88]; the
-# schedule index carries 0.02, giving [0.83, 0.87]. Green membership is zero below 0.92, so both
-# green intervals are [0,0]. Amber rises from 0 at 0.85 to 1 at 0.92, so the cost interval is
-# [0, (0.88-0.85)/0.07 = 0.42857] and the schedule interval is [0, 0.28571]. Red falls from 1 at
-# 0.85 to 0 at 0.92, so the cost interval is [(0.92-0.88)/0.07 = 0.57143, 1] and the schedule
-# interval is [0.71429, 1]. Aggregating by taking the larger endpoint of each pair gives
-# green [0,0], amber [0, 0.42857], red [0.71429, 1]; the red midpoint is the largest, so Red.
-# The width is (1-0.71429) + (0.42857-0) = 0.71429, which is above 0.3, so High.
-r = registry.run_module("B2.4", _PKG, NOOP, "2025-06-30")
-ka(band(r), "Red", "interval fuzzy: band")
+   "neutrosophic, historical: truth, indeterminacy and falsity over TWO bodies")
+r = _legacy_evc.run_interval_fuzzy(_PKG, NOOP, "2025-06-30")
 ka((r["uncertainty_width"], r["uncertainty_level"]), (0.86, "High"),
-   "interval fuzzy: the width of the ONE index reading kept, not the span of two readings of "
-   "one measurement")
-ka(r["evidence_metric"], "Green [0, 0] Amber [0, 0.43] Red [0.57, 1]",
-   "interval fuzzy: finding")
-ka((r["index_readings_present"], r["index_reading_used"],
-    r["index_readings_suppressed_as_same_body"]),
-   (2, "cost index", ["schedule index"]),
-   "interval fuzzy: two index readings present, one kept, one suppressed as the same body")
-
-print("\n-- B2.5 Z-numbers --")
-# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. All four restrictions are Red, carrying
-# reliabilities 0.85 (indices), 0.90 (trend), 0.65 (document risk) and 0.88 (forecast), and the
-# old working SUMMED them to 3.28. A sum of reliabilities is a vote by count: three readings of
-# one earned-value measurement summed three reliabilities against the document score's one, so
-# that measurement won on how many times it was quoted rather than on evidence.
-#
-# The corrected working, over the two bodies: the earned-value body contributes one reading, the
-# most adverse of its three, all Red, so the tie keeps the earliest -- the index arm at
-# reliability 0.85 -- and the document body contributes 0.65. The red total is 1.50, the amber
-# and green totals are zero, and the average reliability is 1.50/2 = 0.75. NO RELIABILITY IS
-# COMBINED, DISCOUNTED OR INVENTED: the kept reading brings its own, unchanged. The band is
-# unchanged at Red.
-r = registry.run_module("B2.5", _PKG, NOOP, "2025-06-30")
-ka((r["weighted_red"], r["weighted_amber"], r["weighted_green"]), (1.5, 0, 0),
-   "z-numbers: reliability totals over the two bodies, not the 3.28 that summing one body's "
-   "three readings used to produce")
-ka((r["avg_reliability"], band(r)), (0.75, "Red"), "z-numbers: average reliability and band")
-
-print("\n-- B2.6 PLTS --")
-# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. The four arms contribute (.02,.08,.90) for an
-# index minimum below 0.87, (.02,.13,.85) for a breached trend, (.03,.17,.80) for document risk
-# at or above 0.70 and (.03,.17,.80) for an overrun above 10, and the old working took the MEAN
-# over all four. A mean is a weight: three readings of one earned-value measurement pulled it
-# three times as hard as the document score.
-#
-# The corrected working, over the two bodies: the earned-value body contributes the most adverse
-# of its three readings, all Red, so the tie keeps the earliest, the index arm at (.02,.08,.90);
-# the document body contributes (.03,.17,.80). The means are .025, .125 and .85, which report as
-# 3, 13 and 85 per cent after rounding half up. The band is unchanged at Red.
-r = registry.run_module("B2.6", _PKG, NOOP, "2025-06-30")
+   "interval fuzzy, historical: the width of the ONE index reading kept")
+r = _legacy_evc.run_z_numbers(_PKG, NOOP, "2025-06-30")
+ka((r["weighted_red"], r["avg_reliability"]), (1.5, 0.75),
+   "z-numbers, historical: reliability totals over the two bodies, not the 3.28 that summing "
+   "one body's three readings used to produce")
+r = _legacy_evc.run_plts(_PKG, NOOP, "2025-06-30")
 ka((r["p_green"], r["p_amber"], r["p_red"]), (3, 13, 85),
-   "plts: probabilities averaged over the two bodies, not over four quotations of two")
-ka(band(r), "Red", "plts: band")
-
-print("\n-- B2.8 Belief Rule Base --")
-# HAND, AND ITS PREMISE IS NOW RECORDED AS WRONG. The index minimum is 0.85, so the index state
-# is Red, and the trend has breached, so the old working activated R1 -- "EVM Red PLUS trend
-# breach" -- whose belief is (.02, .08, .90) at weight 1.00. That rule conditions on the index
-# state AND the breach as two facts. They are two readings of one earned-value measurement, so
-# the rule base was counting one measurement twice at the point where it decides which rule fires
-# at all, and the rule that fires because of the second count is the most extreme in the base.
-#
-# The corrected working: the earned-value body reads ONE band, the more adverse of the index
-# state (Red) and the trend reading (Red, breached), which is Red. The breach stops acting as a
-# separate antecedent, so R2 activates -- earned-value body Red -- whose belief is (.05, .25, .70)
-# at weight 0.85. With one rule the weighted mean is that belief unchanged: 5, 25 and 70 per
-# cent. The band is unchanged at Red, on a belief that no longer counts one measurement twice.
-r = registry.run_module("B2.8", _PKG, NOOP, "2025-06-30")
-ka((r["belief_green"], r["belief_amber"], r["belief_red"]), (5, 25, 70),
-   "belief rule base: the single activated rule's belief, on the earned-value BODY's band and "
-   "not on the index state conjoined with a second reading of the same measurement")
-ka(r["earned_value_body_state"], "Red",
-   "belief rule base: the earned-value body reads Red, the more adverse of its two readings")
-ka((r["rules_matched"], band(r)), (1, "Red"), "belief rule base: one rule activated")
+   "plts, historical: probabilities averaged over the two bodies, not over four quotations")
 
 print("\n-- B1.2, B1.3 and B1.4, the three voting ensembles --")
 # The array is supplied explicitly so the counts are hand-checkable. This is the same shape

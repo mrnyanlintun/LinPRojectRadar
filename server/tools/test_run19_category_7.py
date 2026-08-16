@@ -78,7 +78,31 @@ NEST = {"evm": {"cpi": 0.92, "spi": 0.93}, "cusum": {"breached": False},
 FLAT = {"cpi": 0.92, "spi": 0.93, "docRiskScore": 0.2}
 
 
+# RUN 30 CLOSURE. WHAT THIS SUITE AUDITS IS THE v13-AND-EARLIER CATEGORY-7 LINE, and that line
+# is preserved rather than deleted. Run 30's closure repointed all twenty Category-7 production
+# identities onto the canonical v5 layer, so `REG.run_module` no longer reaches the
+# implementations every finding below was made against; driving this audit through it would make
+# nineteen historical findings assert things about code they were never about.
+#
+# So `run()` dispatches to the LEGACY implementation for the Category-7 identities, and the table
+# it dispatches through is read live from the legacy modules' own extension dictionaries rather
+# than hand-written here, so a legacy function that is renamed or removed breaks this suite
+# instead of silently falling through to something else. Everything outside Category 7, and the
+# three disabled identities, still go through the production entry point unchanged: a disabled
+# module must still be proved disabled by the gate that actually disables it.
+#
+# THE CURRENT PRODUCTION ROUTE IS ASSERTED SEPARATELY, at the foot of this file, so this suite
+# also records that none of the code it audits is reachable from production any more.
+from app.simulation.models_evc import EVC_EXTENSIONS               # noqa: E402
+from app.simulation.models_fuzzy import FUZZY_EXTENSIONS           # noqa: E402
+
+LEGACY_CAT7 = {k: v[1] for k, v in {**EVC_EXTENSIONS, **FUZZY_EXTENSIONS}.items()
+               if k.startswith("B2.")}
+
+
 def run(code_id: str, si: dict) -> dict:
+    if code_id in LEGACY_CAT7 and code_id not in REG.DISABLED_MODULES:
+        return LEGACY_CAT7[code_id](si, RAND, CUTOFF)
     return REG.run_module(code_id, si, RAND, CUTOFF)
 
 
@@ -1410,6 +1434,23 @@ def main() -> int:
             all(r["voting_status"] == "non-voting" for r in rows))
     A.check("ROWS", "no production change is recorded on any row",
             all(r["production_change_made"] == "no" for r in rows))
+    # ---------------------------------------------------------------------------------------
+    # RUN 30 CLOSURE. THE CODE THIS SUITE AUDITS IS NO LONGER REACHABLE FROM PRODUCTION.
+    #
+    # Every finding above was made against the legacy Category-7 implementations, which are
+    # preserved. What is asserted here is that the production registry no longer routes ANY
+    # Category-7 identity into them: the routing table is read live from
+    # `registry.VALIDATED`, so this cannot pass by agreeing with a copy of itself.
+    _legacy_modules = {"app.simulation.models_evc", "app.simulation.models_fuzzy"}
+    _still_legacy = sorted(
+        m for m in (f"B2.{n}" for n in range(1, 21))
+        if REG.VALIDATED[m][1].__module__ in _legacy_modules)
+    A.check("ROWS", "no Category-7 production identity resolves to one of the legacy "
+            "implementations this suite audits; all twenty route to the canonical layer",
+            not _still_legacy, str(_still_legacy))
+    A.check("ROWS", "and the legacy implementations are still present, so these findings remain "
+            "checkable rather than being deleted along with the defect",
+            len(LEGACY_CAT7) >= 17, str(len(LEGACY_CAT7)))
     return A.finish()
 
 

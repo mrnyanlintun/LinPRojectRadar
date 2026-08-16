@@ -216,14 +216,16 @@ PROXY_QUALIFIERS: dict[str, str] = {
     # ad hoc 0.3 / 0.3 / 0.4 weighted sum" or "a ranking of four present-state deviations" would
     # now be false in the opposite direction: it would advertise a weakness the code no longer
     # has, which is the error this dictionary exists to prevent in its own direction.
-    "B2.10": "hard-coded transformations of raw CPI, SPI and document risk",
-    "B2.11": "hard-coded memberships consuming raw metrics; no calibration evidenced",
-    "B2.12": "designed perturbations, not elicited or observed hesitant assessments",
-    "B2.13": "membership intervals that are designed constants",
-    "B2.14": "entropy over designed state probabilities; measures the lookup, not the project",
-    "B2.15": "fixed mappings from raw metrics; no governed possibility distribution",
-    "B2.16": "algebraically bounded but fixed memberships on raw unqualified inputs",
-    "B2.17": "formula-shaped with designed memberships, no empirical or elicitation basis",
+    # RUN 30 CLOSURE. EIGHT FURTHER ENTRIES ARE GONE -- B2.10 to B2.17 -- and for exactly the
+    # reason Run 28's eleven and Run 29's six went: the proxy is gone. Every one of the twenty
+    # Category-7 production identities now routes through models_cat7.py into the canonical v5
+    # layer and abstains when its defining structure is absent, so a qualifier reading
+    # "hard-coded transformations of raw CPI, SPI and document risk" or "entropy over designed
+    # state probabilities; measures the lookup, not the project" would now be FALSE IN THE
+    # OPPOSITE DIRECTION: it would advertise a weakness the code no longer has, which is the
+    # error this dictionary exists to prevent in its own direction. The legacy functions those
+    # sentences described still sit in models_fuzzy.py as the historical record of the v14/v15
+    # line, and no production route reaches them.
     "B3.5": "a raw modification count; not a frequency without a denominator",
     "B4.3": "an explainable four-rule checklist, not a constraint-satisfaction solver",
     "B4.4": "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
@@ -345,6 +347,20 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
             f"it cannot be computed on a single project"
         )
     if new_id in DISABLED_CONCEPT_ONLY:
+        # RUN 30 CLOSURE. THE SHARED SENTENCE BECAME FALSE FOR THREE OF THE EIGHT. It says the
+        # module has "no production implementation of the analytical structure its name claims",
+        # and for B2.7 Plithogenic, B2.9 Quantum and B2.20 Hypersoft that is no longer true: each
+        # now has a canonical laboratory structure in canonical_v5.py. What is true of all three
+        # is that they are NOT OPERATIONAL, which is a different statement and the one that has
+        # to be made. Those three therefore answer with their own runner's refusal, which says
+        # so truthfully and carries the canonical result source onto the ledger row.
+        #
+        # THE GATE IS UNCHANGED IN SUBSTANCE. The refusal is still returned HERE, before the
+        # module's mathematics is reached, and those runners read no input at all, so a complete
+        # laboratory structure cannot make one of them compute. Completeness is not activation.
+        from .models_cat7 import CAT7_CANONICAL
+        if new_id in CAT7_CANONICAL:
+            return CAT7_CANONICAL[new_id][1](si, rand, period_cutoff)
         return {
             "status_color": None,
             "insufficient_data": True,
@@ -454,6 +470,19 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                 entry["newly_wired_unvalidated"] = True
                 entry["wiring_note"] = WIRING_NOTE
                 entry["signal_qualification"] = SIGNAL_QUALIFICATION
+            # RUN 30 CLOSURE. AN ABSTENTION IS A LEDGER ROW AND MUST SAY WHICH LINE PRODUCED IT.
+            # Run 30's first pass built a canonical layer production never called, and the only
+            # surface on which that was visible was the ledger. A row that merely goes quiet is
+            # indistinguishable from a proxy that happened to have nothing to say, so the
+            # canonical source, the structure it was waiting for, the provenance of whatever was
+            # supplied, the disposition and the lineage travel onto the abstaining row too.
+            # These are new keys only: the participant ledger's status accessors read module_id,
+            # status_color and evidence_metric, none of which is touched.
+            for _k in ("result_source", "canonical_disposition", "canonical_structure",
+                       "structure_provenance", "abstention_reason", "lineage",
+                       "canonical_state", "operational"):
+                if out.get(_k) is not None:
+                    entry[_k] = out[_k]
             abstained.append(entry)
             return
         out = dict(out)

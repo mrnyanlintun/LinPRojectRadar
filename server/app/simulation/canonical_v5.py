@@ -1504,11 +1504,66 @@ def necessity_of(pi: dict[str, float], event: Iterable[str]) -> float:
 # Category-10 methods. Section 10 of the contract.
 # =================================================================================================
 
+#: The splits of governed reference material a measure may read. Anything else is refused.
+READABLE_SPLITS = ("DEVELOPMENT", "VALIDATION")
+LOCKED_SPLIT = "LOCKED_HOLDOUT"
+
+
+def _reference_material_guards(structure: dict) -> None:
+    """
+    THE THREE RESEARCH-INTEGRITY GUARDS ON GOVERNED REFERENCE MATERIAL, carried forward unchanged
+    from `canonical.require_reference_object` onto the shared v5 decision structure.
+
+    They are not a Run-30 invention and they are not theory: they are the platform's existing
+    rule that locked holdout material is locked precisely so that no measure consults it, that
+    reference material must say which version it came from, and that the project being assessed
+    may not sit inside the reference set it is compared against. Repointing B2.18 and B2.19 onto
+    a new structure is exactly the moment such a guard gets dropped by accident, so it is applied
+    here, on the new structure, before anything is read from it.
+
+    A DECISION PROBLEM SUPPLIED DIRECTLY FOR A PROJECT carries no split and no asset version;
+    there is no reference material for these guards to act on and they pass. A structure that
+    claims to BE reference material -- it names an asset version -- but does not say which part
+    of it, is refused, so declaring the version and omitting the split is not a way past the
+    lock.
+    """
+    split = str(structure.get("split") or "").upper()
+    version = str(structure.get("asset_version") or "").strip()
+    if split == LOCKED_SPLIT:
+        raise StructureAbsent(
+            "The decision information provided comes from material that is held back and "
+            "locked. It is locked precisely so that no measure consults it, so no reading is "
+            "taken from it.")
+    if split and split not in READABLE_SPLITS:
+        raise StructureAbsent(
+            "The decision information provided does not say which part of the reference "
+            "material it belongs to, so it cannot be shown to be material this measure is "
+            "allowed to read, and no reading is taken.")
+    if version and not split:
+        raise StructureAbsent(
+            "The decision information provided names the reference material it came from but "
+            "not which part of it, so it cannot be shown to be material this measure is allowed "
+            "to read, and no reading is taken.")
+    if split and not version:
+        raise StructureAbsent(
+            "The decision information provided does not say which version of the reference "
+            "material it came from, so a reading taken from it could not be interpreted later "
+            "and none is taken.")
+    evaluated = str(structure.get("evaluated_project_id") or "")
+    members = structure.get("reference_member_project_ids") or ()
+    if evaluated and evaluated in {str(m) for m in members}:
+        raise StructureAbsent(
+            "The project being assessed is itself part of the reference material it would be "
+            "compared against, so the comparison would be of the project with itself and no "
+            "reading is taken from it.")
+
+
 def decision_problem(structure: dict, *, module_id: str,
                      require_weights: bool) -> dict[str, Any]:
     """Read and validate the shared decision structure. Criteria are never alternatives."""
     words = V5_STRUCTURE_WORDS[module_id]
     _provenance(structure, words, "context_id", "source")
+    _reference_material_guards(structure)
     period = structure.get("period")
     crits = _rows(structure, "criteria", words)
     criteria: list[dict] = []

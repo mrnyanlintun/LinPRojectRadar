@@ -927,9 +927,27 @@ try:
     # the A3.6 note above: it no longer produces a finding on the real path, because the
     # canonical method needs an item level register the corpus does not carry, and its
     # abstention is asserted a few lines below rather than dropped.
-    for mid in ("A6.1", "A6.4", "A1.1", "B1.1", "B2.1"):
+    # RUN 30 CLOSURE REMOVED B2.1 FROM THIS LIST, with the reason recorded rather than the
+    # expectation quietly rewritten. Dempster-Shafer's defining structure is a set of bodies of
+    # evidence expressed as mass over a stated frame, each naming the evidence it was read from.
+    # The four masses the v14/v15 implementation combined were LITERALS IN THE MODULE, selected
+    # by banding the cost and schedule indices, a forecast overrun and a document risk score.
+    # They were not evidence any project supplied, so on this project -- which carries no mass
+    # function -- the correct behaviour is an abstention naming the absent structure, and it is
+    # asserted as such below rather than dropped.
+    for mid in ("A6.1", "A6.4", "A1.1", "B1.1"):
         check(mid in comp, f"{FIFTEEN[mid]} produces a finding on the real path",
               str(abst.get(mid, {}).get("reason"))[:90])
+    check("B2.1" not in comp and "B2.1" in abst,
+          f"{FIFTEEN['B2.1']} abstains on the real path where no body of evidence carries a "
+          f"mass over a stated frame, rather than combining masses that are literals in the "
+          f"module under the name of the method",
+          str(abst.get("B2.1", {}).get("reason"))[:120])
+    check(abst.get("B2.1", {}).get("result_source") == "CANONICAL_V5_LAYER"
+          and abst.get("B2.1", {}).get("canonical_disposition")
+          == "NOT_ESTIMABLE_STRUCTURE_ABSENT",
+          "and the abstaining ledger row records that the canonical route produced the silence",
+          str(abst.get("B2.1", {}).get("canonical_disposition")))
     # RUN 29 CLOSURE REMOVED A4.4 FROM THIS LIST, and the reason is recorded rather than the
     # expectation being quietly rewritten. Run 29 reported that no Category-4 or -5 canonical
     # structure was populated from the real corpus. That single sentence covered two different

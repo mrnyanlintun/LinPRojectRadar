@@ -1,0 +1,21 @@
+module,production_input_shape,defining_structure_present,parameter_provenance_present,production_runner_reached,canonical_function_reached,legacy_proxy_reached,result,expected_result_or_disposition,pass_fail
+B2.1,evidenceMassFunctions,yes,yes (synthetic research fixture),app.simulation.models_cat7,_frozenset_key;_frozenset_key;belief;belief;conflict_coefficient;conflict_coefficient;dempster_combine;dempster_shafer;dempster_shafer;dempster_shafer;plausibility;plausibility;read_mass_function;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.2,roughDecisionTable,yes,yes (synthetic research fixture),app.simulation.models_cat7,rough_approximations;rough_approximations;rough_approximations;rough_approximations;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.3,neutrosophicAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;neutrosophic;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.4,intervalFuzzyAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_interval;_unit;interval_fuzzy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.5,zNumberAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,v5_structure;z_number,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.6,probabilisticLinguisticAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,plts;plts;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.7,plithogenicLabStructure,yes,yes (synthetic research fixture),app.simulation.models_cat7,the canonical operational gate refused before any mathematics,no,DISABLED,"DISABLED or ARCHIVED, no reading",PASS
+B2.8,beliefRuleBase,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;belief_rule_base;belief_rule_base;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.9,(no structure: disabled identity),no,no,app.simulation.models_cat7,the canonical operational gate refused before any mathematics,no,ARCHIVED,"DISABLED or ARCHIVED, no reading",PASS
+B2.10,pythagoreanFuzzyAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;pythagorean_fuzzy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.11,pictureFuzzyAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;picture_fuzzy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.12,hesitantFuzzyAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;hesitant_fuzzy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.13,type2FuzzyAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_interval;_unit;type2_fuzzy;type2_fuzzy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.14,maximumEntropyProblem,yes,yes (synthetic research fixture),app.simulation.models_cat7,maximum_entropy;maximum_entropy;maximum_entropy;maximum_entropy;maximum_entropy;maximum_entropy;maximum_entropy;maximum_entropy;maximum_entropy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.15,possibilityAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;possibility;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.16,sphericalFuzzyAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;spherical_fuzzy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.17,fermateanFuzzyAssessment,yes,yes (synthetic research fixture),app.simulation.models_cat7,_unit;fermatean_fuzzy;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.18,decisionAlternatives,yes,yes (synthetic research fixture),app.simulation.models_cat7,_reference_material_guards;decision_problem;decision_problem;marcos;marcos;marcos;marcos;marcos;marcos;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.19,decisionAlternatives,yes,yes (synthetic research fixture),app.simulation.models_cat7,_reference_material_guards;critic_topsis;critic_topsis;critic_topsis;critic_topsis;critic_topsis;critic_topsis;critic_topsis;decision_problem;v5_structure,no,CANONICAL_RESULT,CANONICAL_RESULT,PASS
+B2.20,hypersoftLabStructure,yes,yes (synthetic research fixture),app.simulation.models_cat7,the canonical operational gate refused before any mathematics,no,DISABLED,"DISABLED or ARCHIVED, no reading",PASS

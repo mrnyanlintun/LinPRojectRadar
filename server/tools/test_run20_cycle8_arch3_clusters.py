@@ -40,8 +40,8 @@ from app.simulation import lineage  # noqa: E402
 from app.simulation.fusion import fuse_signals  # noqa: E402
 from app.simulation.lineage import (  # noqa: E402
     COST_INDEX, SCHEDULE_INDEX, SCHEDULE_INDEX_ANCESTRY_PROGRESS, SCHEDULE_INDEX_ANCESTRY_PV,
-    dependent, evidence_bodies, index_ancestry, lineage_for, resolve_for_evidence,
-    resolve_primitive_sources,
+    CORRELATED, DOCUMENT_BODY, EARNED_VALUE_BODY, dependent, evidence_bodies, index_ancestry, lineage_for,
+    lineage_record, resolve_for_evidence, resolve_primitive_sources,
 )
 from app.simulation.registry import DISABLED_MODULES, run_module  # noqa: E402
 from run20_cycle8_probe import (  # noqa: E402
@@ -166,6 +166,10 @@ def _cpi(si, f):
     si["cpi"] = round(BASE_SI["cpi"] * f, 3)
 
 
+def _spi(si, f):
+    si["spi"] = round(BASE_SI["spi"] * f, 3)
+
+
 # RUN 28. A1.3 no longer reads ANY of the four earned-value fields: the supplied contract
 # replaced its designed variances with a governed prior and a stated observation model. Cycle 8's
 # finding is therefore strengthened rather than lost -- the field set and the evidence disagreed,
@@ -176,15 +180,23 @@ check("A1.3 does not move when the cost index moves either, which is the v3 corr
       "designed variance derived from the index is gone", unmoved_when("A1.3", _cpi))
 check("B3.2 does not move when the budget is moved across a fivefold range",
       unmoved_when("B3.2", _bac))
+# RUN 30 CLOSURE. B2.14 NOW MOVES FOR NEITHER INDEX, and that is the stronger statement. Cycle 8
+# recorded that Maximum Entropy demanded the cost index and did not read it, reading the schedule
+# index instead: a declaration defect on a proxy. The proxy is gone. The production route is the
+# constrained entropy maximisation over a governed state space and set of constraints, and it
+# reads no performance index at all, so it moves for neither and declares neither.
 check("B2.14 does not move when the cost index is moved across a fivefold range",
       unmoved_when("B2.14", _cpi))
+check("B2.14 does not move when the SCHEDULE index is moved either, which is the Run-30 closure: "
+      "the canonical route reads a governed state space and constraints, not an index",
+      unmoved_when("B2.14", _spi))
+check("and B2.14 declares no lineage at all, so no index dependence is asserted anywhere",
+      "B2.14" not in lineage.MODULE_LINEAGE)
 # AND THE CONTROLS ARE NOT VACUOUS: the same modules DO move for the fact they really read.
 check("and the probe is not vacuous: B3.2, which really does read the cost index, moves for it",
       not unmoved_when("B3.2", _cpi))
 check("B3.2 does move when the cost index moves", not unmoved_when("B3.2", _cpi))
-check("B2.14 does move when the schedule index moves",
-      not unmoved_when("B2.14", lambda si, f: si.__setitem__("spi",
-                                                             round(BASE_SI["spi"] * f, 3))))
+# (the vacuity control that used to sit here moved above, inverted, with its reason.)
 
 print("\n=== 3. EVERY DECLARATION MATCHES WHAT THE MODULE ACTUALLY READS ===")
 #
@@ -202,8 +214,20 @@ print("\n=== 3. EVERY DECLARATION MATCHES WHAT THE MODULE ACTUALLY READS ===")
 # for every module, every SCALAR fact it declares must be one the ladder moves it with, and every
 # scalar the ladder moves it with must be declared. A3.6 is in both halves at once, because it
 # declares the budget (a scalar the ladder does move it with) alongside the register's events.
-_declared_here = ("A1.11", "A1.3", "A3.6", "B3.2", "B3.4", "B4.3", "B2.10", "B2.11", "B2.14",
-                  "B2.15", "B2.16", "B2.18", "B2.12", "B2.13", "B2.17", "A3.9")
+# RUN 30 CLOSURE. THE NINE CATEGORY-7 MODULES LEFT THE CLUSTER ENTIRELY, which is again the
+# strongest form of this cycle's finding rather than an exception to it. Cycle 8's rule is that a
+# module's evidence is what its result moves for; all twenty Category-7 identities now route into
+# the canonical layer, which reads no scalar the ladder below multiplies, so the ladder moves
+# none of them and there is nothing left to declare. Their lineage records were removed with
+# them, and that removal is asserted directly rather than inferred from a silent probe.
+_RUN30_LEFT_THE_CLUSTER = ("B2.10", "B2.11", "B2.12", "B2.13", "B2.14",
+                           "B2.15", "B2.16", "B2.17", "B2.18")
+for _mid in _RUN30_LEFT_THE_CLUSTER:
+    check(f"{_mid}: declares nothing, because its production route reads no scalar this ladder "
+          f"can move", lineage_for(_mid) is None, str(lineage_for(_mid)))
+    check(f"{_mid}: and the ladder confirms it, moving neither index",
+          unmoved_when(_mid, _cpi) and unmoved_when(_mid, _spi))
+_declared_here = ("A1.11", "A1.3", "A3.6", "B3.2", "B3.4", "B4.3", "A3.9")
 _false_dep = 0
 _false_indep = 0
 for mid in _declared_here:
@@ -269,7 +293,33 @@ print("\n=== 5. THE SCHEDULE-INDEX ANCESTRY IS A PROPERTY OF THE EVIDENCE ===")
 #
 # The finding this cycle could not have reached from any field list: the same module on the same
 # code rests on the earned value on one project and on the two progress figures on another.
-_r = lineage_for("B2.14")
+# RUN 30 CLOSURE. THE EXEMPLAR IS NOW CONSTRUCTED, AND THE REASON IS THE FINDING ITSELF.
+#
+# This section is about a property of the RESOLVER and of the EVIDENCE: the schedule index has
+# two ancestries, and a record that declares it resolves against the project's own facts rather
+# than against a module id. Demonstrating it needs a record that declares the schedule index AND
+# NOT the cost index, because the cost index reads the earned value and the actual cost and would
+# mask the switch.
+#
+# B2.14 was the only shipped module that did, and after the Run-30 closure it declares nothing at
+# all: its production route reads no index. No shipped module now declares the schedule index
+# alone, which is asserted below rather than left implicit, so the record is CONSTRUCTED HERE
+# from the same `lineage_record` constructor production uses and resolved by the same shipped
+# resolver. Nothing about the ancestry model changed, and the property is still read off the
+# shipped code rather than a copy of it.
+_alone = [m for m, r in lineage.MODULE_LINEAGE.items()
+          if set(r.get("derived_index_reads") or ()) == {SCHEDULE_INDEX}]
+check("no shipped module declares the schedule index alone any more, which is why the exemplar "
+      "below is constructed rather than taken from the registry", not _alone, str(_alone))
+# The record is a FAITHFUL RECONSTRUCTION of the declaration B2.14 carried until the Run-30
+# closure retired it: the document risk score as its primitive fact, the schedule index as its
+# only derived index read, and the document body. Reconstructing it rather than inventing a
+# convenient one keeps this section demonstrating the property on the shape it was found on.
+_r = lineage_record("PROBE.schedule-index-only", source_fact_ids=("doc_risk_score",),
+                    derived_index_reads=(SCHEDULE_INDEX,),
+                    lineage_group_ids=(DOCUMENT_BODY,),
+                    evidence_relationship=CORRELATED,
+                    derivation_chain=("the schedule performance index",))
 check("undeclared of evidence, the record carries the union of both ancestries",
       set(SCHEDULE_INDEX_ANCESTRY_PV) | set(SCHEDULE_INDEX_ANCESTRY_PROGRESS)
       <= set(_r["primitive_source_ids"]))
@@ -283,10 +333,6 @@ check("with no planned value it rests on the progress figures",
 check("with no planned value it does not rest on the earned value", "ev" not in _without)
 check("the resolution never adds a fact the declaration did not carry",
       _with_pv <= set(_r["primitive_source_ids"]) and _without <= set(_r["primitive_source_ids"]))
-check("and the probe agrees, on the module rather than on the record",
-      "ev" not in {f for f in ("ev",) for k in (0.55, 0.78, 1.22, 1.6)
-                   if reading("B2.14", derive({**BASE_FACTS, "pv": None, "ev": BASE_FACTS["ev"] * k}))
-                   != reading("B2.14", derive({**BASE_FACTS, "pv": None}))})
 
 print("\n=== 6. GUARD NON-VACUITY: THE PROBE NOTICES WHAT THE BAND DOES NOT SHOW ===")
 #
@@ -299,15 +345,22 @@ _si_hi["bac"] = BASE_SI["bac"] * 3
 # is the very failure it was written to demonstrate. B2.15 Possibility Theory is used instead --
 # it reports a possibility distribution beside its band, so a movement can show in the result
 # while the band stays put, which is exactly the property this section needs.
+# RUN 30 CLOSURE. B2.15 Possibility Theory can no longer serve as the vehicle either, for
+# exactly the reason A1.3 could not at Run 28: it abstains without a governed possibility
+# distribution, so two runs are identical abstentions and the control would be vacuous -- the
+# very failure this section demonstrates. B3.2 is used instead. It reports a deviation figure
+# beside its band, so a small movement in the cost index shows in the result while the band
+# stays put, which is the property this section needs.
+_VEHICLE = "B3.2"
 _si_hi = dict(BASE_SI)
-_si_hi["docRiskScore"] = min(1.0, BASE_SI["docRiskScore"] + 0.02)
-_full_a = run_module("B2.15", BASE_SI, _const_rng, None)
-_full_b = run_module("B2.15", _si_hi, _const_rng, None)
+_si_hi["cpi"] = BASE_SI["cpi"] + 0.002
+_full_a = run_module(_VEHICLE, BASE_SI, _const_rng, None)
+_full_b = run_module(_VEHICLE, _si_hi, _const_rng, None)
 check("the band alone does not distinguish the two runs",
       _full_a["status_color"] == _full_b["status_color"])
 check("the whole result does distinguish them", _full_a != _full_b)
 check("and the probe's comparison follows the whole result",
-      reading("B2.15", BASE_SI) != reading("B2.15", _si_hi))
+      reading(_VEHICLE, BASE_SI) != reading(_VEHICLE, _si_hi))
 
 print("\n=== 7. THE CLUSTER VERDICTS, AND BOTH DIRECTIONS OF ERROR ===")
 
@@ -335,8 +388,18 @@ check("the overhead absorption rate is independent of the to-complete index, as 
 # THE CLUSTER VERDICTS THEMSELVES.
 check("the cost-index readers are dependent on the voting modules, through the index and not "
       "through a field name", pair_dependent("B3.2", "A1.7", BASE_SI))
-check("Maximum Entropy is dependent on the schedule readers when a planned value exists",
-      pair_dependent("B2.14", "B2.12", BASE_SI))
+# RUN 30 CLOSURE. THE MAXIMUM-ENTROPY CLUSTER VERDICTS ARE REPLACED BY THEIR SUCCESSOR FACT,
+# not deleted. Cycle 8's finding was that B2.14 was dependent on the schedule readers through the
+# schedule index when a planned value existed, and independent of the cost-index readers when
+# none did. Both were statements about a proxy that read the schedule index. That proxy is no
+# longer a production route: B2.14 declares no lineage at all and reads no index, so it is
+# dependent on NOTHING through an index, in either evidence regime. Asserting the old dependence
+# would manufacture a shared fact that has stopped existing, which is the error Run 28 and Run 29
+# each corrected in their own turn.
+check("Maximum Entropy declares no lineage, so it asserts dependence on nothing through any "
+      "index, and the cluster verdict that rested on the schedule index is retired with the "
+      "proxy that produced it",
+      lineage_for("B2.14") is None and lineage_for("B2.12") is None)
 check("the Inflation Adjustment Index is INDEPENDENT of the earned-value readers",
       not pair_dependent("A3.9", "A1.7", BASE_SI))
 # RUN 28 INVERTED THIS CHECK, and the inversion is the correction. Cycle 8 found these two
@@ -349,10 +412,25 @@ check("the Inflation Adjustment Index is INDEPENDENT of the earned-value readers
 check("and it is now INDEPENDENT of the overhead absorption rate too, because neither scales by "
       "progress any more",
       not pair_dependent("A3.9", "A3.5", BASE_SI))
+# THE EVIDENCE-REGIME PROPERTY ITSELF IS UNCHANGED AND IS STILL ASSERTED, on a pair that still
+# declares indices: with no planned value the schedule index rests on the progress figures and
+# the cost index does not, so a schedule-only record and a cost-index reader separate; with a
+# planned value both rest on the earned value and they do not. The constructed schedule-only
+# record from section 5 is the vehicle, for the reason recorded there.
 _no_pv_si = {**BASE_SI, "pv": None}
-check("with no planned value Maximum Entropy is independent of the cost-index readers",
-      not pair_dependent("B2.14", "B3.2", _no_pv_si))
-check("and with a planned value it is not", pair_dependent("B2.14", "B3.2", BASE_SI))
+
+
+def _pair_dependent_rec(rec_a, rec_b, si):
+    ra = resolve_for_evidence(rec_a, si)
+    rb = resolve_for_evidence(rec_b, si)
+    prim = resolve_primitive_sources([ra, rb])
+    return dependent(ra, rb, prim[0], prim[1])
+
+
+check("with no planned value a schedule-index reading is independent of the cost-index readers",
+      not _pair_dependent_rec(_r, lineage_for("B3.2"), _no_pv_si))
+check("and with a planned value it is not",
+      _pair_dependent_rec(_r, lineage_for("B3.2"), BASE_SI))
 
 # FALSE REINFORCEMENT AND FALSE SUPPRESSION, SCORED SEPARATELY AND BOTH REQUIRED TO BE ZERO.
 _false_reinforcement = 0
@@ -395,11 +473,22 @@ print("\n=== 8. THE AMPLIFICATION ARCH.3 EXISTS TO PREVENT, MEASURED BEFORE AND 
 #
 # Three cluster modules, all Amber, all resting on the one earned-value measurement. Undeclared,
 # the combination treated them as three independent bodies. This is the number that moved.
-_undeclared = [{"module_id": m, "status": "Amber", "lineage": None}
-               for m in ("B2.12", "B2.13", "B2.17")]
+# RUN 30 CLOSURE. THE THREE EXEMPLARS MOVE, AND THE MEASUREMENT DOES NOT. Cycle 8 measured this
+# on B2.12, B2.13 and B2.17, three fuzzy proxies that all rested on the one earned-value
+# measurement. None of the three declares anything now, so `lineage_for` returns None for each
+# and the "declared" half of the comparison could not be built from them. The property being
+# measured is a property of FUSION -- that three readings of one body must not sharpen belief as
+# though they were three bodies -- so three modules that still declare that body are used, and
+# they are read from the shipped table rather than named here, so a later run that retires one of
+# them breaks this check instead of silently shrinking the comparison.
+_AMPLIFY = sorted(m for m, r in lineage.MODULE_LINEAGE.items()
+                  if EARNED_VALUE_BODY in (r.get("lineage_group_ids") or ()))[:3]
+check("three modules still declare the earned-value body, so the amplification measurement below "
+      "has a real one-body case to make", len(_AMPLIFY) == 3, str(_AMPLIFY))
+_undeclared = [{"module_id": m, "status": "Amber", "lineage": None} for m in _AMPLIFY]
 _declared = [{"module_id": m, "status": "Amber",
               "lineage": resolve_for_evidence(lineage_for(m), BASE_SI)}
-             for m in ("B2.12", "B2.13", "B2.17")]
+             for m in _AMPLIFY]
 _u = fuse_signals(_undeclared)
 _d = fuse_signals(_declared)
 # RUN 20 CYCLE 9, FUSION.1. THESE TWO CHECKS WERE REWRITTEN AND THEIR PREMISE IS RECORDED, NOT
@@ -422,8 +511,8 @@ check("and the band never changed, only the certainty attached to it",
       _u["status"] == _d["status"] == "Amber")
 # AND THE CORROBORATION THAT IS REAL SURVIVES: a cluster module against a genuinely different body.
 _corr = fuse_signals([
-    {"module_id": "B2.12", "status": "Amber",
-     "lineage": resolve_for_evidence(lineage_for("B2.12"), BASE_SI)},
+    {"module_id": _AMPLIFY[0], "status": "Amber",
+     "lineage": resolve_for_evidence(lineage_for(_AMPLIFY[0]), BASE_SI)},
     {"module_id": "A3.9", "status": "Amber",
      "lineage": resolve_for_evidence(lineage_for("A3.9"), BASE_SI)}])
 check("two genuinely different bodies still corroborate", _corr["lineage_groups"] == 2)
@@ -447,8 +536,10 @@ def mutate(name: str, rec_a: dict, rec_b: dict, expect_dependent: bool) -> None:
           f"still reported dependent={got}")
 
 
-_b212 = resolve_for_evidence(lineage_for("B2.12"), BASE_SI)
-_b213 = resolve_for_evidence(lineage_for("B2.13"), BASE_SI)
+# RUN 30 CLOSURE: the two earned-value exemplars are taken from the shipped table for the same
+# reason as the amplification measurement above, rather than being named here.
+_b212 = resolve_for_evidence(lineage_for(_AMPLIFY[0]), BASE_SI)
+_b213 = resolve_for_evidence(lineage_for(_AMPLIFY[1]), BASE_SI)
 _a39 = resolve_for_evidence(lineage_for("A3.9"), BASE_SI)
 
 # M1: strip the index ancestry from one record entirely. Two readings of one earned-value body
@@ -463,7 +554,7 @@ _m1 = dict(_b212)
 _m1["primitive_source_ids"] = ()
 _m1["lineage_group_ids"] = ()
 _m1["derived_index_reads"] = ()
-mutate("the whole index ancestry stripped from B2.12",
+mutate(f"the whole index ancestry stripped from {_AMPLIFY[0]}",
        _m1, resolve_for_evidence(lineage_for("B3.2"), BASE_SI), True)
 
 # M2: give the independent material-cost body an earned-value fact it does not read.
@@ -472,7 +563,9 @@ _m2["primitive_source_ids"] = tuple(sorted(set(_m2["primitive_source_ids"]) | {"
 mutate("a fact the Inflation Adjustment Index does not read, injected", _m2, _b212, False)
 
 # M3: the resolver made to ignore the evidence and always return the planned-value ancestry.
-_b214 = lineage_for("B2.14")
+# RUN 30 CLOSURE: on the reconstructed schedule-only record from section 5, for the reason
+# recorded there. B2.14 declares nothing now, so it can no longer carry this mutation.
+_b214 = _r
 _wrong = dict(_b214)
 _wrong["primitive_source_ids"] = tuple(sorted(
     set(_b214["source_fact_ids"]) | set(SCHEDULE_INDEX_ANCESTRY_PV)))

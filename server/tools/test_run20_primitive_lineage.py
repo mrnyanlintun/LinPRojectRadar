@@ -419,15 +419,9 @@ ACTUAL_FACTS = {
     "B3.2": set(),                         # the cost index alone; the budget scales out
     "B3.4": set(),                         # the two indices; the budget scales out
     "B4.3": set(),                         # the two indices; the budget scales out
-    "B2.10": {"doc_risk_score"},
-    "B2.11": {"doc_risk_score"},
-    "B2.14": {"doc_risk_score"},           # the schedule index and the risk score; NOT the cost index
-    "B2.15": {"doc_risk_score"},
-    "B2.16": {"doc_risk_score"},
-    "B2.18": {"doc_risk_score"},
-    "B2.12": set(),
-    "B2.13": set(),
-    "B2.17": set(),
+    # RUN 30 CLOSURE. The nine Category-7 entries are gone with their records, for the same
+    # reason as the index table above: the canonical route reads no document risk score either.
+    # Their removal is asserted explicitly a few lines below rather than left as an absence.
     # RUN 28. Re-transcribed: a named external price index and the cost exposure it applies to.
     "A3.9": {"cost_exposure", "external_price_index"},
 }
@@ -439,15 +433,25 @@ ACTUAL_FACTS = {
 # more: the reconciliation index reads two separately prepared estimates and the cost risk
 # analysis reads the register's events over the budget. A record naming an index it does not read
 # would declare a dependence that is not there, which is what removing them prevents.
+# RUN 30 CLOSURE. THE ELEVEN CATEGORY-7 ENTRIES ARE GONE from this table, for exactly the reason
+# Run 28 removed A1.11 and A3.6: none of them reads a derived index any more. All twenty
+# Category-7 production identities route through models_cat7.py into the canonical layer, which
+# reads no cost index, no schedule index and no document risk score, and their lineage records
+# were removed with them. A record naming an index a module does not read would declare a
+# dependence that is not there, and this table exists to catch exactly that.
 ACTUAL_INDEX_READS = {
     "B3.2": {"cost_index"},
     "B3.4": {"cost_index", "schedule_index"}, "B4.3": {"cost_index", "schedule_index"},
-    "B2.10": {"cost_index", "schedule_index"}, "B2.11": {"cost_index", "schedule_index"},
-    "B2.14": {"schedule_index"},
-    "B2.15": {"cost_index", "schedule_index"}, "B2.16": {"cost_index", "schedule_index"},
-    "B2.18": {"cost_index", "schedule_index"}, "B2.12": {"cost_index", "schedule_index"},
-    "B2.13": {"cost_index", "schedule_index"}, "B2.17": {"cost_index", "schedule_index"},
 }
+
+#: The Category-7 identities that USED to be in the table above, kept here so the removal is a
+#: recorded fact rather than an absence, and asserted to declare nothing at all.
+RUN30_INDEX_READS_REMOVED = ["B2.10", "B2.11", "B2.12", "B2.13", "B2.14", "B2.15", "B2.16",
+                             "B2.17", "B2.18"]
+for _mid in RUN30_INDEX_READS_REMOVED:
+    check(f"{_mid}: declares no lineage at all, because its production route reads no index and "
+          f"no document risk score, and a record naming one would be a dependence that is not "
+          f"there", PROD.get(_mid) is None, str(PROD.get(_mid)))
 for mid, expected_reads in sorted(ACTUAL_INDEX_READS.items()):
     rec = PROD.get(mid)
     check(f"{mid}: the declared derived-index reads are exactly what the module consumes",

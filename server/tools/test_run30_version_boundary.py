@@ -61,10 +61,12 @@ def git_show(path: str, rev: str = V14_COMMIT) -> str:
 head("1. THE STAMP AND ITS HISTORY")
 # =================================================================================================
 
-check(SIMULATION_VERSION == "sim-2026.08-v15",
-      "the analytical layer is stamped sim-2026.08-v15", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v14",
-      "and names sim-2026.08-v14 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY THE RUN-30 CLOSURE: this suite proves the v14-to-v15 boundary and still
+# does; the current-stamp assertion follows the live line.
+check(SIMULATION_VERSION == "sim-2026.08-v16",
+      "the analytical layer is stamped sim-2026.08-v16", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v15",
+      "and names sim-2026.08-v15 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "EVERY SIMULATION IDENTIFIER IS UNIQUE: no historical stamp has been re-used",
       str([v for v in SIMULATION_VERSION_HISTORY
@@ -80,8 +82,10 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"the history recorded at commit {V14_COMMIT} is a strict PREFIX of the history now, read "
       f"out of git rather than out of a note, so this run appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
-check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v15",),
-      "and it grew by exactly the one stamp this run is authorised to add",
+check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v15",
+                                                        "sim-2026.08-v16"),
+      "and it grew by the two stamps Run 30 is authorised to add: v15 for the canonical layer "
+      "and v16 for repointing the operational routes onto it",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v14",
       "and the line this run supersedes is the line that commit shipped", str(_old_stamps[-1]))

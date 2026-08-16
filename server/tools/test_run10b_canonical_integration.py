@@ -437,14 +437,31 @@ check(_scn_out.get("recommended_action") is None,
 
 # ---- B2.19. CRITIC weights across the alternatives, checked against the package's recorded
 #      weights, which were produced by an independent implementation of the same definition.
+# RUN 30 CLOSURE. THE PACKAGE'S OWN DECISION PROBLEM NOW REACHES THE CANONICAL PRODUCTION RUNNER.
+# B2.19 routes through models_cat7.py into canonical_v5, whose structure is the shared
+# alternatives-and-criteria object, so the package is imported in that shape by
+# `production_structures.decision_alternatives` -- the SAME package rows `decision_matrix` reads,
+# with nothing invented and no weight supplied. A structurally canonical fixture that never
+# reaches the canonical runner would not have been adequate.
 _matrix = PS.decision_matrix(DP)
-got_ct = run_module("B2.19", {"decisionMatrix": _matrix}, NOOP, CUTOFF)
+_alternatives = PS.decision_alternatives(DP)
+check(len(_alternatives["alternatives"]) == len(_matrix["alternatives"])
+      and len(_alternatives["criteria"]) == len(_matrix["criteria"]),
+      "B2.19: the canonical import carries the same alternatives and criteria as the package's "
+      "own decision matrix, so nothing was added or dropped in the translation",
+      f"{len(_alternatives['alternatives'])} alternatives, "
+      f"{len(_alternatives['criteria'])} criteria")
+got_ct = run_module("B2.19", {"decisionAlternatives": _alternatives}, NOOP, CUTOFF)
+check(got_ct.get("result_source") == "CANONICAL_V5_LAYER"
+      and got_ct.get("canonical_disposition") == "CANONICAL_RESULT",
+      "B2.19: and the answer came from the canonical layer through the production dispatcher",
+      str(got_ct.get("canonical_disposition")))
 truth = [t for t in FL.load_table(f"{PS.PACKAGE_B}/B3_decision_optimization/"
                                  f"ground_truth_decisions.csv", primary_key=None)
          if t["decision_problem_id"] == DP][0]
 import json  # noqa: E402
 recorded_weights = json.loads(truth["critic_weights_json"])
-_w = got_ct.get("criteria_weights") or {}
+_w = got_ct.get("criterion_weights") or {}
 check(set(_w) == set(recorded_weights),
       "B2.19: a weight is produced for every criterion, none dropping out of its own decision",
       str(sorted(_w)))
@@ -454,14 +471,14 @@ check(all(abs(_w[k] - recorded_weights[k]) <= 0.002 for k in recorded_weights),
 check(all(v > 0 for v in _w.values()),
       "B2.19: every weight is above zero, which is the degeneracy the single-alternative form "
       "could not avoid", str(_w))
-check(got_ct.get("top_alternative") == truth["critic_topsis_top_action_id"],
+check((got_ct.get("ranking") or [None])[0] == truth["critic_topsis_top_action_id"],
       "B2.19: and the alternative ranked first is the one the package records",
-      f"{got_ct.get('top_alternative')} vs {truth['critic_topsis_top_action_id']}")
-check(got_ct.get("alternatives_considered") == len(_matrix["alternatives"]),
-      "B2.19: over all the alternatives, not one", str(got_ct.get("alternatives_considered")))
+      f"{(got_ct.get('ranking') or [None])[0]} vs {truth['critic_topsis_top_action_id']}")
+check(len(got_ct.get("ranking") or []) == len(_matrix["alternatives"]),
+      "B2.19: over all the alternatives, not one", str(len(got_ct.get("ranking") or [])))
 
 # ---- THE LEAKAGE CONTROLS, one at a time, on both modules.
-for mid, key, builder in (("B2.19", "decisionMatrix", PS.decision_matrix),):
+for mid, key, builder in (("B2.19", "decisionAlternatives", PS.decision_alternatives),):
     base = {}
 
     locked = dict(builder(DP, split="LOCKED_HOLDOUT"))
@@ -597,6 +614,10 @@ WITH_STRUCTURES = dict(
     queueModel=_r29_queue(),
     agentSupplyChainModel=_r29_abm(),
     scenarioSet=_r29_scn(),
+    # RUN 30 CLOSURE: B2.19 reads the shared alternatives-and-criteria object now, so the rich
+    # fixture supplies it in that shape. The decision matrix stays beside it, unchanged, because
+    # the older canonical layer still reads it.
+    decisionAlternatives=PS.decision_alternatives(DP),
 )
 plain = compute_project(dict(PROJECT_SI), "S-A", "P1", CUTOFF)
 rich = compute_project(dict(WITH_STRUCTURES), "S-A", "P1", CUTOFF)
@@ -702,7 +723,7 @@ mutation("a fully consumed buffer reads a hundred per cent consumed",
                                   CUTOFF)["pct_buffer_consumed"], 100.0, 0.051))
 mutation("claiming a locked holdout is readable would fail",
          lambda: abstains(run_module("B2.19",
-                                     {"decisionMatrix": PS.decision_matrix(
+                                     {"decisionAlternatives": PS.decision_alternatives(
                                          DP, split="LOCKED_HOLDOUT")}, NOOP, CUTOFF)))
 mutation("claiming the six are in the voting set would fail",
          lambda: not set(SIX) & set(CORE_VOTING_MODULES))
@@ -711,12 +732,20 @@ mutation("claiming an absent structure still computes would fail",
 
 # A real injection into the production layer, applied and removed, proving these checks read the
 # shipped code rather than a copy of it.
-_orig = (canonical.READABLE_SPLITS, canonical.LOCKED_SPLIT)
-canonical.READABLE_SPLITS = frozenset({"DEVELOPMENT", "VALIDATION", "LOCKED_HOLDOUT"})
-canonical.LOCKED_SPLIT = "NOTHING_IS_LOCKED"
-_leaked = run_module("B2.19", {"decisionMatrix": PS.decision_matrix(DP, split="LOCKED_HOLDOUT")},
-                     NOOP, CUTOFF)
-canonical.READABLE_SPLITS, canonical.LOCKED_SPLIT = _orig
+# RUN 30 CLOSURE: the injection follows the guard. B2.19 now reads the shared decision structure,
+# whose split lock lives in canonical_v5, so injecting into canonical.py would have applied
+# cleanly and changed nothing -- an injection that silently fails to apply, which is the failure
+# mode this whole section exists to rule out.
+import app.simulation.canonical_v5 as canonical_v5              # noqa: E402
+_orig = (canonical_v5.READABLE_SPLITS, canonical_v5.LOCKED_SPLIT)
+canonical_v5.READABLE_SPLITS = ("DEVELOPMENT", "VALIDATION", "LOCKED_HOLDOUT")
+canonical_v5.LOCKED_SPLIT = "NOTHING_IS_LOCKED"
+_applied = canonical_v5.LOCKED_SPLIT == "NOTHING_IS_LOCKED"     # re-read, never assumed
+_leaked = run_module("B2.19",
+                     {"decisionAlternatives": PS.decision_alternatives(
+                         DP, split="LOCKED_HOLDOUT")}, NOOP, CUTOFF)
+canonical_v5.READABLE_SPLITS, canonical_v5.LOCKED_SPLIT = _orig
+check(_applied, "the split-rule injection actually applied before the answer was taken")
 check(not abstains(_leaked),
       "an injected split rule does change the answer, so the leakage checks are reading the "
       "shipped guard rather than a description of it", str(_leaked.get("status_color")))

@@ -178,7 +178,7 @@ check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
 # sim-2026.08-v2, it is imported and EXECUTED by this suite, and every comparison below runs the
 # old code and the new code side by side on identical inputs. A frozen record that could not be
 # executed would not be evidence of anything.
-check(SIMULATION_VERSION == "sim-2026.08-v15",
+check(SIMULATION_VERSION == "sim-2026.08-v16",
       "and this branch is stamped at Run 28's version, so results computed before and after "
       "each run are distinguishable in the data. Every earlier stamp from sim-2026.07-v1 "
       "onward is preserved in the version history rather than overwritten",
@@ -1096,7 +1096,16 @@ RUN29_CORRECTED = {"A4.4", "A4.5", "A4.6", "A4.7", "A4.8", "A4.9", "A4.10",
 # and B1.4 reports the frozen Worst-2 mean statistic and asserts no band, because the boundaries
 # that would turn it into a state do not exist and Run 33 owns them. B1.1 is NOT in this list:
 # Run 20 cycle 9 made it a genuine maximum over the signal bands and Run 30 did not touch it.
-RUN30_CORRECTED = {"B1.2", "B1.3", "B1.4"}
+# RUN 30 CLOSURE. The twenty Category-7 identities join it. On a fully reported project carrying
+# no governed epistemic structure every one of them now ABSTAINS where it used to band, because a
+# complete set of crisp project metrics is not a mass function, a decision table, an assessed
+# membership, a linguistic probability, a rule weight, a state space or a set of alternatives.
+# That is the move this comparison is field-exact over, and it correctly reports it. B2.7, B2.9
+# and B2.20 are not in the list: all three were already disabled and abstained before and after.
+RUN30_CORRECTED = {"B1.2", "B1.3", "B1.4",
+                   "B2.1", "B2.2", "B2.3", "B2.4", "B2.5", "B2.6", "B2.8",
+                   "B2.10", "B2.11", "B2.12", "B2.13", "B2.14", "B2.15", "B2.16", "B2.17",
+                   "B2.18", "B2.19"}
 check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
                       | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED
                       | RUN30_CORRECTED),

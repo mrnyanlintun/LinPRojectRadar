@@ -61,7 +61,10 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v4",
         "code_audit/run29_participant_package_v4_checksums.sha256",
-        None,
+        # RUN 30 CLOSURE: v4 is a predecessor now, so it is pinned to the commit whose blobs it
+        # describes rather than left reading the working tree. Leaving it on None would make TWO
+        # records claim the live tree, which is exactly the masquerade this chain forbids.
+        "ce03eb1f297d9615a9eac7dea34356a69846e5a3",
         "RUN 29 removed six proxy qualifiers from the registry, because the six modules they "
         "described -- Weather Day Impact, Change Order Frequency, Dispute Escalation Index, "
         "Subcontractor Performance, Sensitivity Analysis and Tornado Risk Ranking -- now carry "
@@ -72,10 +75,87 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "v3 record is NOT regenerated: it is pinned to the commit whose blobs it describes, "
         "which is the defect the Run-28 closure had to correct in the v2 record.",
     ),
+    Package(
+        "og-participant-2026.08-v5",
+        "code_audit/run30_participant_package_v5_checksums.sha256",
+        None,
+        "THE RUN-30 CLOSURE repointed all twenty Category-7 production identities onto the "
+        "canonical layer. Two consequences reach the served defensibility evidence object, which "
+        "is GENERATED from the registry and the structure maps. First, eight proxy qualifiers "
+        "were deleted, because the eight modules they described no longer compute a proxy at "
+        "all. Second, the generator was reading the structure map from canonical.py ALONE, so "
+        "fifty-six modules whose defining structures live in the v3, v4 and v5 layers were being "
+        "described to a reader as not requiring a canonical structure on the very day their "
+        "production routes started requiring one; it now reads all four maps. ONE package file "
+        "changed and both changes are corrections of statements that had become false. No name, "
+        "no threshold, no sequence step and no participant behaviour moved. The v4 record is NOT "
+        "regenerated: it is pinned to the commit whose blobs it describes, which is the defect "
+        "the Run-28 closure had to correct in the v2 record.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v4 and v5.
+V4_TO_V5_CHANGED = (
+    "assets/js/ds_defensibility_evidence.js",
+)
+
+_STRUCTURE_PHRASE_REQUIRED = "required and enforced by the canonical-structure layer"
+_STRUCTURE_PHRASE_NOT = "not required by this module"
+
+#: The eight qualifier sentences the Run-30 closure deleted. Restoring them, and restoring the
+#: pre-closure structure statement, reconstructs the v4 text.
+_RESTORED_QUALIFIERS_V5 = (
+    ("B2.10", "hard-coded transformations of raw CPI, SPI and document risk"),
+    ("B2.11", "hard-coded memberships consuming raw metrics; no calibration evidenced"),
+    ("B2.12", "designed perturbations, not elicited or observed hesitant assessments"),
+    ("B2.13", "membership intervals that are designed constants"),
+    ("B2.14", "entropy over designed state probabilities; measures the lookup, not the project"),
+    ("B2.15", "fixed mappings from raw metrics; no governed possibility distribution"),
+    ("B2.16", "algebraically bounded but fixed memberships on raw unqualified inputs"),
+    ("B2.17", "formula-shaped with designed memberships, no empirical or elicitation basis"),
+)
+
+
+def _v4_era_structure_ids(root) -> set:
+    """The module ids the v4 generator called structure-requiring: the ones whose identifiers
+    appear in canonical.py, which is the only map it scanned. Derived, never listed."""
+    import re
+    src = (root / "server" / "app" / "simulation" / "canonical.py").read_text(encoding="utf-8")
+    return set(re.findall(r'"([A-D]\d+\.\d+)"', src))
+
+
+def to_v4_era(text: str, root) -> str:
+    """Map the current package file back to its v4-era text.
+
+    TWO REVERSALS, both mechanical. The eight deleted qualifier sentences are put back, and the
+    structure statement is put back to what the v4 generator produced -- which is what the
+    canonical.py scan alone yielded. Byte identity after this is the proof that nothing else
+    moved in the file.
+    """
+    v4_ids = _v4_era_structure_ids(root)
+    out = []
+    for line in text.split("\n"):
+        marker = line.strip()
+        if marker.startswith('"') and '": { name:' in marker:
+            mid = marker.split('"')[1]
+            if mid not in v4_ids:
+                line = line.replace(f'canonicalStructure: "{_STRUCTURE_PHRASE_REQUIRED}"',
+                                    f'canonicalStructure: "{_STRUCTURE_PHRASE_NOT}"', 1)
+        out.append(line)
+    text = "\n".join(out)
+    for mid, qualifier in _RESTORED_QUALIFIERS_V5:
+        marker = f'"{mid}": {{ name: '
+        head, sep, rest = text.partition(marker)
+        if not sep:
+            continue
+        line, nl, tail = rest.partition("\n")
+        line = line.replace(_QUALIFICATION_TAIL,
+                            f"{_QUALIFICATION_TAIL} Stated proxy: {qualifier}.", 1)
+        text = head + marker + line + nl + tail
+    return text
 
 #: The files whose bytes moved between v3 and v4, and the ONLY change permitted in them: the
 #: deletion of the six proxy-qualifier sentences the Run-29 remediation made false. The

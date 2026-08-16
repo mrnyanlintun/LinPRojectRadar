@@ -1,0 +1,15 @@
+fault,name,result,detail
+1,a Category-7 dispatcher deliberately points back to its legacy proxy,RED_THEN_GREEN,"baseline=(True, False, 'CANONICAL_RESULT') injected=(False, True, None) restored=(True, False, 'CANONICAL_RESULT') injection_applied=True"
+2,missing canonical structure deliberately falls through to a proxy,RED_THEN_GREEN,"baseline=(True, False, 'NOT_ESTIMABLE_STRUCTURE_ABSENT') injected=(True, True, None) restored=(True, False, 'NOT_ESTIMABLE_STRUCTURE_ABSENT') injection_applied=True"
+3,the canonical Dempster fixture routed to the old proxy,RED_THEN_GREEN,"baseline=(True, False, 'CANONICAL_RESULT') injected=(False, False, None) restored=(True, False, 'CANONICAL_RESULT') injection_applied=True"
+4,a canonical fuzzy fixture routed to the generic old fuzzy implementation,RED_THEN_GREEN,"baseline=(True, False, 'CANONICAL_RESULT') injected=(False, True, None) restored=(True, False, 'CANONICAL_RESULT') injection_applied=True"
+5,"Maximum Entropy routed to the old min(CPI,SPI) implementation",RED_THEN_GREEN,"baseline=(True, False, 'CANONICAL_RESULT') injected=(False, True, None) restored=(True, False, 'CANONICAL_RESULT') injection_applied=True"
+6,"Fermatean routed to the old min(CPI,SPI) implementation",RED_THEN_GREEN,"baseline=(True, False, 'CANONICAL_RESULT') injected=(False, True, None) restored=(True, False, 'CANONICAL_RESULT') injection_applied=True"
+7,Type-2 routed to a midpoint fallback,RED_THEN_GREEN,baseline=None injected=0.5 restored=None injection_applied=True
+8,MARCOS routed to a single-project proxy,RED_THEN_GREEN,"baseline=(True, False, 'CANONICAL_RESULT') injected=(False, True, None) restored=(True, False, 'CANONICAL_RESULT') injection_applied=True"
+9,CRITIC-TOPSIS routed to a single-project proxy,RED_THEN_GREEN,"baseline=(True, False, 'CANONICAL_RESULT') injected=(False, True, None) restored=(True, False, 'CANONICAL_RESULT') injection_applied=True"
+10,disabled Plithogenic made operational,RED_THEN_GREEN,"baseline=(False, None) injected=(True, 'Amber') restored=(False, None) injection_applied=True"
+11,archived Quantum made operational,RED_THEN_GREEN,baseline=True injected=False restored=True injection_applied=True
+12,disabled Hypersoft made operational,RED_THEN_GREEN,"baseline=(False, None) injected=(True, 'Green') restored=(False, None) injection_applied=True"
+13,a ledger row claims the canonical source while a legacy function actually executed,RED_THEN_GREEN,baseline=True injected=False restored=True injection_applied=True
+14,a duplicate simulation-version stamp,RED_THEN_GREEN,baseline=True injected=False restored=True injection_applied=True

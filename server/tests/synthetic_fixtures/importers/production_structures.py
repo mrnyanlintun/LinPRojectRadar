@@ -224,6 +224,46 @@ def decision_matrix(decision_problem_id: str, split: str = "DEVELOPMENT") -> dic
     }
 
 
+def decision_alternatives(decision_problem_id: str, split: str = "DEVELOPMENT") -> dict:
+    """
+    THE RUN-30 SHARED ALTERNATIVES-AND-CRITERIA OBJECT, imported from the SAME package rows
+    `decision_matrix` reads.
+
+    Run 30's closure repointed B2.18 MARCOS and B2.19 CRITIC-TOPSIS onto one governed decision
+    structure, so the synthetic package's own decision problem has to arrive in that shape or it
+    would never reach the canonical production runner -- and a structurally canonical fixture
+    that never reaches the canonical runner is exactly the gap the closure exists to close.
+
+    NOTHING IS INVENTED HERE. The alternatives, the criteria and every value are the package's
+    own rows, unchanged. The only translation is the orientation vocabulary: the package writes
+    MIN and MAX, and the canonical structure names the same fact benefit or cost. NO WEIGHT IS
+    SUPPLIED, because CRITIC derives its weights and MARCOS's must be externally governed; a
+    weight invented here would be exactly the fabrication the contract forbids.
+    """
+    raw = decision_matrix(decision_problem_id, split)
+    if not raw:
+        return {}
+    return {
+        "data_origin": ORIGIN,
+        "not_for_empirical_validation": True,
+        "context_id": decision_problem_id,
+        "asset_version": raw["asset_version"],
+        "split": raw["split"],
+        "evaluated_project_id": raw["evaluated_project_id"],
+        "reference_member_project_ids": list(raw["reference_member_project_ids"]),
+        "source": f"synthetic research package {FL.PROGRAMME_VERSION}, decision optimisation "
+                  f"reference set",
+        "period": None,
+        "criteria": [{"criterion_id": c["criterion_id"], "label": c["criterion_id"],
+                      "orientation": "cost" if c["direction"] == "MIN" else "benefit",
+                      "units": None}
+                     for c in raw["criteria"]],
+        "alternatives": [{"alternative_id": a["alternative_id"],
+                          "label": a["alternative_id"], "values": dict(a["values"])}
+                         for a in raw["alternatives"]],
+    }
+
+
 # =================================================================================================
 # RUN 29 CLOSURE: THE CANONICAL CATEGORY-4 AND CATEGORY-5 SHAPES.
 #

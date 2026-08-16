@@ -82,7 +82,13 @@ RESOLVED_BY_RUN_28 = ["A1.5", "A1.6", "A1.10", "A1.11", "A2.7", "A2.10", "A2.11"
 #: that runs an event list with a clock, a resource and a queue would be the false claim this
 #: table exists to prevent, told in the opposite direction.
 RESOLVED_BY_RUN_29 = ["A4.6", "A4.7", "A4.10", "A5.3", "A5.5", "A5.8"]
-RESOLVED = RESOLVED_BY_RUN_28 + RESOLVED_BY_RUN_29
+# RUN 30 CLOSURE. Three further rows are resolved for exactly the same reason: B2.2 Rough Sets
+# now computes lower and upper approximations over a governed decision table, B2.14 Maximum
+# Entropy solves a constrained maximisation through the convex dual, and B2.18 MARCOS ranks an
+# explicit set of alternatives. Each abstains when its defining structure is absent. Leaving
+# their labels would assert a weakness the code no longer has.
+RESOLVED_BY_RUN_30 = ["B2.2", "B2.14", "B2.18"]
+RESOLVED = RESOLVED_BY_RUN_28 + RESOLVED_BY_RUN_29 + RESOLVED_BY_RUN_30
 MISMATCH_23_STILL_LABELLED = [m for m in MISMATCH_23 if m not in RESOLVED]
 STRUCTURAL_8_STILL_LABELLED = [m for m in STRUCTURAL_8 if m not in RESOLVED]
 #: The module this suite drives for the "label reaches the result" checks. It must be one that
@@ -100,8 +106,8 @@ check("every mismatch row Run 28 did not remediate still carries a truthful meth
 check("and every row Run 28 DID remediate has had its label removed, because the code now "
       "performs the method its registered name claims and a stale weakness claim would be a "
       "false statement in the other direction",
-      all(ML.method_label(m) is None for m in RESOLVED_BY_RUN_28),
-      str([m for m in RESOLVED_BY_RUN_28 if ML.method_label(m) is not None]))
+      all(ML.method_label(m) is None for m in RESOLVED),
+      str([m for m in RESOLVED if ML.method_label(m) is not None]))
 check("A3.8 kept its label, because it is still disabled and still implements no parametric "
       "estimating relationship in production",
       ML.method_label("A3.8") is not None)
@@ -371,10 +377,16 @@ check("and it states plainly that no compliance determination under any named in
       "made", "not a compliance determination" in ML.claim_limit("A6.3")[1])
 check("the document risk score is recorded as unvalidated, with no accuracy claim supportable",
       ML.claim_limit("A4.1")[0] == "EMPIRICAL_VALIDATION_BLOCKED")
-check("two rows are carried as owner decisions rather than being disposed of quietly",
+# RUN 30 CLOSURE. B2.18 MARCOS leaves this list because its LABEL is gone, not because the owner
+# decision is: it now ranks an explicit set of alternatives, so the label's claim that it "scores
+# this one project against designed reference points" is no longer true. The owner decision it
+# carried -- whether a decision-ranking method belongs in Category 7 at all -- is unchanged, is
+# NOT resolved by Run 30, and is recorded against Run 32 in the Run-30 closure table. One row
+# remains labelled as an owner decision.
+check("one row is carried as an owner decision rather than being disposed of quietly",
       sorted(m for m in ML.labelled_modules()
              if ML.method_label(m).disposition == "OWNER_DECISION_REQUIRED")
-      == ["B2.18", "C1.4"])
+      == ["C1.4"])
 check("and the four disabled ones are future research only, which is not an activation",
       sorted(m for m in ML.labelled_modules()
              if ML.method_label(m).disposition == "FUTURE_RESEARCH_ONLY")

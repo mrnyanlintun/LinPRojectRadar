@@ -223,12 +223,35 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # EXECUTES it beside the current one and asserts exactly those divergences. Every earlier stamp,
 # v14 included, remains the historical audit baseline for the results collected under it; none is
 # overwritten or re-used.
-SIMULATION_VERSION = "sim-2026.08-v15"
+#
+# RUN 30 CLOSURE -> sim-2026.08-v16. THE CATEGORY-7 OPERATIONAL ROUTE CHANGED, so the stamp moves
+# again. v15 built the canonical Category-7 layer and PRODUCTION NEVER CALLED IT: executing the
+# production entry point for all twenty identities and profiling the interpreter gave canonical_v5
+# reached on zero of twenty, while seventeen ran their v14 proxy arithmetic. v16 repoints every
+# one of the twenty through models_cat7.py into that layer.
+#
+#     input: signalInputs carrying cpi 0.85, spi 0.85 and a document risk score, and no governed
+#            epistemic structure of any kind
+#
+#     models_fuzzy.py as it shipped at commit ce03eb1 (v15)  B2.14 Maximum Entropy reports Amber
+#                                                            from the entropy of a lookup table
+#                                                            indexed by min(cpi, spi)
+#     the current line                                       B2.14 ABSTAINS: no state space and
+#                                                            no constraints were supplied, so
+#                                                            there is nothing to maximise over
+#
+#     On a governed maximum-entropy problem BOTH lines produce a reading, and only the current
+#     one is the constrained optimisation the method is named for.
+#
+# server/tools/test_run30_closure_version_boundary.py extracts the v15 package from that git
+# object, EXECUTES it beside the current one and asserts exactly that. Every earlier stamp, v15
+# included, remains the historical audit baseline for the results collected under it.
+SIMULATION_VERSION = "sim-2026.08-v16"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v14"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v15"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -237,7 +260,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
-    "sim-2026.08-v15",
+    "sim-2026.08-v15", "sim-2026.08-v16",
 )
 
 
@@ -786,6 +809,15 @@ def _register_extensions() -> None:
     VALIDATED.update(FUZZY_EXTENSIONS)
     VALIDATED.update(DQ_EXTENSIONS)
     VALIDATED.update(DECISION_EXTENSIONS)
+    # RUN 30 CLOSURE, v16. THE TWENTY CATEGORY-7 IDENTITIES ARE REPOINTED, LAST, so this line is
+    # the one that decides which implementation production runs and a reader can see it decide.
+    # `EVC_EXTENSIONS` and `FUZZY_EXTENSIONS` are still imported and still updated above, because
+    # they also carry Category-7-adjacent modules that Run 30 is not in scope to touch; what
+    # changes is that every B2.x key they set is overwritten here by the thin canonical route in
+    # models_cat7.py. The legacy Category-7 functions therefore remain in the tree as the
+    # historical record of the v14/v15 line and are reachable from no production route.
+    from .models_cat7 import CAT7_CANONICAL
+    VALIDATED.update(CAT7_CANONICAL)
 
 
 _register_extensions()

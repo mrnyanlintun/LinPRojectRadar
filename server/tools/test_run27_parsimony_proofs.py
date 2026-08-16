@@ -80,8 +80,27 @@ GRID = [_si(c / 100, s / 100, d)
         for d in (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)]
 
 
+# RUN 30 CLOSURE. THE FUZZY-FAMILY PROOF IS ABOUT THE LEGACY IMPLEMENTATIONS, and they are
+# preserved. Run 27 established, over 5,166 admissible points, that B2.10 to B2.17 were NOT
+# mathematically identical and that two of them were informationally functions of min(cpi, spi).
+# Both findings were made about implementations that read cpi, spi and the document risk score.
+# Run 30's closure repointed all twenty Category-7 production identities onto the canonical
+# layer, which reads none of those three, so driving this proof through `VALIDATED` would now
+# grid twenty abstentions and prove nothing about anything.
+#
+# `bands` therefore resolves a Category-7 identity to its LEGACY implementation, through the
+# legacy modules' own extension dictionaries read live rather than a hand-written table. The
+# finding stands, against the code it was made about. That the current production route no
+# longer reaches that code is asserted separately at the foot of this file.
+from app.simulation.models_evc import EVC_EXTENSIONS               # noqa: E402
+from app.simulation.models_fuzzy import FUZZY_EXTENSIONS           # noqa: E402
+
+LEGACY_CAT7 = {k: v[1] for k, v in {**EVC_EXTENSIONS, **FUZZY_EXTENSIONS}.items()
+               if k.startswith("B2.")}
+
+
 def bands(code_id, grid=GRID):
-    fn = VALIDATED[code_id][1]
+    fn = LEGACY_CAT7.get(code_id) or VALIDATED[code_id][1]
     out = []
     for si in grid:
         try:
@@ -437,6 +456,29 @@ with OUT.open("w", encoding="utf-8", newline="\n") as fh:
 
 check("the property-test artifact records every case examined",
       len(_records) >= 8, str(len(_records)))
+
+# =================================================================================================
+# RUN 30 CLOSURE. NONE OF THE CODE THIS PROOF EXAMINES IS REACHABLE FROM PRODUCTION.
+# =================================================================================================
+section("9. THE EXAMINED FUZZY IMPLEMENTATIONS ARE NO LONGER A PRODUCTION ROUTE")
+_legacy_modules = {"app.simulation.models_evc", "app.simulation.models_fuzzy"}
+_still = sorted(m for m in (f"B2.{n}" for n in range(1, 21))
+                if VALIDATED[m][1].__module__ in _legacy_modules)
+check("no Category-7 production identity resolves to one of the implementations gridded above; "
+      "the routing table is read live from the registry rather than restated here",
+      not _still, str(_still))
+check("and those implementations are still present, so this parsimony finding stays checkable "
+      "rather than being deleted along with the proxies",
+      len(LEGACY_CAT7) >= 17, str(len(LEGACY_CAT7)))
+record("Fuzzy family production reachability",
+       "the eight fuzzy variants gridded here are a current production route",
+       "the registry routing table, read live after the Run-30 closure repointing",
+       "REFUTED",
+       "all twenty Category-7 identities now resolve to server/app/simulation/models_cat7.py. "
+       "The parsimony question Run 27 raised is unchanged and remains Run 33's: the canonical "
+       "implementations are seven separately enforced domains, and no consolidation is "
+       "authorised here.")
+
 
 print()
 if _fail:

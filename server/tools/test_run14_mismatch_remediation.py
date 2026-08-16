@@ -187,9 +187,15 @@ section("3. THE FIVE OUT-OF-DOMAIN BANDING OCCURRENCES: THE RUN 13 REPRODUCER, B
 # abstained on the version guard WITH the structure and computed a proxy WITHOUT it. That is
 # exactly backwards from what those two tests need to show, so the real decision problem is used
 # here and the empty-object case is asserted separately below as its own abstention.
+# RUN 30 CLOSURE: the shared governed alternatives-and-criteria object B2.18 and B2.19 now read.
+# It is the Run-30 hand-derived canonical benchmark, which is synthetic research evidence and is
+# marked as such on the structure itself; `decisionMatrix` is kept beside it because A5.4 and the
+# older canonical layer still read it.
+from run30 import fixtures_cat67 as _FX30                              # noqa: E402
 BASE = dict(STRUCTURED,
             scenarioDecisionStructure=PS.scenario_decision("DP-01"),
             decisionMatrix=PS.decision_matrix("DP-01"),
+            decisionAlternatives=_FX30.critic_benchmark(),
             # RUN 29: A5.4's defining structure, and A5.8's, so the nominal project still
             # carries a real structure for every module this section drives.
             scenarioSet=_r29_scn(),
@@ -372,7 +378,11 @@ section("5. THE TWO CANONICAL-METHOD OCCURRENCES: ABSENT STRUCTURE MEANS ABSTENT
 # in its own words that choosing between courses of action is Category 10's question. Its
 # structure is a governed scenario set, supplied on BASE below, and the reason code it raises is
 # the ordinary canonical-structure one rather than the decision-structure one.
-STRUCTURE_KEY = {"A5.4": "scenarioSet", "B2.19": "decisionMatrix"}
+# RUN 30 CLOSURE. B2.19's defining structure key moved from `decisionMatrix` to
+# `decisionAlternatives`: MARCOS and CRITIC-TOPSIS now share ONE governed alternatives-and-criteria
+# object, which is what section 10 of the supplied Run-30 contract requires and what Run 32's
+# Category-10 methods will reuse. The property this section asserts is unchanged.
+STRUCTURE_KEY = {"A5.4": "scenarioSet", "B2.19": "decisionAlternatives"}
 STRUCTURE_REASON = {"A5.4": "canonical_structure_absent",
                     "B2.19": "canonical_decision_structure_absent"}
 for mid in STRUCTURE:
@@ -381,7 +391,7 @@ for mid in STRUCTURE:
     check(with_structure.get("insufficient_data") is not True,
           f"{mid}: with its defining structure present the method computes", str(with_structure))
     check(with_structure.get("canonical_structure") in
-          ("scenario_set", "alternatives_by_criteria_matrix"),
+          ("scenario_set", "alternatives_by_criteria_matrix", "decisionAlternatives"),
           f"{mid}: and the result names the structure it was computed across",
           str(with_structure.get("canonical_structure")))
     without = run(mid, {k: v for k, v in BASE.items() if k != key})
@@ -434,7 +444,7 @@ check(not (set(CORE_VOTING_MODULES) & set(MISMATCH)),
 check(sorted(DISABLED_CONCEPT_ONLY) == DISABLED,
       "the eight disabled modules are the eight Run 13 recorded, and this run activated none "
       "of them", str(sorted(DISABLED_CONCEPT_ONLY)))
-check(SIMULATION_VERSION == "sim-2026.08-v15",
+check(SIMULATION_VERSION == "sim-2026.08-v16",
       "the analytical layer is stamped at this run's version, and every earlier stamp remains "
       "the historical baseline for results collected under it", SIMULATION_VERSION)
 
@@ -473,13 +483,58 @@ MUTATION_CASE = {
     "A5.8": ({"desProcessModel": _r29_des()}, None),
     "C1.6": ({}, "actualPctComplete"),
     "A5.4": ({}, "scenarioSet"),
-    "B2.19": ({}, "decisionMatrix"),
+    "B2.19": ({}, "decisionAlternatives"),
 }
+# RUN 30 CLOSURE. B2.19's runner is now a CLOSURE built by `models_cat7._route`, so neither
+# same-function mutation nor the helper walk can reach it: the function it delegates to is a
+# closure variable, not a module-level name, and `inspect.getsource` of the closure yields a body
+# with nothing of its own to invert. The fault is therefore injected into the canonical function
+# the route delegates to, and the answer is taken THROUGH THE PRODUCTION ROUTE, which is a
+# stronger statement than mutating the runner would have been: it proves the production answer is
+# decided by the canonical function and not by anything the runner does on the way.
+_CANONICAL_DELEGATE = {"B2.19": ("critic_topsis", {"decisionAlternatives": None})}
+
+
+def _mutate_through_route(mid, si):
+    import app.simulation.canonical_v5 as _v5
+    name, _ = _CANONICAL_DELEGATE[mid]
+    target = getattr(_v5, name)
+    live = run(mid, dict(si))
+    bound = []
+    for transformer, label in ((NegateGuard, "every branch guard inverted"),
+                               (FlipCompare, "every ordering comparison reversed")):
+        mutant, count = mutated_callable(target, transformer)
+        if mutant is None or count == 0:
+            continue
+        setattr(_v5, name, mutant)
+        applied = getattr(_v5, name) is mutant        # re-read, never assumed
+        try:
+            got = run(mid, dict(si))
+        finally:
+            setattr(_v5, name, target)
+        if applied and got != live:
+            bound.append(label)
+    return live, bound, run(mid, dict(si))
+
+
 for mid in MISMATCH:
     overrides, drop = MUTATION_CASE[mid]
     fn = VALIDATED[mid][1]
     si = {k: v for k, v in BASE.items() if k != drop}
     si.update(overrides)
+    if mid in _CANONICAL_DELEGATE:
+        # The delegate needs a real decision problem, or every mutant abstains identically and
+        # the injection would prove nothing.
+        from run30 import fixtures_cat67 as _FX30
+        si = {"decisionAlternatives": _FX30.critic_benchmark()}
+        live, changed, after = _mutate_through_route(mid, si)
+        check(bool(changed),
+              f"{mid}: the corrected behaviour disappears when a fault is injected into the "
+              f"canonical function its production route delegates to",
+              "; ".join(changed) or "NO MUTATION BOUND")
+        check(after == live,
+              f"{mid}: and the production route is unchanged after the injection", str(after)[:80])
+        continue
     live = fn(dict(si), NOOP, CUTOFF)
     changed = []
     for transformer, name in ((NegateGuard, "every branch guard inverted"),

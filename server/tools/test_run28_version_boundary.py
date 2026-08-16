@@ -81,10 +81,10 @@ head("1. THE STAMP AND ITS HISTORY")
 # prove the v11-to-v12 boundary and that v11 was not overwritten, and it still proves exactly
 # that. The current stamp assertion follows the live line.
 # RESTATED BY RUN 30, for the fourth time and by the same rule.
-check(SIMULATION_VERSION == "sim-2026.08-v15",
-      "the analytical layer is stamped sim-2026.08-v15", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v14",
-      "and names sim-2026.08-v14 as the line it supersedes, so a reader can see which stamp the "
+check(SIMULATION_VERSION == "sim-2026.08-v16",
+      "the analytical layer is stamped sim-2026.08-v16", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v15",
+      "and names sim-2026.08-v15 as the line it supersedes, so a reader can see which stamp the "
       "immediately preceding audit baseline is", SIMULATION_VERSION_SUPERSEDED)
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "EVERY SIMULATION IDENTIFIER IS UNIQUE: no historical stamp has been re-used",
@@ -96,7 +96,7 @@ check(SIMULATION_VERSION_HISTORY == (
       "sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4", "sim-2026.08-v5",
       "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
       "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
-      "sim-2026.08-v15"),
+      "sim-2026.08-v15", "sim-2026.08-v16"),
       "and the whole sequence is APPENDED to, never rewritten: every stamp from v1 onward is "
       "still there in order", str(SIMULATION_VERSION_HISTORY))
 
@@ -122,9 +122,9 @@ check(len(SIMULATION_VERSION_HISTORY) > len(_old_stamps),
       "and it grew: every stamp added since that commit is an append onto the end",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v12", "sim-2026.08-v13",
-                                                        "sim-2026.08-v14", "sim-2026.08-v15"),
-      "and the stamps added since the v11 commit are exactly v12, v13, v14 and v15, in that "
-      "order",
+                                                        "sim-2026.08-v14", "sim-2026.08-v15",
+                                                        "sim-2026.08-v16"),
+      "and the stamps added since the v11 commit are exactly v12 to v16, in that order",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 
 # =================================================================================================

@@ -232,6 +232,11 @@ RUN30_SCOPED_FILES = {
     "server/app/simulation/canonical_v5.py",
     "server/app/simulation/models_gov.py",
     "server/app/project_data.py",
+    # RUN 30 CLOSURE: repointing the twenty Category-7 operational routes.
+    "server/app/simulation/models_cat7.py",
+    "server/app/simulation/models.py",
+    "server/app/simulation/registry.py",
+    "server/app/simulation/method_labels.py",
 }
 
 #: RUN 14 adds its own authorised production scope on the same footing, and it is the two files

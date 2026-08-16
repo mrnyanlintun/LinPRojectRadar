@@ -905,76 +905,31 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
         derivation_chain=("the cost and schedule performance indices",
                           "satisfaction of each index constraint",
                           "count of constraints met")),
-    #      The fuzzy and ranking family. Ten modules were grouped here by field name; four are
-    #      disabled and are not declared, one reads only the schedule index, and the remaining
-    #      five read both indices and the document risk score.
-    "B2.10": lineage_record(  # Pythagorean Fuzzy Sets
-        "B2.10", source_fact_ids=("doc_risk_score",),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices and the document risk score",
-                          "membership and non-membership degrees",
-                          "Pythagorean aggregation to a band")),
-    "B2.11": lineage_record(  # Picture Fuzzy Sets
-        "B2.11", source_fact_ids=("doc_risk_score",),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices and the document risk score",
-                          "positive, neutral and negative membership degrees",
-                          "picture aggregation to a band")),
-    "B2.14": lineage_record(  # Maximum Entropy. Demands the cost index and does not read it.
-        "B2.14", source_fact_ids=("doc_risk_score",),
-        derived_index_reads=(SCHEDULE_INDEX,),
-        lineage_group_ids=(DOCUMENT_BODY,),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the schedule performance index and the document risk score",
-                          "maximum-entropy distribution over the four bands",
-                          "the modal band and its entropy")),
-    "B2.15": lineage_record(  # Possibility Theory
-        "B2.15", source_fact_ids=("doc_risk_score",),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices and the document risk score",
-                          "possibility and necessity measures over the bands")),
-    "B2.16": lineage_record(  # Spherical Fuzzy Sets
-        "B2.16", source_fact_ids=("doc_risk_score",),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices and the document risk score",
-                          "spherical membership triple",
-                          "spherical aggregation to a band")),
-    "B2.18": lineage_record(  # MARCOS Ranking
-        "B2.18", source_fact_ids=("doc_risk_score",),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY, DOCUMENT_BODY),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices and the document risk score",
-                          "ideal and anti-ideal reference points",
-                          "utility ratios and the MARCOS composite")),
-    "B2.12": lineage_record(  # Hesitant Fuzzy Sets
-        "B2.12", source_fact_ids=(),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices", "hesitant membership set", "aggregation to a band")),
-    "B2.13": lineage_record(  # Type-2 Fuzzy Sets
-        "B2.13", source_fact_ids=(),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices", "upper and lower membership functions",
-                          "type reduction to a band")),
-    "B2.17": lineage_record(  # Fermatean Fuzzy Sets
-        "B2.17", source_fact_ids=(),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the two indices", "Fermatean membership and non-membership degrees",
-                          "aggregation to a band")),
+    #      THE FUZZY AND RANKING FAMILY. ELEVEN DECLARATIONS REMOVED BY THE RUN-30 CLOSURE.
+    #
+    #      Every one of them said the same thing: that the module's reading rested on the two
+    #      performance indices and the document risk score, through the earned-value body and
+    #      the document body. That was TRUE of the implementations they described, and it is the
+    #      reason those implementations were proxies. It is no longer true of anything: all
+    #      twenty Category-7 production identities now route through models_cat7.py into the
+    #      canonical layer, which reads no index and no document risk score at all, and abstains
+    #      when its governed structure is absent.
+    #
+    #      A DECLARATION IS A CLAIM ABOUT WHAT EVIDENCE A READING RESTS ON, and leaving these
+    #      would assert a dependence between a Category-7 reading and the earned-value
+    #      measurement that has stopped existing. That is the error Run 20 cycle 5 recorded in
+    #      its other direction, and it is the more dangerous direction here: a false CORRELATED
+    #      edge into the earned-value body would let a later consumer suppress corroboration
+    #      that is really there.
+    #
+    #      THEY ARE REMOVED RATHER THAN REWRITTEN ONTO THEIR GOVERNED STRUCTURES, deliberately.
+    #      What a Category-7 structure rests on is whatever its assessor read, and this platform
+    #      does not know that. Declaring eleven new INDEPENDENT bodies, one per structure key,
+    #      would manufacture exactly the independence this table exists to stop being assumed.
+    #      What IS known travels on the module's own ledger row, which carries the structure, its
+    #      provenance and its qualification state; Run 31's qualification gate reads those rows.
+    #      No Category-7 identity may carry a lineage record naming the earned-value or document
+    #      body, and server/tools/test_run30_cat7_operational_route.py asserts it.
     #      The cluster that dissolved. Its other member is disabled, so this is not a pair.
     # RUN 28. The cluster that dissolved has dissolved further, and correctly. Run 20 cycle 8
     # declared this module on the project's own two material cost figures and its progress,

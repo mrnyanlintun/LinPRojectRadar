@@ -184,13 +184,31 @@ try:
     # four literal weights it used to apply had no authority behind them. The adapter's
     # reachability is what this check is about, and it is unchanged: all fourteen are still
     # reached and accounted for, and the three now decline for stated reasons of their own.
-    check(len(reached) == 9,
-          "nine of the fourteen nested-input computations produce a finding at period four, and "
-          "the three synthesis ensembles abstain for stated reasons rather than being unreached",
+    # RUN 30 CLOSURE: TWO, AND EVERY ONE OF THE OTHER TWELVE DECLINES FOR A STATED REASON OF ITS
+    # OWN. The nine of the previous pass included the seven Category-7 evidence-combination
+    # modules, which read the assembled arms. Those arms are crisp project metrics; they are not
+    # a mass function over a stated frame, a decision table, an assessed indeterminacy triple, an
+    # elicited membership range, a stated reliability, a linguistic probability or a belief rule
+    # base, and the supplied Run-30 contracts say so for each in turn. All seven now abstain
+    # naming the structure they await. WHAT THIS SUITE IS ABOUT IS UNCHANGED AND IS ASSERTED
+    # MORE STRICTLY BELOW: every one of the fourteen is REACHED by the adapter, and every one
+    # says what happened to it. Reachability was the defect; a stated abstention is not the
+    # wiring failure this adapter fixed, and the check now distinguishes the two directly.
+    check(len(reached) == 2 and set(reached) == {"B1.1", "B3.1"},
+          "the two governance projections produce a finding at period four; the other twelve "
+          "decline for stated reasons of their own rather than being unreached",
           f"reached={sorted(reached)}")
-    check(all(m in abst4 and str(abst4[m].get("reason", "")).strip()
-              for m in ("B1.2", "B1.3", "B1.4")),
-          "and each of the three states why it declined")
+    _silent = [m for m in FOURTEEN
+               if m not in comp4 and not str(abst4.get(m, {}).get("reason", "")).strip()]
+    check(not _silent,
+          "and every one of the fourteen that did not compute states why, so none of them is "
+          "silent in the way the pre-adapter wiring failure was", str(_silent))
+    _canonical_route = [m for m in FOURTEEN if m.startswith("B2.")
+                        and abst4.get(m, {}).get("result_source") != "CANONICAL_V5_LAYER"]
+    check(not _canonical_route,
+          "and every Category-7 row records that the canonical route produced its answer, so a "
+          "reader of the ledger can tell a canonical abstention from a proxy that had nothing "
+          "to say", str(_canonical_route))
     check(all(m in comp4 or m in abst4 for m in FOURTEEN),
           "and every one of the fourteen is accounted for, computed or abstained")
 
@@ -473,7 +491,7 @@ try:
           "FAULT: with the adapter's tiers emptied nothing of the fourteen computes, which is "
           "what the reachability check would catch", str(broken_reached))
     rerun = compute_project(dict(si4), PRJ, "P4", CUTOFF)
-    check(len([m for m in FOURTEEN if m in {x["module_id"] for x in rerun["modules"]}]) == 9
+    check(len([m for m in FOURTEEN if m in {x["module_id"] for x in rerun["modules"]}]) == 2
           and rerun["project_status"] == after["project_status"],
           "and the baseline is restored after the fault, status included")
 

@@ -68,6 +68,16 @@ RUN30_CHANGES_TO_POST_BASELINE_FILES: dict[str, tuple[str, str, str]] = {
 #: that did not exist when the Run-20 freeze was taken has no baseline row to differ from, so
 #: without this declaration a new production file could appear in the simulation package with
 #: nothing anywhere recording it. The guard reads this list alongside the earlier runs'.
+#: RUN 30 CLOSURE. Two further baseline files changed, and BOTH ARE ALREADY DECLARED, so neither
+#: appears above and the changed list stays empty. `registry.py` (Run 20) removed the eight
+#: Category-7 proxy qualifiers that repointing made false and routes the three disabled
+#: Category-7 identities to their own refusing runners so the shared disabled sentence cannot
+#: claim they have no implementation when they now have a laboratory one; it also carries the
+#: canonical source, structure, provenance, disposition and lineage onto an ABSTAINING ledger
+#: row, because a row that merely goes quiet cannot tell a reader which line produced the
+#: silence. `method_labels.py` (Run 29) lost the three Category-7 truthful labels for the same
+#: reason Run 28 lost nine and Run 29 lost six: the modules now do what their registered names
+#: say. `models.py` (Run 28) carries the v16 stamp and the one line that repoints the twenty.
 RUN30_NEW_PRODUCTION_FILES: dict[str, str] = {
     "server/app/simulation/canonical_v5.py":
         "The v5 canonical method layer for Categories 6 and 7. It defines the nineteen governed "
@@ -88,4 +98,18 @@ RUN30_NEW_PRODUCTION_FILES: dict[str, str] = {
         "criteria object carrying MARCOS and CRITIC-TOPSIS. Nothing in the file reads cpi, spi "
         "or docRiskScore: every epistemic quantity arrives on a governed structure or the method "
         "abstains.",
+    # RUN 30 CLOSURE. The second new production file, and the one that makes the difference
+    # between a correct library and a correct ledger.
+    "server/app/simulation/models_cat7.py":
+        "The Category-7 operational runners. Twenty thin routes, one per registered identity, "
+        "each reading its governed structure off the signal inputs, handing it to the canonical "
+        "v5 function and rendering whatever came back. They perform NO arithmetic of their own, "
+        "so there is nowhere for a proxy to live, and none of them reads cpi, spi or "
+        "docRiskScore. The four blocked operators survive the repointing -- Type-2 has no "
+        "midpoint fallback, Z-numbers no invented reduction, the belief rule base no invented "
+        "multi-rule ER operator, and Plithogenic no operator at all -- and the three disabled or "
+        "archived identities refuse before any structure is read, so a complete laboratory "
+        "structure cannot make one of them compute. Every row it emits, computed or abstaining, "
+        "carries the canonical result source, the structure, its provenance, the disposition "
+        "and the lineage, because the ledger is the operational truth surface.",
 }

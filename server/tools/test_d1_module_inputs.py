@@ -141,18 +141,29 @@ FULL = {
 # "precondition: computes on a complete input" nor "abstains specifically because THIS key is
 # absent" is a meaningful assertion about them any more. They stay disabled, not merely
 # re-fabricated, so removing them here is correct rather than a loosened check.
+#
+# RUN 30 CLOSURE. THE SEVEN CATEGORY-7 ENTRIES MOVE OUT OF THIS LIST, for exactly the reason
+# remediation Run 1 moved B2.7 and B2.9 out of it, and the paragraph above states the rule: a
+# module that abstains UNCONDITIONALLY can no longer demonstrate "abstains specifically because
+# THIS key is absent". All seven now route through the canonical Category-7 layer, whose defining
+# structures are governed epistemic objects -- a mass function over a stated frame, a decision
+# table, an assessed truth/indeterminacy/falsity triple, an elicited membership range, a stated
+# reliability, a linguistic probability distribution, an elicited belief rule base. None of those
+# is any of the assembled blob keys, so removing `evm` or `doc` from this fixture cannot be what
+# makes them abstain: they abstain on the COMPLETE fixture too.
+#
+# THEIR D1 FIX STILL STANDS AND NOTHING WAS REVERTED. Section 3 below still asserts, against the
+# emitted literals, that the fabrication paths are gone from the source of the legacy
+# implementations, and section 1c asserts the stronger property the repointing gives them.
 TWELVE = [
     ("A1.2", "spiHistory", "wired"),
-    ("B2.1", "evm+mc+cusum+doc", "blob"),
-    ("B2.2", "evm+mc+cusum+doc", "blob"),
-    ("B2.3", "evm+mc+cusum+doc", "blob"),
-    ("B2.4", "evm", "blob"),
-    ("B2.5", "evm+mc+cusum+doc", "blob"),
-    ("B2.6", "evm+mc+cusum+doc", "blob"),
-    ("B2.8", "evm", "blob"),
     ("C1.4", "events", "wired"),
     ("C1.7", "events", "wired"),
 ]
+
+#: The seven Category-7 identities that now abstain unconditionally on a signalInputs carrying no
+#: governed epistemic structure, however complete it is in the flat and blob keys.
+CANONICAL_NOW = ["B2.1", "B2.2", "B2.3", "B2.4", "B2.5", "B2.6", "B2.8"]
 
 # The two now-disabled modules, checked separately: they must abstain UNCONDITIONALLY (on the
 # complete fixture too), carrying the DISABLED_UNSAFE activation state, never reaching their
@@ -196,6 +207,26 @@ for module_id in DISABLED_NOW:
     check(out.get("activation_state") == "DISABLED_UNSAFE",
           f"{module_id} carries activation_state DISABLED_UNSAFE",
           str(out.get("activation_state")))
+
+# ------------------------------------------- 1c: the seven now-canonical Category-7 modules
+
+print("\n1c. B2.1 to B2.6 and B2.8 route to the canonical Category-7 layer (Run 30 closure):")
+print("    they abstain even on the complete fixture, because a complete set of crisp project")
+print("    metrics is not a mass function, a decision table or an elicited membership.")
+
+for module_id in CANONICAL_NOW:
+    out = run(module_id, FULL)
+    check(abstains(out),
+          f"{module_id} abstains on a complete signalInputs carrying no governed epistemic "
+          f"structure", f"{out.get('status_color')} / {out.get('evidence_metric')}")
+    check(out.get("result_source") == "CANONICAL_V5_LAYER",
+          f"{module_id} records that the canonical route produced the silence, not a proxy",
+          str(out.get("result_source")))
+    check(out.get("canonical_disposition") == "NOT_ESTIMABLE_STRUCTURE_ABSENT",
+          f"{module_id} names the disposition rather than going quiet",
+          str(out.get("canonical_disposition")))
+    check(bool(out.get("canonical_structure")),
+          f"{module_id} names the structure it was waiting for")
 
 # ---------------------------------------------------------------- 2: absence abstains
 
