@@ -10778,3 +10778,43 @@ parsimony (**Run 33**); Category-10 placement of MARCOS and CRITIC-TOPSIS (**Run
 LINEAGE finding was marked resolved.
 
 Suite on the final head: **144 suites, 11891/11891 checks, all green.**
+
+---
+
+## RUN 30 FINAL CLOSURE — lineage-state semantics and the ledger-count reconciliation
+
+**sim-2026.08-v16 STANDS.** Decided from behaviour: the v16 package extracted from `b7709cf` and
+run beside the current one gives identical computed and abstaining sets, identical rows apart from
+the `lineage` metadata key, and identical fused project status. Fault D proves lineage status IS
+behavioural in fusion; `compute` builds fusion inputs from `lineage_for(module_id)` and never reads
+the key off a result row, so the added field cannot reach it.
+
+**Lineage semantics.** The eleven removed Category-7 declarations were NOT replaced with invented
+independent bodies — what a governed epistemic structure rests on is what its assessor read, and
+this platform does not know that. The gap was representational, and `lineage.py` now names four
+states: `LINEAGE_ESTABLISHED_INDEPENDENT`, `LINEAGE_ESTABLISHED_DEPENDENT`, `LINEAGE_UNRESOLVED`,
+`LINEAGE_NOT_APPLICABLE`, DERIVED from the shipped declaration table. This is the repository's own
+vocabulary extended, not a new semantic: `fusion.py` has implemented the unresolved state since
+FUSION.1 (Run 20 cycle 9).
+
+Category-7 today: **17 UNRESOLVED, 3 NOT_APPLICABLE, 0 blank, 0 fabricated bodies, 0 rows claiming
+independence.** Source provenance is recorded SEPARATELY from independence — a row may know
+exactly where its structure came from and still be UNRESOLVED.
+
+**Run-31 handoff** (`code_audit/run30_cat7_lineage_handoff.csv`, 20 rows): A = 0, B = 0, C = 17,
+D = 17, E = 3. C and D are orthogonal and both apply to the same seventeen on this corpus; both
+are recorded so Run 31 need not guess which question was answered.
+
+**THE 17-VERSUS-18 COUNT WAS A COUNTING ERROR IN MY OWN REPORT, now corrected in place.** Measured
+by executing both lines: 17 proxy runners executed, **16** populated analytical rows, 3
+disabled/archive. B2.19 ran its runner and abstained under v15 too, which is why runners and
+populated rows are different quantities. No analytical row existed outside the 17 runners.
+Disabled/archive rows are counted in neither analytical total.
+
+Participant v5 preserved (no bytes moved); freeze `...-RUN30-FINAL-CLOSURE-V16-2` supersedes
+`...-RUN30-CLOSURE-V16-1`.
+
+Suite on the final head: **146 suites, 11949/11949 checks, all green.**
+
+**Still open, unchanged:** Category-9 qualification gate (**Run 31**); calibration and parsimony
+(**Run 33**); Category-10 placement (**Run 32**).
