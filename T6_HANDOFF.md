@@ -10738,3 +10738,43 @@ carry DOI citations only): Karnik-Mendel type reduction, RIMER/ER multi-rule agg
 Z-number reduction and the plithogenic operator.
 
 Suite on the final head: **141 suites, 11867/11867 checks, all green.**
+
+---
+
+## RUN 30 CLOSURE — the operational Category-7 path, sim-2026.08-v16
+
+**The defect Run 30 disclosed and this closure fixed:** Category-7 canonical mathematics existed,
+but the operational runners still executed legacy proxy arithmetic. Measured by executing
+`registry.run_module` for all twenty identities and profiling the interpreter: `canonical_v5`
+reached on **0 of 20**. Seventeen ran proxy arithmetic; three were short-circuited as disabled.
+
+**After:** all twenty resolve to `server/app/simulation/models_cat7.py`; canonical function
+reached on 17 of 17 operational identities; the other three refused by the canonical operational
+gate before any mathematics; **legacy proxy reached 0 of 20**.
+
+New production file `models_cat7.py`: twenty thin routes that perform no arithmetic of their own
+and read no cpi, spi or docRiskScore. The four blocked operators survive the repointing (Type-2 no
+midpoint, Z-numbers no reduction, BRB no multi-rule ER, Plithogenic no operator). Legacy
+implementations are **preserved and production-unreachable** — Runs 14, 19 and 27 were all made
+about them, and each of those suites now resolves them through the legacy extension maps read live
+and separately asserts non-reachability.
+
+Ledger rows, computed and abstaining alike, now carry the canonical result source, structure,
+provenance, disposition and lineage. Eight proxy qualifiers, three truthful method labels and
+eleven Category-7 lineage declarations were removed as no longer true.
+
+**On the real corpus eighteen populated proxy rows became abstentions.** That is correct; no old
+reading was preserved to keep the ledger populated. What each proxy would have returned is
+recorded in `code_audit/run30_cat7_real_corpus_route.csv`, measured by executing the preserved
+implementation.
+
+Participant package **v5** created (served defensibility evidence regenerated); v4 pinned to
+`ce03eb1`. No synthetic successor: no package byte moved, but the package's decision problem now
+reaches the canonical production runner and reproduces its recorded CRITIC weights and top
+alternative.
+
+**Still open, unchanged:** the Category-9 qualification gate (**Run 31**); calibration and
+parsimony (**Run 33**); Category-10 placement of MARCOS and CRITIC-TOPSIS (**Run 32**). No
+LINEAGE finding was marked resolved.
+
+Suite on the final head: **144 suites, 11891/11891 checks, all green.**
