@@ -552,7 +552,9 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # RUN 32, SECTION 3: the one authorised Category-10 rename reaches the
                    # server-side parity table, which names each module beside the client
                    # file it is checked against. A display name, no parity value moved.
-                   - {"server/app/simulation/VALIDATION.md"})
+                   - {"server/app/simulation/VALIDATION.md"}
+                   # RUN 32 FINAL CLOSURE: the chart keyed on B4.7's old method class.
+                   - {"assets/js/module_charts.js"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",
@@ -569,9 +571,18 @@ _assets = sorted(p for p in _prod if p.startswith("assets/"))
 # here does NOT widen the guard over any participant surface. The narrower property -- that no
 # file a participant route loads changed -- is asserted separately below, where it can fail on
 # its own.
+# RUN 32 FINAL CLOSURE. Two further browser surfaces move and are NAMED rather than the rule
+# being widened. `module_charts.js` keyed the expected-regret chart on B4.7's OLD method class,
+# which the section-3 rename stopped anything from emitting, so the chart silently stopped being
+# drawn; `ds_defensibility_evidence.js` is the GENERATED defensibility object, regenerated because
+# its generator read four of the six canonical structure maps. Display and metadata only: no band,
+# threshold, arithmetic result or step of the participant sequence moved.
+RUN32_CLOSURE_SCOPED_FILES = {"assets/js/module_charts.js",
+                              "assets/js/ds_defensibility_evidence.js"}
 check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
            - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES
-           - RUN23_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES),
+           - RUN23_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES
+           - RUN32_CLOSURE_SCOPED_FILES),
       "every browser surface outside the authorised browser scope of Runs 11, 12, 15, 16 and 21 "
       "is byte-identical to the freeze",
       str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES

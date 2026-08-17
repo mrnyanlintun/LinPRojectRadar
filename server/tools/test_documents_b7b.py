@@ -455,7 +455,7 @@ _mods = {m.get("method_class"): m for m in (_res.get("module_results") or [])
 check(not any(m.get("recommendation_withheld") for m in _mods.values()),
       "nothing is withheld from the operational PM on their own project",
       str([k for k, m in _mods.items() if m.get("recommendation_withheld")]))
-check("Regret_Minimization" not in _mods,
+check("Minimax_Regret_Decision_Rule" not in _mods and "Regret_Minimization" not in _mods,
       "and the analysis that scored the courses of action carries no row, because it abstains "
       "for want of an action by scenario payoff matrix", str(sorted(_mods))[:120])
 _abst = {a.get("module_id"): a for a in (_res.get("abstained") or [])}

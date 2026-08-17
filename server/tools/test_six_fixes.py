@@ -273,7 +273,7 @@ try:
           str(served.get("recommendation_basis"))[:140])
     _mods = {m.get("method_class"): m for m in (served.get("module_results") or [])
              if isinstance(m, dict)}
-    check("Regret_Minimization" not in _mods,
+    check("Minimax_Regret_Decision_Rule" not in _mods and "Regret_Minimization" not in _mods,
           "and the abstaining module is absent from the stored module rows, as every "
           "abstention is", str(sorted(_mods))[:140])
     _abst = {a.get("module_id"): a for a in (served.get("abstained") or [])}
@@ -288,7 +288,8 @@ try:
     # The helper itself still refuses to invent, which was always its own property.
     check(recommendation_basis(None, None) is None,
           "no module, no basis: nothing is invented")
-    check(recommendation_basis({"cpi": 0.8}, {"method_class": "Regret_Minimization"}) is None,
+    check(recommendation_basis({"cpi": 0.8},
+                              {"method_class": "Minimax_Regret_Decision_Rule"}) is None,
           "a module with no scores yields no basis either")
     nb = recommendation_basis({}, {"expected_regret": {"a": 1, "b": 2},
                                    "recommended_action": "a"})

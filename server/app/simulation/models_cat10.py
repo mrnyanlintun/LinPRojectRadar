@@ -54,6 +54,21 @@ from .models import ABSTAIN_DECISION_STRUCTURE_ABSENT
 #: the ledger rather than from a report.
 RESULT_SOURCE = "CANONICAL_V7_LAYER"
 
+#: B4.7'S CURRENT METHOD-CLASS IDENTIFIER, AND THE ONE IT USED TO CARRY.
+#:
+#: The section-3 rename moved the DISPLAY name to "Minimax Regret Decision Rule" and the runner
+#: emits the matching method class below. Consumers that key on the method class were left
+#: matching the old identifier, which is worse than a cosmetic mismatch: a lookup that no longer
+#: matches anything does not fail, it silently returns nothing, so the courses-of-action basis
+#: and the module chart quietly stopped finding this module at all.
+#:
+#: THE ALIAS EXISTS ONLY FOR STORED ROWS. A period result written before the rename carries the
+#: old class in the database, and a consumer reading history must still recognise it. Nothing
+#: EMITS the alias: it is only ever matched against.
+B4_7_METHOD_CLASS = "Minimax_Regret_Decision_Rule"
+B4_7_HISTORICAL_METHOD_CLASSES = ("Regret_Minimization",)
+B4_7_ANY_METHOD_CLASS = (B4_7_METHOD_CLASS,) + B4_7_HISTORICAL_METHOD_CLASSES
+
 DISPOSITION_COMPUTED = "CANONICAL_RESULT"
 DISPOSITION_STRUCTURE_ABSENT = "NOT_ESTIMABLE_STRUCTURE_ABSENT"
 

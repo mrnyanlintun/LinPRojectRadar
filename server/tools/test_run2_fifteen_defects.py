@@ -1349,7 +1349,21 @@ try:
             check(_A11_NEW in live and _A11_OLD in base,
                   f"{rel}: the copy names A1.1, and the name it uses is the one the owner "
                   f"decided rather than the one the Run-4 baseline carried")
-            _norm = live.replace(_A11_NEW, _A11_OLD)
+            # RUN 32 FINAL CLOSURE. A THIRD PERMITTED DIFFERENCE, NAMED RATHER THAN ADMITTED
+            # BY LOOSENING THE CHECK, on exactly the Run-28 construction above. B4.7's method
+            # class became `Minimax_Regret_Decision_Rule` at the section-3 rename, and this file
+            # keys the courses-of-action lookup on it. Reading only the old key returned
+            # undefined on every current project, so the frame went silently empty -- a lookup
+            # that stops matching does not fail, it disappears. The rename is normalised OUT of
+            # both sides before the Run-4 property is asserted, and is asserted on its own below
+            # so it cannot hide here.
+            _B47_OLD = "var regret = mods.Regret_Minimization;"
+            _B47_NEW = ("var regret = mods.Minimax_Regret_Decision_Rule "
+                        "|| mods.Regret_Minimization;")
+            check(_B47_NEW in live and _B47_OLD in base,
+                  f"{rel}: the courses-of-action lookup reads B4.7's CURRENT method class, with "
+                  f"the historical one kept only so a row stored before the rename still routes")
+            _norm = live.replace(_B47_NEW, _B47_OLD).replace(_A11_NEW, _A11_OLD)
             check(_norm.count(_A11_OLD) == base.count(_A11_OLD),
                   f"{rel}: and the rename is the ONLY thing that changed about that name: "
                   f"normalising it back gives exactly the baseline's occurrences",
@@ -1477,6 +1491,10 @@ try:
             # beside its claims.
             "assets/js/ds_defensibility_data.js": "Validation for this method would consist of",
             "index.html": "ds_defensibility_evidence.js",
+            # RUN 32 FINAL CLOSURE. The expected-regret chart was keyed on B4.7's OLD method
+            # class, which the section-3 rename stopped anything from emitting, so the chart
+            # silently stopped being drawn rather than failing. The marker is the current class.
+            "assets/js/module_charts.js": "Minimax_Regret_Decision_Rule",
         }
         if rel in RUN11_WORDING_SCOPE and live != base:
             marker = RUN11_WORDING_SCOPE[rel]

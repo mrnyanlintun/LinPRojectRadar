@@ -120,7 +120,7 @@
     // Cat 10 — Decision Optimization (8)
     [9,'Pareto Front','Pareto_Front'],        [9,'MAUT','MAUT'],
     [9,'AHP Weighting','AHP_Weighting'],      [9,'TOPSIS Rank','TOPSIS_Rank'],
-    [9,'Regret Minimiz.','Regret_Minimization'],[9,'Info Value','Info_Value'],
+    [9,'Minimax Regret','Minimax_Regret_Decision_Rule'],[9,'Info Value','Info_Value'],
     [9,'Sensitivity Rank','Sensitivity_Rank'],[9,'Robust Decision','Robust_Decision'],
   ];
   // Portfolio Health (ex-Cat 8 ML/AI) is portfolio-scale — not part of this

@@ -219,7 +219,8 @@ try:
     check(res.get("ok") is True, "the operational PM can read the result", str(res)[:160])
     result = res["result"]
     mods = modules_of(result)
-    regret = mods.get("Regret_Minimization")
+    regret = (mods.get("Minimax_Regret_Decision_Rule")
+              or mods.get("Regret_Minimization"))
 
     check(regret is None,
           "the analysis that scored the courses of action carries no stored row: it abstains "
@@ -249,7 +250,8 @@ try:
     # This project omits the budget at completion, so a number of modules abstain on a missing
     # input rather than on a missing structure. The distinction is asserted rather than assumed:
     # the ledger must be able to say WHICH kind of silence it is looking at.
-    check("Regret_Minimization" not in amods,
+    check("Minimax_Regret_Decision_Rule" not in amods
+          and "Regret_Minimization" not in amods,
           "the scoring analysis is absent here too, and never reaches the row",
           str(sorted(amods)[:5]))
     _areasons = {a.get("module_id"): a for a in (ares["result"].get("abstained") or [])}
