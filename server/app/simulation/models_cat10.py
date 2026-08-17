@@ -47,7 +47,7 @@ from .canonical import StructureAbsent
 from .canonical_v7 import (
     ANALYTICAL_RESULT, AUTHORITY_NOTE, V7_STRUCTURE_KEYS, v7_structure,
 )
-from .models import ABSTAIN_STRUCTURE_ABSENT
+from .models import ABSTAIN_DECISION_STRUCTURE_ABSENT
 
 #: Stamped on every Category-10 ledger row this file produces, computed or abstaining. A row
 #: without this marker did not come from here, which is how the route inventory is verified from
@@ -77,8 +77,19 @@ def _authority_fields() -> dict[str, Any]:
 
 
 def _abstain(module_id: str, method_class: str, sentence: str) -> dict[str, Any]:
+    """
+    THE STABLE CODE IS THE DECISION-STRUCTURE ONE, not the generic structure one.
+
+    `canonical_decision_structure_absent` is the established code for a method whose defining
+    structure is a decision structure, and B2.18 MARCOS and B2.19 CRITIC-TOPSIS already emit it
+    for the same `decisionAlternatives` object two of these seven read. Every Category-10 module
+    is a decision method by definition, so all seven use it. Emitting the generic code here was a
+    real regression introduced by this run's repointing: three suites -- the courses-of-action
+    ledger, the six-fixes acceptance and the Run-6 known-answer set -- assert the decision code
+    for B4.7 specifically, and they were right to.
+    """
     row = {
-        "abstention_reason_code": ABSTAIN_STRUCTURE_ABSENT,
+        "abstention_reason_code": ABSTAIN_DECISION_STRUCTURE_ABSENT,
         "method_class": method_class,
         "insufficient_data": True,
         "result_source": RESULT_SOURCE,

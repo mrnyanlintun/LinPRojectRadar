@@ -481,6 +481,16 @@ RUN31_SCOPED_FILES = {
     "server/app/field_registry.py",
 }
 
+# RUN 32 is authorised by its supervisory contract to implement the supplied Category-10
+# decision-optimization contracts. TWO files are new -- the canonical decision layer and its
+# seven thin runners -- and the two files Run 31 already lists (models.py, project_data.py) are
+# changed again. Pinned in code_audit/run32_production_tree.sha256; this list is the same scope,
+# read here so the check keeps its full force over every file OUTSIDE it.
+RUN32_SCOPED_FILES = {
+    "server/app/simulation/canonical_v7.py",
+    "server/app/simulation/models_cat10.py",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -490,7 +500,8 @@ _prod = [p for p in _diff
          and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES
          and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES
          and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
-         and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES]
+         and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES
+         and p not in RUN32_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
