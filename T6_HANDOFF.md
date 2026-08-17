@@ -10818,3 +10818,37 @@ Suite on the final head: **146 suites, 11949/11949 checks, all green.**
 
 **Still open, unchanged:** Category-9 qualification gate (**Run 31**); calibration and parsimony
 (**Run 33**); Category-10 placement (**Run 32**).
+
+---
+
+## Run 31 — Categories 8 and 9, the Category-9 qualification gate (2026-08-17)
+
+**Merge commit:** see `git log --first-parent main` for the Run-31 merge; final simulation line `sim-2026.08-v19`.
+
+- **Scope:** 16/16 — Category 8 = A6.1–A6.4 + B3.1–B3.5 (9), Category 9 = C1.1–C1.7 (7), derived from `p0-baseline/module_renumbering_map.csv`.
+- **Simulation:** v16 → v17 (canonical Cat-8/9 layer) → v18 (operational qualification boundary) → v19 (absence fails closed). Each boundary proved by executing the predecessor package from its git object; none by source diff.
+- **Participant package:** `og-participant-2026.08-v6` current; v5 pinned to `4dd5985`; delta is six display-name substitutions across 8 files, inverse-mappable to v5 bytes exactly. **Participant experimental sequence unchanged.**
+- **Synthetic package:** unchanged; no successor minted.
+- **Production files changed by Run 31:** `regulatory.py`, `abm.py`, `qualified_evidence.py`, `canonical_v6.py`, `models_cat89.py`, `qualification_boundary.py`, `qualification_contract.py` (new); `models.py`, `project_data.py`, `lineage.py`, `extraction_merge.py`, `field_registry.py` (changed). All declared in `server/tools/run31_production_changes.py` and pinned in `code_audit/run31_pass1_production_tree.sha256`.
+- **Audit/test files changed:** 32 historical suites reconciled (16 HISTORICAL_ONLY, 12 TEST_INFRASTRUCTURE_DEFECT, 4 GENUINE_REGRESSION, ambiguous 0); new guards `test_run31_canonical_oracles`, `test_run31_pass2_acceptance`, `test_run31_version_boundaries`, `test_run31_synthetic_checksums`.
+- **Voting effect:** none. Voting remains exactly A1.7 (TCPI) and A1.8 (VAC), count 2. Category 9 is metadata and casts no vote; the Run-26 exclusion of Data Integrity from Project Status survives.
+- **Activation effect:** none. A3.4 Material Cost Variance remains disabled; Plithogenic (B2.7) disabled, Quantum (B2.9) archived, Hypersoft (B2.20) disabled.
+- **Fault campaign:** 64 required, 64 applied, 64 RED for the intended reason, 64 restored GREEN, NOT_APPLIED 0, crashes accepted as RED 0. Results in `code_audit/run31_fault_injection_results.csv`.
+- **Bypass counters:** raw and missing-assessment bypass = 0 for Categories 6, 7, 8 and 10, measured through the production dispatcher with the route population derived independently.
+- **Lineage counters:** UNRESOLVED treated independent 0; false reinforcement 0; false suppression 0; ambiguous 0. Dependence remains pairwise and non-transitive.
+
+### Package limitation carried forward
+
+**`OG-SYNTH-0.1` is historically incomplete and is not fully reproducible.** 519 governed manifest entries, 504 recovered and checksum-matched, **15 unrecoverable rows / 5 unique paths**, 0 external-reference entries, 0 mismatches. The five never delivered with the archives: `validators/validate_synthetic_programme.py`, `generators/generate_opus_synthetic_programme.py`, `validation_report.json`, `module_asset_map.csv`, `schemas/schema_catalog.json`. OG-SYNTH-0.2, 0.3 and 0.4 do **not** inherit this.
+
+### Unresolved calibration and validation
+
+No band was invented for any Category-8 or Category-9 quantity. Every canonical quantity carries `calibration_pending` and asserts no `status_color`. Nothing in Run 31 is empirically validated; synthetic fixtures establish arithmetic, structure and fault detection only.
+
+### Run 32 requirements
+
+Category-10 algorithm remediation only: MOO, LP, CSP, What-if, Decision Sensitivity, Pareto, Minimax Regret and MARCOS/CRITIC placement. Run 31 enforced the qualification interface at Category 10 and changed no Category-10 algorithm. Do not reopen the Category-9 gate.
+
+### Run 33 requirements
+
+Calibration and empirical validation for all 16 Category-8/9 targets: status bands, source-reliability numeric mapping (none exists — `reliability_weight` is `None` by design), freshness windows per source class, quality and environmental thresholds, safety combination policy, and contractor-assessment aggregation. Each is currently absent by design, not by oversight.

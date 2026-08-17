@@ -19,7 +19,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from app.simulation import canonical_v6 as V6            # noqa: E402
 from app.simulation import regulatory as REG             # noqa: E402
-from app.simulation.abm import (                         # noqa: E402
+from app.simulation.abm import (  # noqa: E402
+    matrix_from,
     AUTHORIZED_BY_OWNER, BLOCKED_PROCEDURE_INCOMPLETE, BLOCKED_UNQUALIFIED_EVIDENCE, DEFERRED,
     NO_ACTION_ABSTAINING_SIGNAL, REQUEST_EVIDENCE, model_from,
 )
@@ -313,9 +314,9 @@ check("9.6 oracle B: 100 vs 110 at 2% is a material conflict",
 check("9.6 oracle B: relative difference is 10%",
       round(ob["comparisons"][0]["relative_difference"], 6), 0.1)
 check("9.6 oracle B: the conflict is preserved", len(ob["material_conflicts"]), 1)
+_mc0 = (ob["material_conflicts"] or [{}])[0]
 check("9.6 oracle B: both values survive in the conflict row",
-      (ob["material_conflicts"][0]["reference_value"], ob["material_conflicts"][0]["value"]),
-      (100.0, 110.0))
+      (_mc0.get("reference_value"), _mc0.get("value")), (100.0, 110.0))
 # NEVER AVERAGED (fault 22): 105 must appear nowhere in the result.
 check("9.6 the conflict is not averaged to 105", "105" in str(ob), False)
 # different periods are NOT_COMPARABLE, not inconsistent (fault 23)
@@ -584,8 +585,8 @@ crit99 = [{"requirement_id": f"Q{i}", "applicable": True, "assessed": True, "sat
 c99 = V6.quality_compliance({"requirements": crit99})
 check("8.6 the aggregate is 0.99", c99["quality_compliance_rate"], 0.99)
 check("8.6 the one critical exception is separately visible", len(c99["critical_exceptions"]), 1)
-check("8.6 the critical exception is named", c99["critical_exceptions"][0]["requirement_id"],
-      "QCRIT")
+check("8.6 the critical exception is named",
+      (c99["critical_exceptions"] or [{}])[0].get("requirement_id"), "QCRIT")
 # no assessed applicable requirements -> abstain, never a fabricated denominator (fault 48)
 none_assessed = V6.quality_compliance({"requirements": [
     {"requirement_id": "Q1", "applicable": True, "assessed": False}]})
@@ -926,6 +927,116 @@ from app.simulation.qualified_evidence import ELIGIBLE_STATES        # noqa: E40
 from app.simulation.models_cat89 import _qualify                     # noqa: E402
 check("lineage UNRESOLVED is never treated as independent",
       _qualify("B3.2", {"evidence_id": "x"}).independence_established, False)
+
+
+# =============================================================================================
+# PASS-3 CAMPAIGN COVERAGE. The 64-fault campaign found these invariants asserted nowhere, so a
+# mutation that broke them left every guard green. Each is a real property of the supplied
+# contract; the campaign is what exposed that nothing was checking it.
+# =============================================================================================
+from app.simulation.models import insufficient as _insufficient          # noqa: E402
+_ab = _insufficient("Probe", "no evidence")
+check("an abstention asserts NO band", _ab.get("status_color"), None)
+check("and is flagged insufficient", _ab.get("insufficient_data"), True)
+
+# 9.3: BAC may never appear among the reliability components, even when it is offered.
+_bacrel = V6.source_reliability({"bac": 1_000_000.0, "source_authority": "system_of_record",
+                                 "verification_status": "verified"})
+check("9.3 a supplied BAC does not enter the reliability components",
+      "1000000" in str(_bacrel["components"]), False)
+check("9.3 and no weight is asserted without a governed rubric",
+      _bacrel["reliability_weight"], None)
+
+# 9.7: a duplicate may not raise coverage above the unique periods received.
+_dupcov = V6.reporting_frequency({"expected_periods": PERIODS, "report_history": [
+    {"period_id": "P1", "received_date": "2026-01-30"},
+    {"period_id": "P1", "received_date": "2026-01-30"},
+    {"period_id": "P1", "received_date": "2026-01-30"}]})
+check("9.7 three copies of one report cover one period, not three",
+      round(_dupcov["reporting_coverage"], 6), round(1 / 3, 6))
+check("9.7 and the duplicates are counted as ignored", _dupcov["duplicate_reports_ignored"], 2)
+
+# 8.1: the structural guard must refuse a model with no agents at all.
+try:
+    model_from(abm_structure(agents=[]), signal_eligible=True, signal_abstaining=False)
+    check("8.1 an agentless structure is refused", "no raise", "ABMStructureError")
+except ABMStructureError:
+    check("8.1 an agentless structure is refused", "ABMStructureError", "ABMStructureError")
+# 8.1: THE OUTER STRUCTURAL GUARD, reached only by constructing the model directly. `model_from`
+# validates agents too, so the agentless case is protected in DEPTH: a fault in either layer alone
+# leaves the other standing. This asserts the layer `model_from` cannot stand in for, so a fault
+# that disables `assert_structural` is visible rather than masked by the constructor.
+from app.simulation.abm import Environment, GovernanceModel                # noqa: E402
+try:
+    GovernanceModel(agents={}, env=Environment(matrix=matrix_from(
+        abm_structure()["authority_matrix"]), signal_eligible=True)).run()
+    check("8.1 running a directly constructed agentless model is refused by the structural guard",
+          "no raise", "ABMStructureError")
+except ABMStructureError:
+    check("8.1 running a directly constructed agentless model is refused by the structural guard",
+          "ABMStructureError", "ABMStructureError")
+
+# 8.1: authority is asked of the matrix, and a matrix that grants everything is detectable.
+_m = model_from(abm_structure(), signal_eligible=True, signal_abstaining=False)
+check("8.1 the matrix denies authority to the contractor",
+      _m.env.matrix.may_authorize("CONTRACTOR", "HIGH_IMPACT"), False)
+check("8.1 and to the project manager",
+      _m.env.matrix.may_authorize("PROJECT_MANAGER", "HIGH_IMPACT"), False)
+check("8.1 and grants it only to the owner",
+      _m.env.matrix.may_authorize("OWNER", "HIGH_IMPACT"), True)
+
+# 8.2: a Federal context with a designation must still not become APPLICABLE from a BAC.
+_bac_des = V6.evms_applicability({"acquisition_id": "A", "bac": 500_000_000,
+                                  "acquisition_designation": "development",
+                                  "major_acquisition": True, "agency": "GSA"})
+check("8.2 a BAC does not establish Federal context, so a major development acquisition with "
+      "no Federal-context evidence is still not APPLICABLE",
+      _bac_des["applicability"], REG.INSUFFICIENT_EVIDENCE)
+_nodes = V6.evms_applicability({"acquisition_id": "A", "federal_context": True, "agency": "GSA",
+                                "bac": 500_000_000})
+check("8.2 a Federal acquisition with no designation is not APPLICABLE",
+      _nodes["applicability"] == REG.APPLICABLE, False)
+check("8.2 and it says the designation is what is missing",
+      _nodes["applicability"], REG.INSUFFICIENT_EVIDENCE)
+
+# 8.4: a period whose report never arrived may not read as satisfied.
+_noreport = V6.evms_reporting({"clause_id": "52.234-4", "required_cadence": "monthly",
+                               "required_artifacts_expected": 4,
+                               "required_artifacts_received": 4,
+                               "due_date": "2026-07-31"}, {"applicability": REG.APPLICABLE})
+check("8.4 a missing report is never SATISFIED", _noreport["result"] == REG.SATISFIED, False)
+check("8.4 and its reason names the absent report",
+      "no report" in _noreport["reason"].lower(), True)
+
+# 8.6: a register with no assessed applicable requirement produces no rate at all.
+_noass = V6.quality_compliance({"requirements": [
+    {"requirement_id": "Q1", "applicable": True, "assessed": False}]})
+check("8.6 no assessed applicable requirement yields no rate",
+      _noass["quality_compliance_rate"], None)
+check("8.6 and says so", _noass["disposition"], "NOT_ESTIMABLE")
+
+# 8.9: the worst factor must be the worst, not merely present.
+_worst = V6.contractor_assessment({
+    "source_system": "CPARS", "assessment_id": "X", "rating_order": ORDER,
+    "factor_ratings": [{"factor": "Quality", "rating": "Exceptional"},
+                       {"factor": "Schedule", "rating": "Unsatisfactory"}]})
+check("8.9 the worst factor is the lowest-ranked one",
+      (_worst["worst_factor"] or {}).get("rating"), "Unsatisfactory")
+
+# ORPHAN: the extraction path must still emit the OSHA numerator.
+from app.extraction_merge import emit_observations as _emit               # noqa: E402
+_obs = {o["field"]: o["value"] for o in _emit(
+    {"sha256": "a", "doc_type": "safety_report", "filename": "s.pdf",
+     "extraction": {"osha_recordable_incidents": 3, "total_manhours": 200000}})}
+check("orphan: the recordable-case count reaches signal inputs",
+      _obs.get("oshaRecordableIncidents"), 3)
+check("orphan: and the hours worked reach them too", _obs.get("totalManhours"), 200000)
+
+# ORPHAN: every v6 structure key has a governed intake path.
+from app.project_data import governed_structure_keys as _gsk              # noqa: E402
+from app.simulation.canonical_v6 import V6_STRUCTURE_KEYS as _V6K         # noqa: E402
+check("orphan: every v6 governed structure is writable through the production intake",
+      sorted(set(_V6K.values()) - _gsk()), [])
 
 print()
 for f in FAILURES:
