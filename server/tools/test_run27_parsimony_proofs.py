@@ -218,9 +218,22 @@ record("Worst-N-of-M denominator",
 # ================================================ 2. Constraint Satisfaction Analysis
 section("2. CONSTRAINT SATISFACTION ANALYSIS (B4.3)")
 
-src = inspect.getsource(VALIDATED["B4.3"][1])
+# HISTORICAL_ONLY (Run 32). Run 27's finding is about the v19 IMPLEMENTATION of B4.3, and that
+# implementation is preserved rather than deleted, because this proof is evidence ABOUT it.
+# Run 32 repointed B4.3 onto a real constraint network, so reading the LIVE dispatch entry here
+# would no longer be reading the thing Run 27 measured -- it would silently turn a refuted claim
+# into a passing one about different code. The assertion below is UNCHANGED; only the source it
+# reads is resolved through the historical extension mechanism.
+#
+# `assert_not_reachable` immediately after is the other half and is not optional: a historical
+# proof that only asserted the old behaviour would go green again if a later run reconnected the
+# proxy.
+import run32_historical_cat10 as _H32  # noqa: E402
+
+src = inspect.getsource(_H32.legacy_runner("B4.3"))
 check("B4.3's rule set is four fixed threshold tests, not a constraint network",
       src.count('"name":') == 4 and "solve" not in src.lower(), str(src.count('"name":')))
+_H32.assert_not_reachable(lambda ok, label, detail="": check(label, ok, detail))
 violations = [c / 1000 for c in range(0, 3001) if (c / 1000 >= 0.90) and not (c / 1000 > 0.80)]
 check("its rule 'CPI >= 0.90' logically implies its rule 'CPI > 0.80' over the whole cost-index "
       "domain, so two of its four rules are one cost test",
