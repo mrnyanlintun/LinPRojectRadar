@@ -292,7 +292,22 @@ for _mid in _RUN30_LEFT_THE_CLUSTER:
           f"can move", lineage_for(_mid) is None, str(lineage_for(_mid)))
     check(f"{_mid}: and the ladder confirms it, moving neither index",
           unmoved_when(_mid, _cpi) and unmoved_when(_mid, _spi))
-_declared_here = ("A1.11", "A1.3", "A3.6", "B3.2", "B3.4", "B4.3", "A3.9")
+# RUN 32 CLOSURE. B4.3 LEFT THE CLUSTER ENTIRELY, on exactly the Run-30 construction above and
+# for exactly the same reason. Cycle 8's rule is that a module's evidence is what its result
+# moves for. B4.3 now routes through models_cat10.py into canonical_v7, which reads a governed
+# constraint-satisfaction problem -- variables, their domains and constraints over them -- and
+# reads no cost index, no schedule index and no scalar this ladder multiplies. The ladder no
+# longer moves it, so there is nothing left for it to declare, and its lineage record was removed
+# with the proxy it described. That removal is asserted directly here rather than inferred from a
+# silent probe, which is the trap this section exists to avoid: a module that abstains reports
+# every scalar as immaterial, and reading that as a false dependence would be vacuous.
+_RUN32_LEFT_THE_CLUSTER = ("B4.3",)
+for _mid in _RUN32_LEFT_THE_CLUSTER:
+    check(f"{_mid}: declares nothing, because its production route reads no scalar this ladder "
+          f"can move", lineage_for(_mid) is None, str(lineage_for(_mid)))
+    check(f"{_mid}: and the ladder confirms it, moving neither index",
+          unmoved_when(_mid, _cpi) and unmoved_when(_mid, _spi))
+_declared_here = ("A1.11", "A1.3", "A3.6", "B3.2", "B3.4", "A3.9")
 _false_dep = 0
 _false_indep = 0
 for mid in _declared_here:

@@ -272,7 +272,7 @@ const DS_DEFENSIBILITY = {
    },
    {
     "id_display": "B4.7",
-    "currentName": "Regret Minimization Index",
+    "currentName": "Minimax Regret Decision Rule",
     "finding": "The expected-regret table is mathematically inspectable, but state probabilities and regret values are hard-coded and signal overrides bypass the stated minimax result. Defend only as a toy decision-analysis demonstration.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
@@ -3484,7 +3484,7 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "Regret Minimization Index",
+     "name": "Minimax Regret Decision Rule",
      "methodClass": "Regret Minimization",
      "defenseTier": "Tier 2 - Deterministic or calibrated indicator",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
@@ -3502,7 +3502,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Standard OR methods (LP: Dantzig; Pareto/regret: Savage) with textbook provenance. Validation for this method would consist of hand-checkable small instances in the test harness. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: MAP, MEASURE, and MANAGE; ISO/IEC 42001: clauses 6 and 8-10; ISO/IEC 23894: risk evaluation, treatment, monitoring, and review. The mapping supports governance alignment, not algorithm certification.",
-     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by Regret Minimization Index.\" Prohibited: \"The code implements the canonical Regret Minimization Index method\" until the label/code mismatch is resolved.",
+     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by Minimax Regret Decision Rule.\" Prohibited: \"The code implements the canonical Minimax Regret Decision Rule method\" until the label/code mismatch is resolved.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [],
      "requiredInputs": [

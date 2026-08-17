@@ -81,14 +81,26 @@ def governed_structure_keys() -> set[str]:
     # contractor registers, and the seven evidence-quality structures -- are governed by
     # `canonical_v6.py`. Reading only the earlier four maps would build an intake path that
     # could not reach one of them, which is the exact defect Run 28's closure found.
+    # RUN 32 ADDS THE v7 MAP for the same reason a fifth time. The Category-10 decision
+    # structures -- the linear program, the constraint-satisfaction problem, the action-by-
+    # scenario matrix and the decision-sensitivity model -- are governed by `canonical_v7.py`.
+    # Reading only the earlier five maps would build an intake path that could not reach one of
+    # them, and the seven decision methods would abstain forever with no way for an owner to
+    # supply what they ask for. That is the exact defect Run 28's closure found.
+    #
+    # NOTE THAT `decisionAlternatives` IS NOT NEW HERE. B4.1 and B4.6 read the SAME shared
+    # decision structure that B2.18 MARCOS and B2.19 CRITIC-TOPSIS already read, so the union
+    # absorbs it rather than adding a parallel key. That is section 17's requirement made
+    # visible: one alternatives-and-criteria object, supplied once, serves both categories.
     from .simulation.canonical import CANONICAL_STRUCTURE_KEYS
     from .simulation.canonical_v3 import V3_STRUCTURE_KEYS
     from .simulation.canonical_v4 import V4_STRUCTURE_KEYS
     from .simulation.canonical_v5 import V5_STRUCTURE_KEYS
     from .simulation.canonical_v6 import V6_STRUCTURE_KEYS
+    from .simulation.canonical_v7 import V7_STRUCTURE_KEYS
     return (set(V3_STRUCTURE_KEYS.values()) | set(CANONICAL_STRUCTURE_KEYS.values())
             | set(V4_STRUCTURE_KEYS.values()) | set(V5_STRUCTURE_KEYS.values())
-            | set(V6_STRUCTURE_KEYS.values()))
+            | set(V6_STRUCTURE_KEYS.values()) | set(V7_STRUCTURE_KEYS.values()))
 
 
 #: The document path assembles these two itself, from evidence the corpus already holds. They

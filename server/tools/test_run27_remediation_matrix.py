@@ -161,9 +161,13 @@ RUN31_RENAMES = {"B3.1": ("ABM Governance Layer", "Agent-Based Governance Model"
                           "Contract Modification Governance Check"),
                  "A6.4": ("Contractor Performance Score",
                           "Contractor Performance Assessment Signal")}
-RENAMED = {**RUN28_RENAMES, **RUN31_RENAMES}
-check("every registered name in the matrix is the registry's own name for that id, except the "
-      "two Run 28 renamed on the owner's authority",
+# RUN 32, section 3. The one Category-10 rename the owner's Run-32 contract authorises, and no
+# other. The matrix's own wording is preserved as the historical record of what the module was
+# called when the matrix was written.
+RUN32_RENAMES = {"B4.7": ("Regret Minimization Index", "Minimax Regret Decision Rule")}
+RENAMED = {**RUN28_RENAMES, **RUN31_RENAMES, **RUN32_RENAMES}
+check("every registered name in the matrix is the registry's own name for that id, except those "
+      "renamed on the owner's authority by Runs 28, 31 and 32",
       all(r["current_registered_name"] == registry[r["canonical_id"]]["module_name"]
           for r in matrix if r["canonical_id"] not in RENAMED),
       str([r["canonical_id"] for r in matrix

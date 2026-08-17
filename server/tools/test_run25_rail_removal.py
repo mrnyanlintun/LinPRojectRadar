@@ -166,7 +166,15 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # qualification boundary and the governed regulatory and agent-based
                         # governance structures. The Run-30 manifest is its parent and is not
                         # rewritten.
-                        "run31_pass1_production_tree.sha256"),
+                        "run31_pass1_production_tree.sha256",
+                        # RUN 32 extends the chain once more, for the same reason and by the same
+                        # rule: the Category-10 canonical decision remediation ADDED
+                        # canonical_v7.py and models_cat10.py and CHANGED project_data.py and
+                        # models.py, so the pin moves to the Run-32 manifest and the Run-31
+                        # pass-1 manifest is kept addressable as its parent rather than
+                        # rewritten. The chain is EXTENDED, not opened; a pin at an unnamed file
+                        # is still red.
+                        "run32_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

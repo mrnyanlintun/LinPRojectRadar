@@ -163,6 +163,12 @@ OWNER_APPROVED_RENAMES: dict[str, str] = {
     "B3.4": "EVMS Reporting Compliance Monitor",
     "B3.5": "Contract Modification Governance Check",
     "A6.4": "Contractor Performance Assessment Signal",
+    # RUN 32, section 3 of the owner's supervisory contract. The specification heads this module
+    # "Regret Minimization Index", a name for an index that carried no payoff matrix and therefore
+    # defined no regret at all. The canonical method IS the minimax regret decision rule, so the
+    # registry name says so. This is the ONLY Category-10 rename authorised, and the
+    # specification's own wording is preserved above rather than edited.
+    "B4.7": "Minimax Regret Decision Rule",
 }
 
 

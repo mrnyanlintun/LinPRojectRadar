@@ -163,13 +163,23 @@ from run31_production_changes import (  # noqa: E402
     RUN31_NEW_PRODUCTION_FILES,
     RUN31_PRODUCTION_CHANGES,
 )
+# RUN 32, THE CATEGORY-10 CANONICAL REMEDIATION. Its own manifest, same construction, same
+# property. models.py is NOT in it (Run 28 declares it) and project_data.py is NOT in it (Run 30
+# declares it), because no path may appear in two manifests.
+from run32_production_changes import (  # noqa: E402
+    RUN32_CHANGES_TO_POST_BASELINE_FILES,
+    RUN32_NEW_PRODUCTION_FILES,
+    RUN32_PRODUCTION_CHANGES,
+)
 run30_declared = {entry[1] for entry in RUN30_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN30_NEW_PRODUCTION_FILES}
 run31_declared = {entry[1] for entry in RUN31_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN31_NEW_PRODUCTION_FILES}
+run32_declared = {entry[1] for entry in RUN32_PRODUCTION_CHANGES.values()
+                  if entry[1] not in RUN32_NEW_PRODUCTION_FILES}
 declared = (run20_declared | run21_declared | run23_declared | run25_declared
             | run26_declared | run28_declared | run29_declared | run30_declared
-            | run31_declared)
+            | run31_declared | run32_declared)
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",
@@ -319,7 +329,9 @@ _undeclared_new = sorted(
     # RUN 30 declares its own new production file in its own manifest, for the same reason.
     and str(p.relative_to(ROOT)) not in RUN30_NEW_PRODUCTION_FILES
     # RUN 31 declares its own five new production files in its own manifest, for the same reason.
-    and str(p.relative_to(ROOT)) not in RUN31_NEW_PRODUCTION_FILES)
+    and str(p.relative_to(ROOT)) not in RUN31_NEW_PRODUCTION_FILES
+    # RUN 32 declares its own two new production files in its own manifest, for the same reason.
+    and str(p.relative_to(ROOT)) not in RUN32_NEW_PRODUCTION_FILES)
 check("and no OTHER file has appeared in the simulation package undeclared, which is the check "
       "that makes the new-file list mean something",
       not _undeclared_new, str(_undeclared_new))

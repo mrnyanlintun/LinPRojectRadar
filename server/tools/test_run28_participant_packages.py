@@ -75,6 +75,15 @@ V4_COMMIT = "ce03eb1f297d9615a9eac7dea34356a69846e5a3"
 V5_COMMIT = "4dd59857c77c2c87aed0f741fd7a0e989efef5f2"
 V6_IDENTITY = "og-participant-2026.08-v6"
 V6_RECORD = "code_audit/run31_participant_package_v6_checksums.sha256"
+# RUN 32. v6 IS A PREDECESSOR NOW and v7 describes the live tree. The successor exists because
+# section 3 of the owner's Run-32 contract renamed B4.7 -- Regret Minimization Index becomes
+# Minimax Regret Decision Rule -- and eight participant-visible files carry that display name.
+# The delta is ONE substitution and nothing else, inverse-mappable back to the v6 bytes exactly,
+# which is asserted below. v6 is PINNED to the commit whose blobs it describes and is NOT
+# regenerated.
+V6_COMMIT = "93942ca03295d642dcbae4551faceca3643aadc8"
+V7_IDENTITY = "og-participant-2026.08-v7"
+V7_RECORD = "code_audit/run32_participant_package_v7_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -315,19 +324,28 @@ _v5_bad = sorted(rel for rel, digest in _v5.items()
 check(not _v5_bad,
       f"every one of v5's seventy checksums holds against commit {V5_COMMIT[:7]}, which is where "
       f"that package's bytes live now that it is a predecessor", str(_v5_bad))
+# RUN 32: v6 IS NOW A PREDECESSOR TOO, so the live tree is not its evidence either.
 _v6 = parse((ROOT / V6_RECORD).read_text(encoding="utf-8"))
 _v6_bad = sorted(rel for rel, digest in _v6.items()
+                 if hashlib.sha256(git_bytes(rel, V6_COMMIT) or b"").hexdigest() != digest)
+check(not _v6_bad,
+      f"every one of v6's seventy checksums holds against commit {V6_COMMIT[:7]}, which is where "
+      f"that package's bytes live now that it is a predecessor", str(_v6_bad))
+_v7 = parse((ROOT / V7_RECORD).read_text(encoding="utf-8"))
+_v7_bad = sorted(rel for rel, digest in _v7.items()
                  if not (ROOT / rel).is_file()
                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
-check(not _v6_bad,
-      "and every one of v6's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v6_bad))
+check(not _v7_bad,
+      "and every one of v7's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v7_bad))
 # THE INVERSE-MAPPING PROOF. Applying the six reverse name substitutions to the eight files v6
 # moved must reproduce the v5 bytes EXACTLY. That is what makes this a display-name delta rather
 # than a behaviour change, and it is proved rather than asserted.
 _inv_bad = []
 for _rel in PP.V5_TO_V6_CHANGED:
-    _txt = (ROOT / _rel).read_text(encoding="utf-8")
+    # RUN 32. v6's bytes are the COMMIT's bytes now, not the tree's: the tree has moved on to v7.
+    # Reading the tree here would compare v7 against v5 and fail for the wrong reason.
+    _txt = (git_bytes(_rel, V6_COMMIT) or b"").decode("utf-8")
     for _new, _old in PP.V6_TO_V5_INVERSE.items():
         _txt = _txt.replace(_new, _old)
     if hashlib.sha256(_txt.encode("utf-8")).hexdigest() != _v5.get(_rel):
@@ -335,6 +353,21 @@ for _rel in PP.V5_TO_V6_CHANGED:
 check(not _inv_bad,
       "and applying the six reverse name substitutions to the eight files v6 moved reproduces "
       "the v5 bytes EXACTLY, so the delta is display names and nothing else", str(_inv_bad))
+
+# THE SAME INVERSE-MAPPING PROOF FOR v7. Applying the ONE reverse substitution to the eight files
+# v7 moved must reproduce the v6 bytes EXACTLY. That is what makes the Run-32 rename a display
+# delta rather than a behaviour change, and it is proved rather than asserted.
+_inv7_bad = []
+for _rel in PP.V6_TO_V7_CHANGED:
+    _txt = (ROOT / _rel).read_text(encoding="utf-8")
+    for _new, _old in PP.V7_TO_V6_INVERSE.items():
+        _txt = _txt.replace(_new, _old)
+    if hashlib.sha256(_txt.encode("utf-8")).hexdigest() != _v6.get(_rel):
+        _inv7_bad.append(_rel)
+check(not _inv7_bad,
+      "and applying the ONE reverse name substitution to the eight files v7 moved reproduces the "
+      "v6 bytes EXACTLY, so the Run-32 delta is one display name and nothing else",
+      str(_inv7_bad))
 
 # THE IDENTITY GUARD, which is the one the checksum guard alone cannot be. EXACTLY ONE record in
 # the chain may describe the live tree, and it must be the one declared current. A predecessor
@@ -347,21 +380,21 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V6_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V7_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
-          V6_IDENTITY],
+          V6_IDENTITY, V7_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 6
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 7
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all six are present, so no link shares a record "
+      "each link has its OWN record file and all seven are present, so no link shares a record "
       "with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all five predecessors name the commit "
+      "and only the current link reads the working tree; all six predecessors name the commit "
       "their bytes live in")
 # THE v3 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes commit 01e943e
 # wrote, which is what stops the Run-28 closure's own defect from recurring here.

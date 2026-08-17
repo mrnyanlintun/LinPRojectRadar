@@ -542,7 +542,17 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                       "server/app/simulation/lineage.py",
                       "server/app/project_data.py",
                       "server/app/extraction_merge.py",
-                      "server/app/field_registry.py"})
+                      "server/app/field_registry.py"}
+                   # RUN 32: the canonical Category-10 decision layer and its seven thin
+                   # operational runners. Pinned in run32_production_tree.sha256; the check keeps
+                   # full force outside this named set, which is why the two files are listed
+                   # rather than the comparison being relaxed.
+                   - {"server/app/simulation/canonical_v7.py",
+                      "server/app/simulation/models_cat10.py"}
+                   # RUN 32, SECTION 3: the one authorised Category-10 rename reaches the
+                   # server-side parity table, which names each module beside the client
+                   # file it is checked against. A display name, no parity value moved.
+                   - {"server/app/simulation/VALIDATION.md"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

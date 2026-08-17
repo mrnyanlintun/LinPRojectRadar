@@ -246,12 +246,30 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # server/tools/test_run30_closure_version_boundary.py extracts the v15 package from that git
 # object, EXECUTES it beside the current one and asserts exactly that. Every earlier stamp, v15
 # included, remains the historical audit baseline for the results collected under it.
-SIMULATION_VERSION = "sim-2026.08-v19"
+# RUN 32, v20. THE SEVEN CATEGORY-10 DECISION METHODS ARE REPOINTED onto `canonical_v7.py`, so
+# the analytical layer no longer reports a decision recommendation manufactured from project
+# indices. This stamp is APPENDED; v19 and every stamp before it remain the audit baseline for
+# the results collected under them, and none is edited or removed.
+#
+#     A v19 -> v20 DIVERGENCE, executed rather than described. On a project carrying no governed
+#     decision structure:
+#
+#       v19  B4.1  Multi-Objective Optimization   a number, blended from cpi, spi and the
+#                                                 document risk score
+#       v20  B4.1  Multi-Objective Optimization   no reading; awaiting the alternatives being
+#                                                 compared and the objectives they are measured on
+#
+#     and on a project that DOES carry a governed decision problem both lines produce a reading,
+#     but only v20's is the dominance relation the method is named for.
+#
+# server/tools/test_run32_closure_version_boundary.py extracts the v19 package FROM ITS GIT
+# OBJECT, executes it beside the current one and asserts that, rather than comparing source text.
+SIMULATION_VERSION = "sim-2026.08-v20"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v18"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v19"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -261,7 +279,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
-    "sim-2026.08-v18", "sim-2026.08-v19",
+    "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20",
 )
 
 
@@ -831,6 +849,22 @@ def _register_extensions() -> None:
     # is zero by profiling the interpreter through `registry.run_module`.
     from .models_cat89 import CAT89_CANONICAL
     VALIDATED.update(CAT89_CANONICAL)
+    # RUN 32, v20. THE SEVEN CATEGORY-10 IDENTITIES ARE REPOINTED, LAST, by the same pattern and
+    # for the same reason: whatever registers last decides what production executes, and a reader
+    # can see it decide here. `DECISION_EXTENSIONS` is still imported and still updated above --
+    # it carries modules outside Run 32's scope -- and every B4.x key it sets is overwritten here
+    # by the thin canonical route in `models_cat10.py`. The legacy Category-10 functions remain
+    # in the tree as the historical record of the v19 line and are reachable from no production
+    # route; `test_run32_operational_route.py` proves that count is zero by profiling the
+    # interpreter through `registry.run_module` rather than by reading this file.
+    #
+    # WHAT THIS LINE RETIRES. At v19 B4.1 blended cpi, spi and a document risk score and called
+    # the result multi-objective optimization; B4.2 returned a fixed rule score for a linear
+    # program with no variables; B4.6 reported threshold booleans over a single project as a
+    # Pareto frontier. After this line none of them is reachable, and the seven measures abstain
+    # until a governed decision problem is supplied rather than reporting a proxy.
+    from .models_cat10 import CAT10_CANONICAL
+    VALIDATED.update(CAT10_CANONICAL)
     # RUN 31 PASS 2, v18. THE SYSTEM-WIDE QUALIFICATION BOUNDARY IS INSTALLED LAST, INTO THE
     # DISPATCH TABLE ITSELF. This is the line that makes the Category-9 gate operational rather
     # than decorative: after it, no Category-6, -7, -8 or -10 entry in VALIDATED reaches its

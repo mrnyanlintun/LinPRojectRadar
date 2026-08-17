@@ -90,11 +90,22 @@ from app.simulation.models_fuzzy import FUZZY_EXTENSIONS           # noqa: E402
 LEGACY_CAT7 = {k: v[1] for k, v in {**EVC_EXTENSIONS, **FUZZY_EXTENSIONS}.items()
                if k.startswith("B2.")}
 
+# RUN 32, THE IDENTICAL TREATMENT FOR CATEGORY 10 and for the identical reason. This suite is
+# Run 14's functional audit of the disabled concept-only methods, and its Category-10 assertions
+# measure the v19 implementations. Run 32 repointed all seven onto the canonical layer, so
+# resolving them live would mutate and inspect a thin refusing runner and prove nothing about the
+# code this suite examines. The v19 implementations are preserved and resolved through the
+# historical extension mechanism, exactly as LEGACY_CAT7 already does above.
+import run32_historical_cat10 as _H32  # noqa: E402
+
+LEGACY_CAT10 = {k: v[1] for k, v in _H32.LEGACY_CAT10.items()}
+LEGACY = {**LEGACY_CAT7, **LEGACY_CAT10}
+
 
 def call(mid: str, si: dict):
     """The module's own function, called directly. The registry is not asked to run it."""
     try:
-        fn = LEGACY_CAT7.get(mid) or VALIDATED[mid][1]
+        fn = LEGACY.get(mid) or VALIDATED[mid][1]
         # RUN 31 v19: this helper calls the module function DIRECTLY, so the fixture installer
         # (which patches registry.run_module) cannot reach it. The governed assessment is
         # attached here instead -- the ordinary declaration a real caller supplies.
@@ -111,7 +122,7 @@ def mutation_binds(mid: str, si: dict) -> str:
     """Inject a fault into an isolated copy of the module's own source; report what bound."""
     # RUN 30 CLOSURE: the same resolution `call` uses, for the same reason. Mutating the thin
     # refusing runner would prove nothing about the implementation this section examines.
-    fn = LEGACY_CAT7.get(mid) or VALIDATED[mid][1]
+    fn = LEGACY.get(mid) or VALIDATED[mid][1]
     live = fn(dict(si), NOOP, CUTOFF)
     bound = []
     for cls, name in ((FlipCompare, "every ordering comparison reversed"),

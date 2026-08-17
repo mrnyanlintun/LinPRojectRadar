@@ -115,7 +115,7 @@ Tolerance: numeric fields within 1e-6 relative; `status_color` and categorical f
 | B4.4 | What-If Scenario Matrix | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; cpi/bac exactly 0 abstains (JS Infinity/NaN fallthrough) |
 | B4.5 | Decision Sensitivity Matrix | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; `total || 1` zero-impact fallback reproduced |
 | B4.6 | Pareto Frontier Analysis | simulations.js | **yes** | 0.0e+00 | exact match; batch 7 |
-| B4.7 | Regret Minimization Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; expected-regret Object.keys order preserved (monitor, investigate, escalate) |
+| B4.7 | Minimax Regret Decision Rule | simulations.js | **yes** | 0.0e+00 | exact match; batch 7; expected-regret Object.keys order preserved (monitor, investigate, escalate) |
 | C1.1 | Missing Data Index | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; always computes (a completeness meter, not a signal) |
 | C1.2 | Data Timeliness Score | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; the known wall-clock offender — the port takes period_cutoff as its reference date instead of `new Date()`; validated against the JS with the browser Date constructor frozen to the cutoff (see the clock note below) |
 | C1.3 | Source Reliability Weighting | simulations.js | **yes** | 0.0e+00 | exact match; batch 9; array-form sources use the LAST entry's docType; unknown types weight 0.50 |

@@ -266,7 +266,41 @@ check("a module with neither a naming fault nor a claim limit acquires no label 
 
 
 print("\n=== 4. THE LABEL SURVIVES A REAL RUN OF THE PRODUCTION REGISTRY ===")
-_res = run_all(dict(SI), "cycle10", "2025-06", "2025-06-30")
+# RUN 32, FIXTURE ENRICHMENT THROUGH THE REAL GOVERNED INTAKE.
+#
+# THE FIXTURE'S PURPOSE, established before touching it: section 7e takes its leak probe from a
+# module that ACTUALLY COMPUTED on this run, precisely so the guard exercises a real ledger
+# record rather than a hypothetical one. Run 30 already had to move the probe once for exactly
+# this reason when B1.2 began abstaining. So this fixture was always intended to exercise a
+# COMPUTING labelled module; it was never intended to be sparse.
+#
+# Run 32 repointed Category 10, and B4.4 -- a labelled, enabled module -- now abstains without a
+# governed action-by-scenario matrix, which emptied the probe's candidate set. The fixture is
+# therefore ENRICHED rather than reinterpreted: the matrix is supplied as a project-data revision
+# and applied with `apply_to_signal_inputs`, the same route a real supplying owner uses. It is
+# NOT attached directly to the signal-input dict, because that would prove the module can read a
+# dict rather than that the platform can deliver one.
+from app import project_data as _pd32  # noqa: E402
+
+_DOC32 = {"projectData": {"actionScenarioMatrix": [{
+    "effective_period": 1,
+    "supplied_by": "run20 cycle-10 truthful-label proof",
+    "source": "run32 governed decision structure",
+    "at": "2026-08-17T00:00:00Z",
+    "record": {
+        "context_id": "CYCLE10-ACTIONS",
+        "source": "run32 governed decision structure",
+        "orientation": "cost", "units": "USD",
+        "actions": [{"action_id": "resequence"}, {"action_id": "accelerate"}],
+        "scenarios": [{"scenario_id": "base"}, {"scenario_id": "adverse"}],
+        "cells": {"resequence": {"base": 120000, "adverse": 180000},
+                  "accelerate": {"base": 150000, "adverse": 160000}},
+    },
+}]}}
+
+_SI32 = dict(SI)
+_pd32.apply_to_signal_inputs(_SI32, _DOC32, 6)
+_res = run_all(_SI32, "cycle10", "2025-06", "2025-06-30")
 _by_id = {r["module_id"]: r for r in _res["computed"]}
 _ab_by_id = {r["module_id"]: r for r in _res["abstained"]}
 _reached = set(_by_id) | set(_ab_by_id)

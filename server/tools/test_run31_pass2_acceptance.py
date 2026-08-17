@@ -146,7 +146,32 @@ for label, decl in cases:
     r = run("B4.3", dict(SI, evidenceQualification=decl))
     check(r.get("status_color") is None and r.get("abstention_reason_code") == REFUSED,
           f"precedence: {label}", f"band={r.get('status_color')} code={r.get('abstention_reason_code')}")
-check(run("B4.3", dict(SI, evidenceQualification=QUAL)).get("status_color") is not None,
+# RESTATED BY RUN 32, and the property is preserved rather than dropped. Run 31 proved "the gate
+# changes eligibility, not availability" by asserting that qualified evidence still produced a
+# BAND. At v20 a Category-10 row carries NO status_color by design -- a decision result is not an
+# observation about the project and never enters fusion or voting -- so band presence can no
+# longer be the usability signal for any Category-10 module. The gate property is proved by
+# EXECUTION instead, which is stronger: with the governed structure supplied through the REAL
+# intake, the qualified package reaches the consumer and the consumer computes.
+from app import project_data as _pd32  # noqa: E402
+
+_DOC32 = {"projectData": {"constraintSatisfactionProblem": [{
+    "effective_period": 1, "supplied_by": "run31 pass-2 acceptance",
+    "source": "run32 governed decision structure", "at": "2026-08-17T00:00:00Z",
+    "record": {
+        "context_id": "PASS2-CSP", "source": "run32 governed decision structure",
+        "variables": [{"variable_id": "X", "domain": ["A", "B"]},
+                      {"variable_id": "Y", "domain": [1, 2]}],
+        "constraints": [{"constraint_id": "c1", "type": "implication",
+                         "if": {"X": "A"}, "then": {"Y": 2}}],
+    },
+}]}}
+_qsi = dict(SI, evidenceQualification=QUAL)
+_pd32.apply_to_signal_inputs(_qsi, _DOC32, 6)
+_q = run("B4.3", _qsi)
+check(_q.get("canonical_disposition") == "CANONICAL_RESULT"
+      and _q.get("abstention_reason_code") != REFUSED
+      and _q.get("status_color") is None,
       "and QUALIFIED evidence still produces the reading, so the gate changes eligibility "
       "rather than disabling the consumer")
 

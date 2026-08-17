@@ -72,7 +72,22 @@ FULL = {"bac": 1000, "ev": 400, "ac": 500, "pv": 500, "cpi": 0.80, "spi": 0.85,
         "docRiskScore": 0.30}
 
 
+# HISTORICAL_ONLY (Run 32). This entire suite is Run 19's audit OF THE v19 CATEGORY-10
+# IMPLEMENTATIONS. Run 32 repointed all seven onto the canonical decision layer, so resolving
+# these assertions through the live dispatcher would stop measuring the thing Run 19 measured.
+# The v19 implementations are PRESERVED, not deleted, precisely because this audit is evidence
+# about them, and `run` resolves to them through the historical extension mechanism. Every
+# assertion below is unchanged.
+#
+# The disabled short-circuit is preserved by asking the registry FIRST: a concept-only module
+# must still report its governed disabled state, which is a fact about the registry rather than
+# about either implementation.
+import run32_historical_cat10 as _H32  # noqa: E402
+
+
 def run(code_id: str, si: dict) -> dict:
+    if code_id in _H32.LEGACY_CAT10 and code_id not in REG.DISABLED_MODULES:
+        return _H32.run_legacy(code_id, dict(si), RAND, CUTOFF)
     return REG.run_module(code_id, si, RAND, CUTOFF)
 
 
@@ -617,6 +632,11 @@ def main() -> int:
     A.check("ROWS", "a production change is recorded on exactly the rows the declared Run-20 "
                     "manifest names",
             {r["module_id"] for r in rows if r["production_change_made"] == "yes"} == {"10.3"})
+    # THE OTHER HALF OF A HISTORICAL PROOF (Run 32). Everything above describes the v19
+    # implementations. This proves current production reaches none of them, so no later run can
+    # satisfy this audit by reconnecting a proxy.
+    _H32.assert_not_reachable(
+        lambda ok, label, detail="": A.check("ROUTE", label, ok))
     return A.finish()
 
 

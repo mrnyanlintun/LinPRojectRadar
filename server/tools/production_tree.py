@@ -289,7 +289,21 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: release wrote it, as that release's historical record, and this successor names it as its
 #: parent and carries its digest below. The guard was turned red first and observed reporting
 #: exactly those five added and two changed files.
-PINNED = ROOT / "code_audit" / "run31_pass1_production_tree.sha256"
+#: RUN 32. Repointed once more, by the same discipline and for the same kind of reason: the
+#: owner's Run-32 supervisory contract authorises modification of Category-10 analytical
+#: production code and of the governed decision-structure intake. TWO production files were
+#: created -- canonical_v7.py (the canonical Category-10 decision layer) and models_cat10.py (the
+#: seven thin operational runners) -- and TWO were changed: models.py, where the seven
+#: Category-10 identities are repointed onto the canonical layer and the stamp advances to
+#: sim-2026.08-v20, and project_data.py, whose governed intake vocabulary is extended with the v7
+#: structure map. The run31 pass-1 manifest is NOT rewritten: it stays exactly as that release
+#: wrote it, as that release's historical record, and this successor names it as its parent and
+#: keeps it addressable below. The guard was turned red FIRST and observed reporting exactly
+#: those two added and two changed files and nothing else.
+PINNED = ROOT / "code_audit" / "run32_production_tree.sha256"
+#: The Run-31 pass-1 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN31_PASS1 = ROOT / "code_audit" / "run31_pass1_production_tree.sha256"
 #: The Run-30 final closure manifest, the immediate parent, kept addressable so a guard can prove
 #: the supersession is a real change and not a silent rewrite.
 PINNED_RUN30_FINAL_CLOSURE = ROOT / "code_audit" / "run30_final_closure_production_tree.sha256"

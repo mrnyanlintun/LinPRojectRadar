@@ -99,7 +99,10 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v6",
         "code_audit/run31_participant_package_v6_checksums.sha256",
-        None,
+        # RUN 32 PINNED IT. v6 became a predecessor when the Run-32 rename moved eight of its
+        # files, so the live tree stopped being its evidence and this is the commit whose blobs
+        # it describes. The record itself is NOT regenerated.
+        "93942ca03295d642dcbae4551faceca3643aadc8",
         "RUN 31 PASS 2 propagated the six owner-approved Category-8 names to every current "
         "surface, and eight participant-visible files carry a module display name: categories, "
         "decision-ui, deepdive, the two defensibility objects, knowledge, taxonomy and "
@@ -113,10 +116,42 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "reproduces the v5 bytes exactly, which the package suite asserts. The v5 record is NOT "
         "regenerated: it is pinned to the commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v7",
+        "code_audit/run32_participant_package_v7_checksums.sha256",
+        None,
+        "RUN 32 applied section 3 of the owner's supervisory contract: the ONE authorised "
+        "Category-10 rename, Regret Minimization Index becomes Minimax Regret Decision Rule. The "
+        "old name called the module an INDEX and it carried no payoff matrix, so no regret was "
+        "defined in it at all -- regret is the gap between an outcome and the best outcome "
+        "available in the same future state, and with no matrix of futures there is no best to "
+        "measure against. Eight participant-visible files carry the display name: categories, "
+        "decision-ui, the two defensibility objects, knowledge, simulations, taxonomy and "
+        "workspace. The delta is ONE DISPLAY-NAME SUBSTITUTION and nothing else, and NO OTHER "
+        "Category-10 rename is made. No threshold, no evidence-review step, no preliminary "
+        "judgment, no preliminary lock, no AI reveal, no final judgment, no rationale or evidence "
+        "capture, no final lock and no period advancement moved: THE EXPERIMENTAL SEQUENCE IS "
+        "UNCHANGED. The delta is inverse-mappable -- applying the single reverse substitution to "
+        "those eight files reproduces the v6 bytes exactly, which the package suite asserts. The "
+        "v6 record is NOT regenerated: it is pinned to the commit whose blobs it describes.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v6 and v7, and the ONE substitution that moved them.
+V6_TO_V7_CHANGED = (
+    "assets/js/categories.js", "assets/js/decision-ui.js",
+    "assets/js/ds_defensibility_data.js", "assets/js/ds_defensibility_evidence.js",
+    "assets/js/knowledge.js", "assets/js/simulations.js", "assets/js/taxonomy.js",
+    "assets/js/workspace.js",
+)
+
+#: NEW -> OLD. Applying this to the v7 bytes must reproduce the v6 bytes exactly.
+V7_TO_V6_INVERSE = {
+    "Minimax Regret Decision Rule": "Regret Minimization Index",
+}
 
 #: The files whose bytes moved between v5 and v6, and the six substitutions that moved them.
 V5_TO_V6_CHANGED = (

@@ -96,7 +96,7 @@
     "B4.1": "Multi-Objective Optimization", "B4.2": "Linear Programming",
     "B4.3": "Constraint Satisfaction Analysis", "B4.4": "What-If Scenario Matrix",
     "B4.5": "Decision Sensitivity Matrix", "B4.6": "Pareto Frontier Analysis",
-    "B4.7": "Regret Minimization Index",
+    "B4.7": "Minimax Regret Decision Rule",
     "C1.1": "Missing Data Index", "C1.2": "Data Timeliness Score",
     "C1.3": "Source Reliability Weighting", "C1.4": "Audit Trail Completeness",
     "C1.5": "Information Completeness Ratio", "C1.6": "Cross-document Consistency Score",
