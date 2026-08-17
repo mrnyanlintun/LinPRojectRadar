@@ -304,12 +304,25 @@ check(_row.get("minimax_regret_alternative") == "B",
       "with a governed action-by-scenario matrix supplied, v20 B4.7 identifies B as the "
       "minimax-regret alternative, so the canonical route computes rather than only abstaining",
       str(_row.get("minimax_regret_alternative") or _row.get("evidence_metric")))
-check(_row.get("result_class") == "ANALYTICAL_RESULT"
-      and _row.get("human_authorization_required") is True
-      and _row.get("creates_project_evidence") is False
-      and _row.get("status_color") is None,
-      "and the row it emits is an ANALYTICAL_RESULT that authorises nothing, creates no project "
-      "evidence and carries no status colour")
+# THE TWO SCIENTIFICALLY LOAD-BEARING PROPERTIES ARE ASSERTED SEPARATELY, and the Run-32 fault
+# campaign is why. They used to be one conjunction, which meant a single check caught BOTH fault
+# 18 (an algorithm exercising human approval authority) and fault 24 (a decision output re-entering
+# as project-condition evidence). A conjunction that catches two different defects cannot tell you
+# WHICH defect it caught, so neither fault could be proved independently non-vacuous. They are four
+# checks now, and each fault turns its own one red.
+check(_row.get("result_class") == "ANALYTICAL_RESULT",
+      "the row it emits is stamped ANALYTICAL_RESULT and never HUMAN_DECISION",
+      str(_row.get("result_class")))
+check(_row.get("human_authorization_required") is True,
+      "and it requires human authorisation, so no algorithm here exercises approval authority",
+      str(_row.get("human_authorization_required")))
+check(_row.get("creates_project_evidence") is False,
+      "and it creates no project evidence, so a decision output cannot re-enter as a "
+      "project-condition observation",
+      str(_row.get("creates_project_evidence")))
+check(_row.get("status_color") is None,
+      "and it carries no status colour, so it cannot reach status fusion",
+      str(_row.get("status_color")))
 
 _old_with = run_old("B4.7", _si_with)
 check(_old_with.get("minimax_regret_alternative") is None,

@@ -352,6 +352,41 @@ check("10.1 and 10.6 read the same shared decision structure",
 check("10.4 and 10.7 read the same action-by-scenario matrix",
       v7.V7_STRUCTURE_KEYS["B4.4"] == v7.V7_STRUCTURE_KEYS["B4.7"] == "actionScenarioMatrix")
 
+# THE SUPPLY PATH. A DECISION STRUCTURE THAT EXISTS ONLY IN TEST FIXTURES IS NOT SUPPLIED.
+#
+# This check was MISSING and the Run-32 fault campaign is what found it. Fault 32 removes the v7
+# keys from `project_data.governed_structure_keys()` -- which is exactly what "the structure lives
+# only in fixtures" looks like in this tree -- and no guard anywhere went red. Run 29 and Run 31
+# both carry the equivalent check for their own canonical layers (`test_run29_supply_path_guard`
+# for v3/v4 and `test_run31_canonical_oracles` for v6); v7 had none, so a Category-10 structure
+# could have been readable by the canonical method and unwritable through the real production
+# intake, with every oracle still green.
+from app.project_data import governed_structure_keys as _gsk               # noqa: E402
+
+check("every governed Category-10 decision structure is admitted by the production intake",
+      not sorted(set(v7.V7_STRUCTURE_KEYS.values()) - _gsk()))
+
+# B2.19 CRITIC-TOPSIS'S OWN MINIMUM, WHICH HAD NO INDEPENDENT GUARD UNTIL THE FAULT CAMPAIGN
+# LOOKED FOR ONE.
+#
+# B2.19 is exposed operationally through the Category-10 decision service over the SAME
+# `decisionAlternatives` structure B4.1 and B4.6 read, so its refusals are a Category-10 concern
+# too. CRITIC derives its weights from the DISPERSION of each criterion across the alternative
+# set and from the correlations between criteria, and neither means anything below three rows --
+# the sample standard deviation divides by m - 1, so two rows give a degenerate spread and one
+# gives none at all. `critic_topsis` therefore refuses fewer than three.
+#
+# THAT LINE WAS UNTESTED. The only existing check feeds it a SINGLE row, and a single row is
+# already refused further upstream by the shared `decision_problem`, which requires at least two
+# alternatives before CRITIC is ever reached. So the check passed whether or not the minimum-three
+# rule existed, and lowering the threshold from three to two broke nothing anywhere in the tree.
+# Two rows is the case that distinguishes the two layers, and this is the check that asks for it.
+from app.simulation import canonical_v5 as v5                              # noqa: E402
+
+check("CRITIC-TOPSIS refuses two project rows, because the spread it weights by needs at least "
+      "three and two rows are already past the shared decision structure's own minimum",
+      abstains(v5.critic_topsis, dict(MOO, alternatives=MOO["alternatives"][:2])))
+
 
 passed = sum(1 for _n, ok in CHECKS if ok)
 for name, ok in CHECKS:
