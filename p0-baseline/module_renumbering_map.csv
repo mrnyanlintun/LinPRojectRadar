@@ -51,7 +51,7 @@ A5.8,Discrete Event Simulation,5.8,A,Project Health,A5,System Dynamics & Complex
 A6.1,Quality Compliance Index,8.6,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
 A6.2,Safety Performance Index,8.7,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
 A6.3,Environmental Compliance Rate,8.8,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
-A6.4,Contractor Performance Score,8.9,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
+A6.4,Contractor Performance Assessment Signal,8.9,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
 B1.1,Conservative Dominance,6.1,B,Recommendation & Governance,B1,Signal Synthesis,
 B1.2,Weighted Voting,6.2,B,Recommendation & Governance,B1,Signal Synthesis,
 B1.3,Majority Rules,6.3,B,Recommendation & Governance,B1,Signal Synthesis,
@@ -76,11 +76,11 @@ B2.17,Fermatean Fuzzy Sets,7.17,B,Recommendation & Governance,B2,Evidence Combin
 B2.18,MARCOS Ranking,7.18,B,Recommendation & Governance,B2,Evidence Combination,
 B2.19,CRITIC-TOPSIS,7.19,B,Recommendation & Governance,B2,Evidence Combination,
 B2.20,Hypersoft Sets,7.20,B,Recommendation & Governance,B2,Evidence Combination,
-B3.1,ABM Governance Layer,8.1,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.2,FAR Threshold Monitor,8.2,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.3,OMB A-11 Check,8.3,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.4,EVM Reporting Threshold,8.4,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.5,Contract Modification Frequency,8.5,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.1,Agent-Based Governance Model,8.1,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.2,FAR/Agency EVMS Applicability Monitor,8.2,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.3,Versioned A-11 Capital Programming Conformance Check,8.3,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.4,EVMS Reporting Compliance Monitor,8.4,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
+B3.5,Contract Modification Governance Check,8.5,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
 B4.1,Multi-Objective Optimization,10.1,B,Recommendation & Governance,B4,Decision Optimization,
 B4.2,Linear Programming,10.2,B,Recommendation & Governance,B4,Decision Optimization,
 B4.3,Constraint Satisfaction Analysis,10.3,B,Recommendation & Governance,B4,Decision Optimization,

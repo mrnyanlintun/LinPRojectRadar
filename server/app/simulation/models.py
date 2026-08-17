@@ -246,12 +246,12 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # server/tools/test_run30_closure_version_boundary.py extracts the v15 package from that git
 # object, EXECUTES it beside the current one and asserts exactly that. Every earlier stamp, v15
 # included, remains the historical audit baseline for the results collected under it.
-SIMULATION_VERSION = "sim-2026.08-v17"
+SIMULATION_VERSION = "sim-2026.08-v18"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v16"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v17"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -261,6 +261,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
+    "sim-2026.08-v18",
 )
 
 
@@ -830,6 +831,16 @@ def _register_extensions() -> None:
     # is zero by profiling the interpreter through `registry.run_module`.
     from .models_cat89 import CAT89_CANONICAL
     VALIDATED.update(CAT89_CANONICAL)
+    # RUN 31 PASS 2, v18. THE SYSTEM-WIDE QUALIFICATION BOUNDARY IS INSTALLED LAST, INTO THE
+    # DISPATCH TABLE ITSELF. This is the line that makes the Category-9 gate operational rather
+    # than decorative: after it, no Category-6, -7, -8 or -10 entry in VALIDATED reaches its
+    # runner without the boundary first, and `registry.run_module` looks the runner up here. It
+    # runs after every extension map for the same reason the Category-7 and Category-8/9
+    # repointings do -- whatever registers last decides what production executes, and a reader
+    # can see it decide. Category 9 is excluded by construction: it performs the assessment.
+    from .qualification_boundary import install as _install_boundary
+    global QUALIFICATION_BOUNDARY_INSTALLED
+    QUALIFICATION_BOUNDARY_INSTALLED = _install_boundary(VALIDATED)
 
 
 _register_extensions()

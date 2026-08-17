@@ -1113,6 +1113,19 @@ def environmental_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
         out["rule"] = None
         out["rule_note"] = ("the permitting authority for this site is not EPA, so the EPA "
                             "Construction General Permit is not the governing instrument here")
+    # RUN 31 PASS 2. THE REAL EXTRACTED EVIDENCE TRAVELS OUT WITH THE REFUSAL. A document-stated
+    # compliance rate and a reported violations count are EVIDENCE; they are simply not a
+    # requirement register, and neither establishes the jurisdiction and permitting authority
+    # that must be settled before conformance is assessed. Dropping them would discard what the
+    # project actually holds; using them as a rate would invent regulatory applicability. Both
+    # are refused, so they are carried under names that say exactly what they are.
+    recorded = structure.get("recorded_environmental_evidence")
+    if recorded:
+        out["recorded_environmental_evidence"] = dict(recorded)
+        out["recorded_evidence_note"] = (
+            "a rate asserted by the source document and a reported violations count; neither is "
+            "an applicable/assessed/satisfied requirement population, so neither is used as the "
+            "environmental compliance rate")
     if not authority or not jurisdiction:
         out.update({"environmental_compliance_rate": None,
                     "disposition": "APPLICABILITY_NOT_ESTABLISHED",

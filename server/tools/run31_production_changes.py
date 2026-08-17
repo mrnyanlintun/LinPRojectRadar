@@ -94,6 +94,18 @@ RUN31_CHANGES_TO_POST_BASELINE_FILES: dict[str, tuple[str, str, str]] = {}
 #: without this declaration a new production file could appear in the simulation package with
 #: nothing anywhere recording it. The guard reads this list alongside the earlier runs'.
 RUN31_NEW_PRODUCTION_FILES: dict[str, str] = {
+    "server/app/simulation/qualification_boundary.py":
+        "PASS 2. The system-wide operational qualification boundary, and the file that makes the "
+        "Category-9 gate real rather than decorative. It is installed INTO the dispatch table by "
+        "models.py, last, so no Category-6, -7, -8 or -10 entry in VALIDATED reaches its runner "
+        "without passing through it, and registry.run_module looks the runner up there. The "
+        "gated set is DERIVED from the shipped registry CSV by category rather than listed, so a "
+        "module the registry gains in a gated category is gated the moment it exists. Category 9 "
+        "is excluded by construction because it performs the assessment. The wrapper is "
+        "transparent to introspection (functools.wraps) so every existing proof that asks which "
+        "implementation a module resolves to still reads the real runner, and advertises itself "
+        "through __gated__ / gate_installed_for() so a proof that asks whether the boundary is "
+        "present gets a straight answer too.",
     "server/app/simulation/regulatory.py":
         "The governed, versioned regulatory rule layer. Before Run 31 the Category-8 regulatory "
         "identities carried their authority inline -- a FAR applicability decision was a "

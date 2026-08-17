@@ -523,6 +523,7 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                       "server/app/simulation/qualified_evidence.py",
                       "server/app/simulation/canonical_v6.py",
                       "server/app/simulation/models_cat89.py",
+                      "server/app/simulation/qualification_boundary.py",
                       "server/app/simulation/models.py",
                       "server/app/simulation/lineage.py",
                       "server/app/project_data.py",

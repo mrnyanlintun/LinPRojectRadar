@@ -88,7 +88,19 @@ RESOLVED_BY_RUN_29 = ["A4.6", "A4.7", "A4.10", "A5.3", "A5.5", "A5.8"]
 # explicit set of alternatives. Each abstains when its defining structure is absent. Leaving
 # their labels would assert a weakness the code no longer has.
 RESOLVED_BY_RUN_30 = ["B2.2", "B2.14", "B2.18"]
-RESOLVED = RESOLVED_BY_RUN_28 + RESOLVED_BY_RUN_29 + RESOLVED_BY_RUN_30
+# RUN 31. Four further rows are resolved for exactly the same reason. B3.1 now runs a genuine
+# agent-based model -- agents with state and latency, a message queue with a declared ordering
+# rule, a simulation clock -- where the label said agents, interaction and time steps were
+# absent; the action boundary and authority matrix survives as the POLICY the model consults.
+# A6.4 now carries the official-assessment structure whose absence its label recorded: source
+# system, assessment period, record status and review state. C1.6 compares the SAME governed
+# fact across actual source records instead of recomputing two indices from one reported set.
+# C1.4 assesses the real signal, judgment and audit objects, their chronology and linkage, and
+# treats the critical fields noncompensatorily. Leaving any of these labels would assert a
+# weakness the code no longer has.
+RESOLVED_BY_RUN_31 = ["B3.1", "A6.4", "C1.6", "C1.4"]
+RESOLVED = (RESOLVED_BY_RUN_28 + RESOLVED_BY_RUN_29 + RESOLVED_BY_RUN_30
+            + RESOLVED_BY_RUN_31)
 MISMATCH_23_STILL_LABELLED = [m for m in MISMATCH_23 if m not in RESOLVED]
 STRUCTURAL_8_STILL_LABELLED = [m for m in STRUCTURAL_8 if m not in RESOLVED]
 #: The module this suite drives for the "label reaches the result" checks. It must be one that
@@ -383,10 +395,17 @@ check("the document risk score is recorded as unvalidated, with no accuracy clai
 # carried -- whether a decision-ranking method belongs in Category 7 at all -- is unchanged, is
 # NOT resolved by Run 30, and is recorded against Run 32 in the Run-30 closure table. One row
 # remains labelled as an owner decision.
-check("one row is carried as an owner decision rather than being disposed of quietly",
+# RUN 31. C1.4 leaves this list because its LABEL is gone, not because an owner decision was
+# taken quietly. The label said the check counted declared audit-field presence with the real
+# audit objects, chronology, linkage and noncompensatory critical treatment ABSENT; the canonical
+# measure assesses all four, so the label's claim is no longer true of the code. NO owner
+# decision is resolved here and none is invented: what the label recorded was a code weakness,
+# and the weakness is what Run 31 removed. With it gone, no row carries OWNER_DECISION_REQUIRED.
+check("no row is carried as an owner decision, because the one that was is now resolved by code "
+      "rather than disposed of quietly",
       sorted(m for m in ML.labelled_modules()
              if ML.method_label(m).disposition == "OWNER_DECISION_REQUIRED")
-      == ["C1.4"])
+      == [])
 check("and the four disabled ones are future research only, which is not an activation",
       sorted(m for m in ML.labelled_modules()
              if ML.method_label(m).disposition == "FUTURE_RESEARCH_ONLY")

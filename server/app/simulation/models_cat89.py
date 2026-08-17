@@ -243,6 +243,38 @@ def _assemble(si: dict, module_id: str) -> dict | None:
         if hours is not None:
             rec["employee_hours_worked"] = hours
         return rec
+    if module_id == "A6.3":
+        # ENVIRONMENTAL, COMPLETING WHAT PASS 1 LEFT PARTIAL. Mechanical inspection of the
+        # Environmental Compliance Report schema found FOUR extracted fields
+        # (permit_conditions_total, violations, compliance_rate, report_date), of which only TWO
+        # reach signal inputs: `environmentalComplianceRate` (a FRACTION, range-guarded at 1.0)
+        # and `environmentalViolations`. `permit_conditions_total` is emitted nowhere.
+        #
+        # NONE OF THEM IS DEFINING EVIDENCE FOR THE CANONICAL RATE, and the reason is the same
+        # one Pass 1 gave: a stated rate is a summary, a violations count is a count, and a
+        # permit-conditions total gives no assessed or satisfied split. More decisively, the
+        # corpus carries NO jurisdiction, NO permitting authority and NO permit identity
+        # anywhere, and section 15 requires applicability to be determined BEFORE conformance is
+        # assessed. EPA CGP is never assumed to apply.
+        #
+        # So the real evidence is preserved and the module returns
+        # APPLICABILITY_NOT_ESTABLISHED. Nothing is converted into a compliance percentage.
+        rate = si.get("environmentalComplianceRate")
+        viol = si.get("environmentalViolations")
+        if rate is None and viol is None:
+            return None
+        return {
+            "evidence_id": "A6.3-corpus",
+            "provenance": "assembled from the project's Environmental Compliance Report "
+                          "extraction",
+            # Deliberately absent: jurisdiction, permitting_authority, permit_id. The corpus
+            # does not carry them, and inventing any one of them would be inventing regulatory
+            # applicability.
+            "recorded_environmental_evidence": {
+                "document_stated_compliance_rate": rate,
+                "reported_violations": viol,
+            },
+        }
     if module_id == "A6.1":
         score = si.get("qualityAuditScore")
         findings = si.get("totalFindings")

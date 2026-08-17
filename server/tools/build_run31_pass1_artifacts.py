@@ -28,11 +28,11 @@ SEMANTICS = {
  ("quality_audit_report","critical_findings"): ("count of critical findings","criticalFindings","summary","requirement register","A6.1 recorded_audit_evidence","PRESERVED"),
  ("quality_audit_report","deficiency_count"): ("count of deficiencies","-","summary","requirement register","none","NOT WIRED: no signal field is emitted for it and it establishes no population"),
  ("quality_audit_report","audit_date"): ("date of the audit","-","context","-","none","NOT WIRED in Pass 1"),
- ("environmental_report","compliance_rate"): ("rate as STATED by the document","environmentalComplianceRate","summary","jurisdiction, permitting authority, requirement register","none yet","PASS1_PARTIAL: 8.8 requires applicability BEFORE conformance; a stated rate is not a requirement register"),
- ("environmental_report","violations"): ("count of violations","environmentalViolations","summary","requirement register + criticality","none yet","PASS1_PARTIAL"),
- ("environmental_report","permit_conditions_total"): ("count of permit conditions","-","candidate denominator","assessed/satisfied split + authority","none yet","PASS1_PARTIAL: a total alone gives no assessed or satisfied count"),
- ("environmental_report","report_date"): ("report date","-","context","-","none","PASS1_PARTIAL"),
-}
+ ("environmental_report","compliance_rate"): ('rate as STATED by the document', 'environmentalComplianceRate', 'summary, NOT defining', 'jurisdiction + permitting authority + applicable/assessed/satisfied register', 'A6.3 recorded_environmental_evidence', 'PRESERVED, NOT a rate: a stated rate is not a requirement register, and applicability is not established'),
+  ("environmental_report","violations"): ('count of reported violations', 'environmentalViolations', 'summary, NOT defining', 'requirement register + criticality', 'A6.3 recorded_environmental_evidence', 'PRESERVED: a violations count is not an assessed/satisfied population'),
+  ("environmental_report","permit_conditions_total"): ('count of permit conditions', '-', 'NOT defining', 'assessed/satisfied split + permitting authority', 'none', 'NOT WIRED: emitted to no signal field at all, and a total alone gives no assessed or satisfied count'),
+  ("environmental_report","report_date"): ('date of the environmental report', '-', 'context', '-', 'none', 'NOT WIRED: emitted to no environmental signal field'),
+ }
 
 def orphan_rows():
     rows=[]
@@ -41,8 +41,8 @@ def orphan_rows():
             meaning, sig, defining, needs, consumer, reason = SEMANTICS.get(
                 (fam,f), ("(not classified)","-","unknown","-","none","NOT CLASSIFIED"))
             reaches = "YES" if sig not in ("-", None) else "NO"
-            status = "PASS" if (reason.startswith(("WIRED","PRESERVED","NOT USED"))
-                                or reason.startswith("NOT WIRED")) else "PASS1_PARTIAL"
+            status = "PASS" if reason.startswith(("WIRED","PRESERVED","NOT USED","NOT WIRED")) \
+                else "PASS1_PARTIAL"
             rows.append([fam,f,meaning,"per project/period",reaches,reaches,defining,needs,
                          "legacy proxy" if fam!="safety_report" else "legacy proxy",
                          consumer,reason,status])

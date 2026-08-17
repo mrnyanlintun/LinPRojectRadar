@@ -68,6 +68,13 @@ V4_RECORD = "code_audit/run29_participant_package_v4_checksums.sha256"
 V5_IDENTITY = "og-participant-2026.08-v5"
 V5_RECORD = "code_audit/run30_participant_package_v5_checksums.sha256"
 V4_COMMIT = "ce03eb1f297d9615a9eac7dea34356a69846e5a3"
+# RUN 31 PASS 2. v5 IS A PREDECESSOR NOW and v6 describes the live tree. The successor exists
+# because propagating the six owner-approved Category-8 names moved eight participant-visible
+# files; the delta is six display-name substitutions and nothing else, and it is inverse-mappable
+# back to the v5 bytes exactly, which is asserted below.
+V5_COMMIT = "4dd59857c77c2c87aed0f741fd7a0e989efef5f2"
+V6_IDENTITY = "og-participant-2026.08-v6"
+V6_RECORD = "code_audit/run31_participant_package_v6_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -304,11 +311,30 @@ check(not _v4_bad,
       f"that package's bytes live now that it is a predecessor", str(_v4_bad))
 _v5 = parse((ROOT / V5_RECORD).read_text(encoding="utf-8"))
 _v5_bad = sorted(rel for rel, digest in _v5.items()
+                 if hashlib.sha256(git_bytes(rel, V5_COMMIT) or b"").hexdigest() != digest)
+check(not _v5_bad,
+      f"every one of v5's seventy checksums holds against commit {V5_COMMIT[:7]}, which is where "
+      f"that package's bytes live now that it is a predecessor", str(_v5_bad))
+_v6 = parse((ROOT / V6_RECORD).read_text(encoding="utf-8"))
+_v6_bad = sorted(rel for rel, digest in _v6.items()
                  if not (ROOT / rel).is_file()
                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
-check(not _v5_bad,
-      "and every one of v5's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v4_bad))
+check(not _v6_bad,
+      "and every one of v6's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v6_bad))
+# THE INVERSE-MAPPING PROOF. Applying the six reverse name substitutions to the eight files v6
+# moved must reproduce the v5 bytes EXACTLY. That is what makes this a display-name delta rather
+# than a behaviour change, and it is proved rather than asserted.
+_inv_bad = []
+for _rel in PP.V5_TO_V6_CHANGED:
+    _txt = (ROOT / _rel).read_text(encoding="utf-8")
+    for _new, _old in PP.V6_TO_V5_INVERSE.items():
+        _txt = _txt.replace(_new, _old)
+    if hashlib.sha256(_txt.encode("utf-8")).hexdigest() != _v5.get(_rel):
+        _inv_bad.append(_rel)
+check(not _inv_bad,
+      "and applying the six reverse name substitutions to the eight files v6 moved reproduces "
+      "the v5 bytes EXACTLY, so the delta is display names and nothing else", str(_inv_bad))
 
 # THE IDENTITY GUARD, which is the one the checksum guard alone cannot be. EXACTLY ONE record in
 # the chain may describe the live tree, and it must be the one declared current. A predecessor
@@ -321,20 +347,21 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V5_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V6_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
-      == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY],
+      == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
+          V6_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 5
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 6
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all five are present, so no link shares a record "
+      "each link has its OWN record file and all six are present, so no link shares a record "
       "with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all three predecessors name the commit "
+      "and only the current link reads the working tree; all five predecessors name the commit "
       "their bytes live in")
 # THE v3 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes commit 01e943e
 # wrote, which is what stops the Run-28 closure's own defect from recurring here.
@@ -375,7 +402,11 @@ check(_changed5 == sorted(PP.V4_TO_V5_CHANGED),
 _not_corrections_only = []
 for rel in _changed5:
     _v4_text = (git_bytes(rel, V4_COMMIT) or b"").decode("utf-8")
-    if PP.to_v4_era((ROOT / rel).read_text(encoding="utf-8"), ROOT) != _v4_text:
+    # RUN 31 PASS 2: read the v5-era bytes from V5_COMMIT rather than the live tree. v5 is a
+    # predecessor now, so the tree is no longer its evidence -- the same correction v3 and v4
+    # each received when they stopped being current.
+    _v5_text = (git_bytes(rel, V5_COMMIT) or b"").decode("utf-8")
+    if PP.to_v4_era(_v5_text, ROOT) != _v4_text:
         _not_corrections_only.append(rel)
 check(not _not_corrections_only,
       "and restoring the eight deleted proxy qualifiers and the pre-closure structure statement "

@@ -459,6 +459,7 @@ RUN31_SCOPED_FILES = {
     "server/app/simulation/qualified_evidence.py",
     "server/app/simulation/canonical_v6.py",
     "server/app/simulation/models_cat89.py",
+    "server/app/simulation/qualification_boundary.py",
     "server/app/simulation/models.py",
     "server/app/simulation/lineage.py",
     "server/app/project_data.py",

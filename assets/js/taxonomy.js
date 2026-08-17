@@ -131,7 +131,7 @@ window.LIN_CATEGORIES = [
       { id: 'a6_1', num: 'A6.1', name: 'Quality Compliance Index', method_class: 'Quality_Compliance', active: true, required: ['qualityDeficienciesNoted'] },
       { id: 'a6_2', num: 'A6.2', name: 'Safety Performance Index', method_class: 'Safety_Performance', active: true, required: ['safetyIncidentsDiscussed'], sectors: ['construction','hybrid'] },
       { id: 'a6_3', num: 'A6.3', name: 'Environmental Compliance Rate', method_class: 'Environmental_Compliance', active: true, required: ['environmentalIssuesDiscussed'], sectors: ['construction','hybrid'] },
-      { id: 'a6_4', num: 'A6.4', name: 'Contractor Performance Score', method_class: 'Contractor_Performance', active: true, required: ['overallRating','scheduleRating','costRating'] }
+      { id: 'a6_4', num: 'A6.4', name: 'Contractor Performance Assessment Signal', method_class: 'Contractor_Performance', active: true, required: ['overallRating','scheduleRating','costRating'] }
     ]
   },
   {
@@ -180,11 +180,11 @@ window.LIN_CATEGORIES = [
     color: '#e0556b',
     description: 'Regulatory and authority thresholds that determine who must act and at what level.',
     modules: [
-      { id: 'b3_1', num: 'B3.1', name: 'ABM Governance Layer', method_class: 'ABM_Governance', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b3_2', num: 'B3.2', name: 'FAR Threshold Monitor', method_class: 'FAR_Threshold', active: true, required: ['bac','cpi','ev','ac'] },
-      { id: 'b3_3', num: 'B3.3', name: 'OMB A-11 Check', method_class: 'OMB_A11_Check', active: true, required: ['bac','cpi','actualPctComplete'] },
-      { id: 'b3_4', num: 'B3.4', name: 'EVM Reporting Threshold', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
-      { id: 'b3_5', num: 'B3.5', name: 'Contract Modification Frequency', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] }
+      { id: 'b3_1', num: 'B3.1', name: 'Agent-Based Governance Model', method_class: 'ABM_Governance', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b3_2', num: 'B3.2', name: 'FAR/Agency EVMS Applicability Monitor', method_class: 'FAR_Threshold', active: true, required: ['bac','cpi','ev','ac'] },
+      { id: 'b3_3', num: 'B3.3', name: 'Versioned A-11 Capital Programming Conformance Check', method_class: 'OMB_A11_Check', active: true, required: ['bac','cpi','actualPctComplete'] },
+      { id: 'b3_4', num: 'B3.4', name: 'EVMS Reporting Compliance Monitor', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
+      { id: 'b3_5', num: 'B3.5', name: 'Contract Modification Governance Check', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] }
     ]
   },
   {
