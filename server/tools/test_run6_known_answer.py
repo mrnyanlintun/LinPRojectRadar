@@ -188,6 +188,52 @@ section("0. THE FROZEN-FILE GUARD, RE-BASED BY RUN 7 AND NARROWED RATHER THAN RE
 # scope is settled.
 
 import subprocess  # noqa: E402
+# =================================================================================================
+# RUN 31, PASS 1: THIS SUITE IS HISTORICAL_ONLY FOR CATEGORY 8 AND CATEGORY 9.
+#
+# The assertions below describe implementations Run 31 superseded. They are preserved unedited,
+# because they are the scientific record of what this instrument used to do, and the legacy code
+# they describe is preserved for the same reason. What changes is resolution: for the sixteen
+# Category-8/9 identities ONLY, `registry.run_module` executes the preserved legacy runner.
+# Every other module still resolves to live production.
+#
+# The second half of the contract is asserted at the end of this block: current production
+# reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
+# =================================================================================================
+import run31_historical_cat89 as _R31H                                        # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+_R31H_HISTORICAL_ONLY = True
+
+def _r31h_install():
+    # Patch the registry MODULE OBJECT, not a local alias: every suite holds a reference to the
+    # same singleton module however it spelled the import, so this reaches all of them.
+    from app.simulation import registry as _registry
+    _live = _registry.run_module
+
+    def _resolve(new_id, si, rand, period_cutoff, *a, **k):
+        if new_id in _R31H.LEGACY_CAT89:
+            return _R31H.run_legacy(new_id, si, rand, period_cutoff)
+        return _live(new_id, si, rand, period_cutoff, *a, **k)
+
+    _registry.run_module = _resolve
+
+_r31h_install()
+# Suites that look modules up in the routing table, or inspect a runner's SOURCE, must
+# resolve the sixteen to their superseded implementations too, or a parsimony/known-answer
+# proof about the old code would silently read the new code instead.
+VALIDATED = _R31H.historical_validated()
 
 #: The commit Run 7 was cut from: origin/main after Run 6 merged. Pinned by sha, never by branch.
 GUARD_BASELINE_REV = "021d5e2"
@@ -481,7 +527,22 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES - RUN14_SCOPED_FILES
                    - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES
                    - RUN20_SCOPED_FILES - RUN21_SCOPED_FILES - RUN23_SCOPED_FILES
-                   - RUN28_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES - RUN29_SCOPED_FILES)
+                   - RUN28_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES - RUN29_SCOPED_FILES
+                   # RUN 31 PASS 1: the Category-8/9 canonical layer and the Category-9
+                   # qualification boundary. Declared in run31_production_changes.py and pinned
+                   # in run31_pass1_production_tree.sha256; the check keeps full force outside it.
+                   - {"server/app/simulation/regulatory.py",
+                      "server/app/simulation/abm.py",
+                      "server/app/simulation/qualified_evidence.py",
+                      "server/app/simulation/canonical_v6.py",
+                      "server/app/simulation/models_cat89.py",
+                      "server/app/simulation/qualification_boundary.py",
+                      "server/app/simulation/qualification_contract.py",
+                      "server/app/simulation/models.py",
+                      "server/app/simulation/lineage.py",
+                      "server/app/project_data.py",
+                      "server/app/extraction_merge.py",
+                      "server/app/field_registry.py"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",
@@ -542,11 +603,15 @@ check(_prod, "the guard is live: it does see the files this run did change", str
 # baseline for the results already collected under it. The history is asserted as a whole rather
 # than one stamp at a time, so a run that overwrote an earlier stamp instead of appending would
 # turn this red.
-check(registry.SIMULATION_VERSION == "sim-2026.08-v16",
-      "the analytical layer is stamped at Run 28's version",
+# RESTATED BY RUN 31, PASS 1: the assertion pinned the CURRENT stamp to the stamp this run
+# added, which any authorised later append necessarily moves. What is an invariant -- and
+# what is still asserted -- is that this run's stamp is PRESENT in the append-only history.
+from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH0  # noqa: E402
+check("sim-2026.08-v16" in _SVH0,
+      "the stamp this line was qualified at, sim-2026.08-v16, is present in the history",
       registry.SIMULATION_VERSION)
 from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH  # noqa: E402
-check(_SVH == ("sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4",
+check(_SVH[:16] == ("sim-2026.07-v1", "sim-2026.08-v2", "sim-2026.08-v3", "sim-2026.08-v4",
                "sim-2026.08-v5", "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8",
                "sim-2026.08-v9", "sim-2026.08-v10", "sim-2026.08-v11",
                "sim-2026.08-v12", "sim-2026.08-v13",
@@ -1381,6 +1446,7 @@ for _mid, _name in (("B2.1", "dempster-shafer"), ("B2.2", "rough sets"),
 # and cycle-9 workings derived by hand, unchanged.
 import app.simulation.models_gov as _legacy_gov            # noqa: E402
 import app.simulation.models_evc as _legacy_evc            # noqa: E402
+
 r = _legacy_gov.run_dst(_PKG, NOOP, "2025-06-30")
 ka((r["belief_green"], r["belief_amber"], r["belief_red"]), (0.01, 0.05, 0.93),
    "dempster-shafer, historical: belief on Red when TWO bodies of evidence agree, and NOT the "

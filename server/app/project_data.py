@@ -75,12 +75,20 @@ def governed_structure_keys() -> set[str]:
     the exact defect section 15 of Run 29's contract forbids repeating, so the vocabulary is the
     union of all three maps and nothing here restates a key.
     """
+    # RUN 31 ADDS THE v6 MAP for the same reason a fourth time. The sixteen Category-8
+    # and Category-9 structures Run 31 supplies -- the agent/authority model, the applicability,
+    # rule-register, reporting and modification records, the quality, safety, environmental and
+    # contractor registers, and the seven evidence-quality structures -- are governed by
+    # `canonical_v6.py`. Reading only the earlier four maps would build an intake path that
+    # could not reach one of them, which is the exact defect Run 28's closure found.
     from .simulation.canonical import CANONICAL_STRUCTURE_KEYS
     from .simulation.canonical_v3 import V3_STRUCTURE_KEYS
     from .simulation.canonical_v4 import V4_STRUCTURE_KEYS
     from .simulation.canonical_v5 import V5_STRUCTURE_KEYS
+    from .simulation.canonical_v6 import V6_STRUCTURE_KEYS
     return (set(V3_STRUCTURE_KEYS.values()) | set(CANONICAL_STRUCTURE_KEYS.values())
-            | set(V4_STRUCTURE_KEYS.values()) | set(V5_STRUCTURE_KEYS.values()))
+            | set(V4_STRUCTURE_KEYS.values()) | set(V5_STRUCTURE_KEYS.values())
+            | set(V6_STRUCTURE_KEYS.values()))
 
 
 #: The document path assembles these two itself, from evidence the corpus already holds. They

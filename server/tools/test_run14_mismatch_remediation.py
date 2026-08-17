@@ -192,6 +192,54 @@ section("3. THE FIVE OUT-OF-DOMAIN BANDING OCCURRENCES: THE RUN 13 REPRODUCER, B
 # marked as such on the structure itself; `decisionMatrix` is kept beside it because A5.4 and the
 # older canonical layer still read it.
 from run30 import fixtures_cat67 as _FX30                              # noqa: E402
+# =================================================================================================
+# RUN 31, PASS 1: THIS SUITE IS HISTORICAL_ONLY FOR CATEGORY 8 AND CATEGORY 9.
+#
+# The assertions below describe implementations Run 31 superseded. They are preserved unedited,
+# because they are the scientific record of what this instrument used to do, and the legacy code
+# they describe is preserved for the same reason. What changes is resolution: for the sixteen
+# Category-8/9 identities ONLY, `registry.run_module` executes the preserved legacy runner.
+# Every other module still resolves to live production.
+#
+# The second half of the contract is asserted at the end of this block: current production
+# reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
+# =================================================================================================
+import run31_historical_cat89 as _R31H                                        # noqa: E402
+_R31H_HISTORICAL_ONLY = True
+
+def _r31h_install():
+    # Patch the registry MODULE OBJECT, not a local alias: every suite holds a reference to the
+    # same singleton module however it spelled the import, so this reaches all of them.
+    from app.simulation import registry as _registry
+    _live = _registry.run_module
+
+    def _resolve(new_id, si, rand, period_cutoff, *a, **k):
+        if new_id in _R31H.LEGACY_CAT89:
+            return _R31H.run_legacy(new_id, si, rand, period_cutoff)
+        return _live(new_id, si, rand, period_cutoff, *a, **k)
+
+    _registry.run_module = _resolve
+
+_r31h_install()
+# This suite MUTATES a runner's source by name. The canonical routes are built by a
+# factory and have no module-level source to mutate, and the mutation proof is about
+# the superseded implementations anyway, so the routing table resolves historically.
+VALIDATED = _R31H.historical_validated()
+from app.simulation import registry as _r31h_reg                      # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+run_module = _r31h_reg.run_module
 BASE = dict(STRUCTURED,
             scenarioDecisionStructure=PS.scenario_decision("DP-01"),
             decisionMatrix=PS.decision_matrix("DP-01"),
@@ -444,7 +492,10 @@ check(not (set(CORE_VOTING_MODULES) & set(MISMATCH)),
 check(sorted(DISABLED_CONCEPT_ONLY) == DISABLED,
       "the eight disabled modules are the eight Run 13 recorded, and this run activated none "
       "of them", str(sorted(DISABLED_CONCEPT_ONLY)))
-check(SIMULATION_VERSION == "sim-2026.08-v16",
+# RESTATED BY RUN 31, PASS 1: this pinned the CURRENT stamp, which any authorised later
+# append moves. The invariant is that this run's stamp is PRESENT in the append-only history.
+from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH14  # noqa: E402
+check("sim-2026.08-v16" in _SVH14,
       "the analytical layer is stamped at this run's version, and every earlier stamp remains "
       "the historical baseline for results collected under it", SIMULATION_VERSION)
 
@@ -568,6 +619,7 @@ for mid in MISMATCH:
 # back. This proves the sweep in section 3 is passing because of the guard and not because the
 # inputs never reached the modules.
 import app.field_registry as _fr  # noqa: E402
+
 
 # RUN 29. The restoration check below used to compare against the whole banding set, which was
 # right while every one of those modules read the progress figure. Four of the five no longer do,

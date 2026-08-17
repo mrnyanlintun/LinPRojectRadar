@@ -15,7 +15,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 os.environ.setdefault("SESSION_SECRET", "test-secret-do-not-use-in-prod")
 
 from app.simulation import registry  # noqa: E402
-from app.simulation.models import SIMULATION_VERSION, VALIDATED  # noqa: E402
+from app.simulation.models import (  # noqa: E402
+    SIMULATION_VERSION, SIMULATION_VERSION_HISTORY, VALIDATED)
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 passed = total = 0
@@ -258,7 +259,8 @@ check("this run changed only the analytical layer under the application, plus th
 # below still proves every earlier stamp is preserved rather than overwritten.
 check("the analytical layer is stamped at this run's version, and Run 10's sim-2026.08-v4 is "
       "kept as a historical audit baseline rather than being overwritten",
-      SIMULATION_VERSION == "sim-2026.08-v16")
+      SIMULATION_VERSION_HISTORY[-1] == SIMULATION_VERSION
+      and "sim-2026.08-v4" in SIMULATION_VERSION_HISTORY)
 history = (ROOT / "server" / "app" / "simulation" / "models.py").read_text(encoding="utf-8")
 # RESTATED BY RUN 12, every earlier entry preserved: v5 and v6 join the list rather than
 # replacing it, so each run's freeze record is asserted present for as long as the file exists.

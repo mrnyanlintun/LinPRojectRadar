@@ -78,7 +78,11 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v5",
         "code_audit/run30_participant_package_v5_checksums.sha256",
-        None,
+        # RUN 31 PASS 2: v5 is a predecessor now, so it is pinned to the commit whose blobs it
+        # describes rather than left reading the working tree. Leaving it on None would make TWO
+        # records claim the live tree, which is exactly the masquerade this chain forbids and the
+        # defect the Run-28 closure had to undo in the v2 record.
+        "4dd59857c77c2c87aed0f741fd7a0e989efef5f2",
         "THE RUN-30 CLOSURE repointed all twenty Category-7 production identities onto the "
         "canonical layer. Two consequences reach the served defensibility evidence object, which "
         "is GENERATED from the registry and the structure maps. First, eight proxy qualifiers "
@@ -92,10 +96,44 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "regenerated: it is pinned to the commit whose blobs it describes, which is the defect "
         "the Run-28 closure had to correct in the v2 record.",
     ),
+    Package(
+        "og-participant-2026.08-v6",
+        "code_audit/run31_participant_package_v6_checksums.sha256",
+        None,
+        "RUN 31 PASS 2 propagated the six owner-approved Category-8 names to every current "
+        "surface, and eight participant-visible files carry a module display name: categories, "
+        "decision-ui, deepdive, the two defensibility objects, knowledge, taxonomy and "
+        "workspace. The delta is SIX DISPLAY-NAME SUBSTITUTIONS and nothing else -- 8.1 becomes "
+        "Agent-Based Governance Model and expressly NOT Action Boundary & Authority Matrix, "
+        "which remains the governed policy the model consults rather than a registered module, "
+        "and no Bayesian terminology is introduced. No threshold, no evidence-review step, no "
+        "preliminary assessment or lock, no AI reveal, no final capture, no final lock and no "
+        "period advancement moved: THE EXPERIMENTAL SEQUENCE IS UNCHANGED. The delta is "
+        "inverse-mappable -- applying the six reverse substitutions to those eight files "
+        "reproduces the v5 bytes exactly, which the package suite asserts. The v5 record is NOT "
+        "regenerated: it is pinned to the commit whose blobs it describes.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v5 and v6, and the six substitutions that moved them.
+V5_TO_V6_CHANGED = (
+    "assets/js/categories.js", "assets/js/decision-ui.js", "assets/js/deepdive.js",
+    "assets/js/ds_defensibility_data.js", "assets/js/ds_defensibility_evidence.js",
+    "assets/js/knowledge.js", "assets/js/taxonomy.js", "assets/js/workspace.js",
+)
+
+#: NEW -> OLD. Applying these to the v6 bytes must reproduce the v5 bytes exactly.
+V6_TO_V5_INVERSE = {
+    "Agent-Based Governance Model": "ABM Governance Layer",
+    "FAR/Agency EVMS Applicability Monitor": "FAR Threshold Monitor",
+    "Versioned A-11 Capital Programming Conformance Check": "OMB A-11 Check",
+    "EVMS Reporting Compliance Monitor": "EVM Reporting Threshold",
+    "Contract Modification Governance Check": "Contract Modification Frequency",
+    "Contractor Performance Assessment Signal": "Contractor Performance Score",
+}
 
 #: The files whose bytes moved between v4 and v5.
 V4_TO_V5_CHANGED = (

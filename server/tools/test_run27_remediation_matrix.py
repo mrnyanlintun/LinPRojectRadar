@@ -28,9 +28,23 @@ import csv
 import pathlib
 import sys
 
+
+
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server"))
 sys.path.insert(0, str(ROOT / "server" / "tools"))
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
 
 from app.simulation.registry import (  # noqa: E402
     CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, DISABLED_MODULES, load_registry,
@@ -133,14 +147,29 @@ check("no matrix row is outside the registry",
 RUN28_RENAMES = {"A1.1": ("Monte Carlo EAC", "Monte Carlo EAC Forecast"),
                  "A1.10": ("Regression to Mean CPI", "CPI Shrinkage Forecast"),
                  "A1.11": ("ICE Ratio", "Independent EAC Reconciliation Index")}
+# RUN 31 renamed six Category-8 identities on the owner's explicit authority, and the matrix keeps
+# the names those modules carried WHEN RUN 27 AUDITED THEM for exactly the reason stated above:
+# both are true of their own moment and neither is edited to agree with the other. 8.1 is
+# `Agent-Based Governance Model` and expressly NOT `Action Boundary & Authority Matrix`; the
+# matrix is the policy the model consults, not the module.
+RUN31_RENAMES = {"B3.1": ("ABM Governance Layer", "Agent-Based Governance Model"),
+                 "B3.2": ("FAR Threshold Monitor", "FAR/Agency EVMS Applicability Monitor"),
+                 "B3.3": ("OMB A-11 Check",
+                          "Versioned A-11 Capital Programming Conformance Check"),
+                 "B3.4": ("EVM Reporting Threshold", "EVMS Reporting Compliance Monitor"),
+                 "B3.5": ("Contract Modification Frequency",
+                          "Contract Modification Governance Check"),
+                 "A6.4": ("Contractor Performance Score",
+                          "Contractor Performance Assessment Signal")}
+RENAMED = {**RUN28_RENAMES, **RUN31_RENAMES}
 check("every registered name in the matrix is the registry's own name for that id, except the "
       "two Run 28 renamed on the owner's authority",
       all(r["current_registered_name"] == registry[r["canonical_id"]]["module_name"]
-          for r in matrix if r["canonical_id"] not in RUN28_RENAMES),
+          for r in matrix if r["canonical_id"] not in RENAMED),
       str([r["canonical_id"] for r in matrix
-           if r["canonical_id"] not in RUN28_RENAMES
+           if r["canonical_id"] not in RENAMED
            and r["current_registered_name"] != registry[r["canonical_id"]]["module_name"]]))
-for _mid, (_was, _now) in sorted(RUN28_RENAMES.items()):
+for _mid, (_was, _now) in sorted(RENAMED.items()):
     _row = next((r for r in matrix if r["canonical_id"] == _mid), None)
     check(f"the matrix still records the name {_mid} carried when Run 27 audited it",
           _row is not None and _row["current_registered_name"] == _was,

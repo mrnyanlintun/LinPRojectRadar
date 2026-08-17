@@ -178,7 +178,33 @@ check(old_models.SIMULATION_VERSION == "sim-2026.08-v2",
 # sim-2026.08-v2, it is imported and EXECUTED by this suite, and every comparison below runs the
 # old code and the new code side by side on identical inputs. A frozen record that could not be
 # executed would not be evidence of anything.
-check(SIMULATION_VERSION == "sim-2026.08-v16",
+# RESTATED BY RUN 31, PASS 1: the assertion pinned the CURRENT stamp to the stamp this run
+# added, which any authorised later append necessarily moves. What is an invariant -- and
+# what is still asserted -- is that this run's stamp is PRESENT in the append-only history.
+from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH7  # noqa: E402
+
+# =================================================================================================
+# RUN 31, PASS 1: this suite makes ONE historical assertion about the superseded Category-9
+# implementations (the empty-input absence band). It resolves that assertion against the
+# preserved legacy runners; every other module here still resolves to live production.
+# =================================================================================================
+import run31_historical_cat89 as _R31H                                        # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+_R31H_HISTORICAL_ONLY = True
+
+check("sim-2026.08-v16" in _SVH7,
       "and this branch is stamped at Run 28's version, so results computed before and after "
       "each run are distinguishable in the data. Every earlier stamp from sim-2026.07-v1 "
       "onward is preserved in the version history rather than overwritten",
@@ -981,9 +1007,30 @@ for _mid in sorted(VALIDATED):
     _rr = registry.run_module(_mid, {}, NOOP, CUTOFF)
     if not abstains(_rr):
         _banders.append(_mid)
-check(_banders == ["C1.1", "C1.5"],
-      "and across the whole implemented set only the two modules whose SUBJECT is absence band "
-      "on an empty input", str(_banders))
+# RESTATED BY RUN 31, AND THE ORIGINAL FINDING IS PRESERVED BESIDE IT RATHER THAN DELETED.
+#
+# Run 7 found that exactly two modules band on an empty input, because their SUBJECT is absence:
+# C1.1 Missing Data Index and C1.5 Information Completeness Ratio. That was true of the
+# implementations it described, and it was true BECAUSE both counted against a hard-coded
+# eleven-field list -- a denominator nobody had supplied.
+#
+# Run 31's supplied contract forbids exactly that: 9.1's denominator is the required-input
+# contract of the module or use being assessed, and section 23 says a completeness figure with an
+# invented denominator is not a measurement. So both now ABSTAIN on an empty input, which is the
+# contract's own answer and not a regression. The historical behaviour is asserted directly
+# against the preserved legacy implementations, so what Run 7 found remains reconstructable.
+_legacy_banders = []
+for _mid in ("C1.1", "C1.5"):
+    _lr = _R31H.run_legacy(_mid, {}, NOOP, CUTOFF)
+    if not abstains(_lr):
+        _legacy_banders.append(_mid)
+check(_legacy_banders == ["C1.1", "C1.5"],
+      "HISTORICAL: the two modules whose SUBJECT is absence banded on an empty input in the "
+      "superseded implementations, which is what Run 7 found", str(_legacy_banders))
+check(_banders == [],
+      "and under Run 31 no module bands on an empty input at all: 9.1 and 9.5 now require the "
+      "governed contract and package their denominators are defined over, and abstain without "
+      "them rather than counting against a hard-coded field list", str(_banders))
 
 print("\n-- the participant surface carries no remediation label --")
 _forbidden = ("remediation", "Run 7", "run7", "defect", "abstention_reason_code",
@@ -1106,9 +1153,27 @@ RUN30_CORRECTED = {"B1.2", "B1.3", "B1.4",
                    "B2.1", "B2.2", "B2.3", "B2.4", "B2.5", "B2.6", "B2.8",
                    "B2.10", "B2.11", "B2.12", "B2.13", "B2.14", "B2.15", "B2.16", "B2.17",
                    "B2.18", "B2.19"}
+# RUN 31 corrected the nine Category-8 and seven Category-9 identities onto the canonical layer.
+# Each now reads its own governed structure and abstains when it is absent, so a module that
+# previously produced a band from a cost index, a meeting-minute mention or an eleven-field
+# completeness list moves here. That is the remediation, not a regression.
+RUN31_CORRECTED = {"A6.1", "A6.2", "A6.3", "A6.4",
+                   "B3.1", "B3.2", "B3.3", "B3.4", "B3.5",
+                   "C1.1", "C1.2", "C1.3", "C1.4", "C1.5", "C1.6", "C1.7"}
+# RUN 31 v19 CLOSURE. The owner's decision that a package with NO Category-9 assessment fails
+# closed reaches every Category-6/7/8/10 consumer, so the Signal Synthesis, Evidence Combination
+# and Decision Optimization identities move too on a package that declares no assessment. That is
+# the gate working, not a regression: with a governed assessment supplied they compute exactly as
+# before, which test_run31_version_boundaries proves on identical input.
+RUN31_V19_GATED = {"B1.1", "B1.2", "B1.3", "B1.4",
+                   "B2.1", "B2.2", "B2.3", "B2.4", "B2.5", "B2.6", "B2.7", "B2.8", "B2.9",
+                   "B2.10", "B2.11", "B2.12", "B2.13", "B2.14", "B2.15", "B2.16", "B2.17",
+                   "B2.18", "B2.19", "B2.20",
+                   "B4.1", "B4.2", "B4.3", "B4.4", "B4.5", "B4.6", "B4.7"}
 check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
                       | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED
-                      | RUN30_CORRECTED),
+                      | RUN30_CORRECTED | RUN31_CORRECTED
+                      | RUN31_V19_GATED),
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "one of the later runs' corrected lists",
       str(sorted(set(_moved) - (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED

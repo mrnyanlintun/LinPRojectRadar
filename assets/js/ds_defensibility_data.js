@@ -212,25 +212,25 @@ const DS_DEFENSIBILITY = {
    },
    {
     "id_display": "B3.1",
-    "currentName": "ABM Governance Layer",
+    "currentName": "Agent-Based Governance Model",
     "finding": "The implementation is a deterministic authority and decision tree in decision.js. That is a strong explainable governance mechanism, but it is not an agent-based simulation. Rename as Governance Decision Rules.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
     "id_display": "B3.2",
-    "currentName": "FAR Threshold Monitor",
+    "currentName": "FAR/Agency EVMS Applicability Monitor",
     "finding": "The hard-coded FAR Part 34 and 25-percent overrun logic must not be presented as a legal compliance determination. Replace with a versioned, cited, configurable rule set reviewed by a contracting specialist.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
     "id_display": "B3.3",
-    "currentName": "OMB A-11 Check",
+    "currentName": "Versioned A-11 Capital Programming Conformance Check",
     "finding": "A BAC/CPI trigger does not constitute an OMB Circular A-11 compliance assessment. Treat the current output as a demonstration flag only.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
    {
     "id_display": "B3.4",
-    "currentName": "EVM Reporting Threshold",
+    "currentName": "EVMS Reporting Compliance Monitor",
     "finding": "The module applies custom CPI/SPI bands. It is not an authoritative reporting threshold unless the governing agency requirement, effective date, and applicability are configured and cited.",
     "disposition": "Rename to match the current calculation or implement the canonical method; keep only as illustrative until validated."
    },
@@ -2857,7 +2857,7 @@ const DS_DEFENSIBILITY = {
    "count": 9,
    "modules": [
     {
-     "name": "ABM Governance Layer",
+     "name": "Agent-Based Governance Model",
      "methodClass": "ABM Governance",
      "defenseTier": "Tier 1 - Statistical / stochastic model",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
@@ -2875,7 +2875,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Poisson/queueing theory is canonical (M/M/1 assumptions stated); validation of the agent-based and discrete-event methods would consist of face validation and extreme-condition tests (Sargent's simulation V&V framework - the citable accreditation standard for simulation models).",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: GOVERN and MANAGE; ISO/IEC 42001: management-system clause families 4-10; ISO/IEC 23894: risk treatment, communication, monitoring, and review. Any legal threshold requires a versioned authoritative source. This is an alignment statement, not certification.",
-     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by ABM Governance Layer.\" Prohibited: \"The code implements the canonical ABM Governance Layer method\" until the label/code mismatch is resolved.",
+     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by Agent-Based Governance Model.\" Prohibited: \"The code implements the canonical Agent-Based Governance Model method\" until the label/code mismatch is resolved.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [],
      "requiredInputs": [
@@ -2885,7 +2885,7 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "FAR Threshold Monitor",
+     "name": "FAR/Agency EVMS Applicability Monitor",
      "methodClass": "FAR Threshold",
      "defenseTier": "Tier 2 - Deterministic or calibrated indicator",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
@@ -2903,7 +2903,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Direct citation to FAR clauses / OMB Circular A-11 / agency EVM reporting thresholds. Validation for this method would consist of test cases at threshold boundaries. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: GOVERN and MANAGE; ISO/IEC 42001: management-system clause families 4-10; ISO/IEC 23894: risk treatment, communication, monitoring, and review. Any legal threshold requires a versioned authoritative source. This is an alignment statement, not certification.",
-     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by FAR Threshold Monitor.\" Prohibited: \"The code implements the canonical FAR Threshold Monitor method\" until the label/code mismatch is resolved.",
+     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by FAR/Agency EVMS Applicability Monitor.\" Prohibited: \"The code implements the canonical FAR/Agency EVMS Applicability Monitor method\" until the label/code mismatch is resolved.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [],
      "requiredInputs": [
@@ -2914,7 +2914,7 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "OMB A-11 Check",
+     "name": "Versioned A-11 Capital Programming Conformance Check",
      "methodClass": "OMB A11 Check",
      "defenseTier": "Tier 2 - Deterministic or calibrated indicator",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
@@ -2932,7 +2932,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Direct citation to FAR clauses / OMB Circular A-11 / agency EVM reporting thresholds. Validation for this method would consist of test cases at threshold boundaries. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: GOVERN and MANAGE; ISO/IEC 42001: management-system clause families 4-10; ISO/IEC 23894: risk treatment, communication, monitoring, and review. Any legal threshold requires a versioned authoritative source. This is an alignment statement, not certification.",
-     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by OMB A-11 Check.\" Prohibited: \"The code implements the canonical OMB A-11 Check method\" until the label/code mismatch is resolved.",
+     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by Versioned A-11 Capital Programming Conformance Check.\" Prohibited: \"The code implements the canonical Versioned A-11 Capital Programming Conformance Check method\" until the label/code mismatch is resolved.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [],
      "requiredInputs": [
@@ -2942,8 +2942,8 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "EVM Reporting Threshold",
-     "methodClass": "EVM Reporting Threshold",
+     "name": "EVMS Reporting Compliance Monitor",
+     "methodClass": "EVMS Reporting Compliance Monitor",
      "defenseTier": "Tier 2 - Deterministic or calibrated indicator",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
      "assuranceClass": "C",
@@ -2960,7 +2960,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Direct citation to FAR clauses / OMB Circular A-11 / agency EVM reporting thresholds. Validation for this method would consist of test cases at threshold boundaries. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: GOVERN and MANAGE; ISO/IEC 42001: management-system clause families 4-10; ISO/IEC 23894: risk treatment, communication, monitoring, and review. Any legal threshold requires a versioned authoritative source. This is an alignment statement, not certification.",
-     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by EVM Reporting Threshold.\" Prohibited: \"The code implements the canonical EVM Reporting Threshold method\" until the label/code mismatch is resolved.",
+     "permittedProhibitedClaims": "Allowed: \"The current module is an exploratory proxy inspired by EVMS Reporting Compliance Monitor.\" Prohibited: \"The code implements the canonical EVMS Reporting Compliance Monitor method\" until the label/code mismatch is resolved.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [],
      "requiredInputs": [
@@ -2970,7 +2970,7 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "Contract Modification Frequency",
+     "name": "Contract Modification Governance Check",
      "methodClass": "Contract Mod Frequency",
      "defenseTier": "Tier 2 - Deterministic or calibrated indicator",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
@@ -2988,7 +2988,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Direct citation to FAR clauses / OMB Circular A-11 / agency EVM reporting thresholds. Validation for this method would consist of test cases at threshold boundaries. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: GOVERN and MANAGE; ISO/IEC 42001: management-system clause families 4-10; ISO/IEC 23894: risk treatment, communication, monitoring, and review. Any legal threshold requires a versioned authoritative source. This is an alignment statement, not certification.",
-     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Contract Modification Frequency method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
+     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Contract Modification Governance Check method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [],
      "requiredInputs": [
@@ -3081,7 +3081,7 @@ const DS_DEFENSIBILITY = {
      ]
     },
     {
-     "name": "Contractor Performance Score",
+     "name": "Contractor Performance Assessment Signal",
      "methodClass": "Contractor Performance",
      "defenseTier": "Tier 2 - Deterministic or calibrated indicator",
      "asCodedTier": "Tier 2 - Deterministic or calibrated indicator",
@@ -3099,7 +3099,7 @@ const DS_DEFENSIBILITY = {
      "accreditationBasis": "Direct citation to FAR clauses / OMB Circular A-11 / agency EVM reporting thresholds. Validation for this method would consist of test cases at threshold boundaries. None of that has been performed on this platform. What the repository holds is known-answer testing of the stated formula and, for many modules, a domain and boundary enumeration. That supports the claim that the arithmetic is independently verified for the stated formula. It does not establish empirical validation or calibration.",
      "validationRequired": "Verify formula and threshold boundaries; trace each input to provenance; run missing/stale/contradictory-data tests; calibrate bands on synthetic scenarios and, later, non-confidential field cases; confirm that the output abstains when required inputs are absent.",
      "standardsAlignment": "NIST AI RMF 1.0: GOVERN and MANAGE; ISO/IEC 42001: management-system clause families 4-10; ISO/IEC 23894: risk treatment, communication, monitoring, and review. Any legal threshold requires a versioned authoritative source. This is an alignment statement, not certification.",
-     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Contractor Performance Score method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
+     "permittedProhibitedClaims": "Allowed: \"The module is an explainable, literature-grounded demonstration of the Contractor Performance Assessment Signal method family under stated assumptions.\" Prohibited: \"This is a calibrated or production-grade implementation\" unless validation evidence is added.",
      "governanceRole": "Enters the signal package with provenance, method version, input completeness, uncertainty/confidence, status, evidence metric, and abstention state; cannot authorize action without human judgment.",
      "defenseQuestions": [],
      "requiredInputs": [

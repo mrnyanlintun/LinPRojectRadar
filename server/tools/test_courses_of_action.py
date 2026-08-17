@@ -44,6 +44,19 @@ from app.models import Project  # noqa: E402
 from app.research_identity import hash_access_token  # noqa: E402
 from app.research_models import Assignment, Participant, ProjectMember  # noqa: E402
 
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+
 client = TestClient(main.app, raise_server_exceptions=False)
 Session = main.SessionFactory
 PASSED = 0
@@ -156,9 +169,42 @@ def make_operational(code: str):
 
 
 ops_id, ops = make_operational("COA-OPS-PM")
+
 for legacy, tag in ((OPS, "OPS"), (ABST, "ABST")):
     post({"action": "adminmemberadd", "session_token": admin, "id": legacy,
           "participant_id": ops_id, "project_role": "PM"})
+    if legacy == ABST:
+        # RUN 31, PASS 1: THE FIXTURE IS ENRICHED THROUGH THE PRODUCTION INTAKE, NOT AROUND IT.
+        #
+        # This check needs a NON-DEGENERATE computed population: the point it proves is that the
+        # scoring analysis's absence is SPECIFIC to that module rather than a project on which
+        # nothing ran. Before Run 31 the population was supplied incidentally by Category-8/9
+        # proxies that computed a band from cpi and spi; those proxies are gone, and restoring them
+        # to make this green would reconnect exactly what Run 31 removed.
+        #
+        # So the project is given ONE governed structure it genuinely has the evidence for -- its
+        # monthly report carries a document date, and a freshness rule for that source class is
+        # configuration -- through `saveprojectdata`, the same production write path a real project
+        # uses. Nothing is asserted about Category 9 here; it exists so the ledger is not empty.
+        # The structure is a test-only synthetic research fixture and enters no operational or
+        # participant database.
+        _seed = post({"action": "saveprojectdata", "session_token": ops, "id": legacy,
+                      "structure": "evidenceTimelinessRecord", "effectivePeriod": 1,
+                      "suppliedBy": "run31 pass1 fixture", "source": "SYNTHETIC_RESEARCH_FIXTURE",
+                      "record": {"data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+                                 "not_for_empirical_validation": True,
+                                 "evaluation_date": "2026-05-31",
+                                 "effective_date": "2026-05-20",
+                                 "date_field": "effective_date",
+                                 "source_class": "MONTHLY_REPORT",
+                                 "use": "current_period_decision",
+                                 "freshness_rule": {"allowed_age_days": 30,
+                                                    "boundary": "inclusive",
+                                                    "version": "run31-fixture-fr-v1"}}})
+        check(_seed.get("ok") is True,
+              "the governed timeliness structure is accepted by the production intake path",
+              str(_seed)[:160])
+
     post({"action": "projectupload", "session_token": ops, "id": legacy, "period": 1,
           "documents": [{"filename": f"{tag}.pdf", "mimeType": "application/pdf",
                          "dataBase64": b64(doc(tag))}]})

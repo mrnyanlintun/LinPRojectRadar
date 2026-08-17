@@ -57,9 +57,52 @@ from app.research_models import ComputedResult, Participant  # noqa: E402
 from app.simulation import compute_project  # noqa: E402
 from app.simulation.registry import CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY  # noqa: E402
 from app.simulation.signal_package import (  # noqa: E402
+
     ADAPTER_TIERS, NESTED_INPUT_MODULES, SIGNAL_KEYS, build_signals, doc_status, evm_status,
 )
 
+# =================================================================================================
+# RUN 31, PASS 1: THIS SUITE IS HISTORICAL_ONLY FOR CATEGORY 8 AND CATEGORY 9.
+#
+# The assertions below describe implementations Run 31 superseded. They are preserved unedited,
+# because they are the scientific record of what this instrument used to do, and the legacy code
+# they describe is preserved for the same reason. What changes is resolution: for the sixteen
+# Category-8/9 identities ONLY, `registry.run_module` executes the preserved legacy runner.
+# Every other module still resolves to live production.
+#
+# The second half of the contract is asserted at the end of this block: current production
+# reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
+# =================================================================================================
+import run31_historical_cat89 as _R31H                                        # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+_R31H_HISTORICAL_ONLY = True
+
+def _r31h_install():
+    # Patch the registry MODULE OBJECT, not a local alias: every suite holds a reference to the
+    # same singleton module however it spelled the import, so this reaches all of them.
+    from app.simulation import registry as _registry
+    _live = _registry.run_module
+
+    def _resolve(new_id, si, rand, period_cutoff, *a, **k):
+        if new_id in _R31H.LEGACY_CAT89:
+            return _R31H.run_legacy(new_id, si, rand, period_cutoff)
+        return _live(new_id, si, rand, period_cutoff, *a, **k)
+
+    _registry.run_module = _resolve
+
+_r31h_install()
 client = TestClient(main.app, raise_server_exceptions=False)
 Session = main.SessionFactory
 PASSED = 0

@@ -150,6 +150,22 @@ def text_key(code_id: str) -> str:
     return f"{category}.{int(index) + offset}"
 
 
+#: OWNER-APPROVED RENAMES SINCE THE RUN-17 AUDIT. The Run-17 specification text is a HISTORICAL
+#: artefact: it records the module names as they stood when that audit was taken, and rewriting it
+#: would destroy the evidence that the names were ever different -- the same principle that keeps
+#: the superseded runners in the tree. These renames were made on explicit owner authority in
+#: Run 31 and are the CURRENT authoritative names, so a registry name matching one of them is
+#: agreement, not drift. Any other disagreement is still a problem and is still reported.
+OWNER_APPROVED_RENAMES: dict[str, str] = {
+    "B3.1": "Agent-Based Governance Model",
+    "B3.2": "FAR/Agency EVMS Applicability Monitor",
+    "B3.3": "Versioned A-11 Capital Programming Conformance Check",
+    "B3.4": "EVMS Reporting Compliance Monitor",
+    "B3.5": "Contract Modification Governance Check",
+    "A6.4": "Contractor Performance Assessment Signal",
+}
+
+
 def verify_mapping() -> list[str]:
     """
     Prove the group mapping by module name against the owner specification. Returns the list of
@@ -164,7 +180,8 @@ def verify_mapping() -> list[str]:
         if spec_name is None:
             problems.append(f"{code} -> {key}: no owner-specification module at that key")
             continue
-        if registry_name.lower() != spec_name.lower():
+        if registry_name.lower() != spec_name.lower() and \
+                OWNER_APPROVED_RENAMES.get(code, "").lower() != registry_name.lower():
             problems.append(
                 f"{code} -> {key}: registry {registry_name!r} vs specification {spec_name!r}")
     missing = set(SPEC_NAMES) - {text_key(r["new_id"].strip()) for r in load_rows()}

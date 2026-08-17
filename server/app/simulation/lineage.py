@@ -808,14 +808,19 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
                           "change magnitude = summed signed change value / baseline "
                           "contract value, reported separately and never combined with the "
                           "frequency")),
-    "B3.5": lineage_record(  # Contract Modification Frequency
-        "B3.5",
-        source_fact_ids=("baseline_contract_sum", "change_order_count", "revised_contract_sum"),
-        lineage_group_ids=(CONTRACT_CHANGE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("change order log", "count of contract modifications",
-                          "scope growth = (revised contract sum - baseline contract sum) "
-                          "/ baseline contract sum")),
+    #      B3.5: ONE DECLARATION REMOVED BY RUN 31, for the same reason and with one addition.
+    #      It declared the reading on the change-order COUNT and the baseline and revised
+    #      contract sums, through the contract-change body. That described a change-frequency
+    #      measure -- which is Category 4.6's job, not this module's: section 12 of the Run-31
+    #      contract separates them in terms and forbids a change count being 8.5's result. The
+    #      canonical module assesses modification AUTHORITY, PROCESS and DOCUMENTATION and reads
+    #      no count at all, so the declared derivation chain describes a computation that no
+    #      longer happens anywhere.
+    #
+    #      Keeping it would also create a false SAME_SOURCE_TRANSFORM edge into the
+    #      contract-change body shared with Category 4.6, which is the false-suppression
+    #      direction again. Removed, not rewritten: what a governed modification register rests
+    #      on is whatever its assessor read, and this platform does not know that.
     #      The second pair, AS RUN 29 LEFT IT. Run 20 cycle 4 declared Sensitivity Analysis and
     #      Tornado Risk Ranking CORRELATED, because each recomputed over the same earned-value
     #      and document evidence rather than one reading the other's output. Run 29's supplied
@@ -922,24 +927,28 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
                           "own cost impact",
                           "Monte Carlo realisation of the events over the base cost",
                           "the empirical eightieth percentile of the simulated total")),
-    "B3.2": lineage_record(  # FAR Threshold Monitor. The budget is demanded and is immaterial.
-        "B3.2", source_fact_ids=(),
-        derived_index_reads=(COST_INDEX,),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=SAME_SOURCE_TRANSFORM,
-        derivation_chain=("the cost performance index",
-                          "cost performance index = ev / ac",
-                          "forecast overrun as a percentage of the budget, which is "
-                          "scale-invariant in the budget",
-                          "comparison against an internal review level")),
-    "B3.4": lineage_record(  # EVM Reporting Threshold
-        "B3.4", source_fact_ids=(),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the cost and schedule performance indices",
-                          "deviation of each index from one",
-                          "comparison against an internal reporting level")),
+    #      B3.2 AND B3.4: TWO DECLARATIONS REMOVED BY RUN 31, ON THE RUN-30 CLOSURE'S REASONING.
+    #
+    #      Both said the same thing: that the reading rested on the cost index, or on the cost
+    #      and schedule indices, through the earned-value body. That was TRUE of the
+    #      implementations they described, and it is precisely why those implementations were
+    #      proxies -- section 9 of the Run-31 contract forbids inferring EVMS applicability from
+    #      BAC, CPI, SPI, EV or AC in those words, and section 11 forbids CPI/SPI establishing
+    #      reporting conformance. It is no longer true of anything: B3.2 and B3.4 now route
+    #      through models_cat89.py into canonical_v6, which reads no index at all and abstains
+    #      when its governed structure is absent.
+    #
+    #      LEAVING THEM WOULD ASSERT A DEPENDENCE THAT HAS STOPPED EXISTING, and that is the
+    #      dangerous direction: a false SAME_SOURCE_TRANSFORM or CORRELATED edge into the
+    #      earned-value body would let a consumer SUPPRESS corroboration that is really there.
+    #
+    #      THEY ARE REMOVED RATHER THAN REWRITTEN ONTO THEIR GOVERNED STRUCTURES, deliberately
+    #      and for the reason the Run-30 closure gives above. What an acquisition-applicability
+    #      record or a reporting record rests on is whatever its assessor read, and this platform
+    #      does not know that. Declaring new INDEPENDENT bodies would manufacture exactly the
+    #      independence this table exists to stop being assumed. `lineage_status` therefore
+    #      derives LINEAGE_UNRESOLVED for both from the absent declaration, which is the truthful
+    #      state: not independent, not dependent, not established.
     "B4.3": lineage_record(  # Constraint Satisfaction Analysis
         "B4.3", source_fact_ids=(),
         derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),

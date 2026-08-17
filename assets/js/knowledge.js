@@ -747,7 +747,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         ${svgCusum()}
 
         <h3>What a breach means</h3>
-        <p>A CUSUM breach hands the question to Conservative Dominance and ultimately ABM Governance Layer. The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative", itself a finding worth surfacing.</p>
+        <p>A CUSUM breach hands the question to Conservative Dominance and ultimately Agent-Based Governance Model. The monitor never acts on its own; it produces evidence the governance layer routes. If the breach has no document narrative behind it, the conflict type is "Anomaly Without Narrative", itself a finding worth surfacing.</p>
       `,
     },
     {
@@ -1225,7 +1225,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     },
     {
       id: "module19",
-      title: "ABM Governance Layer",
+      title: "Agent-Based Governance Model",
       eyebrow: "Regulatory and Authority Thresholds · decision output",
       build: () => `
         <p class="kn-lead">"Agent-based" here means each authority role, project manager, controls lead, program director, is modelled with explicit, executable decision rules rather than free text. In <code>decision.js</code> those rules are pure functions, readable, testable, and auditable. Nothing is learned; everything is documented. This module is read last, because it consumes the signal-synthesis baseline plus the evidence-combination checks and produces the recommendation that gets recorded.</p>
@@ -2142,13 +2142,13 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
   /* ---------- Regulatory and Authority Thresholds, Governance & Compliance (8.1-8.9) ---------- */
   const CAT8_MODULES = [
-    { n: "B3.1", name: "ABM Governance Layer", mc: "ABM_Governance",
+    { n: "B3.1", name: "Agent-Based Governance Model", mc: "ABM_Governance",
       purpose: "Converts the fused signal state into the named authority, recommended action, and required documentation, the last step in the stack, the artefact that survives the reporting cycle.",
       formula: "Each authority role (PM, controls lead, program director) is modelled as an agent with explicit decision rules implemented as pure functions (deriveHealthState, classifyConflict, deriveDecision) in decision.js, consuming the Conservative Dominance baseline and Evidence Combination evidence-combination cross-checks. Runs in decision.js, not simulations.js.",
       sources: "Consumes every already-computed module's output; no independent document extraction of its own.",
       interp: "This module's output IS the decision card the PM sees; a status change here is not itself a decision, a decision requires a named human, a role, a rationale, and a timestamp before it is recorded.",
       ground: "Agent-based governance modeling (Bonabeau, 2002) assigns explicit decision rules to distinct authority roles; here those rules are deliberately implemented as readable functions rather than a learned model, so every recommendation is traceable to an inspectable rule." },
-    { n: "B3.2", name: "FAR Threshold Monitor", mc: "FAR_Threshold",
+    { n: "B3.2", name: "FAR/Agency EVMS Applicability Monitor", mc: "FAR_Threshold",
       purpose: "Tracks projected cost overrun against the FAR Part 34 25% reporting threshold used on federal capital programs, converting a percentage into a specific reporting obligation.",
       formula: "eac = BAC/CPI; overrunPct = ((eac−BAC)/BAC) × 100; far34Threshold = 25%; distanceToThreshold = 25 − overrunPct.",
       bands: [["green","Green","overrun ≤ 5%"], ["yellow","Yellow","5-15%"], ["amber","Amber","15-25%"], ["red","Red","≥ 25% (FAR reporting required)"]],
@@ -2156,7 +2156,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       sources: "Pay Application, Schedule of Values, Cost Report.",
       interp: "distanceToThreshold in the evidence string tells the PM exactly how much headroom remains before mandatory FAR reporting is triggered, a specific number for a specific regulatory conversation, not just a status color.",
       ground: "FAR Part 34 (Federal Acquisition Regulation, Major System Acquisition) sets a 25% cost-growth threshold that triggers formal reporting obligations on federal capital programs; this module encodes that specific regulatory threshold directly." },
-    { n: "B3.3", name: "OMB A-11 Check", mc: "OMB_A11_Check",
+    { n: "B3.3", name: "Versioned A-11 Capital Programming Conformance Check", mc: "OMB_A11_Check",
       purpose: "Flags whether a major program (BAC ≥ $10M) with CPI below 0.90 has crossed the mandatory-reporting condition under OMB Circular A-11 guidance for federal capital investments.",
       formula: "cpiBelow90 = CPI &lt; 0.90; majorProgram = BAC ≥ $10,000,000; reportingTriggered = both true simultaneously.",
       bands: [["green","Green","CPI ≥ 0.90"], ["yellow","Yellow","0.92 ≤ CPI &lt; ... (see amber)"], ["amber","Amber","0.88 ≤ CPI &lt; 0.92"], ["red","Red","CPI &lt; 0.88, or reporting triggered"]],
@@ -2164,7 +2164,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       sources: "Pay Application, Schedule of Values, Cost Report.",
       interp: "'MANDATORY REPORTING TRIGGERED' in the evidence string means both conditions (major-program size AND CPI breach) are simultaneously true; a smaller program with the same CPI shortfall does not carry the same OMB reporting obligation.",
       ground: "OMB Circular A-11 establishes reporting and review requirements for major federal capital investments; this module encodes the size and cost-performance conditions that jointly trigger that reporting obligation." },
-    { n: "B3.4", name: "EVM Reporting Threshold", mc: "EVM_Reporting_Threshold",
+    { n: "B3.4", name: "EVMS Reporting Compliance Monitor", mc: "EVM_Reporting_Threshold",
       purpose: "Checks whether CPI and/or SPI have individually breached the standard 0.90 reporting threshold, distinguishing a single-metric breach from a joint cost-and-schedule breach.",
       formula: "cpiBreached = CPI &lt; 0.90; spiBreached = SPI &lt; 0.90; bothBreached = both; eacDeltaPct computed from BAC/CPI.",
       bands: [["green","Green","neither breached"], ["yellow","Yellow","exactly one of CPI/SPI breached"], ["amber","Amber","both breached AND EAC delta ≤ 15%"], ["red","Red","both breached AND EAC delta &gt; 15%"]],
@@ -2172,7 +2172,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       sources: "Pay Application, Schedule of Values.",
       interp: "A joint cost-and-schedule breach (both true) reads more severely than either alone even at the same individual CPI/SPI value, because a single-dimension shortfall is more often recoverable than a compounding cost-and-schedule problem.",
       ground: "The 0.90 CPI/SPI threshold is a widely used industry rule-of-thumb reporting trigger in EVM practice (consistent with the PMI EVM standard's guidance on significant-variance reporting); joint-breach escalation reflects that simultaneous cost and schedule shortfalls compound risk." },
-    { n: "B3.5", name: "Contract Modification Frequency", mc: "Contract_Mod_Frequency",
+    { n: "B3.5", name: "Contract Modification Governance Check", mc: "Contract_Mod_Frequency",
       purpose: "The Regulatory and Authority Thresholds governance-compliance reading of change-order activity, distinct from Change Order Frequency's document-risk framing: here the question is whether modification frequency merits contracting-officer review.",
       formula: "scopeGrowthPct computed identically to Change Order Frequency; riskLevel = Red if changeOrderCount ≥10 OR scopeGrowth ≥20%; Amber if ≥6 OR ≥10%; Yellow if ≥3 OR ≥5%; else Green.",
       abstain: "changeOrderCount, baselineContractSum or revisedContractSum missing.",
@@ -2203,7 +2203,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       sources: "Environmental Compliance Report (preferred); OAC Meeting Minutes proxy when unavailable, flagged '[est.]'.",
       interp: "Any recorded environmentalViolations count is surfaced directly in the evidence string alongside the rate, a formal violation should be treated as materially more significant than a compliance-rate dip alone, regardless of the numeric band.",
       ground: "Environmental permit compliance-rate tracking is standard practice for public capital programs subject to NEPA and related environmental review requirements, where violations carry direct regulatory and funding consequences." },
-    { n: "A6.4", name: "Contractor Performance Score", mc: "Contractor_Performance",
+    { n: "A6.4", name: "Contractor Performance Assessment Signal", mc: "Contractor_Performance",
       purpose: "Takes the worst of three separately rated dimensions (overall, schedule, cost), rather than an average, so one weak dimension cannot be masked by two strong ones.",
       formula: "minRating = min(overallRating, scheduleRating, costRating, qualityRating), each on a 1-5 scale. The quality rating enters on the same footing as the other three where the evaluation supplies it, and the finding names which ratings were read.",
       bands: [["green","Green","≥ 4.0"], ["yellow","Yellow","3.5-3.9"], ["amber","Amber","3.0-3.4"], ["red","Red","&lt; 3.0"]],

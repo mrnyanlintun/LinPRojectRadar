@@ -104,6 +104,27 @@ class MethodLabel:
 # new names. A3.8's entry STAYS: that module remains disabled and non-voting, its canonical
 # structure exists only as a laboratory implementation, and a truthful label on a disabled module
 # is exactly where a stale claim would otherwise survive.
+    # RUN 31 REMOVED FOUR CATEGORY-8/9 TRUTHFUL LABELS, for the same reason Run 28 lost nine,
+    # Run 29 lost six and Run 30 lost three: THE MODULES NOW DO WHAT THEIR REGISTERED NAMES SAY,
+    # so a label asserting a gap between the name and the code has become false.
+    #
+    #   B3.1  said the module was an action boundary and authority matrix with agents, an
+    #         interaction structure and time steps ABSENT. All three now exist in abm.py: agents
+    #         with state and latency, a message queue with a declared ordering rule, and a
+    #         simulation clock. The matrix survives as the POLICY the model consults.
+    #   A6.4  said official past-performance information -- source system, assessment period,
+    #         record status, review state -- was absent. The canonical structure carries every
+    #         one of them and abstains when they are not supplied.
+    #   C1.6  said the check recomputed the two performance indices from one reported set. The
+    #         canonical measure compares the SAME governed fact across actual source records and
+    #         preserves material conflicts rather than counting index disagreements.
+    #   C1.4  said the check counted declared audit-field presence, with the real audit objects,
+    #         chronology, linkage and noncompensatory critical treatment absent. The canonical
+    #         measure assesses all four.
+    #
+    # The labels are removed rather than rewritten: a truthful-label entry exists to record a
+    # gap, and there is no longer a gap to record. What these implementations USED to do remains
+    # reconstructable through server/tools/run31_historical_cat89.py and the suites that use it.
 TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
 
     # ---------------------------------------------------------------- category 1, cost and EVM
@@ -163,47 +184,8 @@ TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
     # other direction, which is precisely why Run 28 removed nine and Run 29 removed six.
     #
     # ------------------------------------------------------------------- category 8, governance
-    "B3.1": MethodLabel(
-        registered="ABM Governance Layer",
-        truthful="Action boundary and authority matrix",
-        performs="maps the decision layer state to the action to take and the authority that "
-                 "may take it",
-        absent="agents with decision rules, an interaction structure and time steps. The mapping "
-               "itself is sound and is not changed; what is absent is everything that would make "
-               "it agent based",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "A6.4": MethodLabel(
-        registered="Contractor Performance Score",
-        truthful="Project-document contractor estimate",
-        performs="scores contractor performance from figures carried on this project's own "
-                 "documents",
-        absent="official past performance information: a source system identifier, the "
-               "assessment period, the record status and its review state. Nothing here is past "
-               "performance information and it must not be read as such",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
 
     # ------------------------------------------------------------------ category 9, data quality
-    "C1.6": MethodLabel(
-        registered="Cross-document Consistency Score",
-        truthful="Reported index self-consistency check",
-        performs="recomputes the two performance indices and the reported progress from the "
-                 "earned value figures in one reported set and counts the disagreements against "
-                 "the three checks the method is defined over",
-        absent="per-field source records. Every figure compared comes from the same assembled "
-               "set, so no fact is compared across two documents and no document is identified "
-               "as the source of any disagreement",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
-    "C1.4": MethodLabel(
-        registered="Audit Trail Completeness",
-        truthful="Declared audit field presence check",
-        performs="counts the presence of the declared audit fields",
-        absent="assessment of the real signal, judgment and audit objects, event chronology and "
-               "linkage between them, and a noncompensatory treatment of the critical fields",
-        disposition="OWNER_DECISION_REQUIRED",
-    ),
 
     # ----------------------------------------------------------------- category 10, optimisation
     "B4.1": MethodLabel(

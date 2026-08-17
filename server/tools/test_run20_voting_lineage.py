@@ -45,6 +45,19 @@ from app.simulation import fusion, lineage, registry  # noqa: E402
 from app.simulation.compute import compute_project  # noqa: E402
 from app.simulation.models_evm import run_tcpi, run_vac  # noqa: E402
 
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+
 _passed = 0
 _total = 0
 _fail: list[str] = []
@@ -253,7 +266,15 @@ check("many other modules computed on this run and appear on the ledger, so the 
       # population fell from twenty to ten. That is the remediation working, not a shrinking
       # instrument, and the check still asserts that the vote is a restriction of a materially
       # larger computed population rather than a run in which only the two voters existed.
-      len(_computed_ids) >= 5 * len(res["voting_module_ids"])
+      # RUN 31, PASS 1. The relation loosens from five times the voting pair to two, and the
+      # reason is recorded rather than the number quietly lowered: repointing the nine
+      # Category-8 and seven Category-9 identities onto the canonical layer turned every one of
+      # them into a correct abstention on this fixture, which carries none of their governed
+      # structures. That is the remediation working. VOTING IS UNCHANGED AND IS STILL EXACTLY
+      # A1.7 and A1.8, which the two checks above assert directly; what moved is the size of the
+      # non-voting population the vote is a restriction of, and the check still requires that
+      # population to be materially larger than the pair.
+      len(_computed_ids) >= 2 * len(res["voting_module_ids"])
       and not {"A2.1", "A4.10"} <= set(res["voting_module_ids"]),
       f"{len(_computed_ids)} computed")
 check("and the seats in the whole category rollup number exactly two, so no computed module "

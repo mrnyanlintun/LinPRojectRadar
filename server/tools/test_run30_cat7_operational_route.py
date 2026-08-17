@@ -29,7 +29,20 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
 from app.simulation import registry as REG                       # noqa: E402
+from app.simulation.models import SIMULATION_VERSION            # noqa: E402
 from app.simulation import lineage as LIN                        # noqa: E402
 from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS        # noqa: E402
 from app.simulation.compute import compute_project               # noqa: E402
@@ -190,6 +203,8 @@ def prod(mid, structure):
 
 import math                                                       # noqa: E402
 
+
+
 _o = prod("B2.1", FX.dst_independent())
 near("7.1 DST through production: m({G}) = .8", _o["belief"]["G"], 0.8)
 near("7.1 and the conflict coefficient is 0", _o["conflict"], 0.0)
@@ -330,7 +345,7 @@ _live_disabled = [m for m in NON_OPERATIONAL if m in _computed]
 check(not _live_disabled,
       "the disabled and archived identities do not appear as live analytical readings at all",
       str(_live_disabled))
-check(_res["simulation_version"] == "sim-2026.08-v16",
+check(_res["simulation_version"] == SIMULATION_VERSION,
       "and the ledger carries the current simulation version", str(_res["simulation_version"]))
 check(sorted(REG.CORE_VOTING_MODULES) == ["A1.7", "A1.8"],
       "voting is still exactly the two", str(sorted(REG.CORE_VOTING_MODULES)))

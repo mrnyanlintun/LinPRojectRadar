@@ -29,6 +29,18 @@ import sys
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
 from app.simulation import models_evc, models_ext, models_fuzzy, models_gov  # noqa: E402
 from app.simulation.models import VALIDATED  # noqa: E402
 from app.simulation import registry  # noqa: E402
@@ -83,7 +95,10 @@ def call(mid: str, si: dict):
     """The module's own function, called directly. The registry is not asked to run it."""
     try:
         fn = LEGACY_CAT7.get(mid) or VALIDATED[mid][1]
-        return fn(dict(si), NOOP, CUTOFF)
+        # RUN 31 v19: this helper calls the module function DIRECTLY, so the fixture installer
+        # (which patches registry.run_module) cannot reach it. The governed assessment is
+        # attached here instead -- the ordinary declaration a real caller supplies.
+        return fn(_R31Q.qualified(dict(si)), NOOP, CUTOFF)
     except Exception as exc:                                          # noqa: BLE001
         return {"raised": type(exc).__name__, "detail": str(exc)[:80]}
 
@@ -201,6 +216,8 @@ check("A3.8" not in registry.CORE_VOTING_MODULES, "A3.8: and remains non-voting"
 # Known answer from the supplied contract itself: Cost = 10 + 2*x1 + 3*x2 at x1 = 4 and x2 = 5
 # is 10 + 8 + 15 = 33.
 from app.simulation import canonical_v3 as _CV3  # noqa: E402
+
+
 _PCM = {"intercept": 10.0,
         "coefficient_source": "least squares fit on the closed project ledger",
         "fit_dataset": "OG-CLOSED-2019-2025", "model_version": "PCM-1",

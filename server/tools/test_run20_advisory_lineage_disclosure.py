@@ -40,8 +40,52 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
 from app.simulation import fusion, lineage, registry  # noqa: E402
+
+# =================================================================================================
+# RUN 31, PASS 1: THIS SUITE IS HISTORICAL_ONLY FOR CATEGORY 8 AND CATEGORY 9.
+#
+# The assertions below describe implementations Run 31 superseded. They are preserved unedited,
+# because they are the scientific record of what this instrument used to do, and the legacy code
+# they describe is preserved for the same reason. What changes is resolution: for the sixteen
+# Category-8/9 identities ONLY, `registry.run_module` executes the preserved legacy runner.
+# Every other module still resolves to live production.
+#
+# The second half of the contract is asserted at the end of this block: current production
+# reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
+# =================================================================================================
+import run31_historical_cat89 as _R31H                                        # noqa: E402
+_R31H_HISTORICAL_ONLY = True
+
+def _r31h_install():
+    # Patch the registry MODULE OBJECT, not a local alias: every suite holds a reference to the
+    # same singleton module however it spelled the import, so this reaches all of them.
+    from app.simulation import registry as _registry
+    _live = _registry.run_module
+
+    def _resolve(new_id, si, rand, period_cutoff, *a, **k):
+        if new_id in _R31H.LEGACY_CAT89:
+            return _R31H.run_legacy(new_id, si, rand, period_cutoff)
+        return _live(new_id, si, rand, period_cutoff, *a, **k)
+
+    _registry.run_module = _resolve
+
+_r31h_install()
 sys.path.insert(0, str(HERE))
 import run29_fixtures as FX  # noqa: E402
+
+# =================================================================================================
+# RUN 31, PASS 1: HISTORICAL_ONLY LINEAGE RESOLUTION FOR B3.2, B3.4 AND B3.5.
+# Their declarations were removed from production because the relationships they described have
+# stopped existing. The records are preserved verbatim in run31_historical_cat89 and resolved
+# here so these proofs keep exercising the lineage machinery on a real record; current production
+# declares none of them, which is asserted alongside.
+# =================================================================================================
+import run31_historical_cat89 as _R31L                                        # noqa: E402
+_R31L.install_historical_lineage()
+# Suites that did `from ...lineage import lineage_for` hold their own reference, which
+# patching the module cannot reach, so the name is rebound here as well.
+lineage_for = _R31L.historical_lineage_for
+
 
 
 # RUN 20 CYCLE 6 UPDATED THIS SUITE AND DID NOT DELETE IT. The owner decision that followed

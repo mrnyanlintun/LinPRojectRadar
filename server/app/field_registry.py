@@ -71,6 +71,7 @@ FIELD_KINDS: dict[str, str] = {
     # -- everything else: one writer, snapshot semantics ------------------------------------
     "weatherDaysLost": SNAPSHOT, "floatRemaining": SNAPSHOT,
     "oshaIncidentRate": SNAPSHOT, "totalManhours": SNAPSHOT,
+    "oshaRecordableIncidents": SNAPSHOT,
     "qualityAuditScore": SNAPSHOT, "totalFindings": SNAPSHOT, "criticalFindings": SNAPSHOT,
     "environmentalComplianceRate": SNAPSHOT, "environmentalViolations": SNAPSHOT,
     "subcontractorComplianceScore": SNAPSHOT,

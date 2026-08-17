@@ -34,6 +34,19 @@ from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS         # noqa: E402
 from run30 import fixtures_cat67 as FX                            # noqa: E402
 from run30.route_trace import canonical_hits, legacy_hits, trace_calls  # noqa: E402
 
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+
 NOOP = lambda: 0.5  # noqa: E731
 CUTOFF = "2026-06-30"
 RICH = {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 440_000.0, "pv": 450_000.0,
@@ -312,10 +325,17 @@ check(all(REG.VALIDATED[m][1].__module__ == "app.simulation.models_cat7"
           for m in (f"B2.{n}" for n in range(1, 21))),
       "and after the whole campaign the routing table is exactly as it shipped: all twenty "
       "Category-7 identities still resolve to the canonical route")
-check(MODELS.SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v16"
+# RESTATED BY RUN 31, PASS 1. This asserted the history was UNCHANGED, meaning "unchanged by
+# this fault campaign" -- but it pinned the last element to Run 30's own stamp, which an
+# authorised later append necessarily moves. What the campaign must prove is that IT changed
+# nothing and that the append-only invariants hold; both are asserted, and the stamp Run 30 added
+# is still required to be present.
+check("sim-2026.08-v16" in MODELS.SIMULATION_VERSION_HISTORY
+      and MODELS.SIMULATION_VERSION_HISTORY[-1] == MODELS.SIMULATION_VERSION
       and len(MODELS.SIMULATION_VERSION_HISTORY)
       == len(set(MODELS.SIMULATION_VERSION_HISTORY)),
-      "and the version history is unchanged and still unique")
+      "and the version history is unchanged by this campaign and still unique",
+      str(MODELS.SIMULATION_VERSION_HISTORY[-3:]))
 
 print()
 print("=" * 78)

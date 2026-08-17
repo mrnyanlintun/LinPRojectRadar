@@ -161,7 +161,12 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         "run30_production_tree.sha256",
                         "run30_closure_production_tree.sha256",
                         # RUN 30 FINAL CLOSURE: the lineage-state naming.
-                        "run30_final_closure_production_tree.sha256"),
+                        "run30_final_closure_production_tree.sha256",
+                        # RUN 31 PASS 1: the Category-8/9 canonical layer, the Category-9
+                        # qualification boundary and the governed regulatory and agent-based
+                        # governance structures. The Run-30 manifest is its parent and is not
+                        # rewritten.
+                        "run31_pass1_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)
