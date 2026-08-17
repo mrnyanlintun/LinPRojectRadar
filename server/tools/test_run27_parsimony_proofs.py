@@ -33,6 +33,10 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "server"))
 
+# RUN 31 v19: the governed assessment this suite's modules now require.
+import run31_qualified_fixture as _R31Q   # noqa: E402
+_R31Q.install()
+
 from app.simulation import portfolio as PORTFOLIO_SRC  # noqa: E402
 from app.simulation.models import VALIDATED  # noqa: E402
 
@@ -108,6 +112,8 @@ from app.simulation.models_fuzzy import FUZZY_EXTENSIONS           # noqa: E402
 # reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
 # =================================================================================================
 import run31_historical_cat89 as _R31H                                        # noqa: E402
+
+
 _R31H_HISTORICAL_ONLY = True
 
 def _r31h_install():
@@ -152,6 +158,11 @@ assembled = {
                 "cusum": {"status": "Green"}, "doc": {"status": "Green"}},
     "simulationSignals": {"signal_array": [{"status_color": "Green"} for _ in range(40)]},
 }
+# RUN 31 v19: this suite calls VALIDATED[...] DIRECTLY rather than through
+# registry.run_module, so the fixture installer cannot reach it. The governed
+# assessment is attached to the assembled package here instead -- the same
+# ordinary declaration, supplied the way a real caller supplies it.
+assembled = _R31Q.qualified(assembled)
 b11 = VALIDATED["B1.1"][1](assembled, lambda: 0.5, None)["status_color"]
 # RUN 30 v15. B1.4 IS THE FROZEN WORST-2 MEAN STATISTIC AND ASSERTS NO BAND, so the comparison
 # is between a state and a statistic rather than between two states. The Run-27 finding stands:
@@ -189,8 +200,8 @@ small = {"signals": assembled["signals"],
 big = {"signals": assembled["signals"],
        "simulationSignals": {"signal_array": [{"status_color": "Red"} for _ in range(3)]
                              + [{"status_color": "Green"} for _ in range(60)]}}
-b14_small = VALIDATED["B1.4"][1](small, lambda: 0.5, "2026-06-30").get("mean_worst_2")
-b14_big = VALIDATED["B1.4"][1](big, lambda: 0.5, "2026-06-30").get("mean_worst_2")
+b14_small = VALIDATED["B1.4"][1](_R31Q.qualified(small), lambda: 0.5, "2026-06-30").get("mean_worst_2")
+b14_big = VALIDATED["B1.4"][1](_R31Q.qualified(big), lambda: 0.5, "2026-06-30").get("mean_worst_2")
 check("B1.4's verdict no longer depends on how many modules are registered",
       b14_small == b14_big and b14_small is not None,
       f"same three adverse module signals: {b14_small} with a "
@@ -405,6 +416,16 @@ check("and neither reads the pair any more, so the two are no longer two reading
       "of primitives", set(v211) == {None} and set(v58) == {None},
       f"A2.11={v211} A5.8={v58}")
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
 from run29_fixtures import des_model as _r29_des  # noqa: E402
 check("and with its own governed event model A5.8 computes the supplied contract's own mean "
       "wait of a half, from a structure A2.11 does not read",

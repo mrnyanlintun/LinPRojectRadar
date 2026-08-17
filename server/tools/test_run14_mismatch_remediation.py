@@ -226,6 +226,19 @@ _r31h_install()
 # the superseded implementations anyway, so the routing table resolves historically.
 VALIDATED = _R31H.historical_validated()
 from app.simulation import registry as _r31h_reg                      # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
 run_module = _r31h_reg.run_module
 BASE = dict(STRUCTURED,
             scenarioDecisionStructure=PS.scenario_decision("DP-01"),

@@ -246,12 +246,12 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # server/tools/test_run30_closure_version_boundary.py extracts the v15 package from that git
 # object, EXECUTES it beside the current one and asserts exactly that. Every earlier stamp, v15
 # included, remains the historical audit baseline for the results collected under it.
-SIMULATION_VERSION = "sim-2026.08-v18"
+SIMULATION_VERSION = "sim-2026.08-v19"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v17"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v18"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -261,7 +261,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
-    "sim-2026.08-v18",
+    "sim-2026.08-v18", "sim-2026.08-v19",
 )
 
 

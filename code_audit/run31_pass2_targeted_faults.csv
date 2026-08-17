@@ -1,11 +1,15 @@
 fault,description,injection,guard_result_under_fault,guard_suite,intended_reason,status
-1,Cat6 accepts raw UNASSESSED input,APPLIED,55/57,test_run31_pass2_acceptance,"Signal Synthesis leaves the gated category set, so its four modules are no longer gated at all",PASS
-2,Cat7 accepts raw UNASSESSED evidence,APPLIED,55/57,test_run31_pass2_acceptance,"Evidence Combination leaves the gated category set, so its twenty modules are no longer gated at all",PASS
-3,Cat8 accepts raw UNASSESSED evidence,APPLIED,54/57,test_run31_pass2_acceptance,Category-8 B3 leaves the gated category set,PASS
-4,Cat10 accepts raw UNASSESSED state,APPLIED,48/57,test_run31_pass2_acceptance,Decision Optimization leaves the gated category set,PASS
-5,Category-9 output becomes an independent project-risk vote,APPLIED,56/58,test_run31_pass2_acceptance,"the voting set can no longer be read, so the voting-is-exactly-2 and Category-9-not-voting checks cannot hold",PASS
-6,UNRESOLVED lineage is treated as independent,APPLIED,55/58,test_run31_pass2_acceptance,"the independence predicate the gate and fusion both read now calls every state independent, including UNRESOLVED",PASS
-7,v18 duplicated / predecessor overwritten,APPLIED,28/31,test_run31_version_boundaries,the append-only history is no longer unique,PASS
+1,Cat6 accepts raw UNASSESSED input,APPLIED,66/73,test_run31_pass2_acceptance,"Signal Synthesis leaves the gated category set, so its four modules are no longer gated at all",PASS
+2,Cat7 accepts raw UNASSESSED evidence,APPLIED,66/86,test_run31_pass2_acceptance,"Evidence Combination leaves the gated category set, so its twenty modules are no longer gated at all",PASS
+3,Cat8 accepts raw UNASSESSED evidence,APPLIED,59/74,test_run31_pass2_acceptance,Category-8 B3 leaves the gated category set,PASS
+4,Cat10 accepts raw UNASSESSED state,APPLIED,57/72,test_run31_pass2_acceptance,Decision Optimization leaves the gated category set,PASS
+5,Category-9 output becomes an independent project-risk vote,APPLIED,67/69,test_run31_pass2_acceptance,"the voting set can no longer be read, so the voting-is-exactly-2 and Category-9-not-voting checks cannot hold",PASS
+6,UNRESOLVED lineage is treated as independent,APPLIED,66/69,test_run31_pass2_acceptance,"the independence predicate the gate and fusion both read now calls every state independent, including UNRESOLVED",PASS
+7,v19 duplicated / predecessor overwritten,APPLIED,47/50,test_run31_version_boundaries,the append-only history is no longer unique,PASS
 8,participant predecessor record regenerated,APPLIED,44/48,test_run28_participant_packages,a predecessor record rewritten to match the live tree makes TWO records claim the tree,PASS
-9,ledger says QUALIFIED while the raw route executed,APPLIED,48/91,test_run31_pass2_acceptance,"the refusal branch is dead, so raw evidence executes while the row still carries a qualification block",PASS
-10,qualification helper exists but the dispatcher bypasses it,APPLIED,44/91,test_run31_pass2_acceptance,"the boundary is never installed into the dispatch table, which is exactly Run 30's defect",PASS
+9,ledger says QUALIFIED while the raw route executed,APPLIED,59/102,test_run31_pass2_acceptance,"the refusal branch is dead, so raw evidence executes while the row still carries a qualification block",PASS
+11,remove a qualification-required consumer declaration,APPLIED,66/73,test_run31_pass2_acceptance,"a consumer category loses its governed declaration, so the expected-population guard sees fewer required routes than the registry implies",PASS
+12,add Category-9 self-gating,APPLIED,62/71,test_run31_pass2_acceptance,"Category 9 is gated behind its own output, which is the circular architecture the specification forbids",PASS
+13,missing assessment is allowed through,APPLIED,63/69,test_run31_pass2_acceptance,"absence stops failing closed, so a package with no Category-9 assessment reaches the consumer",PASS
+14,an undeclared route sails through instead of blocking,APPLIED,57/72,test_run31_pass2_acceptance,"the default branch stops being deny, so a route nobody declared executes",PASS
+10,qualification helper exists but the dispatcher bypasses it,APPLIED,49/102,test_run31_pass2_acceptance,"the boundary is never installed into the dispatch table, which is exactly Run 30's defect",PASS

@@ -20,6 +20,10 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent))
+
+# RUN 31 v19: the governed assessment these modules now require.
+import run31_qualified_fixture as _R31Q   # noqa: E402
+_R31Q.install()
 sys.path.insert(0, str(HERE))
 
 from app.simulation.models import (  # noqa: E402

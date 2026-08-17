@@ -71,7 +71,21 @@ CONSUMER_CATEGORIES = {"Signal Synthesis", "Evidence Combination",
                        "Regulatory & Authority Thresholds", "Delivery Quality Performance",
                        "Decision Optimization"}
 EXPECTED_GATED = {r["new_id"] for r in _reg if r["category_name"] in CONSUMER_CATEGORIES}
+from app.simulation.qualification_contract import (                    # noqa: E402
+    CONFIGURATION_MISSING, NOT_APPLICABLE, REQUIRED, expected_not_applicable,
+    expected_qualification_required, requirement_for)
 gated = gated_module_ids()
+# THE GOVERNED CONTRACT, asserted against the independently derived expectation.
+check(set(gated) == expected_qualification_required(),
+      "the gated set equals the governed contract's REQUIRED population",
+      f"diff={sorted(set(gated) ^ expected_qualification_required())}")
+check(not (set(gated) & expected_not_applicable()),
+      "and no Category-9 route is gated behind its own output",
+      str(sorted(set(gated) & expected_not_applicable())))
+check(all(requirement_for(m) == REQUIRED for m in expected_qualification_required()),
+      "every expected consumer route carries a REQUIRED declaration")
+check(requirement_for("NO.SUCH.MODULE") == CONFIGURATION_MISSING,
+      "and an undeclared route resolves to CONFIGURATION_MISSING, so the default branch is deny")
 check(set(gated) == EXPECTED_GATED,
       f"the gated population is exactly the {len(EXPECTED_GATED)} modules in the four consumer "
       f"categories, derived independently from the registry CSV",
@@ -96,6 +110,28 @@ check(all(gate_installed_for(VALIDATED[m][1]) for m in gated),
       f"the boundary is installed on all {len(gated)} gated dispatch entries")
 check(not any(gate_installed_for(VALIDATED[m][1]) for m in CAT89_CANONICAL if m.startswith("C1.")),
       "and on none of the seven Category-9 entries, which perform the assessment")
+
+head("1b. MISSING-ASSESSMENT BYPASS = 0 (owner closure: absence fails closed)")
+_miss = {}
+for mid, cat in sorted(gated.items()):
+    r = REG.run_module(mid, dict(SI), NOOP, CUT)          # NO assessment supplied at all
+    disabled = r.get("activation_state") in ("DISABLED_UNSAFE",
+                                             "DISABLED_EVIDENCE_UNDER_REVIEW")
+    ok = r.get("abstention_reason_code") == "CATEGORY9_ASSESSMENT_MISSING" or disabled
+    _miss.setdefault(cat, []).append((mid, ok))
+for cat, rws in sorted(_miss.items()):
+    bad = [m for m, ok in rws if not ok]
+    check(not bad, f"{cat}: missing-assessment bypass = 0 across {len(rws)} routes", str(bad))
+_probe = REG.run_module("B4.3", dict(SI), NOOP, CUT)
+_pq = _probe.get("qualification") or {}
+check(_probe.get("consumer_executed") is False
+      and _pq.get("qualification_state") == "UNASSESSED"
+      and _pq.get("qualification_reason") == "CATEGORY9_ASSESSMENT_MISSING"
+      and _probe.get("simulation_version") and _probe.get("lineage"),
+      "and the blocked row carries module, UNASSESSED, the reason, lineage SEPARATELY, the "
+      "simulation version and consumer_executed=false", str(_pq))
+check(_pq.get("qualification_state") != "QUALIFIED",
+      "and never stamps QUALIFIED after refusing")
 
 head("2. QUALIFICATION PRECEDENCE: NOTHING MISSING BECOMES FAVOURABLE")
 cases = [
@@ -236,6 +272,11 @@ check(unq.get("terminal_state") != "AUTHORIZED_BY_OWNER",
       str(unq.get("terminal_state")))
 
 head("7. PASS-1 RESULTS DO NOT REGRESS")
+# These check the canonical ARITHMETIC of A6.1/A6.2/A6.3, so under v19 they supply the governed
+# assessment their modules now require -- the ordinary declaration a real caller supplies. The
+# GATE itself is proved in sections 1 and 2 above, which deliberately supply nothing.
+def run(mid, si):                                                    # noqa: F811
+    return REG.run_module(mid, dict(si, evidenceQualification=dict(QUAL)), NOOP, CUT)
 s = run("A6.2", {"oshaRecordableIncidents": 3, "totalManhours": 200000})
 check(s.get("incidence_rate") == 3.0, "safety 3 cases / 200,000 h = 3.0", str(s.get("incidence_rate")))
 s99 = run("A6.2", {"oshaRecordableIncidents": 3, "totalManhours": 200000,

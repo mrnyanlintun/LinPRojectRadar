@@ -45,6 +45,19 @@ from app.simulation import fusion, lineage, registry  # noqa: E402
 from app.simulation.compute import compute_project  # noqa: E402
 from app.simulation.models_evm import run_tcpi, run_vac  # noqa: E402
 
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+
 _passed = 0
 _total = 0
 _fail: list[str] = []

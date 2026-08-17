@@ -201,6 +201,19 @@ import subprocess  # noqa: E402
 # reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
 # =================================================================================================
 import run31_historical_cat89 as _R31H                                        # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
 _R31H_HISTORICAL_ONLY = True
 
 def _r31h_install():
@@ -524,6 +537,7 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                       "server/app/simulation/canonical_v6.py",
                       "server/app/simulation/models_cat89.py",
                       "server/app/simulation/qualification_boundary.py",
+                      "server/app/simulation/qualification_contract.py",
                       "server/app/simulation/models.py",
                       "server/app/simulation/lineage.py",
                       "server/app/project_data.py",

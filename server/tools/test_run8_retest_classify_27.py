@@ -92,6 +92,19 @@ _r31h_install()
 # proof about the old code would silently read the new code instead.
 VALIDATED = _R31H.historical_validated()
 from app.simulation import registry as _r31h_reg                      # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
 run_module = _r31h_reg.run_module
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -460,6 +473,7 @@ RUN31_SCOPED_FILES = {
     "server/app/simulation/canonical_v6.py",
     "server/app/simulation/models_cat89.py",
     "server/app/simulation/qualification_boundary.py",
+    "server/app/simulation/qualification_contract.py",
     "server/app/simulation/models.py",
     "server/app/simulation/lineage.py",
     "server/app/project_data.py",

@@ -44,22 +44,22 @@ def run_suite(name):
 
 FAULTS = [
     # (n, description, file, old, new, guard suite, intended reason)
-    (1, "Cat6 accepts raw UNASSESSED input", SIM / "qualification_boundary.py",
-     '    "Signal Synthesis",                  # Category 6',
+    (1, "Cat6 accepts raw UNASSESSED input", SIM / "qualification_contract.py",
+     '    "Signal Synthesis": REQUIRED,',
      '    # FAULT 1\n',
      "test_run31_pass2_acceptance", "Signal Synthesis leaves the gated "
      "category set, so its four modules are no longer gated at all"),
-    (2, "Cat7 accepts raw UNASSESSED evidence", SIM / "qualification_boundary.py",
-     '    "Evidence Combination",              # Category 7',
+    (2, "Cat7 accepts raw UNASSESSED evidence", SIM / "qualification_contract.py",
+     '    "Evidence Combination": REQUIRED,',
      '    # FAULT 2\n',
      "test_run31_pass2_acceptance", "Evidence Combination leaves the gated category set, so its twenty modules are "
      "no longer gated at all"),
-    (3, "Cat8 accepts raw UNASSESSED evidence", SIM / "qualification_boundary.py",
-     '    "Regulatory & Authority Thresholds",  # Category 8 (B3)',
+    (3, "Cat8 accepts raw UNASSESSED evidence", SIM / "qualification_contract.py",
+     '    "Regulatory & Authority Thresholds": REQUIRED,',
      '    # FAULT 3\n',
      "test_run31_pass2_acceptance", "Category-8 B3 leaves the gated category set"),
-    (4, "Cat10 accepts raw UNASSESSED state", SIM / "qualification_boundary.py",
-     '    "Decision Optimization",             # Category 10',
+    (4, "Cat10 accepts raw UNASSESSED state", SIM / "qualification_contract.py",
+     '    "Decision Optimization": REQUIRED,',
      '    # FAULT 4\n',
      "test_run31_pass2_acceptance", "Decision Optimization leaves the gated category set"),
     (5, "Category-9 output becomes an independent project-risk vote", SIM / "registry.py",
@@ -72,18 +72,37 @@ FAULTS = [
      "    return True  # FAULT 6\n    if status not in LINEAGE_STATES:",
      "test_run31_pass2_acceptance", "the independence predicate the gate and fusion both "
      "read now calls every state independent, including UNRESOLVED"),
-    (7, "v18 duplicated / predecessor overwritten", SIM / "models.py",
-     '    "sim-2026.08-v18",\n)', '    "sim-2026.08-v18", "sim-2026.08-v18",\n)',
+    (7, "v19 duplicated / predecessor overwritten", SIM / "models.py",
+     '"sim-2026.08-v18", "sim-2026.08-v19",\n)',
+     '"sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v19",\n)',
      "test_run31_version_boundaries", "the append-only history is no longer unique"),
     (8, "participant predecessor record regenerated", None,
      "code_audit/run30_participant_package_v5_checksums.sha256", None,
      "test_run28_participant_packages", "a predecessor record rewritten to match the live tree "
      "makes TWO records claim the tree"),
     (9, "ledger says QUALIFIED while the raw route executed", SIM / "qualification_boundary.py",
-     '                if ev is not None and not ev.eligible_for(use):',
-     '                if False and ev is not None and not ev.eligible_for(use):',
+     '                if not ev.eligible_for(use):',
+     '                if False and not ev.eligible_for(use):',
      "test_run31_pass2_acceptance", "the refusal branch is dead, so raw evidence executes while "
      "the row still carries a qualification block"),
+    (11, "remove a qualification-required consumer declaration", SIM / "qualification_contract.py",
+     '    "Signal Synthesis": REQUIRED,', '    # FAULT 11\n',
+     "test_run31_pass2_acceptance", "a consumer category loses its governed declaration, so the "
+     "expected-population guard sees fewer required routes than the registry implies"),
+    (12, "add Category-9 self-gating", SIM / "qualification_contract.py",
+     '    "Data Integrity": NOT_APPLICABLE,', '    "Data Integrity": REQUIRED,',
+     "test_run31_pass2_acceptance", "Category 9 is gated behind its own output, which is the "
+     "circular architecture the specification forbids"),
+    (13, "missing assessment is allowed through", SIM / "qualification_boundary.py",
+     '                if ev is None:',
+     '                if ev is None:\n                    ev = declared_evidence(dict(si, evidenceQualification={"qualification_state": "QUALIFIED", "timeliness_status": "TIMELY"}), mid, cat)\n                if False:',
+     "test_run31_pass2_acceptance", "absence stops failing closed, so a package with no "
+     "Category-9 assessment reaches the consumer"),
+    (14, "an undeclared route sails through instead of blocking", SIM / "qualification_contract.py",
+     '    "Decision Optimization": REQUIRED,',
+     '    # FAULT 14: Decision Optimization is undeclared entirely\n',
+     "test_run31_pass2_acceptance", "the default branch stops being deny, so a route nobody "
+     "declared executes"),
     (10, "qualification helper exists but the dispatcher bypasses it", SIM / "models.py",
      '    QUALIFICATION_BOUNDARY_INSTALLED = _install_boundary(VALIDATED)',
      '    QUALIFICATION_BOUNDARY_INSTALLED = {"gated": [], "assessing_excluded": []}',

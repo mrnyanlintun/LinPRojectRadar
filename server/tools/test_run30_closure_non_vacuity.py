@@ -34,6 +34,19 @@ from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS         # noqa: E402
 from run30 import fixtures_cat67 as FX                            # noqa: E402
 from run30.route_trace import canonical_hits, legacy_hits, trace_calls  # noqa: E402
 
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
+
 NOOP = lambda: 0.5  # noqa: E731
 CUTOFF = "2026-06-30"
 RICH = {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 440_000.0, "pv": 450_000.0,

@@ -189,6 +189,19 @@ from app.simulation.models import SIMULATION_VERSION_HISTORY as _SVH7  # noqa: E
 # preserved legacy runners; every other module here still resolves to live production.
 # =================================================================================================
 import run31_historical_cat89 as _R31H                                        # noqa: E402
+
+# =================================================================================================
+# RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
+#
+# From sim-2026.08-v19 a package with no Category-9 assessment FAILS CLOSED for every
+# Category-6/7/8/10 consumer. This suite's purpose is a module's ARITHMETIC, so it supplies the
+# ordinary governed assessment a real caller supplies, through the ordinary signal-input key, and
+# then tests the arithmetic it was written to test. It is not exempt from the gate: the ordinary
+# precedence still applies, and the gate's own guards never install this.
+# =================================================================================================
+import run31_qualified_fixture as _R31Q                                       # noqa: E402
+_R31Q.install()
+
 _R31H_HISTORICAL_ONLY = True
 
 check("sim-2026.08-v16" in _SVH7,
@@ -1147,9 +1160,20 @@ RUN30_CORRECTED = {"B1.2", "B1.3", "B1.4",
 RUN31_CORRECTED = {"A6.1", "A6.2", "A6.3", "A6.4",
                    "B3.1", "B3.2", "B3.3", "B3.4", "B3.5",
                    "C1.1", "C1.2", "C1.3", "C1.4", "C1.5", "C1.6", "C1.7"}
+# RUN 31 v19 CLOSURE. The owner's decision that a package with NO Category-9 assessment fails
+# closed reaches every Category-6/7/8/10 consumer, so the Signal Synthesis, Evidence Combination
+# and Decision Optimization identities move too on a package that declares no assessment. That is
+# the gate working, not a regression: with a governed assessment supplied they compute exactly as
+# before, which test_run31_version_boundaries proves on identical input.
+RUN31_V19_GATED = {"B1.1", "B1.2", "B1.3", "B1.4",
+                   "B2.1", "B2.2", "B2.3", "B2.4", "B2.5", "B2.6", "B2.7", "B2.8", "B2.9",
+                   "B2.10", "B2.11", "B2.12", "B2.13", "B2.14", "B2.15", "B2.16", "B2.17",
+                   "B2.18", "B2.19", "B2.20",
+                   "B4.1", "B4.2", "B4.3", "B4.4", "B4.5", "B4.6", "B4.7"}
 check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
                       | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED
-                      | RUN30_CORRECTED | RUN31_CORRECTED),
+                      | RUN30_CORRECTED | RUN31_CORRECTED
+                      | RUN31_V19_GATED),
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "one of the later runs' corrected lists",
       str(sorted(set(_moved) - (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED

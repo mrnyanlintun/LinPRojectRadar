@@ -32,6 +32,8 @@ sys.path.insert(0, str(HERE))
 V16_COMMIT = "53f3081"
 #: The first commit containing sim-2026.08-v17, found with `git log -S` over models.py.
 V17_COMMIT = "c0e0f56"
+#: The first commit containing sim-2026.08-v18.
+V18_COMMIT = "f147278"
 
 PASSED = 0
 FAILED = 0
@@ -67,18 +69,39 @@ def extract(commit: str, alias: str):
     for n in py:
         src = subprocess.run(["git", "show", f"{commit}:{n}"], cwd=ROOT,
                              capture_output=True, text=True, check=True).stdout
+        # AN EXTRACTED PACKAGE LIVES IN A TEMP DIRECTORY, so any module that resolves the
+        # shipped registry CSV from its own file location resolves it to a path that does not
+        # exist. The expression is rewritten to the real repository path in the EXTRACTED COPY
+        # only; the committed source is untouched, and the behaviour under test is unaffected
+        # because the CSV contents are identical either way.
+        src = src.replace(
+            'pathlib.Path(__file__).resolve().parents[3] / "p0-baseline"',
+            f'pathlib.Path(r"{ROOT}") / "p0-baseline"')
+        src = src.replace(
+            'path = (pathlib.Path(__file__).resolve().parents[3] / "p0-baseline"',
+            f'path = (pathlib.Path(r"{ROOT}") / "p0-baseline"')
         (pkg / pathlib.Path(n).name).write_text(src, encoding="utf-8")
     (pkg / "__init__.py").write_text("", encoding="utf-8")
     sys.path.insert(0, tmp)
     mod = __import__(f"{alias}.registry", fromlist=["registry"])
     mod.CSV_PATH = ROOT / "p0-baseline" / "module_renumbering_map.csv"
+    # An extracted package sits in a temp directory, so any module that resolves the registry CSV
+    # from its own location must be repointed too, or it reads a path that does not exist.
+    for sub in ("qualification_contract", "qualification_boundary"):
+        try:
+            m = __import__(f"{alias}.{sub}", fromlist=[sub])
+        except Exception:                                                  # noqa: BLE001
+            continue
+        if hasattr(m, "_CSV"):
+            m._CSV = ROOT / "p0-baseline" / "module_renumbering_map.csv"
     return mod
 
 
 head("0. THE THREE LINES, EXTRACTED FROM GIT AND EXECUTED SIDE BY SIDE")
 V16 = extract(V16_COMMIT, "oldsim16")
 V17 = extract(V17_COMMIT, "oldsim17")
-from app.simulation import registry as V18                        # noqa: E402
+from app.simulation import registry as REGLIVE                    # noqa: E402
+V18 = REGLIVE
 from app.simulation.models import (                               # noqa: E402
     SIMULATION_VERSION, SIMULATION_VERSION_HISTORY as H, SIMULATION_VERSION_SUPERSEDED)
 
@@ -86,8 +109,8 @@ check(V16.SIMULATION_VERSION == "sim-2026.08-v16",
       f"the package at {V16_COMMIT} is stamped v16", V16.SIMULATION_VERSION)
 check(V17.SIMULATION_VERSION == "sim-2026.08-v17",
       f"the package at {V17_COMMIT} is stamped v17", V17.SIMULATION_VERSION)
-check(SIMULATION_VERSION == "sim-2026.08-v18",
-      "and the live line is stamped v18", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v19",
+      "and the live line is stamped v19", SIMULATION_VERSION)
 check(V16.run_module is not V17.run_module is not V18.run_module,
       "all three are different function objects, so this runs three lines rather than one thrice")
 
@@ -212,15 +235,48 @@ check(c18.get("abstention_reason_code") != "evidence_not_qualified_for_use",
       "Category 9 is not gated by its own boundary, which would be the circular architecture the "
       "specification forbids", str(c18.get("abstention_reason_code")))
 
+head("2b. BOUNDARY C -- v18 to v19: MISSING ASSESSMENT FAILS CLOSED")
+V18 = extract(V18_COMMIT, "oldsim18")
+check(V18.SIMULATION_VERSION == "sim-2026.08-v18",
+      f"the package at {V18_COMMIT} is stamped v18", V18.SIMULATION_VERSION)
+# THE SAME evidence, carrying NO Category-9 assessment at all, on both lines.
+NO_ASSESSMENT = dict(SI)
+for mid, cat in (("B1.1", "Category 6"), ("B2.1", "Category 7"),
+                 ("B3.2", "Category 8"), ("B4.3", "Category 10")):
+    r18 = run(V18, mid, NO_ASSESSMENT)
+    r19 = run(V18 and V18, mid, NO_ASSESSMENT) if False else run(V18, mid, NO_ASSESSMENT)
+    live = REGLIVE.run_module(mid, dict(NO_ASSESSMENT), NOOP, CUT)
+    check(r18.get("abstention_reason_code") != "CATEGORY9_ASSESSMENT_MISSING",
+          f"{cat} {mid}: v18 does NOT block a package with no Category-9 assessment",
+          str(r18.get("abstention_reason_code")))
+    check(live.get("abstention_reason_code") == "CATEGORY9_ASSESSMENT_MISSING",
+          f"{cat} {mid}: v19 blocks the identical package for missing assessment",
+          str(live.get("abstention_reason_code")))
+    check(live.get("consumer_executed") is False
+          and live.get("qualification", {}).get("qualification_state") == "UNASSESSED",
+          f"{cat} {mid}: and the row records UNASSESSED with consumer_executed false")
+    check(live.get("status_color") is None,
+          f"{cat} {mid}: the refusal is never a favourable band")
+# AND THE SAME EVIDENCE WITH AN ASSESSMENT REMAINS USABLE: eligibility changed, not availability.
+WITH = dict(SI, evidenceQualification=QUALIFIED_SI["evidenceQualification"])
+for mid, cat in (("B4.3", "Category 10"),):
+    ok = REGLIVE.run_module(mid, dict(WITH), NOOP, CUT)
+    check(ok.get("abstention_reason_code") != "CATEGORY9_ASSESSMENT_MISSING"
+          and ok.get("status_color") is not None,
+          f"{cat} {mid}: with a governed assessment the v19 consumer remains usable",
+          f"band={ok.get('status_color')}")
+
 head("3. VERSION NON-VACUITY")
 
-check("sim-2026.08-v16" in H and "sim-2026.08-v17" in H and "sim-2026.08-v18" in H,
-      "v16, v17 and v18 are all present in the append-only history", str(H[-4:]))
+check(all(v in H for v in ("sim-2026.08-v16", "sim-2026.08-v17", "sim-2026.08-v18",
+                          "sim-2026.08-v19")),
+      "v16, v17, v18 and v19 are all present in the append-only history", str(H[-4:]))
 check(len(H) == len(set(H)), "every simulation identifier is unique", str(H))
 check(H[-1] == SIMULATION_VERSION, "the history ends at the current stamp")
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v17",
-      "and the current line names v17 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
-check(H.count("sim-2026.08-v18") == 1, "v18 was appended exactly once")
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v18",
+      "and the current line names v18 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
+check(H.count("sim-2026.08-v19") == 1, "v19 was appended exactly once")
+check(H.count("sim-2026.08-v18") == 1, "and v18 remains present exactly once, unchanged")
 
 _old = subprocess.run(["git", "show", f"{V16_COMMIT}:server/app/simulation/models.py"],
                       cwd=ROOT, capture_output=True, text=True, check=True).stdout
@@ -230,8 +286,9 @@ _prev = tuple(s.strip().strip('",') for s in _seg.replace("\n", " ").split()
 check(H[:len(_prev)] == _prev,
       f"the history at {V16_COMMIT} is a strict PREFIX of the history now, read from git rather "
       f"than from a note, so this run appended and overwrote nothing", f"{_prev} vs {H}")
-check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18"),
-      "and it grew by exactly the two stamps Run 31 is authorised to add", str(H[len(_prev):]))
+check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19"),
+      "and it grew by exactly the three stamps Run 31 is authorised to add",
+      str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.
 _m17 = subprocess.run(["git", "show", f"{V17_COMMIT}:server/app/simulation/models.py"],

@@ -88,13 +88,13 @@ def inventory():
             rel)
 
     add("simulation identity", "models.SIMULATION_VERSION",
-        SIMULATION_VERSION == "sim-2026.08-v18", SIMULATION_VERSION,
+        SIMULATION_VERSION == "sim-2026.08-v19", SIMULATION_VERSION,
         "server/app/simulation/models.py")
     add("superseded line", "models.SIMULATION_VERSION_SUPERSEDED",
-        SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v17", SIMULATION_VERSION_SUPERSEDED,
+        SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v18", SIMULATION_VERSION_SUPERSEDED,
         "server/app/simulation/models.py")
-    add("append-only history through v18", "models.SIMULATION_VERSION_HISTORY",
-        HIST[-1] == "sim-2026.08-v18" and len(HIST) == len(set(HIST)),
+    add("append-only history through v19", "models.SIMULATION_VERSION_HISTORY",
+        HIST[-1] == "sim-2026.08-v19" and len(HIST) == len(set(HIST)),
         f"{len(HIST)} stamps, unique={len(HIST)==len(set(HIST))}, tail={HIST[-3:]}",
         "server/app/simulation/models.py")
     add("qualification boundary installed in the dispatch table",

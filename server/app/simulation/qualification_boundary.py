@@ -107,8 +107,26 @@ def gated_module_ids() -> dict[str, str]:
     READ FROM THE SHIPPED REGISTRY. A module the registry gains in a gated category is gated the
     moment it exists, with nothing here to remember to update.
     """
-    return {mid: cat for mid, cat in _registry_categories().items()
-            if cat in GATED_CATEGORY_NAMES}
+    # RUN 31 PASS-2 CLOSURE. The gated population now comes from the GOVERNED CONSUMER CONTRACT
+    # in `qualification_contract`, not from a category-name set kept here. The contract is the
+    # authority and this module is its reader; a route it declares REQUIRED is gated, and a route
+    # in a consumer category that it does not declare at all is ALSO gated, because
+    # CONFIGURATION_MISSING must block rather than pass.
+    from .qualification_contract import (
+        CONFIGURATION_MISSING, REQUIRED, expected_qualification_required, requirement_for,
+    )
+    cats = _registry_categories()
+    gated: dict[str, str] = {}
+    for mid, cat in cats.items():
+        req = requirement_for(mid)
+        if req == REQUIRED or (req == CONFIGURATION_MISSING
+                               and mid in expected_qualification_required()):
+            gated[mid] = cat
+    # A route the contract cannot classify at all is gated too: deny is the default branch.
+    for mid, cat in cats.items():
+        if requirement_for(mid) == CONFIGURATION_MISSING and mid not in gated:
+            gated[mid] = cat
+    return gated
 
 
 def _registry_categories() -> dict[str, str]:
@@ -124,7 +142,10 @@ def _registry_categories() -> dict[str, str]:
     path = (pathlib.Path(__file__).resolve().parents[3] / "p0-baseline"
             / "module_renumbering_map.csv")
     with path.open(encoding="utf-8-sig", newline="") as fh:
-        return {r["new_id"]: r["category_name"] for r in csv.DictReader(fh) if r.get("new_id")}
+        rows = [r for r in csv.DictReader(fh) if r.get("new_id")]
+    # Retired aliases are not routes; see qualification_contract._registry_rows for why.
+    return {r["new_id"]: r["category_name"] for r in rows
+            if r["new_id"] != "RETIRED" and r.get("group") != "-"}
 
 
 def declared_evidence(si: dict, module_id: str, category_name: str) -> QualifiedEvidence | None:
@@ -200,6 +221,44 @@ def _refuse(module_id: str, method_class: str, ev: QualifiedEvidence | None, use
     return out
 
 
+def _refuse_missing(module_id: str, method_class: str, use: str, reason_code: str,
+                    sentence: str) -> dict[str, Any]:
+    """
+    The governed abstention for a route blocked before any evidence could be assessed.
+
+    THE ROW IS NOT BLANK AND IS NOT HIDDEN (section 5). It carries the module, the requested use,
+    the qualification state UNASSESSED, the reason, the lineage state SEPARATELY, the simulation
+    version and an explicit `consumer_executed = False`. It never says QUALIFIED.
+    """
+    from .lineage import evidence_body_of, independence_established, lineage_status
+    from .models import SIMULATION_VERSION, insufficient
+
+    status = lineage_status(module_id, applicable=True)
+    out = insufficient(method_class, sentence, reason_code)
+    out["result_source"] = RESULT_SOURCE
+    out["consumer_executed"] = False
+    out["simulation_version"] = SIMULATION_VERSION
+    out["qualification"] = {
+        "module_id": module_id,
+        "requested_use": use,
+        "qualification_state": UNASSESSED,
+        "eligible_for_use": False,
+        "qualification_reason": reason_code,
+        "qualification_reasons": [sentence],
+        "evidence_id": None,
+        "simulation_version": SIMULATION_VERSION,
+        "consumer_executed": False,
+    }
+    # LINEAGE IS REPORTED SEPARATELY AND IS NOT INFERRED FROM THE MISSING QUALIFICATION. The two
+    # dimensions are different defects and each keeps its own answer.
+    out["lineage"] = {
+        "lineage_status": status,
+        "independence_established": independence_established(status),
+        "evidence_body": evidence_body_of(module_id, status),
+    }
+    return out
+
+
 def install(validated: dict[str, tuple[str, Callable]]) -> dict[str, list[str]]:
     """
     Wrap every gated runner IN THE DISPATCH TABLE. Returns what was wrapped, for the artifact.
@@ -219,8 +278,30 @@ def install(validated: dict[str, tuple[str, Callable]]) -> dict[str, list[str]]:
 
         def make(mid=mid, cat=cat, method_class=method_class, inner=inner, use=use):
             def run(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+                from .qualification_contract import (
+                    ASSESSMENT_MISSING, CONFIGURATION_MISSING, CONTRACT_MISSING, requirement_for,
+                )
+                # THE CONTRACT IS CONSULTED FIRST, AND AN ABSENT CONTRACT BLOCKS. Section 2: a
+                # target route with no governed qualification-requirement declaration is a
+                # configuration failure. The default branch is deny.
+                if requirement_for(mid) == CONFIGURATION_MISSING:
+                    return _refuse_missing(
+                        mid, method_class, use, CONTRACT_MISSING,
+                        "No governed qualification requirement is declared for this route, so it "
+                        "is not executed. An undeclared route is a configuration failure and is "
+                        "blocked rather than allowed through.")
                 ev = declared_evidence(si, mid, cat)
-                if ev is not None and not ev.eligible_for(use):
+                # OWNER DECISION, PASS-2 CLOSURE: ABSENCE FAILS CLOSED. A package carrying no
+                # Category-9 assessment is UNASSESSED, and UNASSESSED is ineligible. Nothing is
+                # inferred, nothing is imputed, and the consumer does not execute first and get
+                # stamped afterwards.
+                if ev is None:
+                    return _refuse_missing(
+                        mid, method_class, use, ASSESSMENT_MISSING,
+                        "The evidence offered to this measure carries no Category-9 assessment, "
+                        "so it is unassessed and not eligible for this use. No reading is "
+                        "produced and no figure is used in its place.")
+                if not ev.eligible_for(use):
                     return _refuse(
                         mid, method_class, ev, use,
                         "The evidence supplied for this measure has not been qualified for this "

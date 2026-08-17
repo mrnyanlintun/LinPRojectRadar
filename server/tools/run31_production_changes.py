@@ -94,6 +94,17 @@ RUN31_CHANGES_TO_POST_BASELINE_FILES: dict[str, tuple[str, str, str]] = {}
 #: without this declaration a new production file could appear in the simulation package with
 #: nothing anywhere recording it. The guard reads this list alongside the earlier runs'.
 RUN31_NEW_PRODUCTION_FILES: dict[str, str] = {
+    "server/app/simulation/qualification_contract.py":
+        "PASS-2 CLOSURE, v19. The governed qualification-requirement contract. The owner's "
+        "decision is that a package carrying NO Category-9 assessment fails closed for every "
+        "Category-6/7/8/10 consumer, and the obvious implementation -- working out what each "
+        "module needs at the call site -- is forbidden, because a requirement computed inside "
+        "the dispatcher is a copy of production logic checked against production logic. So the "
+        "requirement is DECLARED here per registered route and the dispatcher reads it. The "
+        "population comes from the shipped registry CSV and each route's requirement follows "
+        "from its registered category role, so nothing here enumerates module ids. THE DEFAULT "
+        "BRANCH IS DENY: a route in a consumer category with no declaration returns "
+        "CONFIGURATION_MISSING and is blocked, not allowed through.",
     "server/app/simulation/qualification_boundary.py":
         "PASS 2. The system-wide operational qualification boundary, and the file that makes the "
         "Category-9 gate real rather than decorative. It is installed INTO the dispatch table by "
