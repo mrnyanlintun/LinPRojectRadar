@@ -9,6 +9,138 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-17 - Category 10, Decision Optimization: canonical remediation and closure (Run 32)
+
+**Branch `run32-wip` from `origin/main` at `73297a6`. THIS RUN CHANGED ANALYTICAL PRODUCTION
+CODE**, on the owner's supervisory instruction, for the Category-10 scope and no wider. Full
+report: `REPORT_2026-08-17_run32-cat10-decision-optimization.md`.
+
+**Simulation version: `sim-2026.08-v20`**, superseding `sim-2026.08-v19`, which is preserved. The
+history is append-only and remains a strict prefix extension of main's.
+**Participant package: `og-participant-2026.08-v7`** (successor; v6 pinned to `93942ca`, NOT
+regenerated). **Synthetic package: UNCHANGED, no successor minted.**
+
+## SIX THINGS FROM THIS RUN THAT MUST NOT BE LOST
+
+**1. THE SUPPLIED SENSITIVITY FIXTURE IS A = (0.9, 0.4), B = (0.6, 0.8), CROSSOVER EXACTLY 4/7.**
+An earlier claim in this run that it was 4/9 was AN AGENT CALCULATION ERROR, not a defect in the
+supplied contract. Solve it exactly: 0.5w + 0.4 = -0.2w + 0.8, so 0.7w = 0.4 and w = 4/7. A future
+run that thinks the contract is wrong must check its own arithmetic in exact rational terms FIRST.
+Do not reintroduce 4/9.
+
+**2. THE ROW COUNT A PROMPT QUOTES CAN BE MEASURED THROUGH AN OBSCURED WINDOW.** The Run-32
+prompt said the suite reconciliation had 23 rows. It has **53**. Three suites CRASHED before
+printing a `RESULT:` line, so their failing assertions were hidden, not absent; clearing the
+crashes in a throwaway worktree exposed 31 failures where 3 were visible. **Always derive the
+number from execution, and clear crashes before counting.** Classifications are only ever
+HISTORICAL_ONLY, GENUINE_REGRESSION, TEST_INFRASTRUCTURE_DEFECT - a fourth value is a defect.
+
+**3. A GUARD OUTSIDE `run_all_suites.sh` IS AN UNENFORCED GUARD.** The 68 Category-10 oracle
+checks lived under `server/tests/`, and the runner globs `tools/test_*.py`, so they were never in
+the acceptance total: a regression in `canonical_v7` would not have turned the run red.
+`server/tools/test_run32_cat10_oracles.py` now executes them in-process. **Anything placed under
+`server/tests/` in future is invisible to the gate.**
+
+**4. THE FAULT CAMPAIGN IS WHAT FOUND THE REAL DEFECTS, AND IT STARTED AT 1/32.** Eight guards did
+not fire, three crashed and twenty went red for unrelated reasons. Reaching 32/32 honestly meant
+repointing faults and guards, never loosening the rule. It surfaced three genuine gaps: the
+unenforced oracles above; **the v7 supply path had no guard at all** (Runs 29 and 31 have the
+equivalent for their layers); and **B2.19's minimum-three rule was untested**, because the only
+test fed it one row, which the shared `decision_problem` already refuses upstream. It also forced
+the authority conjunction apart into four checks, so faults 18 and 24 - human authority, and
+decision output re-entering as evidence - are independently provable.
+
+**5. ALL SEVEN CATEGORY-10 MODULES ABSTAIN ON THE REAL CORPUS, AND THAT IS CORRECT.** The
+controlled corpus holds no decision problem. There is deliberately **NO corpus-assembly
+fallback**: assembling a candidate action set would invent the alternatives, which is worse than
+inventing a parameter. All five structure keys are admitted by the production intake, so an
+owner-supplied decision problem computes the moment it arrives. **Four of the seven (B4.1, B4.2,
+B4.5, B4.6) are DISABLED concept-only and stay disabled** - a laboratory pass is not activation.
+
+**6. B4.3's LINEAGE RECORD WAS REMOVED, AND `ACTUAL_INDEX_READS` IS NOW EMPTY.** It declared the
+two performance indices into the earned-value body as CORRELATED, which was true of the v19
+checklist and is why that implementation was a proxy. B4.3 now reads a governed constraint network
+and no index. A false CORRELATED edge lets a consumer SUPPRESS corroboration that is really there.
+Removed, not rewritten onto its governed structure, on the Run-30/31 precedent. **No production
+lineage record declares any derived-index read any more.**
+
+## Production files changed
+
+`server/app/simulation/lineage.py` (B4.3 record removed; already declared by Run 29's manifest),
+`server/app/simulation/VALIDATION.md` (rename; declared by Run 32 as a POST-BASELINE file - it was
+rejected from the baseline-covered dict by the declared-changes guard), and the eight
+participant-visible display surfaces plus `p0-baseline/module_renumbering_map.csv` (rename;
+already declared by Runs 21, 26 and 28). `canonical_v7.py` and `models_cat10.py` were created
+earlier in the run. Production pin: `code_audit/run32_production_tree.sha256`, advanced only after
+the guard was turned RED and observed.
+
+## Results
+
+* **Full suite: 152 suites, 12427/12427 on the final merged main.**
+* **Suite reconciliation: 53 rows, 53 PASS** - 30 HISTORICAL_ONLY, 18 TEST_INFRASTRUCTURE_DEFECT,
+  5 GENUINE_REGRESSION. 0 blank, 0 duplicate, 0 ambiguous.
+* **Fault campaign: 32 attempted, 32 applied, 32 RED for the intended reason, 32 restored GREEN**,
+  0 NOT_APPLIED, 0 crashes accepted as RED, 0 unrelated failures accepted as RED.
+* Canonical routes 7/7; legacy Cat-10 proxy reachable 0; corpus-present-but-unwired 0; supplyable
+  structures with no production path 0; raw bypass 0; missing-assessment bypass 0; human-authority
+  bypass 0; decision-output feedback 0; MARCOS/CRITIC duplicate engines 0; unauthorized new IDs 0.
+* **Voting remains exactly two: A1.7 TCPI and A1.8 Variance at Completion.** A3.4 disabled, B2.7
+  disabled, B2.9 disabled and ARCHIVED, B2.20 disabled. **Participant protocol changes: 0.**
+
+## The §3 rename
+
+**Regret Minimization Index -> Minimax Regret Decision Rule**, the ONLY Category-10 rename
+authorised. Historical wording is preserved everywhere it records what the platform said at the
+time. The owner-approved-rename allowances in `run17/population.py` and
+`test_run27_remediation_matrix.py` were extended as Runs 28 and 31 extended them.
+
+## Artefacts
+
+`code_audit/run32_suite_reconciliation.csv`, `run32_marcos_critic_placement.csv`,
+`run32_fault_injection_results.csv`, `run32_cat10_scope.csv`,
+`run32_real_corpus_decision_structure_reconciliation.csv`,
+`run32_decision_supply_path_reconciliation.csv`, `run32_cat10_operational_route_inventory.csv`,
+`run32_cat10_final_closure.csv`, `run32_participant_package_v7_checksums.sha256`,
+`run32_production_tree.sha256`. Builders: `server/tools/build_run32_artifacts.py`,
+`server/tools/run32_fault_campaign.py`, `server/tools/run32_production_changes.py`.
+
+## UNRESOLVED - calibration and validation
+
+* **No Category-10 band is calibrated and none is asserted.** No labelled outcome corpus and no
+  expert reference standard exists in this repository. Every row carries `calibration_pending`.
+* **The oracles are synthetic known-answer tests. THEY ARE NOT EMPIRICAL VALIDATION.** How often a
+  Category-10 reading would be right on real projects is unknown. Do not describe them otherwise.
+* **Portfolio Health is untouched and remains outstanding.**
+
+## CARRIED FINDINGS FOR THE NEXT RUN - not fixed here, deliberately
+
+1. **DEFENSIBILITY-CLAIM DRIFT, PLATFORM-WIDE.** `assets/js/ds_defensibility_evidence.js` still
+   says of B4.7 "implemented and computed by the server" and "canonicalStructure: not required by
+   this module". Both stopped being true at the repoint. **The same drift exists for every module
+   Runs 28 to 31 remediated** - B3.2 carries its Run-31 name beside identical stale claims. This
+   is a platform-wide reconciliation, not a Category-10 remainder. Rewriting a defensibility claim
+   is not a rename and needs owner authority.
+2. **`method_class` DIVERGENCE ON THE CLIENT SURFACE.** `assets/js/categories.js` and
+   `taxonomy.js` carry `method_class: 'Regret_Minimization'` for B4.7 while the server emits
+   `Minimax_Regret_Decision_Rule`. No guard compares them. Changing a code identifier could affect
+   ledger joins, so it was reported rather than made.
+
+## EXACT REQUIREMENTS FOR THE NEXT RUN
+
+* **Read the registry and the executed version tuple, never a prompt's version premise.** The
+  line is at `sim-2026.08-v20` on main as of this run.
+* **Do not launch a Category-10 activation.** Four modules are disabled by design.
+* Do not expand voting beyond exactly two. Do not reactivate A3.4, B2.7, B2.9 or B2.20.
+* Do not change the participant experimental sequence. If participant bytes move, mint the
+  successor `og-participant-2026.08-v8` and PIN v7 - never regenerate a predecessor.
+* Use `server/run_all_suites.sh` with fresh migrated SQLite per file. **Never
+  `DATABASE_URL=:memory:` for acceptance** - DB-touching suites crash partway and print a lower
+  but green-looking RESULT.
+* Restore the self-rewriting audit artefacts before every commit:
+  `code_audit/run9_no_operational_effect.csv`, `run10_no_operational_effect.csv`,
+  `run20_cycle12_100_reaudit.csv`, `run8_expectation_mutation_proof.csv`, and the other `run9_*`
+  CSVs, all of which the suites rewrite nondeterministically.
+
 # 2026-08-14 — Categories 1 to 3 canonical remediation, and the new analytical line (Run 28)
 
 **Branch `run28-cat1-3-canonical-v3` from `origin/main` at `316c841`.
