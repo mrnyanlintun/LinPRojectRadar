@@ -85,7 +85,10 @@
     }
 
     // Expected regret of each candidate action. Stored: expected_regret{action: value}.
-    if (methodClass === "Regret_Minimization" && r.expected_regret && typeof r.expected_regret === "object") {
+    // RUN 32 FINAL CLOSURE: match the current method class, and the historical one for rows
+    // stored before the section-3 rename. Matching only the old identifier meant this chart
+    // silently stopped being drawn rather than failing.
+    if ((methodClass === "Minimax_Regret_Decision_Rule" || methodClass === "Regret_Minimization") && r.expected_regret && typeof r.expected_regret === "object") {
       var rb = Object.keys(r.expected_regret)
         .map(function (k) { return { label: k.charAt(0).toUpperCase() + k.slice(1), value: num(r.expected_regret[k]) }; })
         .filter(function (b) { return b.value !== null; });
@@ -186,7 +189,8 @@
     // The method_class set this module can chart. Callers may pre-filter with it.
     charted: {
       Sensitivity_Analysis: true, Tornado_Diagram: true, Multi_Objective_Optimization: true,
-      WhatIf_Scenario_Matrix: true, Decision_Sensitivity_Matrix: true, Regret_Minimization: true,
+      WhatIf_Scenario_Matrix: true, Decision_Sensitivity_Matrix: true,
+      Minimax_Regret_Decision_Rule: true, Regret_Minimization: true,
       Maximum_Entropy: true
     }
   };

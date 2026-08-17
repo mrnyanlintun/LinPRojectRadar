@@ -198,7 +198,7 @@ window.LIN_CATEGORIES = [
       { id: 'b4_4', num: 'B4.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] },
       { id: 'b4_5', num: 'B4.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b4_6', num: 'B4.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_7', num: 'B4.7', name: 'Minimax Regret Decision Rule', method_class: 'Regret_Minimization', active: true, required: ['cpi','spi','bac'] }
+      { id: 'b4_7', num: 'B4.7', name: 'Minimax Regret Decision Rule', method_class: 'Minimax_Regret_Decision_Rule', active: true, required: ['cpi','spi','bac'] }
     ]
   },
   {
@@ -359,6 +359,9 @@ window.getModuleStatus = function (methodClass, project) {
     case "WhatIf_Scenario_Matrix":
     case "Decision_Sensitivity_Matrix":
     case "Pareto_Frontier":
+    // RUN 32 FINAL CLOSURE: the current method class. The old identifier is kept beside it
+    // so a STORED row written before the section-3 rename still routes; nothing emits it.
+    case "Minimax_Regret_Decision_Rule":
     case "Regret_Minimization":    return findSim(methodClass);
     default:                       return findSim(methodClass);
   }

@@ -129,7 +129,10 @@
   function build(result) {
     var mods = modulesOf(result);
     var si = (result && result.signal_inputs) || {};
-    var regret = mods.Regret_Minimization;
+    // RUN 32 FINAL CLOSURE: the current method class, falling back to the historical one for
+    // rows stored before the section-3 rename. Reading only the old key returned undefined
+    // on every current project, so the courses-of-action frame went silently empty.
+    var regret = mods.Minimax_Regret_Decision_Rule || mods.Regret_Minimization;
     var scores = regret && regret.expected_regret;
 
     // Run 1 remediation (remediation_decisions_answered.md 1.1, 1.2; the run-1 prompt Part 3).

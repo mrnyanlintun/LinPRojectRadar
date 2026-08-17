@@ -493,6 +493,10 @@ RUN32_SCOPED_FILES = {
     # module beside the client file it is checked against, and its B4.7 row carried the old name.
     # A display name moved; no parity value, tolerance, batch or ordering note did.
     "server/app/simulation/VALIDATION.md",
+    # THE RUN-32 FINAL CLOSURE. The expected-regret chart keyed on B4.7's OLD method class, which
+    # the section-3 rename stopped anything from emitting, so it silently stopped being drawn.
+    # Display only: no chart geometry, axis, band or value changed.
+    "assets/js/module_charts.js",
 }
 
 _prod = [p for p in _diff
@@ -519,7 +523,10 @@ _unscoped_assets = sorted(p for p in _diff
                           and p not in RUN16_SCOPED_FILES
                           and p not in RUN21_SCOPED_FILES
                           and p not in RUN23_SCOPED_FILES
-                          and p not in RUN28_CLOSURE_SCOPED_FILES)
+                          and p not in RUN28_CLOSURE_SCOPED_FILES
+                          # RUN 32 FINAL CLOSURE: the two browser surfaces the metadata
+                          # correction moves, named rather than the rule being widened.
+                          and p not in RUN32_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

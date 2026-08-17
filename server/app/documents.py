@@ -70,6 +70,7 @@ from .jdrive_tree import (
 from .facade import err, now_iso
 from .models import Project
 from .project_data import apply_to_signal_inputs
+from .simulation.models_cat10 import B4_7_ANY_METHOD_CLASS
 from .simulation.fusion import governed_status_semantics
 from .simulation.qualification import qualification_for_stored_result
 from .research_identity import audit, resolve_caller
@@ -1693,8 +1694,14 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     # cannot. Absent when the action-bearing fields were withheld by the reveal gate, which is
     # correct: there is no recommendation on that read to explain.
     _mods = row.module_results if include_recommendation else None
+    # RUN 32 FINAL CLOSURE. This matched the literal "Regret_Minimization", which B4.7 stopped
+    # emitting when the section-3 rename landed. The lookup did not fail -- it silently found
+    # nothing, so the recommendation basis quietly went absent on every project. It matches the
+    # current class and the historical one, because stored rows written before the rename still
+    # carry the old identifier.
     _regret = next((m for m in (_mods or [])
-                    if isinstance(m, dict) and m.get("method_class") == "Regret_Minimization"),
+                    if isinstance(m, dict)
+                    and m.get("method_class") in B4_7_ANY_METHOD_CLASS),
                    None)
     view["recommendation_basis"] = recommendation_basis(row.signal_inputs, _regret)
     if include_recommendation and package is not None:

@@ -29,6 +29,12 @@ Each entry is (authority, path, why).
 
 from __future__ import annotations
 
+_OWNER_CLOSURE = ("owner supervisory closure contract of 2026-08-17 for Run 32: correct the "
+                  "served module-defensibility metadata so that every current statement is "
+                  "derivable from the running instrument, and finish the B4.7 current-name "
+                  "propagation, without changing analytical execution, qualification, voting or "
+                  "the participant experimental sequence")
+
 _OWNER = ("owner supervisory method contract of 2026-08-17 for Run 32: implement the supplied "
           "Category-10 canonical decision-optimization contracts in the new analytical line, "
           "supply the governed decision structures those methods are defined on, hold the "
@@ -41,7 +47,18 @@ _OWNER = ("owner supervisory method contract of 2026-08-17 for Run 32: implement
 #: surfaces plus `p0-baseline/module_renumbering_map.csv` by Runs 21, 26 and 28, which carried the
 #: earlier approved renames through exactly these files. No path may appear in two manifests, so
 #: those are NOT redeclared here. One file has never been declared by any run, and it is:
-RUN32_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {}
+RUN32_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {
+    "assets/js/module_charts.js": (
+        _OWNER_CLOSURE,
+        "assets/js/module_charts.js",
+        "THE EXPECTED-REGRET CHART WAS KEYED ON B4.7's OLD METHOD CLASS. The section-3 rename "
+        "moved the runner's emitted class to `Minimax_Regret_Decision_Rule`, and this file still "
+        "matched the literal `Regret_Minimization` in both the chart builder and the `charted` "
+        "set. A lookup that stops matching does not fail: the chart silently stopped being drawn "
+        "on every project. Both the current class and the historical one are matched now, "
+        "because a row stored before the rename still carries the old identifier. No chart "
+        "geometry, axis, band or value changed."),
+}
 
 #: Files Run 32 changed that the Run-20 freeze CANNOT cover, because they did not exist when it
 #: was taken. `VALIDATION.md` is one: the byte comparison structurally cannot reach it, so

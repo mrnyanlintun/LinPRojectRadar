@@ -261,7 +261,9 @@ check(not redacted_any,
 # asserted is the property the check was for: nothing on this read is withheld, and the module
 # is recorded as an abstention rather than vanishing without explanation.
 _reg = next((m for m in (r["module_results"] or [])
-             if isinstance(m, dict) and m.get("method_class") == "Regret_Minimization"), None)
+             if isinstance(m, dict)
+             and m.get("method_class") in ("Minimax_Regret_Decision_Rule",
+                                           "Regret_Minimization")), None)
 check(_reg is None,
       "the analysis that scored the courses of action carries no row, because it abstains",
       str(_reg)[:160])

@@ -9,6 +9,115 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-17 - Run 32 FINAL CLOSURE: defensibility metadata and the B4.7 name completion
+
+**Branch `run32-defensibility-closure` from `main` at `93f08bc`.** Still Run 32. Closes the two
+findings the Category-10 run carried rather than fixed. Full report:
+`REPORT_2026-08-17_run32-defensibility-metadata-and-b47-name-closure.md`.
+
+**Simulation version: `sim-2026.08-v20`, UNCHANGED.** Participant package:
+**`og-participant-2026.08-v8`** (v7 pinned to `93f08bc`, NOT regenerated). Synthetic: unchanged.
+
+## FIVE THINGS FROM THIS CLOSURE THAT MUST NOT BE LOST
+
+**1. A GUARD THAT RE-RUNS THE GENERATOR CANNOT PROVE THE GENERATOR IS RIGHT.**
+`test_run11_defensibility_claims.py` compares the generated defensibility object against the
+generator that generated it, byte for byte. It was green for two runs while 89 of 101 records
+carried a statement FALSE about the current instrument, because the generator produces BOTH SIDES:
+a wrong derivation matches itself perfectly. `test_run32_defensibility_truth.py` is the answer -
+it rebuilds the expected inventory INDEPENDENTLY from registry, dispatch tables, every canonical
+structure map, the intake vocabulary and the runner resolved past the Category-9 boundary, and
+never reads the generator. **Any future metadata surface needs a guard of that second kind.**
+
+**2. THE RUN-30 LESSON WAS LEARNED ONCE AND THEN NOT APPLIED TWICE.** The generator read four of
+six canonical structure maps. Run 30 had already fixed exactly this for v5 and left a comment
+about it; Run 31 added v6 and Run 32 added v7 and NEITHER extended the list, so 22 identities were
+told a reader that no governed structure was required while their routes required one. The layer
+list is now built by GLOBBING `canonical_v*.py` and asserting each contributed a map. **A run that
+adds canonical_v8 cannot forget it, because there is no list left to forget.**
+
+**3. A LOOKUP THAT STOPS MATCHING DOES NOT FAIL - IT SILENTLY RETURNS NOTHING.** B4.7's display
+name was renamed in Run 32 proper; its `method_class` identifier was not. The recommendation
+basis, the courses-of-action frame and the expected-regret chart had all quietly gone empty, and
+FOUR test assertions had become VACUOUSLY TRUE by asserting the absence of an identifier nothing
+emits. **When renaming an identifier, grep for its consumers and check whether any absence
+assertion still tests anything.**
+
+**4. B3.2-B3.5 CARRY THE SAME DEFECT AND WERE NOT FIXED HERE.** The browser verification found the
+participant taxonomy still carrying `FAR_Threshold`, `OMB_A11_Check`, `EVM_Reporting_Threshold`
+and `Contract_Mod_Frequency` while the runners emit `EVMS_Applicability`, `A11_Conformance`,
+`EVMS_Reporting_Compliance` and `Modification_Governance`. Run 31 propagated the names and not the
+identifiers. Recorded as FAIL in the verification CSV and CARRIED, because this closure authorises
+the B4.7 rename and no other. **Needs owner authorisation.**
+
+**5. THE EARLIER SCOPE CLAIM WAS WRONG IN BOTH DIRECTIONS, AND IS CORRECTED.** The Run-32 report
+said the drift affected every module Runs 28-31 remediated. Measured: the STRUCTURE misstatement is
+confined to v6+v7 (22 modules, Runs 31-32 only) - narrower; the "computed by the server" falsehood
+spans EVERY category and 77 modules, including Runs 28-30 - far broader. **Establish a distribution
+by inspection before asserting its scope.**
+
+## Results
+
+* **Full suite: 153 suites, 12488/12488.**
+* **Defensibility reconciliation: 101 records, 0 unsupported claims after correction**, 0
+  duplicates, 0 missing, 0 invented. Population derived from the registry, not hard-coded.
+* **Ten-fault campaign: 10 attempted, 10 applied, 10 RED for the intended reason, 10 restored
+  GREEN**, 0 NOT_APPLIED, 0 crashes accepted, 0 unrelated accepted. (First pass 7/10: three faults
+  anchored on field text shared across modules and the campaign correctly refused to apply them.)
+* **Browser/API verification: 52 rows, 48 PASS, 4 FAIL** - the four are the B3.2-B3.5 finding above.
+* **Analytical behaviour PROVED identical**: all 95 dispatched modules executed before and after on
+  identical inputs, one sha256 over the whole profile identical on both sides
+  (`a9577151e71ab7211bde450a2b69f82827fde130b7e89c0a1a015f18e137f45a`). The v20 stop condition was
+  not triggered.
+* Voting exactly 2 (A1.7, A1.8). A3.4/B2.7/B2.20 disabled, B2.9 disabled and archived. Category-9
+  qualification unchanged. Raw and missing-assessment bypass 0. **Participant protocol changes 0.**
+
+## Production files changed
+
+`assets/js/` - categories, ds_defensibility_evidence (REGENERATED), knowledge, module_charts,
+neural_flow, recommendation_options, taxonomy. `server/app/documents.py` (method-class alias),
+`server/app/simulation/models_cat10.py` (method-class constants),
+`server/app/simulation/models_cat7.py` (refusal disposition exposed for introspection).
+`tools/build_run11_defensibility_evidence.py` (the generator). Only `module_charts.js` was
+undeclared by any manifest and is declared by Run 32's. Pin: `code_audit/run32_production_tree.sha256`.
+
+## Artefacts
+
+`code_audit/run32_defensibility_metadata_reconciliation.csv`,
+`run32_defensibility_browser_api_verification.csv`, `run32_closure_fault_injection.csv`,
+`run32_closure_participant_package_v8_checksums.sha256`. Tools:
+`server/tools/build_run32_defensibility_inventory.py`, `test_run32_defensibility_truth.py`,
+`run32_closure_fault_campaign.py`, `run32_closure_browser_verification.py`,
+`run32_fix_cat10_knowledge.py`.
+
+## UNRESOLVED
+
+* **B3.2-B3.5 method-class drift** (above). Owner authorisation needed.
+* **`ds_defensibility_data.js`**, the narrative handbook, is generated from an earlier draft and
+  NOT from the registry. Its per-capability prose has never been reconciled against the instrument.
+* **The oracles remain synthetic known-answer tests. They are NOT empirical validation**, and no
+  module's banding is calibrated. Do not describe them otherwise.
+* **Portfolio Health** remains outstanding.
+
+## EXACT REQUIREMENTS FOR THE NEXT RUN
+
+* Read the registry and the executed version tuple, never a prompt's version premise. The line is
+  `sim-2026.08-v20` on main.
+* **If you touch metadata, regenerate with `tools/build_run11_defensibility_evidence.py` and run
+  `server/tools/test_run32_defensibility_truth.py`.** Never hand-edit
+  `assets/js/ds_defensibility_evidence.js`.
+* If participant bytes move, mint `og-participant-2026.08-v9` and PIN v8. Never regenerate a
+  predecessor.
+* Browser work: Chromium is at `/opt/pw-browsers`; the installed build REMOVED old headless mode,
+  so launch `chromium_headless_shell-*/chrome-linux/headless_shell` via `executable_path`. Do not
+  run `playwright install`. The handbook surface needs an authenticated participant session.
+* Use `server/run_all_suites.sh` with fresh migrated SQLite per file. Never
+  `DATABASE_URL=:memory:` for acceptance.
+* Restore the self-rewriting audit artefacts before every commit (`run9_*`,
+  `run10_no_operational_effect.csv`, `run20_cycle12_100_reaudit.csv`,
+  `run8_expectation_mutation_proof.csv`).
+* Do not expand voting, reactivate A3.4/B2.7/B2.9/B2.20, or change the participant sequence.
+
 # 2026-08-17 - Category 10, Decision Optimization: canonical remediation and closure (Run 32)
 
 **Branch `run32-wip` from `origin/main` at `73297a6`. THIS RUN CHANGED ANALYTICAL PRODUCTION

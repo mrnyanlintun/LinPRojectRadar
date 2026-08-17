@@ -258,6 +258,14 @@ def _refuse(module_id: str, method_class: str, disposition: str,
 
     run.__name__ = f"run_{method_class.lower()}"
     run.__qualname__ = run.__name__
+    # THE DISPOSITION IS READABLE WITHOUT RUNNING THE MODULE, and there is still exactly ONE
+    # place it is stated -- the `_refuse` call that built this runner. The served defensibility
+    # object has to say whether an identity is DISABLED or ARCHIVED, and those are different
+    # claims: disabled means not operational, archived means kept as part of the research record
+    # and not a runnable current capability. Deriving it by executing the runner would need a
+    # database; copying it into a second table would let the two drift, which is exactly the
+    # defect this closure exists to remove. Introspection reads the one source instead.
+    run.canonical_disposition = disposition
     return run
 
 

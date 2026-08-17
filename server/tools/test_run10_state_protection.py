@@ -205,12 +205,26 @@ RUN28_CLOSURE_BROWSER_SCOPE = {
     "assets/js/workspace.js", "assets/js/ds_defensibility_data.js",
     "assets/js/neural_flow.js", "assets/js/recommendation_options.js",
 }
+# RESTATED BY THE RUN-32 FINAL CLOSURE, ORIGINAL FINDING PRESERVED. Two further participant-
+# facing assets move, and they are NAMED rather than the rule being widened to "assets/".
+# `ds_defensibility_evidence.js` is the GENERATED defensibility object, regenerated because its
+# generator was reading only four of the six canonical structure maps and therefore telling a
+# reader that twenty-two modules required no governed structure while their production routes
+# required one. `module_charts.js` keys a chart on B4.7's method class, which the section-3
+# rename changed, so the chart had silently stopped being drawn.
+#
+# ONLY DISPLAY STRINGS AND A METHOD-CLASS KEY CHANGED. No band, boundary, threshold or
+# arithmetic result, and no step of the participant decision sequence.
+RUN32_CLOSURE_BROWSER_SCOPE = {
+    "assets/js/ds_defensibility_evidence.js", "assets/js/module_charts.js",
+}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
            and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE
            and d not in RUN16_BROWSER_SCOPE and d not in RUN21_BROWSER_SCOPE
-           and d not in RUN23_BROWSER_SCOPE and d not in RUN28_CLOSURE_BROWSER_SCOPE])
+           and d not in RUN23_BROWSER_SCOPE and d not in RUN28_CLOSURE_BROWSER_SCOPE
+           and d not in RUN32_CLOSURE_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
            and d not in RUN11_PAGE_SCOPE])

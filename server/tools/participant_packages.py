@@ -119,7 +119,10 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v7",
         "code_audit/run32_participant_package_v7_checksums.sha256",
-        None,
+        # RUN 32 FINAL CLOSURE PINNED IT. v7 became a predecessor when the closure corrected the
+        # served defensibility metadata and finished the B4.7 name propagation, so the live tree
+        # stopped being its evidence. The record itself is NOT regenerated.
+        "93f08bcf36c8675aed3bb4d2b8b83011b8077bc0",
         "RUN 32 applied section 3 of the owner's supervisory contract: the ONE authorised "
         "Category-10 rename, Regret Minimization Index becomes Minimax Regret Decision Rule. The "
         "old name called the module an INDEX and it carried no payoff matrix, so no regret was "
@@ -135,10 +138,52 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "those eight files reproduces the v6 bytes exactly, which the package suite asserts. The "
         "v6 record is NOT regenerated: it is pinned to the commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v8",
+        "code_audit/run32_closure_participant_package_v8_checksums.sha256",
+        None,
+        "THE RUN-32 FINAL CLOSURE corrected the served module-defensibility metadata and finished "
+        "the B4.7 current-name propagation. Seven participant-visible files moved: categories, "
+        "the defensibility evidence object, knowledge, module charts, neural flow, recommendation "
+        "options and taxonomy. THIS DELTA IS NOT A DISPLAY-NAME SUBSTITUTION AND IS NOT CLAIMED "
+        "TO BE ONE -- v7's was, and was proved so by inverse mapping; this one CORRECTS "
+        "STATEMENTS THAT HAD BECOME FALSE, so only taxonomy.js inverse-maps by the identifier "
+        "alone. The defensibility object is regenerated because its generator read four of the "
+        "six canonical structure maps and its execution sentence was a binary, so eighty-nine of "
+        "one hundred and one records carried a statement false about the current instrument; the "
+        "seven Category-10 method descriptions in knowledge.js described the v19 proxies as "
+        "current and carried band ladders for a status colour those modules do not emit; and "
+        "B4.7's method-class key had stopped matching anything the runner emits, so the "
+        "courses-of-action frame and the expected-regret chart had silently gone empty. NO "
+        "ANALYTICAL EXECUTION CHANGED, and that is proved rather than asserted: all ninety-five "
+        "dispatched modules were executed on identical governed inputs before and after, and "
+        "every emitted row is byte-identical under one sha256 over the whole profile. THE "
+        "EXPERIMENTAL SEQUENCE IS UNCHANGED: decision.js, decision-ui.js, workspace.js, "
+        "deepdive.js and the questionnaires are byte for byte identical to v7. The v7 record is "
+        "NOT regenerated: it is pinned to the commit whose blobs it describes.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v7 and v8. Unlike every earlier link, this delta is NOT a
+#: pure display substitution and no inverse mapping is claimed for it: it corrects statements that
+#: had become false. Only `taxonomy.js` inverse-maps by the identifier alone.
+V7_TO_V8_CHANGED = (
+    "assets/js/categories.js", "assets/js/ds_defensibility_evidence.js",
+    "assets/js/knowledge.js", "assets/js/module_charts.js", "assets/js/neural_flow.js",
+    "assets/js/recommendation_options.js", "assets/js/taxonomy.js",
+)
+
+#: The files that CARRY THE PARTICIPANT EXPERIMENTAL SEQUENCE. They must be byte for byte
+#: identical between v7 and v8, which is what makes "the sequence is unchanged" a checkable claim
+#: rather than a sentence in a report.
+SEQUENCE_BEARING_FILES = (
+    "assets/js/decision.js", "assets/js/decision-ui.js", "assets/js/workspace.js",
+    "assets/js/deepdive.js", "assets/questionnaires/intake.json",
+    "assets/questionnaires/debrief.json",
+)
 
 #: The files whose bytes moved between v6 and v7, and the ONE substitution that moved them.
 V6_TO_V7_CHANGED = (
