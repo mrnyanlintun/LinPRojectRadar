@@ -548,7 +548,11 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # full force outside this named set, which is why the two files are listed
                    # rather than the comparison being relaxed.
                    - {"server/app/simulation/canonical_v7.py",
-                      "server/app/simulation/models_cat10.py"})
+                      "server/app/simulation/models_cat10.py"}
+                   # RUN 32, SECTION 3: the one authorised Category-10 rename reaches the
+                   # server-side parity table, which names each module beside the client
+                   # file it is checked against. A display name, no parity value moved.
+                   - {"server/app/simulation/VALIDATION.md"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

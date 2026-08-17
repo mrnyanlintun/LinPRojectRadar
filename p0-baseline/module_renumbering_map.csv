@@ -87,7 +87,7 @@ B4.3,Constraint Satisfaction Analysis,10.3,B,Recommendation & Governance,B4,Deci
 B4.4,What-If Scenario Matrix,10.4,B,Recommendation & Governance,B4,Decision Optimization,
 B4.5,Decision Sensitivity Matrix,10.5,B,Recommendation & Governance,B4,Decision Optimization,
 B4.6,Pareto Frontier Analysis,10.6,B,Recommendation & Governance,B4,Decision Optimization,
-B4.7,Regret Minimization Index,10.7,B,Recommendation & Governance,B4,Decision Optimization,
+B4.7,Minimax Regret Decision Rule,10.7,B,Recommendation & Governance,B4,Decision Optimization,
 C1.1,Missing Data Index,9.1,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
 C1.2,Data Timeliness Score,9.2,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
 C1.3,Source Reliability Weighting,9.3,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation

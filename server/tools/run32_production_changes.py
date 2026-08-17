@@ -35,14 +35,33 @@ _OWNER = ("owner supervisory method contract of 2026-08-17 for Run 32: implement
           "authority boundary so that no algorithm exercises human approval authority, and "
           "abstain where a project does not possess a governed decision problem")
 
-#: EMPTY, AND THAT IS THE GUARD WORKING RATHER THAN A GAP. Both baseline-covered files Run 32
-#: edited -- `models.py` and `project_data.py` -- are already declared by an earlier run's
-#: manifest (Run 28 and Run 30 respectively), and no path may appear in two.
+#: NEARLY EMPTY, AND THAT IS THE GUARD WORKING RATHER THAN A GAP. Every other baseline-covered
+#: file Run 32 edited is already declared by an earlier run's manifest -- `models.py` by Run 28,
+#: `project_data.py` by Run 30, `lineage.py` by Run 29, and the eight participant-visible display
+#: surfaces plus `p0-baseline/module_renumbering_map.csv` by Runs 21, 26 and 28, which carried the
+#: earlier approved renames through exactly these files. No path may appear in two manifests, so
+#: those are NOT redeclared here. One file has never been declared by any run, and it is:
 RUN32_PRODUCTION_CHANGES: dict[str, tuple[str, str, str]] = {}
 
 #: Files Run 32 changed that the Run-20 freeze CANNOT cover, because they did not exist when it
-#: was taken. EMPTY for the same reason as above.
-RUN32_CHANGES_TO_POST_BASELINE_FILES: dict[str, tuple[str, str, str]] = {}
+#: was taken. `VALIDATION.md` is one: the byte comparison structurally cannot reach it, so
+#: without this declaration a production file could move with nothing recording it. It belongs
+#: HERE and not in the baseline-covered dict above -- the declared-changes guard proved that by
+#: reporting it as "declared but unchanged" and "not in baseline" when it was put there first.
+RUN32_CHANGES_TO_POST_BASELINE_FILES: dict[str, tuple[str, str, str]] = {
+    "server/app/simulation/VALIDATION.md": (
+        _OWNER,
+        "server/app/simulation/VALIDATION.md",
+        "SECTION 3 OF THE RUN-32 CONTRACT, THE ONE AUTHORISED CATEGORY-10 RENAME. The "
+        "server-side parity table names each module beside the client file it is checked "
+        "against, and its B4.7 row carried the old name `Regret Minimization Index`. That name "
+        "called the module an INDEX while it carried no payoff matrix, so no regret was defined "
+        "in it at all; the canonical method IS the minimax regret decision rule and the table "
+        "now says so. NOTHING ELSE IN THE FILE MOVED: no parity value, no tolerance, no batch "
+        "number and no ordering note. The change is a display name and is inverse-mappable, "
+        "which the participant-package suite proves for the eight client files carrying the "
+        "same substitution.")
+}
 
 #: Production files Run 32 CREATED. The byte comparison structurally cannot reach these: a file
 #: that did not exist when the Run-20 freeze was taken has no baseline row to differ from, so

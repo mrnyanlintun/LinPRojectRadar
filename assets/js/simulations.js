@@ -2803,7 +2803,7 @@
     };
   }
 
-  // Cat 10.7 — Regret Minimization Index
+  // Cat 10.7 — Minimax Regret Decision Rule
   function runRegretMinimization(si) {
     if (!checkInputs(si, ['cpi','spi','bac']))
       return insufficientData('Regret_Minimization');

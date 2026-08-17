@@ -489,6 +489,10 @@ RUN31_SCOPED_FILES = {
 RUN32_SCOPED_FILES = {
     "server/app/simulation/canonical_v7.py",
     "server/app/simulation/models_cat10.py",
+    # SECTION 3, the one authorised Category-10 rename. The server-side parity table names each
+    # module beside the client file it is checked against, and its B4.7 row carried the old name.
+    # A display name moved; no parity value, tolerance, batch or ordering note did.
+    "server/app/simulation/VALIDATION.md",
 }
 
 _prod = [p for p in _diff

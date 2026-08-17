@@ -2319,7 +2319,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
       sources: "Pay Application, Schedule of Values, RFI / RFI Log.",
       interp: "'Pareto-dominated' (Red) is a specific, stronger finding than a generic Red elsewhere in the stack: it means multiple objectives are simultaneously failing, a pattern consistent with systemic rather than isolated problems, and worth investigating for a common root cause.",
       ground: "Pareto efficiency (Pareto, 1906) is the standard multi-objective optimisation concept for a solution where no objective can be improved without worsening another; classifying a project as efficient, dominated, or in a trade-off zone directly applies that concept to the cost/schedule/risk objective set." },
-    { n: "B4.7", name: "Regret Minimization Index", mc: "Regret_Minimization",
+    { n: "B4.7", name: "Minimax Regret Decision Rule", mc: "Regret_Minimization",
       purpose: "Applies minimax-regret decision theory to choose between monitor/investigate/escalate under three weighted future states (improves/stable/worsens), then overrides the regret-minimising choice with a hard signal-state floor so a severe CPI/SPI reading cannot be smoothed away by the probability weighting.",
       formula: "Fixed regret matrix per decision × future-state combination; expectedRegret[decision] = Σ(regret × future-state probability); recommended = argmin(expectedRegret). Override: if CPI &lt; 0.88 or SPI &lt; 0.88 → forced to 'escalate'; else if CPI &lt; 0.95 or SPI &lt; 0.95 → forced to 'investigate'.",
       bands: [["green","Green","recommended = monitor"], ["amber","Amber","recommended = investigate"], ["red","Red","recommended = escalate"]],
@@ -2895,7 +2895,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         ["What-If Scenario Matrix", "Projects several futures, from recovery through continued current performance to further degradation. The range across scenarios quantifies how much the decision depends on which future arrives."],
         ["Decision Sensitivity Matrix", "Identifies which input variable most affects the recommendation. Where one input dominates, a small change in it changes the recommendation, so verification effort belongs there first."],
         ["Pareto Frontier Analysis", "Determines whether the project is efficient across all objectives, dominated on several at once (which suggests a systemic problem), or in a trade-off zone where improving one objective means accepting degradation in another."],
-        ["Regret Minimization Index", "Applies minimax regret theory to a decision under uncertainty: given a set of possible futures and a set of available decisions, which decision minimizes the worst-case regret?"]
+        ["Minimax Regret Decision Rule", "Applies minimax regret theory to a decision under uncertainty: given a set of possible futures and a set of available decisions, which decision minimizes the worst-case regret?"]
       ],
       pmReading: "These methods are read after the state is understood, not instead of it. They do not replace the conservative-dominance classification or the evidence-combination cross-check; they operationalise them. Read the state first, then read these to choose the action."
     }
