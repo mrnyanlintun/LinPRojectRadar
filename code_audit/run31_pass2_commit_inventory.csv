@@ -1,0 +1,27 @@
+requirement,expected_file_or_object,present,current_value,evidence_location,status
+Run-31 production file abm.py,server/app/simulation/abm.py,YES,"437 lines, sha e05094cb8707219e",server/app/simulation/abm.py,PASS
+Run-31 production file canonical_v6.py,server/app/simulation/canonical_v6.py,YES,"1268 lines, sha 452a789046c76476",server/app/simulation/canonical_v6.py,PASS
+Run-31 production file models_cat89.py,server/app/simulation/models_cat89.py,YES,"479 lines, sha abb2b192656754ff",server/app/simulation/models_cat89.py,PASS
+Run-31 production file qualified_evidence.py,server/app/simulation/qualified_evidence.py,YES,"326 lines, sha 348e0132433ace1c",server/app/simulation/qualified_evidence.py,PASS
+Run-31 production file regulatory.py,server/app/simulation/regulatory.py,YES,"397 lines, sha 5751692d4342675f",server/app/simulation/regulatory.py,PASS
+Run-31 production file qualification_boundary.py,server/app/simulation/qualification_boundary.py,YES,"274 lines, sha d2dff209a481643c",server/app/simulation/qualification_boundary.py,PASS
+simulation identity,models.SIMULATION_VERSION,YES,sim-2026.08-v18,server/app/simulation/models.py,PASS
+superseded line,models.SIMULATION_VERSION_SUPERSEDED,YES,sim-2026.08-v17,server/app/simulation/models.py,PASS
+append-only history through v18,models.SIMULATION_VERSION_HISTORY,YES,"18 stamps, unique=True, tail=('sim-2026.08-v16', 'sim-2026.08-v17', 'sim-2026.08-v18')",server/app/simulation/models.py,PASS
+qualification boundary installed in the dispatch table,models._register_extensions -> qualification_boundary.install,YES,40 gated modules derived from the registry CSV,server/app/simulation/models.py,PASS
+boundary present on every gated dispatch entry,VALIDATED[mid].__gated__,YES,40/40,server/app/simulation/qualification_boundary.py,PASS
+Category 9 excluded from the boundary by construction,C1.x not gated,YES,0/7 Category-9 modules gated,server/app/simulation/qualification_boundary.py,PASS
+artifact run31_cat8_9_scope.csv,code_audit/run31_cat8_9_scope.csv,YES,"16 data rows, sha c4a883fa3ef8001e",code_audit/run31_cat8_9_scope.csv,PASS
+artifact run31_orphan_field_reconciliation.csv,code_audit/run31_orphan_field_reconciliation.csv,YES,"13 data rows, sha 5bf72ca433a63eac",code_audit/run31_orphan_field_reconciliation.csv,PASS
+artifact run31_real_corpus_structure_reconciliation.csv,code_audit/run31_real_corpus_structure_reconciliation.csv,YES,"16 data rows, sha 0f39689052795612",code_audit/run31_real_corpus_structure_reconciliation.csv,PASS
+artifact run31_regulatory_snapshot.csv,code_audit/run31_regulatory_snapshot.csv,YES,"10 data rows, sha 07a570e4e5e066f4",code_audit/run31_regulatory_snapshot.csv,PASS
+artifact run31_downstream_qualification_execution.csv,code_audit/run31_downstream_qualification_execution.csv,YES,"40 data rows, sha 9ae3d2782ac5d551",code_audit/run31_downstream_qualification_execution.csv,PASS
+artifact run31_cat8_9_operational_route_inventory.csv,code_audit/run31_cat8_9_operational_route_inventory.csv,YES,"16 data rows, sha 4399646b81b24840",code_audit/run31_cat8_9_operational_route_inventory.csv,PASS
+artifact run31_historical_suite_reconciliation.csv,code_audit/run31_historical_suite_reconciliation.csv,YES,"32 data rows, sha 1516b09ddffe7058",code_audit/run31_historical_suite_reconciliation.csv,PASS
+artifact run31_safety_upstream_identity_proof.csv,code_audit/run31_safety_upstream_identity_proof.csv,YES,"7 data rows, sha cd660549836ca699",code_audit/run31_safety_upstream_identity_proof.csv,PASS
+artifact run31_pass1_production_tree.sha256,code_audit/run31_pass1_production_tree.sha256,YES,"237 data rows, sha 711f88f671b8b499",code_audit/run31_pass1_production_tree.sha256,PASS
+artifact run31_participant_package_v6_checksums.sha256,code_audit/run31_participant_package_v6_checksums.sha256,YES,"70 data rows, sha 4292ba5e3311b732",code_audit/run31_participant_package_v6_checksums.sha256,PASS
+simulation-version execution proof,server/tools/test_run31_version_boundaries.py,YES,"executes v16, v17 and v18 packages from git objects on identical input",server/tools/test_run31_version_boundaries.py,PASS
+Pass-2 operational acceptance,server/tools/test_run31_pass2_acceptance.py,YES,"raw-bypass, precedence, lineage, non-voting, 9.1/9.5, 9.2/9.7, ABM, wording",server/tools/test_run31_pass2_acceptance.py,PASS
+participant successor package,og-participant-2026.08-v6,YES,"current=og-participant-2026.08-v6, chain=6, predecessors pinned=True",server/tools/participant_packages.py,PASS
+synthetic package decision,no successor minted,YES,"Pass 2 changed no synthetic fixture byte, so no successor was minted",git diff 4dd5985..f147278,PASS

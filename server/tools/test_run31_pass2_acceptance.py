@@ -55,7 +55,32 @@ def run(mid, si):
 
 
 head("1. RAW BYPASS = 0 THROUGH THE REAL DISPATCHER, ROUTES DERIVED FROM THE REGISTRY")
+# THE EXPECTED GATED POPULATION IS ASSERTED FIRST, AND THIS IS NOT DECORATION. Iterating
+# `gated_module_ids()` alone is SELF-LIMITING: if a consumer category were dropped from the gated
+# set, its modules would simply leave the loop and every remaining check would still pass. The
+# Pass-2 fault campaign found exactly that vacuity in this guard -- removing Signal Synthesis and
+# Evidence Combination from GATED_CATEGORY_NAMES left it green.
+#
+# So the population is derived INDEPENDENTLY from the shipped registry CSV -- every module in the
+# four consumer categories the architecture names -- and the gated set must equal it exactly.
+import csv as _csv                                                        # noqa: E402
+_CSV = pathlib.Path(REG.CSV_PATH)
+with _CSV.open(encoding="utf-8-sig", newline="") as _fh:
+    _reg = list(_csv.DictReader(_fh))
+CONSUMER_CATEGORIES = {"Signal Synthesis", "Evidence Combination",
+                       "Regulatory & Authority Thresholds", "Delivery Quality Performance",
+                       "Decision Optimization"}
+EXPECTED_GATED = {r["new_id"] for r in _reg if r["category_name"] in CONSUMER_CATEGORIES}
 gated = gated_module_ids()
+check(set(gated) == EXPECTED_GATED,
+      f"the gated population is exactly the {len(EXPECTED_GATED)} modules in the four consumer "
+      f"categories, derived independently from the registry CSV",
+      f"missing={sorted(EXPECTED_GATED - set(gated))} extra={sorted(set(gated) - EXPECTED_GATED)}")
+for _cat in sorted(CONSUMER_CATEGORIES):
+    _want = {r["new_id"] for r in _reg if r["category_name"] == _cat}
+    _have = {m for m, c in gated.items() if c == _cat}
+    check(_have == _want, f"{_cat}: all {len(_want)} modules are gated",
+          f"ungated={sorted(_want - _have)}")
 by_cat = {}
 for mid, cat in sorted(gated.items()):
     r = run(mid, dict(SI, evidenceQualification=UNQ))
