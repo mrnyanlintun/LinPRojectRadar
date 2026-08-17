@@ -101,9 +101,19 @@ check(_old_stamps[-1] == "sim-2026.08-v19",
 # =================================================================================================
 head("2. THE v19 LINE, EXTRACTED FROM ITS GIT OBJECT AND EXECUTED")
 # =================================================================================================
+# THE EXTRACTED PACKAGE IS PLACED AT THE DEPTH THE v19 CODE EXPECTS. `qualification_boundary`
+# and `qualification_contract` resolve the shipped registry CSV as `parents[3]/p0-baseline/...`,
+# counted from `server/app/simulation/`. Dropping the sources into a flat temp directory would
+# make that path resolve to the filesystem root and the import would die -- so the layout is
+# reconstructed, and the CSV is taken FROM THE SAME COMMIT, so the v19 line reads the registry as
+# it stood rather than as it stands now.
 _TMP = tempfile.mkdtemp(prefix="run32-v19-")
-_PKG = pathlib.Path(_TMP) / "oldsim32"
-_PKG.mkdir()
+_FAKE_ROOT = pathlib.Path(_TMP) / "repo"
+_PKG = _FAKE_ROOT / "server" / "app" / "oldsim32"
+_PKG.mkdir(parents=True)
+(_FAKE_ROOT / "p0-baseline").mkdir(parents=True)
+(_FAKE_ROOT / "p0-baseline" / "module_renumbering_map.csv").write_text(
+    git_show("p0-baseline/module_renumbering_map.csv"), encoding="utf-8")
 _names = subprocess.run(["git", "ls-tree", "--name-only", V19_COMMIT,
                          "server/app/simulation/"],
                         cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
@@ -114,7 +124,7 @@ if len(_py) < 10:
 for _n in _py:
     (_PKG / pathlib.Path(_n).name).write_text(git_show(_n), encoding="utf-8")
 (_PKG / "__init__.py").write_text("", encoding="utf-8")
-sys.path.insert(0, _TMP)
+sys.path.insert(0, str(_PKG.parent))
 
 import oldsim32.models as old_models            # noqa: E402
 
@@ -142,10 +152,23 @@ head("3. THE DIVERGENCES, OBSERVED BY RUNNING BOTH LINES ON THE SAME INPUT")
 # A PROJECT CARRYING NO GOVERNED DECISION STRUCTURE, but carrying exactly the three index fields
 # the v19 Category-10 implementations blended into a recommendation. This is the ordinary case:
 # the controlled corpus holds no decision problem, so it is what a real project looked like.
+# THE PACKAGE MUST PASS CATEGORY-9 QUALIFICATION, AND THIS IS THE CORRECTION OF A FALSE CLAIM
+# THIS FILE ORIGINALLY MADE. The first version of this probe supplied no qualification record.
+# BOTH lines then refused with CATEGORY9_ASSESSMENT_MISSING -- the v18 boundary is present in v19
+# too -- so the "divergence" it reported was not one, and the run would have claimed credit for a
+# difference that does not exist. That is the Run-31 lesson (a divergence example must be
+# EXECUTED on both lines before it is written down) and it is why this probe declares a QUALIFIED
+# assessment: only past the gate is the Category-10 implementation itself reached, which is where
+# v19 and v20 actually differ.
+QUAL = {"qualification_state": "QUALIFIED", "timeliness_status": "TIMELY",
+        "verification_status": "verified", "source_authority": "system_of_record"}
+
 SI_NO_STRUCTURE = {
-    "cpi": 0.92, "spi": 0.88, "docRiskScore": 41,
+    "cpi": 0.92, "spi": 0.88, "docRiskScore": 0.41,
     "bac": 1000000.0, "ac": 480000.0, "ev": 440000.0, "pv": 500000.0,
+    "actualPctComplete": 44.0, "plannedPctComplete": 50.0,
     "percentComplete": 44.0, "durationMonths": 24, "monthsElapsed": 11,
+    "evidenceQualification": QUAL,
 }
 
 
@@ -191,15 +214,32 @@ check(_d1,
       f"v19={ {k: v for k, v in _o41.items() if k != 'period'} } v20_abstains="
       f"{not produced_a_reading(_n41)}")
 
-# ---- DIVERGENCE 2: B4.7, the module section 3 also renames -------------------------------------
-_o47 = run_old("B4.7", SI_NO_STRUCTURE)
-_n47 = run_new("B4.7", SI_NO_STRUCTURE)
-_d2 = produced_a_reading(_o47) and not produced_a_reading(_n47)
+# ---- DIVERGENCE 2: B4.2 Linear Programming -----------------------------------------------------
+# CHOSEN BY EXECUTION, NOT BY GUESS. This slot originally claimed B4.7 diverged here. It does
+# not: v19's B4.7 ALREADY abstained on a project with no payoff matrix, because Run 7 corrected
+# exactly that module. Running all seven identities on this input is what established which ones
+# genuinely differ -- B4.1, B4.2, B4.3, B4.4, B4.5 and B4.6 do; B4.7 does not -- and the claim
+# was replaced with one of the six rather than kept because it read well.
+_o42 = run_old("B4.2", SI_NO_STRUCTURE)
+_n42 = run_new("B4.2", SI_NO_STRUCTURE)
+_d2 = produced_a_reading(_o42) and not produced_a_reading(_n42)
 if _d2:
     DIVERGENCES += 1
 check(_d2,
-      "DIVERGENCE 2: v19 reported a regret index with no payoff matrix in evidence; v20 reports "
-      "no reading, because regret is undefined without one",
+      "DIVERGENCE 2: v19 reported a linear-programming score for a model with no decision "
+      "variables and no constraint matrix; v20 reports no reading until a governed linear "
+      "program is supplied",
+      f"v19_keys={[k for k in _o42 if 'score' in k]} v20_reading={produced_a_reading(_n42)}")
+
+# ---- THE HONEST NON-DIVERGENCE INSIDE THE SCOPE ------------------------------------------------
+# B4.7 abstained on BOTH lines for this input. Recording it as a divergence would have been a
+# false claim of credit, so it is recorded as what it is.
+_o47 = run_old("B4.7", SI_NO_STRUCTURE)
+_n47 = run_new("B4.7", SI_NO_STRUCTURE)
+check(not produced_a_reading(_o47) and not produced_a_reading(_n47),
+      "IN-SCOPE NON-DIVERGENCE: B4.7 produced no reading on EITHER line for a project with no "
+      "payoff matrix, because v19 already refused there. Its v20 change is the rename and the "
+      "fact that it now computes when a matrix IS supplied, not a new abstention",
       f"v19_reading={produced_a_reading(_o47)} v20_reading={produced_a_reading(_n47)}")
 
 # ---- DIVERGENCE 3: the method name itself, which is section 3's rename -------------------------
