@@ -109,8 +109,19 @@ check(V16.SIMULATION_VERSION == "sim-2026.08-v16",
       f"the package at {V16_COMMIT} is stamped v16", V16.SIMULATION_VERSION)
 check(V17.SIMULATION_VERSION == "sim-2026.08-v17",
       f"the package at {V17_COMMIT} is stamped v17", V17.SIMULATION_VERSION)
-check(SIMULATION_VERSION == "sim-2026.08-v19",
-      "and the live line is stamped v19", SIMULATION_VERSION)
+# RESTATED BY RUN 32, RUN 31'S FINDING PRESERVED. This pinned the live stamp to Run 31's own
+# stamp, which was true until the next authorised append. Run 32 appends v20. What is an
+# INVARIANT -- and what is still asserted, immediately below -- is that v19 remains in the
+# history at the position Run 31 put it, that the v16 history is still a strict prefix, and that
+# the extracted v16 and v17 packages are still stamped v16 and v17. The v19 expectation is not
+# overwritten: it is asserted as a HISTORICAL position rather than as the live stamp. The
+# precedent is Run 31's identical restatement of Run 30's boundary test.
+check(H.index("sim-2026.08-v19") == H.index("sim-2026.08-v18") + 1,
+      "the v19 line Run 31 added is still in the history, still directly after v18",
+      str(H[-4:]))
+check(SIMULATION_VERSION == "sim-2026.08-v20",
+      "and the live line has advanced to v20, the one stamp Run 32 is authorised to add",
+      SIMULATION_VERSION)
 check(V16.run_module is not V17.run_module is not V18.run_module,
       "all three are different function objects, so this runs three lines rather than one thrice")
 
@@ -195,6 +206,28 @@ check(n16.get("status_color") == n17.get("status_color")
       "and 9 and nothing else, and a voting module outside that scope did not move",
       f"{n16.get('status_color')} vs {n17.get('status_color')}")
 
+from app import project_data as _pd  # noqa: E402
+
+# A GOVERNED CONSTRAINT-SATISFACTION PROBLEM, SUPPLIED THROUGH THE REAL INTAKE.
+# This is a project-data revision of exactly the shape `saveprojectdata` writes, applied with
+# `apply_to_signal_inputs`, so what the module sees here is what a real supplying owner would
+# give it. It is NOT attached directly to the signal inputs, because that would prove the module
+# can read a dict rather than that the platform can deliver one.
+_CSP_DOC = {"projectData": {"constraintSatisfactionProblem": [{
+    "effective_period": 1,
+    "supplied_by": "run31 version-boundary proof",
+    "source": "run32 governed decision structure",
+    "at": "2026-08-17T00:00:00Z",
+    "record": {
+        "context_id": "RUN31-BOUNDARY-CSP",
+        "source": "run32 governed decision structure",
+        "variables": [{"variable_id": "X", "domain": ["A", "B"]},
+                      {"variable_id": "Y", "domain": [1, 2]}],
+        "constraints": [{"constraint_id": "c1", "type": "implication",
+                         "if": {"X": "A"}, "then": {"Y": 2}}],
+    },
+}]}}
+
 head("2. BOUNDARY B -- v17 to v18: THE OPERATIONAL QUALIFICATION GATE")
 
 # The SAME evidence, declared UNASSESSED, offered to the same module on both lines.
@@ -224,10 +257,48 @@ for mid, cat in (("B4.3", "Category 10"),):
           f"{cat} {mid}: the QUALIFIED version of the same evidence is NOT refused by the gate, "
           f"so v18 changed eligibility rather than disabling the consumer",
           str(q18.get("abstention_reason_code")))
-    check(q18.get("status_color") == r17.get("status_color"),
-          f"{cat} {mid}: and qualified evidence reproduces the v17 reading exactly, so the "
-          f"analytical answer is unchanged where the evidence is eligible",
-          f"v17={r17.get('status_color')} v18-qualified={q18.get('status_color')}")
+    # RESTATED BY RUN 32, AND THE ORIGINAL PROPERTY IS PRESERVED RATHER THAN DROPPED.
+    #
+    # Run 31 proved "the gate changes eligibility, not the answer" by asserting that qualified
+    # evidence reproduced v17's BAND exactly. That was the right proof while B4.3 ran the same
+    # implementation on both lines. Two things about v20 make band-equality the wrong invariant
+    # for THIS module, and neither is a weakening:
+    #
+    #   1. Run 32 is authorised to change B4.3's analytical answer, and did: the v19 module was a
+    #      checklist of fixed index thresholds, and the v20 module is a real constraint network.
+    #      Asserting the answer is unchanged would assert this run did not happen.
+    #   2. A Category-10 row carries NO status_color at v20 BY DESIGN. A decision result is not
+    #      an observation about the project and never enters fusion, so band presence can no
+    #      longer be the signal that a consumer is usable -- for any Category-10 module, forever.
+    #
+    # So the gate property is proved by EXECUTION instead, which is a stronger statement than the
+    # band comparison was: with the governed structure supplied through the real intake, the
+    # qualified package REACHES the consumer and the consumer COMPUTES, while the unassessed
+    # package is still refused at the boundary above.
+    _csp_si = dict(QUALIFIED_SI)
+    _pd.apply_to_signal_inputs(_csp_si, _CSP_DOC, 6)
+    q18s = run(V18, mid, _csp_si)
+    check(q18s.get("canonical_disposition") == "CANONICAL_RESULT"
+          and q18s.get("satisfiable") is not None,
+          f"{cat} {mid}: with the governed decision structure supplied through the real intake, "
+          f"qualified evidence REACHES the consumer and it computes, so the gate changed "
+          f"eligibility rather than disabling the consumer",
+          f"disposition={q18s.get('canonical_disposition')} "
+          f"reason={q18s.get('abstention_reason_code')}")
+    check(q18s.get("status_color") is None,
+          f"{cat} {mid}: and the computed decision row still carries no band, because a decision "
+          f"result never enters the project-status rollup",
+          str(q18s.get("status_color")))
+
+# THE ORIGINAL BAND-REPRODUCTION PROPERTY, KEPT UNDER TEST on modules Run 32 did not touch, so
+# retiring it for B4.3 removes no coverage from the instrument.
+for mid, cat in (("B2.1", "Category 7"), ("B3.2", "Category 8")):
+    r17b = run(V17, mid, UNASSESSED_SI)
+    q18b = run(V18, mid, QUALIFIED_SI)
+    check(q18b.get("status_color") == r17b.get("status_color"),
+          f"{cat} {mid}: qualified evidence reproduces the v17 reading exactly, so the gate "
+          f"changes eligibility rather than the analytical answer",
+          f"v17={r17b.get('status_color')} qualified={q18b.get('status_color')}")
 
 # Category 9 is NOT gated by itself: it performs the assessment.
 c18 = run(V18, "C1.1", UNASSESSED_SI)
@@ -260,10 +331,14 @@ for mid, cat in (("B1.1", "Category 6"), ("B2.1", "Category 7"),
 # AND THE SAME EVIDENCE WITH AN ASSESSMENT REMAINS USABLE: eligibility changed, not availability.
 WITH = dict(SI, evidenceQualification=QUALIFIED_SI["evidenceQualification"])
 for mid, cat in (("B4.3", "Category 10"),):
-    ok = REGLIVE.run_module(mid, dict(WITH), NOOP, CUT)
+    # RESTATED BY RUN 32 for the reason given at boundary B: a Category-10 row carries no band
+    # by design, so "usable" is proved by the consumer executing and producing a canonical
+    # result, with the governed structure supplied through the real intake.
+    _with_si = dict(WITH)
+    _pd.apply_to_signal_inputs(_with_si, _CSP_DOC, 6)
+    ok = REGLIVE.run_module(mid, _with_si, NOOP, CUT)
     check(ok.get("abstention_reason_code") != "CATEGORY9_ASSESSMENT_MISSING"
-          and ok.get("status_color") is not None,
-          f"{cat} {mid}: with a governed assessment the v19 consumer remains usable",
+          and ok.get("canonical_disposition") == "CANONICAL_RESULT",
           f"band={ok.get('status_color')}")
 
 head("3. VERSION NON-VACUITY")
@@ -273,8 +348,12 @@ check(all(v in H for v in ("sim-2026.08-v16", "sim-2026.08-v17", "sim-2026.08-v1
       "v16, v17, v18 and v19 are all present in the append-only history", str(H[-4:]))
 check(len(H) == len(set(H)), "every simulation identifier is unique", str(H))
 check(H[-1] == SIMULATION_VERSION, "the history ends at the current stamp")
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v18",
-      "and the current line names v18 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY RUN 32, same reasoning: v19 superseded v18 when Run 31 wrote this, and v20
+# supersedes v19 now. The invariant is that the superseded pointer names the immediately previous
+# stamp, which is what is asserted here rather than a fixed literal.
+check(SIMULATION_VERSION_SUPERSEDED == H[-2],
+      "and the current line names the stamp immediately before it as the line it supersedes",
+      f"{SIMULATION_VERSION_SUPERSEDED} vs {H[-2]}")
 check(H.count("sim-2026.08-v19") == 1, "v19 was appended exactly once")
 check(H.count("sim-2026.08-v18") == 1, "and v18 remains present exactly once, unchanged")
 
@@ -286,8 +365,11 @@ _prev = tuple(s.strip().strip('",') for s in _seg.replace("\n", " ").split()
 check(H[:len(_prev)] == _prev,
       f"the history at {V16_COMMIT} is a strict PREFIX of the history now, read from git rather "
       f"than from a note, so this run appended and overwrote nothing", f"{_prev} vs {H}")
-check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19"),
-      "and it grew by exactly the three stamps Run 31 is authorised to add",
+# RESTATED BY RUN 32. Run 31's three stamps are still exactly the first three that follow the
+# v16 history, which is Run 31's finding preserved; v20 is Run 32's own single authorised append.
+check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19",
+                         "sim-2026.08-v20"),
+      "and it grew by exactly the three stamps Run 31 added plus the one stamp Run 32 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.
