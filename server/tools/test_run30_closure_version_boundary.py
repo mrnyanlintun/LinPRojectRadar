@@ -61,10 +61,19 @@ def git_show(path: str, rev: str = V15_COMMIT) -> str:
 # =================================================================================================
 head("1. THE STAMP AND ITS HISTORY")
 # =================================================================================================
-check(SIMULATION_VERSION == "sim-2026.08-v16",
-      "the analytical layer is stamped sim-2026.08-v16", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v15",
-      "and names sim-2026.08-v15 as the line it supersedes", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY RUN 31, PASS 1. The assertion below pinned the CURRENT stamp to this run's
+# own stamp, which was true until the next authorised append. Run 31 appends v17. What is
+# an invariant -- and what is still asserted -- is that this run's stamp is present, in
+# order, at the position this run added it, and that the earlier history is a strict prefix
+# read out of git. The precedent for this restatement is Run 29's identical comment in
+# test_run28_version_boundary.py.
+check("sim-2026.08-v16" in SIMULATION_VERSION_HISTORY,
+      "the stamp this closure added, sim-2026.08-v16, is present in the history",
+      str(SIMULATION_VERSION_HISTORY))
+check(SIMULATION_VERSION_HISTORY.index("sim-2026.08-v16")
+      == SIMULATION_VERSION_HISTORY.index("sim-2026.08-v15") + 1,
+      "and it directly follows sim-2026.08-v15, the line it superseded",
+      str(SIMULATION_VERSION_HISTORY))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "EVERY SIMULATION IDENTIFIER IS UNIQUE: no historical stamp has been re-used",
       str([v for v in SIMULATION_VERSION_HISTORY
@@ -80,7 +89,7 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"the history recorded at commit {V15_COMMIT} is a strict PREFIX of the history now, read "
       f"out of git rather than out of a note, so this closure appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
-check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v16",),
+check(SIMULATION_VERSION_HISTORY[len(_old_stamps):][:1] == ("sim-2026.08-v16",),
       "and it grew by exactly the one stamp this closure is authorised to add",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v15",

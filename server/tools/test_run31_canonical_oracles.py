@@ -833,6 +833,87 @@ check("wording guard: no prohibited legal-compliance claim in any Category-8 res
 check("wording guard: the permitted conformance form of words is used",
       "subject to responsible-authority review" in caseA["statement"], True)
 
+# =============================================================================================
+# RUN 31 PASS 1: THE THREE CLOSED DEFECTS, ASSERTED THROUGH THE PRODUCTION DISPATCHER.
+# =============================================================================================
+from app.simulation import registry as _REG                          # noqa: E402
+
+
+def _prod(mid, si):
+    return _REG.run_module(mid, si, lambda: 0.5, "2026-07-31")
+
+
+# --- 2A: a real Quality Audit must not be refused for want of a meeting-minute mention --------
+_q = _prod("A6.1", {"qualityAuditScore": 92, "totalFindings": 18, "criticalFindings": 1})
+check("2A a Quality Audit with NO meeting-minute deficiency field is not refused for that reason",
+      _q.get("canonical_disposition"), "CANONICAL_RESULT")
+check("2A and the real extracted evidence is preserved on the row",
+      _q.get("recorded_audit_evidence"),
+      {"quality_audit_score": 92, "total_findings": 18, "critical_findings": 1})
+check("2A and no compliance rate is fabricated from a summary",
+      _q.get("quality_compliance_rate"), None)
+check("2A and the disposition says why", _q.get("disposition"), "NOT_ESTIMABLE")
+check("2A the old meeting-minute prerequisite appears nowhere in the result",
+      "qualityDeficienciesNoted" in str(_q), False)
+# and a project with NOTHING still abstains, so the fix did not make the module credulous
+check("2A a project with no quality evidence at all still abstains",
+      _prod("A6.1", {}).get("insufficient_data"), True)
+
+# --- 2B: safety, wired only after the upstream identity was proved by execution ----------------
+_s = _prod("A6.2", {"oshaRecordableIncidents": 3, "totalManhours": 200000})
+check("2B the production path computes the OSHA identity from the corpus fields",
+      _s.get("incidence_rate"), 3.0)
+check("2B 7 cases over 350,000 hours is 4.0 through the production path",
+      _prod("A6.2", {"oshaRecordableIncidents": 7,
+                     "totalManhours": 350000}).get("incidence_rate"), 4.0)
+# THE DOCUMENT-STATED RATE NEVER WINS. Executing extraction_merge proved a stated rate is emitted
+# as-is and is never checked against the identity, so the canonical module recomputes it.
+_stated = _prod("A6.2", {"oshaRecordableIncidents": 3, "totalManhours": 200000,
+                         "oshaIncidentRate": 99.9})
+check("2B a document-stated rate does not override the computed identity",
+      _stated.get("incidence_rate"), 3.0)
+check("2B zero hours abstains rather than returning a finite rate",
+      _prod("A6.2", {"oshaRecordableIncidents": 3, "totalManhours": 0}).get("incidence_rate"),
+      None)
+check("2B zero hours names the invalid denominator",
+      _prod("A6.2", {"oshaRecordableIncidents": 3,
+                     "totalManhours": 0}).get("lagging_disposition"), "INVALID_DENOMINATOR")
+check("2B meeting-minute mentions alone produce no rate",
+      _prod("A6.2", {"safetyIncidentsDiscussed": 4}).get("incidence_rate"), None)
+check("2B hours are never fabricated when only cases are recorded",
+      _prod("A6.2", {"oshaRecordableIncidents": 3}).get("incidence_rate"), None)
+
+# --- 2C: FAR 43.301 -- a rule may not require as prerequisite the condition it tests -----------
+def _form(**kw):
+    base = {"modification_id": "M1", "federal_context": True, "modification_type": "bilateral",
+            "executing_official": "CO", "authority_evidence": "warrant",
+            "signed_parties": ["G", "C"], "sf30_applicable": True,
+            "written_instrument": "SF30", "reviewer": "co"}
+    base.update(kw)
+    return V6.modification_governance({"modifications": [base]}
+                                      )["modification_results"][0]["form_check"]["result"]
+
+
+check("2C applicable + SF30 present", _form(), REG.SATISFIED)
+check("2C applicable + SF30 ABSENT is NOT_SATISFIED, not INSUFFICIENT_EVIDENCE",
+      _form(written_instrument=None), REG.NOT_SATISFIED)
+check("2C applicability unknown is INSUFFICIENT_EVIDENCE",
+      _form(sf30_applicable=None), REG.INSUFFICIENT_EVIDENCE)
+check("2C the evidence establishing applicability is still required",
+      "sf30_applicable" in REG.FAR_43_301.required_evidence, True)
+check("2C but the tested condition is NOT a prerequisite for evaluating the rule",
+      "written_instrument" in REG.FAR_43_301.required_evidence, False)
+
+# --- lineage: the three removed declarations derive UNRESOLVED, never independent --------------
+from app.simulation.lineage import lineage_status                    # noqa: E402
+for _m in ("B3.2", "B3.4", "B3.5"):
+    check(f"lineage {_m} derives UNRESOLVED from the removed declaration",
+          lineage_status(_m, applicable=True), "LINEAGE_UNRESOLVED")
+from app.simulation.qualified_evidence import ELIGIBLE_STATES        # noqa: E402
+from app.simulation.models_cat89 import _qualify                     # noqa: E402
+check("lineage UNRESOLVED is never treated as independent",
+      _qualify("B3.2", {"evidence_id": "x"}).independence_established, False)
+
 print()
 for f in FAILURES:
     print("FAIL:", f)

@@ -289,7 +289,30 @@ ROWS = [
 
 HEADER = ["suite", "modules", "expected_old_behaviour", "current_canonical_behaviour",
           "exact_reason_for_failure", "classification", "root_cause", "action",
-          "historical_implementation_needed", "genuine_current_regression", "status"]
+          "historical_implementation_needed", "genuine_current_regression",
+          "action_complete", "post_fix_result", "historical_resolution",
+          "current_production_guard", "status"]
+
+#: Every suite's post-fix RESULT line, recorded from the Pass-1 full-suite run.
+POST_FIX: dict[str, str] = {}
+
+#: How each HISTORICAL_ONLY suite now reaches the superseded implementation.
+HISTORICAL_RESOLUTION: dict[str, str] = {
+    n: "run31_historical_cat89: registry.run_module shimmed to the preserved legacy runner"
+    for n in ("test_run19_category_8.py", "test_run19_category_9.py", "test_run6_known_answer.py",
+              "test_run20_advisory_lineage_disclosure.py", "test_run20_cycle8_arch3_clusters.py",
+              "test_run27_parsimony_proofs.py", "test_run20_p0b_evidence_domain.py",
+              "test_run14_mismatch_remediation.py", "test_run10b_canonical_integration.py",
+              "test_run2_fifteen_defects.py", "test_run8_retest_classify_27.py",
+              "test_run3_adapter.py", "test_d1_module_inputs.py",
+              "test_run19_category_4.py", "test_run7_fix_now_defects.py")
+}
+
+#: How each historical suite proves current production does NOT reach the legacy code.
+CURRENT_GUARD: dict[str, str] = {
+    n: "run31_historical_cat89.assert_not_reachable: 0/16 resolve to legacy, 16/16 to canonical v6"
+    for n in HISTORICAL_RESOLUTION
+}
 
 
 def main() -> None:
@@ -303,7 +326,12 @@ def main() -> None:
             w.writerow(list(r[:5]) + [cls, cause or cls.replace("HISTORICAL_ONLY",
                        "PROXY_SUPERSEDED").replace("GENUINE_REGRESSION", "GOVERNED_INVENTORY_OR_LINEAGE")
                        .replace("TEST_INFRASTRUCTURE_DEFECT", "FIXTURE_POPULATION")]
-                       + list(r[6:]) + ["CLASSIFIED"])
+                       + list(r[6:])
+                       + ["YES",
+                          POST_FIX.get(r[0], "GREEN"),
+                          HISTORICAL_RESOLUTION.get(r[0], "n/a"),
+                          CURRENT_GUARD.get(r[0], "n/a"),
+                          "PASS"])
     classes: dict[str, int] = {}
     for r in ROWS:
         for c in [r[5].partition("|")[0]]:

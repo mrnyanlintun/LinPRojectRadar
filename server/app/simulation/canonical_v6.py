@@ -938,6 +938,31 @@ def quality_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
     CRITICAL EXCEPTIONS ARE NONCOMPENSATORY: one critical exception is returned in its own list
     and cannot disappear inside a 99% aggregate. No status threshold is invented (section 53).
     """
+    # RUN 31, DEFECT 2A. A PROJECT MAY HOLD REAL QUALITY AUDIT EVIDENCE AND NO REQUIREMENT
+    # REGISTER, and that combination must neither compute nor discard what it has. The old
+    # implementation refused this project for the wrong reason entirely -- it required a
+    # MEETING-MINUTE deficiency mention before it would look at the audit at all -- so a project
+    # with a genuine Quality Audit Report abstained because nobody discussed deficiencies.
+    #
+    # An audit score, a findings count and a critical-findings count are SUMMARIES. None of them
+    # establishes the applicable, assessed and satisfied requirement populations this rate is
+    # defined over, and section 13 forbids substituting a summary for a denominator. So the rate
+    # is NOT estimated and the evidence is REPORTED, which is the honest partial disposition.
+    if "requirements" not in structure and structure.get("recorded_audit_evidence"):
+        return {
+            "measure": "quality_compliance",
+            "quality_compliance_rate": None,
+            "disposition": "NOT_ESTIMABLE",
+            "reason": ("the project's Quality Audit evidence is recorded below, but it "
+                       "establishes no applicable, assessed and satisfied requirement "
+                       "population, so no compliance rate is measurable and none is estimated"),
+            "recorded_audit_evidence": dict(structure["recorded_audit_evidence"]),
+            "applicable_assessed": 0, "satisfied": 0,
+            "unassessed_applicable": [], "critical_exceptions": [],
+            "register_id": structure.get("register_id"),
+            "rule": REG.FAR_46_2.identity(),
+            "calibration_pending": True,
+        }
     reqs = _rows(structure, "requirements", "a governed quality requirement register")
     applicable_assessed, satisfied, unassessed, critical_exceptions = [], [], [], []
     for r in reqs:

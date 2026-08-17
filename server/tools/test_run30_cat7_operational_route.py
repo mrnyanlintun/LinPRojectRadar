@@ -30,6 +30,7 @@ sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 
 from app.simulation import registry as REG                       # noqa: E402
+from app.simulation.models import SIMULATION_VERSION            # noqa: E402
 from app.simulation import lineage as LIN                        # noqa: E402
 from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS        # noqa: E402
 from app.simulation.compute import compute_project               # noqa: E402
@@ -330,7 +331,7 @@ _live_disabled = [m for m in NON_OPERATIONAL if m in _computed]
 check(not _live_disabled,
       "the disabled and archived identities do not appear as live analytical readings at all",
       str(_live_disabled))
-check(_res["simulation_version"] == "sim-2026.08-v16",
+check(_res["simulation_version"] == SIMULATION_VERSION,
       "and the ledger carries the current simulation version", str(_res["simulation_version"]))
 check(sorted(REG.CORE_VOTING_MODULES) == ["A1.7", "A1.8"],
       "voting is still exactly the two", str(sorted(REG.CORE_VOTING_MODULES)))

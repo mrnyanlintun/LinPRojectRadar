@@ -36,7 +36,8 @@ import tempfile
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 from app.simulation.compute import compute_project  # noqa: E402
-from app.simulation.models import ABSTAIN_MALFORMED_INPUT, SIMULATION_VERSION  # noqa: E402
+from app.simulation.models import (  # noqa: E402
+    ABSTAIN_MALFORMED_INPUT, SIMULATION_VERSION, SIMULATION_VERSION_HISTORY)
 from app.simulation.models_evm import run_tcpi  # noqa: E402
 from app.simulation.registry import CORE_VOTING_MODULES  # noqa: E402
 
@@ -109,7 +110,7 @@ import oldsim10b.models_evm as old_evm  # noqa: E402
 
 check(old_models.SIMULATION_VERSION == "sim-2026.08-v4",
       "the pinned baseline is the version Run 10 shipped", old_models.SIMULATION_VERSION)
-check(SIMULATION_VERSION == "sim-2026.08-v16",
+check(SIMULATION_VERSION_HISTORY[-1] == SIMULATION_VERSION,
       "and this branch is stamped at this run's version, so a result computed before the "
       "correction and one computed after are distinguishable in already collected data",
       SIMULATION_VERSION)

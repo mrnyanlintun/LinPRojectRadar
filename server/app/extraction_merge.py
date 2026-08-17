@@ -793,6 +793,24 @@ def emit_observations(doc: dict) -> list[dict]:
             emit("oshaIncidentRate", incident_rate)
         if _coerce_numeric(ex.get("total_manhours")) is not None:
             emit("totalManhours", _coerce_numeric(ex.get("total_manhours")))
+        # RUN 31. THE RECORDABLE-CASE COUNT IS NOW EMITTED, and it was not before: the tier map
+        # above sends `osha_recordable_incidents` to None, so the NUMERATOR of the OSHA identity
+        # never reached signal inputs while the derived rate and the denominator both did.
+        #
+        # WHY THAT MATTERED, found by EXECUTING this branch rather than reading it. When the
+        # extractor supplies `incident_rate` directly, it is emitted AS-IS and is never checked
+        # against the identity: a document stating 99.9 alongside a recorded 3-cases/200,000-hours
+        # pair emits 99.9. A downstream consumer reading `oshaIncidentRate` therefore cannot tell
+        # a rate this platform DERIVED from the identity from a rate a document ASSERTED.
+        #
+        # Emitting the count lets the canonical Safety Performance module compute
+        # RecordableCases * 200000 / EmployeeHoursWorked itself, from the two defining
+        # quantities, and treat a document-stated rate as a document-stated rate rather than as
+        # an exposure-normalised measurement. Nothing is fabricated here and no rate is changed;
+        # one already-extracted field stops being discarded.
+        if _coerce_numeric(ex.get("osha_recordable_incidents")) is not None:
+            emit("oshaRecordableIncidents",
+                 _coerce_numeric(ex.get("osha_recordable_incidents")))
 
     elif doc_type == "subcontractor_report":
         comp = _coerce_numeric(ex.get("compliance_score"))

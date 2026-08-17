@@ -95,6 +95,40 @@ GRID = [_si(c / 100, s / 100, d)
 from app.simulation.models_evc import EVC_EXTENSIONS               # noqa: E402
 from app.simulation.models_fuzzy import FUZZY_EXTENSIONS           # noqa: E402
 
+# =================================================================================================
+# RUN 31, PASS 1: THIS SUITE IS HISTORICAL_ONLY FOR CATEGORY 8 AND CATEGORY 9.
+#
+# The assertions below describe implementations Run 31 superseded. They are preserved unedited,
+# because they are the scientific record of what this instrument used to do, and the legacy code
+# they describe is preserved for the same reason. What changes is resolution: for the sixteen
+# Category-8/9 identities ONLY, `registry.run_module` executes the preserved legacy runner.
+# Every other module still resolves to live production.
+#
+# The second half of the contract is asserted at the end of this block: current production
+# reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
+# =================================================================================================
+import run31_historical_cat89 as _R31H                                        # noqa: E402
+_R31H_HISTORICAL_ONLY = True
+
+def _r31h_install():
+    # Patch the registry MODULE OBJECT, not a local alias: every suite holds a reference to the
+    # same singleton module however it spelled the import, so this reaches all of them.
+    from app.simulation import registry as _registry
+    _live = _registry.run_module
+
+    def _resolve(new_id, si, rand, period_cutoff, *a, **k):
+        if new_id in _R31H.LEGACY_CAT89:
+            return _R31H.run_legacy(new_id, si, rand, period_cutoff)
+        return _live(new_id, si, rand, period_cutoff, *a, **k)
+
+    _registry.run_module = _resolve
+
+_r31h_install()
+# Suites that look modules up in the routing table, or inspect a runner's SOURCE, must
+# resolve the sixteen to their superseded implementations too, or a parsimony/known-answer
+# proof about the old code would silently read the new code instead.
+VALIDATED = _R31H.historical_validated()
+
 LEGACY_CAT7 = {k: v[1] for k, v in {**EVC_EXTENSIONS, **FUZZY_EXTENSIONS}.items()
                if k.startswith("B2.")}
 

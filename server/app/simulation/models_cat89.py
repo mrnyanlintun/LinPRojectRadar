@@ -191,6 +191,80 @@ def _abstain(module_id: str, method_class: str, sentence: str, disposition: str,
     return out
 
 
+def _assemble(si: dict, module_id: str) -> dict | None:
+    """
+    CORPUS-TO-STRUCTURE ASSEMBLY, for the structures the controlled corpus can genuinely build.
+
+    THIS IS THE ORPHAN-FIELD CLOSURE AND IT IS DELIBERATELY NARROW. Run 27 found three document
+    families emitting fields no registered module consumed. Assembly here turns those already
+    extracted, already assembled signal fields into the governed structure the canonical module
+    is defined on. It fabricates nothing: a quantity the corpus does not carry does not appear,
+    and where the defining structure cannot be built the module abstains rather than receiving a
+    partial structure that would let it compute from an invented denominator.
+
+    A6.2 SAFETY. The corpus carries `oshaRecordableIncidents` (Run 31 stopped discarding it),
+    `totalManhours` and `oshaIncidentRate`. The canonical module is given the TWO DEFINING
+    QUANTITIES and computes the identity itself. The document-stated rate is carried separately
+    as `document_stated_incident_rate` and is NEVER used as the incidence rate, because executing
+    the upstream branch proved a stated rate is emitted as-is and is not checked against the
+    identity: a document asserting 99.9 beside a 3-cases/200,000-hours pair emits 99.9. A stated
+    rate is a document's claim; the identity is a measurement.
+
+    A6.1 QUALITY. The corpus carries `qualityAuditScore`, `totalFindings` and `criticalFindings`.
+    NONE of those is a requirement register: a findings count is not an applicable-requirement
+    population, and an audit score is not the ratio of satisfied applicable assessed requirements
+    to assessed applicable requirements. Section 13 of the Run-31 contract forbids substituting a
+    summary for a denominator, so this assembly carries the real evidence onto the structure as
+    `recorded_audit_evidence` and supplies NO `requirements` list. The canonical module therefore
+    abstains from the rate and the extracted evidence is preserved rather than discarded.
+
+    WHAT IS DELIBERATELY NOT ASSEMBLED. `qualityDeficienciesNoted`, `safetyIncidentsDiscussed`
+    and `environmentalIssuesDiscussed` are meeting-minute MENTIONS. They are evidence candidates
+    and nothing here converts one into a denominator, an incidence numerator or a compliance
+    percentage. A6.1's old prerequisite on `qualityDeficienciesNoted` is gone entirely: a project
+    holding a real Quality Audit Report is no longer refused because nobody mentioned deficiencies
+    in the minutes.
+    """
+    if module_id == "A6.2":
+        cases = si.get("oshaRecordableIncidents")
+        hours = si.get("totalManhours")
+        stated = si.get("oshaIncidentRate")
+        if cases is None and hours is None and stated is None:
+            return None
+        rec: dict[str, Any] = {
+            "evidence_id": "A6.2-corpus",
+            "reporting_period": si.get("reportPeriod"),
+            "provenance": "assembled from the project's Safety Report extraction",
+            "document_stated_incident_rate": stated,
+            "leading_indicators": [],
+        }
+        if cases is not None:
+            rec["recordable_cases"] = cases
+        if hours is not None:
+            rec["employee_hours_worked"] = hours
+        return rec
+    if module_id == "A6.1":
+        score = si.get("qualityAuditScore")
+        findings = si.get("totalFindings")
+        critical = si.get("criticalFindings")
+        if score is None and findings is None and critical is None:
+            return None
+        return {
+            "evidence_id": "A6.1-corpus",
+            "register_id": None,
+            "provenance": "assembled from the project's Quality Audit Report extraction",
+            # NO `requirements` KEY. See the docstring: none of these establishes an applicable,
+            # assessed and satisfied requirement population, so no rate is computable and none is
+            # estimated. The evidence is preserved for the reader instead of being discarded.
+            "recorded_audit_evidence": {
+                "quality_audit_score": score,
+                "total_findings": findings,
+                "critical_findings": critical,
+            },
+        }
+    return None
+
+
 def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any]],
            *, gated: bool) -> Callable:
     """
@@ -203,8 +277,13 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
         try:
             structure = v6_structure(si, module_id)
         except StructureAbsent as exc:
-            return _abstain(module_id, method_class, exc.sentence,
-                            DISPOSITION_STRUCTURE_ABSENT)
+            # THE CORPUS MAY BE ABLE TO BUILD IT even when no governed structure was supplied
+            # through the intake. `_assemble` returns the structure the project's own extracted
+            # evidence supports, or None when it supports none.
+            structure = _assemble(si, module_id)
+            if structure is None:
+                return _abstain(module_id, method_class, exc.sentence,
+                                DISPOSITION_STRUCTURE_ABSENT)
         use = MODULE_USE[module_id]
         ev = _qualify(module_id, structure)
         qual = _qualification_block(ev, use)

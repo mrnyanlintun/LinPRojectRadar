@@ -81,6 +81,38 @@ sys.path.insert(0, _TMP)
 import oldsim30v16.registry as OLD_REG        # noqa: E402
 import oldsim30v16.compute as OLD_COMPUTE     # noqa: E402
 
+# RESTATED BY RUN 31, PASS 1. This suite proved Run 30's FINAL decision by comparing the v16
+# commit against THE LIVE TREE, which was Run 30's final state at the time it was written. The
+# live tree is not a fixed object: Run 31 changes sixteen Category-8/9 modules, so the comparison
+# silently stopped being "what Run 30's closure changed" and became "what Run 31 changed".
+#
+# Both sides are now GIT OBJECTS. `RUN30_FINAL_COMMIT` is Run 30's final merged head, so this
+# suite proves permanently what Run 30 decided, and no later authorised run can move either side
+# of it. Nothing about the decision itself is weakened: the same rows are compared, by the same
+# `strip`, for the same identity.
+RUN30_FINAL_COMMIT = "53f3081"
+_TMP2 = tempfile.mkdtemp(prefix="run30f-final-")
+_PKG2 = pathlib.Path(_TMP2) / "oldsim30final"
+_PKG2.mkdir()
+_names2 = subprocess.run(["git", "ls-tree", "--name-only", RUN30_FINAL_COMMIT,
+                          "server/app/simulation/"],
+                         cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+_py2 = [n for n in _names2 if n.endswith(".py")]
+if len(_py2) < 10:
+    raise SystemExit("Run-30 final extraction found no simulation sources at the pinned commit")
+for _n in _py2:
+    _src2 = subprocess.run(["git", "show", f"{RUN30_FINAL_COMMIT}:{_n}"], cwd=ROOT,
+                           capture_output=True, text=True, check=True).stdout
+    (_PKG2 / pathlib.Path(_n).name).write_text(_src2, encoding="utf-8")
+(_PKG2 / "__init__.py").write_text("", encoding="utf-8")
+sys.path.insert(0, _TMP2)
+
+import oldsim30final.models as FINAL_MODELS   # noqa: E402
+import oldsim30final.registry as FINAL_REG     # noqa: E402
+import oldsim30final.compute as FINAL_COMPUTE  # noqa: E402
+
+FINAL_REG.CSV_PATH = ROOT / "p0-baseline" / "module_renumbering_map.csv"
+
 OLD_REG.CSV_PATH = ROOT / "p0-baseline" / "module_renumbering_map.csv"
 
 from app.simulation import compute as NEW_COMPUTE       # noqa: E402
@@ -111,7 +143,7 @@ def strip(rows):
 head("2. NO ANALYTICAL RESULT AND NO ELIGIBILITY OUTCOME MOVED")
 # =================================================================================================
 _a = OLD_REG.run_all(dict(SI), "S", "P1", "2026-06-30")
-_b = NEW_REG.run_all(dict(SI), "S", "P1", "2026-06-30")
+_b = FINAL_REG.run_all(dict(SI), "S", "P1", "2026-06-30")
 _ac, _bc = strip(_a["computed"]), strip(_b["computed"])
 _aa, _ab = strip(_a["abstained"]), strip(_b["abstained"])
 check(set(_ac) == set(_bc),
@@ -131,7 +163,7 @@ check(sorted(_changed) == sorted(f"B2.{n}" for n in range(1, 21)),
       str(sorted(_changed)))
 
 _pa = OLD_COMPUTE.compute_project(dict(SI), "P", "P1", "2026-06-30")
-_pb = NEW_COMPUTE.compute_project(dict(SI), "P", "P1", "2026-06-30")
+_pb = FINAL_COMPUTE.compute_project(dict(SI), "P", "P1", "2026-06-30")
 for _k in ("project_status", "categories_voting", "voting_module_ids", "project_conflict",
            "project_conflict_state", "category_statuses"):
     check(_pa.get(_k) == _pb.get(_k),
@@ -145,7 +177,7 @@ head("3. THE NEW FIELD IS STRUCTURALLY INCAPABLE OF REACHING THE FUSION PATH")
 # decisive question: can the field this closure added get there? It cannot, and the reason is that
 # compute builds every fusion input from the DECLARATION TABLE rather than from a module's row.
 import inspect                                                    # noqa: E402
-_src = inspect.getsource(NEW_COMPUTE)
+_src = inspect.getsource(FINAL_COMPUTE)
 check("lineage=lineage_for(" in _src.replace(" ", "").replace("\n", "")
       or "lineage=lineage_for(row[" in _src,
       "compute builds each signal's fusion lineage from lineage_for(module_id), the declaration "
@@ -156,14 +188,14 @@ check('row["lineage"]' not in _src and "row.get(\"lineage\")" not in _src,
 # Proved by execution as well as by reading: a row carrying a fabricated independent lineage key
 # does not change the fused answer, because fusion never looks at it.
 _poisoned = dict(SI)
-_before = NEW_COMPUTE.compute_project(dict(_poisoned), "P", "P1", "2026-06-30")["project_status"]
-_rows = NEW_REG.run_all(dict(SI), "S", "P1", "2026-06-30")
+_before = FINAL_COMPUTE.compute_project(dict(_poisoned), "P", "P1", "2026-06-30")["project_status"]
+_rows = FINAL_REG.run_all(dict(SI), "S", "P1", "2026-06-30")
 for _r in _rows["abstained"]:
     if _r["module_id"].startswith("B2."):
         _r["lineage"] = {"lineage_status": "LINEAGE_ESTABLISHED_INDEPENDENT",
                          "independence_established": True,
                          "evidence_body": "INVENTED_BODY"}
-_after = NEW_COMPUTE.compute_project(dict(_poisoned), "P", "P1", "2026-06-30")["project_status"]
+_after = FINAL_COMPUTE.compute_project(dict(_poisoned), "P", "P1", "2026-06-30")["project_status"]
 check(_before == _after,
       "and rewriting the key on a returned row changes no fused answer, because the value never "
       "travels anywhere that reads it", f"{_before} vs {_after}")
@@ -172,15 +204,15 @@ check(_before == _after,
 # =================================================================================================
 head("4. THE DECISION")
 # =================================================================================================
-check(SIMULATION_VERSION == "sim-2026.08-v16",
+check(FINAL_REG.SIMULATION_VERSION == "sim-2026.08-v16",
       "sim-2026.08-v16 STANDS. This closure changed ledger metadata semantics and no analytical "
       "result, no eligibility outcome and no fused status, so the stamp is still truthful and is "
-      "NOT overwritten", SIMULATION_VERSION)
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v16"
+      "NOT overwritten", FINAL_REG.SIMULATION_VERSION)
+check(FINAL_MODELS.SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v16"
       and len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "the history is unchanged, still append-only and still unique",
       str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[:15] == tuple(
+check(FINAL_MODELS.SIMULATION_VERSION_HISTORY[:15] == tuple(
     f"sim-2026.0{'7' if n == 1 else '8'}-v{n}" for n in range(1, 16)),
       "and every predecessor stamp is preserved in order")
 

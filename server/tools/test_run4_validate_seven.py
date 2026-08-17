@@ -713,8 +713,15 @@ non_voting_count = sum(1 for r in comp.values() if not r.get("votes"))
 # compute, and this project's corpus carries none of them, so they abstain here instead of
 # computing a proxy. Twenty computed rows on this fixture, of which eighteen do not vote. The
 # RATIO is what the finding is about and the arithmetic identity is still pinned exactly.
+# RUN 31, PASS 1. The floor moves once more, for the same kind of reason and recorded the same
+# way: the nine Category-8 and seven Category-9 identities now hold their governed structures
+# before they compute, and this project's corpus carries none of them, so they abstain here
+# instead of computing a proxy from a cost index, a meeting-minute mention or a hard-coded field
+# list. Ten computed rows on this fixture, of which eight do not vote. The RATIO is what the
+# finding is about, the arithmetic identity is still pinned exactly, and the voting set is still
+# exactly the two modules asserted above.
 check(non_voting_count >= len(comp) - 2 and non_voting_count == len(comp) - len(voting_ids)
-      and len(comp) >= 18,
+      and len(comp) >= 10,
       "and the ones that do not vote are the bulk of the platform, computed and stored as "
       "before: every computed module except the two voters",
       f"{non_voting_count} non-voting of {len(comp)} computed")

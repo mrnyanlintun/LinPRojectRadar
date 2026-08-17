@@ -275,7 +275,24 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: Category-7 ledger row, which touched lineage.py and models_cat7.py. The run30 closure manifest
 #: is NOT rewritten: it stays as that release wrote it, and this successor names it as its parent
 #: and carries its digest in research/freeze/RUN30_FINAL_CLOSURE_FREEZE_2026-08-16.json.
-PINNED = ROOT / "code_audit" / "run30_final_closure_production_tree.sha256"
+#: RUN 31, PASS 1. Repointed once more, by the same discipline and for the same kind of reason:
+#: the owner's Run-31 supervisory contract authorises modification of Category-8/9 analytical
+#: production code, of evidence and data contracts, and the addition of the governed regulatory,
+#: agent-based-governance and evidence-qualification structures those methods are defined on.
+#: FIVE production files were created -- regulatory.py (the governed versioned rule layer),
+#: abm.py (the agent-based governance model), qualified_evidence.py (the Category-9 qualified
+#: evidence object and gate), canonical_v6.py (the v6 canonical layer) and models_cat89.py (the
+#: sixteen thin operational runners) -- and TWO were changed: models.py, where the sixteen
+#: Category-8/9 identities are repointed onto the canonical layer and the stamp advances to
+#: sim-2026.08-v17, and project_data.py, whose governed intake vocabulary is extended with the v6
+#: structure map. The run30 final closure manifest is NOT rewritten: it stays exactly as that
+#: release wrote it, as that release's historical record, and this successor names it as its
+#: parent and carries its digest below. The guard was turned red first and observed reporting
+#: exactly those five added and two changed files.
+PINNED = ROOT / "code_audit" / "run31_pass1_production_tree.sha256"
+#: The Run-30 final closure manifest, the immediate parent, kept addressable so a guard can prove
+#: the supersession is a real change and not a silent rewrite.
+PINNED_RUN30_FINAL_CLOSURE = ROOT / "code_audit" / "run30_final_closure_production_tree.sha256"
 #: The Run-30 closure manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN30_CLOSURE = ROOT / "code_audit" / "run30_closure_production_tree.sha256"

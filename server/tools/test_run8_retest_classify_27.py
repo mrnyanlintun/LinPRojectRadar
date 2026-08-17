@@ -58,6 +58,41 @@ from app.simulation.models_ext import (  # noqa: E402
 from app.simulation.models_fuzzy import run_critic_topsis, run_marcos  # noqa: E402
 from app.simulation.models_sim import run_monte_carlo  # noqa: E402
 from app.simulation.rng import make_rng  # noqa: E402
+# =================================================================================================
+# RUN 31, PASS 1: THIS SUITE IS HISTORICAL_ONLY FOR CATEGORY 8 AND CATEGORY 9.
+#
+# The assertions below describe implementations Run 31 superseded. They are preserved unedited,
+# because they are the scientific record of what this instrument used to do, and the legacy code
+# they describe is preserved for the same reason. What changes is resolution: for the sixteen
+# Category-8/9 identities ONLY, `registry.run_module` executes the preserved legacy runner.
+# Every other module still resolves to live production.
+#
+# The second half of the contract is asserted at the end of this block: current production
+# reaches NONE of the sixteen legacy implementations and ALL sixteen canonical routes.
+# =================================================================================================
+import run31_historical_cat89 as _R31H                                        # noqa: E402
+_R31H_HISTORICAL_ONLY = True
+
+def _r31h_install():
+    # Patch the registry MODULE OBJECT, not a local alias: every suite holds a reference to the
+    # same singleton module however it spelled the import, so this reaches all of them.
+    from app.simulation import registry as _registry
+    _live = _registry.run_module
+
+    def _resolve(new_id, si, rand, period_cutoff, *a, **k):
+        if new_id in _R31H.LEGACY_CAT89:
+            return _R31H.run_legacy(new_id, si, rand, period_cutoff)
+        return _live(new_id, si, rand, period_cutoff, *a, **k)
+
+    _registry.run_module = _resolve
+
+_r31h_install()
+# Suites that look modules up in the routing table, or inspect a runner's SOURCE, must
+# resolve the sixteen to their superseded implementations too, or a parsimony/known-answer
+# proof about the old code would silently read the new code instead.
+VALIDATED = _R31H.historical_validated()
+from app.simulation import registry as _r31h_reg                      # noqa: E402
+run_module = _r31h_reg.run_module
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PASSED = 0
@@ -411,6 +446,26 @@ _untracked = [line[3:].strip().strip('"') for line in subprocess.run(
 
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split() + _untracked
+# RUN 31 is authorised by its supervisory contract to implement the supplied Category 8 and 9
+# canonical contracts, install the Category-9 qualification boundary, and add the governed
+# regulatory, agent-based-governance and evidence-quality structures those methods are defined
+# on. Five files are new and four changed. Each is declared in
+# server/tools/run31_production_changes.py and pinned in
+# code_audit/run31_pass1_production_tree.sha256; this list is the same scope, read here so the
+# check keeps its full force over every file OUTSIDE it.
+RUN31_SCOPED_FILES = {
+    "server/app/simulation/regulatory.py",
+    "server/app/simulation/abm.py",
+    "server/app/simulation/qualified_evidence.py",
+    "server/app/simulation/canonical_v6.py",
+    "server/app/simulation/models_cat89.py",
+    "server/app/simulation/models.py",
+    "server/app/simulation/lineage.py",
+    "server/app/project_data.py",
+    "server/app/extraction_merge.py",
+    "server/app/field_registry.py",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -420,7 +475,8 @@ _prod = [p for p in _diff
          and p not in RUN20_SCOPED_FILES and p not in RUN21_SCOPED_FILES
          and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES
          and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
-         and p not in RUN30_SCOPED_FILES]
+         and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES]
+
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
 # RESTATED BY RUN 11, original finding preserved. This read "nothing under assets/ differs"
@@ -1498,6 +1554,7 @@ for mid, key, expected, why in (
 
 # The production status vocabulary is recognised by the one place that recognises it.
 import app.simulation.fusion as fusion  # noqa: E402
+
 _unrecognised = sorted(m for m in UNRESOLVED_27
                        if m in _by_id
                        and fusion.normalise_status(_by_id[m]["status_color"]) is None)

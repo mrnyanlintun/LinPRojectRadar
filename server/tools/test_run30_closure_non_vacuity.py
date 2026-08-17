@@ -312,10 +312,17 @@ check(all(REG.VALIDATED[m][1].__module__ == "app.simulation.models_cat7"
           for m in (f"B2.{n}" for n in range(1, 21))),
       "and after the whole campaign the routing table is exactly as it shipped: all twenty "
       "Category-7 identities still resolve to the canonical route")
-check(MODELS.SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v16"
+# RESTATED BY RUN 31, PASS 1. This asserted the history was UNCHANGED, meaning "unchanged by
+# this fault campaign" -- but it pinned the last element to Run 30's own stamp, which an
+# authorised later append necessarily moves. What the campaign must prove is that IT changed
+# nothing and that the append-only invariants hold; both are asserted, and the stamp Run 30 added
+# is still required to be present.
+check("sim-2026.08-v16" in MODELS.SIMULATION_VERSION_HISTORY
+      and MODELS.SIMULATION_VERSION_HISTORY[-1] == MODELS.SIMULATION_VERSION
       and len(MODELS.SIMULATION_VERSION_HISTORY)
       == len(set(MODELS.SIMULATION_VERSION_HISTORY)),
-      "and the version history is unchanged and still unique")
+      "and the version history is unchanged by this campaign and still unique",
+      str(MODELS.SIMULATION_VERSION_HISTORY[-3:]))
 
 print()
 print("=" * 78)

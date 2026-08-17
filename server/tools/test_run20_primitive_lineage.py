@@ -403,7 +403,6 @@ ACTUAL_FACTS = {
     "A4.6": set(),      # the governed change event register, not the extracted contract sums
     "A5.2": set(),      # the governed sensitivity model, not the earned-value scalars
     "A5.3": set(),      # A5.2's result, and nothing else at all
-    "B3.5": {"baseline_contract_sum", "change_order_count", "revised_contract_sum"},
     "D1.5": set(),                                            # a synthesis holds no fact itself
     # RUN 20 CYCLE 8, THE ARCH.3 CLUSTERS. These records name their DIRECT facts here and reach
     # the rest through `derived_index_reads`, so the hand-transcribed set below is the direct
@@ -416,8 +415,6 @@ ACTUAL_FACTS = {
     # register's own risk events, and no cost index.
     "A1.11": {"independent_eac", "management_eac"},
     "A3.6": {"bac", "risk_events"},
-    "B3.2": set(),                         # the cost index alone; the budget scales out
-    "B3.4": set(),                         # the two indices; the budget scales out
     "B4.3": set(),                         # the two indices; the budget scales out
     # RUN 30 CLOSURE. The nine Category-7 entries are gone with their records, for the same
     # reason as the index table above: the canonical route reads no document risk score either.
@@ -440,8 +437,14 @@ ACTUAL_FACTS = {
 # were removed with them. A record naming an index a module does not read would declare a
 # dependence that is not there, and this table exists to catch exactly that.
 ACTUAL_INDEX_READS = {
-    "B3.2": {"cost_index"},
-    "B3.4": {"cost_index", "schedule_index"}, "B4.3": {"cost_index", "schedule_index"},
+# RUN 31. B3.2, B3.4 and B3.5 ARE NO LONGER DECLARED, and the sweep records that rather than
+# transcribing reads that have stopped happening. All three route through models_cat89.py into
+# canonical_v6, which reads no cost index, no schedule index and no change-order count; the
+# Run-31 contract forbids each of those reads in terms (sections 9, 11 and 12). Their lineage
+# declarations were REMOVED rather than rewritten, on the Run-30 closure's reasoning, so
+# lineage_status derives LINEAGE_UNRESOLVED for all three. Their historical declared reads are
+# preserved in the block comments in lineage.py where the records used to stand.
+    "B4.3": {"cost_index", "schedule_index"},
 }
 
 #: The Category-7 identities that USED to be in the table above, kept here so the removal is a
