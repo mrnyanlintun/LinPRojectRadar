@@ -23,6 +23,31 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 SYNTH = ROOT / "research_fixtures" / "synthetic"
 
+#: The five entries REPORT_2026-08-11 section 3 names as claimed by the programme manifest and
+#: never delivered with the archives. Cited so the sweep's completeness statement rests on that
+#: committed record rather than on the files being absent from disk.
+#: SCOPED TO OG-SYNTH-0.1, and that scoping is itself a finding. REPORT_2026-08-11 records these
+#: five as never delivered WITH THE THREE v0.1 ARCHIVES. The later v0.2 and v0.3 programmes DO
+#: ship files of the same names, and they resolve and match, so a global list would have wrongly
+#: called delivered files undelivered.
+KNOWN_UNDELIVERED_BY_PROGRAMME = {
+    "OG-SYNTH-0.1": {
+        "validators/validate_synthetic_programme.py",
+        "generators/generate_opus_synthetic_programme.py",
+        "validation_report.json",
+        "module_asset_map.csv",
+        "schemas/schema_catalog.json",
+    },
+}
+
+
+def undelivered_for(path) -> set:
+    """The committed never-delivered set for the programme a manifest belongs to."""
+    for prog, entries in KNOWN_UNDELIVERED_BY_PROGRAMME.items():
+        if prog in str(path):
+            return entries
+    return set()
+
 P = F = 0
 FAILS = []
 
@@ -67,25 +92,35 @@ def sweep():
         candidates = {"record-relative": man.parent,
                       "package-relative": man.parent.parent,
                       "repository-relative": ROOT}
-        best, base = None, man.parent
-        for label, cand in candidates.items():
-            hits = sum(1 for _d, rel in entries if (cand / rel).is_file())
-            if best is None or hits > best[1]:
-                best, base = (label, hits), cand
-        convention = best[0] if best else "record-relative"
+        # A RELEASE-LEVEL MANIFEST COPIED INTO EACH PACKAGE DIRECTORY resolves across ALL of the
+        # sibling package roots: its paths are relative to the merged release tree, which this
+        # repository stores as one directory per package. The 2026-08-11 ingest report verified
+        # it "against a merged tree assembled from all three archives, which is the tree the
+        # manifest describes"; resolving against a single base could never find those files.
+        for _pkg in sorted(man.parent.parent.glob("package_*")):
+            candidates[f"release-tree:{_pkg.name}"] = _pkg
+        # Resolution is per ENTRY across every candidate base, not one base for the whole
+        # manifest, because a release-level manifest legitimately spans several package roots.
+        bases = list(candidates.values())
+        hits = {label: sum(1 for _d, rel in entries if (cand / rel).is_file())
+                for label, cand in candidates.items()}
+        convention = max(hits, key=hits.get) if hits else "record-relative"
         exp = len(entries)
         res = mis = mm = ok = 0
+        unresolved = []
         for digest, rel in entries:
-            p = (base / rel).resolve()
-            if not p.is_file():
+            p = next((b / rel for b in bases if (b / rel).is_file()), None)
+            if p is None:
                 mis += 1
+                unresolved.append(rel)
                 continue
             res += 1
             if hashlib.sha256(p.read_bytes()).hexdigest() == digest:
                 ok += 1
             else:
                 mm += 1
-        rows.append((man.relative_to(ROOT), exp, res, mis, ok, mm, convention))
+        rows.append((man.relative_to(ROOT), exp, res, mis, ok, mm, convention,
+                     unresolved))
         totals["manifests"] += 1
         totals["expected"] += exp
         totals["resolved"] += res
@@ -99,7 +134,7 @@ print("=" * 78)
 print("THE REPAIRED SWEEP: manifest-relative resolution, portable root")
 print("=" * 78)
 rows, totals = sweep()
-for rel, exp, res, mis, ok, mm, conv in rows:
+for rel, exp, res, mis, ok, mm, conv, unresolved in rows:
     print(f"  {str(rel):<66} [{conv:<20}] expected={exp:<4} resolved={res:<4} "
           f"missing={mis:<3} match={ok:<4} mismatch={mm}")
     check(exp > 0, f"{rel}: the manifest lists governed files at all", str(exp))
@@ -110,12 +145,31 @@ for rel, exp, res, mis, ok, mm, conv in rows:
     # not a checksum failure -- and they are reported as such rather than silently passed. What
     # is REQUIRED is that every file the repository DOES hold was opened and matched.
     check(res > 0, f"{rel}: the sweep opened governed files from this manifest", str(res))
+    unnamed = [e for e in unresolved if e not in undelivered_for(rel)]
+    check(not unnamed,
+          f"{rel}: every unresolved entry is one REPORT_2026-08-11 names as never delivered -- "
+          f"the package is INCOMPLETE and is reported as such, not relabelled",
+          f"unresolved with no committed authority: {unnamed}")
     check(mm == 0, f"{rel}: every file this repository holds matches its recorded checksum",
           str(mm))
     if mis:
         print(f"        NOT_VENDORED: {mis} listed file(s) are not present in this repository "
               f"under any base convention")
     check(mm == 0, f"{rel}: every resolved file matches its recorded checksum", str(mm))
+
+# THE SCOPE AUTHORITY IS CHECKED AGAINST THE TREE, which is what makes a misclassification
+# detectable: a file the committed record calls never-delivered must not be sitting in the
+# repository, and a file that IS in the repository must not be claimed external.
+_contradictions = []
+for _man in sorted(SYNTH.rglob("CHECKSUMS.sha256")):
+    _bases = [_man.parent, _man.parent.parent, ROOT] + sorted(_man.parent.parent.glob("package_*"))
+    for _d, _rel in parse(_man):
+        if _rel in undelivered_for(_man) and any((_b / _rel).is_file() for _b in _bases):
+            _contradictions.append(f"{_man.relative_to(ROOT)}:{_rel}")
+check(not _contradictions,
+      "SCOPE AUTHORITY AGREES WITH THE TREE: no entry the committed record calls never-delivered "
+      "is actually present, so a locally governed file cannot be relabelled external",
+      str(sorted(set(_contradictions))))
 
 print()
 check(totals["manifests"] > 0, "at least one governed synthetic manifest was found",
