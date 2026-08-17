@@ -1058,6 +1058,22 @@ def safety_performance(structure: Mapping[str, Any]) -> dict[str, Any]:
         out["leading_disposition"] = "ABSTAIN_NO_LEADING_EVIDENCE"
     severe = structure.get("severe_events")
     out["severe_events"] = list(severe) if isinstance(severe, list) else []
+    # THE DOCUMENT-STATED RATE IS CARRIED, LABELLED, AND NEVER USED AS THE MEASUREMENT.
+    # Executing `extraction_merge.emit_observations` proved a rate asserted by a document is
+    # emitted unchecked -- 99.9 survived beside a recorded 3-cases/200,000-hours pair -- so it
+    # cannot stand as an exposure-normalised measurement. It is still EVIDENCE, and dropping it
+    # would hide a disagreement between what a document claims and what its own figures imply,
+    # so it travels out under a name that says exactly what it is.
+    stated = structure.get("document_stated_incident_rate")
+    out["document_stated_incident_rate"] = stated
+    out["document_stated_rate_note"] = (
+        "a rate asserted by the source document; it is recorded as a claim and is not used as "
+        "the exposure-normalised incidence rate, which is computed from the recordable cases "
+        "and employee hours worked" if stated is not None else None)
+    if stated is not None and out.get("incidence_rate") is not None:
+        out["document_stated_rate_agrees"] = abs(float(stated) - out["incidence_rate"]) < 1e-9
+    else:
+        out["document_stated_rate_agrees"] = None
     out["combined_index"] = None
     out["combined_index_reason"] = (
         "no governed policy for combining leading and lagging safety evidence is supplied, so "
