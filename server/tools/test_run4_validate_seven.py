@@ -733,8 +733,19 @@ non_voting_count = sum(1 for r in comp.values() if not r.get("votes"))
 # list. Ten computed rows on this fixture, of which eight do not vote. The RATIO is what the
 # finding is about, the arithmetic identity is still pinned exactly, and the voting set is still
 # exactly the two modules asserted above.
+# RUN 32. The floor moves once more, for the same kind of reason and recorded the same way: the
+# seven Category-10 identities now hold their governed decision structures before they compute,
+# and this project's corpus carries no alternative set, no linear program, no constraint network,
+# no action-by-scenario matrix and no payoff matrix, so they abstain here instead of computing a
+# decision from a cost index, a schedule index and a document risk score. The two that still
+# computed on this fixture -- B4.3 Constraint Satisfaction and B4.4 What-If Scenario Matrix --
+# are now correct abstentions; B4.7 was already abstaining from Run 7. Eight computed rows on
+# this fixture, of which six do not vote. The RATIO is what the finding is about, the arithmetic
+# identity is still pinned exactly, and the voting set is still exactly the two modules asserted
+# above. THE BULK PROPERTY STILL HOLDS AND IS NOT WEAKENED: six of the eight computed modules do
+# not vote, which is three quarters of the computed population.
 check(non_voting_count >= len(comp) - 2 and non_voting_count == len(comp) - len(voting_ids)
-      and len(comp) >= 10,
+      and len(comp) >= 8,
       "and the ones that do not vote are the bulk of the platform, computed and stored as "
       "before: every computed module except the two voters",
       f"{non_voting_count} non-voting of {len(comp)} computed")

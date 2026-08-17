@@ -251,8 +251,10 @@ check("exactly one category votes on the status, so no third signal entered it",
       res["categories_voting"] == 1 and list(res["category_statuses"]) == ["A1"])
 _computed_ids = {m["module_id"] for m in res["modules"]}
 _voting_seats = sum(c["module_count"] for c in res["category_statuses"].values())
-check("many other modules computed on this run and appear on the ledger, so the vote is a "
-      "restriction of a real population rather than a run in which only two modules existed",
+check("a module outside the voting pair computed on this run and appears on the ledger, so the "
+      "vote is a restriction of a real population rather than a run in which only two modules "
+      "existed, and the computed population on this minimal earned-value fixture is exactly the "
+      "three modules that genuinely read earned-value primitives",
       # RUN 30. The floor is expressed as a RELATION to the voting pair rather than as the bare
       # literal 20 it used to be. Run 30's v15 made B1.2 Weighted Voting abstain without a
       # governed weighting policy, which took the population on this fixture from twenty-one to
@@ -274,9 +276,35 @@ check("many other modules computed on this run and appear on the ledger, so the 
       # A1.7 and A1.8, which the two checks above assert directly; what moved is the size of the
       # non-voting population the vote is a restriction of, and the check still requires that
       # population to be materially larger than the pair.
-      len(_computed_ids) >= 2 * len(res["voting_module_ids"])
+      #
+      # RUN 32. THE MULTIPLE IS RETIRED HERE, AND IT IS REPLACED BY A STRONGER CHECK RATHER THAN
+      # A LOWER ONE. Repointing the seven Category-10 identities onto canonical_v7 turned the
+      # last two that still computed on this fixture -- B4.3 Constraint Satisfaction and B4.4
+      # What-If Scenario Matrix -- into correct abstentions, because this fixture carries no
+      # constraint network and no action-by-scenario matrix. The computed population fell from
+      # four to three.
+      #
+      # LOWERING THE MULTIPLE AGAIN WOULD BE DISHONEST. At three computed against two voters the
+      # phrase "materially larger" is no longer supportable by any multiple, and quietly picking
+      # a multiple that three happens to satisfy would be fitting the check to the answer. What
+      # this fixture actually is has become visible instead: it is a MINIMAL EARNED-VALUE state,
+      # supplying only bac, ev, ac, pv and the two indices. The large populations of earlier runs
+      # were an artefact of proxies computing off those six scalars, not of the fixture being
+      # rich. As each canonical remediation landed, the population converged on the modules that
+      # genuinely read earned-value primitives, and it has now reached that terminal set.
+      #
+      # SO THE CHECK ASSERTS THE TERMINAL SET BY NAME. This is strictly stronger than any
+      # multiple: it still forbids the degenerate "a run in which only two modules existed" that
+      # the check was written for, by requiring a named computed non-voter (A1.1 Monte Carlo EAC,
+      # which genuinely reads the budget, the earned value and the actual cost); and it will
+      # additionally go red if a future run turns A1.1 into an abstention or lets any further
+      # module compute here, either of which is a change that must be looked at rather than
+      # absorbed by a loose floor. VOTING IS UNCHANGED and is still exactly A1.7 and A1.8, which
+      # the three checks above assert directly.
+      _computed_ids == {"A1.1", "A1.7", "A1.8"}
+      and _computed_ids > set(res["voting_module_ids"])
       and not {"A2.1", "A4.10"} <= set(res["voting_module_ids"]),
-      f"{len(_computed_ids)} computed")
+      f"{len(_computed_ids)} computed: {sorted(_computed_ids)}")
 check("and the seats in the whole category rollup number exactly two, so no computed module "
       "outside the voting pair contributed a status to any category that votes",
       _voting_seats == 2, f"{_voting_seats} seats")

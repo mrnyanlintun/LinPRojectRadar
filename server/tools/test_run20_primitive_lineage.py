@@ -415,7 +415,10 @@ ACTUAL_FACTS = {
     # register's own risk events, and no cost index.
     "A1.11": {"independent_eac", "management_eac"},
     "A3.6": {"bac", "risk_events"},
-    "B4.3": set(),                         # the two indices; the budget scales out
+    # RUN 32. B4.3 IS GONE from this table with its record, for the same reason Run 30 removed
+    # the Category-7 entries and Run 31 removed B3.2, B3.4 and B3.5: its production route now
+    # reads a governed constraint-satisfaction problem and no index at all. Its removal is
+    # asserted explicitly below rather than left as an absence.
     # RUN 30 CLOSURE. The nine Category-7 entries are gone with their records, for the same
     # reason as the index table above: the canonical route reads no document risk score either.
     # Their removal is asserted explicitly a few lines below rather than left as an absence.
@@ -444,14 +447,23 @@ ACTUAL_INDEX_READS = {
 # declarations were REMOVED rather than rewritten, on the Run-30 closure's reasoning, so
 # lineage_status derives LINEAGE_UNRESOLVED for all three. Their historical declared reads are
 # preserved in the block comments in lineage.py where the records used to stand.
-    "B4.3": {"cost_index", "schedule_index"},
+# RUN 32. B4.3 IS NO LONGER DECLARED, and it was the LAST entry this table held, so the table is
+# now empty and the check below that no record anywhere declares an untranscribed index read has
+# become a check that NO production lineage record declares a derived index read at all. That is
+# the truthful terminal state of the canonical remediation rather than an emptied table: every
+# module that used to rest a reading on the cost index, the schedule index or the document risk
+# score now routes through a canonical layer that reads a governed structure instead. B4.3's own
+# historical declared reads are preserved in the block comment in lineage.py where its record
+# used to stand.
 }
 
 #: The Category-7 identities that USED to be in the table above, kept here so the removal is a
 #: recorded fact rather than an absence, and asserted to declare nothing at all.
 RUN30_INDEX_READS_REMOVED = ["B2.10", "B2.11", "B2.12", "B2.13", "B2.14", "B2.15", "B2.16",
                              "B2.17", "B2.18"]
-for _mid in RUN30_INDEX_READS_REMOVED:
+#: RUN 32, the same construction for the one Category-10 identity that carried a record.
+RUN32_INDEX_READS_REMOVED = ["B4.3"]
+for _mid in RUN30_INDEX_READS_REMOVED + RUN32_INDEX_READS_REMOVED:
     check(f"{_mid}: declares no lineage at all, because its production route reads no index and "
           f"no document risk score, and a record naming one would be a dependence that is not "
           f"there", PROD.get(_mid) is None, str(PROD.get(_mid)))

@@ -949,14 +949,39 @@ MODULE_LINEAGE: dict[str, dict[str, Any]] = {
     #      independence this table exists to stop being assumed. `lineage_status` therefore
     #      derives LINEAGE_UNRESOLVED for both from the absent declaration, which is the truthful
     #      state: not independent, not dependent, not established.
-    "B4.3": lineage_record(  # Constraint Satisfaction Analysis
-        "B4.3", source_fact_ids=(),
-        derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
-        lineage_group_ids=(EARNED_VALUE_BODY,),
-        evidence_relationship=CORRELATED,
-        derivation_chain=("the cost and schedule performance indices",
-                          "satisfaction of each index constraint",
-                          "count of constraints met")),
+    #      B4.3: THE LAST INDEX DECLARATION IN THIS TABLE, REMOVED BY RUN 32, ON EXACTLY THE
+    #      REASONING RECORDED IMMEDIATELY ABOVE FOR B3.2 AND B3.4 AND BELOW FOR THE ELEVEN
+    #      CATEGORY-7 RECORDS.
+    #
+    #      What it used to say, preserved here as history rather than deleted silently:
+    #
+    #          "B4.3": lineage_record(   # Constraint Satisfaction Analysis
+    #              "B4.3", source_fact_ids=(),
+    #              derived_index_reads=(COST_INDEX, SCHEDULE_INDEX),
+    #              lineage_group_ids=(EARNED_VALUE_BODY,),
+    #              evidence_relationship=CORRELATED,
+    #              derivation_chain=("the cost and schedule performance indices",
+    #                                "satisfaction of each index constraint",
+    #                                "count of constraints met")),
+    #
+    #      That was TRUE of the v19 implementation, and it is precisely why that implementation
+    #      was a proxy: a checklist of fixed thresholds on the two indices is not a constraint
+    #      network, and "count of constraints met" is not a satisfying assignment. B4.3 now
+    #      routes through models_cat10.py into canonical_v7, which reads a governed
+    #      constraintSatisfactionProblem -- variables, their domains and constraints over them --
+    #      and reads NO cost index and NO schedule index at all. `models_cat10` performs no
+    #      arithmetic of its own and cannot see those fields.
+    #
+    #      LEAVING IT WOULD ASSERT A DEPENDENCE THAT HAS STOPPED EXISTING, into the earned-value
+    #      body, and that is the direction that lets a consumer SUPPRESS corroboration which is
+    #      really there. The Run-20 cycle-8 execution probe caught it directly: the declared
+    #      facts are no longer material, because the module abstains rather than moving for them.
+    #
+    #      IT IS REMOVED RATHER THAN REWRITTEN ONTO ITS GOVERNED STRUCTURE, for the reason the
+    #      Run-30 closure gives above. What a constraint-satisfaction result rests on is whatever
+    #      the owner declared the variables and constraints from, and this platform does not know
+    #      that. `lineage_status` therefore derives LINEAGE_UNRESOLVED, which is the truthful
+    #      state: not independent, not dependent, not established.
     #      THE FUZZY AND RANKING FAMILY. ELEVEN DECLARATIONS REMOVED BY THE RUN-30 CLOSURE.
     #
     #      Every one of them said the same thing: that the module's reading rested on the two
