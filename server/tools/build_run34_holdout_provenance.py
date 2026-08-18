@@ -208,7 +208,16 @@ def main() -> int:
     src = AUDIT / HOLDOUT_ARTIFACT
     with src.open(encoding="utf-8", newline="") as fh:
         existing = list(csv.reader(fh))
-    header, body = existing[0], [r for r in existing[1:] if r and r[0] != "PROVENANCE"]
+    header = list(existing[0])
+    body = [list(r) for r in existing[1:] if r and r[0] != "PROVENANCE"]
+    # THE `result` COLUMN IS ADDED so every provenance row can carry its own disposition -- and
+    # so a PASS/FAIL and a REPORTED_LIMITATION are distinguishable, which is the same lesson the
+    # `row_type` column taught on the parameter artifact. The original result rows are PADDED,
+    # never rewritten: their five recorded fields are preserved exactly.
+    if header[-1] != "result":
+        header.append("result")
+    width = len(header)
+    body = [r + [""] * (width - len(r)) for r in body]
     out = OUT_DIR / HOLDOUT_ARTIFACT
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", encoding="utf-8", newline="") as fh:

@@ -94,6 +94,46 @@ separation +0.2397 (calibration set: 0.9984 / 0.9698 / +0.2389). These are **sep
 on synthetic data with ground truth defined before the detector**. They are not field performance,
 not a false-positive rate, not predictive validity, and they authorise no threshold.
 
+### Holdout selection-order closure
+
+Stated mechanically, from Git history plus committed artifacts — **not** from prose, and **not**
+new calibration evidence:
+
+| field | value |
+|---|---|
+| `selection_completed_before_holdout` | **YES** |
+| `holdout_changed_selection` | **NO** |
+| `selection_commit` | `8995794f5c4352cda7d0a234fb2779d2098b0155` |
+| `holdout_evaluation_commit` | `8995794f5c4352cda7d0a234fb2779d2098b0155` |
+| `selection_artifact` | `code_audit/run34_ph1_tree_count_calibration.csv` |
+| `holdout_artifact` | `code_audit/run34_ph1_holdout_result.csv` |
+| `parameter_retuned_after_holdout_inspection` | **NO** |
+| `is_new_calibration_evidence` | **NO** |
+
+- **Selection occurred before holdout evaluation**, and the holdout was **evaluated once, after**
+  selection was final.
+- **`holdout_changed_selection` = NO.** The recorded selection is the published default of 100
+  under `UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE`, reached by the D2 operational-relevance gate,
+  which is evaluated from the production route's abstention state and not from any labelled data.
+- **No parameter was retuned after holdout inspection.**
+
+**Two limitations are recorded plainly, because commit ordering alone does not establish this.**
+Both appear in the artifact as `REPORTED_LIMITATION` rows rather than being glossed:
+
+1. **Selection and holdout evaluation share a commit** (`8995794`), because one script performs
+   both phases. Commit ordering therefore cannot separate them, and it is not relied on.
+2. **The holdout fixture was on disk throughout selection.** It was committed at `c20a587`,
+   before the selection campaign ran. *Availability* is therefore not the basis of this closure.
+
+**The load-bearing evidence is non-consumption, established by execution.** The selection
+decision — protocol clauses D2 to D5 — was extracted verbatim into `selection_decision()`, whose
+only data inputs are the stability metrics and the live production route. It is executed with the
+holdout fixture **booby-trapped to raise on any read** (`open`, `read_text`, `read_bytes`), and it
+runs to completion, observes **zero** holdout reads, and returns `chosen = 100`,
+`state = UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE` — reproducing the recorded
+`selected_tree_count` exactly. A decision that cannot read the holdout cannot have been changed
+by it.
+
 ## 6. PH.2 weighting disposition
 
 **The composite is withdrawn. `composite = NONE`, disposition `PARAMETER_PROVENANCE_BLOCKED`,
