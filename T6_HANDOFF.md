@@ -30,6 +30,22 @@ fix is in place and is now guarded BY EXECUTION (`test_run32_method_class_agreem
 against a `storedResult` fixture for all 101 modules). **Do not add a string-only check to a file
 whose behaviour a participant depends on.**
 
+**0. THE COUNT: PROMPT EXPECTED 30, AUTHORITATIVE IS 29, AND THE DIFFERENCE IS DATED.**
+Derived from the pinned pre-change object `19a7055`, not from the current tree and not from the
+reconciliation under audit: authoritative **raw entries 29**, **unique keys 29**, duplicates 0,
+**final reconciliation rows 29**, omitted 0, extra 0, unclassified 0, distribution `WITHDRAWN` 27
+/ `CURRENT_REQUIRED` 2. The prompt's 30 is out of date by exactly one commit: the same extractor
+run against `19a7055^1` = `6e7ce20` returns **30**, because the method-class closure removed
+`Regression_To_Mean` (A1.10, whose server qualifier Run 28 had already withdrawn) and renamed
+`Contract_Mod_Frequency` to `Modification_Governance` (B3.5). Neither figure was a miscount.
+Artifacts: `code_audit/run32_prechange_qualifier_population.csv`,
+`code_audit/run32_qualifier_count_closure.csv`, guard
+`server/tools/test_run32_qualifier_count_closure.py` (18/18), four-fault campaign 4/4 in
+`code_audit/run32_qualifier_count_fault_injection.csv`. **The guard does not trust its own
+extractor** - it recounts the map literal from the same git blob independently and requires
+agreement key for key, because an extractor that can be made to under-report is exactly what
+would have produced a false 29.
+
 **2. A QUALIFIER IS NOT WITHDRAWN MERELY BECAUSE THE SERVER LACKS IT.** Intent was established
 from Run 28/29/30 doctrine, not from absence. Reconciliation: 29 client entries, **27 WITHDRAWN,
 2 CURRENT_REQUIRED** (`CUSUM` = A1.2, `Portfolio_Outlier` = D1.2), 0 HISTORICAL_ONLY, 0

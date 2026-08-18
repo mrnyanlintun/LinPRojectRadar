@@ -11,9 +11,10 @@ Still Run 32. This closes all three things the previous closures carried.
 
 ## 1. The nine facts this report leads with
 
-1. **Client qualifier entries inspected: 29, not 30.** The owner's figure was written against my
-   previous report, which measured 30 before that closure removed A1.10's entry. Derived from the
-   file, not carried forward.
+1. **Client qualifier entries inspected: 29, not 30.** Prompt-expected 30; authoritative raw
+   entries **29**; authoritative unique keys **29**; final reconciliation rows **29**. Derived
+   mechanically from the pinned pre-change git object, not carried forward and not forced to
+   either number. The full accounting is in section 14 below.
 2. **Final classification distribution:** `WITHDRAWN` **27**, `CURRENT_REQUIRED` **2**. No
    `HISTORICAL_ONLY`, no `BACKWARD_ALIAS_ONLY`, no `CURRENT_SERVER_QUALIFIER_MISSING`, and no
    sixth classification was needed. 0 unclassified, 0 duplicate keys.
@@ -250,3 +251,89 @@ are byte for byte identical to v9, and the guard asserts the moved set is exactl
    accessors). Only the taxonomy DATA is generated. The accessors differ by design - one reads the
    stored row, the other re-derives for the researcher deep-dive - but they remain two
    implementations of a similar lookup, which is what allowed the recursion defect to hide.
+
+---
+
+## 14. The 29-versus-30 accounting closure
+
+The opening prompt expected **30** client qualifier entries. The reconciliation carried **29**,
+and the first version of this report asserted the difference without deriving it. It is now
+derived. **The count was not forced to either number.**
+
+The authoritative population is extracted from the pinned pre-change git object
+`19a70556fe1b6ee8d17706cfbbc5d72e12051086` -- never from the current tree, which no longer holds
+the population, and never from the reconciliation CSV, which is the object under audit.
+
+| Quantity | Value | How derived |
+|---|---|---|
+| Prompt-expected count | 30 | stated in the opening prompt |
+| Authoritative pre-change **raw entries** | **29** | `RUN1_PROXY_QUALIFIER` literal in `assets/js/knowledge.js@19a7055`, one row per entry |
+| Authoritative pre-change **unique keys** | **29** | raw entries de-duplicated |
+| Duplicate keys | **0** | occurrence count per key; raw and unique therefore coincide |
+| Final reconciliation rows | **29** | `run32_proxy_qualifier_reconciliation.csv` |
+| Omitted keys | **0** | population minus reconciliation |
+| Extra keys | **0** | reconciliation minus population |
+| Duplicate reconciliation rows | **0** | per-key row count |
+| Unclassified keys | **0** | classification present and one of the five permitted values |
+| Distribution | `WITHDRAWN` **27**, `CURRENT_REQUIRED` **2** | counted from the reconciliation |
+
+**The prompt expected 30 entries, but the authoritative pre-change client qualifier map contained
+29 unique keys. All 29 were reconciled: 27 withdrawn and 2 current-required.**
+
+### Where the 30 came from
+
+The 30 is not wrong; it is **out of date by one commit**, and this is confirmed by re-running the
+same extractor against the predecessor object rather than by argument. `19a7055^1` is `6e7ce20`,
+and the same map there holds **30 raw entries, 30 unique keys**. The method-class closure merged
+at `19a7055` changed the map twice: it **removed** `Regression_To_Mean` (A1.10), whose server
+qualifier Run 28 had already withdrawn when it repointed the module onto its canonical method, and
+it **renamed** `Contract_Mod_Frequency` to `Modification_Governance` (B3.5). A removal and a
+rename take 30 to 29. The prompt's figure was quoted from the handoff paragraph written at that
+closure, which described the state *before* it.
+
+So the discrepancy is a real, dated, one-entry transition between two commits, and neither figure
+was ever a miscount.
+
+### Artifacts
+
+* `code_audit/run32_prechange_qualifier_population.csv` -- 29 rows, one per raw entry: key, value,
+  source file, source location, module id, occurrence count, duplicate flag, alias/historical
+  flag, evidence, PASS/FAIL.
+* `code_audit/run32_qualifier_count_closure.csv` -- 29 rows, one per unique key: present in
+  reconciliation, classification, current action, evidence, PASS/FAIL.
+* `server/tools/build_run32_qualifier_count_closure.py` -- the extractor.
+* `server/tools/test_run32_qualifier_count_closure.py` -- the guard, **18/18**.
+
+### The guard does not trust its own extractor
+
+A guard built on the extractor alone could be made to under-report by suppressing one key, which
+is the exact failure mode that would have produced a *false* 29. The guard therefore recounts the
+map literal from the same git blob by an independent scan and requires agreement **key for key**,
+not merely in count. That check is what fault 4 below defeats the closure by attacking.
+
+### Fault campaign (four faults, one at a time)
+
+| # | Fault | Applied | Result | Intended reason | Restored |
+|---|---|---|---|---|---|
+| 1 | remove one reconciliation row | yes | RED | omitted keys != 0; rows != unique keys | GREEN |
+| 2 | duplicate one reconciliation row | yes | RED | duplicate reconciliation rows != 0 | GREEN |
+| 3 | add one fake key to the reconciliation | yes | RED | extra keys != 0 | GREEN |
+| 4 | suppress one real key from the pre-change extraction | yes | RED | independent recount disagrees with the extractor | GREEN |
+
+4 required, 4 applied, 4 RED for the intended reason, 4 restored GREEN. No crash was accepted as
+RED. Recorded in `code_audit/run32_qualifier_count_fault_injection.csv`.
+
+**The first pass was 2/4, and both misses were real.** Fault 3 was mis-aimed: a textual
+substitution hit the *method-class* column before the qualifier-key column, so it produced a
+duplicate key rather than an extra one -- the campaign correctly refused to credit it against the
+"extra keys" check, and the fault was rewritten to write through the csv module. Fault 4 **found a
+latent defect in the extractor itself**: the extra-key branch of the builder still read a
+pre-rename column name (`action_taken`) and raised `KeyError` instead of reporting, so the guard
+crashed rather than going RED. A crash is not RED, the campaign recorded it as a crash, and the
+builder was fixed. That defect would have surfaced only when a key was genuinely extra -- which is
+precisely the condition this closure exists to detect.
+
+### What this closure did not change
+
+Reporting and accounting only. No analytical code, no qualification gate, no voting, no
+participant protocol. `sim-2026.08-v20` and `og-participant-2026.08-v10` both stand.
