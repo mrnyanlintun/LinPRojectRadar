@@ -33,16 +33,27 @@ from app.simulation.portfolio import PORTFOLIO_VALIDATED               # noqa: E
 from app.simulation.registry import CSV_PATH                           # noqa: E402
 
 AUDIT = ROOT / "code_audit"
+#: RUN 34 FINAL CLOSURE. The generator can write into a DIFFERENT directory, so a guard can
+#: regenerate and compare WITHOUT overwriting the artifact it is checking. A generator that
+#: rewrites its own subject destroys any injected fault before a later check can see it -- which
+#: is exactly what happened when this campaign was first run, and it made four faults red for one
+#: uninformative reason instead of their own.
+OUT_DIR = AUDIT
 CAL_DS = "RUN34-CAL (OG-SYNTH-0.6, labelled, ground truth before detector)"
 HOLD_DS = "RUN34-HOLDOUT (OG-SYNTH-0.6, independent draw, scored once after selection)"
 
 
 def write(path, header, rows):
+    path = OUT_DIR / path.name
     with path.open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
-    print(f"wrote {path.relative_to(ROOT)}: {len(rows)} rows")
+    try:
+        shown = path.relative_to(ROOT)
+    except ValueError:                    # writing outside the repo, e.g. a guard's temp dir
+        shown = path
+    print(f"wrote {shown}: {len(rows)} rows")
 
 
 def population():
@@ -154,10 +165,17 @@ def main() -> int:
            for mid in ids])
 
     # --------------------------------------------------------------------- 2. provenance
+    #
+    # RUN 34 FINAL CLOSURE. THE `row_type` COLUMN IS NEW AND IT EXISTS BECAUSE ITS ABSENCE CAUSED
+    # A MISCOUNT. This table carried 21 rows: 19 GOVERNED PARAMETERS and 2 ACCEPTANCE COUNTERS.
+    # Nothing distinguished them except a `module` of "-", so a reader counting rows read 21
+    # parameters and the Run-34 report said so. The two kinds of row are now labelled, and every
+    # count downstream is taken over `row_type == "PARAMETER"` rather than over the row count.
     rows = []
     for p in V8.PH_PARAMETERS:
         calibrated = "yes" if p["calibrated"] else "no"
         rows.append([
+            "PARAMETER",
             p["module"], p["parameter"], "none" if p["value"] is None else str(p["value"]),
             p["source"], p["parameter_class"],
             CAL_DS if p["parameter_class"] == V8.SYNTHETIC_LAB_CALIBRATION
@@ -170,19 +188,138 @@ def main() -> int:
             "yes" if p["applied_operationally"] else "no",
             p["note"] or "retained as declared",
             "PASS"])
-    rows.append(["-", "UNCLASSIFIED PARAMETERS", "0", "-", "-", "-", "-", "-", "-", "-", "-",
+    # THE TWO ACCEPTANCE COUNTERS. They are NOT parameters and are now labelled as counters.
+    rows.append(["ACCEPTANCE_COUNTER",
+                 "-", "UNCLASSIFIED PARAMETERS", "0", "-", "-", "-", "-", "-", "-", "-", "-",
                  "-", "every parameter carries exactly one of the seven declared classes",
                  "PASS" if not [p for p in V8.PH_PARAMETERS
                                 if p["parameter_class"] not in V8.PARAMETER_CLASSES] else "FAIL"])
-    rows.append(["-", "UNSUPPORTED PARAMETERS APPLIED", str(len(V8.unsupported_applied())),
+    rows.append(["ACCEPTANCE_COUNTER",
+                 "-", "UNSUPPORTED PARAMETERS APPLIED", str(len(V8.unsupported_applied())),
                  "-", "-", "-", "-", "-", "-", "-", "-", "-",
                  "an UNSUPPORTED parameter is recorded but may never be applied to produce an "
                  "operational reading", "PASS" if not V8.unsupported_applied() else "FAIL"])
     write(AUDIT / "run34_portfolio_parameter_provenance.csv",
-          ["module", "parameter", "current_value", "current_source", "parameter_class",
-           "calibration_dataset", "holdout_dataset", "effective_schema", "effective_cohort",
-           "calibrated", "field_validated", "operationally_authorized", "action", "result"],
+          ["row_type", "module", "parameter", "current_value", "current_source",
+           "parameter_class", "calibration_dataset", "holdout_dataset", "effective_schema",
+           "effective_cohort", "calibrated", "field_validated", "operationally_authorized",
+           "action", "result"],
           rows)
+
+    # ------------------------------------------------- 2b. THE PARAMETER-CLASS COUNT CLOSURE
+    #
+    # RUN 34 FINAL CLOSURE. Every row of the provenance artifact, adjudicated: is it a parameter
+    # or a counter, is its identity unique, is its class one of the seven permitted values, is it
+    # a duplicate. The counts are taken over PARAMETER rows and the TARGET DISCREPANCY is stated
+    # rather than padded away.
+    prov = list(csv.reader(
+        (OUT_DIR / "run34_portfolio_parameter_provenance.csv").open(encoding="utf-8",
+                                                                    newline="")))
+    header, body = prov[0], prov[1:]
+    col = {name: i for i, name in enumerate(header)}
+    crows = []
+    seen: dict[str, int] = {}
+    for r in body:
+        rtype = r[col["row_type"]]
+        mod, par, val = r[col["module"]], r[col["parameter"]], r[col["current_value"]]
+        cls = r[col["parameter_class"]]
+        ident = f"{mod}::{par}"
+        is_param = rtype == "PARAMETER"
+        seen[ident] = seen.get(ident, 0) + 1
+        valid = (cls in V8.PARAMETER_CLASSES) if is_param else (cls == "-")
+        blank = (not cls.strip()) or (is_param and cls == "-")
+        crows.append([
+            rtype, mod, par, ident, val, cls, r[col["current_source"]],
+            r[col["calibration_dataset"]], r[col["holdout_dataset"]],
+            r[col["operationally_authorized"]], r[col["field_validated"]],
+            "yes" if valid else "no", "no", "PASS" if (valid and not blank) else "FAIL"])
+    dupes = sorted(k for k, n in seen.items() if n > 1)
+    for r in crows:
+        if r[3] in dupes:
+            r[12], r[13] = "yes", "FAIL"
+    params = [r for r in crows if r[0] == "PARAMETER"]
+    counters = [r for r in crows if r[0] == "ACCEPTANCE_COUNTER"]
+    dist = {c: sum(1 for r in params if r[5] == c) for c in V8.PARAMETER_CLASSES}
+
+    def rec(item, value, note, result="PASS"):
+        crows.append(["RECONCILIATION", "-", item, "-", str(value), "-", note, "-", "-", "-",
+                      "-", "-", "-", result])
+
+    rec("total rows in the provenance artifact", len(body),
+        "the figure the Run-34 report mistook for a parameter count")
+    rec("PARAMETER rows", len(params),
+        "the true number of governed Portfolio Health parameters")
+    rec("ACCEPTANCE_COUNTER rows", len(counters),
+        "UNCLASSIFIED PARAMETERS and UNSUPPORTED PARAMETERS APPLIED. These are acceptance "
+        "counters, not parameters: they carry module '-', class '-' and a count as their value. "
+        "They were always counters; nothing distinguished them until the row_type column.")
+    rec("unique parameter identities", len({r[3] for r in params}),
+        "module::parameter, over PARAMETER rows only")
+    rec("blank classifications", sum(1 for r in params if not r[5].strip() or r[5] == "-"), "")
+    rec("duplicate parameter rows", len(dupes), str(dupes) if dupes else "none")
+    rec("illegal classification values",
+        sum(1 for r in params if r[5] not in V8.PARAMETER_CLASSES), "")
+    rec("classification counts sum", sum(dist.values()),
+        "sums to the PARAMETER row count, not to the artifact row count",
+        "PASS" if sum(dist.values()) == len(params) else "FAIL")
+    rec("registry agreement", len(V8.PH_PARAMETERS),
+        "the live canonical_v8 parameter registry holds the same number of parameters as the "
+        "artifact records",
+        "PASS" if len(V8.PH_PARAMETERS) == len(params) else "FAIL")
+    rec("SECTION_1_TARGET_DISCREPANCY", "21 required vs 19 actual",
+        "The Run-34 final-closure contract requires rows = 21 AND unique parameter identities "
+        "= 21. The artifact does hold 21 ROWS, but only 19 of them are parameters, so there are "
+        "19 unique parameter identities and not 21. The target of 21 parameter identities was "
+        "written from the SAME MISCOUNT the Run-34 report contained -- both read the artifact's "
+        "row count as a parameter count. IT IS NOT SATISFIED AND IS NOT PADDED: reaching 21 "
+        "would require inventing two parameters, which the contract separately forbids. The "
+        "spirit of section 1 is satisfied in full -- every governed parameter classified, no "
+        "blanks, no duplicates, no illegal classes, counts summing to the real parameter total.",
+        "REPORTED_DISCREPANCY")
+    for c in V8.PARAMETER_CLASSES:
+        crows.append(["CLASS_COUNT", "-", c, "-", str(dist[c]), c,
+                      "derived from the artifact, not from the report; all seven classes are "
+                      "reported including zeros", "-", "-", "-", "-", "-", "-", "PASS"])
+
+    # -- SECTION 3: the five modules, expected versus represented, derived FROM THE CODE --------
+    for mid in ids:
+        expected = {p["parameter"] for p in V8.parameters_for(mid)}
+        represented = {r[2] for r in params if r[1] == mid}
+        missing = sorted(expected - represented)
+        extra = sorted(represented - expected)
+        d = {c: sum(1 for r in params if r[1] == mid and r[5] == c)
+             for c in V8.PARAMETER_CLASSES}
+        crows.append([
+            "MODULE_RECONCILIATION", mid, "expected vs represented", "-",
+            f"expected {len(expected)}, represented {len(represented)}", "-",
+            f"missing {missing or 'none'}; extra {extra or 'none'}; distribution "
+            + ", ".join(f"{c}={n}" for c, n in d.items() if n),
+            "-", "-", "-", "-", "-", "-",
+            "PASS" if not missing and not extra else "FAIL"])
+
+    # -- ADJUDICATED NON-PARAMETERS. Numeric literals found in the governed code by an AST scan
+    #    and adjudicated NOT to be governed parameters, with the reason each was dismissed.
+    #    Recorded rather than silently ignored, so the 19 is a scanned result and not an assertion.
+    crows.append([
+        "ADJUDICATED_NON_PARAMETER", "D1.3", "epoch origin 1970 in _as_days", "-", "1970", "-",
+        "A date-arithmetic origin, not a parameter: an OLS slope is invariant to a shift of the "
+        "time origin, verified by computing the same series against two different origins and "
+        "obtaining the identical exact slope -1/10.", "-", "-", "-", "-", "-", "-", "PASS"])
+    crows.append([
+        "ADJUDICATED_NON_PARAMETER", "D1.1", "degenerate-normaliser fallback 0.5 in "
+        "IsolationForest.anomaly_score", "-", "0.5", "-",
+        "A library guard for c(psi) <= 0, UNREACHABLE from the PH.1 route: the cohort gate "
+        "refuses below three eligible projects, so psi >= 3 and c(3) = 1.2074 > 0. Verified by "
+        "evaluating c(min(256, n)) for every n from 3 upward. It governs no PH reading and is "
+        "not added to the registry, which would be padding.", "-", "-", "-", "-", "-", "-",
+        "PASS"])
+
+    write(AUDIT / "run34_parameter_class_count_closure.csv",
+          ["row_type", "module", "parameter", "unique_parameter_identity", "current_value",
+           "parameter_class", "parameter_source", "calibration_dataset", "holdout_dataset",
+           "operationally_authorized", "field_validated", "classification_valid", "duplicate",
+           "result"],
+          crows)
 
     # --------------------------------------------------------------------- 3. reconciliation
     snap = PH.compute_portfolio_health_snapshot("PROBE", {}, [], "2026-01-31")
@@ -242,4 +379,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if "--out" in sys.argv:
+        OUT_DIR = pathlib.Path(sys.argv[sys.argv.index("--out") + 1]).resolve()
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
     raise SystemExit(main())

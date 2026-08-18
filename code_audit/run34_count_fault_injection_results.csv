@@ -1,0 +1,7 @@
+fault,target,mutation,applied,confirmed_applied,guard,intended_red,crash_accepted_as_red,restored_green,result
+1,the provenance artifact,"the D1.4 tie_rule parameter row is deleted, so a governed parameter the live registry declares has no provenance record",YES,YES,"MISSING GOVERNED PARAMETER RECORDS = 0, derived from the live registry",YES,NO,YES,PASS
+2,the provenance artifact,"the D1.4 tie_rule row appears twice, so one parameter is counted as two",YES,YES,DUPLICATE PARAMETER ROWS = 0,YES,NO,YES,PASS
+3,the provenance artifact,"the D1.4 tie_rule row's parameter_class is blanked, so a parameter carries no provenance class at all",YES,YES,BLANK CLASSIFICATIONS = 0,YES,NO,YES,PASS
+4,the provenance artifact,the D1.4 tie_rule row is given a class that is not one of the seven permitted values,YES,YES,ILLEGAL CLASSIFICATION VALUES = 0,YES,NO,YES,PASS
+5,the Run-34 report,the report's published UNSUPPORTED count is padded from 7 to 9 so the seven classes sum to 21 rather than to the true 19 -- the precise defect this closure guards against,YES,YES,"the report's distribution equals the artifact's, class for class, and sums to the true parameter total",YES,NO,YES,PASS
+TOTALS,-,-,5,-,-,5,0,5,PASS

@@ -181,6 +181,104 @@ registry, not asserted about).
 Seven `UNSUPPORTED` rows is the honest count. Each is a parameter that would have to be invented
 to produce a reading, so the reading is withheld instead.
 
+### Parameter-provenance count correction (Run-34 final closure)
+
+**Original headline row count.** The provenance artifact contained — and still contains — **21
+rows**. That is what the generator's own console line reported: `wrote
+run34_portfolio_parameter_provenance.csv: 21 rows`.
+
+**Original reported distribution.** `UNSUPPORTED` 7, `OWNER_POLICY` 5, `THEORETICAL_CONSTANT` 4,
+`PUBLISHED_DEFAULT` 2, `SYNTHETIC_LAB_CALIBRATION` 1, `EMPIRICAL_CALIBRATION` 0, `HEURISTIC` 0.
+**Total 19.**
+
+**Why the distribution summed to 19 while the artifact held 21 rows.** Because **two of the 21
+rows were never parameters.** They are acceptance counters:
+
+| module | parameter | value | class |
+|---|---|---|---|
+| `-` | `UNCLASSIFIED PARAMETERS` | `0` | `-` |
+| `-` | `UNSUPPORTED PARAMETERS APPLIED` | `0` | `-` |
+
+Each carries `module = '-'`, `parameter_class = '-'` and a *count* as its value. They assert two
+acceptance conditions; they describe no parameter. 19 parameters + 2 counters = 21 rows, and the
+distribution was right to sum to 19.
+
+**Authoritative final distribution** (derived from the artifact by
+`code_audit/run34_parameter_class_count_closure.csv`, all seven classes including zeros):
+
+| class | n |
+|---|---|
+| `UNSUPPORTED` | 7 |
+| `OWNER_POLICY` | 5 |
+| `THEORETICAL_CONSTANT` | 4 |
+| `PUBLISHED_DEFAULT` | 2 |
+| `SYNTHETIC_LAB_CALIBRATION` | 1 |
+| `EMPIRICAL_CALIBRATION` | **0** |
+| `HEURISTIC` | **0** |
+| **total governed parameters** | **19** |
+
+**The two "omitted" rows are not `HEURISTIC`, and `HEURISTIC` is genuinely zero.** They are not
+parameters of any class. Stated mechanically: filtering the artifact to `row_type = PARAMETER`
+yields 19 rows, and the seven class counts over those 19 rows sum to 19 exactly.
+
+**Was the CSV wrong, or only the prose?** *Neither was wrong.* This is the finding, and it differs
+both from the contract's premise and from the diagnosis offered to me, so it is stated plainly:
+
+- The **artifact was correct.** 21 rows, of which 19 are parameters and 2 are counters.
+- The **report was correct.** Section 11 as merged at `41f01e8` states "**19 parameters**" and
+  lists all seven classes, including the two zeros, summing to 19. **The report never claimed 21
+  parameters.** Verified by reading the report out of the merged git object, not the working tree:
+  `git show 41f01e8:REPORT_…md` contains no "21 parameters", no "rows = 21" and no "= 21".
+- The contract's section states that "the Run-34 report states parameter-provenance rows = 21".
+  That claim is not supported by the merged report. Both 21 and 19 were correct *about different
+  things* — 21 rows, 19 parameters — and the appearance of a contradiction came from reading a
+  row count as a parameter count.
+
+**What was genuinely defective was the artifact's structure, not either number.** Nothing
+distinguished a counter row from a parameter row except a `module` of `-`, so a reader counting
+rows could not help but read 21 parameters. The fix is structural: a declared **`row_type`**
+column (`PARAMETER` / `ACCEPTANCE_COUNTER`), and every count downstream taken over
+`row_type == PARAMETER` rather than over the row count.
+
+**The section-1 target of "21 unique parameter identities" is NOT satisfied and has NOT been
+padded.** There are 19 governed parameters; reaching 21 would require inventing two, which the
+same contract forbids. The target was written from the same row-count-as-parameter-count reading.
+The *spirit* of section 1 is satisfied in full: every governed parameter classified, blanks 0,
+duplicates 0, illegal classes 0, counts summing to the real parameter total, and the discrepancy
+reported rather than absorbed. The closure artifact records it as
+`SECTION_1_TARGET_DISCREPANCY = REPORTED_DISCREPANCY`.
+
+**Did any calibration conclusion change? No.** Not one. The tree count is still 100, the frozen
+threshold is still synthetic and schema- and cohort-bound and unapplied, PH.2's composite is still
+`NONE`, PH.3's history and time policy are unchanged, PH.4 is still continuous distance only,
+PH.5's score is still `null`, empirical validation is still pending for all five, and voting is
+still false for all five. This closure changed an artifact's *structure* and a *count's
+description*. It changed no measurement, no parameter and no decision.
+
+**Module reconciliation (contract section 3), derived from the code and not from the artifact
+under test.** Expected parameters per module come from the live `canonical_v8` registry:
+
+| module | expected | represented | missing | extra |
+|---|---|---|---|---|
+| D1.1 | 9 | 9 | 0 | 0 |
+| D1.2 | 2 | 2 | 0 | 0 |
+| D1.3 | 3 | 3 | 0 | 0 |
+| D1.4 | 3 | 3 | 0 | 0 |
+| D1.5 | 2 | 2 | 0 | 0 |
+
+**Five modules represented, missing governed parameter records 0, unexplained extra records 0.**
+
+An AST scan of the governed code for numeric literals that might be unregistered parameters found
+exactly two, and **both were adjudicated non-parameters with a mechanical reason**, recorded in
+the closure rather than silently dropped:
+
+- the epoch origin `1970` in `_as_days` — an OLS slope is invariant to a shift of the time origin,
+  verified by fitting the same series against two origins and obtaining the identical exact slope
+  `-1/10`;
+- the `0.5` degenerate-normaliser fallback in `IsolationForest.anomaly_score` — **unreachable**
+  from the PH.1 route, because the cohort gate refuses below three eligible projects so
+  `psi >= 3` and `c(3) = 1.2074 > 0`, verified over every reachable cohort size.
+
 ## 12. The 20-fault campaign
 
 `code_audit/run34_fault_injection_results.csv`.

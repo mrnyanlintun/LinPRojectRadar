@@ -9,6 +9,78 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-18 - Run 34 FINAL CLOSURE: the parameter-provenance count reconciliation
+
+**Branch `run34-parameter-count-closure` from `main` at `41f01e8`.** Still Run 34. Report section:
+"Parameter-provenance count correction" in
+`REPORT_2026-08-18_run34-portfolio-health-calibration.md`.
+
+**Simulation `sim-2026.08-v22`, participant `og-participant-2026.08-v11`, synthetic
+`OG-SYNTH-0.6` - ALL UNCHANGED.** Artifact structure and report description only; no executable
+behaviour, no parameter and no decision moved.
+
+## FIVE THINGS THAT MUST NOT BE LOST
+
+**1. THE AUTHORITATIVE COUNT IS 19 GOVERNED PARAMETERS IN 21 ARTIFACT ROWS.**
+`UNSUPPORTED` 7, `OWNER_POLICY` 5, `THEORETICAL_CONSTANT` 4, `PUBLISHED_DEFAULT` 2,
+`SYNTHETIC_LAB_CALIBRATION` 1, `EMPIRICAL_CALIBRATION` **0**, `HEURISTIC` **0**. Total **19**.
+The other two rows are ACCEPTANCE COUNTERS - `UNCLASSIFIED PARAMETERS` and `UNSUPPORTED
+PARAMETERS APPLIED` - carrying module `-`, class `-` and a count as their value.
+**19 parameters + 2 counters = 21 rows.**
+
+**2. NEITHER THE ARTIFACT NOR THE REPORT WAS WRONG, AND THIS WAS VERIFIED FROM THE MERGED GIT
+OBJECT, NOT THE WORKING TREE.** The contract's premise was that the report claimed 21
+parameter-provenance rows while its distribution summed to 19. `git show 41f01e8:REPORT_...md`
+contains **no** "21 parameters", **no** "rows = 21" and **no** "= 21"; section 11 as merged says
+"**19 parameters**" and lists all seven classes summing to 19. The artifact held 21 rows of which
+19 were parameters. **Both figures were right about different things.** Section 8 of
+`server/tests/test_run34_parameter_count_closure.py` executes this comparison against the merged
+objects, so the finding is reproducible and not a recollection.
+
+**3. WHAT WAS ACTUALLY DEFECTIVE WAS THE ARTIFACT'S STRUCTURE.** Nothing distinguished a counter
+row from a parameter row except a `module` of `-`, so a row count could not be told from a
+parameter count by any reader or any guard. The fix is a declared **`row_type`** column
+(`PARAMETER` / `ACCEPTANCE_COUNTER`) and every count taken over `row_type == PARAMETER`.
+**If you add a summary or counter row to any artifact, label it.**
+
+**4. THE SECTION-1 TARGET OF 21 UNIQUE PARAMETER IDENTITIES IS NOT SATISFIED AND WAS NOT PADDED.**
+There are 19 governed parameters; reaching 21 would require inventing two, which the same contract
+forbids. The closure artifact records it as `SECTION_1_TARGET_DISCREPANCY = REPORTED_DISCREPANCY`
+and the guard asserts that marker is present. **Do not "fix" this by adding rows.** The spirit of
+section 1 is met in full: every governed parameter classified, blanks 0, duplicates 0, illegal
+classes 0, counts summing to the real total.
+
+**5. THE FAULT CAMPAIGN FOUND TWO REAL DEFECTS IN THE GUARD ITSELF, AND BOTH ARE THE KIND THIS
+PROGRAMME HAS BEEN BITTEN BY.** (a) The guard REGENERATED THE ARTIFACT IT WAS CHECKING, wiping
+every injected fault before the later sections ran - four faults went red for one uninformative
+reason instead of their own. The generator now takes `--out` and the guard compares against a
+temporary directory. **A generator that rewrites its own subject cannot be used inside a fault
+campaign.** (b) The guard CRASHED with a `KeyError` on a removed row instead of failing the
+missing-record check. **A crash is not a RED.**
+
+## Substantive check (contract section 3), derived from the code and not from the artifact
+
+Expected vs represented, from the live `canonical_v8` registry: D1.1 9/9, D1.2 2/2, D1.3 3/3,
+D1.4 3/3, D1.5 2/2. **Five modules represented, missing 0, unexplained extra 0.** An AST scan of
+the governed code for numeric literals that might be unregistered parameters found exactly two,
+both adjudicated NON-parameters with a mechanical reason and recorded rather than dropped: the
+epoch origin `1970` (an OLS slope is invariant to a shift of time origin, verified) and the `0.5`
+degenerate-normaliser fallback (unreachable from PH.1 - the cohort gate forces psi >= 3 and
+c(3) = 1.2074 > 0, verified over every reachable cohort size).
+
+## Run-34 scientific decisions, all preserved unchanged
+
+PH.1 tree count 100; frozen 0.576 threshold synthetic, schema- and cohort-bound, not applied;
+PH.2 composite NONE without governed weights; PH.3 minimum history 3 and actual-time policy;
+PH.4 continuous distance only; PH.5 score null while weights and missingness policy are absent;
+empirical validation PENDING for all five; voting false for all five; voting exactly 2.
+
+## Run 35 requirements (NOT launched here)
+
+Unchanged from the Run-34 entry below.
+
+---
+
 # 2026-08-18 - Run 34: Portfolio Health calibration and parameter provenance, sim-2026.08-v22
 
 **Branch `run34-portfolio-health-calibration` from `main` at `f5c52d3`.** Report:
