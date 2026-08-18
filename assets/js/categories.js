@@ -47,8 +47,8 @@ window.LIN_CATEGORIES = [
       { id: 'a1_7', num: 'A1.7', name: 'TCPI', method_class: 'TCPI', active: true, required: ['bac','ev','ac'] },
       { id: 'a1_8', num: 'A1.8', name: 'Variance at Completion', method_class: 'VAC', active: true, required: ['bac','cpi'] },
       { id: 'a1_9', num: 'A1.9', name: 'Budget Execution Rate', method_class: 'Budget_Execution_Rate', active: true, required: ['ac','bac','actualPctComplete'] },
-      { id: 'a1_10', num: 'A1.10', name: 'CPI Shrinkage Forecast', method_class: 'Regression_To_Mean', active: true, required: ['cpi','cpiHistory'] },
-      { id: 'a1_11', num: 'A1.11', name: 'Independent EAC Reconciliation Index', method_class: 'ICE_Ratio', active: true, required: ['bac','cpi','ev','ac'] }
+      { id: 'a1_10', num: 'A1.10', name: 'CPI Shrinkage Forecast', method_class: 'CPI_Shrinkage_Forecast', active: true, required: ['cpi','cpiHistory'] },
+      { id: 'a1_11', num: 'A1.11', name: 'Independent EAC Reconciliation Index', method_class: 'Independent_EAC_Reconciliation', active: true, required: ['bac','cpi','ev','ac'] }
     ]
   },
   {
@@ -180,10 +180,10 @@ window.LIN_CATEGORIES = [
     description: 'Regulatory and authority thresholds that determine who must act and at what level.',
     modules: [
       { id: 'b3_1', num: 'B3.1', name: 'Agent-Based Governance Model', method_class: 'ABM_Governance', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b3_2', num: 'B3.2', name: 'FAR/Agency EVMS Applicability Monitor', method_class: 'FAR_Threshold', active: true, required: ['bac','cpi','ev','ac'] },
-      { id: 'b3_3', num: 'B3.3', name: 'Versioned A-11 Capital Programming Conformance Check', method_class: 'OMB_A11_Check', active: true, required: ['bac','cpi','actualPctComplete'] },
-      { id: 'b3_4', num: 'B3.4', name: 'EVMS Reporting Compliance Monitor', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
-      { id: 'b3_5', num: 'B3.5', name: 'Contract Modification Governance Check', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] }
+      { id: 'b3_2', num: 'B3.2', name: 'FAR/Agency EVMS Applicability Monitor', method_class: 'EVMS_Applicability', active: true, required: ['bac','cpi','ev','ac'] },
+      { id: 'b3_3', num: 'B3.3', name: 'Versioned A-11 Capital Programming Conformance Check', method_class: 'A11_Conformance', active: true, required: ['bac','cpi','actualPctComplete'] },
+      { id: 'b3_4', num: 'B3.4', name: 'EVMS Reporting Compliance Monitor', method_class: 'EVMS_Reporting_Compliance', active: true, required: ['bac','cpi','spi'] },
+      { id: 'b3_5', num: 'B3.5', name: 'Contract Modification Governance Check', method_class: 'Modification_Governance', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] }
     ]
   },
   {
@@ -310,13 +310,45 @@ window.projectLevelCategories = function () {
    returned insufficient-data and was filtered out of the signal array).
    Returns the string 'NA' when the module's `sectors` tag excludes this
    project's sector — a deliberate abstention, distinct from "no data yet". */
+/* HISTORICAL METHOD-CLASS ALIASES, FOR STORED ROWS ONLY.
+
+   A stored period result carries the method class the runner emitted WHEN IT WAS COMPUTED. Runs
+   28, 31 and 32 renamed six identities' method classes, so a row written before those runs
+   carries the superseded identifier and a lookup on the current one would miss it.
+
+   THE CURRENT IDENTIFIER IS ALWAYS THE PRIMARY. These are only ever matched against; nothing
+   emits them, no taxonomy row carries them, and an alias must never become the key a surface
+   displays or a generator writes.
+
+   The consequence of NOT having had this is on record: the client taxonomy carried the
+   superseded identifiers for these six modules, `findSim` matched none of them against the
+   server's signal array, and the lookup returned null rather than failing -- a status that
+   silently never rendered. */
+window.LIN_HISTORICAL_METHOD_CLASS = {
+  CPI_Shrinkage_Forecast: ["Regression_To_Mean"],
+  Independent_EAC_Reconciliation: ["ICE_Ratio"],
+  EVMS_Applicability: ["FAR_Threshold"],
+  A11_Conformance: ["OMB_A11_Check"],
+  EVMS_Reporting_Compliance: ["EVM_Reporting_Threshold"],
+  Modification_Governance: ["Contract_Mod_Frequency"],
+  Minimax_Regret_Decision_Rule: ["Regret_Minimization"],
+  DSM_Rework_Cat5: ["DSM_Rework_Propagation"]
+};
+window.linMethodClassMatches = function (candidate, wanted) {
+  if (candidate === wanted) return true;
+  var alt = window.LIN_HISTORICAL_METHOD_CLASS[wanted];
+  return !!alt && alt.indexOf(candidate) !== -1;
+};
+
 window.getModuleStatus = function (methodClass, project) {
   if (!project) return null;
   if (window.isModuleSectorNA(methodClass, project)) return "NA";
   const s = project.signals || {};
   const sim = (project.simulationSignals && project.simulationSignals.signal_array) || [];
   const findSim = (cls) => {
-    const found = sim.find((m) => m.method_class === cls);
+    // Matches the CURRENT identifier, and a superseded one only for rows stored before the
+    // rename. Comparing on equality alone is what made six modules' status silently absent.
+    const found = sim.find((m) => window.linMethodClassMatches(m.method_class, cls));
     return found ? (found.status_color || found.status || null) : null;
   };
   switch (methodClass) {
@@ -334,7 +366,12 @@ window.getModuleStatus = function (methodClass, project) {
     case "ABM_Governance":
     case "abm_governance":         return s.decision ? s.decision.state : null;
     // Cat 5.1 reuses the Cat 3 DSM result under a distinct method_class.
-    case "DSM_Rework_Cat5":        return findSim("DSM_Rework_Propagation");
+    // RUN 32 FINAL CLOSURE. This TRANSLATED the current identifier into `DSM_Rework_Propagation`,
+    // which no runner emits: the server stamps `DSM_Rework_Cat5`. The remap therefore turned a
+    // working lookup into a guaranteed miss, and a miss returns null rather than failing, so
+    // A5.1's status silently never rendered. The current identifier is passed through and the
+    // superseded one is carried in the historical alias map for rows stored under it.
+    case "DSM_Rework_Cat5":        return findSim(methodClass);
     // Portfolio Health (ex-"Cat 8" ML/AI) — results come from the
     // portfolioanalyze POST and are merged into the simulation signal_array
     // like the other sim modules.

@@ -93,6 +93,12 @@ V7_RECORD = "code_audit/run32_participant_package_v7_checksums.sha256"
 V7_COMMIT = "93f08bcf36c8675aed3bb4d2b8b83011b8077bc0"
 V8_IDENTITY = "og-participant-2026.08-v8"
 V8_RECORD = "code_audit/run32_closure_participant_package_v8_checksums.sha256"
+# THE METHOD-CLASS PROPAGATION. v8 IS A PREDECESSOR NOW and v9 describes the live tree. Six
+# identifiers the client carried had stopped being emitted by the runners, so `getModuleStatus`
+# matched none of them and returned null rather than failing. v8 is PINNED and NOT regenerated.
+V8_COMMIT = "6e7ce204567a3a3331ee894436cd21748bde381e"
+V9_IDENTITY = "og-participant-2026.08-v9"
+V9_RECORD = "code_audit/run32_b3_participant_package_v9_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -347,27 +353,45 @@ _v7_bad = sorted(rel for rel, digest in _v7.items()
 check(not _v7_bad,
       f"every one of v7's seventy checksums holds against commit {V7_COMMIT[:7]}, which is where "
       f"that package's bytes live now that it is a predecessor", str(_v7_bad))
+# v8 IS NOW A PREDECESSOR TOO, so the live tree is not its evidence either.
 _v8 = parse((ROOT / V8_RECORD).read_text(encoding="utf-8"))
 _v8_bad = sorted(rel for rel, digest in _v8.items()
+                 if hashlib.sha256(git_bytes(rel, V8_COMMIT) or b"").hexdigest() != digest)
+check(not _v8_bad,
+      f"every one of v8's seventy checksums holds against commit {V8_COMMIT[:7]}, which is where "
+      f"that package's bytes live now that it is a predecessor", str(_v8_bad))
+_v9 = parse((ROOT / V9_RECORD).read_text(encoding="utf-8"))
+_v9_bad = sorted(rel for rel, digest in _v9.items()
                  if not (ROOT / rel).is_file()
                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
-check(not _v8_bad,
-      "and every one of v8's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v8_bad))
+check(not _v9_bad,
+      "and every one of v9's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v9_bad))
+_seq9_bad = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
+                   if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v8.get(rel))
+check(not _seq9_bad,
+      "THE EXPERIMENTAL SEQUENCE IS UNCHANGED across v8 to v9: every file carrying evidence "
+      "review, preliminary judgment, preliminary lock, AI reveal, final judgment, capture, final "
+      "lock and period advancement is byte for byte identical to v8", str(_seq9_bad))
+_moved9 = sorted(rel for rel, digest in _v8.items()
+                 if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved9 == sorted(PP.V8_TO_V9_CHANGED),
+      "and the files v9 moved are exactly the three it declares, so nothing rode along with the "
+      "identifier propagation", str(_moved9))
 
 # THE SEQUENCE PROOF, WHICH IS WHAT REPLACES v8's MISSING INVERSE MAPPING. v7's delta was a
 # display substitution and was proved so by inverse-mapping it back. v8's is not, so the claim
 # "the experimental sequence is unchanged" cannot rest on that. It rests on this instead: every
 # file that CARRIES the sequence is byte for byte identical between v7 and v8.
 _seq_bad = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
-                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v7.get(rel))
+                  if hashlib.sha256(git_bytes(rel, V8_COMMIT) or b"").hexdigest() != _v7.get(rel))
 check(not _seq_bad,
       "THE EXPERIMENTAL SEQUENCE IS UNCHANGED: every file carrying evidence review, preliminary "
       "judgment, preliminary lock, AI reveal, final judgment, capture, final lock and period "
       "advancement is byte for byte identical to v7", str(_seq_bad))
 # AND THE FILES v8 DID MOVE ARE EXACTLY THE ONES DECLARED, so a further file cannot ride along.
 _moved = sorted(rel for rel, digest in _v7.items()
-                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                if hashlib.sha256(git_bytes(rel, V8_COMMIT) or b"").hexdigest() != digest)
 check(_moved == sorted(PP.V7_TO_V8_CHANGED),
       "and the files v8 moved are exactly the seven it declares, so nothing rode along with the "
       "metadata correction", str(_moved))
@@ -416,21 +440,21 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V8_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V9_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
-          V6_IDENTITY, V7_IDENTITY, V8_IDENTITY],
+          V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 8
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 9
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all eight are present, so no link shares a record "
+      "each link has its OWN record file and all nine are present, so no link shares a record "
       "with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all seven predecessors name the commit "
+      "and only the current link reads the working tree; all eight predecessors name the commit "
       "their bytes live in")
 # THE v3 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes commit 01e943e
 # wrote, which is what stops the Run-28 closure's own defect from recurring here.

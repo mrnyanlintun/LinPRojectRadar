@@ -9,6 +9,107 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-18 - Run 32 FINAL CLOSURE: method-class identifier propagation
+
+**Branch `run32-b3-method-class` from `main` at `6e7ce20`.** Still Run 32. Closes the finding the
+defensibility closure carried. Report:
+`REPORT_2026-08-18_run32-b3-method-class-closure.md`.
+
+**Simulation: `sim-2026.08-v20`, UNCHANGED** - no `server/app/` file changed at all, and the
+95-module dispatched profile is byte-identical (digest
+`a9577151e71ab7211bde450a2b69f82827fde130b7e89c0a1a015f18e137f45a`).
+**Participant package: `og-participant-2026.08-v9`** (v8 pinned to `6e7ce20`, NOT regenerated).
+
+## FIVE THINGS THAT MUST NOT BE LOST
+
+**1. `index.html` LOADS `taxonomy.js`, NOT `categories.js`.** They are near-duplicate taxonomies.
+`taxonomy.js` is the LIVE participant surface; `categories.js` is the researcher-side stack loaded
+by `tests.html`. THIS RUN'S FIRST FIX WENT INTO `categories.js` ALONE and every string-based check
+passed; the authenticated browser session caught it with
+`window.linMethodClassMatches is not a function`. **Fixing the copy the participant never sees is
+the "asserted against a copy of the logic" failure, and it was committed here before being caught.**
+
+**2. THE TWO FILES JOIN DIFFERENTLY, so the same drift has different consequences.**
+`categories.js` matches `method_class` equality against the signal array -- a stale identifier
+matches nothing and returns null. `taxonomy.js` resolves through `METHOD_TO_NUM` (built from its
+OWN rows) to a MODULE NUMBER and matches on that -- a stale identifier is self-consistent and still
+resolves. So the demonstrated silent-empty-lookup is on the RESEARCHER-SIDE stack; on the
+participant surface the drift was LATENT. The report says so rather than letting the stronger
+claim stand.
+
+**3. THE OWNER NAMED FOUR MODULES; THE MECHANICAL INVENTORY FOUND SIX, AND EXECUTION FOUND A
+SEVENTH.** A1.10 and A1.11 drifted at Run 28 and were missed because the previous browser probe
+used a focus LIST rather than deriving from the registry. The seventh was
+`case "DSM_Rework_Cat5": return findSim("DSM_Rework_Propagation")` -- a remap translating A5.1's
+CURRENT identifier into one no runner emits, found only because the guard EXECUTES the lookup.
+**Derive populations from the registry; make guards execute, not compare strings.**
+
+**4. A STALE KEY MUST NOT BE REPAIRED INTO A STALE CLAIM.** `RUN1_PROXY_QUALIFIER` in
+`knowledge.js` is keyed by method_class and mirrors `registry.PROXY_QUALIFIERS`. B3.5's key was
+stale so a qualifier the server STILL HOLDS had stopped rendering -- renamed. A1.10's qualifier had
+been WITHDRAWN by Run 28 -- REMOVED, because renaming would newly surface a claim the source of
+truth no longer makes.
+
+**5. `simulations.js` AND `sim.js` ARE HISTORICAL ARTEFACTS AND MUST NOT BE PROPAGATED INTO.**
+`client_algorithm_version.js` declares them the pre-remediation browser implementations: "the
+server is the single computational authority and a second implementation is the defect rather than
+the backup." They keep their historical identifiers.
+
+## Results
+
+* **Full suite: 154 suites, 12523/12523.**
+* **Method-class reconciliation: 6 rows, 6 unique, 0 FAIL. Current mixed identifiers = 0.**
+* **Six-fault campaign: 6 attempted, 6 applied, 6 RED for the intended reason, 6 restored GREEN**;
+  0 NOT_APPLIED, 0 crashes accepted, 0 unrelated accepted.
+* **Browser: 21 rows, 20 PASS, 0 FAIL, 1 NOT_VERIFIED.** Previous browser failures 4 -> final 0.
+  The per-module handbook documentation was NOT reached (module-local arrays, not on `window`);
+  recorded as NOT_VERIFIED, not passed. It is NOT a consequence of this change -- the previously
+  renamed "Minimax Regret Decision Rule" is equally absent.
+* Defensibility reconciliation still 101/101 with 0 unsupported claims. Voting exactly 2.
+
+## Files changed
+
+`assets/js/taxonomy.js` (LIVE surface: identifiers, alias map, `numForMethodClass` resolver),
+`assets/js/categories.js` (identifiers, alias map, A5.1 remap), `assets/js/knowledge.js`
+(identifiers, proxy-qualifier keys). All three already declared by Runs 26/28, so only the pin
+moved. NO `server/app/` file changed.
+
+## Artefacts
+
+`code_audit/run32_b3_method_class_reconciliation.csv`,
+`run32_b3_pre_change_lookup_evidence.json` (measured BEFORE propagation; not reproducible after),
+`run32_b3_fault_injection.csv`, `run32_b3_browser_verification.csv`,
+`run32_b3_participant_package_v9_checksums.sha256`. Tools:
+`server/tools/test_run32_method_class_agreement.py` (the guard),
+`build_run32_b3_reconciliation.py`, `run32_b3_fault_campaign.py`,
+`run32_b3_browser_verification.py`.
+
+## UNRESOLVED
+
+* **`RUN1_PROXY_QUALIFIER` is 27 entries stale** -- 30 client keys against 5 server qualifiers.
+  Runs 28-32 withdrew the rest and the mirror was never updated, so the handbook still attributes
+  proxy qualifiers to modules that no longer carry one. Only the two drifting KEYS were touched.
+  Needs owner authorisation.
+* **`categories.js` and `taxonomy.js` are near-duplicate taxonomies kept in step by hand.** A guard
+  now asserts their alias maps agree, but one generator would remove the hazard.
+* The oracles remain synthetic known-answer tests, NOT empirical validation. Portfolio Health
+  outstanding.
+
+## NEXT RUN
+
+* Read the registry and the executed version tuple, never a prompt's premise. Line is
+  `sim-2026.08-v20`.
+* **Any client-surface fix must go into `taxonomy.js` (live). Check `index.html` for what is
+  actually loaded before editing a client file.**
+* Regenerate `ds_defensibility_evidence.js` with `tools/build_run11_defensibility_evidence.py`;
+  never hand-edit it. Run `test_run32_defensibility_truth.py` and
+  `test_run32_method_class_agreement.py`.
+* If participant bytes move, mint v10 and PIN v9. Never regenerate a predecessor.
+* Browser: use `chromium_headless_shell-*` via `executable_path`; do not run `playwright install`.
+  Provision via `researchlogin` on `/exec` (text/plain), token in `sessionStorage['og-session-token']`.
+* Fresh migrated SQLite per suite; never `:memory:` for acceptance. Restore the self-rewriting
+  `code_audit` CSVs before every commit.
+
 # 2026-08-17 - Run 32 FINAL CLOSURE: defensibility metadata and the B4.7 name completion
 
 **Branch `run32-defensibility-closure` from `main` at `93f08bc`.** Still Run 32. Closes the two
