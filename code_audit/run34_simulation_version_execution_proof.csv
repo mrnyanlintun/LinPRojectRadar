@@ -1,0 +1,7 @@
+record_type,module,input,v21_behaviour,v22_behaviour,divergence,observed_by,result
+DIVERGENCE,D1.2 Portfolio Outlier Detection,"the same four-project cohort, two features","composite 0.875 under equal weighting, provenance OWNER_POLICY","composite None, disposition PARAMETER_PROVENANCE_BLOCKED, result_type FEATURE_PERCENTILE_PROFILE",YES,execution of both lines,PASS
+DIVERGENCE,D1.1 Isolation Forest,a governed cohort of exactly two eligible projects,"computed: abstained=False, 2 project score(s)","abstained=True, disposition=NOT_ESTIMABLE",YES,execution of both lines,PASS
+DIVERGENCE,D1.3 Signal Trajectory Classifier,"a constant cost-index history 1.0, 1.0, 1.0","classification FLAT, equal-spacing reported: False","classification STABLE, equally_spaced=True",YES,execution of both lines,PASS
+NON_DIVERGENCE,all five Portfolio Health modules,no governed cohort supplied at all,"all five abstain, same five reasons","all five abstain, same five reasons",NO,execution of both lines,PASS
+NON_DIVERGENCE,A1.7 To-Complete Performance Index,identical earned-value signal inputs,"{""evidence_metric"": ""TCPI: 1.083, the cost efficiency the remaining work must achieve to finish within budget, above the","{""evidence_metric"": ""TCPI: 1.083, the cost efficiency the remaining work must achieve to finish within budget, above the",NO,execution of both lines,PASS
+SUMMARY,-,-,v21 at f5c52d3fd97498e031bad7e93ceb5cdc7ee65151,v22 current,"3 divergences, 2 non-divergences",execution of both lines,PASS
