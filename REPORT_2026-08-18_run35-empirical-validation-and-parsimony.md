@@ -298,6 +298,13 @@ behaviour, **no** parameter application and **no** participant-visible analytica
 line of `server/app/` was modified. The three findings in section 9 that would have changed
 executed behaviour were deliberately **not** acted on, and are recorded as Run-36 work.
 
+The **production manifest is byte-identical** to the one Run 34 pinned — regenerating
+`code_audit/run34_production_tree.sha256` produced no change — and that is the mechanical proof
+that no production byte moved. The **authority** manifest was repointed onto
+`code_audit/run35_authority_tree.sha256` because the Run-35 protocol is a scientific authority
+document and belongs inside the walked authority tree; the Run-34 and Run-22 authority manifests
+are kept addressable and were not rewritten.
+
 **Participant package `og-participant-2026.08-v11` STANDS.** No participant-facing byte changed;
 the controlled participant sequence is unchanged.
 
