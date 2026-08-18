@@ -1,0 +1,28 @@
+record_type,n_trees,metric,value,note
+PREDECLARATION,-,protocol,research/methodology/run34_portfolio_calibration_protocol.md,"committed before this campaign was written; candidates [100, 400, 1000]; 30 seeds, all used, none selected; STABILITY fixture ph1_rank_agreement_fixture.json, unmodified and frozen in OG-SYNTH-0.5"
+METRIC,100,within_production_rank_stability,0.986049,mean pairwise Spearman of the score vector with itself across distinct seeds
+METRIC,100,top_1_agreement,0.229885,fraction of seed pairs naming the same most-anomalous project
+METRIC,100,top_10_agreement,0.494220,mean Jaccard overlap of top-10 sets across seed pairs
+METRIC,100,mean_per_project_score_variance,0.000071,across the 30 seeds
+METRIC,100,median_runtime_seconds,0.401277,"fit and score the whole cohort, one seed"
+METRIC,100,peak_traced_memory_bytes,2541606,tracemalloc peak over the 30 fits
+METRIC,400,within_production_rank_stability,0.995392,mean pairwise Spearman of the score vector with itself across distinct seeds
+METRIC,400,top_1_agreement,0.501149,fraction of seed pairs naming the same most-anomalous project
+METRIC,400,top_10_agreement,0.671675,mean Jaccard overlap of top-10 sets across seed pairs
+METRIC,400,mean_per_project_score_variance,0.000018,across the 30 seeds
+METRIC,400,median_runtime_seconds,1.705310,"fit and score the whole cohort, one seed"
+METRIC,400,peak_traced_memory_bytes,9140752,tracemalloc peak over the 30 fits
+METRIC,1000,within_production_rank_stability,0.997836,mean pairwise Spearman of the score vector with itself across distinct seeds
+METRIC,1000,top_1_agreement,0.703448,fraction of seed pairs naming the same most-anomalous project
+METRIC,1000,top_10_agreement,0.749511,mean Jaccard overlap of top-10 sets across seed pairs
+METRIC,1000,mean_per_project_score_variance,0.000007,across the 30 seeds
+METRIC,1000,median_runtime_seconds,4.567630,"fit and score the whole cohort, one seed"
+METRIC,1000,peak_traced_memory_bytes,22396040,tracemalloc peak over the 30 fits
+MARGINAL,100->400,delta_stability,+0.009343,instability ratio I(t')/I(t) = 0.3303; runtime ratio R(t')/R(t) = 4.25
+MARGINAL,400->1000,delta_stability,+0.002444,instability ratio I(t')/I(t) = 0.4696; runtime ratio R(t')/R(t) = 2.68
+DECISION,-,D2_operational_relevance_gate,FAIL,"Executed through the real production route: PH.1 on the corpus as it stands abstained=True disposition=STRUCTURE_ABSENT. No governed portfolio cohort is supplied, so PH.1 produces NO operational reading and no authoritative flag under any schema. The stability/compute trade-off therefore has no operational units and NO candidate has defensible superiority."
+DECISION,100,selected_tree_count,100,D4 applies: retain the published default of 100 and record calibration unresolved. This is an authorised outcome under contract section 6A and is not a failure to complete. D5 tie-break would also prefer the smaller count.
+DECISION,-,tree_count_calibration_status,UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE,
+DECISION,-,production_tree_count_after_run34,100,unchanged
+DECISION,100,D3_counterfactual_if_gate_had_passed,100,"Reported for completeness; it did not decide anything, because D2 failed. 100->400: instability halves=True, runtime<=4x=False"
+PROHIBITED_BASIS,-,cross_implementation_spearman,NOT USED,"The protocol forbids selecting a tree count because cross-implementation Spearman exceeds 0.99, and this campaign does not compute it. Run 33 established why: at t=100 the implementation agrees with itself across seeds (0.986049) essentially as closely as with scikit-learn (0.986057)."

@@ -301,12 +301,40 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # server/tools/test_run33_version_boundary.py extracts the v20 package FROM ITS GIT OBJECT,
 # executes it beside the current one on identical inputs, and asserts that -- rather than
 # comparing source text.
-SIMULATION_VERSION = "sim-2026.08-v21"
+# RUN 34 (PORTFOLIO HEALTH CALIBRATION AND PARAMETER PROVENANCE) -> sim-2026.08-v22. PORTFOLIO
+# HEALTH BEHAVIOUR CHANGED, so the stamp moves. On identical portfolio inputs the two lines
+# differ, and the differences are behavioural rather than editorial:
+#
+#       v21  D1.2  Portfolio Outlier Detection   emitted a composite percentile under EQUAL
+#                                                weighting, labelled OWNER_POLICY but emitted
+#       v22  D1.2  Portfolio Outlier Detection   composite withheld absent governed weights;
+#                                                the per-feature percentile profile is returned
+#                                                and the disposition is
+#                                                PARAMETER_PROVENANCE_BLOCKED
+#
+#       v21  D1.1  Isolation Forest              computed on a cohort of two eligible projects
+#       v22  D1.1  Isolation Forest              NOT_ESTIMABLE below three: two projects cannot
+#                                                establish what is normal for a portfolio, since
+#                                                each is the other's entire reference population
+#
+#       v21  D1.3  Signal Trajectory Classifier  a zero slope classified FLAT
+#       v22  D1.3  Signal Trajectory Classifier  a zero slope classified STABLE, and the fitted
+#                                                series reports whether it was equally spaced
+#                                                rather than leaving that to be assumed
+#
+# and on a portfolio that carries NO governed cohort both lines refuse identically, which is the
+# legitimate non-divergence: the calibration work changed what is reported where a reading is
+# possible, and changed nothing about when a reading is possible at all.
+#
+# server/tests/test_run34_version_boundary.py extracts the v21 package FROM ITS GIT OBJECT,
+# executes it beside the current one on identical inputs, and asserts that -- rather than
+# comparing source text.
+SIMULATION_VERSION = "sim-2026.08-v22"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v20"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v21"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -317,6 +345,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
+    "sim-2026.08-v22",
 )
 
 

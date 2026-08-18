@@ -1,0 +1,14 @@
+record_type,dataset,metric,value,note
+ORDERING,-,selection_completed_before_holdout_read,YES,"The tree count above was fixed by D2/D4 from the state of the corpus and the stability metrics alone. The holdout is read now, after selection, and CANNOT change it: protocol D6 and section 11 item 5."
+CALIBRATION,RUN34-CAL,roc_auc,0.998421,"t=100, seed=20250815, n=200, 10 labelled anomalous"
+CALIBRATION,RUN34-CAL,pr_auc,0.969798,
+CALIBRATION,RUN34-CAL,mean_score_labelled_anomalous,0.661557,
+CALIBRATION,RUN34-CAL,mean_score_labelled_normal,0.422706,
+CALIBRATION,RUN34-CAL,separation,+0.238851,difference of means; a SYNTHETIC separation statistic
+HOLDOUT,RUN34-HOLDOUT,roc_auc,0.996842,"t=100, seed=20250815, n=200, 10 labelled anomalous"
+HOLDOUT,RUN34-HOLDOUT,pr_auc,0.926346,
+HOLDOUT,RUN34-HOLDOUT,mean_score_labelled_anomalous,0.654266,
+HOLDOUT,RUN34-HOLDOUT,mean_score_labelled_normal,0.414564,
+HOLDOUT,RUN34-HOLDOUT,separation,+0.239701,difference of means; a SYNTHETIC separation statistic
+BOUNDARY,-,data_origin,SYNTHETIC_RESEARCH_CALIBRATION,"These are separation statistics on SYNTHETIC data with ground truth defined before the detector. They are NOT field performance, NOT a false-positive rate, NOT predictive validity and NOT empirical validation, and they authorise no operational threshold."
+BOUNDARY,-,operational_threshold_created,NONE,No operational anomaly threshold is created by this run. PH.1 emits a continuous score and no flag.
