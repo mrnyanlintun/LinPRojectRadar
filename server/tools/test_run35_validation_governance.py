@@ -455,6 +455,10 @@ def g26_every_target_present():
             bad.append(f"{name} has duplicate ids")
     if len(scope) != 100:
         bad.append(f"the scope declares {len(scope)} scientific targets")
+    # section 17 requires a Run-36 re-audit requirement on EVERY row, scored or not
+    for r in rows("run35_empirical_validation_results.csv"):
+        if not r.get("run36_reaudit_requirement", "").strip():
+            bad.append(f"{r['module_id']} carries no Run-36 re-audit requirement")
     return not bad, "; ".join(bad[:4])
 
 

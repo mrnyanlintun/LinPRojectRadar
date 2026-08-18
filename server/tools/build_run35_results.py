@@ -206,6 +206,7 @@ def main():
             "", "",                                   # filled below from the disposition pass
             "; ".join(secondary) or "none",
             "NO",                                   # synthetic_claimed_as_empirical
+            "",                                     # run36 re-audit requirement, filled below
             SIMULATION_VERSION,
         ])
 
@@ -253,6 +254,7 @@ def main():
         row = executed[mid]
         rres = next(r for r in res_rows if r[0] == mid)
         d, why = disposition(mid, s, row, rres[7])
+        # (run36 is computed just below and written back into the result row)
         assert d in DISPOSITIONS, f"{mid}: illegal disposition {d}"
         disp_by_id[mid] = d
         lin = lineage_status(mid, applicable=mid not in REG.DISABLED_MODULES)
@@ -270,6 +272,7 @@ def main():
         # fill the disposition back into the result artifact
         rres[9] = s["calibration_state"]
         rres[10] = d
+        rres[13] = run36
 
     # ------------------------------------------------------ parsimony reconciliation, 100
     prim = {mid: primitive_sources(mid) for mid in order}
@@ -318,7 +321,8 @@ def main():
            "reference_independence", "empirical_metric_applicable", "metric",
            "empirical_result", "verdict", "limitation", "calibration_state",
            "operational_disposition", "secondary_classes_also_true",
-           "synthetic_claimed_as_empirical", "simulation_version"], res_rows)
+           "synthetic_claimed_as_empirical", "run36_reaudit_requirement",
+           "simulation_version"], res_rows)
 
     write("run35_operational_disposition.csv",
           ["module_id", "module_name", "category", "canonical_method", "validation_class",
@@ -339,6 +343,7 @@ def main():
     assert all(r[7] in VERDICTS and r[7] != "" for r in res_rows)
     assert all(r[8] for r in res_rows), "a limitation sentence is required on every row"
     assert all(r[12] == "NO" for r in res_rows), "synthetic_as_empirical_claims must be 0"
+    assert all(r[13] for r in res_rows), "every row needs a Run-36 re-audit requirement"
     assert sum(1 for r in disp_rows if r[9] == "YES") == 2, "voting must be exactly 2"
     assert all(r[11] for r in disp_rows), "every disposition needs a rationale"
     print("\nverdicts:", dict(Counter(r[7] for r in res_rows)))
