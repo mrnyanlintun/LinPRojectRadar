@@ -1,0 +1,7 @@
+fault,target,mutation,applied,confirmed_applied,guard,intended_red,crash_accepted_as_red,restored_green,result
+1,the holdout artifact,"the holdout_changed_selection row is removed entirely, so the artifact no longer states whether the holdout influenced the selection",YES,YES,the holdout artifact records holdout_changed_selection,YES,NO,YES,PASS
+2,the holdout artifact,"the artifact asserts that the holdout DID change the selection, which would mean a parameter was chosen after inspecting holdout results",YES,YES,holdout_changed_selection = NO,YES,NO,YES,PASS
+3,the holdout artifact,"the recorded selection_commit is replaced with a LATER commit, so the artifact represents selection as having occurred after the holdout evaluation",YES,YES,the artifact's recorded commits are the ones GIT gives,YES,NO,YES,PASS
+4,the holdout artifact,"the non-consumption evidence is withdrawn, leaving the ordering claim resting on commit order alone -- which cannot support it, because the holdout fixture predates selection and both phases share a commit",YES,YES,the artifact records the same non-consumption result this guard just derived,YES,NO,YES,PASS
+5,the Run-34 report,"the report states holdout_changed_selection = YES while the artifact states NO, so the published claim and the recorded fact disagree",YES,YES,the report's stated holdout_changed_selection equals the artifact's,YES,NO,YES,PASS
+TOTALS,-,-,5,-,-,5,0,5,PASS

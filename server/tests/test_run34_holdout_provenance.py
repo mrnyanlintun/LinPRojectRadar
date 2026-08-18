@@ -82,7 +82,25 @@ def git_order(a: str, b: str) -> str:
     return "before" if anc.returncode == 0 else "after"
 
 
-prov = {r["metric"]: r for r in rows(HOLDOUT) if r["record_type"] == "PROVENANCE"}
+_prov_rows = {r["metric"]: r for r in rows(HOLDOUT) if r["record_type"] == "PROVENANCE"}
+
+
+class _Provenance(dict):
+    """
+    INDEXED DEFENSIVELY. A MISSING FIELD MUST FAIL A CHECK, NOT RAISE HERE.
+
+    A guard that crashes instead of failing is one of the ways a check has lied in this
+    repository, and the fault campaign beside this file caught exactly that when the
+    `holdout_changed_selection` row was deleted: direct indexing raised a KeyError and the
+    campaign scored a crash rather than a red. A missing field now reads as an empty record,
+    which fails the checks that name it and passes none of them.
+    """
+
+    def __missing__(self, key):
+        return {"metric": key, "value": "", "note": "", "result": "", "record_type": ""}
+
+
+prov = _Provenance(_prov_rows)
 report_text = REPORT.read_text(encoding="utf-8")
 
 
@@ -93,10 +111,11 @@ REQUIRED = ("selection_completed_before_holdout", "holdout_changed_selection", "
             "holdout_evaluation_commit", "selection_artifact", "holdout_artifact", "evidence")
 for f in REQUIRED:
     check(f in prov, f"the holdout artifact records {f}")
-check(all(prov[f]["value"].strip() for f in REQUIRED if f in prov),
-      "and none of them is blank")
-check(all(r["result"].strip() for r in prov.values()),
-      "every provenance row carries a PASS/FAIL disposition")
+check(all(prov[f]["value"].strip() for f in REQUIRED),
+      "and none of them is blank or absent",
+      str([f for f in REQUIRED if not prov[f]["value"].strip()]))
+check(bool(_prov_rows) and all(r["result"].strip() for r in _prov_rows.values()),
+      "every provenance row present carries a PASS/FAIL disposition")
 # The original holdout RESULT rows must survive untouched.
 _orig = [r for r in rows(HOLDOUT) if r["record_type"] in ("CALIBRATION", "HOLDOUT", "BOUNDARY",
                                                           "ORDERING")]
