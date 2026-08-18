@@ -105,6 +105,46 @@ def auc(scores, labels):
     return roc, pr
 
 
+def selection_decision(metrics):
+    """
+    THE PREDECLARED DECISION RULE, D2 to D5, ISOLATED SO NON-CONSUMPTION IS PROVABLE.
+
+    RUN-34 FINAL METADATA CLOSURE. This body is the selection code verbatim -- the same D2 probe,
+    the same D3 promotion loop, the same D4 default, in the same order. It was extracted, not
+    rewritten, so that a guard can EXECUTE it with the holdout fixture booby-trapped to raise on
+    any read and observe that the decision completes untouched.
+
+    ITS ONLY DATA INPUT IS `metrics`, which comes from the STABILITY fixture, plus the live
+    production route probed for D2. IT DOES NOT TAKE, AND CANNOT REACH, THE HOLDOUT DATASET.
+    That is the point: commit ordering alone cannot prove non-consumption here, because the
+    holdout fixture was committed at c20a587 and was therefore present on disk when the selection
+    campaign ran at 8995794. What proves it is that the decision does not read it.
+
+    Returns (chosen, state, d2_pass, d1) so `main` can report exactly what it reported before.
+    """
+    from app.simulation import portfolio_health as PH
+
+    real = PH.compute_portfolio_health_snapshot("PROBE", {}, [], "2026-01-31")
+    d1 = real["results"]["cat8_1_isolation_forest"]
+    operational_reading = not d1.get("abstained")
+    flag_permitted = bool(d1.get("authoritative_flag_permitted"))
+    d2_pass = operational_reading and flag_permitted
+    if d2_pass:
+        chosen = CANDIDATES[0]
+        for lo, hi in zip(CANDIDATES, CANDIDATES[1:]):
+            inst_ok = (1 - metrics[hi]["S"]) <= 0.5 * (1 - metrics[lo]["S"])
+            cost_ok = metrics[hi]["R"] <= 4 * metrics[lo]["R"]
+            if inst_ok and cost_ok and chosen == lo:
+                chosen = hi
+            else:
+                break
+        state = "SELECTED_UNDER_D3"
+    else:
+        chosen = 100
+        state = "UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE"
+    return chosen, state, d2_pass, d1
+
+
 def main() -> int:
     from app.simulation import canonical_v8 as V8
     from app.simulation.isolation_forest import IsolationForest
@@ -182,12 +222,7 @@ def main() -> int:
     # D2, the controlling clause: does the tree count have a demonstrable operational consequence?
     # Decided from the state of the corpus, by EXECUTING the production route rather than by
     # asserting about it.
-    from app.simulation import portfolio_health as PH
-    real = PH.compute_portfolio_health_snapshot("PROBE", {}, [], "2026-01-31")
-    d1 = real["results"]["cat8_1_isolation_forest"]
-    operational_reading = not d1.get("abstained")
-    flag_permitted = bool(d1.get("authoritative_flag_permitted"))
-    d2_pass = operational_reading and flag_permitted
+    chosen, state, d2_pass, d1 = selection_decision(metrics)
     rows.append(["DECISION", "-", "D2_operational_relevance_gate",
                  "PASS" if d2_pass else "FAIL",
                  "Executed through the real production route: PH.1 on the corpus as it stands "
@@ -195,19 +230,6 @@ def main() -> int:
                  "governed portfolio cohort is supplied, so PH.1 produces NO operational reading "
                  "and no authoritative flag under any schema. The stability/compute trade-off "
                  "therefore has no operational units and NO candidate has defensible superiority."])
-    if d2_pass:
-        chosen = CANDIDATES[0]
-        for lo, hi in zip(CANDIDATES, CANDIDATES[1:]):
-            inst_ok = (1 - metrics[hi]["S"]) <= 0.5 * (1 - metrics[lo]["S"])
-            cost_ok = metrics[hi]["R"] <= 4 * metrics[lo]["R"]
-            if inst_ok and cost_ok and chosen == lo:
-                chosen = hi
-            else:
-                break
-        state = "SELECTED_UNDER_D3"
-    else:
-        chosen = 100
-        state = "UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE"
     rows.append(["DECISION", str(chosen), "selected_tree_count", str(chosen),
                  "D4 applies: retain the published default of 100 and record calibration "
                  "unresolved. This is an authorised outcome under contract section 6A and is not "
