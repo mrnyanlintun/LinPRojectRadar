@@ -314,7 +314,19 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: release's historical record, and this successor names it as its parent and keeps it
 #: addressable below. The guard was turned red FIRST and observed reporting exactly those added
 #: and changed files and nothing else.
-PINNED = ROOT / "code_audit" / "run33_production_tree.sha256"
+#: RUN 34. Repointed once more, by the same discipline: the owner's Run-34 calibration contract
+#: authorises modification of Portfolio Health parameter handling, abstention behaviour and
+#: threshold application. THREE production files changed and none was created: canonical_v8.py
+#: (the parameter registry, the cohort-size policy, the TWO_SIDED orientation, the withheld PH.2
+#: composite, PH.3's STABLE/NOT_ESTIMABLE vocabulary and the governed calibration record),
+#: portfolio_health.py (the calibration-record intake) and models.py (the stamp advances to
+#: sim-2026.08-v22). The run33 manifest is NOT rewritten: it stays exactly as that release wrote
+#: it and this successor names it as its parent. The guard was turned red FIRST and observed
+#: reporting exactly those three changed files and nothing else.
+PINNED = ROOT / "code_audit" / "run34_production_tree.sha256"
+#: The Run-33 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN33 = ROOT / "code_audit" / "run33_production_tree.sha256"
 #: The Run-32 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN32 = ROOT / "code_audit" / "run32_production_tree.sha256"
@@ -354,7 +366,14 @@ PINNED_RUN25 = ROOT / "code_audit" / "run25_production_tree.sha256"
 #: same reason.
 PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: The same, for the scientific authority tree.
-PINNED_AUTHORITY = ROOT / "code_audit" / "run22_authority_tree.sha256"
+#: RUN 34 REPOINTS THE AUTHORITY MANIFEST TOO, for the first time since Run 22. The predeclared
+#: calibration protocol is a scientific authority document -- it is what makes the Run-34
+#: parameter decisions auditable -- so it belongs inside the authority tree rather than beside
+#: it. The Run-22 record is kept addressable and is NOT rewritten.
+PINNED_AUTHORITY = ROOT / "code_audit" / "run34_authority_tree.sha256"
+#: The Run-22 authority manifest, kept addressable so the supersession is a real change and not a
+#: silent rewrite.
+PINNED_AUTHORITY_RUN22 = ROOT / "code_audit" / "run22_authority_tree.sha256"
 
 
 def compare(root: pathlib.Path | None = None,

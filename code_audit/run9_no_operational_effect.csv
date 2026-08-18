@@ -1,6 +1,6 @@
 surface,value,note
-server/app tree digest,061306bb6eda9c3199bc73d399edaa7539b73f5c83ede4bec55af262a790b57d,recorded in this run; compared against the pre-change digest recorded in the report
-assets tree digest,8bd0c30f96ddbc01f3220005c717bffd1bdfebee3334d935c4fdcf203e328d17,recorded in this run
+server/app tree digest,f58e65c032a4881d45c0bc35b4519329b99dcff1f77afb82545663e44aae2c45,recorded in this run; compared against the pre-change digest recorded in the report
+assets tree digest,02a89bcdddf725bf426721c7b5efbaac59d274615313b905e8a60dd19aa21887,recorded in this run
 voting set,A1.7|A1.8,unchanged
 disabled concept-only set,A3.8|B2.20|B2.7|B2.9|B4.1|B4.2|B4.5|B4.6,unchanged
 bucket 5 modules,A3.1|A5.1,"disabled by unconditional abstention, non-voting"

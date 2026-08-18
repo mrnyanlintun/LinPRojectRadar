@@ -223,12 +223,19 @@ check([p.identifier for p in SP.SYNTHETIC_PACKAGES][:4]
       == ["OG-SYNTH-0.1", "OG-SYNTH-0.2", "OG-SYNTH-0.3", "OG-SYNTH-0.4"],
       "the chain is declared oldest first and Run 29's four links are still its prefix",
       str([p.identifier for p in SP.SYNTHETIC_PACKAGES]))
-check([p.identifier for p in SP.SYNTHETIC_PACKAGES]
+# RUN 34 APPENDED OG-SYNTH-0.6, the labelled calibration package. Run 33's five links are
+# asserted as a strict PREFIX rather than overwritten, by the same discipline as before.
+check([p.identifier for p in SP.SYNTHETIC_PACKAGES][:5]
       == ["OG-SYNTH-0.1", "OG-SYNTH-0.2", "OG-SYNTH-0.3", "OG-SYNTH-0.4", "OG-SYNTH-0.5"],
+      "Run 33's five links are still the chain's prefix",
+      str([p.identifier for p in SP.SYNTHETIC_PACKAGES]))
+check([p.identifier for p in SP.SYNTHETIC_PACKAGES]
+      == ["OG-SYNTH-0.1", "OG-SYNTH-0.2", "OG-SYNTH-0.3", "OG-SYNTH-0.4", "OG-SYNTH-0.5",
+          "OG-SYNTH-0.6"],
       "and every link is named, oldest first",
       str([p.identifier for p in SP.SYNTHETIC_PACKAGES]))
 check(sum(1 for p in SP.SYNTHETIC_PACKAGES if p.current) == 1
-      and SP.CURRENT.identifier == "OG-SYNTH-0.5",
+      and SP.CURRENT.identifier == "OG-SYNTH-0.6",
       "exactly one link is declared current and it is the newest successor",
       SP.CURRENT.identifier)
 check(all((ROOT / p.root).is_dir() for p in SP.SYNTHETIC_PACKAGES),

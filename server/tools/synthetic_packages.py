@@ -107,7 +107,9 @@ SYNTHETIC_PACKAGES: tuple[SyntheticPackage, ...] = (
         "research_fixtures/synthetic/OG-SYNTH-0.5",
         "research_fixtures/synthetic/OG-SYNTH-0.5/CHECKSUMS.sha256",
         "repository_root",
-        True,
+        # RUN 34 DEMOTED THIS LINK. It was the current link until OG-SYNTH-0.6 was minted; its
+        # record and its files are untouched. Exactly one link may be current.
+        False,
         "RUN 33. The five Portfolio Health modules were being exercised against PORTFOLIO "
         "VECTORS: bare {id, cpi, spi, docRiskScore, actualPctComplete} objects with no cohort, "
         "no period, no feature schema, no orientation, no qualification state and no model "
@@ -115,6 +117,23 @@ SYNTHETIC_PACKAGES: tuple[SyntheticPackage, ...] = (
         "because a portfolio comparison is undefined without a declared population, period, "
         "feature schema and model version. This successor adds the five canonical fixtures the "
         "contract is defined on, at the exact figures the supplied oracles state.",
+    ),
+    SyntheticPackage(
+        "OG-SYNTH-0.6",
+        "research_fixtures/synthetic/OG-SYNTH-0.6",
+        "research_fixtures/synthetic/OG-SYNTH-0.6/CHECKSUMS.sha256",
+        "repository_root",
+        True,
+        "RUN 34. Calibration needs something the Run-33 structural fixtures deliberately do not "
+        "carry: LABELS. This successor adds the two labelled datasets the predeclared Run-34 "
+        "protocol names -- a calibration set and an INDEPENDENT holdout draw under the same "
+        "generative specification with a different generator seed. Ground truth is defined "
+        "before the detector and before the data: the anomalous set is an arithmetic property of "
+        "the project identifier, fixed before any feature value is drawn, and no detector output "
+        "settles any label. The fixtures establish numerical behaviour, stability, sensitivity "
+        "and known anomaly separation; they establish nothing about real anomaly prevalence, "
+        "field false-positive rates, practitioner usefulness, operational thresholds or "
+        "predictive validity.",
     ),
 )
 
@@ -124,19 +143,11 @@ CURRENT = SYNTHETIC_PACKAGES[-1]
 #: The canonical fixture files the current link adds. Named here so a guard can assert that the
 #: successor record covers them and that no predecessor record does.
 CURRENT_ONLY_FILES = (
-    "research_fixtures/synthetic/OG-SYNTH-0.5/README.md",
-    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
-    "ph1_isolation_forest_fixture.json",
-    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
-    "ph1_rank_agreement_fixture.json",
-    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
-    "ph2_midrank_percentile_fixture.json",
-    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
-    "ph3_trajectory_slope_fixture.json",
-    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
-    "ph4_nearest_neighbour_fixture.json",
-    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
-    "ph5_component_profile_fixture.json",
+    "research_fixtures/synthetic/OG-SYNTH-0.6/README.md",
+    "research_fixtures/synthetic/OG-SYNTH-0.6/package_D_portfolio_calibration/"
+    "run34_ph1_calibration_labelled.json",
+    "research_fixtures/synthetic/OG-SYNTH-0.6/package_D_portfolio_calibration/"
+    "run34_ph1_holdout_labelled.json",
 )
 
 #: The three importers the closure replaced, and the canonical successor of each. The old ones are

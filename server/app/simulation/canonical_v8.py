@@ -88,6 +88,10 @@ V8_SUPPLEMENTARY_KEYS: tuple[str, ...] = (
     "portfolioFeatureSchema",
     "portfolioFeatureRecord",
     "portfolioSignalHistory",
+    # RUN 34. The governed calibration record: the ONE place a Portfolio Health parameter that is
+    # not a published default or a theoretical constant may arrive from. Section 5 forbids
+    # scattering parameter literals across the modules, and this is the intake side of that rule.
+    "portfolioCalibrationRecord",
 )
 
 V8_STRUCTURE_WORDS: dict[str, str] = {
@@ -101,13 +105,26 @@ V8_STRUCTURE_WORDS: dict[str, str] = {
     "D1.5": "the governed Portfolio Health constituents this profile is assembled from",
 }
 
-#: Feature orientations (section 4). NEUTRAL is not "no orientation known": it is a declared
-#: statement that the feature is not risk-oriented, and PH.2 excludes it from the adverse-tail
-#: ranking rather than guessing a direction.
+#: Feature orientations. NEUTRAL is not "no orientation known": it is a declared statement that
+#: the feature has NO ADVERSE ORIENTATION, and PH.2 excludes it from the adverse-tail ranking
+#: rather than guessing a direction.
+#:
+#: RUN 34 ADDS TWO_SIDED, which the calibration contract's section 7A requires as a fourth
+#: declarable orientation: a feature where departure in EITHER direction is adverse. It is a
+#: distinct statement from NEUTRAL and from either one-sided orientation, and conflating it with
+#: one of them would silently halve the adverse tail of a feature that has two.
+#:
+#: AND AN UNDECLARED ORIENTATION IS NOT AN ORIENTATION. There is no default and no inference from
+#: a feature's name or the sign of its values: a feature whose orientation nobody declared makes
+#: the adverse-tail interpretation NOT_ESTIMABLE, which is section 7A's own requirement.
 HIGHER_IS_MORE_ADVERSE = "HIGHER_IS_MORE_ADVERSE"
 LOWER_IS_MORE_ADVERSE = "LOWER_IS_MORE_ADVERSE"
+TWO_SIDED = "TWO_SIDED"
 NEUTRAL = "NEUTRAL"
-ORIENTATIONS = (HIGHER_IS_MORE_ADVERSE, LOWER_IS_MORE_ADVERSE, NEUTRAL)
+NO_ADVERSE_ORIENTATION = NEUTRAL
+ORIENTATIONS = (HIGHER_IS_MORE_ADVERSE, LOWER_IS_MORE_ADVERSE, TWO_SIDED, NEUTRAL)
+#: The orientations that define an adverse tail and can therefore be ranked by PH.2.
+RANKABLE_ORIENTATIONS = (HIGHER_IS_MORE_ADVERSE, LOWER_IS_MORE_ADVERSE, TWO_SIDED)
 
 #: Governance constants. A guard asserts against these, not against prose.
 NON_VOTING = True
@@ -124,16 +141,94 @@ AUTHORITY_NOTE = (
 PARAMETER_PROVENANCE_BLOCKED = "PARAMETER_PROVENANCE_BLOCKED"
 INSUFFICIENT_COHORT = "INSUFFICIENT_COHORT"
 OWNER_POLICY = "OWNER_POLICY"
+#: RUN 34. The named state for "the method is not estimable on what was supplied". It is not an
+#: error and not a zero: it is the honest answer when the governed preconditions of a method are
+#: absent, and it is a DIFFERENT statement from a computed reading that happens to be unremarkable.
+NOT_ESTIMABLE = "NOT_ESTIMABLE"
+#: RUN 34. Attached to any reading produced on a cohort below the canonical size.
+SMALL_COHORT_LIMITATION = "SMALL_COHORT_LIMITATION"
 
-#: Section 7: n < 3 is an explicit insufficient-cohort state; n < 10 carries a small-sample
-#: warning. Both are STRUCTURAL MINIMA supplied by the Run-33 contract, not calibrated cut points
-#: on any measured quantity, and they are named here so the difference is legible.
+#: n < 3 is an explicit not-estimable state; n < 10 carries a small-cohort limitation. Both are
+#: STRUCTURAL MINIMA supplied by contract, not calibrated cut points on any measured quantity,
+#: and they are named here so the difference is legible.
 MIN_COHORT_FOR_RANKING = 3
 SMALL_SAMPLE_BELOW = 10
 SMALL_SAMPLE_NOTE = (
     "Small-sample limitation: this cohort holds fewer than ten projects. Every reading below is "
     "exploratory programme context. No predictive validity is claimed and no reading may be used "
     "as a sole trigger.")
+
+# ---------------------------------------------------------------------------------------------
+# RUN 34. PARAMETER PROVENANCE, IN ONE PLACE.
+# ---------------------------------------------------------------------------------------------
+#
+# WHY A REGISTRY. Section 5 of the Run-34 contract forbids scattering parameter literals across
+# the PH modules, and the reason is not tidiness: a literal sitting in the function that uses it
+# carries no statement of where it came from, so a published default, a laboratory calibration
+# and a bare guess all look identical at the point of use. Every Portfolio Health parameter is
+# declared here WITH ITS PROVENANCE CLASS, and a guard can then ask the question that matters --
+# is anything being applied that nothing supports?
+#
+# THE SEVEN CLASSES ARE THE CONTRACT'S OWN. `UNSUPPORTED` is on the list deliberately: where a
+# parameter genuinely has no defensible provenance, that is the honest classification, and the
+# rule is that an UNSUPPORTED parameter may not be APPLIED to produce an operational reading.
+
+PUBLISHED_DEFAULT = "PUBLISHED_DEFAULT"
+THEORETICAL_CONSTANT = "THEORETICAL_CONSTANT"
+SYNTHETIC_LAB_CALIBRATION = "SYNTHETIC_LAB_CALIBRATION"
+EMPIRICAL_CALIBRATION = "EMPIRICAL_CALIBRATION"
+HEURISTIC = "HEURISTIC"
+UNSUPPORTED = "UNSUPPORTED"
+PARAMETER_CLASSES = (PUBLISHED_DEFAULT, THEORETICAL_CONSTANT, SYNTHETIC_LAB_CALIBRATION,
+                     OWNER_POLICY, EMPIRICAL_CALIBRATION, HEURISTIC, UNSUPPORTED)
+
+
+def _param(module, name, value, cls, source, *, applied, schema=None, note=""):
+    return {"module": module, "parameter": name, "value": value, "parameter_class": cls,
+            "source": source, "applied_operationally": applied,
+            "effective_schema": schema, "note": note,
+            "calibrated": cls in (SYNTHETIC_LAB_CALIBRATION, EMPIRICAL_CALIBRATION),
+            "field_validated": cls == EMPIRICAL_CALIBRATION}
+
+
+#: Every parameter any Portfolio Health method reads. Populated at the foot of this module, once
+#: the values themselves are defined, so the registry states the LIVE value rather than a copy.
+PH_PARAMETERS: tuple[dict[str, Any], ...] = ()
+
+
+#: RUN 34, SECTION 6B. THE COHORT-SIZE POLICY, STATED ONCE AND APPLIED EVERYWHERE.
+#:
+#:   n < 3      there is no defensible cross-project anomaly model. NOT_ESTIMABLE.
+#:   3 <= n < 10 a continuous exploratory reading is permitted, carrying SMALL_COHORT_LIMITATION.
+#:              NO authoritative anomaly flag, because no calibration protocol establishes one.
+#:   n >= 10    the canonical score may be produced under the governed cohort/schema/model
+#:              identity. THIS DOES NOT ITSELF AUTHORISE A FIELD THRESHOLD.
+#:
+#: The limitation is not smoothed away at any size: a reading on nine projects says so, and a
+#: reading on ten says what it is and what it still is not.
+COHORT_BELOW_MINIMUM = "COHORT_BELOW_MINIMUM"
+COHORT_SMALL = "COHORT_SMALL"
+COHORT_CANONICAL = "COHORT_CANONICAL"
+
+
+def cohort_size_policy(n: int) -> tuple[str, str]:
+    """The declared band for a cohort of n eligible projects, and the statement that goes with it."""
+    if n < MIN_COHORT_FOR_RANKING:
+        return COHORT_BELOW_MINIMUM, (
+            f"A cohort of {n} eligible project(s) supports no defensible cross-project anomaly "
+            f"model. Fewer than {MIN_COHORT_FOR_RANKING} projects is not a portfolio to compare "
+            f"within, so no reading of any kind is reported.")
+    if n < SMALL_SAMPLE_BELOW:
+        return COHORT_SMALL, (
+            f"A cohort of {n} eligible projects is below the canonical size of "
+            f"{SMALL_SAMPLE_BELOW}. A continuous exploratory reading is permitted and carries an "
+            f"explicit small-cohort limitation. NO authoritative anomaly flag is produced: none "
+            f"is established by any calibration protocol at this cohort size.")
+    return COHORT_CANONICAL, (
+        f"A cohort of {n} eligible projects is at or above the canonical size of "
+        f"{SMALL_SAMPLE_BELOW}, so the canonical score is produced under the governed cohort, "
+        f"schema and model identity. THIS DOES NOT AUTHORISE A FIELD THRESHOLD: no operational "
+        f"anomaly threshold is calibrated or validated for this method.")
 
 
 class CohortInconsistent(StructureAbsent):
@@ -380,12 +475,91 @@ class PortfolioCohort:
 
     def limitation(self) -> dict[str, Any]:
         n = len(self.project_ids)
+        band, note = cohort_size_policy(n)
         return {
             "cohort_size": n,
+            "cohort_size_class": band,
+            "cohort_size_policy_note": note,
             "small_sample": n < SMALL_SAMPLE_BELOW,
             "small_sample_note": SMALL_SAMPLE_NOTE if n < SMALL_SAMPLE_BELOW else None,
             "predictive_validity_claimed": False,
+            # RUN 34. An authoritative flag is a SEPARATE authorisation from a computed score,
+            # and below the canonical cohort size there is none. It is stated as a field so a
+            # consumer cannot infer authority from the presence of a number.
+            "authoritative_flag_permitted": False,
         }
+
+
+# ---------------------------------------------------------------------------------------------
+# RUN 34. THE GOVERNED PORTFOLIO CALIBRATION RECORD
+# ---------------------------------------------------------------------------------------------
+
+_CALIBRATION_FIELDS = ("calibration_record_id", "module_id", "method_version",
+                       "feature_schema_id", "cohort_definition", "cohort_size",
+                       "preprocessing_version", "parameter_name", "parameter_value",
+                       "parameter_source", "calibration_dataset_id", "holdout_dataset_id",
+                       "objective", "metric", "selected_value", "selection_reason",
+                       "sensitivity_results", "effective_date", "operational_applicability",
+                       "empirical_validation_status")
+
+
+class CalibrationRecord:
+    """
+    ONE governed calibration record: a parameter, its value, and everything that has to be true
+    for a reader to know what that value is worth.
+
+    A RECORD IS NOT A LICENCE. Holding a calibration record does not make a parameter
+    operationally applicable; `operational_applicability` says whether it is, and
+    `empirical_validation_status` says separately whether anything in the field supports it. The
+    two are kept apart because a synthetic laboratory calibration can be perfectly real and still
+    authorise nothing operationally.
+    """
+
+    __slots__ = tuple(_CALIBRATION_FIELDS) + ("raw",)
+
+    def __init__(self, raw: Mapping[str, Any]):
+        raw = _require_mapping(raw, "a governed portfolio calibration record")
+        for f in _CALIBRATION_FIELDS:
+            if f not in raw or raw.get(f) in (None, ""):
+                raise PortfolioAbstention(
+                    f"A governed portfolio calibration record must declare {f}; the record "
+                    f"{raw.get('calibration_record_id')!r} does not, so nothing is calibrated "
+                    f"from it.")
+        for f in _CALIBRATION_FIELDS:
+            setattr(self, f, raw[f])
+        if self.parameter_source not in PARAMETER_CLASSES:
+            raise PortfolioAbstention(
+                f"{self.parameter_source!r} is not one of the declared parameter provenance "
+                f"classes {PARAMETER_CLASSES}. An unclassified parameter is not applied.")
+        if self.parameter_source == UNSUPPORTED:
+            raise PortfolioAbstention(
+                "A parameter classified UNSUPPORTED may not be applied to produce an operational "
+                "reading. It is recorded, and the reading is withheld.")
+        self.raw = dict(raw)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {f: getattr(self, f) for f in _CALIBRATION_FIELDS}
+
+
+def calibration_for(records: Any, module_id: str, parameter: str,
+                    schema_version: str) -> CalibrationRecord | None:
+    """
+    The governed calibration record for one module parameter under one feature schema, or None.
+
+    SCHEMA-BOUND BY CONSTRUCTION. A record calibrated on one feature schema is not returned for
+    another, which is the same rule the frozen Run-15 threshold obeys and the reason it obeys it:
+    a parameter fitted on one representation of a project says nothing about a different one.
+    """
+    if not isinstance(records, (list, tuple)):
+        records = [records] if isinstance(records, Mapping) else []
+    for raw in records:
+        if not isinstance(raw, Mapping):
+            continue
+        if (str(raw.get("module_id")) == module_id
+                and str(raw.get("parameter_name")) == parameter
+                and str(raw.get("feature_schema_id")) == schema_version):
+            return CalibrationRecord(raw)
+    return None
 
 
 def _envelope(module_id: str, method: str, cohort: PortfolioCohort) -> dict[str, Any]:
@@ -482,11 +656,14 @@ def isolation_forest(cohort: PortfolioCohort, *, n_trees: int = IF_TREES,
                        f"{len(missing)} project-feature pair(s) ({', '.join(missing)}). A "
                        "missing feature is not replaced by zero, by a cohort mean or by any "
                        "other stand-in, so no forest is grown.")
-    if len(cohort.project_ids) < 2:
-        return abstain("D1.1", "Isolation_Forest", cohort,
-                       "An isolation forest needs at least two observations to grow a tree on. "
-                       "A cohort of fewer than two eligible projects produces no authoritative "
-                       "anomaly reading of any kind.", INSUFFICIENT_COHORT)
+    # RUN 34, SECTION 6B. THE COHORT-SIZE POLICY GATES THE READING, and the gate moved: v21
+    # required two eligible projects, which is the minimum an isolation TREE needs, not the
+    # minimum a cross-project anomaly MODEL needs. Two projects cannot establish what is normal
+    # for a portfolio; each is simply the other's entire reference population. Below three the
+    # answer is NOT_ESTIMABLE.
+    _band, _band_note = cohort_size_policy(len(cohort.project_ids))
+    if _band == COHORT_BELOW_MINIMUM:
+        return abstain("D1.1", "Isolation_Forest", cohort, _band_note, NOT_ESTIMABLE)
 
     order = [f.feature_id for f in feats]
     vectors = [[cohort.value(m, f) for f in feats] for m in cohort.members]
@@ -501,15 +678,24 @@ def isolation_forest(cohort: PortfolioCohort, *, n_trees: int = IF_TREES,
             "source_lineage": m["source_lineage"],
             "source_provenance": m["source_provenance"],
             "qualification_state": m["qualification_state"],
-            # The frozen threshold travels only with the schema it was fitted on.
+            # THE FROZEN THRESHOLD TRAVELS ONLY WITH THE SCHEMA IT WAS FITTED ON, and RUN 34
+            # ADDS THE SECOND CONDITION: it may not produce a flag on a cohort below the
+            # canonical size either. A laboratory threshold applied to eight projects would be
+            # an authoritative-looking reading resting on nothing, which is exactly what section
+            # 6B forbids.
             "exploratory_flag": (
                 bool(score >= RUN15_FROZEN_THRESHOLD)
-                if cohort.schema_version == RUN15_FROZEN_SCHEMA else None),
+                if (cohort.schema_version == RUN15_FROZEN_SCHEMA
+                    and _band == COHORT_CANONICAL) else None),
             "exploratory_flag_reason": (
-                None if cohort.schema_version == RUN15_FROZEN_SCHEMA else
-                "The frozen synthetic threshold was fitted on feature schema "
-                f"{RUN15_FROZEN_SCHEMA!r}; this cohort is on {cohort.schema_version!r}, so no "
-                "flag is derived from it."),
+                None if (cohort.schema_version == RUN15_FROZEN_SCHEMA
+                         and _band == COHORT_CANONICAL)
+                else ("The frozen synthetic threshold was fitted on feature schema "
+                      f"{RUN15_FROZEN_SCHEMA!r}; this cohort is on {cohort.schema_version!r}, so "
+                      "no flag is derived from it."
+                      if cohort.schema_version != RUN15_FROZEN_SCHEMA else
+                      "The cohort is below the canonical size, so no authoritative flag is "
+                      "derived from the frozen synthetic threshold.")),
         }
     out.update({
         "abstained": False,
@@ -530,6 +716,10 @@ def isolation_forest(cohort: PortfolioCohort, *, n_trees: int = IF_TREES,
             "one_forest_per_cohort": True,
             "harmonic_number_form": "PAPER_ESTIMATE_LN_PLUS_EULER_GAMMA",
         },
+        "cohort_size_class": _band,
+        "cohort_size_policy": _band_note,
+        "authoritative_flag_permitted": _band == COHORT_CANONICAL
+        and cohort.schema_version == RUN15_FROZEN_SCHEMA,
         "frozen_synthetic_threshold": RUN15_FROZEN_THRESHOLD,
         "frozen_synthetic_threshold_labels": dict(RUN15_THRESHOLD_LABELS),
         "higher_score_is_more_anomalous": True,
@@ -567,19 +757,30 @@ def _midrank(values: Sequence[Fraction], x: Fraction) -> Fraction:
     return (Fraction(less) + Fraction(equal, 2)) / Fraction(len(values))
 
 
-def portfolio_outlier(cohort: PortfolioCohort) -> dict[str, Any]:
+def portfolio_outlier(cohort: PortfolioCohort,
+                      weights: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """
+    The per-feature adverse-tail percentile profile, and a composite ONLY where governed weights
+    exist.
+
+    RUN 34, SECTION 7B. Equal weighting is an OWNER-POLICY CHOICE, NOT A CANONICAL FACT, and v21
+    emitted a composite under it anyway -- labelled `OWNER_POLICY`, but emitted. The calibration
+    contract closes that: without governed weights the module returns the FEATURE PROFILE and the
+    composite is NONE. Nothing is lost by this, because the profile carries every percentile the
+    composite was averaging; what is lost is a single number whose weighting nobody authorised.
+    """
     out = _envelope("D1.2", "Portfolio_Outlier", cohort)
-    feats = [f for f in cohort.required_features() if f.orientation != NEUTRAL]
+    feats = [f for f in cohort.required_features()
+             if f.orientation in RANKABLE_ORIENTATIONS]
     if not feats:
         return abstain("D1.2", "Portfolio_Outlier", cohort,
-                       "The feature schema declares no required risk-oriented feature. A "
-                       "neutral feature has no adverse tail and none is invented for it.")
+                       "The feature schema declares no required feature with an adverse "
+                       "orientation. A feature declared to have NO adverse orientation has no "
+                       "adverse tail, and none is invented for it.", NOT_ESTIMABLE)
+    _band, _band_note = cohort_size_policy(len(cohort.project_ids))
+    if _band == COHORT_BELOW_MINIMUM:
+        return abstain("D1.2", "Portfolio_Outlier", cohort, _band_note, NOT_ESTIMABLE)
     n = len(cohort.project_ids)
-    if n < MIN_COHORT_FOR_RANKING:
-        return abstain("D1.2", "Portfolio_Outlier", cohort,
-                       f"A cohort of {n} eligible project(s) is below the governed minimum of "
-                       f"{MIN_COHORT_FOR_RANKING} for a portfolio percentile. No rank is "
-                       "reported.", INSUFFICIENT_COHORT)
     missing = [f"{m['project_id']}:{f.feature_id}" for m in cohort.members for f in feats
                if cohort.value(m, f) is None]
     if missing:
@@ -595,45 +796,110 @@ def portfolio_outlier(cohort: PortfolioCohort) -> dict[str, Any]:
         # finished rank. A lower-is-more-adverse feature is negated so that "greater" means
         # "more adverse" for every feature alike; the percentile is then the adverse tail
         # position on one consistent convention.
-        sign = -1 if f.orientation == LOWER_IS_MORE_ADVERSE else 1
-        vals = {m["project_id"]: sign * Fraction(str(cohort.value(m, f)))
-                for m in cohort.members}
+        raw = {m["project_id"]: Fraction(str(cohort.value(m, f))) for m in cohort.members}
+        if f.orientation == TWO_SIDED:
+            # RUN 34. A TWO-SIDED FEATURE IS ADVERSE IN BOTH DIRECTIONS, so the adverse magnitude
+            # is the distance from the cohort's own centre, and it is that magnitude which is
+            # ranked. Treating it as one-sided would declare half its adverse tail favourable.
+            centre = sum(raw.values(), Fraction(0)) / Fraction(len(raw))
+            vals = {pid: abs(v - centre) for pid, v in raw.items()}
+        else:
+            sign = -1 if f.orientation == LOWER_IS_MORE_ADVERSE else 1
+            vals = {pid: sign * v for pid, v in raw.items()}
         pool = list(vals.values())
         per_feature[f.feature_id] = {pid: _midrank(pool, x) for pid, x in vals.items()}
+
+    # GOVERNED WEIGHTS, OR NO COMPOSITE. `weights` arrives from the governed calibration record
+    # and nowhere else; it is never defaulted, and an incomplete or unnormalisable weight set is
+    # refused rather than repaired.
+    governed, weight_reason = _governed_weights(weights, [f.feature_id for f in feats])
 
     projects: dict[str, Any] = {}
     for m in cohort.members:
         pid = m["project_id"]
         ranks = {fid: per_feature[fid][pid] for fid in per_feature}
-        composite = sum(ranks.values(), Fraction(0)) / Fraction(len(ranks))
+        composite = (sum((ranks[fid] * governed[fid] for fid in ranks), Fraction(0))
+                     if governed else None)
         projects[pid] = {
             "feature_percentiles": {k: float(v) for k, v in sorted(ranks.items())},
             "feature_percentiles_exact": {k: f"{v.numerator}/{v.denominator}"
                                           for k, v in sorted(ranks.items())},
-            "portfolio_outlier_percentile": float(composite),
-            "portfolio_outlier_percentile_exact": f"{composite.numerator}/{composite.denominator}",
+            "portfolio_outlier_percentile": float(composite) if composite is not None else None,
+            "portfolio_outlier_percentile_exact": (
+                f"{composite.numerator}/{composite.denominator}"
+                if composite is not None else None),
+            "composite_disposition": ("COMPUTED" if composite is not None
+                                      else PARAMETER_PROVENANCE_BLOCKED),
             "source_lineage": m["source_lineage"],
             "source_provenance": m["source_provenance"],
             "qualification_state": m["qualification_state"],
         }
-    ordered = sorted(projects, key=lambda p: (-projects[p]["portfolio_outlier_percentile"], p))
+    ordered = (sorted(projects, key=lambda p: (-projects[p]["portfolio_outlier_percentile"], p))
+               if governed else None)
     out.update({
-        "abstained": False, "disposition": "COMPUTED", "projects": projects,
+        "abstained": False,
+        "disposition": "COMPUTED" if governed else PARAMETER_PROVENANCE_BLOCKED,
+        "projects": projects,
         "method_note": METHOD_CLASS_NOTE_D12,
         "is_learned_model": False,
         "is_probability_of_failure": False,
         "ranking_rule": "MIDRANK_ADVERSE_TAIL_EMPIRICAL_PERCENTILE",
-        "composite_rule": "MEAN_OVER_COMPLETE_GOVERNED_REQUIRED_RISK_ORIENTED_FEATURE_SET",
-        "composite_weighting_provenance": OWNER_POLICY,
-        "composite_weighting_note": (
-            "Equal weighting over the complete governed required risk-oriented feature set is a "
-            "transparent v21 owner-policy design, not an empirically calibrated scientific "
-            "constant. Final calibration and value assessment are Run-34/35 work."),
+        "result_type": "FEATURE_PERCENTILE_PROFILE" if not governed else "WEIGHTED_COMPOSITE",
+        "composite_rule": ("GOVERNED_SUPPLIED_WEIGHTS" if governed else None),
+        "composite_weights": ({k: float(v) for k, v in sorted(governed.items())}
+                              if governed else None),
+        "composite_weighting_provenance": (OWNER_POLICY if governed else None),
+        "composite_weighting_note": weight_reason,
+        "cohort_size_class": _band,
+        "cohort_size_policy": _band_note,
+        "authoritative_flag_permitted": False,
+        "status_bands": None,
         "features_ranked": [f.feature_id for f in feats],
-        "most_adverse_project_ids": ordered[:1],
+        "feature_orientations": {f.feature_id: f.orientation for f in feats},
+        "most_adverse_project_ids": (ordered[:1] if ordered else None),
         "adverse_order": ordered,
     })
     return out
+
+
+def _governed_weights(weights: Mapping[str, Any] | None,
+                      feature_ids: Sequence[str]) -> tuple[dict[str, Fraction] | None, str]:
+    """
+    The supplied weight set, or None with the reason it cannot be used.
+
+    NO WEIGHT IS EVER DEFAULTED OR INVENTED. Equal weighting is not produced here as a fallback,
+    which is the whole point of section 7B: a composite that silently weights everything the same
+    is still a weighted composite, and nobody authorised those weights.
+    """
+    if weights is None:
+        return None, ("No governed feature weights were supplied, so NO COMPOSITE IS PRODUCED. "
+                      "The per-feature adverse-tail percentile profile is reported instead. "
+                      "Equal weighting is an owner-policy choice, not a canonical fact, and it "
+                      "is not applied as a default. Owner policy is required.")
+    if not isinstance(weights, Mapping) or not weights:
+        return None, ("The supplied feature weighting is not a governed weight set, so no "
+                      "composite is produced.")
+    missing = [fid for fid in feature_ids if fid not in weights]
+    extra = [k for k in weights if k not in feature_ids]
+    if missing or extra:
+        return None, (
+            f"The supplied weight set does not cover the ranked feature set exactly "
+            f"(missing {sorted(missing)}, unexpected {sorted(extra)}), so no composite is "
+            f"produced. A partial weight set is not completed and the remainder is not "
+            f"renormalised.")
+    try:
+        parsed = {fid: Fraction(str(weights[fid])) for fid in feature_ids}
+    except (TypeError, ValueError, ZeroDivisionError):
+        return None, "A supplied weight is not a number this measure can read."
+    if any(w < 0 for w in parsed.values()):
+        return None, "A supplied weight is negative, which no adverse-tail composite can read."
+    total = sum(parsed.values(), Fraction(0))
+    if total == 0:
+        return None, "The supplied weights sum to zero, so no composite is defined."
+    return ({fid: w / total for fid, w in parsed.items()},
+            "Composite produced from GOVERNED SUPPLIED WEIGHTS, normalised to sum to one. The "
+            "weights are owner policy carried in the governed calibration record; they are not "
+            "an empirical calibration and no predictive validity attaches to them.")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -658,7 +924,13 @@ def portfolio_outlier(cohort: PortfolioCohort) -> dict[str, Any]:
 
 DETERIORATING = "DETERIORATING"
 IMPROVING = "IMPROVING"
-FLAT = "FLAT"
+#: RUN 34, SECTION 8C. The permitted outputs are IMPROVING, STABLE, DETERIORATING and
+#: NOT_ESTIMABLE. v21 named the zero-slope case FLAT; the calibration contract names it STABLE.
+#: `FLAT` is retained as a backward alias so a stored v21 result remains readable, and nothing
+#: emits it.
+STABLE = "STABLE"
+FLAT = STABLE
+TRAJECTORY_CLASSIFICATIONS = (IMPROVING, STABLE, DETERIORATING, NOT_ESTIMABLE)
 NUMERICAL_ZERO = Fraction(1, 10 ** 12)
 
 MIN_TRAJECTORY_OBSERVATIONS = 3
@@ -746,15 +1018,18 @@ def _one_history(entry: Mapping[str, Any], cohort: PortfolioCohort | None) -> di
         times.append(_as_days(o["reporting_time"]))
         values.append(Fraction(str(v)))
 
+    # RUN 34, SECTION 8A. The minimum observation count is PREDECLARED at three and is not tuned:
+    # below it a trajectory classification is NOT_ESTIMABLE. Two points determine a line exactly
+    # and carry no evidence that the line is a trend rather than an artefact of two readings.
     if len(times) < MIN_TRAJECTORY_OBSERVATIONS:
         raise PortfolioAbstention(
-            f"{len(times)} observation(s) of {signal_id!r}; at least "
+            f"NOT_ESTIMABLE: {len(times)} observation(s) of {signal_id!r}; at least "
             f"{MIN_TRAJECTORY_OBSERVATIONS} are required before a trend is fitted.")
     if len(set(times)) < MIN_TRAJECTORY_OBSERVATIONS:
         raise PortfolioAbstention(
-            f"The history of {signal_id!r} holds {len(set(times))} distinct reporting time(s); "
-            f"at least {MIN_TRAJECTORY_OBSERVATIONS} are required. Duplicate timestamps are not "
-            "silently spread across the interval.")
+            f"NOT_ESTIMABLE: the history of {signal_id!r} holds {len(set(times))} distinct "
+            f"reporting time(s); at least {MIN_TRAJECTORY_OBSERVATIONS} are required. Duplicate "
+            "timestamps are not silently spread across the interval.")
 
     # Input order is irrelevant to an OLS fit; sorting is for the reported series only.
     pairs = sorted(zip(times, values))
@@ -762,7 +1037,7 @@ def _one_history(entry: Mapping[str, Any], cohort: PortfolioCohort | None) -> di
     q = 1 if orientation == HIGHER_IS_MORE_ADVERSE else -1
     a = q * b
     if abs(a) <= NUMERICAL_ZERO:
-        classification = FLAT
+        classification = STABLE
     elif a > 0:
         classification = DETERIORATING
     else:
@@ -778,14 +1053,29 @@ def _one_history(entry: Mapping[str, Any], cohort: PortfolioCohort | None) -> di
         "observations_used": len(times),
         "distinct_reporting_times": len(set(times)),
         "time_units": "days",
+        # RUN 34, SECTION 8B. The ACTUAL reporting times enter the fit. Equal spacing is never
+        # assumed; it is REPORTED where the supplied dates happen to be equally spaced, so a
+        # reader can tell a genuinely regular series from one that was treated as regular.
+        "reporting_times_days": [str(t) for t in sorted(set(times))],
+        "equally_spaced": (len(set(
+            [pairs[i + 1][0] - pairs[i][0] for i in range(len(pairs) - 1)])) == 1),
+        "regression_trace": {
+            "n": len(times),
+            "mean_time_days": str(sum(times, Fraction(0)) / Fraction(len(times))),
+            "mean_value": str(sum(values, Fraction(0)) / Fraction(len(values))),
+        },
+        "minimum_observations_required": MIN_TRAJECTORY_OBSERVATIONS,
+        "permitted_classifications": list(TRAJECTORY_CLASSIFICATIONS),
         "ols_slope_per_day": float(b),
         "ols_slope_exact": f"{b.numerator}/{b.denominator}",
         "adverse_slope_per_day": float(a),
         "adverse_slope_exact": f"{a.numerator}/{a.denominator}",
         "classification": classification,
         "magnitude_band": None,
-        "numerical_zero_handling": "1e-12; this is floating-point zero handling and is not an "
-                                   "operational threshold.",
+        "numerical_zero_handling": "1e-12; this is NUMERICAL TOLERANCE for floating-point zero "
+                                   "and is NOT an operational threshold, band or magnitude "
+                                   "criterion. No magnitude of adverse slope is graded.",
+        "magnitude_bands": None,
         "is_trained_classifier": False,
     }
 
@@ -988,8 +1278,24 @@ PH5_INDEPENDENCE = {
 }
 
 
-def anomaly_profile(cohort: PortfolioCohort, constituents: Mapping[str, Mapping[str, Any]]
+def anomaly_profile(cohort: PortfolioCohort,
+                    weights: Any = None,
+                    constituents: Mapping[str, Mapping[str, Any]] | None = None
                     ) -> dict[str, Any]:
+    """
+    The PortfolioAnomalyProfile. RUN 34 threads the governed weight record through, and the
+    answer is unchanged where none exists: the composite stays NONE.
+
+    THREE THINGS MUST ALL BE TRUE before a scalar could be produced, and section 10B/10C name
+    them: governed WEIGHTS with a permitted provenance, a governed MISSINGNESS POLICY covering an
+    absent constituent, and constituents that are not the same evidence counted twice. Absent any
+    of the three, the composite abstains. Weights are never derived from the same fixture the
+    composite would be evaluated on, and equal weighting is never adopted as a default.
+    """
+    if constituents is None:
+        constituents = weights if isinstance(weights, Mapping) and "D1.1" in (
+            weights or {}) else {}
+        weights = None
     out = _envelope("D1.5", "Anomaly_Score", cohort)
     profiles: dict[str, Any] = {}
     for pid in cohort.project_ids:
@@ -1036,6 +1342,13 @@ def anomaly_profile(cohort: PortfolioCohort, constituents: Mapping[str, Mapping[
             "confidence": None,
             "score": None,
             "disposition": PARAMETER_PROVENANCE_BLOCKED,
+            "governed_weights_supplied": weights is not None,
+            "governed_missingness_policy": None,
+            "missingness_policy_note": (
+                "No governed missingness policy exists. A missing constituent therefore does NOT "
+                "silently reweight the remainder -- there is nothing to reweight, because there "
+                "are no weights -- and the composite abstains rather than being computed over "
+                "whatever happens to be present."),
             "score_blocked_reason": (
                 "No governed normalisation, transformation, weight set, missingness policy or "
                 "calibration objective exists for a Portfolio Health composite. A scalar "
@@ -1044,11 +1357,28 @@ def anomaly_profile(cohort: PortfolioCohort, constituents: Mapping[str, Mapping[
             "weights": None,
             "effective_weights": None,
         }
+    # A GOVERNED WEIGHT RECORD IS NECESSARY BUT NOT SUFFICIENT. Even with weights, section 10C
+    # requires a governed missingness policy before a composite may be formed over constituents
+    # that may be absent, and none exists. So the scalar stays blocked, and the reason says which
+    # of the two preconditions is missing rather than collapsing them into one silence.
+    _blocked_reason = (
+        "No governed constituent weights exist for a Portfolio Health composite, and no governed "
+        "missingness policy exists for an absent constituent. Run 34 did not create either: "
+        "weights may not be invented, may not be defaulted to equal, and may not be derived from "
+        "the same synthetic fixture the composite would be evaluated on."
+        if weights is None else
+        "Governed constituent weights were supplied, but no governed MISSINGNESS POLICY exists "
+        "for an absent constituent. A composite formed over whatever constituents happen to be "
+        "present would silently reweight the remainder, which section 10C forbids, so the scalar "
+        "remains withheld.")
     out.update({
         "abstained": False,
         "disposition": PARAMETER_PROVENANCE_BLOCKED,
         "result_type": "PortfolioAnomalyProfile",
         "score": None,
+        "score_blocked_reason": _blocked_reason,
+        "governed_weights_supplied": weights is not None,
+        "governed_missingness_policy": None,
         "weights": None,
         "projects": profiles,
         "constituent_modules": list(PH5_CONSTITUENTS),
@@ -1080,7 +1410,8 @@ METHOD_CLASSES = {
 def compute_portfolio_health(cohort_structure: Mapping[str, Any] | None,
                              schema: Mapping[str, Any] | None,
                              records: Sequence[Mapping[str, Any]],
-                             histories: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
+                             histories: Sequence[Mapping[str, Any]] = (),
+                             calibration: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
     """
     All five Portfolio Health readings for one governed cohort, from one fitted model set.
 
@@ -1099,13 +1430,18 @@ def compute_portfolio_health(cohort_structure: Mapping[str, Any] | None,
             "results": {RESULT_KEYS[m]: abstain(m, METHOD_CLASSES[m], None, reason)
                         for m in RESULT_KEYS},
         }
+    # THE GOVERNED WEIGHTS, LOOKED UP AND NEVER DEFAULTED. Absent a record, `weights` stays None
+    # and the composite is withheld rather than equal-weighted.
+    _w2 = calibration_for(calibration, "D1.2", "feature_weights", cohort.schema_version)
+    _w5 = calibration_for(calibration, "D1.5", "constituent_weights", cohort.schema_version)
     results = {
         "cat8_1_isolation_forest": isolation_forest(cohort),
-        "cat8_2_portfolio_outlier": portfolio_outlier(cohort),
+        "cat8_2_portfolio_outlier": portfolio_outlier(
+            cohort, _w2.parameter_value if _w2 else None),
         "cat8_3_trajectory_classifier": trajectory_classifier(list(histories), cohort),
         "cat8_4_cross_project_pattern": cross_project_pattern(cohort),
     }
-    results["cat8_5_anomaly_score"] = anomaly_profile(cohort, {
+    results["cat8_5_anomaly_score"] = anomaly_profile(cohort, _w5, {
         "D1.1": results["cat8_1_isolation_forest"],
         "D1.2": results["cat8_2_portfolio_outlier"],
         "D1.3": results["cat8_3_trajectory_classifier"],
@@ -1113,3 +1449,111 @@ def compute_portfolio_health(cohort_structure: Mapping[str, Any] | None,
     })
     return {"ok": True, "structure_absent": False, "cohort": cohort.identity(),
             "results": {k: results[k] for k in sorted(results)}}
+
+
+# ---------------------------------------------------------------------------------------------
+# RUN 34. THE PARAMETER REGISTRY, POPULATED FROM THE LIVE VALUES
+# ---------------------------------------------------------------------------------------------
+#
+# Declared at the foot of the module so every entry reads the value the module actually uses; a
+# registry that restated its values would be a second copy, and the copy would drift.
+#
+# THE RULE A GUARD CAN ASSERT: no parameter is unclassified, and nothing classified UNSUPPORTED
+# is applied operationally. `applied_operationally` is False for a parameter that exists but
+# governs no reading -- the frozen threshold is the case in point: it is retained as an artifact
+# and it produces no flag on any cohort the platform can currently assemble.
+
+PH_PARAMETERS = (
+    _param("D1.1", "n_trees", IF_TREES, PUBLISHED_DEFAULT,
+           "Liu, Ting and Zhou, Isolation Forest, ICDM 2008: t = 100 is the default of the "
+           "algorithm as published, not of any library and not of any fixture.",
+           applied=True,
+           note="RUN 34 EVALUATED {100, 400, 1000} under a predeclared protocol and RETAINED "
+                "100. See code_audit/run34_ph1_tree_count_calibration.csv."),
+    _param("D1.1", "subsample_psi", IF_SUBSAMPLE, PUBLISHED_DEFAULT,
+           "Liu, Ting and Zhou: psi = 256 is the published default.", applied=True,
+           note="Not searched in Run 34."),
+    _param("D1.1", "seed", IF_SEED, THEORETICAL_CONSTANT,
+           "A fixed constant that makes a randomized ensemble reproducible. It is a "
+           "reproducibility device, not a tuned value: no objective was optimised over it.",
+           applied=True),
+    _param("D1.1", "height_limit", "ceil(log2(psi))", THEORETICAL_CONSTANT,
+           "The published height limit, derived from psi rather than chosen.", applied=True),
+    _param("D1.1", "c(n) harmonic form", "PAPER_ESTIMATE_LN_PLUS_EULER_GAMMA", THEORETICAL_CONSTANT,
+           "The paper's own stated estimate of the harmonic number. The deviation from the exact "
+           "sum is measured and recorded, not assumed.", applied=True),
+    _param("D1.1", "frozen_synthetic_threshold", RUN15_FROZEN_THRESHOLD,
+           SYNTHETIC_LAB_CALIBRATION,
+           "Run 15, selected on a seeded SYNTHETIC calibration split under a predeclared "
+           "objective and evaluated once on a synthetic holdout. NOT retuned by Run 34.",
+           applied=False, schema=RUN15_FROZEN_SCHEMA,
+           note="SCHEMA-BOUND AND COHORT-BOUND. It produces no flag under any other feature "
+                "schema, and none below the canonical cohort size. No field calibration is "
+                "claimed and it authorises nothing operationally."),
+    _param("D1.1", "min_cohort_for_a_model", MIN_COHORT_FOR_RANKING, OWNER_POLICY,
+           "Run-34 contract section 6B: below three eligible projects there is no defensible "
+           "cross-project anomaly model.", applied=True,
+           note="A structural minimum supplied by contract, not a cut point fitted to data."),
+    _param("D1.1", "canonical_cohort_size", SMALL_SAMPLE_BELOW, OWNER_POLICY,
+           "Run-34 contract section 6B: below ten a reading carries an explicit small-cohort "
+           "limitation and no authoritative flag.", applied=True,
+           note="A structural minimum supplied by contract, not a cut point fitted to data."),
+    _param("D1.1", "operational_anomaly_threshold", None, UNSUPPORTED,
+           "No operational anomaly threshold exists for any schema. None was created by Run 34.",
+           applied=False,
+           note="UNSUPPORTED AND THEREFORE NOT APPLIED: PH.1 emits a continuous score and no "
+                "operational flag. Calibration and validation are Run-34/35 remainder."),
+    _param("D1.2", "feature_weights", None, UNSUPPORTED,
+           "No governed feature weights exist. Equal weighting is an owner-policy choice, not a "
+           "canonical fact, and Run 34 did not adopt it as a default.", applied=False,
+           note="NOT APPLIED: without governed weights the module returns the per-feature "
+                "percentile profile and the composite is NONE."),
+    _param("D1.2", "percentile_bands", None, UNSUPPORTED,
+           "No percentile-to-status mapping is calibrated or authorised.", applied=False,
+           note="NOT APPLIED: no status colour and no band is emitted."),
+    _param("D1.3", "min_observations", MIN_TRAJECTORY_OBSERVATIONS, OWNER_POLICY,
+           "Run-34 contract section 8A, predeclared before any fixture was scored: fewer than "
+           "three observations is NOT_ESTIMABLE for a trajectory.", applied=True),
+    _param("D1.3", "numerical_zero_tolerance", "1e-12", THEORETICAL_CONSTANT,
+           "Floating-point zero handling for the sign of an exactly-zero slope.", applied=True,
+           note="NUMERICAL TOLERANCE, NOT AN OPERATIONAL BAND. No magnitude of slope is graded."),
+    _param("D1.3", "slope_magnitude_bands", None, UNSUPPORTED,
+           "No slope magnitude band is calibrated or authorised.", applied=False,
+           note="NOT APPLIED: direction only, from the sign of the adverse slope."),
+    _param("D1.4", "match_radius", None, UNSUPPORTED,
+           "The v20 fixed radius of 0.15 was never validated and was retired in Run 33. No "
+           "replacement was invented in Run 34.", applied=False,
+           note="NOT APPLIED: PH.4 reports the continuous nearest-neighbour relationship only."),
+    _param("D1.4", "tie_rule", TIE_RULE, OWNER_POLICY,
+           "A declared deterministic tie rule, so that ordering cannot depend on input order.",
+           applied=True,
+           note="A determinism device, not a tuned value."),
+    _param("D1.4", "standardisation", "COHORT_Z_SCORE_POPULATION_SD", OWNER_POLICY,
+           "The declared cohort preprocessing, applied identically to every member.",
+           applied=True),
+    _param("D1.5", "constituent_weights", None, UNSUPPORTED,
+           "No governed constituent weights exist. They may not be invented, may not be "
+           "defaulted to equal, and may not be derived from the same synthetic fixture the "
+           "composite would be evaluated on.", applied=False,
+           note="NOT APPLIED: composite score is NONE under PARAMETER_PROVENANCE_BLOCKED."),
+    _param("D1.5", "missingness_policy", None, UNSUPPORTED,
+           "No governed missingness policy exists for an absent constituent.", applied=False,
+           note="NOT APPLIED: the composite abstains rather than reweighting the remainder."),
+)
+
+
+def parameters_for(module_id: str) -> tuple[dict[str, Any], ...]:
+    """Every declared parameter of one Portfolio Health module."""
+    return tuple(p for p in PH_PARAMETERS if p["module"] == module_id)
+
+
+def unsupported_applied() -> tuple[dict[str, Any], ...]:
+    """
+    THE QUESTION THE REGISTRY EXISTS TO ANSWER: is anything being applied that nothing supports?
+
+    A guard asserts this is empty. It is the one condition that cannot be satisfied by writing a
+    better comment.
+    """
+    return tuple(p for p in PH_PARAMETERS
+                 if p["parameter_class"] == UNSUPPORTED and p["applied_operationally"])
+

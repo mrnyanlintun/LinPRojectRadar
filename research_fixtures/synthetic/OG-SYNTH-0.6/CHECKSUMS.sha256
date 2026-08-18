@@ -1,0 +1,7 @@
+# OPUS GUBERNATIO SYNTHETIC PACKAGE OG-SYNTH-0.6
+# Successor to OG-SYNTH-0.5, whose own CHECKSUMS.sha256 is preserved unchanged.
+# Every path below is relative to the repository root.
+#
+3beb5ba9d6eed4aee4725c8e4069855f9973945cdd2161836f2acb0b9c10e2a9  research_fixtures/synthetic/OG-SYNTH-0.6/README.md
+3d9876478e04e24d8d27f2be831415408f5381f1fdfd5d080bc326bdb354b180  research_fixtures/synthetic/OG-SYNTH-0.6/package_D_portfolio_calibration/run34_ph1_calibration_labelled.json
+fec8207cdb0d9de78b782cf25e4183c49664095717993fa586f2fd28acd0d805  research_fixtures/synthetic/OG-SYNTH-0.6/package_D_portfolio_calibration/run34_ph1_holdout_labelled.json

@@ -1,0 +1,3685 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_CALIBRATION",
+  "not_for_empirical_validation": true,
+  "ground_truth_defined_before_detector": true,
+  "dataset_id": "RUN34-HOLDOUT",
+  "role": "HOLDOUT",
+  "generator_seed": 340002,
+  "label_rule": "project index i is anomalous iff i % 20 == 7; decided from the identifier alone, before any feature value is drawn, and never from any detector output",
+  "generative_specification": {
+    "dimensions": 3,
+    "normal": "each coordinate drawn standard normal",
+    "anomalous": "displaced onto a shell at 5.0 standard deviations in a uniformly random direction, plus a quarter-weight normal jitter",
+    "n_projects": 200,
+    "n_anomalous": 10
+  },
+  "what_this_establishes": [
+    "numerical behaviour",
+    "stability",
+    "sensitivity",
+    "known anomaly separation",
+    "known cohort effects",
+    "parameter trade-offs"
+  ],
+  "what_this_does_not_establish": [
+    "real construction-project anomaly prevalence",
+    "field false-positive rate",
+    "practitioner usefulness",
+    "operational business threshold",
+    "predictive validity"
+  ],
+  "labels": {
+    "HOLD-000": 0,
+    "HOLD-001": 0,
+    "HOLD-002": 0,
+    "HOLD-003": 0,
+    "HOLD-004": 0,
+    "HOLD-005": 0,
+    "HOLD-006": 0,
+    "HOLD-007": 1,
+    "HOLD-008": 0,
+    "HOLD-009": 0,
+    "HOLD-010": 0,
+    "HOLD-011": 0,
+    "HOLD-012": 0,
+    "HOLD-013": 0,
+    "HOLD-014": 0,
+    "HOLD-015": 0,
+    "HOLD-016": 0,
+    "HOLD-017": 0,
+    "HOLD-018": 0,
+    "HOLD-019": 0,
+    "HOLD-020": 0,
+    "HOLD-021": 0,
+    "HOLD-022": 0,
+    "HOLD-023": 0,
+    "HOLD-024": 0,
+    "HOLD-025": 0,
+    "HOLD-026": 0,
+    "HOLD-027": 1,
+    "HOLD-028": 0,
+    "HOLD-029": 0,
+    "HOLD-030": 0,
+    "HOLD-031": 0,
+    "HOLD-032": 0,
+    "HOLD-033": 0,
+    "HOLD-034": 0,
+    "HOLD-035": 0,
+    "HOLD-036": 0,
+    "HOLD-037": 0,
+    "HOLD-038": 0,
+    "HOLD-039": 0,
+    "HOLD-040": 0,
+    "HOLD-041": 0,
+    "HOLD-042": 0,
+    "HOLD-043": 0,
+    "HOLD-044": 0,
+    "HOLD-045": 0,
+    "HOLD-046": 0,
+    "HOLD-047": 1,
+    "HOLD-048": 0,
+    "HOLD-049": 0,
+    "HOLD-050": 0,
+    "HOLD-051": 0,
+    "HOLD-052": 0,
+    "HOLD-053": 0,
+    "HOLD-054": 0,
+    "HOLD-055": 0,
+    "HOLD-056": 0,
+    "HOLD-057": 0,
+    "HOLD-058": 0,
+    "HOLD-059": 0,
+    "HOLD-060": 0,
+    "HOLD-061": 0,
+    "HOLD-062": 0,
+    "HOLD-063": 0,
+    "HOLD-064": 0,
+    "HOLD-065": 0,
+    "HOLD-066": 0,
+    "HOLD-067": 1,
+    "HOLD-068": 0,
+    "HOLD-069": 0,
+    "HOLD-070": 0,
+    "HOLD-071": 0,
+    "HOLD-072": 0,
+    "HOLD-073": 0,
+    "HOLD-074": 0,
+    "HOLD-075": 0,
+    "HOLD-076": 0,
+    "HOLD-077": 0,
+    "HOLD-078": 0,
+    "HOLD-079": 0,
+    "HOLD-080": 0,
+    "HOLD-081": 0,
+    "HOLD-082": 0,
+    "HOLD-083": 0,
+    "HOLD-084": 0,
+    "HOLD-085": 0,
+    "HOLD-086": 0,
+    "HOLD-087": 1,
+    "HOLD-088": 0,
+    "HOLD-089": 0,
+    "HOLD-090": 0,
+    "HOLD-091": 0,
+    "HOLD-092": 0,
+    "HOLD-093": 0,
+    "HOLD-094": 0,
+    "HOLD-095": 0,
+    "HOLD-096": 0,
+    "HOLD-097": 0,
+    "HOLD-098": 0,
+    "HOLD-099": 0,
+    "HOLD-100": 0,
+    "HOLD-101": 0,
+    "HOLD-102": 0,
+    "HOLD-103": 0,
+    "HOLD-104": 0,
+    "HOLD-105": 0,
+    "HOLD-106": 0,
+    "HOLD-107": 1,
+    "HOLD-108": 0,
+    "HOLD-109": 0,
+    "HOLD-110": 0,
+    "HOLD-111": 0,
+    "HOLD-112": 0,
+    "HOLD-113": 0,
+    "HOLD-114": 0,
+    "HOLD-115": 0,
+    "HOLD-116": 0,
+    "HOLD-117": 0,
+    "HOLD-118": 0,
+    "HOLD-119": 0,
+    "HOLD-120": 0,
+    "HOLD-121": 0,
+    "HOLD-122": 0,
+    "HOLD-123": 0,
+    "HOLD-124": 0,
+    "HOLD-125": 0,
+    "HOLD-126": 0,
+    "HOLD-127": 1,
+    "HOLD-128": 0,
+    "HOLD-129": 0,
+    "HOLD-130": 0,
+    "HOLD-131": 0,
+    "HOLD-132": 0,
+    "HOLD-133": 0,
+    "HOLD-134": 0,
+    "HOLD-135": 0,
+    "HOLD-136": 0,
+    "HOLD-137": 0,
+    "HOLD-138": 0,
+    "HOLD-139": 0,
+    "HOLD-140": 0,
+    "HOLD-141": 0,
+    "HOLD-142": 0,
+    "HOLD-143": 0,
+    "HOLD-144": 0,
+    "HOLD-145": 0,
+    "HOLD-146": 0,
+    "HOLD-147": 1,
+    "HOLD-148": 0,
+    "HOLD-149": 0,
+    "HOLD-150": 0,
+    "HOLD-151": 0,
+    "HOLD-152": 0,
+    "HOLD-153": 0,
+    "HOLD-154": 0,
+    "HOLD-155": 0,
+    "HOLD-156": 0,
+    "HOLD-157": 0,
+    "HOLD-158": 0,
+    "HOLD-159": 0,
+    "HOLD-160": 0,
+    "HOLD-161": 0,
+    "HOLD-162": 0,
+    "HOLD-163": 0,
+    "HOLD-164": 0,
+    "HOLD-165": 0,
+    "HOLD-166": 0,
+    "HOLD-167": 1,
+    "HOLD-168": 0,
+    "HOLD-169": 0,
+    "HOLD-170": 0,
+    "HOLD-171": 0,
+    "HOLD-172": 0,
+    "HOLD-173": 0,
+    "HOLD-174": 0,
+    "HOLD-175": 0,
+    "HOLD-176": 0,
+    "HOLD-177": 0,
+    "HOLD-178": 0,
+    "HOLD-179": 0,
+    "HOLD-180": 0,
+    "HOLD-181": 0,
+    "HOLD-182": 0,
+    "HOLD-183": 0,
+    "HOLD-184": 0,
+    "HOLD-185": 0,
+    "HOLD-186": 0,
+    "HOLD-187": 1,
+    "HOLD-188": 0,
+    "HOLD-189": 0,
+    "HOLD-190": 0,
+    "HOLD-191": 0,
+    "HOLD-192": 0,
+    "HOLD-193": 0,
+    "HOLD-194": 0,
+    "HOLD-195": 0,
+    "HOLD-196": 0,
+    "HOLD-197": 0,
+    "HOLD-198": 0,
+    "HOLD-199": 0
+  },
+  "cohort": {
+    "cohort_id": "RUN34-HOLDOUT",
+    "portfolio_id": "SYNTH-CALIBRATION-PORTFOLIO",
+    "project_ids": [
+      "HOLD-000",
+      "HOLD-001",
+      "HOLD-002",
+      "HOLD-003",
+      "HOLD-004",
+      "HOLD-005",
+      "HOLD-006",
+      "HOLD-007",
+      "HOLD-008",
+      "HOLD-009",
+      "HOLD-010",
+      "HOLD-011",
+      "HOLD-012",
+      "HOLD-013",
+      "HOLD-014",
+      "HOLD-015",
+      "HOLD-016",
+      "HOLD-017",
+      "HOLD-018",
+      "HOLD-019",
+      "HOLD-020",
+      "HOLD-021",
+      "HOLD-022",
+      "HOLD-023",
+      "HOLD-024",
+      "HOLD-025",
+      "HOLD-026",
+      "HOLD-027",
+      "HOLD-028",
+      "HOLD-029",
+      "HOLD-030",
+      "HOLD-031",
+      "HOLD-032",
+      "HOLD-033",
+      "HOLD-034",
+      "HOLD-035",
+      "HOLD-036",
+      "HOLD-037",
+      "HOLD-038",
+      "HOLD-039",
+      "HOLD-040",
+      "HOLD-041",
+      "HOLD-042",
+      "HOLD-043",
+      "HOLD-044",
+      "HOLD-045",
+      "HOLD-046",
+      "HOLD-047",
+      "HOLD-048",
+      "HOLD-049",
+      "HOLD-050",
+      "HOLD-051",
+      "HOLD-052",
+      "HOLD-053",
+      "HOLD-054",
+      "HOLD-055",
+      "HOLD-056",
+      "HOLD-057",
+      "HOLD-058",
+      "HOLD-059",
+      "HOLD-060",
+      "HOLD-061",
+      "HOLD-062",
+      "HOLD-063",
+      "HOLD-064",
+      "HOLD-065",
+      "HOLD-066",
+      "HOLD-067",
+      "HOLD-068",
+      "HOLD-069",
+      "HOLD-070",
+      "HOLD-071",
+      "HOLD-072",
+      "HOLD-073",
+      "HOLD-074",
+      "HOLD-075",
+      "HOLD-076",
+      "HOLD-077",
+      "HOLD-078",
+      "HOLD-079",
+      "HOLD-080",
+      "HOLD-081",
+      "HOLD-082",
+      "HOLD-083",
+      "HOLD-084",
+      "HOLD-085",
+      "HOLD-086",
+      "HOLD-087",
+      "HOLD-088",
+      "HOLD-089",
+      "HOLD-090",
+      "HOLD-091",
+      "HOLD-092",
+      "HOLD-093",
+      "HOLD-094",
+      "HOLD-095",
+      "HOLD-096",
+      "HOLD-097",
+      "HOLD-098",
+      "HOLD-099",
+      "HOLD-100",
+      "HOLD-101",
+      "HOLD-102",
+      "HOLD-103",
+      "HOLD-104",
+      "HOLD-105",
+      "HOLD-106",
+      "HOLD-107",
+      "HOLD-108",
+      "HOLD-109",
+      "HOLD-110",
+      "HOLD-111",
+      "HOLD-112",
+      "HOLD-113",
+      "HOLD-114",
+      "HOLD-115",
+      "HOLD-116",
+      "HOLD-117",
+      "HOLD-118",
+      "HOLD-119",
+      "HOLD-120",
+      "HOLD-121",
+      "HOLD-122",
+      "HOLD-123",
+      "HOLD-124",
+      "HOLD-125",
+      "HOLD-126",
+      "HOLD-127",
+      "HOLD-128",
+      "HOLD-129",
+      "HOLD-130",
+      "HOLD-131",
+      "HOLD-132",
+      "HOLD-133",
+      "HOLD-134",
+      "HOLD-135",
+      "HOLD-136",
+      "HOLD-137",
+      "HOLD-138",
+      "HOLD-139",
+      "HOLD-140",
+      "HOLD-141",
+      "HOLD-142",
+      "HOLD-143",
+      "HOLD-144",
+      "HOLD-145",
+      "HOLD-146",
+      "HOLD-147",
+      "HOLD-148",
+      "HOLD-149",
+      "HOLD-150",
+      "HOLD-151",
+      "HOLD-152",
+      "HOLD-153",
+      "HOLD-154",
+      "HOLD-155",
+      "HOLD-156",
+      "HOLD-157",
+      "HOLD-158",
+      "HOLD-159",
+      "HOLD-160",
+      "HOLD-161",
+      "HOLD-162",
+      "HOLD-163",
+      "HOLD-164",
+      "HOLD-165",
+      "HOLD-166",
+      "HOLD-167",
+      "HOLD-168",
+      "HOLD-169",
+      "HOLD-170",
+      "HOLD-171",
+      "HOLD-172",
+      "HOLD-173",
+      "HOLD-174",
+      "HOLD-175",
+      "HOLD-176",
+      "HOLD-177",
+      "HOLD-178",
+      "HOLD-179",
+      "HOLD-180",
+      "HOLD-181",
+      "HOLD-182",
+      "HOLD-183",
+      "HOLD-184",
+      "HOLD-185",
+      "HOLD-186",
+      "HOLD-187",
+      "HOLD-188",
+      "HOLD-189",
+      "HOLD-190",
+      "HOLD-191",
+      "HOLD-192",
+      "HOLD-193",
+      "HOLD-194",
+      "HOLD-195",
+      "HOLD-196",
+      "HOLD-197",
+      "HOLD-198",
+      "HOLD-199"
+    ],
+    "period": "2026-01",
+    "inclusion_rule": "every declared synthetic calibration project",
+    "exclusion_rule": "none",
+    "feature_schema_version": "synth-run34-cal-v1",
+    "qualification_policy": "CATEGORY_9_ELIGIBLE_STATES_ONLY",
+    "model_version": "ph-v22-synthetic-calibration-m1"
+  },
+  "feature_schema": {
+    "version": "synth-run34-cal-v1",
+    "features": [
+      {
+        "feature_id": "g1",
+        "label": "g1",
+        "units": "index",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_CALIBRATION_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "g2",
+        "label": "g2",
+        "units": "index",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_CALIBRATION_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "g3",
+        "label": "g3",
+        "units": "index",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_CALIBRATION_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      }
+    ]
+  },
+  "feature_records": [
+    {
+      "project_id": "HOLD-000",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.265565,
+        "g2": 0.019576,
+        "g3": -1.622901
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-000",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-001",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.679462,
+        "g2": 1.132548,
+        "g3": -0.306688
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-001",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-002",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.232874,
+        "g2": -2.86337,
+        "g3": -0.338954
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-002",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-003",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.284013,
+        "g2": 0.432741,
+        "g3": 2.208485
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-003",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-004",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.088371,
+        "g2": -0.100914,
+        "g3": -0.092911
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-004",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-005",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.199075,
+        "g2": 0.249789,
+        "g3": 1.863276
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-005",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-006",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.27142,
+        "g2": -0.519645,
+        "g3": 0.206459
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-006",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-007",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.469985,
+        "g2": -5.423901,
+        "g3": 0.912762
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-007",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-008",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.26424,
+        "g2": 2.629712,
+        "g3": -1.23347
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-008",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-009",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.352703,
+        "g2": 0.387536,
+        "g3": 0.249224
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-009",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-010",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.948313,
+        "g2": 0.313976,
+        "g3": -0.899716
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-010",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-011",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.814009,
+        "g2": -1.462237,
+        "g3": -0.60057
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-011",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-012",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.862397,
+        "g2": 2.851678,
+        "g3": 0.603778
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-012",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-013",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.259047,
+        "g2": 2.237081,
+        "g3": 1.205245
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-013",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-014",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.507716,
+        "g2": 0.46866,
+        "g3": -0.633294
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-014",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-015",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.326859,
+        "g2": -1.044338,
+        "g3": 0.515451
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-015",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-016",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.58817,
+        "g2": 0.500261,
+        "g3": 0.727431
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-016",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-017",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.596629,
+        "g2": -0.373521,
+        "g3": -0.06397
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-017",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-018",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.825127,
+        "g2": 0.108527,
+        "g3": 0.100529
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-018",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-019",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.42685,
+        "g2": 0.206789,
+        "g3": -0.725751
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-019",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-020",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.514531,
+        "g2": 0.596936,
+        "g3": -1.496573
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-020",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-021",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.092516,
+        "g2": 0.332064,
+        "g3": -0.087416
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-021",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-022",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.78546,
+        "g2": 0.367976,
+        "g3": 0.499261
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-022",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-023",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.003678,
+        "g2": 0.980992,
+        "g3": 0.078623
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-023",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-024",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.369028,
+        "g2": 0.323296,
+        "g3": 0.931966
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-024",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-025",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.03028,
+        "g2": -0.994176,
+        "g3": -1.199489
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-025",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-026",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.827106,
+        "g2": 0.551887,
+        "g3": -1.199788
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-026",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-027",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -4.439603,
+        "g2": 2.084524,
+        "g3": 0.180487
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-027",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-028",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.767615,
+        "g2": 0.241297,
+        "g3": 2.184328
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-028",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-029",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.513421,
+        "g2": 0.550218,
+        "g3": 1.465786
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-029",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-030",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.68271,
+        "g2": 0.253376,
+        "g3": 0.073232
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-030",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-031",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.450267,
+        "g2": 0.692764,
+        "g3": 0.878405
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-031",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-032",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.788034,
+        "g2": -0.497657,
+        "g3": -1.21207
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-032",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-033",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.909056,
+        "g2": -0.029181,
+        "g3": 1.663544
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-033",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-034",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.50833,
+        "g2": -0.755768,
+        "g3": -0.289447
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-034",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-035",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.012241,
+        "g2": 2.3245,
+        "g3": 0.223618
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-035",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-036",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.669131,
+        "g2": -0.69129,
+        "g3": 0.922512
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-036",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-037",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.146755,
+        "g2": -0.148331,
+        "g3": -0.349398
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-037",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-038",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.220137,
+        "g2": 1.13601,
+        "g3": -1.929922
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-038",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-039",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.003662,
+        "g2": -0.98972,
+        "g3": -1.535321
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-039",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-040",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.063473,
+        "g2": -0.851737,
+        "g3": -0.079992
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-040",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-041",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.098265,
+        "g2": 0.920851,
+        "g3": -0.043105
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-041",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-042",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.02535,
+        "g2": 1.745247,
+        "g3": -0.404702
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-042",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-043",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.424681,
+        "g2": 0.628919,
+        "g3": 0.530704
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-043",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-044",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.993301,
+        "g2": -0.704585,
+        "g3": -1.149418
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-044",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-045",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.145578,
+        "g2": 0.332686,
+        "g3": -0.755298
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-045",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-046",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.129991,
+        "g2": 0.031957,
+        "g3": 0.651018
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-046",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-047",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.54752,
+        "g2": 4.202834,
+        "g3": 2.405444
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-047",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-048",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.446632,
+        "g2": 0.511428,
+        "g3": 1.297679
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-048",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-049",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.504102,
+        "g2": 0.020337,
+        "g3": 1.458432
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-049",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-050",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.497545,
+        "g2": 0.27427,
+        "g3": 0.41312
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-050",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-051",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.781461,
+        "g2": 0.923009,
+        "g3": -1.210745
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-051",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-052",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.183043,
+        "g2": 0.003715,
+        "g3": -1.185787
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-052",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-053",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.277394,
+        "g2": -0.563984,
+        "g3": 0.563758
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-053",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-054",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.429262,
+        "g2": -0.067583,
+        "g3": -0.314356
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-054",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-055",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.367301,
+        "g2": 1.063339,
+        "g3": -0.74514
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-055",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-056",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.05942,
+        "g2": -0.870792,
+        "g3": 0.592146
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-056",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-057",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.436764,
+        "g2": -0.932619,
+        "g3": 0.503379
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-057",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-058",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.304439,
+        "g2": 1.722554,
+        "g3": 1.285198
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-058",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-059",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.580784,
+        "g2": 0.087818,
+        "g3": 0.10692
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-059",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-060",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.436079,
+        "g2": -0.502574,
+        "g3": -0.127273
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-060",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-061",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.906955,
+        "g2": -1.064592,
+        "g3": 1.1772
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-061",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-062",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.591853,
+        "g2": 0.980644,
+        "g3": -0.534705
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-062",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-063",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.463655,
+        "g2": -0.059775,
+        "g3": 1.03555
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-063",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-064",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.699111,
+        "g2": 0.23951,
+        "g3": -1.356424
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-064",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-065",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.675882,
+        "g2": 0.322432,
+        "g3": -1.019962
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-065",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-066",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.026529,
+        "g2": 0.77784,
+        "g3": 1.25755
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-066",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-067",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.135921,
+        "g2": -4.421308,
+        "g3": 0.98413
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-067",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-068",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.026768,
+        "g2": -0.938727,
+        "g3": 0.611822
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-068",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-069",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.303538,
+        "g2": -0.422074,
+        "g3": -0.573875
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-069",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-070",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.225356,
+        "g2": -0.035634,
+        "g3": 1.221441
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-070",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-071",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.741997,
+        "g2": -0.55386,
+        "g3": -0.826791
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-071",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-072",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.372224,
+        "g2": 1.181594,
+        "g3": 0.190333
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-072",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-073",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.98439,
+        "g2": 0.608833,
+        "g3": -2.239268
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-073",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-074",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.391387,
+        "g2": 0.600318,
+        "g3": -0.282957
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-074",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-075",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -3.014683,
+        "g2": 0.667661,
+        "g3": 1.9887
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-075",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-076",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.790394,
+        "g2": 0.720254,
+        "g3": -0.79064
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-076",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-077",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.807955,
+        "g2": 0.13801,
+        "g3": -0.60298
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-077",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-078",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.187449,
+        "g2": -1.245695,
+        "g3": 1.424308
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-078",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-079",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.074702,
+        "g2": 1.327156,
+        "g3": 0.333621
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-079",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-080",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.082387,
+        "g2": 1.513134,
+        "g3": -0.712412
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-080",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-081",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.776883,
+        "g2": 0.284773,
+        "g3": -0.192086
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-081",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-082",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.598992,
+        "g2": -0.956152,
+        "g3": 0.229319
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-082",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-083",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.173975,
+        "g2": 1.848738,
+        "g3": -0.265221
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-083",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-084",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.186048,
+        "g2": -1.779145,
+        "g3": 0.902524
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-084",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-085",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.56204,
+        "g2": -0.472403,
+        "g3": 1.798844
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-085",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-086",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.645523,
+        "g2": 0.274431,
+        "g3": 1.200222
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-086",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-087",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.719179,
+        "g2": 2.202957,
+        "g3": -3.109534
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-087",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-088",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.105068,
+        "g2": -0.487048,
+        "g3": -0.051933
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-088",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-089",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.365995,
+        "g2": -1.286761,
+        "g3": -2.164616
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-089",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-090",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.248521,
+        "g2": 1.253972,
+        "g3": -0.161595
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-090",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-091",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.885703,
+        "g2": -0.533515,
+        "g3": -0.233594
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-091",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-092",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.065192,
+        "g2": -0.458334,
+        "g3": -1.140263
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-092",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-093",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.094457,
+        "g2": 0.519108,
+        "g3": 1.100241
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-093",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-094",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.442138,
+        "g2": -1.074822,
+        "g3": -0.373189
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-094",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-095",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.317966,
+        "g2": 0.144987,
+        "g3": -0.087941
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-095",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-096",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.803608,
+        "g2": 0.740805,
+        "g3": 1.716785
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-096",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-097",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.831864,
+        "g2": 0.271062,
+        "g3": -0.390287
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-097",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-098",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.690939,
+        "g2": 0.158926,
+        "g3": -0.209984
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-098",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-099",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.708342,
+        "g2": 0.835536,
+        "g3": 0.654369
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-099",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-100",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.556323,
+        "g2": 1.141937,
+        "g3": 1.369252
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-100",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-101",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.494195,
+        "g2": -0.103716,
+        "g3": 0.282328
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-101",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-102",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.67119,
+        "g2": -0.30593,
+        "g3": 0.586305
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-102",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-103",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.650971,
+        "g2": 0.097702,
+        "g3": -1.217675
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-103",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-104",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.660171,
+        "g2": 0.369561,
+        "g3": 1.435084
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-104",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-105",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.051939,
+        "g2": 0.679435,
+        "g3": 0.384684
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-105",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-106",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.409493,
+        "g2": -0.561791,
+        "g3": -0.057065
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-106",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-107",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.255288,
+        "g2": 1.001996,
+        "g3": 4.72894
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-107",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-108",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.853675,
+        "g2": 1.247335,
+        "g3": -1.854733
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-108",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-109",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.559071,
+        "g2": 2.806333,
+        "g3": -0.554634
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-109",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-110",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.266671,
+        "g2": 0.190491,
+        "g3": 0.351057
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-110",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-111",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.885576,
+        "g2": 0.779447,
+        "g3": 0.920636
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-111",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-112",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.424144,
+        "g2": 0.336065,
+        "g3": 1.747664
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-112",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-113",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.699528,
+        "g2": -0.902343,
+        "g3": 0.792046
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-113",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-114",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.651066,
+        "g2": -0.80647,
+        "g3": 0.956285
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-114",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-115",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.971322,
+        "g2": -0.040333,
+        "g3": -0.058451
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-115",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-116",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.666948,
+        "g2": 0.798593,
+        "g3": 0.049728
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-116",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-117",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.460407,
+        "g2": 2.253454,
+        "g3": 0.243625
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-117",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-118",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.235601,
+        "g2": -0.272569,
+        "g3": 0.004205
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-118",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-119",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.670298,
+        "g2": 0.303331,
+        "g3": -0.189783
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-119",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-120",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.455836,
+        "g2": 0.550007,
+        "g3": -1.190798
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-120",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-121",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.23559,
+        "g2": 0.733859,
+        "g3": 0.851644
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-121",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-122",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.944753,
+        "g2": 0.67698,
+        "g3": -0.926813
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-122",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-123",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.699067,
+        "g2": 1.100138,
+        "g3": -0.629172
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-123",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-124",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.966307,
+        "g2": -0.486183,
+        "g3": 0.494142
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-124",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-125",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.054962,
+        "g2": 0.304314,
+        "g3": 0.298189
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-125",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-126",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.250832,
+        "g2": -0.726336,
+        "g3": -0.646562
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-126",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-127",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.981266,
+        "g2": -1.670475,
+        "g3": 4.543728
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-127",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-128",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.693866,
+        "g2": -0.388483,
+        "g3": -0.20861
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-128",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-129",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.38296,
+        "g2": 0.055976,
+        "g3": 0.34753
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-129",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-130",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.742232,
+        "g2": 2.701479,
+        "g3": 0.248698
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-130",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-131",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.26502,
+        "g2": 0.341924,
+        "g3": 1.695103
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-131",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-132",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.091147,
+        "g2": -0.195748,
+        "g3": -0.946339
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-132",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-133",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.151104,
+        "g2": -1.19866,
+        "g3": 0.960923
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-133",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-134",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.610219,
+        "g2": -1.150377,
+        "g3": -1.04485
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-134",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-135",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.268267,
+        "g2": -0.904584,
+        "g3": 1.362048
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-135",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-136",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.511881,
+        "g2": -0.082936,
+        "g3": -1.494765
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-136",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-137",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.558635,
+        "g2": -2.194731,
+        "g3": 2.153451
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-137",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-138",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.306145,
+        "g2": -1.461142,
+        "g3": 0.139281
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-138",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-139",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.049233,
+        "g2": -1.649507,
+        "g3": 0.154254
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-139",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-140",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.746949,
+        "g2": -0.988908,
+        "g3": -0.952207
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-140",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-141",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.183375,
+        "g2": -0.616094,
+        "g3": 3.008282
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-141",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-142",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.162233,
+        "g2": 0.585982,
+        "g3": -1.18952
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-142",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-143",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.186461,
+        "g2": 1.763842,
+        "g3": -0.046835
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-143",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-144",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.889584,
+        "g2": 1.618027,
+        "g3": -0.025828
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-144",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-145",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.201178,
+        "g2": -2.293363,
+        "g3": -0.262567
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-145",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-146",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.44718,
+        "g2": 0.959674,
+        "g3": 1.428521
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-146",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-147",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.053603,
+        "g2": -1.607252,
+        "g3": -4.794336
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-147",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-148",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.049935,
+        "g2": -0.28812,
+        "g3": 0.506289
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-148",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-149",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.371059,
+        "g2": -1.858293,
+        "g3": -0.210457
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-149",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-150",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.039161,
+        "g2": 0.298417,
+        "g3": 2.22253
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-150",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-151",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.661201,
+        "g2": 1.024871,
+        "g3": -1.301087
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-151",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-152",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.349135,
+        "g2": -1.373821,
+        "g3": 0.734867
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-152",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-153",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.077411,
+        "g2": -0.836128,
+        "g3": 0.445738
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-153",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-154",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.731343,
+        "g2": 2.453992,
+        "g3": -0.113292
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-154",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-155",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.447627,
+        "g2": -0.274964,
+        "g3": 0.491346
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-155",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-156",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.853699,
+        "g2": -1.623699,
+        "g3": 0.929054
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-156",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-157",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.532436,
+        "g2": 0.563131,
+        "g3": -0.220141
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-157",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-158",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.11993,
+        "g2": 0.76543,
+        "g3": -0.137951
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-158",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-159",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.831346,
+        "g2": -0.673067,
+        "g3": -0.050571
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-159",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-160",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.286515,
+        "g2": 1.066792,
+        "g3": -1.037428
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-160",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-161",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.202908,
+        "g2": 1.557591,
+        "g3": 0.047706
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-161",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-162",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.02709,
+        "g2": 0.093709,
+        "g3": 0.203513
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-162",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-163",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.787675,
+        "g2": -0.086433,
+        "g3": 0.013702
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-163",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-164",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.998837,
+        "g2": -1.59035,
+        "g3": -1.130716
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-164",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-165",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.297808,
+        "g2": 0.292466,
+        "g3": 0.797194
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-165",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-166",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.456605,
+        "g2": 0.344879,
+        "g3": 1.438053
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-166",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-167",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.433759,
+        "g2": 1.359413,
+        "g3": 3.479283
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-167",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-168",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.461688,
+        "g2": 2.782934,
+        "g3": 1.20509
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-168",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-169",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.273717,
+        "g2": 1.138962,
+        "g3": -1.031313
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-169",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-170",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.961737,
+        "g2": 0.017132,
+        "g3": -0.423104
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-170",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-171",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.866639,
+        "g2": 0.762641,
+        "g3": 0.001388
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-171",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-172",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.983897,
+        "g2": 0.441076,
+        "g3": 0.267752
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-172",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-173",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.025108,
+        "g2": 0.623593,
+        "g3": 1.397576
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-173",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-174",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.040701,
+        "g2": -1.228779,
+        "g3": -0.364317
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-174",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-175",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.407333,
+        "g2": -0.947258,
+        "g3": -1.353353
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-175",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-176",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.75932,
+        "g2": 0.782069,
+        "g3": 0.355572
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-176",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-177",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.134473,
+        "g2": -1.505982,
+        "g3": -0.546134
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-177",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-178",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.48489,
+        "g2": -0.827384,
+        "g3": -0.875585
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-178",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-179",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.257996,
+        "g2": -0.612867,
+        "g3": 1.974564
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-179",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-180",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.168729,
+        "g2": 0.531472,
+        "g3": -0.270803
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-180",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-181",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.044157,
+        "g2": -0.871457,
+        "g3": 0.484755
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-181",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-182",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.058079,
+        "g2": 0.07662,
+        "g3": 0.722912
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-182",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-183",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.487593,
+        "g2": 1.581978,
+        "g3": 0.664359
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-183",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-184",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.475952,
+        "g2": -0.630552,
+        "g3": 2.541579
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-184",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-185",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.834904,
+        "g2": 0.324199,
+        "g3": 0.08224
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-185",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-186",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.145748,
+        "g2": 0.565494,
+        "g3": -0.222927
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-186",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-187",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -3.187459,
+        "g2": 3.099508,
+        "g3": 0.790434
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-187",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-188",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.272659,
+        "g2": -0.631075,
+        "g3": 1.197346
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-188",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-189",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.474509,
+        "g2": -0.160375,
+        "g3": -1.864354
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-189",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-190",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.510183,
+        "g2": -0.188618,
+        "g3": -2.297146
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-190",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-191",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.450376,
+        "g2": -1.37833,
+        "g3": -0.504009
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-191",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-192",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.960656,
+        "g2": -0.695016,
+        "g3": 0.482121
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-192",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-193",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.601453,
+        "g2": -0.167682,
+        "g3": 1.67481
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-193",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-194",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.239707,
+        "g2": -1.027948,
+        "g3": 0.889641
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-194",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-195",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.777064,
+        "g2": 0.104383,
+        "g3": 1.606237
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-195",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-196",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.18655,
+        "g2": 0.921369,
+        "g3": 0.873864
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-196",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-197",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.032809,
+        "g2": -0.814714,
+        "g3": -1.272662
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-197",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-198",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.270614,
+        "g2": 0.271834,
+        "g3": 0.468604
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-198",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    },
+    {
+      "project_id": "HOLD-199",
+      "cohort_id": "RUN34-HOLDOUT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.379334,
+        "g2": 0.473221,
+        "g3": -1.074532
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_CALIBRATION::HOLD-199",
+      "source_provenance": "SYNTHETIC_CALIBRATION::RUN34-HOLDOUT",
+      "feature_schema_version": "synth-run34-cal-v1"
+    }
+  ]
+}

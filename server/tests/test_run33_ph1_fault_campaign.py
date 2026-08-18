@@ -405,8 +405,13 @@ fault(8, "PH.1 isolation_forest.IsolationForest", IF_SRC,
       "digest", repro_guard, REPRO_PROBE, PH1)
 
 fault(9, "PH.1 canonical_v8 frozen synthetic threshold", V8_SRC,
+      # RUN 34 added a SECOND condition to this expression -- the cohort must also be at or
+      # above the canonical size -- so the anchor is the whole guarded expression. Mutating it
+      # to an unconditional application is still exactly the fault: a laboratory threshold
+      # escaping the schema (and now the cohort size) it was fitted under.
       [("                bool(score >= RUN15_FROZEN_THRESHOLD)\n"
-        "                if cohort.schema_version == RUN15_FROZEN_SCHEMA else None),",
+        "                if (cohort.schema_version == RUN15_FROZEN_SCHEMA\n"
+        "                    and _band == COHORT_CANONICAL) else None),",
         "                bool(score >= RUN15_FROZEN_THRESHOLD)),")],
       "the frozen Run-15 synthetic threshold is applied regardless of feature schema, so a "
       "laboratory threshold fitted on one schema produces flags on another",

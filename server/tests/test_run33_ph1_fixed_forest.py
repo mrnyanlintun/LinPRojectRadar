@@ -516,10 +516,18 @@ head("12. THE SIMULATION VERSION DID NOT MOVE")
 # =================================================================================================
 from app.simulation.models import SIMULATION_VERSION                   # noqa: E402
 
-check(SIMULATION_VERSION == "sim-2026.08-v21",
-      "fixed-forest equivalence PASSED, so no analytical fix was required and the stamp stays at "
-      "sim-2026.08-v21: a test and report closure does not move the simulation version",
-      SIMULATION_VERSION)
+# RESTATED BY RUN 34. The Run-33 closure's finding was that fixed-forest equivalence passed, so
+# THAT run required no analytical fix and did not move the stamp. That remains true and is
+# asserted as a HISTORICAL position. Run 34 then changed Portfolio Health behaviour on its own
+# account -- the PH.2 composite, the PH.1 cohort minimum, the PH.3 classification vocabulary --
+# and moved the stamp to v22 for those reasons, which are nothing to do with this oracle.
+from app.simulation.models import SIMULATION_VERSION_HISTORY as _H            # noqa: E402
+
+check("sim-2026.08-v21" in _H,
+      "the v21 stamp Run 33 closed under is still in the history, unmoved", str(_H[-3:]))
+check(SIMULATION_VERSION == "sim-2026.08-v22",
+      "and the live stamp is v22, moved by Run 34's calibration changes to PH.1, PH.2 and PH.3 "
+      "and not by anything this fixed-forest oracle found", SIMULATION_VERSION)
 
 
 print()

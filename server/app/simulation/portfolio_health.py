@@ -36,7 +36,10 @@ SCHEMA_KEY = "portfolioFeatureSchema"
 RECORD_KEY = "portfolioFeatureRecord"
 HISTORY_KEY = "portfolioSignalHistory"
 
-PORTFOLIO_STRUCTURE_KEYS: tuple[str, ...] = (COHORT_KEY, SCHEMA_KEY, RECORD_KEY, HISTORY_KEY)
+CALIBRATION_KEY = "portfolioCalibrationRecord"
+
+PORTFOLIO_STRUCTURE_KEYS: tuple[str, ...] = (COHORT_KEY, SCHEMA_KEY, RECORD_KEY, HISTORY_KEY,
+                                             CALIBRATION_KEY)
 
 #: Named so a guard asserts against a contract rather than a sentence.
 LEGACY_V20_ROUTE_REACHABLE = False
@@ -96,7 +99,19 @@ def assemble(current_id: str, current_si: Mapping[str, Any],
         histories.extend(_histories_from(si, pid))
     records.sort(key=lambda r: str(r.get("project_id")))
     histories.sort(key=lambda h: (str(h.get("project_id")), str(h.get("signal_id"))))
-    return {"cohort": cohort, "schema": schema, "records": records, "histories": histories}
+    # RUN 34. The governed calibration records ride with the COHORT ANCHOR, not with each member:
+    # a parameter is a property of the cohort's model, not of one project's evidence, and letting
+    # members supply their own would let one project change the weighting the whole cohort is
+    # read under.
+    raw_cal = current_si.get(CALIBRATION_KEY)
+    if isinstance(raw_cal, Mapping):
+        calibration = [raw_cal]
+    elif isinstance(raw_cal, (list, tuple)):
+        calibration = [c for c in raw_cal if isinstance(c, Mapping)]
+    else:
+        calibration = []
+    return {"cohort": cohort, "schema": schema, "records": records, "histories": histories,
+            "calibration": calibration}
 
 
 def compute_portfolio_health_snapshot(current_id: str, current_si: Mapping[str, Any],
@@ -110,7 +125,8 @@ def compute_portfolio_health_snapshot(current_id: str, current_si: Mapping[str, 
     """
     inputs = assemble(current_id, current_si, others)
     run = V8.compute_portfolio_health(inputs["cohort"], inputs["schema"],
-                                      inputs["records"], inputs["histories"])
+                                      inputs["records"], inputs["histories"],
+                                      inputs["calibration"])
     cohort = run["cohort"]
     snapshot: dict[str, Any] = {
         "ok": True,
