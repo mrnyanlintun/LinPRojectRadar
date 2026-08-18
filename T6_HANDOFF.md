@@ -9,6 +9,81 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-18 - Run 34 FINAL METADATA CLOSURE: holdout/selection provenance
+
+**Branch `run34-holdout-selection-provenance` from `main` at `be87d82`.** Still Run 34. Report
+subsection: "Holdout selection-order closure" in
+`REPORT_2026-08-18_run34-portfolio-health-calibration.md`.
+
+**Simulation `sim-2026.08-v22`, participant `og-participant-2026.08-v11`, synthetic
+`OG-SYNTH-0.6` - ALL UNCHANGED.** Artifact, report, guard and test only.
+
+## THE EXPLICIT FIELDS, now machine-readable on `code_audit/run34_ph1_holdout_result.csv`
+
+| field | value |
+|---|---|
+| `selection_completed_before_holdout` | **YES** |
+| `holdout_changed_selection` | **NO** |
+| `selection_commit` | `8995794f5c4352cda7d0a234fb2779d2098b0155` |
+| `holdout_evaluation_commit` | `8995794f5c4352cda7d0a234fb2779d2098b0155` |
+| `selection_artifact` | `code_audit/run34_ph1_tree_count_calibration.csv` |
+| `holdout_artifact` | `code_audit/run34_ph1_holdout_result.csv` |
+| `parameter_retuned_after_holdout_inspection` | **NO** |
+| `is_new_calibration_evidence` | **NO** |
+
+## FIVE THINGS THAT MUST NOT BE LOST
+
+**1. COMMIT ORDERING DOES NOT PROVE THIS, AND THE ARTIFACT SAYS SO IN TWO
+`REPORTED_LIMITATION` ROWS.** The holdout fixture was committed at `c20a587`, BEFORE the
+selection campaign ran at `8995794`, so it was on disk and readable throughout selection. And one
+script performs both phases, so **selection and holdout evaluation share a commit**. Anyone
+re-deriving this must not claim ordering as the evidence. **Availability is not the question;
+consumption is.**
+
+**2. THE LOAD-BEARING EVIDENCE IS NON-CONSUMPTION, PROVED BY EXECUTION.** The selection decision
+(protocol clauses D2-D5) was extracted VERBATIM into
+`run34_ph1_tree_count_calibration.selection_decision(metrics)`. Its only data inputs are the
+stability metrics and the live production route. It is executed with the holdout fixture
+**booby-trapped on `open`, `read_text` and `read_bytes`**, runs to completion, records **zero**
+holdout reads, and returns `chosen=100`, `state=UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE` -
+reproducing the recorded `selected_tree_count` exactly. **A decision that cannot read the holdout
+cannot have been changed by it.** Do not "simplify" that refactor away: it is what makes the
+claim checkable.
+
+**3. THE GUARD'S ORACLE IS NOT THE GENERATOR.** `server/tests/test_run34_holdout_provenance.py`
+runs its OWN `git log` calls, re-executes the selection decision ITSELF, and only then requires
+the artifact and the report to agree with what it derived. Section 7 proves that independence on
+the PARSED source (import set, called-function set), because the guard necessarily NAMES the
+generator in order to run it as a subprocess - a substring check would flag its own filename.
+
+**4. THE GUARD MUST NOT REGENERATE ITS SUBJECT, AND MUST NOT CRASH INSTEAD OF FAILING.** Both
+defects were found here by the campaign, and both were found in the previous closure too. The
+provenance generator takes `--out` so the guard compares against a temp directory; and provenance
+is read through a defaulting map, so a DELETED field fails the checks that name it rather than
+raising a `KeyError`. **A crash is not a RED.**
+
+**5. THE HOLDOUT ARTIFACT GAINED A `result` COLUMN AND KEPT ITS 13 ORIGINAL ROWS.** The original
+CALIBRATION/HOLDOUT/BOUNDARY/ORDERING rows are PADDED, never rewritten; the guard asserts all 13
+survive. `PROVENANCE` rows carry `PASS`, `FAIL` or `REPORTED_LIMITATION`, so a limitation is
+distinguishable from a pass - the same lesson `row_type` taught on the parameter artifact.
+
+## Run-34 conclusions and parameter population, verified unchanged by this closure
+
+PH.1 tree count 100; tree-count disposition `UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE`; 0.576
+synthetic, schema- and cohort-bound, not applied; PH.2 composite NONE; PH.3 minimum-history and
+actual-time policy; PH.4 continuous distance only; PH.5 score null / provenance blocked; empirical
+validation PENDING x5; voting false x5; voting exactly 2. Parameter population **19 `PARAMETER` +
+2 `ACCEPTANCE_COUNTER`**, distribution `UNSUPPORTED` 7 / `OWNER_POLICY` 5 /
+`THEORETICAL_CONSTANT` 4 / `PUBLISHED_DEFAULT` 2 / `SYNTHETIC_LAB_CALIBRATION` 1 /
+`EMPIRICAL_CALIBRATION` 0 / `HEURISTIC` 0. All of these are asserted by section 6 of the new
+guard, so a later metadata edit cannot perturb them unnoticed.
+
+## Run 35 requirements (NOT launched here)
+
+Unchanged. Empirical field validation and the final parsimony decisions.
+
+---
+
 # 2026-08-18 - Run 34 FINAL CLOSURE: the parameter-provenance count reconciliation
 
 **Branch `run34-parameter-count-closure` from `main` at `41f01e8`.** Still Run 34. Report section:
