@@ -264,8 +264,21 @@ def main():
             mid, r["module_name"], r["category_name"], "YES",
             "YES", "SUPPLIED" if mid in REG.unported_modules() else "COMPUTED",
             op_state,
-            "YES" if (struct_key or r["group"] == "D") else "NO_DECLARED_STRUCTURE_KEY",
-            "NO" if state in ("ABSTAINS", "NOT_COMPUTED_SUPPLIED_FIELD") else "YES",
+            # CANONICAL METHOD ESTABLISHED is not the same question as "declares a governed
+            # structure key": A1.7 reads plain earned-value scalars and has no structure key, and
+            # its canonical method is nonetheless the published PMI identity. The eight
+            # concept-only disabled modules are the population where no canonical method is
+            # implemented at all. The structure key is carried in its own column beside this one.
+            "NO_METHOD_IMPLEMENTED" if mid in REG.DISABLED_CONCEPT_ONLY else "YES",
+            struct_key or "NO_GOVERNED_STRUCTURE_KEY (reads plain scalar evidence)",
+            # MEASURED, NOT INFERRED FROM WHETHER THE MODULE COMPUTED. The controlled corpus
+            # supplies NO governed structure key at all, so a module with a declared key does not
+            # have it. A1.1 is the reason this distinction matters: it declares
+            # `costDriverDistributions`, computes anyway from plain cpi/spi scalars, and no code
+            # anywhere reads that key -- a declared canonical structure with no implementation
+            # and no production consumer.
+            ("NO" if struct_key not in ("", None) and struct_key not in CORPUS_SI
+             else "N/A_NO_GOVERNED_STRUCTURE_REQUIRED"),
             "NO_CALIBRATION_SET" if unresolved else (
                 "PUBLISHED_METHOD_PARAMETER" if provs else "NO_TUNABLE_VALUE"),
             ";".join(sorted({p.parameter_class for p in provs})) or "NO_PARAMETER_ROW",
@@ -340,7 +353,8 @@ def main():
         scope_rows.append([
             mid, r["module_name"], r["category_name"], "YES", "NO", "COMPUTED",
             REG.activation_state(mid),
-            "YES" if struct_key else "NO_DECLARED_STRUCTURE_KEY", "NO",
+            "YES", struct_key or "NO_GOVERNED_STRUCTURE_KEY (reads plain scalar evidence)",
+            "NO" if struct_key else "N/A_NO_GOVERNED_STRUCTURE_REQUIRED",
             "NO_CALIBRATION_SET", ";".join(sorted({p.parameter_class for p in provs})),
             row["__state__"], "NO", "NO_PRODUCTION_ROUTE",
             "STRUCTURE_OR_DATA_ABSENT (recorded for completeness; NOT one of the 100 "
@@ -349,7 +363,7 @@ def main():
     write("run35_scientific_target_scope.csv",
           ["module_id", "module_name", "category", "registered", "scientific_target",
            "supplied_or_computed", "current_operational_state", "canonical_method_established",
-           "governed_structure_available_on_corpus", "calibration_state",
+           "declared_governed_structure_key", "governed_structure_available_on_corpus", "calibration_state",
            "parameter_provenance_state", "real_corpus_execution_state", "voting",
            "legacy_route_reachable", "run35_validation_eligibility"], scope_rows)
 
@@ -409,7 +423,7 @@ def main():
     assert len(sci_rows) == 100, f"scientific rows = {len(sci_rows)}, expected 100"
     assert len(set(r[0] for r in sci_rows)) == 100, "duplicate scientific ids"
     assert len(set(r[0] for r in scope_rows)) == len(scope_rows), "duplicate scope ids"
-    assert sum(1 for r in scope_rows if r[12] == "YES") == 2, "voting must be exactly 2"
+    assert sum(1 for r in scope_rows if r[13] == "YES") == 2, "voting must be exactly 2"
     print(f"scope rows total {len(scope_rows)}; scientific {len(sci_rows)}; "
           f"registered-not-scientific {len(scope_rows) - len(sci_rows)}")
     (OUT_DIR / "run35_eligibility.json").write_text(
