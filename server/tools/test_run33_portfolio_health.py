@@ -208,16 +208,27 @@ def _if(pids, values, **kw):
 
 _one = _if(["P1"], {"P1": {"a": 1, "b": 1}})
 check(_one["cat8_1_isolation_forest"]["abstained"] is True
-      and _one["cat8_1_isolation_forest"]["disposition"] == V8.INSUFFICIENT_COHORT,
-      "ONE PROJECT: PH.1 abstains with an explicit insufficient-cohort state and emits no "
-      "authoritative anomaly flag")
+      and _one["cat8_1_isolation_forest"]["disposition"] == V8.NOT_ESTIMABLE,
+      "ONE PROJECT: PH.1 is NOT_ESTIMABLE and emits no authoritative anomaly flag")
+# RUN 34 MOVED THIS GATE, and the move is the finding. v21 required two eligible projects --
+# the minimum an isolation TREE needs -- and computed. Two projects cannot establish what is
+# normal for a portfolio: each is the other's entire reference population. Section 6B of the
+# calibration contract sets the minimum for a cross-project anomaly MODEL at three.
 _two = _if(["P1", "P2"], {"P1": {"a": 1, "b": 1}, "P2": {"a": 9, "b": 0.1}})
-check(_two["cat8_1_isolation_forest"]["abstained"] is False
-      and _two["cat8_1_isolation_forest"]["limitation"]["small_sample"] is True
-      and _two["cat8_1_isolation_forest"]["limitation"]["predictive_validity_claimed"] is False,
-      "TWO PROJECTS: a forest can be grown, and the small-sample limitation is EXPLICIT and "
-      "claims no predictive validity",
-      _two["cat8_1_isolation_forest"]["limitation"]["small_sample_note"][:60])
+check(_two["cat8_1_isolation_forest"]["abstained"] is True
+      and _two["cat8_1_isolation_forest"]["disposition"] == V8.NOT_ESTIMABLE,
+      "TWO PROJECTS: NOT_ESTIMABLE, because two projects are not a portfolio to compare within",
+      _two["cat8_1_isolation_forest"]["abstention_reason"][:70])
+_three = _if(["P1", "P2", "P3"], {"P1": {"a": 1, "b": 1}, "P2": {"a": 9, "b": 0.1},
+                                  "P3": {"a": 2, "b": 0.9}})
+_t3 = _three["cat8_1_isolation_forest"]
+check(_t3["abstained"] is False and _t3["cohort_size_class"] == V8.COHORT_SMALL
+      and _t3["limitation"]["small_sample"] is True
+      and _t3["limitation"]["predictive_validity_claimed"] is False
+      and _t3["authoritative_flag_permitted"] is False,
+      "THREE PROJECTS: a continuous exploratory reading, with the small-cohort limitation "
+      "EXPLICIT, no predictive validity claimed and NO authoritative flag permitted",
+      _t3["limitation"]["small_sample_note"][:60])
 _ident = _if(["P1", "P2", "P3"], {p: {"a": 1, "b": 1} for p in ("P1", "P2", "P3")})
 _is = _ident["cat8_1_isolation_forest"]
 check(_is["abstained"] is False and len(set(round(v["anomaly_score"], 12)
@@ -259,20 +270,30 @@ ph2 = fixture("ph2_midrank_percentile_fixture.json")
 r2 = run(ph2)
 d2 = r2["results"]["cat8_2_portfolio_outlier"]
 check(d2["abstained"] is False, "PH.2 computes on the canonical fixture")
+# RUN 34: THE SUPPLIED ORACLE MIDRANKS LIVE IN THE FEATURE PROFILE. Section 7B withdrew the
+# equal-weighted composite -- equal weighting is an owner-policy choice, not a canonical fact --
+# so the composite is None absent governed weights and the per-feature percentiles are what the
+# module reports. Nothing is lost: the composite was averaging exactly these numbers.
 _want = {"P-A": Fraction(1, 8), "P-B": Fraction(3, 8), "P-C": Fraction(5, 8),
          "P-D": Fraction(7, 8)}
 for _p, _w in sorted(_want.items()):
-    _got = d2["projects"][_p]["portfolio_outlier_percentile_exact"]
+    _got = d2["projects"][_p]["feature_percentiles_exact"]["f_adverse"]
     check(Fraction(_got) == _w,
           f"THE SUPPLIED ORACLE: value {ph2['feature_records'][sorted(_want).index(_p)]['values']['f_adverse']} "
           f"has midrank {_w}", f"{_got} = {float(_w)}")
-check(d2["most_adverse_project_ids"] == ["P-D"],
-      "10 IS THE MOST EXTREME ADVERSE PROJECT", str(d2["most_adverse_project_ids"]))
+check(all(d2["projects"][p]["portfolio_outlier_percentile"] is None for p in d2["projects"])
+      and d2["disposition"] == V8.PARAMETER_PROVENANCE_BLOCKED
+      and d2["result_type"] == "FEATURE_PERCENTILE_PROFILE",
+      "and the COMPOSITE IS WITHHELD absent governed weights: equal weighting is not adopted as "
+      "a default", d2["composite_weighting_note"][:70])
+check(max(_want, key=lambda k: _want[k]) == "P-D",
+      "10 IS THE MOST EXTREME ADVERSE PROJECT, by its own feature percentile of 7/8",
+      d2["projects"]["P-D"]["feature_percentiles_exact"]["f_adverse"])
 check(d2["is_learned_model"] is False and d2["is_probability_of_failure"] is False,
       "PH.2 declares itself NOT a learned ML model and NOT a probability of failure")
-check(d2["composite_weighting_provenance"] == V8.OWNER_POLICY,
-      "the equal-feature weighting is recorded as OWNER_POLICY, not as a calibrated constant",
-      d2["composite_weighting_provenance"])
+check(d2["composite_weighting_provenance"] is None and d2["composite_weights"] is None,
+      "no weighting provenance is claimed, because no composite is produced",
+      str(d2["composite_weighting_provenance"]))
 check("status_color" not in d2 and all("status_color" not in v for v in d2["projects"].values()),
       "and no status colour is emitted")
 
@@ -280,22 +301,22 @@ check("status_color" not in d2 and all("status_color" not in v for v in d2["proj
 _tie = V8.compute_portfolio_health(ph2["tie_cohort"], ph2["feature_schema"],
                                    ph2["tie_feature_records"], [])["results"][
     "cat8_2_portfolio_outlier"]
-check(_tie["projects"]["T-A"]["portfolio_outlier_percentile_exact"]
-      == _tie["projects"]["T-B"]["portfolio_outlier_percentile_exact"],
+check(_tie["projects"]["T-A"]["feature_percentiles_exact"]
+      == _tie["projects"]["T-B"]["feature_percentiles_exact"],
       "TIES RECEIVE THE SAME MIDRANK",
-      _tie["projects"]["T-A"]["portfolio_outlier_percentile_exact"])
+      str(_tie["projects"]["T-A"]["feature_percentiles_exact"]))
 _rev = V8.compute_portfolio_health(ph2["cohort"], ph2["feature_schema"],
                                    list(reversed(ph2["feature_records"])), [])["results"][
     "cat8_2_portfolio_outlier"]
-check({k: v["portfolio_outlier_percentile_exact"] for k, v in _rev["projects"].items()}
-      == {k: v["portfolio_outlier_percentile_exact"] for k, v in d2["projects"].items()},
+check({k: v["feature_percentiles_exact"] for k, v in _rev["projects"].items()}
+      == {k: v["feature_percentiles_exact"] for k, v in d2["projects"].items()},
       "PROJECT ORDERING DOES NOT CHANGE RESULTS")
 _units = V8.compute_portfolio_health(
     ph2["cohort"], ph2["feature_schema"],
     [dict(r, values={"f_adverse": r["values"]["f_adverse"] * 1000.0})
      for r in ph2["feature_records"]], [])["results"]["cat8_2_portfolio_outlier"]
-check({k: v["portfolio_outlier_percentile_exact"] for k, v in _units["projects"].items()}
-      == {k: v["portfolio_outlier_percentile_exact"] for k, v in d2["projects"].items()},
+check({k: v["feature_percentiles_exact"] for k, v in _units["projects"].items()}
+      == {k: v["feature_percentiles_exact"] for k, v in d2["projects"].items()},
       "FEATURE UNITS DO NOT AFFECT THE PERCENTILE RANK")
 
 # orientation reversal: the SAME numbers, declared lower-is-worse, must reverse the ranking.
@@ -304,12 +325,11 @@ _low = dict(ph2["feature_schema"],
                            orientation=V8.LOWER_IS_MORE_ADVERSE)])
 _lowr = V8.compute_portfolio_health(ph2["cohort"], _low, ph2["feature_records"], [])["results"][
     "cat8_2_portfolio_outlier"]
-check(_lowr["most_adverse_project_ids"] == ["P-A"]
-      and Fraction(_lowr["projects"]["P-A"]["portfolio_outlier_percentile_exact"])
+check(Fraction(_lowr["projects"]["P-A"]["feature_percentiles_exact"]["f_adverse"])
       == Fraction(7, 8),
       "LOWER-IS-WORSE ORIENTATION REVERSES THE RANK CORRECTLY: the value 1 becomes the most "
       "adverse at 7/8",
-      _lowr["projects"]["P-A"]["portfolio_outlier_percentile_exact"])
+      _lowr["projects"]["P-A"]["feature_percentiles_exact"]["f_adverse"])
 
 # missing required feature, and the cohort-size states
 _pm = V8.compute_portfolio_health(
@@ -321,8 +341,8 @@ check(_pm["abstained"] is True and "NOT renormalised" in _pm["abstention_reason"
       "are not renormalised")
 _n2 = _if(["P1", "P2"], {"P1": {"a": 1, "b": 1}, "P2": {"a": 2, "b": 1}})[
     "cat8_2_portfolio_outlier"]
-check(_n2["abstained"] is True and _n2["disposition"] == V8.INSUFFICIENT_COHORT,
-      "COHORT n < 3 PRODUCES AN EXPLICIT INSUFFICIENT-COHORT STATE", _n2["disposition"])
+check(_n2["abstained"] is True and _n2["disposition"] == V8.NOT_ESTIMABLE,
+      "COHORT n < 3 PRODUCES AN EXPLICIT NOT_ESTIMABLE STATE", _n2["disposition"])
 check(d2["limitation"]["small_sample"] is True
       and "Small-sample limitation" in (d2["limitation"]["small_sample_note"] or ""),
       "COHORT n < 10 CARRIES A SMALL-SAMPLE WARNING", str(d2["limitation"]["cohort_size"]))
@@ -721,10 +741,10 @@ check(_snap["structure_absent"] is False and _snap["portfolio_size"] == 4,
       "THE REAL DISPATCHER assembles the four-project cohort from the projects' own stored "
       "signal inputs and computes", str(_snap["portfolio_size"]))
 check(_snap["results"]["cat8_2_portfolio_outlier"]["projects"][_cur][
-          "portfolio_outlier_percentile_exact"] == "7/8",
+          "feature_percentiles_exact"]["f_adverse"] == "7/8",
       "and the supplied PH.2 oracle holds THROUGH THE PRODUCTION ROUTE, not only in the library",
       _snap["results"]["cat8_2_portfolio_outlier"]["projects"][_cur][
-          "portfolio_outlier_percentile_exact"])
+          "feature_percentiles_exact"]["f_adverse"])
 check(_snap["voting"] is False and _snap["creates_project_evidence"] is False
       and _snap["route"] == "canonical_v8",
       "and the snapshot itself is stamped non-voting, creating no project evidence, on the "

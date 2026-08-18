@@ -160,8 +160,9 @@ from app.simulation.registry import (                                   # noqa: 
     CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY,
 )
 
-check(SIMULATION_VERSION == "sim-2026.08-v21", "simulation version = sim-2026.08-v21",
-      SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v22",
+      "simulation version = sim-2026.08-v22 (Run 34's calibration changes moved it; Run 33's v21 "
+      "remains in the history at its own position)", SIMULATION_VERSION)
 check(len(CORE_VOTING_MODULES) == 2, "voting remains exactly 2",
       str(sorted(CORE_VOTING_MODULES)))
 check(not (set(CORE_VOTING_MODULES) & set(V8.RESULT_KEYS)), "Portfolio Health votes = 0")

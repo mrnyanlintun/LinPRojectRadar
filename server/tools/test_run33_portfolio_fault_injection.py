@@ -456,9 +456,11 @@ fx = json.loads(pathlib.Path(sys.argv[2]).read_text())
 
 
 def ranks(recs):
+    # RUN 34: the composite is withheld absent governed weights, so the midranks this fault is
+    # about are read from the per-feature profile, which is where they now live.
     d = V8.compute_portfolio_health(fx["tie_cohort"], fx["feature_schema"], recs,
                                     [])["results"]["cat8_2_portfolio_outlier"]
-    return {p: v["portfolio_outlier_percentile_exact"] for p, v in d["projects"].items()}
+    return {p: v["feature_percentiles_exact"] for p, v in d["projects"].items()}
 
 
 fwd = ranks(fx["tie_feature_records"])
@@ -796,15 +798,16 @@ source_fault(
 # --- 22. a scalar without governed transformations/weights --------------------------------------
 source_fault(
     22, "PH.5 canonical_v8.anomaly_profile", "server/app/simulation/canonical_v8.py",
-    '        "score": None,\n        "weights": None,\n        "projects": profiles,',
-    '        "score": 0.42,\n        "weights": {"D1.1": 0.5, "D1.2": 0.5},\n'
-    '        "projects": profiles,',
+    '        "score": None,\n        "score_blocked_reason": _blocked_reason,',
+    '        "score": 0.42,\n        "score_blocked_reason": _blocked_reason,',
     "a scalar composite and a weight set are emitted although no governed normalisation, "
     "transformation, weight set, missingness policy or calibration objective exists",
     "PH.5 emits no scalar and no weights, and its disposition is PARAMETER_PROVENANCE_BLOCKED",
     lambda v: v["results"][ANM_KEY]["score"] is None
     and v["results"][ANM_KEY]["weights"] is None
     and v["results"][ANM_KEY]["disposition"] == "PARAMETER_PROVENANCE_BLOCKED",
+    also=[('        "weights": None,\n        "projects": profiles,',
+           '        "weights": {"D1.1": 0.5, "D1.2": 0.5},\n        "projects": profiles,')],
     fixture_name="ph5_component_profile_fixture.json")
 
 
