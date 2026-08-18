@@ -141,7 +141,8 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v8",
         "code_audit/run32_closure_participant_package_v8_checksums.sha256",
-        None,
+        # PINNED when the method-class propagation moved three of its files. NOT regenerated.
+        "6e7ce204567a3a3331ee894436cd21748bde381e",
         "THE RUN-32 FINAL CLOSURE corrected the served module-defensibility metadata and finished "
         "the B4.7 current-name propagation. Seven participant-visible files moved: categories, "
         "the defensibility evidence object, knowledge, module charts, neural flow, recommendation "
@@ -162,10 +163,45 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "deepdive.js and the questionnaires are byte for byte identical to v7. The v7 record is "
         "NOT regenerated: it is pinned to the commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v9",
+        "code_audit/run32_b3_participant_package_v9_checksums.sha256",
+        None,
+        "THE METHOD-CLASS PROPAGATION. Six identifiers had been left behind when their display "
+        "names were renamed -- A1.10 and A1.11 by Run 28, B3.2 to B3.5 by Run 31 -- so the client "
+        "taxonomy carried an identifier the production runner had stopped emitting. A stale "
+        "identifier does not raise: `getModuleStatus` matches the client's method_class against "
+        "the server's signal array, the match simply fails, and the lookup returns null, so all "
+        "six modules' statuses SILENTLY NEVER RENDERED. That was measured on the pre-change tree "
+        "module by module before anything was edited. Three participant-visible files moved: "
+        "categories, knowledge and taxonomy. One proxy qualifier the server still holds (B3.5's) "
+        "had stopped rendering for the same reason and is restored under the current key; one the "
+        "server has WITHDRAWN (A1.10's) was removed rather than renamed. Backward-compatible "
+        "aliases are added for STORED ROWS ONLY and the current identifier remains primary. No "
+        "analytical execution changed, proved by executing all 95 dispatched modules before and "
+        "after on identical inputs under one sha256. THE EXPERIMENTAL SEQUENCE IS UNCHANGED: "
+        "decision.js, decision-ui.js, workspace.js, deepdive.js and both questionnaires are byte "
+        "for byte identical to v8. The v8 record is NOT regenerated.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v8 and v9, and the six identifiers that moved them.
+V8_TO_V9_CHANGED = (
+    "assets/js/categories.js", "assets/js/knowledge.js", "assets/js/taxonomy.js",
+)
+
+#: CURRENT <- SUPERSEDED. Matched against for stored rows only; never emitted, never displayed.
+V9_METHOD_CLASS_PROPAGATION = {
+    "CPI_Shrinkage_Forecast": "Regression_To_Mean",
+    "Independent_EAC_Reconciliation": "ICE_Ratio",
+    "EVMS_Applicability": "FAR_Threshold",
+    "A11_Conformance": "OMB_A11_Check",
+    "EVMS_Reporting_Compliance": "EVM_Reporting_Threshold",
+    "Modification_Governance": "Contract_Mod_Frequency",
+}
 
 #: The files whose bytes moved between v7 and v8. Unlike every earlier link, this delta is NOT a
 #: pure display substitution and no inverse mapping is claimed for it: it corrects statements that

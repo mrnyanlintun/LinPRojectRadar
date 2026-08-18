@@ -43,8 +43,8 @@ window.LIN_CATEGORIES = [
       { id: 'a1_7', num: 'A1.7', name: 'TCPI', method_class: 'TCPI', active: true, required: ['bac','ev','ac'] },
       { id: 'a1_8', num: 'A1.8', name: 'Variance at Completion', method_class: 'VAC', active: true, required: ['bac','cpi'] },
       { id: 'a1_9', num: 'A1.9', name: 'Budget Execution Rate', method_class: 'Budget_Execution_Rate', active: true, required: ['ac','bac','actualPctComplete'] },
-      { id: 'a1_10', num: 'A1.10', name: 'CPI Shrinkage Forecast', method_class: 'Regression_To_Mean', active: true, required: ['cpi','cpiHistory'] },
-      { id: 'a1_11', num: 'A1.11', name: 'Independent EAC Reconciliation Index', method_class: 'ICE_Ratio', active: true, required: ['bac','cpi','ev','ac'] }
+      { id: 'a1_10', num: 'A1.10', name: 'CPI Shrinkage Forecast', method_class: 'CPI_Shrinkage_Forecast', active: true, required: ['cpi','cpiHistory'] },
+      { id: 'a1_11', num: 'A1.11', name: 'Independent EAC Reconciliation Index', method_class: 'Independent_EAC_Reconciliation', active: true, required: ['bac','cpi','ev','ac'] }
     ]
   },
   {
@@ -181,10 +181,10 @@ window.LIN_CATEGORIES = [
     description: 'Regulatory and authority thresholds that determine who must act and at what level.',
     modules: [
       { id: 'b3_1', num: 'B3.1', name: 'Agent-Based Governance Model', method_class: 'ABM_Governance', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b3_2', num: 'B3.2', name: 'FAR/Agency EVMS Applicability Monitor', method_class: 'FAR_Threshold', active: true, required: ['bac','cpi','ev','ac'] },
-      { id: 'b3_3', num: 'B3.3', name: 'Versioned A-11 Capital Programming Conformance Check', method_class: 'OMB_A11_Check', active: true, required: ['bac','cpi','actualPctComplete'] },
-      { id: 'b3_4', num: 'B3.4', name: 'EVMS Reporting Compliance Monitor', method_class: 'EVM_Reporting_Threshold', active: true, required: ['bac','cpi','spi'] },
-      { id: 'b3_5', num: 'B3.5', name: 'Contract Modification Governance Check', method_class: 'Contract_Mod_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] }
+      { id: 'b3_2', num: 'B3.2', name: 'FAR/Agency EVMS Applicability Monitor', method_class: 'EVMS_Applicability', active: true, required: ['bac','cpi','ev','ac'] },
+      { id: 'b3_3', num: 'B3.3', name: 'Versioned A-11 Capital Programming Conformance Check', method_class: 'A11_Conformance', active: true, required: ['bac','cpi','actualPctComplete'] },
+      { id: 'b3_4', num: 'B3.4', name: 'EVMS Reporting Compliance Monitor', method_class: 'EVMS_Reporting_Compliance', active: true, required: ['bac','cpi','spi'] },
+      { id: 'b3_5', num: 'B3.5', name: 'Contract Modification Governance Check', method_class: 'Modification_Governance', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] }
     ]
   },
   {
@@ -399,6 +399,41 @@ window.projectLevelCategories = function () {
     });
   });
 
+  /* HISTORICAL METHOD-CLASS ALIASES, FOR STORED ROWS ONLY.
+
+     THIS FILE IS THE LIVE PARTICIPANT SURFACE. index.html loads taxonomy.js and NOT
+     categories.js, so an alias map declared only in categories.js is never loaded by the page
+     that participants read. That distinction cost this run a wrong first fix and is recorded
+     here so it is not repeated.
+
+     Runs 28, 31 and 32 renamed seven identities' method classes. A period result stored before
+     one of those runs carries the SUPERSEDED identifier, and a caller holding that row and
+     asking this file about it would otherwise be dropped: METHOD_TO_NUM is keyed on the current
+     identifiers only. The current identifier is always primary -- nothing emits an alias, no
+     taxonomy row carries one, and an alias is only ever matched against. */
+  window.LIN_HISTORICAL_METHOD_CLASS = window.LIN_HISTORICAL_METHOD_CLASS || {
+    CPI_Shrinkage_Forecast: ["Regression_To_Mean"],
+    Independent_EAC_Reconciliation: ["ICE_Ratio"],
+    EVMS_Applicability: ["FAR_Threshold"],
+    A11_Conformance: ["OMB_A11_Check"],
+    EVMS_Reporting_Compliance: ["EVM_Reporting_Threshold"],
+    Modification_Governance: ["Contract_Mod_Frequency"],
+    Minimax_Regret_Decision_Rule: ["Regret_Minimization"],
+    DSM_Rework_Cat5: ["DSM_Rework_Propagation"]
+  };
+  /* The module number for a method class, resolving a superseded identifier through the map
+     above. Returns undefined when the class is unknown, which callers treat as "no such
+     module" -- distinct from "module present but abstaining". */
+  function numForMethodClass(methodClass) {
+    var num = numForMethodClass(methodClass);
+    if (num) return num;
+    var hist = window.LIN_HISTORICAL_METHOD_CLASS || {};
+    for (var cur in hist) {
+      if (hist[cur].indexOf(methodClass) !== -1) return METHOD_TO_NUM[cur];
+    }
+    return undefined;
+  }
+
   function keyOf(project) {
     if (!project) return null;
     return project.project_id || project.id || null;
@@ -469,7 +504,7 @@ window.projectLevelCategories = function () {
     if (window.isModuleSectorNA && window.isModuleSectorNA(methodClass, project)) return "NA";
     var row = rowFor(project);
     if (!row || !Array.isArray(row.module_results)) return null;
-    var num = METHOD_TO_NUM[methodClass];
+    var num = numForMethodClass(methodClass);
     if (!num) return null;
     for (var i = 0; i < row.module_results.length; i++) {
       if (row.module_results[i] && row.module_results[i].module_id === num) {
@@ -487,7 +522,7 @@ window.projectLevelCategories = function () {
   window.getModuleAbstentionReason = function (methodClass, project) {
     var row = rowFor(project);
     if (!row || !Array.isArray(row.abstained)) return null;
-    var num = METHOD_TO_NUM[methodClass];
+    var num = numForMethodClass(methodClass);
     if (!num) return null;
     for (var i = 0; i < row.abstained.length; i++) {
       var a = row.abstained[i];
@@ -506,7 +541,7 @@ window.projectLevelCategories = function () {
     if (!project) return null;
     var row = rowFor(project);
     if (!row || !Array.isArray(row.module_results)) return null;
-    var num = METHOD_TO_NUM[methodClass];
+    var num = numForMethodClass(methodClass);
     if (!num) return null;
     for (var i = 0; i < row.module_results.length; i++) {
       if (row.module_results[i] && row.module_results[i].module_id === num) {

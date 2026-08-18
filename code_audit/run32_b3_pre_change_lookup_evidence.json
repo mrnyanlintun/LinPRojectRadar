@@ -1,0 +1,56 @@
+[
+ {
+  "module": "A1.10",
+  "name": "CPI Shrinkage Forecast",
+  "clientId": "Regression_To_Mean",
+  "serverId": "CPI_Shrinkage_Forecast",
+  "lookupWithClientId": null,
+  "lookupWithServerId": "Amber",
+  "emptyLookup": true
+ },
+ {
+  "module": "A1.11",
+  "name": "Independent EAC Reconciliation Index",
+  "clientId": "ICE_Ratio",
+  "serverId": "Independent_EAC_Reconciliation",
+  "lookupWithClientId": null,
+  "lookupWithServerId": "Amber",
+  "emptyLookup": true
+ },
+ {
+  "module": "B3.2",
+  "name": "FAR/Agency EVMS Applicability Monitor",
+  "clientId": "FAR_Threshold",
+  "serverId": "EVMS_Applicability",
+  "lookupWithClientId": null,
+  "lookupWithServerId": "Amber",
+  "emptyLookup": true
+ },
+ {
+  "module": "B3.3",
+  "name": "Versioned A-11 Capital Programming Conformance Check",
+  "clientId": "OMB_A11_Check",
+  "serverId": "A11_Conformance",
+  "lookupWithClientId": null,
+  "lookupWithServerId": "Amber",
+  "emptyLookup": true
+ },
+ {
+  "module": "B3.4",
+  "name": "EVMS Reporting Compliance Monitor",
+  "clientId": "EVM_Reporting_Threshold",
+  "serverId": "EVMS_Reporting_Compliance",
+  "lookupWithClientId": null,
+  "lookupWithServerId": "Amber",
+  "emptyLookup": true
+ },
+ {
+  "module": "B3.5",
+  "name": "Contract Modification Governance Check",
+  "clientId": "Contract_Mod_Frequency",
+  "serverId": "Modification_Governance",
+  "lookupWithClientId": null,
+  "lookupWithServerId": "Amber",
+  "emptyLookup": true
+ }
+]
