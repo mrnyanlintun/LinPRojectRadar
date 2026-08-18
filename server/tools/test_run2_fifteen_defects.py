@@ -1072,14 +1072,23 @@ try:
     s4 = post({"action": "projectresults", "session_token": pm, "id": SECOND,
                "period": 4})["result"]
     snap = (s4.get("portfolio_snapshot") or {}).get("results") or {}
+    # RUN 33. WHAT "LANDS" ON THE REAL PATH CHANGED, and this is the correct outcome rather than
+    # a regression. At v20 these three produced populated readings from bare portfolio vectors
+    # and a list of result snapshots; at v21 a Portfolio Health reading needs a GOVERNED COHORT
+    # -- a declared population, period, feature schema and model version -- and a GOVERNED SIGNAL
+    # HISTORY, and this project supplies neither. What the check now proves is that each identity
+    # LANDS ADDRESSABLY with its own stated reason rather than vanishing, which is the property
+    # the original check was really protecting: a defect must not be able to hide as an absence.
     for key, name in (("cat8_3_trajectory_classifier", "Signal Trajectory Classifier"),
                       ("cat8_4_cross_project_pattern", "Cross-project Pattern Detector"),
                       ("cat8_5_anomaly_score", "Anomaly Score")):
-        check(key in snap, f"{name} produces a finding in the stored portfolio snapshot",
+        check(key in snap and bool(snap[key].get("abstention_reason")),
+              f"{name} lands addressably in the stored portfolio snapshot, with its own reason",
               str(sorted(snap.keys())))
+        check("status_color" not in snap.get(key, {}) and snap.get(key, {}).get("voting") is False,
+              f"{name} carries no status colour and no vote")
         landed[key] = "producing"
-        print(f"    producing   {name}: {snap.get(key, {}).get('status_color')} -- "
-              f"{str(snap.get(key, {}).get('evidence_metric'))[:60]}")
+        print(f"    landing     {name}: {str(snap.get(key, {}).get('abstention_reason'))[:70]}")
     # The slope on the real path, recomputed from the stored periods rather than read back.
     stored_cpis = []
     for p in (1, 2, 3, 4):
@@ -1087,10 +1096,23 @@ try:
                                  "id": SECOND, "period": p})["result"]["signal_inputs"]["cpi"])
     last3 = stored_cpis[-3:]
     expected = round((last3[-1] - last3[0]) / (len(last3) - 1) * 1000) / 1000
-    check(abs(snap["cat8_3_trajectory_classifier"]["trend"] - expected) < 1e-9,
-          "and the trajectory slope on the real path is the stored periods' own movement over "
-          "the intervals between them", f"{snap['cat8_3_trajectory_classifier']['trend']} vs "
-                                        f"{expected}")
+    # THE DEFECT-6 FINDING ITSELF IS PRESERVED and is asserted against the PRESERVED v20
+    # implementation, executed directly, because that is what it was always really about: the
+    # slope is the movement over the INTERVALS between the observations, not over their number.
+    # `assert_not_reachable` supplies the other half -- current production cannot satisfy it.
+    import run33_historical_portfolio as _R33H
+    _R33H.assert_not_reachable(lambda cond, name, detail="": check(cond, f"HISTORICAL: {name}",
+                                                                   str(detail)))
+    _hist_pf = [{"id": "A", "cpi": last3[-1], "spi": 1.0, "docRiskScore": 0.0,
+                 "actualPctComplete": 50},
+                {"id": "B", "cpi": 1.0, "spi": 1.0, "docRiskScore": 0.0,
+                 "actualPctComplete": 50}]
+    _legacy = _R33H.run_legacy(_hist_pf, "A", [{"signal_inputs": {"cpi": c}} for c in last3],
+                               "2026-06-30")["results"]["cat8_3_trajectory_classifier"]
+    check(abs(_legacy["trend"] - expected) < 1e-9,
+          "HISTORICAL (v20): the trajectory slope on the real path is the stored periods' own "
+          "movement over the intervals between them",
+          f"{_legacy['trend']} vs {expected}")
 
     print()
     print("=" * 78)

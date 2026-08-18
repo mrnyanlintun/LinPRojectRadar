@@ -1,0 +1,102 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "not_for_empirical_validation": true,
+  "fixture_id": "PH3_TIME_SERIES_SLOPE",
+  "serves": "PH.3 (D1.3) Signal Trajectory Classifier",
+  "expected": {
+    "supplied_oracle": {
+      "t": [
+        0,
+        1,
+        2
+      ],
+      "x": [
+        1.0,
+        0.9,
+        0.8
+      ],
+      "ols_slope": "-1/10",
+      "q": -1,
+      "adverse_slope": "1/10",
+      "classification": "DETERIORATING"
+    },
+    "note": "three observations contain TWO adjacent intervals; the endpoint change is not divided by three"
+  },
+  "histories": [
+    {
+      "project_id": "P-EVEN",
+      "signal_id": "cost_index",
+      "units": "ratio",
+      "orientation": "LOWER_IS_MORE_ADVERSE",
+      "source": "SYNTHETIC_FIXTURE",
+      "history_version": "synth-h1",
+      "observations": [
+        {
+          "reporting_time": 0,
+          "value": 1.0,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": 1,
+          "value": 0.9,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": 2,
+          "value": 0.8,
+          "qualification_state": "QUALIFIED"
+        }
+      ]
+    },
+    {
+      "project_id": "P-IRREGULAR",
+      "signal_id": "cost_index",
+      "units": "ratio",
+      "orientation": "LOWER_IS_MORE_ADVERSE",
+      "source": "SYNTHETIC_FIXTURE",
+      "history_version": "synth-h1",
+      "observations": [
+        {
+          "reporting_time": "2026-01-01",
+          "value": 1.0,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": "2026-01-08",
+          "value": 0.9,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": "2026-03-01",
+          "value": 0.8,
+          "qualification_state": "QUALIFIED"
+        }
+      ]
+    },
+    {
+      "project_id": "P-CONSTANT",
+      "signal_id": "cost_index",
+      "units": "ratio",
+      "orientation": "LOWER_IS_MORE_ADVERSE",
+      "source": "SYNTHETIC_FIXTURE",
+      "history_version": "synth-h1",
+      "observations": [
+        {
+          "reporting_time": 0,
+          "value": 1.0,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": 1,
+          "value": 1.0,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": 2,
+          "value": 1.0,
+          "qualification_state": "QUALIFIED"
+        }
+      ]
+    }
+  ]
+}

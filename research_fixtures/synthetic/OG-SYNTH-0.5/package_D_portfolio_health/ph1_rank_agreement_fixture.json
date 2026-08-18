@@ -1,0 +1,5161 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "not_for_empirical_validation": true,
+  "fixture_id": "PH1_RANK_AGREEMENT_REFERENCE_POPULATION",
+  "serves": "PH.1 (D1.1) Isolation Forest -- the dev-only scikit-learn rank-agreement oracle",
+  "why": "The compact ten-project structural fixture cannot measure RANK agreement: nine of its ten points are a near-identical cluster, so the ordering WITHIN the cluster is ensemble sampling noise in both implementations and a rank correlation over it measures noise rather than agreement. This fixture is a seeded 300-project population with a GRADED radial spread -- radius 0.3 to 6.3 standard deviations, quadratic in the index -- so that true isolation differs materially between neighbouring ranks and order is a real property of the data rather than of the draw. Generator: random.Random(330001), three coordinates drawn standard normal and rescaled onto the target radius.",
+  "generator_seed": 330001,
+  "generator_rule": "r_i = 0.3 + 6.0 * (i/299)^2; direction uniform on the unit sphere",
+  "cohort": {
+    "cohort_id": "SYNTH-PH1-RANK-COHORT",
+    "portfolio_id": "SYNTH-PORTFOLIO-1",
+    "project_ids": [
+      "R-000",
+      "R-001",
+      "R-002",
+      "R-003",
+      "R-004",
+      "R-005",
+      "R-006",
+      "R-007",
+      "R-008",
+      "R-009",
+      "R-010",
+      "R-011",
+      "R-012",
+      "R-013",
+      "R-014",
+      "R-015",
+      "R-016",
+      "R-017",
+      "R-018",
+      "R-019",
+      "R-020",
+      "R-021",
+      "R-022",
+      "R-023",
+      "R-024",
+      "R-025",
+      "R-026",
+      "R-027",
+      "R-028",
+      "R-029",
+      "R-030",
+      "R-031",
+      "R-032",
+      "R-033",
+      "R-034",
+      "R-035",
+      "R-036",
+      "R-037",
+      "R-038",
+      "R-039",
+      "R-040",
+      "R-041",
+      "R-042",
+      "R-043",
+      "R-044",
+      "R-045",
+      "R-046",
+      "R-047",
+      "R-048",
+      "R-049",
+      "R-050",
+      "R-051",
+      "R-052",
+      "R-053",
+      "R-054",
+      "R-055",
+      "R-056",
+      "R-057",
+      "R-058",
+      "R-059",
+      "R-060",
+      "R-061",
+      "R-062",
+      "R-063",
+      "R-064",
+      "R-065",
+      "R-066",
+      "R-067",
+      "R-068",
+      "R-069",
+      "R-070",
+      "R-071",
+      "R-072",
+      "R-073",
+      "R-074",
+      "R-075",
+      "R-076",
+      "R-077",
+      "R-078",
+      "R-079",
+      "R-080",
+      "R-081",
+      "R-082",
+      "R-083",
+      "R-084",
+      "R-085",
+      "R-086",
+      "R-087",
+      "R-088",
+      "R-089",
+      "R-090",
+      "R-091",
+      "R-092",
+      "R-093",
+      "R-094",
+      "R-095",
+      "R-096",
+      "R-097",
+      "R-098",
+      "R-099",
+      "R-100",
+      "R-101",
+      "R-102",
+      "R-103",
+      "R-104",
+      "R-105",
+      "R-106",
+      "R-107",
+      "R-108",
+      "R-109",
+      "R-110",
+      "R-111",
+      "R-112",
+      "R-113",
+      "R-114",
+      "R-115",
+      "R-116",
+      "R-117",
+      "R-118",
+      "R-119",
+      "R-120",
+      "R-121",
+      "R-122",
+      "R-123",
+      "R-124",
+      "R-125",
+      "R-126",
+      "R-127",
+      "R-128",
+      "R-129",
+      "R-130",
+      "R-131",
+      "R-132",
+      "R-133",
+      "R-134",
+      "R-135",
+      "R-136",
+      "R-137",
+      "R-138",
+      "R-139",
+      "R-140",
+      "R-141",
+      "R-142",
+      "R-143",
+      "R-144",
+      "R-145",
+      "R-146",
+      "R-147",
+      "R-148",
+      "R-149",
+      "R-150",
+      "R-151",
+      "R-152",
+      "R-153",
+      "R-154",
+      "R-155",
+      "R-156",
+      "R-157",
+      "R-158",
+      "R-159",
+      "R-160",
+      "R-161",
+      "R-162",
+      "R-163",
+      "R-164",
+      "R-165",
+      "R-166",
+      "R-167",
+      "R-168",
+      "R-169",
+      "R-170",
+      "R-171",
+      "R-172",
+      "R-173",
+      "R-174",
+      "R-175",
+      "R-176",
+      "R-177",
+      "R-178",
+      "R-179",
+      "R-180",
+      "R-181",
+      "R-182",
+      "R-183",
+      "R-184",
+      "R-185",
+      "R-186",
+      "R-187",
+      "R-188",
+      "R-189",
+      "R-190",
+      "R-191",
+      "R-192",
+      "R-193",
+      "R-194",
+      "R-195",
+      "R-196",
+      "R-197",
+      "R-198",
+      "R-199",
+      "R-200",
+      "R-201",
+      "R-202",
+      "R-203",
+      "R-204",
+      "R-205",
+      "R-206",
+      "R-207",
+      "R-208",
+      "R-209",
+      "R-210",
+      "R-211",
+      "R-212",
+      "R-213",
+      "R-214",
+      "R-215",
+      "R-216",
+      "R-217",
+      "R-218",
+      "R-219",
+      "R-220",
+      "R-221",
+      "R-222",
+      "R-223",
+      "R-224",
+      "R-225",
+      "R-226",
+      "R-227",
+      "R-228",
+      "R-229",
+      "R-230",
+      "R-231",
+      "R-232",
+      "R-233",
+      "R-234",
+      "R-235",
+      "R-236",
+      "R-237",
+      "R-238",
+      "R-239",
+      "R-240",
+      "R-241",
+      "R-242",
+      "R-243",
+      "R-244",
+      "R-245",
+      "R-246",
+      "R-247",
+      "R-248",
+      "R-249",
+      "R-250",
+      "R-251",
+      "R-252",
+      "R-253",
+      "R-254",
+      "R-255",
+      "R-256",
+      "R-257",
+      "R-258",
+      "R-259",
+      "R-260",
+      "R-261",
+      "R-262",
+      "R-263",
+      "R-264",
+      "R-265",
+      "R-266",
+      "R-267",
+      "R-268",
+      "R-269",
+      "R-270",
+      "R-271",
+      "R-272",
+      "R-273",
+      "R-274",
+      "R-275",
+      "R-276",
+      "R-277",
+      "R-278",
+      "R-279",
+      "R-280",
+      "R-281",
+      "R-282",
+      "R-283",
+      "R-284",
+      "R-285",
+      "R-286",
+      "R-287",
+      "R-288",
+      "R-289",
+      "R-290",
+      "R-291",
+      "R-292",
+      "R-293",
+      "R-294",
+      "R-295",
+      "R-296",
+      "R-297",
+      "R-298",
+      "R-299"
+    ],
+    "period": "2026-01",
+    "inclusion_rule": "every declared synthetic project",
+    "exclusion_rule": "none",
+    "feature_schema_version": "synth-ph1rank-v1",
+    "qualification_policy": "CATEGORY_9_ELIGIBLE_STATES_ONLY",
+    "model_version": "ph-v21-synthetic-rank-m1"
+  },
+  "feature_schema": {
+    "version": "synth-ph1rank-v1",
+    "features": [
+      {
+        "feature_id": "g1",
+        "label": "g1",
+        "units": "index",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "g2",
+        "label": "g2",
+        "units": "index",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "g3",
+        "label": "g3",
+        "units": "index",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      }
+    ]
+  },
+  "feature_records": [
+    {
+      "project_id": "R-000",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.042643,
+        "g2": -0.268976,
+        "g3": -0.125831
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-000",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-000",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-001",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.261531,
+        "g2": 0.051889,
+        "g3": -0.137657
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-001",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-001",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-002",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.076666,
+        "g2": -0.235103,
+        "g3": 0.170323
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-002",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-002",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-003",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.030273,
+        "g2": 0.04611,
+        "g3": 0.2955
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-003",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-003",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-004",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.242917,
+        "g2": 0.089409,
+        "g3": -0.153763
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-004",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-004",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-005",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.085916,
+        "g2": 0.189997,
+        "g3": -0.218012
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-005",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-005",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-006",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.146843,
+        "g2": -0.1484,
+        "g3": 0.218793
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-006",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-006",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-007",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.212256,
+        "g2": 0.079669,
+        "g3": 0.201455
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-007",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-007",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-008",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.209898,
+        "g2": 0.088185,
+        "g3": 0.201896
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-008",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-008",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-009",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.2932,
+        "g2": -0.071318,
+        "g3": -0.047314
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-009",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-009",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-010",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.048308,
+        "g2": 0.048289,
+        "g3": -0.299009
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-010",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-010",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-011",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.188732,
+        "g2": -0.240318,
+        "g3": -0.039576
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-011",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-011",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-012",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.266305,
+        "g2": 0.115241,
+        "g3": -0.108135
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-012",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-012",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-013",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.038655,
+        "g2": 0.304675,
+        "g3": 0.051115
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-013",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-013",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-014",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.093303,
+        "g2": 0.260775,
+        "g3": -0.146138
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-014",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-014",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-015",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.065037,
+        "g2": -0.246183,
+        "g3": -0.185614
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-015",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-015",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-016",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.061516,
+        "g2": -0.311087,
+        "g3": 0.006681
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-016",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-016",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-017",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.041432,
+        "g2": -0.064652,
+        "g3": -0.310028
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-017",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-017",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-018",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.028028,
+        "g2": 0.312133,
+        "g3": -0.072848
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-018",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-018",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-019",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.318039,
+        "g2": 0.046447,
+        "g3": -0.042634
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-019",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-019",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-020",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.195718,
+        "g2": 0.163971,
+        "g3": 0.204048
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-020",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-020",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-021",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.03057,
+        "g2": 0.300544,
+        "g3": 0.131807
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-021",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-021",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-022",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.265346,
+        "g2": 0.099456,
+        "g3": 0.173911
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-022",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-022",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-023",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.007894,
+        "g2": -0.117064,
+        "g3": 0.314318
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-023",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-023",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-024",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.1691,
+        "g2": -0.223495,
+        "g3": 0.190115
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-024",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-024",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-025",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.048112,
+        "g2": 0.314559,
+        "g3": -0.12516
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-025",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-025",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-026",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.149197,
+        "g2": 0.018317,
+        "g3": -0.310941
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-026",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-026",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-027",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.02982,
+        "g2": -0.237941,
+        "g3": 0.253464
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-027",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-027",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-028",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.237369,
+        "g2": 0.124686,
+        "g3": -0.229015
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-028",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-028",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-029",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.258402,
+        "g2": 0.220081,
+        "g3": 0.108829
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-029",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-029",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-030",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.269438,
+        "g2": 0.021404,
+        "g3": -0.2384
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-030",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-030",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-031",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.273245,
+        "g2": -0.241233,
+        "g3": -0.000823
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-031",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-031",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-032",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.329415,
+        "g2": 0.162959,
+        "g3": 0.029792
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-032",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-032",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-033",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.365886,
+        "g2": 0.019732,
+        "g3": 0.070224
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-033",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-033",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-034",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.184106,
+        "g2": -0.170354,
+        "g3": -0.28223
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-034",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-034",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-035",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.260127,
+        "g2": 0.163932,
+        "g3": 0.227041
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-035",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-035",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-036",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.176796,
+        "g2": 0.288242,
+        "g3": -0.188182
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-036",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-036",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-037",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.297046,
+        "g2": -0.255595,
+        "g3": 0.001957
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-037",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-037",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-038",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.271433,
+        "g2": 0.288158,
+        "g3": 0.028779
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-038",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-038",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-039",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.251031,
+        "g2": 0.140802,
+        "g3": -0.28076
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-039",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-039",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-040",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.209357,
+        "g2": -0.303239,
+        "g3": 0.17371
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-040",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-040",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-041",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.325813,
+        "g2": 0.24234,
+        "g3": 0.074399
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-041",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-041",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-042",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.299907,
+        "g2": -0.05109,
+        "g3": 0.287218
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-042",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-042",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-043",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.202944,
+        "g2": 0.298591,
+        "g3": -0.222512
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-043",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-043",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-044",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.274981,
+        "g2": 0.063813,
+        "g3": -0.324275
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-044",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-044",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-045",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.419965,
+        "g2": 0.089942,
+        "g3": -0.074516
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-045",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-045",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-046",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.076201,
+        "g2": 0.408981,
+        "g3": 0.149339
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-046",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-046",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-047",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.304289,
+        "g2": 0.318264,
+        "g3": -0.083946
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-047",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-047",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-048",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.236668,
+        "g2": 0.32495,
+        "g3": 0.212328
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-048",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-048",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-049",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.416763,
+        "g2": 0.195244,
+        "g3": 0.028941
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-049",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-049",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-050",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.173209,
+        "g2": 0.198782,
+        "g3": -0.386401
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-050",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-050",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-051",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.11433,
+        "g2": -0.442778,
+        "g3": -0.126829
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-051",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-051",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-052",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.209626,
+        "g2": -0.406227,
+        "g3": 0.151177
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-052",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-052",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-053",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.47554,
+        "g2": -0.093628,
+        "g3": 0.061223
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-053",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-053",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-054",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.450738,
+        "g2": 0.056787,
+        "g3": -0.198321
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-054",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-054",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-055",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.301454,
+        "g2": -0.013936,
+        "g3": 0.402441
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-055",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-055",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-056",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.433533,
+        "g2": -0.262935,
+        "g3": 0.059089
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-056",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-056",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-057",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.425511,
+        "g2": 0.242834,
+        "g3": -0.16837
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-057",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-057",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-058",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.475453,
+        "g2": 0.186159,
+        "g3": -0.125388
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-058",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-058",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-059",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.251674,
+        "g2": -0.458856,
+        "g3": -0.104227
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-059",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-059",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-060",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.394832,
+        "g2": 0.190289,
+        "g3": 0.318178
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-060",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-060",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-061",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.54407,
+        "g2": -0.056671,
+        "g3": 0.054568
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-061",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-061",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-062",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.555736,
+        "g2": -0.028048,
+        "g3": -0.041428
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-062",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-062",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-063",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.019299,
+        "g2": 0.547874,
+        "g3": -0.142267
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-063",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-063",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-064",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.457331,
+        "g2": -0.329344,
+        "g3": -0.11352
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-064",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-064",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-065",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.066843,
+        "g2": 0.461429,
+        "g3": -0.350927
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-065",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-065",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-066",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.526871,
+        "g2": -0.234895,
+        "g3": -0.134552
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-066",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-066",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-067",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.560007,
+        "g2": 0.041418,
+        "g3": -0.214952
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-067",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-067",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-068",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.319373,
+        "g2": -0.422397,
+        "g3": 0.303458
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-068",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-068",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-069",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.206436,
+        "g2": -0.121352,
+        "g3": 0.571377
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-069",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-069",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-070",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.489467,
+        "g2": -0.392073,
+        "g3": -0.046478
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-070",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-070",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-071",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.38248,
+        "g2": -0.492645,
+        "g3": -0.135868
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-071",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-071",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-072",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.531096,
+        "g2": -0.191808,
+        "g3": -0.317712
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-072",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-072",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-073",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.373907,
+        "g2": 0.360672,
+        "g3": -0.403247
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-073",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-073",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-074",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.283518,
+        "g2": -0.591325,
+        "g3": -0.124599
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-074",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-074",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-075",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.155814,
+        "g2": -0.336695,
+        "g3": 0.566906
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-075",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-075",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-076",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.123012,
+        "g2": -0.502419,
+        "g3": 0.453101
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-076",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-076",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-077",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.016086,
+        "g2": -0.371603,
+        "g3": -0.59054
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-077",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-077",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-078",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.382883,
+        "g2": -0.54173,
+        "g3": -0.248281
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-078",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-078",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-079",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.487651,
+        "g2": 0.460443,
+        "g3": -0.258727
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-079",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-079",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-080",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.657167,
+        "g2": 0.274244,
+        "g3": 0.15852
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-080",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-080",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-081",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.388279,
+        "g2": 0.590942,
+        "g3": 0.219356
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-081",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-081",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-082",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.695475,
+        "g2": -0.179516,
+        "g3": 0.220218
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-082",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-082",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-083",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.538826,
+        "g2": -0.486811,
+        "g3": -0.232055
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-083",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-083",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-084",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.742013,
+        "g2": -0.195809,
+        "g3": -0.09725
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-084",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-084",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-085",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.500019,
+        "g2": -0.150075,
+        "g3": -0.586103
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-085",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-085",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-086",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.507899,
+        "g2": -0.590109,
+        "g3": 0.167378
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-086",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-086",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-087",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.720848,
+        "g2": -0.308002,
+        "g3": -0.19582
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-087",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-087",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-088",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.069683,
+        "g2": -0.351409,
+        "g3": -0.737296
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-088",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-088",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-089",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.254613,
+        "g2": -0.00332,
+        "g3": 0.791661
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-089",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-089",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-090",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.718313,
+        "g2": 0.429276,
+        "g3": 0.106959
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-090",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-090",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-091",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.338178,
+        "g2": -0.737782,
+        "g3": -0.271381
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-091",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-091",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-092",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.560144,
+        "g2": 0.183182,
+        "g3": 0.63733
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-092",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-092",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-093",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.294302,
+        "g2": 0.81937,
+        "g3": -0.131281
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-093",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-093",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-094",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.377726,
+        "g2": -0.320213,
+        "g3": -0.743142
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-094",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-094",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-095",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.296558,
+        "g2": 0.326335,
+        "g3": -0.791105
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-095",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-095",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-096",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.549046,
+        "g2": 0.429018,
+        "g3": 0.598469
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-096",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-096",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-097",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.251175,
+        "g2": 0.892473,
+        "g3": 0.089654
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-097",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-097",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-098",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.640993,
+        "g2": -0.297009,
+        "g3": -0.626977
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-098",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-098",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-099",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.796175,
+        "g2": 0.025793,
+        "g3": 0.531769
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-099",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-099",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-100",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.869423,
+        "g2": -0.429592,
+        "g3": -0.051524
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-100",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-100",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-101",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.72325,
+        "g2": 0.491026,
+        "g3": -0.453085
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-101",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-101",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-102",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.610711,
+        "g2": 0.646934,
+        "g3": -0.452775
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-102",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-102",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-103",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.65794,
+        "g2": 0.510726,
+        "g3": 0.574829
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-103",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-103",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-104",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.854999,
+        "g2": -0.437303,
+        "g3": 0.360845
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-104",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-104",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-105",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.58382,
+        "g2": -0.631858,
+        "g3": 0.584254
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-105",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-105",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-106",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.786907,
+        "g2": 0.701293,
+        "g3": 0.007864
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-106",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-106",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-107",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.571464,
+        "g2": 0.493165,
+        "g3": 0.756078
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-107",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-107",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-108",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.826976,
+        "g2": -0.075553,
+        "g3": 0.694896
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-108",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-108",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-109",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.895804,
+        "g2": -0.601861,
+        "g3": 0.198815
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-109",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-109",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-110",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.179209,
+        "g2": -1.096479,
+        "g3": -0.048167
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-110",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-110",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-111",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.612306,
+        "g2": -0.218785,
+        "g3": -0.920394
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-111",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-111",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-112",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.881991,
+        "g2": 0.72522,
+        "g3": 0.003949
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-112",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-112",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-113",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.038332,
+        "g2": 0.650309,
+        "g3": -0.956143
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-113",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-113",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-114",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.154943,
+        "g2": -0.200357,
+        "g3": -0.00522
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-114",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-114",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-115",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.567557,
+        "g2": -0.085466,
+        "g3": 1.039666
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-115",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-115",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-116",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.002643,
+        "g2": 1.146824,
+        "g3": -0.36357
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-116",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-116",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-117",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.680811,
+        "g2": -0.472289,
+        "g3": 0.893703
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-117",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-117",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-118",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.683009,
+        "g2": -1.013265,
+        "g3": 0.175355
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-118",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-118",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-119",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.535217,
+        "g2": -0.45145,
+        "g3": 1.035961
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-119",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-119",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-120",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.045261,
+        "g2": -0.280121,
+        "g3": -0.657884
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-120",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-120",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-121",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.390185,
+        "g2": 0.957248,
+        "g3": 0.759283
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-121",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-121",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-122",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.020666,
+        "g2": -0.927918,
+        "g3": -0.908692
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-122",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-122",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-123",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.252872,
+        "g2": 0.224316,
+        "g3": -0.331905
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-123",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-123",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-124",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.846993,
+        "g2": -0.028329,
+        "g3": 1.027546
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-124",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-124",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-125",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.441319,
+        "g2": 0.66767,
+        "g3": 1.085495
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-125",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-125",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-126",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.131706,
+        "g2": -0.731245,
+        "g3": 0.221558
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-126",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-126",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-127",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.183693,
+        "g2": 0.446212,
+        "g3": 1.295522
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-127",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-127",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-128",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.332669,
+        "g2": 0.151342,
+        "g3": 1.351024
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-128",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-128",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-129",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.518708,
+        "g2": -1.014871,
+        "g3": 0.841662
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-129",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-129",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-130",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.80339,
+        "g2": -0.372433,
+        "g3": -1.128198
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-130",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-130",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-131",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.178084,
+        "g2": 0.947864,
+        "g3": 1.085065
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-131",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-131",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-132",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.113358,
+        "g2": -0.792001,
+        "g3": 1.232465
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-132",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-132",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-133",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.974033,
+        "g2": 0.846333,
+        "g3": -0.739358
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-133",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-133",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-134",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.860293,
+        "g2": 0.59215,
+        "g3": -1.083763
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-134",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-134",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-135",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.56999,
+        "g2": 1.346279,
+        "g3": 0.427318
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-135",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-135",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-136",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.171714,
+        "g2": 1.074831,
+        "g3": -1.091305
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-136",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-136",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-137",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.221075,
+        "g2": 0.219794,
+        "g3": -0.945079
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-137",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-137",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-138",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.158208,
+        "g2": 1.305766,
+        "g3": 0.871989
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-138",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-138",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-139",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.151003,
+        "g2": 0.51751,
+        "g3": 1.502938
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-139",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-139",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-140",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.026591,
+        "g2": -1.191815,
+        "g3": -1.090163
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-140",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-140",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-141",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.672311,
+        "g2": 0.051804,
+        "g3": 1.488686
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-141",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-141",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-142",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.493365,
+        "g2": 0.780459,
+        "g3": 1.371418
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-142",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-142",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-143",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.452127,
+        "g2": -1.161106,
+        "g3": -1.115499
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-143",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-143",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-144",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.68026,
+        "g2": -0.106121,
+        "g3": -0.164884
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-144",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-144",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-145",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.506802,
+        "g2": 0.271643,
+        "g3": 0.763857
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-145",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-145",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-146",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.059208,
+        "g2": 0.182563,
+        "g3": -1.35635
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-146",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-146",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-147",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.005665,
+        "g2": 1.307014,
+        "g3": 0.586288
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-147",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-147",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-148",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.251766,
+        "g2": -0.008232,
+        "g3": -1.251437
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-148",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-148",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-149",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.141599,
+        "g2": 1.232979,
+        "g3": -1.289866
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-149",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-149",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-150",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.25343,
+        "g2": -1.274382,
+        "g3": 0.28486
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-150",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-150",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-151",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.279758,
+        "g2": -1.051287,
+        "g3": -1.471853
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-151",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-151",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-152",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.212677,
+        "g2": 0.60575,
+        "g3": -1.259822
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-152",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-152",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-153",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.754319,
+        "g2": 0.400235,
+        "g3": 0.512862
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-153",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-153",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-154",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.134074,
+        "g2": -0.880038,
+        "g3": 1.231985
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-154",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-154",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-155",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.686051,
+        "g2": -1.68113,
+        "g3": -0.600335
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-155",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-155",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-156",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.84189,
+        "g2": 1.501078,
+        "g3": -0.880636
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-156",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-156",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-157",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.422366,
+        "g2": 1.601974,
+        "g3": -1.036573
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-157",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-157",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-158",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.558932,
+        "g2": 0.083397,
+        "g3": 1.210393
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-158",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-158",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-159",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.980585,
+        "g2": -0.161894,
+        "g3": -0.194558
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-159",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-159",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-160",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.168309,
+        "g2": 1.001148,
+        "g3": 1.305944
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-160",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-160",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-161",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.956722,
+        "g2": 0.486632,
+        "g3": -0.307538
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-161",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-161",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-162",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.887256,
+        "g2": -0.77936,
+        "g3": 0.282691
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-162",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-162",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-163",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.214683,
+        "g2": 1.728367,
+        "g3": 1.142851
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-163",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-163",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-164",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.832682,
+        "g2": 1.60819,
+        "g3": 1.073187
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-164",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-164",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-165",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.014273,
+        "g2": 2.1005,
+        "g3": -0.335425
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-165",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-165",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-166",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.369891,
+        "g2": 1.909698,
+        "g3": -0.914356
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-166",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-166",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-167",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.385767,
+        "g2": -2.115418,
+        "g3": 0.304265
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-167",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-167",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-168",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.794461,
+        "g2": 1.194299,
+        "g3": 0.410006
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-168",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-168",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-169",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.970599,
+        "g2": 0.575396,
+        "g3": -0.836642
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-169",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-169",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-170",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.254363,
+        "g2": -1.845518,
+        "g3": 1.243006
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-170",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-170",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-171",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.738263,
+        "g2": 1.305895,
+        "g3": -1.693616
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-171",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-171",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-172",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.120787,
+        "g2": -0.119902,
+        "g3": 2.279135
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-172",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-172",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-173",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.067628,
+        "g2": -2.305747,
+        "g3": 0.09356
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-173",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-173",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-174",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.315917,
+        "g2": -0.214663,
+        "g3": 0.168271
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-174",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-174",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-175",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.398578,
+        "g2": 1.635832,
+        "g3": 0.956916
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-175",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-175",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-176",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.998183,
+        "g2": 0.788839,
+        "g3": -1.02185
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-176",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-176",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-177",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.000716,
+        "g2": 0.7361,
+        "g3": 2.056498
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-177",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-177",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-178",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.200671,
+        "g2": -0.932269,
+        "g3": 2.231169
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-178",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-178",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-179",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.860419,
+        "g2": -1.693978,
+        "g3": 1.547409
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-179",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-179",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-180",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.274708,
+        "g2": -0.972502,
+        "g3": 0.054365
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-180",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-180",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-181",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.070428,
+        "g2": 1.090335,
+        "g3": 2.247156
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-181",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-181",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-182",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.106902,
+        "g2": -2.189567,
+        "g3": -0.588564
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-182",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-182",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-183",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.523522,
+        "g2": 2.483391,
+        "g3": 0.220788
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-183",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-183",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-184",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.396998,
+        "g2": -0.238342,
+        "g3": -2.530167
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-184",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-184",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-185",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.288945,
+        "g2": 1.525237,
+        "g3": 1.660254
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-185",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-185",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-186",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.599819,
+        "g2": -0.669965,
+        "g3": 1.966174
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-186",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-186",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-187",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.788518,
+        "g2": 0.567106,
+        "g3": -1.866977
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-187",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-187",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-188",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.479843,
+        "g2": -1.230961,
+        "g3": 1.853286
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-188",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-188",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-189",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.899986,
+        "g2": 1.354506,
+        "g3": 1.353179
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-189",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-189",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-190",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.276063,
+        "g2": -1.48518,
+        "g3": 0.165443
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-190",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-190",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-191",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.046082,
+        "g2": 1.791513,
+        "g3": 0.396893
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-191",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-191",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-192",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.452675,
+        "g2": -2.640156,
+        "g3": 0.721183
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-192",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-192",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-193",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.656314,
+        "g2": 0.210631,
+        "g3": -0.859707
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-193",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-193",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-194",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.824971,
+        "g2": -1.651061,
+        "g3": 1.388907
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-194",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-194",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-195",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.461461,
+        "g2": -2.758945,
+        "g3": -0.555964
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-195",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-195",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-196",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.259322,
+        "g2": 0.476827,
+        "g3": -2.826584
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-196",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-196",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-197",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.368484,
+        "g2": 0.525312,
+        "g3": -2.832839
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-197",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-197",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-198",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.131698,
+        "g2": 1.265478,
+        "g3": -1.563919
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-198",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-198",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-199",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.807204,
+        "g2": 2.617466,
+        "g3": -1.116069
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-199",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-199",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-200",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.015328,
+        "g2": 2.983436,
+        "g3": -0.079461
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-200",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-200",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-201",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.76161,
+        "g2": -2.386642,
+        "g3": -0.51911
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-201",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-201",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-202",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.279394,
+        "g2": -1.469528,
+        "g3": 2.64478
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-202",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-202",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-203",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.138591,
+        "g2": -0.255095,
+        "g3": -2.834941
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-203",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-203",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-204",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.852601,
+        "g2": 0.85934,
+        "g3": 2.846258
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-204",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-204",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-205",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.586705,
+        "g2": -0.008749,
+        "g3": -3.064773
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-205",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-205",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-206",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.848239,
+        "g2": 2.417417,
+        "g3": -1.829378
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-206",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-206",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-207",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.344092,
+        "g2": -0.696621,
+        "g3": -2.026147
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-207",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-207",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-208",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -3.180392,
+        "g2": -0.36312,
+        "g3": -0.127475
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-208",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-208",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-209",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.190008,
+        "g2": 2.249844,
+        "g3": 2.311968
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-209",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-209",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-210",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.365561,
+        "g2": -1.237717,
+        "g3": -2.688667
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-210",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-210",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-211",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.655051,
+        "g2": -2.801234,
+        "g3": -0.473845
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-211",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-211",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-212",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.887318,
+        "g2": -2.98383,
+        "g3": -1.14348
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-212",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-212",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-213",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.210372,
+        "g2": 0.801909,
+        "g3": -0.488441
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-213",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-213",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-214",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.900627,
+        "g2": 2.27113,
+        "g3": -1.615624
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-214",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-214",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-215",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.66783,
+        "g2": 1.957352,
+        "g3": -2.701577
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-215",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-215",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-216",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.02794,
+        "g2": 0.718679,
+        "g3": 3.193783
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-216",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-216",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-217",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.048813,
+        "g2": 0.214343,
+        "g3": 1.622489
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-217",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-217",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-218",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.477815,
+        "g2": 0.661384,
+        "g3": 3.392762
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-218",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-218",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-219",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.41299,
+        "g2": -0.748654,
+        "g3": 3.1345
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-219",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-219",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-220",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.754513,
+        "g2": -0.177446,
+        "g3": 2.229687
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-220",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-220",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-221",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.78462,
+        "g2": 1.207883,
+        "g3": 3.275154
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-221",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-221",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-222",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.497235,
+        "g2": -0.559223,
+        "g3": 0.686655
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-222",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-222",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-223",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.285741,
+        "g2": 2.642933,
+        "g3": -1.010717
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-223",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-223",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-224",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.476417,
+        "g2": 1.747527,
+        "g3": 2.064924
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-224",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-224",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-225",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.01383,
+        "g2": 3.002296,
+        "g3": 0.776563
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-225",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-225",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-226",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.947062,
+        "g2": -2.260839,
+        "g3": -2.808697
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-226",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-226",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-227",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.752821,
+        "g2": -3.644255,
+        "g3": -0.526648
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-227",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-227",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-228",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.295929,
+        "g2": 2.88761,
+        "g3": 0.863468
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-228",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-228",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-229",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.123073,
+        "g2": -2.685466,
+        "g3": 1.693913
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-229",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-229",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-230",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.113248,
+        "g2": -1.356743,
+        "g3": -3.427055
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-230",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-230",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-231",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.416122,
+        "g2": -3.009052,
+        "g3": 0.414661
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-231",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-231",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-232",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.326148,
+        "g2": 1.983109,
+        "g3": -0.556933
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-232",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-232",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-233",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.638999,
+        "g2": 0.0919,
+        "g3": 3.890316
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-233",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-233",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-234",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.504822,
+        "g2": -2.839181,
+        "g3": 1.210131
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-234",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-234",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-235",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.00273,
+        "g2": 3.064229,
+        "g3": -2.580932
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-235",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-235",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-236",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.56512,
+        "g2": -2.57277,
+        "g3": 3.060472
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-236",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-236",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-237",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.25004,
+        "g2": 2.221883,
+        "g3": 3.400454
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-237",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-237",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-238",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.208239,
+        "g2": -2.949246,
+        "g3": -1.802358
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-238",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-238",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-239",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.40942,
+        "g2": 1.33457,
+        "g3": -1.918664
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-239",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-239",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-240",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.784099,
+        "g2": 2.42412,
+        "g3": -3.295774
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-240",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-240",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-241",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.235705,
+        "g2": 3.007372,
+        "g3": -2.919494
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-241",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-241",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-242",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.614528,
+        "g2": -2.434352,
+        "g3": 3.060021
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-242",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-242",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-243",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.360929,
+        "g2": -1.469211,
+        "g3": 3.985488
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-243",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-243",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-244",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.77269,
+        "g2": -1.646848,
+        "g3": -1.227761
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-244",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-244",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-245",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -3.850584,
+        "g2": 1.013039,
+        "g3": -1.697788
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-245",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-245",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-246",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.202265,
+        "g2": 4.276445,
+        "g3": -0.832578
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-246",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-246",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-247",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.766583,
+        "g2": -3.656281,
+        "g3": 2.314249
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-247",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-247",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-248",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.897629,
+        "g2": 2.683521,
+        "g3": 2.001834
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-248",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-248",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-249",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.138966,
+        "g2": -4.457633,
+        "g3": 0.1075
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-249",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-249",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-250",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.854006,
+        "g2": -2.79166,
+        "g3": 2.0646
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-250",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-250",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-251",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.976739,
+        "g2": -3.857735,
+        "g3": 2.160677
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-251",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-251",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-252",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -3.598512,
+        "g2": 1.468088,
+        "g3": -2.388925
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-252",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-252",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-253",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.179504,
+        "g2": 1.379446,
+        "g3": -4.380276
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-253",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-253",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-254",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.502286,
+        "g2": -3.002378,
+        "g3": 2.481959
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-254",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-254",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-255",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.018271,
+        "g2": -0.461592,
+        "g3": -4.179334
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-255",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-255",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-256",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.621453,
+        "g2": -4.628385,
+        "g3": -0.515987
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-256",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-256",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-257",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -4.687699,
+        "g2": -0.589286,
+        "g3": 0.278077
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-257",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-257",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-258",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.315054,
+        "g2": 3.735403,
+        "g3": 1.847905
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-258",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-258",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-259",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.870624,
+        "g2": -4.722431,
+        "g3": 0.012449
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-259",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-259",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-260",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.739392,
+        "g2": -0.036695,
+        "g3": 4.513137
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-260",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-260",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-261",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -4.605222,
+        "g2": 1.374712,
+        "g3": -0.797999
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-261",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-261",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-262",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.327455,
+        "g2": -4.205999,
+        "g3": 0.985123
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-262",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-262",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-263",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -3.830807,
+        "g2": -0.629164,
+        "g3": -3.058438
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-263",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-263",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-264",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -4.356497,
+        "g2": 1.737053,
+        "g3": -1.667153
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-264",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-264",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-265",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 4.708664,
+        "g2": -1.568543,
+        "g3": -0.706166
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-265",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-265",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-266",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.16149,
+        "g2": 1.424803,
+        "g3": -4.702123
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-266",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-266",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-267",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.833009,
+        "g2": 0.759001,
+        "g3": -4.153256
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-267",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-267",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-268",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.956994,
+        "g2": -1.709066,
+        "g3": 4.412169
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-268",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-268",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-269",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.748581,
+        "g2": 0.037711,
+        "g3": -4.362594
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-269",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-269",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-270",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.879646,
+        "g2": -4.160766,
+        "g3": -1.165493
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-270",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-270",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-271",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.078022,
+        "g2": -0.104881,
+        "g3": 5.115463
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-271",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-271",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-272",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.521903,
+        "g2": 0.830471,
+        "g3": -4.54685
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-272",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-272",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-273",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 2.288417,
+        "g2": -2.992339,
+        "g3": 3.73083
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-273",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-273",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-274",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.961792,
+        "g2": 4.429472,
+        "g3": -2.243171
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-274",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-274",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-275",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.389064,
+        "g2": -3.910702,
+        "g3": 3.667488
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-275",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-275",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-276",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.263785,
+        "g2": 4.860257,
+        "g3": 2.366998
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-276",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-276",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-277",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 0.544784,
+        "g2": 4.471255,
+        "g3": 3.067339
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-277",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-277",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-278",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -4.272144,
+        "g2": 2.523924,
+        "g3": -2.341673
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-278",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-278",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-279",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.116806,
+        "g2": -1.347888,
+        "g3": 4.357197
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-279",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-279",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-280",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.337573,
+        "g2": -2.787993,
+        "g3": 4.622807
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-280",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-280",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-281",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 4.605704,
+        "g2": -2.755582,
+        "g3": 1.595879
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-281",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-281",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-282",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -4.673785,
+        "g2": -1.541601,
+        "g3": 2.748879
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-282",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-282",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-283",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 1.634786,
+        "g2": 5.214922,
+        "g3": -1.5291
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-283",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-283",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-284",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -3.346582,
+        "g2": -1.178043,
+        "g3": 4.477951
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-284",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-284",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-285",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 4.787424,
+        "g2": -3.090056,
+        "g3": -0.780616
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-285",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-285",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-286",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 5.148127,
+        "g2": 2.176034,
+        "g3": 1.510353
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-286",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-286",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-287",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.324672,
+        "g2": -5.006076,
+        "g3": -2.674083
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-287",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-287",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-288",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.825151,
+        "g2": 0.344071,
+        "g3": -4.434795
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-288",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-288",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-289",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.605398,
+        "g2": 2.830328,
+        "g3": -4.480467
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-289",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-289",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-290",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.243251,
+        "g2": -1.505863,
+        "g3": -5.745181
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-290",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-290",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-291",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.862621,
+        "g2": -5.402226,
+        "g3": -1.773578
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-291",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-291",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-292",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -1.221491,
+        "g2": -5.536876,
+        "g3": 2.029702
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-292",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-292",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-293",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.092651,
+        "g2": -5.355513,
+        "g3": -1.918971
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-293",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-293",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-294",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -6.086543,
+        "g2": 0.37974,
+        "g3": -0.179176
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-294",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-294",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-295",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -0.39313,
+        "g2": -1.340693,
+        "g3": -5.979482
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-295",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-295",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-296",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -2.754118,
+        "g2": 2.375053,
+        "g3": 4.996885
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-296",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-296",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-297",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 5.137086,
+        "g2": -3.026714,
+        "g3": -1.771373
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-297",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-297",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-298",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": -5.241283,
+        "g2": -3.385117,
+        "g3": -0.506658
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-298",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-298",
+      "feature_schema_version": "synth-ph1rank-v1"
+    },
+    {
+      "project_id": "R-299",
+      "cohort_id": "SYNTH-PH1-RANK-COHORT",
+      "period": "2026-01",
+      "values": {
+        "g1": 3.251396,
+        "g2": -2.477015,
+        "g3": -4.794041
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::R-299",
+      "source_provenance": "SYNTHETIC_FIXTURE::R-299",
+      "feature_schema_version": "synth-ph1rank-v1"
+    }
+  ]
+}

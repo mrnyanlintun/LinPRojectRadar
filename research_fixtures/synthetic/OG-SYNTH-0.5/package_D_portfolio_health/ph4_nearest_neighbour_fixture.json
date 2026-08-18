@@ -1,0 +1,137 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "not_for_empirical_validation": true,
+  "fixture_id": "PH4_IDENTICAL_NEAR_DISTANT",
+  "serves": "PH.4 (D1.4) Cross-project Pattern Detector",
+  "expected": {
+    "identical_pair": [
+      "ID-A",
+      "ID-B"
+    ],
+    "distance": 0.0,
+    "similarity": 1.0,
+    "zero_variance_feature_excluded": "f_flat",
+    "distant_vector": "FAR-D",
+    "property": "the uniformly distant vector is not the nearest match of any member of the compact cluster"
+  },
+  "cohort": {
+    "cohort_id": "SYNTH-PH4-COHORT",
+    "portfolio_id": "SYNTH-PORTFOLIO-1",
+    "project_ids": [
+      "FAR-D",
+      "ID-A",
+      "ID-B",
+      "NEAR-C"
+    ],
+    "period": "2026-01",
+    "inclusion_rule": "every declared synthetic project",
+    "exclusion_rule": "none",
+    "feature_schema_version": "synth-ph4-v1",
+    "qualification_policy": "CATEGORY_9_ELIGIBLE_STATES_ONLY",
+    "model_version": "ph-v21-synthetic-m1"
+  },
+  "feature_schema": {
+    "version": "synth-ph4-v1",
+    "features": [
+      {
+        "feature_id": "f_x",
+        "label": "f_x",
+        "units": "ratio",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "f_y",
+        "label": "f_y",
+        "units": "ratio",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "f_flat",
+        "label": "f_flat",
+        "units": "ratio",
+        "orientation": "NEUTRAL",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      }
+    ]
+  },
+  "feature_records": [
+    {
+      "project_id": "FAR-D",
+      "cohort_id": "SYNTH-PH4-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_x": 9.0,
+        "f_y": 9.0,
+        "f_flat": 7.0
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::FAR-D",
+      "source_provenance": "SYNTHETIC_FIXTURE::FAR-D",
+      "feature_schema_version": "synth-ph4-v1"
+    },
+    {
+      "project_id": "ID-A",
+      "cohort_id": "SYNTH-PH4-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_x": 1.0,
+        "f_y": 1.0,
+        "f_flat": 7.0
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::ID-A",
+      "source_provenance": "SYNTHETIC_FIXTURE::ID-A",
+      "feature_schema_version": "synth-ph4-v1"
+    },
+    {
+      "project_id": "ID-B",
+      "cohort_id": "SYNTH-PH4-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_x": 1.0,
+        "f_y": 1.0,
+        "f_flat": 7.0
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::ID-B",
+      "source_provenance": "SYNTHETIC_FIXTURE::ID-B",
+      "feature_schema_version": "synth-ph4-v1"
+    },
+    {
+      "project_id": "NEAR-C",
+      "cohort_id": "SYNTH-PH4-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_x": 1.1,
+        "f_y": 1.05,
+        "f_flat": 7.0
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::NEAR-C",
+      "source_provenance": "SYNTHETIC_FIXTURE::NEAR-C",
+      "feature_schema_version": "synth-ph4-v1"
+    }
+  ]
+}

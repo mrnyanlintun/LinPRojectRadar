@@ -9,6 +9,112 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-18 - Run 33: Portfolio Health PH.1-PH.5 canonical remediation, sim-2026.08-v21
+
+**Branch `run33-portfolio-health-v21` from `main` at `54409af`.** Report:
+`REPORT_2026-08-18_run33-portfolio-health-v21.md`.
+
+**Simulation: `sim-2026.08-v21`** (v20 preserved, named as superseded, prefix-verified from git).
+**Participant package: `og-participant-2026.08-v11`** (v10 pinned to `54409af`, NOT regenerated).
+**Synthetic package: `OG-SYNTH-0.5`** (0.1 to 0.4 untouched; 0.4 demoted from current).
+
+## FIVE THINGS THAT MUST NOT BE LOST
+
+**1. PH.5 MUST NOT PRODUCE A SCALAR, AND THAT IS THE CORRECT OUTCOME.** `score = null`,
+disposition `PARAMETER_PROVENANCE_BLOCKED`. The module is called "Anomaly Score" and the
+temptation to make it produce a number is the whole trap: no governed normalisation,
+transformation, weight set, missingness policy or calibration objective exists, and **Run 34 owns
+all five**. What PH.5 emits is a `PortfolioAnomalyProfile` carrying every constituent by module id
+and role with its cohort, period, schema, model version and source lineage. Duplicate lineage
+cannot reinforce: `distinct_evidence_bodies` counts EVIDENCE BODIES, not constituents, so the same
+result offered twice occupies one slot and `confidence` stays null. Every constituent declares
+itself NON-INDEPENDENT, because PH.1, PH.2 and PH.4 are transforms of the same feature records.
+
+**2. THE PH.1 DEFECT WAS OPERATIONAL, NOT ALGORITHMIC, AND IT WAS FOUND BY EXECUTING THE CODE.**
+Run 15's isolation forest is genuine and every piece of the published construction verified.
+But v20 fitted **a new forest per scored project**, on the other projects, and the portfolio card
+displayed those scores side by side as one scale. On a three-project portfolio: reference size 2
+for P1 and a different reference of 2 for P2. Section 6's operational rule forbids it. v21 fits
+ONE forest per cohort/model version. **Do not "restore" the per-project forest as a
+self-exclusion safeguard** - iForest scores its own training set by design, and the population is
+now recorded as `fitted_project_population` instead of avoided by producing incomparable scores.
+ONE DECLARED DEVIATION SURVIVES, unchanged and recorded: `H` is the paper's `ln(i) + gamma`
+estimate, not the exact harmonic sum. It was NOT changed because the Run-15 threshold was frozen
+on that scale and section 14 forbids retuning. The suite measures the gap and asserts it shrinks.
+
+**3. THE sklearn RANK REQUIREMENT IS NOT MET AT THE PAPER DEFAULT, AND THAT IS REPORTED, NOT
+SMOOTHED.** Spearman on the 300-project graded fixture is **0.9875 at t = 100**, short of the
+contract's 0.99; **0.9955 at t = 400** and **0.9975 at t = 1000**. The cause is ensemble
+Monte-Carlo variance and it is DEMONSTRATED - fixture, psi and seed fixed, only the ensemble size
+raised, for both implementations - not asserted. **No production parameter was changed to obtain
+it: production keeps t = 100.** The compact ten-point structural fixture CANNOT measure rank
+agreement at all (nine near-tied inliers), which is why a second fixture exists; both
+implementations do agree on its top project. scikit-learn is dev-only: `requirements.txt` is
+unchanged and no committed file imports it.
+
+**4. SIX FAULTS WERE ILL-POSED ON THE FIRST PASS AND THE CAMPAIGN CORRECTLY REFUSED THEM.** Their
+"mutation" changed only the INPUT - reverse record order, a withdrawn history, a duplicated
+lineage - and the module gave the same answer, because the property genuinely held. That is not a
+fault injection. Each was repointed at the real defect in production source. **Faults 10 and 18
+each need TWO anchors**: mutating the tie-break alone, or the member ordering alone, leaves the
+property standing and the campaign would credit a fault it had not proved. Final: 25 required,
+25 applied, 25 RED for the intended reason, 25 restored GREEN, NOT_APPLIED 0, crashes-as-RED 0.
+
+**5. THE v20 IMPLEMENTATION IS PRESERVED AND UNREACHABLE, AND SEVEN SUITES NOW ASSERT ABOUT IT
+HISTORICALLY.** `app.simulation.portfolio.compute_portfolio` stays byte for byte, because Runs 2,
+6, 13, 14, 15, 17 and 20 recorded findings ABOUT IT. Production routes through
+`portfolio_health.compute_portfolio_health_snapshot` -> `canonical_v8`, and
+`portfolio_health.assert_not_reachable` proves it FROM THE LIVE CALL-SITE SOURCE, not from a list.
+`server/tools/run33_historical_portfolio.py` is the historical resolution mechanism; a suite that
+executes the legacy function MUST also call `assert_not_reachable`, or it is a test that live code
+could satisfy and therefore not a historical record. `test_run17_scientific_methods.py`,
+`test_period_series.py` and `test_run2_fifteen_defects.py` were converted this way.
+
+## What changed operationally
+
+**ALL FIVE MODULES NOW ABSTAIN ON THE REAL CORPUS, AND THAT IS CORRECT.** A portfolio comparison
+needs a declared population, period, feature schema and model version; "the rows this query
+returned" is none of those. The controlled three-project portfolio supplies no governed cohort
+through `saveprojectdata`, so all five abstain with one reason and every identity is ADDRESSABLE
+in the stored snapshot carrying its own reason - at v20 an abstaining portfolio module vanished
+from the map entirely. `portfolio-present-but-unwired = 0`: the intake exists and is wired end to
+end, proved by executing it, and an intake interface is not data.
+
+Four governed structures arrive through the REAL intake (`saveprojectdata` ->
+`project_data.add_revision` -> `apply_to_signal_inputs`): `portfolioCohort`,
+`portfolioFeatureSchema`, `portfolioFeatureRecord`, `portfolioSignalHistory`. Never attach them to
+a test object.
+
+**No status colour anywhere.** PH.2's percentile bands, PH.3's slope bands, PH.4's matched-cluster
+ladder, PH.5's composite ladder and PH.1's threshold bands are all gone, and the participant card
+lost its status dot. **The 0.15 match radius is retired and nothing replaces it.** The 1e-12 in
+PH.3 is NUMERICAL ZERO HANDLING and must never be described as an operational threshold.
+
+**The D1.2 proxy qualifier is WITHDRAWN** (server `PROXY_QUALIFIERS` 2 -> 1, client
+`RUN1_PROXY_QUALIFIER` likewise). Every clause of it became false. History:
+`code_audit/run33_proxy_qualifier_withdrawal.csv`.
+
+## Verification on the final head
+
+Voting exactly 2 (A1.7 TCPI, A1.8 VAC); Portfolio Health votes 0; project-status effect 0;
+Category-9 raw and missing-assessment bypasses 0; legacy proxy route 0; mixed-model, mixed-period
+and mixed-schema comparisons 0; portfolio-output feedback 0; MCV disabled; Plithogenic disabled;
+Quantum archived; Hypersoft disabled; participant experimental sequence unchanged (proved
+structurally, by prefix-equality of `workspace.js` before the Portfolio Health block); production
+Postgres not accessed; no real participant, client or employer-confidential data touched.
+
+## Run 34 requirements (NOT launched here)
+
+Calibration and parameter provenance for all five: PH.1 anomaly threshold/bands and the provenance
+of psi, tree count, seed and feature set; PH.2 the equal-feature weighting now recorded
+`OWNER_POLICY`; PH.3 any magnitude distinction (none authorised at v21); PH.4 any match threshold;
+and PH.5's normalisation, transformations, weights, missingness policy and calibration objective.
+Run 35 owns empirical validation and the parsimony decisions. **Nothing in Run 33 is empirically
+validated**, and the frozen Run-15 threshold's own artifact records
+`FIELD_EMPIRICAL_VALIDATION = NOT_CLAIMED`.
+
+---
+
 # 2026-08-18 - Run 32 FINAL CLOSURE: proxy qualifiers, single client authority, handbook surface
 
 **Branch `run32-qualifier-authority` from `main` at `19a7055`.** Still Run 32. Report:

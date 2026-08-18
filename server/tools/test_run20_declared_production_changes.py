@@ -171,6 +171,11 @@ from run32_production_changes import (  # noqa: E402
     RUN32_NEW_PRODUCTION_FILES,
     RUN32_PRODUCTION_CHANGES,
 )
+# RUN 33, THE PORTFOLIO HEALTH CANONICAL REMEDIATION. Its own manifest, same construction, same
+# property: it declares ONLY the two files it created. models.py, project_data.py, registry.py
+# and documents.py are NOT in it, because earlier runs already declare them and no path may
+# appear in two manifests.
+from run33_production_changes import RUN33_NEW_PRODUCTION_FILES  # noqa: E402
 run30_declared = {entry[1] for entry in RUN30_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN30_NEW_PRODUCTION_FILES}
 run31_declared = {entry[1] for entry in RUN31_PRODUCTION_CHANGES.values()
@@ -331,7 +336,9 @@ _undeclared_new = sorted(
     # RUN 31 declares its own five new production files in its own manifest, for the same reason.
     and str(p.relative_to(ROOT)) not in RUN31_NEW_PRODUCTION_FILES
     # RUN 32 declares its own two new production files in its own manifest, for the same reason.
-    and str(p.relative_to(ROOT)) not in RUN32_NEW_PRODUCTION_FILES)
+    and str(p.relative_to(ROOT)) not in RUN32_NEW_PRODUCTION_FILES
+    # RUN 33 declares its own two new production files in its own manifest, for the same reason.
+    and str(p.relative_to(ROOT)) not in RUN33_NEW_PRODUCTION_FILES)
 check("and no OTHER file has appeared in the simulation package undeclared, which is the check "
       "that makes the new-file list mean something",
       not _undeclared_new, str(_undeclared_new))

@@ -1,0 +1,186 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "not_for_empirical_validation": true,
+  "fixture_id": "PH2_ORDINAL_RANK_AND_TIE",
+  "serves": "PH.2 (D1.2) Portfolio Outlier Detection",
+  "expected": {
+    "supplied_oracle_values": [
+      1,
+      2,
+      3,
+      10
+    ],
+    "supplied_oracle_midranks": {
+      "P-A": "1/8",
+      "P-B": "3/8",
+      "P-C": "5/8",
+      "P-D": "7/8"
+    },
+    "most_extreme_adverse_project_id": "P-D",
+    "tie_property": "T-A and T-B hold the same value and must receive the same midrank"
+  },
+  "cohort": {
+    "cohort_id": "SYNTH-PH2-COHORT",
+    "portfolio_id": "SYNTH-PORTFOLIO-1",
+    "project_ids": [
+      "P-A",
+      "P-B",
+      "P-C",
+      "P-D"
+    ],
+    "period": "2026-01",
+    "inclusion_rule": "every declared synthetic project",
+    "exclusion_rule": "none",
+    "feature_schema_version": "synth-ph2-v1",
+    "qualification_policy": "CATEGORY_9_ELIGIBLE_STATES_ONLY",
+    "model_version": "ph-v21-synthetic-m1"
+  },
+  "feature_schema": {
+    "version": "synth-ph2-v1",
+    "features": [
+      {
+        "feature_id": "f_adverse",
+        "label": "f_adverse",
+        "units": "index",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      }
+    ]
+  },
+  "feature_records": [
+    {
+      "project_id": "P-A",
+      "cohort_id": "SYNTH-PH2-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 1
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::P-A",
+      "source_provenance": "SYNTHETIC_FIXTURE::P-A",
+      "feature_schema_version": "synth-ph2-v1"
+    },
+    {
+      "project_id": "P-B",
+      "cohort_id": "SYNTH-PH2-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 2
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::P-B",
+      "source_provenance": "SYNTHETIC_FIXTURE::P-B",
+      "feature_schema_version": "synth-ph2-v1"
+    },
+    {
+      "project_id": "P-C",
+      "cohort_id": "SYNTH-PH2-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 3
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::P-C",
+      "source_provenance": "SYNTHETIC_FIXTURE::P-C",
+      "feature_schema_version": "synth-ph2-v1"
+    },
+    {
+      "project_id": "P-D",
+      "cohort_id": "SYNTH-PH2-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 10
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::P-D",
+      "source_provenance": "SYNTHETIC_FIXTURE::P-D",
+      "feature_schema_version": "synth-ph2-v1"
+    }
+  ],
+  "tie_cohort": {
+    "cohort_id": "SYNTH-PH2-TIE-COHORT",
+    "portfolio_id": "SYNTH-PORTFOLIO-1",
+    "project_ids": [
+      "T-A",
+      "T-B",
+      "T-C",
+      "T-D"
+    ],
+    "period": "2026-01",
+    "inclusion_rule": "every declared synthetic project",
+    "exclusion_rule": "none",
+    "feature_schema_version": "synth-ph2-v1",
+    "qualification_policy": "CATEGORY_9_ELIGIBLE_STATES_ONLY",
+    "model_version": "ph-v21-synthetic-m1"
+  },
+  "tie_feature_records": [
+    {
+      "project_id": "T-A",
+      "cohort_id": "SYNTH-PH2-TIE-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 5
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::T-A",
+      "source_provenance": "SYNTHETIC_FIXTURE::T-A",
+      "feature_schema_version": "synth-ph2-v1"
+    },
+    {
+      "project_id": "T-B",
+      "cohort_id": "SYNTH-PH2-TIE-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 5
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::T-B",
+      "source_provenance": "SYNTHETIC_FIXTURE::T-B",
+      "feature_schema_version": "synth-ph2-v1"
+    },
+    {
+      "project_id": "T-C",
+      "cohort_id": "SYNTH-PH2-TIE-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 9
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::T-C",
+      "source_provenance": "SYNTHETIC_FIXTURE::T-C",
+      "feature_schema_version": "synth-ph2-v1"
+    },
+    {
+      "project_id": "T-D",
+      "cohort_id": "SYNTH-PH2-TIE-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_adverse": 1
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::T-D",
+      "source_provenance": "SYNTHETIC_FIXTURE::T-D",
+      "feature_schema_version": "synth-ph2-v1"
+    }
+  ]
+}

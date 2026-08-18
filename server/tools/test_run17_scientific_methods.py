@@ -876,6 +876,22 @@ def _proj(pid, cpi, spi, doc=0.0, pct=50.0):
 
 
 def portfolio_health() -> None:
+    # RUN 33 MARKED THIS SECTION HISTORICAL. Every check below executes
+    # `app.simulation.portfolio.compute_portfolio`, which is the SUPERSEDED v20 implementation:
+    # Run 33 repointed production onto the canonical v8 Portfolio Health layer through
+    # `portfolio_health.compute_portfolio_health_snapshot`. The v20 function is PRESERVED because
+    # these findings -- and Run 2's, 6's, 13's, 14's and 15's -- are evidence about it, and
+    # deleting it would delete the subject of the findings.
+    #
+    # THE ASSERTIONS BELOW ARE UNCHANGED and are still exactly what they always asserted: what
+    # the instrument USED to do. `assert_not_reachable` supplies the other half, because a
+    # historical test that only proved the old behaviour would go green again if a later run
+    # reconnected the proxy, and a test that can be satisfied by live code is not a historical
+    # record.
+    import run33_historical_portfolio as _R33H
+    _R33H.assert_not_reachable(
+        lambda cond, name, detail="": check("PH.1", f"HISTORICAL: {name}", cond, str(detail)))
+
     # A cohort of tight inliers plus one distant project.
     inliers = [_proj(f"p{i}", 1.00 + 0.01 * (i % 3), 1.00 + 0.01 * (i % 2)) for i in range(8)]
     anomaly = _proj("odd", 0.40, 0.35, doc=0.9, pct=95.0)
@@ -982,8 +998,13 @@ def portfolio_health() -> None:
           perm["composite_percentile"] == po["composite_percentile"])
     check(mid, "boundary: refuses a cohort below the declared minimum",
           compute_portfolio([_proj("a", 1.0, 1.0)], "a", None, CUTOFF).get("insufficient_data"))
-    check(mid, "label: carries a proxy qualifier stating it is a percentile rank",
-          "D1.2" in REG.PROXY_QUALIFIERS)
+    # RUN 33 WITHDREW THE D1.2 PROXY QUALIFIER, because the proxy it described is gone: the v21
+    # module ranks the complete governed required risk-oriented feature set of a declared cohort
+    # by midrank percentile with the orientation applied before ranking, and carries no bands at
+    # all. The property this check protects -- that the label matches the implementation -- is
+    # kept, in the direction that is now true. See code_audit/run33_proxy_qualifier_withdrawal.csv.
+    check(mid, "label: carries NO proxy qualifier, because the proxy it described is retired",
+          "D1.2" not in REG.PROXY_QUALIFIERS)
 
     # ------------------------------------------------------------------ PH.3 Trajectory
     mid = "PH.3"

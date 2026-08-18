@@ -499,6 +499,17 @@ RUN32_SCOPED_FILES = {
     "assets/js/module_charts.js",
 }
 
+# RUN 33 is authorised by its supervisory contract to implement the supplied Portfolio Health
+# contracts and to modify the portfolio/cohort data contracts. TWO files are new -- the canonical
+# Portfolio Health layer and its production dispatcher -- and the files earlier runs already list
+# (models.py, project_data.py, registry.py, documents.py) are changed again. Pinned in
+# code_audit/run33_production_tree.sha256; this list is the same scope, read here so the check
+# keeps its full force over every file OUTSIDE it.
+RUN33_SCOPED_FILES = {
+    "server/app/simulation/canonical_v8.py",
+    "server/app/simulation/portfolio_health.py",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -509,7 +520,7 @@ _prod = [p for p in _diff
          and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES
          and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
          and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES
-         and p not in RUN32_SCOPED_FILES]
+         and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
@@ -526,7 +537,8 @@ _unscoped_assets = sorted(p for p in _diff
                           and p not in RUN28_CLOSURE_SCOPED_FILES
                           # RUN 32 FINAL CLOSURE: the two browser surfaces the metadata
                           # correction moves, named rather than the rule being widened.
-                          and p not in RUN32_SCOPED_FILES)
+                          and p not in RUN32_SCOPED_FILES
+                          and p not in RUN33_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

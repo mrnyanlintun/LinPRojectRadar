@@ -187,7 +187,9 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v10",
         "code_audit/run32_qualifier_participant_package_v10_checksums.sha256",
-        None,
+        # PINNED BY RUN 33 when the Portfolio Health remediation moved three of its files. NOT
+        # regenerated: this record is the evidence for the results collected under v10.
+        "54409af2a07ac989489447379e8379cc9f95e15f",
         "THE PROXY-QUALIFIER RECONCILIATION AND THE ONE CLIENT AUTHORITY. Four participant-"
         "visible files moved: categories, knowledge, taxonomy and the defensibility evidence "
         "object. TWENTY-SEVEN proxy qualifiers were WITHDRAWN from the client map, leaving the "
@@ -208,10 +210,61 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "SEQUENCE IS UNCHANGED: decision.js, decision-ui.js, workspace.js, deepdive.js and both "
         "questionnaires are byte for byte identical to v9. The v9 record is NOT regenerated.",
     ),
+    Package(
+        "og-participant-2026.08-v11",
+        "code_audit/run33_participant_package_v11_checksums.sha256",
+        None,
+        "THE CANONICAL PORTFOLIO HEALTH LAYER. Three participant-visible files moved: "
+        "workspace.js, knowledge.js and the generated defensibility evidence object. THE "
+        "PORTFOLIO HEALTH CARD NO LONGER SHOWS A STATUS DOT: every one of the five bands the v20 "
+        "snapshot carried was uncalibrated -- the PH.2 percentile cut points, the PH.3 slope "
+        "magnitudes, the PH.4 matched-cluster ladder, the PH.5 composite ladder and the PH.1 "
+        "ladder hung off a synthetic laboratory threshold -- and a coloured dot is read as a "
+        "project condition whatever the caption beside it says. The card now states the governed "
+        "cohort, its period, its feature schema, its model version, the small-sample limitation "
+        "below ten projects, and the reading or the abstention reason in words. The D1.2 proxy "
+        "qualifier is WITHDRAWN from knowledge.js because every clause of it became false when "
+        "the canonical layer replaced the proxy. THE EXPERIMENTAL SEQUENCE IS UNCHANGED: "
+        "decision.js, decision-ui.js, deepdive.js and both questionnaires are byte for byte "
+        "identical to v10, and the workspace.js delta is CONFINED TO THE PORTFOLIO HEALTH "
+        "RENDERING BLOCK -- no step of the decision sequence, no reveal gate, no lock, no "
+        "randomization, no server contract and no append-only record moved. The v10 record is "
+        "NOT regenerated.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v10 and v11.
+V10_TO_V11_CHANGED = (
+    "assets/js/ds_defensibility_evidence.js", "assets/js/knowledge.js",
+    "assets/js/workspace.js",
+)
+
+#: The sequence-bearing files that must be byte-identical from v10 to v11. workspace.js is NOT
+#: here, because it genuinely moved -- and what replaces the blanket claim is a stronger one,
+#: asserted in the guard: the workspace.js delta is confined to the Portfolio Health rendering
+#: block, and every OTHER sequence-bearing file is unchanged. A list that quietly kept
+#: workspace.js while its bytes moved would be the false claim this file exists to prevent.
+V10_TO_V11_SEQUENCE_UNCHANGED = (
+    "assets/js/decision.js", "assets/js/decision-ui.js", "assets/js/deepdive.js",
+    "assets/questionnaires/intake.json", "assets/questionnaires/debrief.json",
+)
+
+#: The v11 workspace.js delta must touch ONLY these identifiers, which are the Portfolio Health
+#: rendering block and nothing else. Named so the guard asserts against a contract rather than
+#: against a line count.
+#: THE ANCHOR THAT BOUNDS THE v11 workspace.js DELTA. Everything BEFORE this line -- which is
+#: present byte for byte in both v10 and v11 -- must be identical between the two, which is a
+#: structural statement rather than a vocabulary of tokens. A token list was tried first and was
+#: the wrong instrument: a multi-line expression's continuation lines carry no distinguishing
+#: token, so the check either flagged real portfolio lines or had to be widened until it accepted
+#: anything. The portfolio-rendering block is the TAIL of this file, so a prefix comparison says
+#: exactly what is meant: no step of the decision sequence, no reveal gate, no lock, no
+#: randomization, no server contract and no append-only record moved.
+V11_WORKSPACE_PORTFOLIO_ANCHOR = (
+    "    // Portfolio Health is a property of the whole portfolio, not of each project:")
 
 #: The files whose bytes moved between v9 and v10.
 V9_TO_V10_CHANGED = (

@@ -1,0 +1,11 @@
+# OPUS GUBERNATIO SYNTHETIC PACKAGE OG-SYNTH-0.5
+# Successor to OG-SYNTH-0.4, whose own CHECKSUMS.sha256 is preserved unchanged.
+# Every path below is relative to the repository root.
+#
+3a5ad55645a3bf63e9f985a9e7f551c8886d041e5c3005e1536093028290208b  research_fixtures/synthetic/OG-SYNTH-0.5/README.md
+87ec4e6751aa760be1cf96b18316ef25f26966883304b6f43cdbe37aad730b36  research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph1_isolation_forest_fixture.json
+416389b2234807f8b24411efdd5a268bae89558e0ed53dda60ba3b17175c7efb  research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph1_rank_agreement_fixture.json
+0b71caaa28f44aa60b7709aa049147192d0c04358ce1a5bc1814421c5ae0b9e5  research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph2_midrank_percentile_fixture.json
+5745d7b8aa24ae476638f7f1cc1e8490e0ce8c9f95b17bcb093b7e9f01e6898f  research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph3_trajectory_slope_fixture.json
+1f0f1588c9a294095885fdc26b8b1dff9b570d0ce574336fa101bb420725eac1  research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph4_nearest_neighbour_fixture.json
+857c1ced5aa093fbdc6984abb5108d4d2b4cc4909cbb55f729e7c20dce170384  research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph5_component_profile_fixture.json

@@ -554,7 +554,13 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # file it is checked against. A display name, no parity value moved.
                    - {"server/app/simulation/VALIDATION.md"}
                    # RUN 32 FINAL CLOSURE: the chart keyed on B4.7's old method class.
-                   - {"assets/js/module_charts.js"})
+                   - {"assets/js/module_charts.js"}
+                   # RUN 33: the canonical Portfolio Health layer and its production dispatcher.
+                   # Pinned in run33_production_tree.sha256; the check keeps full force outside
+                   # this named set, which is why the two files are listed rather than the
+                   # comparison being relaxed.
+                   - {"server/app/simulation/canonical_v8.py",
+                      "server/app/simulation/portfolio_health.py"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

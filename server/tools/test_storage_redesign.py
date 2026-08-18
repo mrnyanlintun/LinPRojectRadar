@@ -252,15 +252,21 @@ def main() -> None:
     check(json.dumps(b_before, sort_keys=True) == json.dumps(b_after, sort_keys=True),
           "B's OWN period 1, recomputed after its period 2 exists, is byte-identical too —"
           " a project's later periods cannot contaminate its earlier ones", "")
-    # Both computed for period 1 must have seen the same three-project population, whatever
-    # the wall-clock order of computation.
+    # Both computed for period 1 must have seen the SAME portfolio population, whatever the
+    # wall-clock order of computation. RUN 33: at v21 the population is the GOVERNED COHORT, not
+    # "the rows this query returned", and neither of these projects supplies one -- so what the
+    # two saw is the same cohort identity (none) and the same cutoff. The property under test is
+    # unchanged: two projects computed for one period must not see different portfolios.
     check(isinstance(a_after, dict) and isinstance(b_after, dict)
-          and a_after.get("portfolio_size") == 3 and b_after.get("portfolio_size") == 3
+          and a_after.get("cohort") == b_after.get("cohort")
+          and a_after.get("portfolio_size") == b_after.get("portfolio_size")
+          and a_after.get("structure_absent") == b_after.get("structure_absent")
           and a_after.get("period_cutoff") == b_after.get("period_cutoff"),
-          "two projects computed for the same period see the same portfolio: same "
-          "3-project population, same cutoff, regardless of when each was computed",
+          "two projects computed for the same period see the same portfolio: same governed "
+          "cohort identity, same size, same cutoff, regardless of when each was computed",
           f"A size={a_after.get('portfolio_size')} B size={b_after.get('portfolio_size')} "
-          f"cutoffs {a_after.get('period_cutoff')}/{b_after.get('period_cutoff')}")
+          f"cutoffs {a_after.get('period_cutoff')}/{b_after.get('period_cutoff')} "
+          f"cohorts {a_after.get('cohort')}/{b_after.get('cohort')}")
 
     # ================================================================== 5. store integrity
     print("\n5. The observation store is append-only and idempotent")

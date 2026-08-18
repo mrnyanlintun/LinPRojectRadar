@@ -215,13 +215,22 @@ check(_zero.get("received") == 0 and _zero.get("backordered") == 2,
 head("4. THE CHAIN, AND THE IDENTITY RULE IT OBEYS")
 # =================================================================================================
 
-check([p.identifier for p in SP.SYNTHETIC_PACKAGES]
+# RUN 33 APPENDED OG-SYNTH-0.5, the Portfolio Health canonical fixture package. Run 29's four
+# links are asserted as a strict PREFIX rather than overwritten, which is the same discipline the
+# simulation-version history is held to: a predecessor's position is a fact about the chain and a
+# successor never edits it.
+check([p.identifier for p in SP.SYNTHETIC_PACKAGES][:4]
       == ["OG-SYNTH-0.1", "OG-SYNTH-0.2", "OG-SYNTH-0.3", "OG-SYNTH-0.4"],
-      "the chain is declared oldest first and every link is named",
+      "the chain is declared oldest first and Run 29's four links are still its prefix",
+      str([p.identifier for p in SP.SYNTHETIC_PACKAGES]))
+check([p.identifier for p in SP.SYNTHETIC_PACKAGES]
+      == ["OG-SYNTH-0.1", "OG-SYNTH-0.2", "OG-SYNTH-0.3", "OG-SYNTH-0.4", "OG-SYNTH-0.5"],
+      "and every link is named, oldest first",
       str([p.identifier for p in SP.SYNTHETIC_PACKAGES]))
 check(sum(1 for p in SP.SYNTHETIC_PACKAGES if p.current) == 1
-      and SP.CURRENT.identifier == "OG-SYNTH-0.4",
-      "exactly one link is declared current and it is the successor")
+      and SP.CURRENT.identifier == "OG-SYNTH-0.5",
+      "exactly one link is declared current and it is the newest successor",
+      SP.CURRENT.identifier)
 check(all((ROOT / p.root).is_dir() for p in SP.SYNTHETIC_PACKAGES),
       "every declared package root exists in the checkout")
 
@@ -360,12 +369,21 @@ try:
     _red7 = check(_flagged == ["OG-SYNTH-0.3"],
                   "F7 RED: the masquerade rule names exactly the predecessor whose identifier a "
                   "current file has taken", str(_flagged))
-    _rec_now = SP.parse_record(
-        (ROOT / SP.CURRENT.record).read_text(encoding="utf-8"))
+    # RUN 33. THE OWNING RECORD IS FOUND MECHANICALLY, not assumed to be the current link.
+    # OG-SYNTH-0.4 became a PREDECESSOR when Run 33 minted OG-SYNTH-0.5, so `SP.CURRENT.record`
+    # no longer names this file and reading it there raised a KeyError rather than failing a
+    # check -- a crash, not a RED. The property under test is unchanged and is now stated on the
+    # record that actually covers the file: whichever package's record names it must go red.
     _digest_now = hashlib.sha256(_after).hexdigest()
     _rel = _victim.relative_to(ROOT).as_posix()
+    _owning = [pkg for pkg in SP.SYNTHETIC_PACKAGES if pkg.record
+               and _rel in SP.parse_record((ROOT / pkg.record).read_text(encoding="utf-8"))]
+    check(len(_owning) == 1,
+          "F7 the file is named by exactly one package record, so the owning record is not "
+          "ambiguous", str([pkg.identifier for pkg in _owning]))
+    _rec_now = SP.parse_record((ROOT / _owning[0].record).read_text(encoding="utf-8"))
     check(_rec_now[_rel] != _digest_now,
-          "F7 AND THE CURRENT RECORD GOES RED TOO: the successor's own checksum no longer matches "
+          "F7 AND THE OWNING RECORD GOES RED TOO: that package's own checksum no longer matches "
           "the file, so the change cannot pass as unrecorded either")
     _refused = False
     try:
@@ -380,10 +398,10 @@ finally:
 _green7b = check(_victim.read_bytes() == _orig
                  and b"OG-SYNTH-0.4" in _victim.read_bytes(),
                  "F7 RESTORED: the file is byte-identical to what it was before the injection")
-check(SP.parse_record((ROOT / SP.CURRENT.record).read_text(encoding="utf-8"))[
+check(SP.parse_record((ROOT / _owning[0].record).read_text(encoding="utf-8"))[
           _victim.relative_to(ROOT).as_posix()]
       == hashlib.sha256(_victim.read_bytes()).hexdigest(),
-      "and the successor record verifies against it again")
+      "and the owning package's record verifies against it again")
 check(not abstains(run("A5.6", {"queueModel": PS.known_answer_queue_model()})),
       "and the importer reads it again, so nothing was left mutated")
 

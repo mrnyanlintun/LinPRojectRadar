@@ -174,7 +174,15 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # pass-1 manifest is kept addressable as its parent rather than
                         # rewritten. The chain is EXTENDED, not opened; a pin at an unnamed file
                         # is still red.
-                        "run32_production_tree.sha256"),
+                        "run32_production_tree.sha256",
+                        # RUN 33 extends the chain once more, for the same reason and by the same
+                        # rule: the Portfolio Health canonical remediation ADDED canonical_v8.py
+                        # and portfolio_health.py and CHANGED documents.py, models.py,
+                        # project_data.py and registry.py, so the pin moves to the Run-33
+                        # manifest and the Run-32 manifest is kept addressable as its parent
+                        # rather than rewritten. The chain is EXTENDED, not opened; a pin at an
+                        # unnamed file is still red.
+                        "run33_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

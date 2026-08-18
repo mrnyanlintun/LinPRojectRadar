@@ -119,8 +119,14 @@ check(V17.SIMULATION_VERSION == "sim-2026.08-v17",
 check(H.index("sim-2026.08-v19") == H.index("sim-2026.08-v18") + 1,
       "the v19 line Run 31 added is still in the history, still directly after v18",
       str(H[-4:]))
-check(SIMULATION_VERSION == "sim-2026.08-v20",
-      "and the live line has advanced to v20, the one stamp Run 32 is authorised to add",
+# RESTATED BY RUN 33, by the same discipline and for the same reason: Run 32's v20 expectation
+# was true until the next authorised append, and Run 33 appends v21. v20's HISTORICAL POSITION is
+# asserted rather than overwritten, immediately below.
+check(H.index("sim-2026.08-v20") == H.index("sim-2026.08-v19") + 1,
+      "the v20 line Run 32 added is still in the history, still directly after v19",
+      str(H[-4:]))
+check(SIMULATION_VERSION == "sim-2026.08-v21",
+      "and the live line has advanced to v21, the one stamp Run 33 is authorised to add",
       SIMULATION_VERSION)
 check(V16.run_module is not V17.run_module is not V18.run_module,
       "all three are different function objects, so this runs three lines rather than one thrice")
@@ -367,9 +373,12 @@ check(H[:len(_prev)] == _prev,
       f"than from a note, so this run appended and overwrote nothing", f"{_prev} vs {H}")
 # RESTATED BY RUN 32. Run 31's three stamps are still exactly the first three that follow the
 # v16 history, which is Run 31's finding preserved; v20 is Run 32's own single authorised append.
+# RESTATED BY RUN 33, same reasoning again: Run 31's three stamps and Run 32's one are still
+# exactly the first four that follow the v16 history, and v21 is Run 33's own single append.
 check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19",
-                         "sim-2026.08-v20"),
-      "and it grew by exactly the three stamps Run 31 added plus the one stamp Run 32 adds",
+                         "sim-2026.08-v20", "sim-2026.08-v21"),
+      "and it grew by exactly the three stamps Run 31 added, the one Run 32 added and the one "
+      "stamp Run 33 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.

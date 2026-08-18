@@ -87,7 +87,12 @@ SYNTHETIC_PACKAGES: tuple[SyntheticPackage, ...] = (
         "research_fixtures/synthetic/OG-SYNTH-0.4",
         "research_fixtures/synthetic/OG-SYNTH-0.4/CHECKSUMS.sha256",
         "repository_root",
-        True,
+        # RUN 33 DEMOTED THIS LINK. It was the current link until OG-SYNTH-0.5 was minted; its
+        # record and its files are untouched. `current` is a statement about which link the
+        # CURRENT canonical line reads its newest fixtures from, and exactly one link may hold
+        # it -- the rule the guard enforces and the reason this flag is flipped here rather than
+        # a second True being left standing.
+        False,
         "RUN 29's CLOSURE. Three Category-4 and Category-5 modules were still being exercised "
         "against the shapes the PREVIOUS analytical line read: an audited findings cohort for the "
         "nonconformance rate, an occupancy log for the queueing measure, and a typed-in state "
@@ -97,6 +102,20 @@ SYNTHETIC_PACKAGES: tuple[SyntheticPackage, ...] = (
         "figures the supplied contracts state, including the one supplier, one carrier, one "
         "project model v0.3 cannot express because all forty-eight of its agents are suppliers.",
     ),
+    SyntheticPackage(
+        "OG-SYNTH-0.5",
+        "research_fixtures/synthetic/OG-SYNTH-0.5",
+        "research_fixtures/synthetic/OG-SYNTH-0.5/CHECKSUMS.sha256",
+        "repository_root",
+        True,
+        "RUN 33. The five Portfolio Health modules were being exercised against PORTFOLIO "
+        "VECTORS: bare {id, cpi, spi, docRiskScore, actualPctComplete} objects with no cohort, "
+        "no period, no feature schema, no orientation, no qualification state and no model "
+        "version. The supplied Run-33 contract names that shape as not being the method, "
+        "because a portfolio comparison is undefined without a declared population, period, "
+        "feature schema and model version. This successor adds the five canonical fixtures the "
+        "contract is defined on, at the exact figures the supplied oracles state.",
+    ),
 )
 
 #: The one link the current canonical fixtures are read from.
@@ -105,15 +124,19 @@ CURRENT = SYNTHETIC_PACKAGES[-1]
 #: The canonical fixture files the current link adds. Named here so a guard can assert that the
 #: successor record covers them and that no predecessor record does.
 CURRENT_ONLY_FILES = (
-    "research_fixtures/synthetic/OG-SYNTH-0.4/README.md",
-    "research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/"
-    "abm_agents_known_answer.csv",
-    "research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/"
-    "abm_environment_known_answer.csv",
-    "research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/"
-    "ncr_exposure_known_answer.csv",
-    "research_fixtures/synthetic/OG-SYNTH-0.4/package_A_project_structures/"
-    "queue_model_known_answer.csv",
+    "research_fixtures/synthetic/OG-SYNTH-0.5/README.md",
+    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
+    "ph1_isolation_forest_fixture.json",
+    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
+    "ph1_rank_agreement_fixture.json",
+    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
+    "ph2_midrank_percentile_fixture.json",
+    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
+    "ph3_trajectory_slope_fixture.json",
+    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
+    "ph4_nearest_neighbour_fixture.json",
+    "research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/"
+    "ph5_component_profile_fixture.json",
 )
 
 #: The three importers the closure replaced, and the canonical successor of each. The old ones are

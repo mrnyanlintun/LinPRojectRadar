@@ -1,0 +1,211 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "not_for_empirical_validation": true,
+  "fixture_id": "PH1_INLIER_CLUSTER_PLUS_DISTANT_ANOMALY",
+  "serves": "PH.1 (D1.1) Isolation Forest",
+  "expected": {
+    "highest_anomaly_score_project_id": "ANOM-01",
+    "property": "the single distant point receives the highest anomaly score of the cohort under one governed forest"
+  },
+  "cohort": {
+    "cohort_id": "SYNTH-PH1-COHORT",
+    "portfolio_id": "SYNTH-PORTFOLIO-1",
+    "project_ids": [
+      "ANOM-01",
+      "IN-01",
+      "IN-02",
+      "IN-03",
+      "IN-04",
+      "IN-05",
+      "IN-06",
+      "IN-07",
+      "IN-08",
+      "IN-09"
+    ],
+    "period": "2026-01",
+    "inclusion_rule": "every declared synthetic project",
+    "exclusion_rule": "none",
+    "feature_schema_version": "synth-ph1-v1",
+    "qualification_policy": "CATEGORY_9_ELIGIBLE_STATES_ONLY",
+    "model_version": "ph-v21-synthetic-m1"
+  },
+  "feature_schema": {
+    "version": "synth-ph1-v1",
+    "features": [
+      {
+        "feature_id": "f_cost",
+        "label": "f_cost",
+        "units": "ratio",
+        "orientation": "LOWER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "f_sched",
+        "label": "f_sched",
+        "units": "ratio",
+        "orientation": "LOWER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      }
+    ]
+  },
+  "feature_records": [
+    {
+      "project_id": "ANOM-01",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 0.2,
+        "f_sched": 0.15
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::ANOM-01",
+      "source_provenance": "SYNTHETIC_FIXTURE::ANOM-01",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-01",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 1.0,
+        "f_sched": 1.0
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-01",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-01",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-02",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 1.01,
+        "f_sched": 0.99
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-02",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-02",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-03",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 0.99,
+        "f_sched": 1.01
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-03",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-03",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-04",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 1.0,
+        "f_sched": 0.98
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-04",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-04",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-05",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 0.98,
+        "f_sched": 1.0
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-05",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-05",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-06",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 1.02,
+        "f_sched": 1.02
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-06",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-06",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-07",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 0.99,
+        "f_sched": 0.99
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-07",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-07",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-08",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 1.01,
+        "f_sched": 1.01
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-08",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-08",
+      "feature_schema_version": "synth-ph1-v1"
+    },
+    {
+      "project_id": "IN-09",
+      "cohort_id": "SYNTH-PH1-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_cost": 1.0,
+        "f_sched": 1.02
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::IN-09",
+      "source_provenance": "SYNTHETIC_FIXTURE::IN-09",
+      "feature_schema_version": "synth-ph1-v1"
+    }
+  ]
+}
