@@ -9,6 +9,86 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-18 - Run 34: Portfolio Health calibration and parameter provenance, sim-2026.08-v22
+
+**Branch `run34-portfolio-health-calibration` from `main` at `f5c52d3`.** Report:
+`REPORT_2026-08-18_run34-portfolio-health-calibration.md`. Protocol:
+`research/methodology/run34_portfolio_calibration_protocol.md`.
+
+**Simulation: `sim-2026.08-v22`** (PH.1/PH.2/PH.3 behaviour changed; proved by execution).
+**Participant package: `og-participant-2026.08-v11`, UNCHANGED** - no participant byte moved.
+**Synthetic package: `OG-SYNTH-0.6`** (labelled calibration + holdout; 0.1-0.5 untouched).
+
+## FIVE THINGS THAT MUST NOT BE LOST
+
+**1. THE PROTOCOL WAS COMMITTED BEFORE THE CAMPAIGN, AT `a2ed922`, AND IT DISCLOSES THAT I WAS
+NOT BLIND.** Run 33 had already measured stability at t=100/400/1000. Declaring a cut-point after
+seeing those numbers would be choosing the answer and calling it a rule, so the decision rule's
+CONTROLLING CLAUSE is an operational-relevance gate decidable from the state of the corpus, not a
+threshold fitted to the stability values. **If a future run needs to re-decide the tree count, do
+not start by picking a stability threshold.**
+
+**2. THE TREE COUNT STAYED AT 100 AND THE REASON IS NOT "THE NUMBERS WERE CLOSE".** D2 fails by
+EXECUTION of the real route: PH.1 produces no operational reading and no authoritative flag on the
+corpus, so the stability/compute trade-off has NO UNITS on one side and no candidate has
+defensible superiority. `TREE_COUNT_CALIBRATION = UNRESOLVED_NO_OPERATIONAL_CONSEQUENCE`, which
+contract section 6A explicitly authorises. **The D3 counterfactual independently agrees**: the
+100->400 runtime ratio is 4.08, failing D3's <=4x cost condition. Better raw numbers at 400/1000
+are NOT a recommendation and the artifact says so.
+
+**3. PH.2's COMPOSITE IS GONE, AND WHAT WENT IS A WEIGHTING, NOT A MEASUREMENT.** v21 emitted an
+equal-weighted composite LABELLED `OWNER_POLICY` - but emitted, and an emitted number is read as a
+measurement whatever the label says. v22 returns the per-feature percentile profile and
+`composite = NONE`. **The supplied oracle midranks are untouched and live in that profile**
+(`[1,2,3,10] -> 1/8, 3/8, 5/8, 7/8`), and the version-boundary proof asserts they are
+BYTE-IDENTICAL across v21 and v22. Do not "restore" the composite to make a number appear.
+
+**4. SEVEN PARAMETERS ARE CLASSIFIED `UNSUPPORTED`, AND THAT IS THE HONEST COUNT.** The parameter
+registry in `canonical_v8` is the ONE place a PH parameter is declared; `unsupported_applied()`
+returns the parameters that are UNSUPPORTED **and applied**, and a guard asserts it is empty. The
+seven - operational anomaly threshold, PH.2 weights and bands, PH.3 magnitude bands, PH.4 radius,
+PH.5 weights and missingness policy - all read `applied = no`. **Do not upgrade a heuristic to a
+calibrated class to avoid an uncomfortable row.** `EMPIRICAL_CALIBRATION` count is ZERO.
+
+**5. SIX OF THE TWENTY FAULTS WERE WRONG ON FIRST PASS AND EVERY CORRECTION IS IN THE FILE.** F2
+CRASHED (removing the cohort gate entirely made a one-project cohort reach the forest constructor;
+a crash is not a RED). F6 went red for the WRONG REASON - leaving an invalid orientation string in
+place still refuses downstream, because an unrecognised orientation is not rankable either, so the
+mutation had to DEFAULT the orientation, which is the defect actually being modelled. F7 returned
+the wrong tuple shape. F9 needed BOTH the count gate and the distinct-times gate. F15 and F20 had
+anchors that were not unique or not in the file the value lives in. **Check that the mutation
+changes what the guard reads, and that the guard fails for the stated reason and not another.**
+
+## What changed in production
+
+`canonical_v8.py`: the parameter registry; the cohort-size policy (n<3 NOT_ESTIMABLE - v21
+computed from n=2; 3<=n<10 continuous with SMALL_COHORT_LIMITATION and NO authoritative flag;
+n>=10 canonical, which still authorises no field threshold); `TWO_SIDED` orientation ranked on
+distance from the cohort centre; undeclared/unrecognised orientation refused; PH.2 composite
+withheld; PH.3 `FLAT` -> `STABLE` with `FLAT` kept as a backward alias, NOT_ESTIMABLE below three
+observations, and `equally_spaced` REPORTED rather than assumed; the governed
+`portfolioCalibrationRecord`. `portfolio_health.py`: calibration-record intake, carried on the
+COHORT ANCHOR so one project cannot change the weighting the whole cohort is read under.
+
+**The frozen 0.576 threshold is now COHORT-BOUND as well as schema-bound** - no flag below the
+canonical cohort size even under its own schema.
+
+## Verification on the final head
+
+Five assurance layers stated SEPARATELY per module; layer 5 PENDING for all five. Voting exactly
+2; Portfolio Health votes 0. No unclassified parameter; nothing UNSUPPORTED applied; no invented
+weights; no synthetic-as-empirical claim. Participant sequence unchanged. Production Postgres not
+accessed.
+
+## Run 35 requirements (NOT launched here)
+
+Empirical field validation against real project outcomes and the final parsimony/removal
+decisions. Also, only if the owner wants them: an operational PH.1 threshold, PH.2 weights, PH.3
+magnitude distinctions, a PH.4 radius, and PH.5 weights plus a missingness policy. **None of them
+exists today and none was created in Run 34.**
+
+---
+
 # 2026-08-18 - Run 33 FINAL CLOSURE: the PH.1 fixed-forest fidelity oracle
 
 **Branch `run33-ph1-fixed-forest-oracle` from `main` at `4395f5a`.** Still Run 33. Report section:
