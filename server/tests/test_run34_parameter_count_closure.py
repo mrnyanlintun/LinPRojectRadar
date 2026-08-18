@@ -69,14 +69,23 @@ def rows(path):
 # =================================================================================================
 head("1. THE ARTIFACTS ARE GENERATED, NOT HAND-AUTHORED")
 # =================================================================================================
-_before = {p.name: p.read_bytes() for p in (PROV, CLOSURE)}
-_r = subprocess.run([sys.executable, str(ROOT / "server" / "tools" / "build_run34_artifacts.py")],
-                    cwd=str(ROOT), capture_output=True, text=True,
-                    env={**os.environ, "PYTHONIOENCODING": "utf-8"})
-check(_r.returncode == 0, "the Run-34 artifact generator runs cleanly", _r.stderr[-200:])
-for _n, _b in _before.items():
-    check((AUDIT / _n).read_bytes() == _b,
-          f"{_n} is byte-identical to what the generator produces")
+# REGENERATED INTO A TEMPORARY DIRECTORY AND COMPARED, never over the committed artifact. A
+# guard that rewrites its own subject destroys any injected fault before the later sections can
+# see it, and the fault campaign beside this file proved that concretely.
+import tempfile                                                        # noqa: E402
+
+with tempfile.TemporaryDirectory() as _tmp:
+    _r = subprocess.run([sys.executable,
+                         str(ROOT / "server" / "tools" / "build_run34_artifacts.py"),
+                         "--out", _tmp],
+                        cwd=str(ROOT), capture_output=True, text=True,
+                        env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+    check(_r.returncode == 0, "the Run-34 artifact generator runs cleanly", _r.stderr[-200:])
+    for _p in (PROV, CLOSURE):
+        _fresh = pathlib.Path(_tmp) / _p.name
+        check(_fresh.is_file() and _fresh.read_bytes() == _p.read_bytes(),
+              f"{_p.name} is byte-identical to what the generator produces, compared without "
+              f"overwriting it")
 
 
 # =================================================================================================
@@ -111,8 +120,14 @@ check(len(params) == len(V8.PH_PARAMETERS),
 check(set(reg) == set(art),
       "MISSING GOVERNED PARAMETER RECORDS = 0 and UNEXPLAINED EXTRA RECORDS = 0",
       f"missing {sorted(set(reg) - set(art))}; extra {sorted(set(art) - set(reg))}")
-check(all(art[k]["parameter_class"] == reg[k]["parameter_class"] for k in reg),
-      "and every recorded class is the class the live registry declares")
+# INDEXED DEFENSIVELY. A missing record must FAIL the check above, not raise here: a guard that
+# crashes instead of failing is one of the ways a check has lied in this repository, and the
+# fault campaign beside this file caught exactly that.
+_mismatch = [k for k in reg
+             if k not in art or art[k]["parameter_class"] != reg[k]["parameter_class"]]
+check(not _mismatch,
+      "and every recorded class is the class the live registry declares",
+      str(_mismatch[:3]))
 
 _ids = [f"{r['module']}::{r['parameter']}" for r in params]
 check(len(set(_ids)) == len(_ids), "DUPLICATE PARAMETER ROWS = 0",

@@ -33,16 +33,27 @@ from app.simulation.portfolio import PORTFOLIO_VALIDATED               # noqa: E
 from app.simulation.registry import CSV_PATH                           # noqa: E402
 
 AUDIT = ROOT / "code_audit"
+#: RUN 34 FINAL CLOSURE. The generator can write into a DIFFERENT directory, so a guard can
+#: regenerate and compare WITHOUT overwriting the artifact it is checking. A generator that
+#: rewrites its own subject destroys any injected fault before a later check can see it -- which
+#: is exactly what happened when this campaign was first run, and it made four faults red for one
+#: uninformative reason instead of their own.
+OUT_DIR = AUDIT
 CAL_DS = "RUN34-CAL (OG-SYNTH-0.6, labelled, ground truth before detector)"
 HOLD_DS = "RUN34-HOLDOUT (OG-SYNTH-0.6, independent draw, scored once after selection)"
 
 
 def write(path, header, rows):
+    path = OUT_DIR / path.name
     with path.open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
-    print(f"wrote {path.relative_to(ROOT)}: {len(rows)} rows")
+    try:
+        shown = path.relative_to(ROOT)
+    except ValueError:                    # writing outside the repo, e.g. a guard's temp dir
+        shown = path
+    print(f"wrote {shown}: {len(rows)} rows")
 
 
 def population():
@@ -202,7 +213,8 @@ def main() -> int:
     # a duplicate. The counts are taken over PARAMETER rows and the TARGET DISCREPANCY is stated
     # rather than padded away.
     prov = list(csv.reader(
-        (AUDIT / "run34_portfolio_parameter_provenance.csv").open(encoding="utf-8", newline="")))
+        (OUT_DIR / "run34_portfolio_parameter_provenance.csv").open(encoding="utf-8",
+                                                                    newline="")))
     header, body = prov[0], prov[1:]
     col = {name: i for i, name in enumerate(header)}
     crows = []
@@ -367,4 +379,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if "--out" in sys.argv:
+        OUT_DIR = pathlib.Path(sys.argv[sys.argv.index("--out") + 1]).resolve()
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
     raise SystemExit(main())
