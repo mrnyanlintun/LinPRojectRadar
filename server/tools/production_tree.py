@@ -370,7 +370,15 @@ PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: calibration protocol is a scientific authority document -- it is what makes the Run-34
 #: parameter decisions auditable -- so it belongs inside the authority tree rather than beside
 #: it. The Run-22 record is kept addressable and is NOT rewritten.
-PINNED_AUTHORITY = ROOT / "code_audit" / "run34_authority_tree.sha256"
+#: RUN 35 REPOINTS IT AGAIN, for the same reason and by the same rule. The Run-35 empirical-
+#: validation protocol is a scientific authority document: it fixes the eligibility vocabulary and
+#: the independence rules that the whole Run-35 campaign is judged against, and it was committed
+#: before any result was scored. It belongs inside the authority tree. The Run-34 and Run-22
+#: records are kept addressable below and are NOT rewritten.
+PINNED_AUTHORITY = ROOT / "code_audit" / "run35_authority_tree.sha256"
+#: The Run-34 authority manifest, kept addressable so the supersession is a real change and not a
+#: silent rewrite.
+PINNED_AUTHORITY_RUN34 = ROOT / "code_audit" / "run34_authority_tree.sha256"
 #: The Run-22 authority manifest, kept addressable so the supersession is a real change and not a
 #: silent rewrite.
 PINNED_AUTHORITY_RUN22 = ROOT / "code_audit" / "run22_authority_tree.sha256"
