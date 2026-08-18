@@ -11694,3 +11694,78 @@ Category-10 algorithm remediation only: MOO, LP, CSP, What-if, Decision Sensitiv
 ### Run 33 requirements
 
 Calibration and empirical validation for all 16 Category-8/9 targets: status bands, source-reliability numeric mapping (none exists — `reliability_weight` is `None` by design), freshness windows per source class, quality and environmental thresholds, safety combination policy, and contractor-assessment aggregation. Each is currently absent by design, not by oversight.
+
+---
+
+## Run 35 — Empirical validation, validation eligibility, final operational/parsimony disposition (2026-08-18)
+
+**Run-35 final commit:** see `git log --first-parent main` for the Run-35 merge; report
+`REPORT_2026-08-18_run35-empirical-validation-and-parsimony.md`.
+**Starting commit:** `584ccf9882c3c48fba85055ab3ef63ae9f89f890`.
+
+**Simulation / packages — all three STAND, decided from executed behaviour:**
+`sim-2026.08-v22`, `og-participant-2026.08-v11`, `OG-SYNTH-0.6`. Run 35 changed no routing, no
+abstention, no operational state, no gate behaviour, no parameter application and no
+participant-visible output. Not one line under `server/app/` was modified, so no version boundary
+existed to prove and none was minted. The participant experimental sequence is unchanged.
+
+**Scope, derived mechanically:** 101 registry rows → 96 registered project modules, **95 project
+scientific targets** (96 minus A3.4, registered but disabled evidence-under-review), **5 Portfolio
+Health**, **100 scientific targets**. `registry.VALIDATED` = 95 is a *different* 95: it excludes
+A4.1, supplied not computed, which IS a scientific target. The scope artifact carries 101 rows so
+the two populations cannot be collapsed.
+
+**Validation-eligibility distribution (primary class, protocol precedence E→D→A→B→G→C→F):**
+
+| A validatable now | B partial reference | C synthetic only | D calibration-blocked | E structure/data absent | F no reference standard | G pending study |
+|---|---|---|---|---|---|---|
+| **0** | **3** | 0 primary | **1** | **96** | 0 primary | 0 primary |
+
+Secondary co-true classes are recorded per row and are not destroyed by precedence: all 5
+Portfolio Health rows carry `EMPIRICAL_VALIDATION_PENDING_STUDY`; all 100 carry
+`SYNTHETIC_VALIDATION_ONLY` on the basis that every identity is asserted by at least one
+executable suite.
+
+**Empirically validated against an independent field outcome: 0.** Partial-reference scored: 3.
+A6.2 PASS exactly against the OSHA incidence identity; A1.7 and A1.8 FAIL the predeclared
+exact-equality rule by exactly `−3/7000` and `+10/909`, caused by production rounding before emit
+and, for A1.7, before banding. 97 rows `NOT_APPLICABLE`, each with an explicit non-pass sentence.
+`synthetic_as_empirical_claims = 0`.
+
+**Operational-disposition distribution (seven-value vocabulary, 100 rows):**
+`KEEP_OPERATIONAL` 2 · `KEEP_ADVISORY` 2 · `KEEP_ABSTENTION_CAPABLE` 87 · `RESEARCH_ONLY` 1 ·
+`DISABLED_INSUFFICIENT_INPUT` 5 · `DISABLED_INSUFFICIENT_PROVENANCE` 2 · `ARCHIVED` 1.
+Deleted modules 0. Unexplained dispositions 0.
+
+**Voting: exactly 2** — A1.7 TCPI, A1.8 VAC, under *Cost Recovery Status*. No voter added; A6.2's
+exact PASS confers no vote.
+
+**Fault campaign:** 30 declared, 30 applied, 30 RED for the intended reason, 30 restored GREEN,
+NOT_APPLIED 0, crashes accepted as RED 0. Guard suite
+`server/tools/test_run35_validation_governance.py` (30 named checks, inside `run_all_suites.sh`).
+
+### The four states Run 36 must keep apart
+
+| State | Meaning | Count |
+|---|---|---|
+| **canonical** | the method its registered name claims is implemented | 92 of 100 (the 8 concept-only disabled are not) |
+| **calibrated** | every tunable value it applies has resolved provenance | 99 of 100 apply no unresolved value; **A1.1 applies one** |
+| **empirically validated** | scored against an independent observed field outcome | **0 of 100** |
+| **operationally retained** | currently exposed as an authoritative project-status vote | **2 of 100** (A1.7, A1.8) |
+
+### Unresolved issues entering Run 36
+
+1. Nothing is empirically field-validated; no band anywhere has measured false-positive or
+   false-negative performance. No labelled outcome corpus and no expert reference standard exist.
+2. **A1.7/A1.8 exact-equality FAIL.** Decide whether JavaScript-parity rounding or identity
+   fidelity governs, and whether a band may be evaluated on a rounded value.
+3. **A1.1 declares `costDriverDistributions` and nothing implements or consumes it.** The key is
+   accepted by the governed intake and reaches nothing; the runner computes from plain scalars;
+   and A1.1 applies the instrument's only reachable unresolved parameter (its four-band ladder).
+4. **Stale truthful-method labels on B4.4 and B1.2** describing proxies Run 32 removed. Correcting
+   them is a rename and requires owner authority.
+5. 96 of 100 targets produce nothing on the controlled corpus; the intake works, the corpus does
+   not carry governed structures.
+6. 96 unresolved-calibration rows: 95 unreached, 1 applied. No calibration set exists.
+7. Portfolio Health empirical validation PENDING ×5, unchanged from Run 34.
+8. Lineage UNRESOLVED for 77 of 100. Unknown lineage was not treated as independent.
