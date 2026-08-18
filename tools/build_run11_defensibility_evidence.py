@@ -75,7 +75,12 @@ def runner_name(mid: str) -> str:
         inner = getattr(fn, "__wrapped__", fn)
         return f"{inner.__module__}.{inner.__name__}"
     if mid in PORTFOLIO_VALIDATED:
-        return f"app.simulation.portfolio ({PORTFOLIO_VALIDATED[mid]})"
+        # RUN 33. The production dispatch a Portfolio Health identity reaches is the canonical
+        # v8 layer, through `portfolio_health.compute_portfolio_health_snapshot`. The v20
+        # implementation in `app.simulation.portfolio` is PRESERVED for the findings recorded
+        # about it and is not reachable from production, so naming it here would name the wrong
+        # implementation -- which is the exact failure this field exists to prevent.
+        return f"app.simulation.canonical_v8 ({PORTFOLIO_VALIDATED[mid]})"
     return "none: declared in the registry and implemented by no runner"
 
 

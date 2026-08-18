@@ -279,8 +279,17 @@ print("\nGuarantee 9 — portfolio reads the stored snapshot; below-threshold st
 snap = r["portfolio_snapshot"]
 check(snap is not None, "portfolio_snapshot is present (never silently null)")
 check(snap.get("insufficient_data") is True, "below threshold, reported as insufficient_data")
-check("need at least" in (snap.get("message") or ""),
-      "server's own message text is present, unmodified", snap.get("message"))
+# RUN 33. AT v21 THE REASON IS THE GOVERNED ONE, not the legacy off-by-one sentence. The v20
+# message ("need at least 3 projects with signal data") described a guard that no longer decides
+# anything: Portfolio Health abstains at v21 because no GOVERNED COHORT has been supplied, which
+# is a different and truthful reason. The legacy sentence travels with the legacy implementation
+# it belongs to and is asserted there.
+check("governed portfolio cohort" in (snap.get("message") or ""),
+      "the server's own abstention reason is present, unmodified", snap.get("message"))
+check(snap.get("route") == "canonical_v8" and snap.get("voting") is False
+      and snap.get("creates_project_evidence") is False,
+      "and the snapshot is stamped with the canonical route, non-voting, creating no evidence",
+      str([snap.get("route"), snap.get("voting"), snap.get("creates_project_evidence")]))
 
 # a second project with real signal data pushes the vector count over the guard
 create2 = post({"action": "projectcreate", "session_token": other, "name": "T3T5 Second Project"})
@@ -291,23 +300,34 @@ post({"action": "projectupload", "session_token": other, "id": pid2, "period": 1
 compute2 = post({"action": "projectcompute", "session_token": other, "id": pid2, "period": 1})
 result2b = post({"action": "projectresults", "session_token": other, "id": pid2, "period": 1})
 snap2 = result2b["result"]["portfolio_snapshot"]
-check(snap2 is not None and snap2.get("insufficient_data") is not True,
-      "with 2+ live results and real signal data, a real portfolio snapshot is stored",
+# RUN 33. A SECOND PROJECT NO LONGER MANUFACTURES A COHORT. At v20 the mere existence of two
+# rows with a cost index was enough to produce four portfolio readings; at v21 a comparison
+# needs a declared population, period, feature schema and model version, and none of those can
+# be inferred from "the rows this query returned". Neither project here supplies a governed
+# cohort through `saveprojectdata`, so all five abstain with the SAME reason -- the abstention
+# is a property of the cohort, not five separate opinions about it. This is the correct reading,
+# not a regression from the populated one.
+check(snap2 is not None and snap2.get("structure_absent") is True,
+      "with 2+ live results but NO governed cohort supplied, the snapshot is a reported "
+      "abstention rather than an invented comparison",
       str(snap2)[:150] if snap2 else None)
-# The server path supplies no history (documents.py passes None), so D1.3 Trajectory
-# Classifier abstains BY ABSENCE — the same contract as project-level modules, where an
-# abstention never appears with a colour. Four results, and cat8_3 specifically absent:
-# asserting only a count would pass again if a different module vanished for a wrong reason.
-# RESTATED BY RUN 15. Three, not four: D1.1 became a real isolation forest and needs at least
-# two other projects to grow trees on, so on this two-project portfolio it abstains by absence
-# exactly as D1.3 does. Both abstentions are asserted specifically below.
-check(isinstance(snap2, dict) and "results" in snap2 and len(snap2["results"]) == 3,
-      "the real snapshot carries the 3 computable D1 sub-results",
-      str(sorted(snap2.get("results", {}).keys())))
-check("cat8_3_trajectory_classifier" not in snap2.get("results", {}),
-      "D1.3 abstains by absence with no history — never a colour beside insufficient_data")
-check("cat8_1_isolation_forest" not in snap2.get("results", {}),
-      "D1.1 abstains by absence too: two projects leave one other to grow trees on")
+# All five are PRESENT as reported abstentions carrying their reason. At v20 an abstaining
+# portfolio module vanished from the map entirely, which is why "the count is 3" was the
+# assertion; a reader of the stored snapshot could not tell an abstention from a module that had
+# never existed. Every one of the five is now addressable, and its reason is readable.
+_res2 = (snap2 or {}).get("results", {})
+check(len(_res2) == 5 and sorted(_res2) == [
+          "cat8_1_isolation_forest", "cat8_2_portfolio_outlier",
+          "cat8_3_trajectory_classifier", "cat8_4_cross_project_pattern",
+          "cat8_5_anomaly_score"],
+      "all five Portfolio Health identities are addressable in the stored snapshot",
+      str(sorted(_res2)))
+check(all(_res2[k].get("abstained") is True and _res2[k].get("abstention_reason")
+          for k in _res2),
+      "and every one of them abstains WITH ITS REASON rather than vanishing")
+check(all(_res2[k].get("voting") is False and _res2[k].get("creates_project_evidence") is False
+          and "status_color" not in _res2[k] for k in _res2),
+      "non-voting, creating no project evidence, and carrying no status colour")
 check(all(not v.get("insufficient_data") for v in snap2.get("results", {}).values()),
       "no stored D1 sub-result carries a colour and an insufficiency flag together")
 

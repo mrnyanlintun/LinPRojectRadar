@@ -184,7 +184,13 @@ for mid, name in (("A1.2", "CUSUM"), ("A1.4", "Kalman"), ("A1.5", "ARIMA"),
                   ("A1.10", "Regression to Mean")):
     check(mid not in mods1, f"{name} abstains at period 1 rather than inventing a series")
 snap1 = r1.get("portfolio_snapshot") or {}
-check("cat8_3_trajectory_classifier" not in (snap1.get("results") or {}),
+# RUN 33. AT v21 AN ABSTAINING PORTFOLIO MODULE IS PRESENT AND CARRIES ITS REASON. At v20 it
+# vanished from the map, so "not in results" was the only way to state it, and a reader of the
+# stored snapshot could not tell an abstention from a module that had never existed. The property
+# this check protects -- one snapshot is not a trend, and nothing is invented from it -- is kept
+# and stated on the reason itself.
+_t1 = (snap1.get("results") or {}).get("cat8_3_trajectory_classifier") or {}
+check(_t1.get("abstained") is True and bool(_t1.get("abstention_reason")),
       "the trajectory classifier abstains at period 1: one snapshot is not a trend",
       str(sorted((snap1.get("results") or {}).keys())))
 # RESTATED BY RUN 15. D1.1 used to compute here on a two-project portfolio, because a distance
@@ -192,11 +198,14 @@ check("cat8_3_trajectory_classifier" not in (snap1.get("results") or {}),
 # isolation forest, which needs at least two OTHER projects to grow trees on, so it abstains by
 # absence alongside the trajectory classifier. The point of the check is unchanged: the
 # abstention is specific and the rest of the snapshot still computed.
-check(snap1.get("ok") is True
-      and "cat8_1_isolation_forest" not in (snap1.get("results") or {})
-      and "cat8_2_portfolio_outlier" in (snap1.get("results") or {}),
-      "and the rest of the portfolio snapshot still computed, so the abstention is specific",
-      str(snap1)[:120])
+check(sorted((snap1.get("results") or {})) == [
+          "cat8_1_isolation_forest", "cat8_2_portfolio_outlier",
+          "cat8_3_trajectory_classifier", "cat8_4_cross_project_pattern",
+          "cat8_5_anomaly_score"]
+      and all(v.get("abstention_reason") for v in (snap1.get("results") or {}).values()),
+      "and every Portfolio Health identity is addressable in the snapshot with its own reason, "
+      "so an abstention is distinguishable from a module that was never there",
+      str(sorted(snap1.get("results") or {})))
 
 print()
 print("=" * 78)
@@ -237,13 +246,43 @@ check(mods3.get("A1.2", {}).get("periods") == 3,
       str(mods3.get("A1.2", {}).get("periods")))
 
 snap3 = (r3.get("portfolio_snapshot") or {}).get("results") or {}
-traj = snap3.get("cat8_3_trajectory_classifier")
+# RUN 33. THE v20 TRAJECTORY ARITHMETIC IS NOW A HISTORICAL ASSERTION, and it is kept INTACT
+# rather than deleted: it is the record of what this instrument did, and Run 2's defect-6 fix is
+# recorded inside it. What it asserted -- that the classifier's figure is derivable from the
+# stored periods alone, recomputed here from the stored rows rather than read back from the
+# module -- is executed below against the PRESERVED v20 implementation, and `assert_not_reachable`
+# proves current production cannot satisfy it.
+#
+# AT v21 D1.3 IS DEFINED ON A GOVERNED SIGNAL HISTORY, not on a list of result snapshots: a
+# stable signal identity, real reporting dates, declared units, a declared orientation and a
+# per-observation qualification state. A list of snapshots carries none of those and list
+# position is not time, so the production route no longer feeds them in and D1.3 abstains here
+# for that stated reason. That is the correct reading.
+import run33_historical_portfolio as _R33H                                       # noqa: E402
+_R33H.assert_not_reachable(check)
+
+_traj21 = snap3.get("cat8_3_trajectory_classifier") or {}
+check(_traj21.get("abstained") is True
+      and "governed portfolio cohort" in (_traj21.get("abstention_reason") or ""),
+      "at v21 the trajectory classifier abstains on this project for want of a governed cohort "
+      "and a governed signal history, and says so",
+      str(_traj21.get("abstention_reason"))[:120])
+check("status_color" not in _traj21 and _traj21.get("voting") is False,
+      "carrying no status colour and no vote")
+
+# --- THE HISTORICAL RECORD, executed against the preserved v20 implementation ---------------
+cpis = [si1["cpi"], si2["cpi"], si3["cpi"]]
+_hist_pf = [{"id": "A", "cpi": cpis[-1], "spi": 1.0, "docRiskScore": 0.0,
+             "actualPctComplete": 50},
+            {"id": "B", "cpi": 1.0, "spi": 1.0, "docRiskScore": 0.0, "actualPctComplete": 50}]
+_hist_h = [{"signal_inputs": {"cpi": c}} for c in cpis]
+_legacy3 = _R33H.run_legacy(_hist_pf, "A", _hist_h, "2026-06-30")["results"]
+traj = _legacy3.get("cat8_3_trajectory_classifier")
 check(traj is not None,
-      "the trajectory classifier COMPUTES at period 3, having abstained on every project ever "
-      "computed while `history` was a literal None",
-      str(sorted(snap3.keys())))
+      "HISTORICAL (v20): the trajectory classifier COMPUTES over a three-period history",
+      str(sorted(_legacy3.keys())))
 check(isinstance(traj, dict) and traj.get("periods_analyzed") == 3,
-      "over 3 periods", str((traj or {}).get("periods_analyzed")))
+      "HISTORICAL (v20): over 3 periods", str((traj or {}).get("periods_analyzed")))
 # Its figure must be reproducible from the stored periods alone: portfolio.py's own expression
 # over the last three stored cpi values. Recomputed here from the STORED rows, not from the
 # module's output, so a wrong series cannot satisfy it.
@@ -255,12 +294,12 @@ check(isinstance(traj, dict) and traj.get("periods_analyzed") == 3,
 # OBSERVATIONS, which is defect 6 of the fifteen, so the copy recorded the defect while the
 # property stood. The rise is spread over the INTERVALS between the observations: three periods
 # are two intervals. Written as a slope below so the same drift cannot recur silently.
-cpis = [si1["cpi"], si2["cpi"], si3["cpi"]]
 intervals = len(cpis) - 1
 expected_trend = (cpis[-1] - cpis[0]) / intervals
 check(isinstance(traj, dict)
       and abs(traj.get("trend", 0) - round(expected_trend * 1000) / 1000) < 1e-9,
-      "and its trend is the stored periods' own cpi movement, recomputed independently here",
+      "HISTORICAL (v20): and its trend is the stored periods' own cpi movement, recomputed "
+      "independently here",
       f"module {traj.get('trend') if traj else None} vs stored {expected_trend}")
 
 print()

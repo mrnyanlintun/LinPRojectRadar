@@ -264,12 +264,49 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # server/tools/test_run32_closure_version_boundary.py extracts the v19 package FROM ITS GIT
 # OBJECT, executes it beside the current one and asserts that, rather than comparing source text.
-SIMULATION_VERSION = "sim-2026.08-v20"
+# RUN 33 (PORTFOLIO HEALTH PH.1-PH.5 CANONICAL REMEDIATION) -> sim-2026.08-v21. THE PORTFOLIO
+# HEALTH ROUTE AND ITS ARITHMETIC BOTH CHANGED, so the stamp moves. On identical portfolio
+# inputs the two lines differ, and the differences are behavioural rather than editorial:
+#
+#       v20  D1.3  Signal Trajectory Classifier   endpoint difference of the last three cost
+#                                                 index values over (count - 1), read off LIST
+#                                                 POSITION, banded Green/Yellow/Amber/Red
+#       v21  D1.3  Signal Trajectory Classifier   ordinary-least-squares slope on the actual
+#                                                 reporting times of a governed signal history,
+#                                                 classified DETERIORATING/IMPROVING/FLAT with
+#                                                 no magnitude band at all
+#
+#       v20  D1.5  Anomaly Score                  a scalar composite_score, the mean of the
+#                                                 retired Mahalanobis proxy and 1 - PH.2's own
+#                                                 percentile, banded to a status colour
+#       v21  D1.5  Anomaly Score                  a PortfolioAnomalyProfile carrying every
+#                                                 constituent and its lineage, with score = None
+#                                                 under PARAMETER_PROVENANCE_BLOCKED
+#
+#       v20  D1.4  Cross-Project Pattern          a fixed unvalidated 0.15 radius over three raw
+#                                                 mixed-unit features, then a status colour
+#       v21  D1.4  Cross-Project Pattern          the continuous nearest-neighbour relationship
+#                                                 on standardised features, no threshold
+#
+#       v20  D1.1  Isolation Forest               a genuine forest, but a DIFFERENT one per
+#                                                 scored project, with scores from different
+#                                                 forests shown side by side as one scale
+#       v21  D1.1  Isolation Forest               one governed forest per cohort and model
+#                                                 version, scoring every member from it
+#
+# and on a portfolio that carries NO governed cohort both lines refuse to compute, which is the
+# legitimate non-divergence: v20 refuses for being too small and v21 refuses for having no
+# governed cohort, and neither invents a reading.
+#
+# server/tools/test_run33_version_boundary.py extracts the v20 package FROM ITS GIT OBJECT,
+# executes it beside the current one on identical inputs, and asserts that -- rather than
+# comparing source text.
+SIMULATION_VERSION = "sim-2026.08-v21"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v19"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v20"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -279,7 +316,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v6", "sim-2026.08-v7", "sim-2026.08-v8", "sim-2026.08-v9", "sim-2026.08-v10",
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
-    "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20",
+    "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
 )
 
 

@@ -1024,16 +1024,34 @@
     html += computed.map(function (row) {
       var p = row.project, snap = row.snap;
       var results = snap.results || {};
-      var rowsHtml = Object.keys(results).map(function (key) {
-        var m = results[key];
-        return '<div class="ws-module"><span class="ws-dot" style="background:' +
-          statusDotColor(m.status_color) + ';"></span>' +
+      // RUN 33. PORTFOLIO HEALTH CARRIES NO STATUS COLOUR. Every one of the five bands the v20
+      // snapshot carried was uncalibrated -- the PH.2 percentile cut points, the PH.3 slope
+      // magnitudes, the PH.4 matched-cluster ladder, the PH.5 composite ladder and the PH.1
+      // ladder hung off a synthetic laboratory threshold -- and a coloured dot is read as a
+      // project condition whatever the caption beside it says. The reading is now stated in
+      // words, with its cohort, and the dot is gone rather than recoloured.
+      var rowsHtml = Object.keys(results).sort().map(function (key) {
+        var m = results[key] || {};
+        return '<div class="ws-module">' +
           '<span class="ws-mname">' + esc(moduleNameForPortfolioKey(key)) + "</span>" +
-          '<span class="ws-note">' + esc(m.evidence_metric || "") + "</span></div>";
+          '<span class="ws-note">' + esc(portfolioReading(m)) + "</span></div>";
       }).join("");
+      var cohort = snap.cohort || {};
+      var limitation = "";
+      if (cohort.cohort_size !== undefined && cohort.cohort_size < 10) {
+        limitation = '<div class="ws-note">Small-sample limitation: fewer than ten projects in ' +
+          'this cohort. Exploratory programme context only; no predictive validity is claimed.' +
+          "</div>";
+      }
       return '<div class="ws-card"><strong>' + esc(p.name || "Untitled project") + "</strong>" +
-        '<div class="ws-note">portfolio size ' + esc(snap.portfolio_size) + "</div>" +
-        rowsHtml + "</div>";
+        '<div class="ws-note">Portfolio Health is programme context. It is inform-only and ' +
+        'non-voting, it does not alter Project Status, and it is never a sole trigger.</div>' +
+        '<div class="ws-note">cohort ' + esc(cohort.cohort_id || "(none)") +
+        " \u2022 period " + esc(cohort.period || "(none)") +
+        " \u2022 feature schema " + esc(cohort.feature_schema_version || "(none)") +
+        " \u2022 model " + esc(cohort.model_version || "(none)") +
+        " \u2022 " + esc(cohort.cohort_size === undefined ? 0 : cohort.cohort_size) +
+        " project(s)</div>" + limitation + rowsHtml + "</div>";
     }).join("");
 
     listEl.innerHTML = html || '<p class="ws-empty">You are not the PM of any project yet.</p>';
@@ -1049,4 +1067,18 @@
     cat8_5_anomaly_score: "Anomaly Score"
   };
   function moduleNameForPortfolioKey(key) { return PORTFOLIO_KEY_NAMES[key] || key; }
+
+  // The reading itself, in words. An abstention states its reason; PH.5 states that its scalar
+  // is blocked for want of governed weights rather than showing a number that does not exist.
+  function portfolioReading(m) {
+    if (m.abstained) { return "No reading. " + (m.abstention_reason || ""); }
+    var projects = m.projects || {};
+    var ids = Object.keys(projects).sort();
+    if (m.module_id === "D1.5") {
+      return "Profile of " + ids.length + " project(s); composite score withheld (" +
+        (m.disposition || "") + "): governed weights do not yet exist.";
+    }
+    return "Computed for " + ids.length + " project(s) in this cohort. Exploratory comparison; " +
+      "not a project condition.";
+  }
 })();

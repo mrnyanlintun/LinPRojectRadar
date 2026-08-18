@@ -69,12 +69,16 @@ from app.simulation.models import (  # noqa: E402
 # =================================================================================================
 head("1. THE STAMP AND ITS HISTORY, APPEND-ONLY AND READ OUT OF GIT")
 # =================================================================================================
-check(SIMULATION_VERSION == "sim-2026.08-v20",
-      "the current stamp is sim-2026.08-v20", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v19",
-      "and the line it supersedes is named as v19", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY RUN 33. Run 32's stamp expectations were true until the next authorised append.
+# What this suite is FOR -- that v20 was really added, at the right position, after v19, and that
+# the v19 package still reconstructs from its own git object and still behaves as v19 -- is
+# unchanged and is asserted below on v20's HISTORICAL position rather than on the live stamp.
+check(SIMULATION_VERSION == "sim-2026.08-v21",
+      "the current stamp is sim-2026.08-v21", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v20",
+      "and the line it supersedes is named as v20", SIMULATION_VERSION_SUPERSEDED)
 check("sim-2026.08-v20" in SIMULATION_VERSION_HISTORY,
-      "the stamp this run added is present in the history")
+      "the stamp Run 32 added is still present in the history")
 check(SIMULATION_VERSION_HISTORY.index("sim-2026.08-v20")
       == SIMULATION_VERSION_HISTORY.index("sim-2026.08-v19") + 1,
       "and it directly follows sim-2026.08-v19, the line it superseded")
@@ -91,8 +95,9 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"the history recorded at commit {V19_COMMIT} is a strict PREFIX of the history now, read "
       f"out of git rather than out of a note, so this run appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
-check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20",),
-      "and it grew by exactly the one stamp this run is authorised to add",
+check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-2026.08-v21"),
+      "and it grew by exactly the one stamp Run 32 was authorised to add plus the one stamp "
+      "Run 33 adds",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v19",
       "and the line this run supersedes is the line that commit shipped", str(_old_stamps[-1]))

@@ -300,7 +300,24 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: wrote it, as that release's historical record, and this successor names it as its parent and
 #: keeps it addressable below. The guard was turned red FIRST and observed reporting exactly
 #: those two added and two changed files and nothing else.
-PINNED = ROOT / "code_audit" / "run32_production_tree.sha256"
+#: RUN 33. Repointed once more, by the same discipline and for the same kind of reason: the
+#: owner's Run-33 supervisory contract authorises modification of Portfolio Health production
+#: code and of the governed portfolio/cohort data contracts. TWO production files were created --
+#: canonical_v8.py (the canonical Portfolio Health layer) and portfolio_health.py (the production
+#: dispatcher) -- and FOUR were changed: documents.py, where the one production portfolio call
+#: site is repointed onto the canonical route; models.py, where the stamp advances to
+#: sim-2026.08-v21; project_data.py, whose governed intake vocabulary is extended with the v8
+#: structure map; and registry.py, where the D1.2 proxy qualifier is withdrawn because the proxy
+#: it described is gone. On the client side workspace.js loses the Portfolio Health status dots,
+#: knowledge.js loses the withdrawn qualifier and the generated defensibility evidence follows.
+#: The run32 manifest is NOT rewritten: it stays exactly as that release wrote it, as that
+#: release's historical record, and this successor names it as its parent and keeps it
+#: addressable below. The guard was turned red FIRST and observed reporting exactly those added
+#: and changed files and nothing else.
+PINNED = ROOT / "code_audit" / "run33_production_tree.sha256"
+#: The Run-32 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN32 = ROOT / "code_audit" / "run32_production_tree.sha256"
 #: The Run-31 pass-1 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN31_PASS1 = ROOT / "code_audit" / "run31_pass1_production_tree.sha256"

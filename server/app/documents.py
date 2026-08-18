@@ -1261,7 +1261,8 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     signals compute through the normal path, made structural: there is no second computation
     path to drift.
     """
-    from .simulation import compute_project, compute_portfolio
+    from .simulation import compute_project
+    from .simulation.portfolio_health import compute_portfolio_health_snapshot
 
     # THE CROSS-PERIOD SERIES, assembled here because this is the single point BOTH assembly
     # paths pass through: the document path above and training period generation. Every period
@@ -1522,25 +1523,50 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
         vectors.append({"id": legacy.legacy_id if legacy else str(pid),
                         "cpi": s.get("cpi"), "spi": s.get("spi"),
                         "docRiskScore": s.get("docRiskScore"),
-                        "actualPctComplete": s.get("actualPctComplete")})
+                        "actualPctComplete": s.get("actualPctComplete"),
+                        # RUN 33. The other projects' GOVERNED PORTFOLIO STRUCTURES, carried
+                        # from their own stored signal inputs -- which is where
+                        # `project_data.apply_to_signal_inputs` put them when that project was
+                        # computed. Nothing is re-derived here and nothing is invented for a
+                        # project that supplied none.
+                        "signal_inputs": s})
     # Include this project's freshly computed vector, which is not yet stored.
     vectors = [v for v in vectors if v["id"] != project.legacy_id]
     vectors.append({"id": project.legacy_id, "cpi": si.get("cpi"), "spi": si.get("spi"),
                     "docRiskScore": si.get("docRiskScore"),
-                    "actualPctComplete": si.get("actualPctComplete")})
-    # Always call, and store whatever it returns — including the insufficient_data shape.
-    # `vectors` always has at least one entry (this project's own, appended above), so
-    # `compute_portfolio`'s own `len(portfolio) < 2` guard is what decides "below threshold",
-    # not a check duplicated here. Collapsing that shape to a bare NULL (the prior behaviour)
-    # discarded its message — "Portfolio too small for anomaly detection — need at least 3
-    # projects with signal data" (portfolio.py, reproducing a legacy off-by-one between the
-    # guard and its own wording) — which T5's portfolio view is required to render verbatim,
-    # not reconstruct. `PORTFOLIO_MIN_PROJECTS` stays as documentation of that guard's value,
-    # not as a second gate here.
-    # `history` is this project's own per-period snapshots (see `_period_snapshots`). It was a
-    # literal None at every call site, which held D1.3 permanently absent. `compute_portfolio`
-    # already accepts and guards it; nothing inside `simulation/` changed to receive it.
-    snapshot = compute_portfolio(vectors, project.legacy_id, history, cutoff)
+                    "actualPctComplete": si.get("actualPctComplete"),
+                    "signal_inputs": si})
+    # Always call, and store whatever it returns — including the abstention shape. Collapsing
+    # an abstention to a bare NULL (the behaviour before Run 2) discarded its reason, and T5's
+    # portfolio view is required to render the reason verbatim rather than reconstruct one.
+    #
+    # AT v20 the message rendered here was "Portfolio too small for anomaly detection — need at
+    # least 3 projects with signal data", reproducing a legacy off-by-one between that guard and
+    # its own wording. At v21 the reason is the governed one the canonical layer states, and the
+    # legacy sentence travels with the legacy implementation it belongs to.
+    #
+    # RUN 33. `history`, this project's per-period snapshots, no longer reaches Portfolio Health.
+    # PH.3 is defined on a GOVERNED SIGNAL HISTORY with a stable signal identity, real reporting
+    # dates, declared units, declared orientation and a per-observation qualification state; a
+    # list of result snapshots carries none of those, and list position is not time. The
+    # snapshots remain assembled and stored for the project-level series that already read them.
+    # RUN 33, THE CANONICAL v21 PORTFOLIO HEALTH ROUTE. The five Portfolio Health readings are
+    # produced by `canonical_v8` over ONE governed cohort, through the dispatcher in
+    # `portfolio_health.py`. The superseded v20 implementation, `portfolio.compute_portfolio`,
+    # is PRESERVED for the Run-2/6/13/14/15/17/20 findings recorded about it and is NOT called
+    # from here or from anywhere else in production; `portfolio_health.assert_not_reachable`
+    # proves that from this function's own source rather than from a list.
+    #
+    # WHY THE COHORT IS NOT `vectors`. A portfolio comparison needs a declared population, a
+    # declared period, a declared feature schema and a declared model version before it means
+    # anything, and "the rows this query returned" is none of those. Where no governed cohort has
+    # been supplied through `saveprojectdata`, all five modules abstain and say so -- which is
+    # the correct reading, not a regression from the populated one v20 produced.
+    snapshot = compute_portfolio_health_snapshot(
+        project.legacy_id, si,
+        [(v["id"], v.get("signal_inputs") or {}) for v in vectors
+         if v["id"] != project.legacy_id],
+        cutoff)
 
     row = ComputedResult(
         result_id=result_id or new_ulid(),

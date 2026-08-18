@@ -243,7 +243,21 @@ PROXY_QUALIFIERS: dict[str, str] = {
     # .csv, one row per withdrawn entry with the run that withdrew it, and the legacy functions
     # they described still sit in models_gov.py and models_fuzzy.py as the historical record with
     # no production route reaching them.
-    "D1.2": "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated",
+    # RUN 33. THE LAST PORTFOLIO ENTRY IS GONE -- D1.2 -- and for exactly the reason the earlier
+    # twenty-eight went: the proxy is gone. The sentence described "an empirical CPI and SPI
+    # percentile rank; small-n behaviour and bands unvalidated", and every clause of it is now
+    # false of the module it names. D1.2 at v21 ranks the COMPLETE governed required
+    # risk-oriented feature set of a declared cohort, not cpi and spi; it uses a MIDRANK
+    # percentile with the governed orientation applied before ranking, not a "less than or equal"
+    # count; it carries NO bands at all, so no band can be unvalidated; and small-n is not left
+    # to a qualifier -- the cohort refuses to rank below three eligible projects and carries an
+    # explicit small-sample limitation below ten. Leaving the sentence in place would advertise
+    # a weakness the code no longer has, which is the error this dictionary exists to prevent in
+    # the direction the note above warns about.
+    #
+    # The sentence is preserved as history in code_audit/run33_proxy_qualifier_withdrawal.csv,
+    # and the legacy implementation it described still sits in portfolio.py as the historical
+    # record with no production route reaching it.
 }
 
 

@@ -92,15 +92,25 @@ def governed_structure_keys() -> set[str]:
     # decision structure that B2.18 MARCOS and B2.19 CRITIC-TOPSIS already read, so the union
     # absorbs it rather than adding a parallel key. That is section 17's requirement made
     # visible: one alternatives-and-criteria object, supplied once, serves both categories.
+    # RUN 33 ADDS THE v8 MAP for the same reason a sixth time. The Portfolio Health cohort,
+    # feature schema, per-project feature record and signal history are governed by
+    # `canonical_v8.py`. Reading only the earlier six maps would build an intake path that could
+    # not reach a single one of them, and the five Portfolio Health modules would abstain forever
+    # with no way for an owner to supply what they ask for -- the exact defect Run 28's closure
+    # found. The supplementary keys are unioned in as well: `V8_STRUCTURE_KEYS` is a module ->
+    # primary-structure map like every other layer's, and the schema and the per-project record
+    # are parts of the SAME shared portfolio structure, not five incompatible inputs.
     from .simulation.canonical import CANONICAL_STRUCTURE_KEYS
     from .simulation.canonical_v3 import V3_STRUCTURE_KEYS
     from .simulation.canonical_v4 import V4_STRUCTURE_KEYS
     from .simulation.canonical_v5 import V5_STRUCTURE_KEYS
     from .simulation.canonical_v6 import V6_STRUCTURE_KEYS
     from .simulation.canonical_v7 import V7_STRUCTURE_KEYS
+    from .simulation.canonical_v8 import V8_STRUCTURE_KEYS, V8_SUPPLEMENTARY_KEYS
     return (set(V3_STRUCTURE_KEYS.values()) | set(CANONICAL_STRUCTURE_KEYS.values())
             | set(V4_STRUCTURE_KEYS.values()) | set(V5_STRUCTURE_KEYS.values())
-            | set(V6_STRUCTURE_KEYS.values()) | set(V7_STRUCTURE_KEYS.values()))
+            | set(V6_STRUCTURE_KEYS.values()) | set(V7_STRUCTURE_KEYS.values())
+            | set(V8_STRUCTURE_KEYS.values()) | set(V8_SUPPLEMENTARY_KEYS))
 
 
 #: The document path assembles these two itself, from evidence the corpus already holds. They

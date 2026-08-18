@@ -1,0 +1,148 @@
+{
+  "data_origin": "SYNTHETIC_RESEARCH_FIXTURE",
+  "not_for_empirical_validation": true,
+  "fixture_id": "PH5_COMPONENT_PROFILE_MISSING_HISTORY_AND_DUPLICATE_LINEAGE",
+  "serves": "PH.5 (D1.5) Anomaly Score",
+  "expected": {
+    "score": null,
+    "disposition": "PARAMETER_PROVENANCE_BLOCKED",
+    "missing_history_projects": [
+      "C-2",
+      "C-3",
+      "C-4"
+    ],
+    "duplicate_lineage_property": "offering the SAME PH.1 and PH.2 lineage twice must not raise confidence or add an evidence body"
+  },
+  "cohort": {
+    "cohort_id": "SYNTH-PH5-COHORT",
+    "portfolio_id": "SYNTH-PORTFOLIO-1",
+    "project_ids": [
+      "C-1",
+      "C-2",
+      "C-3",
+      "C-4"
+    ],
+    "period": "2026-01",
+    "inclusion_rule": "every declared synthetic project",
+    "exclusion_rule": "none",
+    "feature_schema_version": "synth-ph5-v1",
+    "qualification_policy": "CATEGORY_9_ELIGIBLE_STATES_ONLY",
+    "model_version": "ph-v21-synthetic-m1"
+  },
+  "feature_schema": {
+    "version": "synth-ph5-v1",
+    "features": [
+      {
+        "feature_id": "f_a",
+        "label": "f_a",
+        "units": "ratio",
+        "orientation": "HIGHER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      },
+      {
+        "feature_id": "f_b",
+        "label": "f_b",
+        "units": "ratio",
+        "orientation": "LOWER_IS_MORE_ADVERSE",
+        "scaling_rule": "NONE_RAW_UNITS",
+        "missingness_rule": "ABSTAIN_NEVER_IMPUTE",
+        "source_module": "SYNTHETIC_FIXTURE",
+        "qualification_requirement": "CATEGORY_9_ELIGIBLE",
+        "required": true
+      }
+    ]
+  },
+  "feature_records": [
+    {
+      "project_id": "C-1",
+      "cohort_id": "SYNTH-PH5-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_a": 1.0,
+        "f_b": 1.0
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::C-1",
+      "source_provenance": "SYNTHETIC_FIXTURE::C-1",
+      "feature_schema_version": "synth-ph5-v1"
+    },
+    {
+      "project_id": "C-2",
+      "cohort_id": "SYNTH-PH5-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_a": 2.0,
+        "f_b": 0.9
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::C-2",
+      "source_provenance": "SYNTHETIC_FIXTURE::C-2",
+      "feature_schema_version": "synth-ph5-v1"
+    },
+    {
+      "project_id": "C-3",
+      "cohort_id": "SYNTH-PH5-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_a": 3.0,
+        "f_b": 0.8
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::C-3",
+      "source_provenance": "SYNTHETIC_FIXTURE::C-3",
+      "feature_schema_version": "synth-ph5-v1"
+    },
+    {
+      "project_id": "C-4",
+      "cohort_id": "SYNTH-PH5-COHORT",
+      "period": "2026-01",
+      "values": {
+        "f_a": 4.0,
+        "f_b": 0.7
+      },
+      "qualification_state": "QUALIFIED",
+      "missing_fields": [],
+      "invalid_fields": [],
+      "source_lineage": "SYNTHETIC_LINEAGE::C-4",
+      "source_provenance": "SYNTHETIC_FIXTURE::C-4",
+      "feature_schema_version": "synth-ph5-v1"
+    }
+  ],
+  "histories": [
+    {
+      "project_id": "C-1",
+      "signal_id": "cost_index",
+      "units": "ratio",
+      "orientation": "LOWER_IS_MORE_ADVERSE",
+      "source": "SYNTHETIC_FIXTURE",
+      "history_version": "synth-h5",
+      "observations": [
+        {
+          "reporting_time": 0,
+          "value": 1.0,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": 1,
+          "value": 0.9,
+          "qualification_state": "QUALIFIED"
+        },
+        {
+          "reporting_time": 2,
+          "value": 0.8,
+          "qualification_state": "QUALIFIED"
+        }
+      ]
+    }
+  ]
+}

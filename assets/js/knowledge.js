@@ -1399,8 +1399,13 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     //
     // WHAT REMAINS IS EXACTLY WHAT THE SERVER STILL HOLDS FOR A MODULE THAT IS STILL A
     // PROXY. Do not add a key here without adding it to registry.PROXY_QUALIFIERS first.
-    CUSUM: "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma floor and Amber band uncalibrated",
-    Portfolio_Outlier: "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated"
+    // RUN 33 WITHDREW Portfolio_Outlier (D1.2). Its sentence -- "an empirical CPI and SPI
+    // percentile rank; small-n behaviour and bands unvalidated" -- became false in every clause
+    // when the canonical v8 layer replaced the proxy: the v21 module ranks the complete governed
+    // required risk-oriented feature set of a declared cohort by MIDRANK percentile, with the
+    // governed orientation applied before ranking, and it carries NO bands at all. Preserved as
+    // history in code_audit/run33_proxy_qualifier_withdrawal.csv.
+    CUSUM: "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma floor and Amber band uncalibrated"
     };
   const RUN1_DISABLED = {
     Parametric_Cost: true, Plithogenic_Sets: true, Quantum_Probability: true, Hypersoft_Sets: true,

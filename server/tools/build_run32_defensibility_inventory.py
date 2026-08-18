@@ -49,13 +49,17 @@ from app.simulation.canonical_v4 import V4_STRUCTURE_KEYS as K4           # noqa
 from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS as K5           # noqa: E402
 from app.simulation.canonical_v6 import V6_STRUCTURE_KEYS as K6           # noqa: E402
 from app.simulation.canonical_v7 import V7_STRUCTURE_KEYS as K7           # noqa: E402
+from app.simulation.canonical_v8 import V8_STRUCTURE_KEYS as K8           # noqa: E402
 from app.simulation.portfolio import PORTFOLIO_VALIDATED                  # noqa: E402
 
 #: Every canonical layer's structure map, newest last. A module's defining structure is looked up
 #: here rather than by pattern-matching a source file, so a structure added to any layer cannot
 #: leave a statement stale. THIS IS THE LIST THE GENERATOR WAS MISSING v6 AND v7 FROM.
+# RUN 33 ADDS v8, the Portfolio Health layer, for the reason this comment already records: a
+# structure added to any layer and not listed here leaves a stale statement served with every
+# existing guard green. The five Portfolio Health modules define governed structures from v21.
 STRUCTURE_MAPS = (("canonical", K0), ("v3", K3), ("v4", K4), ("v5", K5),
-                  ("v6", K6), ("v7", K7))
+                  ("v6", K6), ("v7", K7), ("v8", K8))
 
 SI = {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 440_000.0, "pv": 450_000.0,
       "cpi": 0.909, "spi": 0.889, "docRiskScore": 0.35,
@@ -112,9 +116,13 @@ def runner_of(mid: str) -> str:
     entry = PORTFOLIO_VALIDATED.get(mid)
     if entry is not None:
         # The portfolio table maps id -> method-class NAME, not to a function: these readings are
-        # computed across the portfolio by app.simulation.portfolio rather than dispatched per
-        # project through registry.VALIDATED.
-        return f"app.simulation.portfolio ({entry})"
+        # computed across a governed cohort rather than dispatched per project through
+        # registry.VALIDATED. RUN 33: the implementation a production dispatch reaches is the
+        # canonical v8 layer, through portfolio_health.compute_portfolio_health_snapshot. The
+        # superseded v20 implementation in app.simulation.portfolio is preserved for the findings
+        # recorded about it and is not reachable from production, so naming it here would name
+        # the wrong implementation -- the exact failure this field exists to prevent.
+        return f"app.simulation.canonical_v8 ({entry})"
     return "none: declared in the registry and implemented by no runner"
 
 
