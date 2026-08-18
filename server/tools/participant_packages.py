@@ -166,7 +166,8 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v9",
         "code_audit/run32_b3_participant_package_v9_checksums.sha256",
-        None,
+        # PINNED when the qualifier reconciliation moved four of its files. NOT regenerated.
+        "19a70556fe1b6ee8d17706cfbbc5d72e12051086",
         "THE METHOD-CLASS PROPAGATION. Six identifiers had been left behind when their display "
         "names were renamed -- A1.10 and A1.11 by Run 28, B3.2 to B3.5 by Run 31 -- so the client "
         "taxonomy carried an identifier the production runner had stopped emitting. A stale "
@@ -183,10 +184,40 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "decision.js, decision-ui.js, workspace.js, deepdive.js and both questionnaires are byte "
         "for byte identical to v8. The v8 record is NOT regenerated.",
     ),
+    Package(
+        "og-participant-2026.08-v10",
+        "code_audit/run32_qualifier_participant_package_v10_checksums.sha256",
+        None,
+        "THE PROXY-QUALIFIER RECONCILIATION AND THE ONE CLIENT AUTHORITY. Four participant-"
+        "visible files moved: categories, knowledge, taxonomy and the defensibility evidence "
+        "object. TWENTY-SEVEN proxy qualifiers were WITHDRAWN from the client map, leaving the "
+        "two the server still holds. A proxy qualifier states that a module computes a PROXY "
+        "instead of the method its name claims; Runs 28 to 32 repointed twenty-seven of them "
+        "onto their canonical methods and withdrew the qualifier as they went, while the client "
+        "mirror was never updated, so the handbook went on calling canonical modules proxies. "
+        "Classification came from each module's PRODUCTION ROUTE, not from the server's silence. "
+        "THREE STALE SERVER QUALIFIERS were withdrawn too (B3.5, B4.3, B4.4), which Runs 31 and "
+        "32 had falsified and not removed, so the served defensibility object stopped claiming "
+        "B4.3 is an explainable four-rule checklist rather than a constraint-satisfaction solver "
+        "about a module that is one. BOTH CLIENT TAXONOMY ARTIFACTS ARE NOW GENERATED from one "
+        "authority by build_client_taxonomy.py, so neither is hand-maintained; the two had "
+        "already drifted, with nine modules carrying a disabled flag in taxonomy.js and not in "
+        "categories.js, and categories.js gains those flags. The runtime taxonomy data is "
+        "otherwise unchanged, reproduced row for row. No analytical execution changed, proved by "
+        "executing all 95 dispatched modules before and after under one sha256. THE EXPERIMENTAL "
+        "SEQUENCE IS UNCHANGED: decision.js, decision-ui.js, workspace.js, deepdive.js and both "
+        "questionnaires are byte for byte identical to v9. The v9 record is NOT regenerated.",
+    ),
 )
 
 #: The one link that describes the working tree.
 CURRENT = PARTICIPANT_PACKAGES[-1]
+
+#: The files whose bytes moved between v9 and v10.
+V9_TO_V10_CHANGED = (
+    "assets/js/categories.js", "assets/js/ds_defensibility_evidence.js",
+    "assets/js/knowledge.js", "assets/js/taxonomy.js",
+)
 
 #: The files whose bytes moved between v8 and v9, and the six identifiers that moved them.
 V8_TO_V9_CHANGED = (

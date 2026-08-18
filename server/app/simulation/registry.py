@@ -226,9 +226,23 @@ PROXY_QUALIFIERS: dict[str, str] = {
     # error this dictionary exists to prevent in its own direction. The legacy functions those
     # sentences described still sit in models_fuzzy.py as the historical record of the v14/v15
     # line, and no production route reaches them.
-    "B3.5": "a raw modification count; not a frequency without a denominator",
-    "B4.3": "an explainable four-rule checklist, not a constraint-satisfaction solver",
-    "B4.4": "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
+    # RUN 32 FINAL CLOSURE. THREE FURTHER ENTRIES ARE GONE -- B3.5, B4.3 and B4.4 -- and for
+    # exactly the reason Run 28's eleven, Run 29's six and Run 30's eight went: the proxy is gone.
+    # THE RULE WAS STATED HERE AND THEN NOT APPLIED TWICE. Run 31 repointed B3.5 onto
+    # models_cat89 and the canonical v6 layer, where it reads a governed contract-modification
+    # register; Run 32 repointed B4.3 and B4.4 onto models_cat10 and the canonical v7 layer,
+    # where B4.3 solves a real variable/domain/constraint network and B4.4 compares a complete
+    # action-by-scenario matrix. Neither run withdrew the qualifier the remediation had made
+    # false. So the dictionary went on saying that B4.3 was "an explainable four-rule checklist,
+    # not a constraint-satisfaction solver" about a module that IS a constraint-satisfaction
+    # solver, and that B4.4 was "four deterministic EAC variants" about a module that refuses to
+    # run without a governed matrix. That is the error this dictionary exists to prevent, in the
+    # direction it warns about above: advertising a weakness the code no longer has.
+    #
+    # The sentences are preserved as history in code_audit/run32_proxy_qualifier_reconciliation
+    # .csv, one row per withdrawn entry with the run that withdrew it, and the legacy functions
+    # they described still sit in models_gov.py and models_fuzzy.py as the historical record with
+    # no production route reaching them.
     "D1.2": "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated",
 }
 

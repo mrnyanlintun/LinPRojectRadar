@@ -132,14 +132,80 @@ check("assets/js/categories.js" not in _index,
       "and does NOT load categories.js, so a fix made only there never reaches a participant")
 check("window.LIN_HISTORICAL_METHOD_CLASS" in _tax_src,
       "taxonomy.js declares the historical alias map itself")
-check("function numForMethodClass" in _tax_src
-      and "METHOD_TO_NUM[methodClass]" not in _tax_src,
-      "and every method-class to module-number lookup in it goes through the resolver, so no "
-      "call site can drop a superseded identifier")
+# The resolver itself must read METHOD_TO_NUM[methodClass] exactly ONCE -- that is its body. More
+# than once means a call site bypasses it; zero means the resolver was rewritten into calling
+# itself, which is exactly the recursion this closure had to fix.
+_direct = _tax_src.count("METHOD_TO_NUM[methodClass]")
+check("function numForMethodClass" in _tax_src and _direct == 1,
+      "and every method-class to module-number lookup goes through the resolver, which reads the "
+      "map exactly once: more would be a call site bypassing it, none would be the resolver "
+      "calling itself", f"METHOD_TO_NUM[methodClass] appears {_direct} times")
 for _cur, _old in sorted(PP.V9_METHOD_CLASS_PROPAGATION.items()):
     check(re.search(r'\b%s:\s*\[\s*"%s"\s*\]' % (re.escape(_cur), re.escape(_old)),
                     _tax_src) is not None,
           f"taxonomy.js carries {_old} as history for {_cur}")
+
+print("\n=== 4c. THE LIVE FILE'S OWN CONSUMERS ARE EXECUTED, NOT READ ===")
+
+# THIS SECTION EXISTS BECAUSE A STRING CHECK MISSED A SHIPPED CRASH. The previous closure
+# rewrote the three method-class lookups in taxonomy.js to go through one resolver, and the
+# blanket rewrite caught the RESOLVER'S OWN BODY as a fourth call site, so it called itself.
+# Every status and result lookup on a project with a stored row threw
+# "RangeError: Maximum call stack size exceeded" -- on the LIVE participant surface -- and the
+# whole suite stayed green, because every guard on this file compared strings and the one
+# execution probe drove the OTHER client file. So the live consumers are executed here.
+import json as _j, shutil as _sh, subprocess as _sp, tempfile as _tf                # noqa: E402
+
+_node2 = _sh.which("node")
+if not _node2:
+    check(False, "node is available to execute the live consumers",
+          "node not found; the execution proof cannot run and is NOT marked passed")
+else:
+    _probe2 = """
+const fs = require('fs');
+global.window = global;
+eval(fs.readFileSync(process.argv[2] + '/assets/js/taxonomy.js', 'utf8'));
+const pairs = JSON.parse(process.argv[3]);
+const project = { id: 'P', storedResult: {
+  module_results: Object.keys(pairs).map(n => ({ module_id: n, method_class: pairs[n],
+                                                 status_color: 'Amber' })),
+  abstained: [] } };
+const out = {};
+for (const n of Object.keys(pairs)) {
+  const mc = pairs[n];
+  for (const fn of ['getModuleStatus', 'getModuleResult', 'getModuleAbstentionReason']) {
+    try { const v = window[fn](mc, project);
+          out[n + '|' + fn] = { ok: true, value: v === null ? null : (v.module_id || v) }; }
+    catch (e) { out[n + '|' + fn] = { ok: false, error: e.constructor.name }; }
+  }
+}
+console.log(JSON.stringify(out));
+"""
+    with _tf.NamedTemporaryFile("w", suffix=".js", delete=False) as _fh2:
+        _fh2.write(_probe2)
+        _pp = _fh2.name
+    _pairs2 = {m: REG.VALIDATED[m][0] for m in sorted(REG.VALIDATED)}
+    _r2 = _sp.run([_node2, _pp, str(ROOT), _j.dumps(_pairs2)],
+                  capture_output=True, text=True, timeout=300)
+    check(_r2.returncode == 0, "the live consumers execute without error",
+          (_r2.stderr or "")[-240:])
+    _res2 = _j.loads(_r2.stdout) if _r2.returncode == 0 and _r2.stdout.strip() else {}
+    _threw = sorted(k for k, v in _res2.items() if not v.get("ok"))
+    check(bool(_res2) and not _threw,
+          "NO live consumer throws: getModuleStatus, getModuleResult and "
+          "getModuleAbstentionReason all execute for every registered module against a stored row",
+          str(_threw[:6]))
+    _wrong = sorted(k for k, v in _res2.items()
+                    if v.get("ok") and k.endswith("|getModuleResult")
+                    and v.get("value") not in (None, k.split("|")[0]))
+    check(bool(_res2) and not _wrong,
+          "and every stored-row lookup returns THAT module's row, never another's",
+          str(_wrong[:6]))
+    _null = sorted(k for k, v in _res2.items()
+                   if v.get("ok") and k.endswith("|getModuleStatus") and v.get("value") is None)
+    check(bool(_res2) and not _null,
+          "and no module's status resolves to a silent null against a row that contains it",
+          str(_null[:6]))
 
 print("\n=== 5. THE LOOKUP ACTUALLY RESOLVES, EXECUTED IN NODE AGAINST THE REAL CLIENT FILE ===")
 

@@ -1,0 +1,926 @@
+{
+ "qualifierKeys": [
+  "CUSUM",
+  "Bayesian_EAC",
+  "Kalman_Filter",
+  "Budget_Execution_Rate",
+  "Schedule_Compression",
+  "SCurve_Deviation",
+  "Milestone_Trend",
+  "Labor_Productivity",
+  "Overhead_Absorption",
+  "Analogous_Estimating",
+  "Inflation_Adjustment",
+  "Weather_Impact",
+  "CO_Frequency",
+  "Dispute_Escalation",
+  "Subcontractor_Performance",
+  "Sensitivity_Analysis",
+  "Tornado_Diagram",
+  "Pythagorean_Fuzzy",
+  "Picture_Fuzzy",
+  "Hesitant_Fuzzy",
+  "Type2_Fuzzy",
+  "Maximum_Entropy",
+  "Possibility_Theory",
+  "Spherical_Fuzzy",
+  "Fermatean_Fuzzy",
+  "Modification_Governance",
+  "Constraint_Satisfaction",
+  "WhatIf_Scenario_Matrix",
+  "Portfolio_Outlier"
+ ],
+ "modules": {
+  "A1.1": {
+   "mc": "Monte_Carlo",
+   "name": "Monte Carlo EAC Forecast",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A1.2": {
+   "mc": "CUSUM",
+   "name": "CUSUM Anomaly Monitor",
+   "qualifierRendered": "Proxy: hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma floor and Amber band uncalibrated",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A1.3": {
+   "mc": "Bayesian_EAC",
+   "name": "Bayesian EAC",
+   "qualifierRendered": "Proxy: Normal-normal updating with designed constant variances, not a governed Bayesian model",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A1.4": {
+   "mc": "Kalman_Filter",
+   "name": "Kalman Filter SPI Smoother",
+   "qualifierRendered": "Proxy: Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering claim",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A1.5": {
+   "mc": "ARIMA_Forecast",
+   "name": "ARIMA CPI Forecast",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A1.6": {
+   "mc": "Earned_Schedule",
+   "name": "Earned Schedule",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A1.7": {
+   "mc": "TCPI",
+   "name": "TCPI",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A1.8": {
+   "mc": "VAC",
+   "name": "Variance at Completion",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A1.9": {
+   "mc": "Budget_Execution_Rate",
+   "name": "Budget Execution Rate",
+   "qualifierRendered": "Proxy: an expenditure-versus-progress control ratio, not a standardised statistical test",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A1.10": {
+   "mc": "CPI_Shrinkage_Forecast",
+   "name": "CPI Shrinkage Forecast",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A1.11": {
+   "mc": "Independent_EAC_Reconciliation",
+   "name": "Independent EAC Reconciliation Index",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.1": {
+   "mc": "PERT_Network_Criticality",
+   "name": "PERT Network Criticality",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.2": {
+   "mc": "Line_of_Balance_Velocity",
+   "name": "Line of Balance",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.3": {
+   "mc": "CCPM_Buffer_Health",
+   "name": "CCPM Buffer Health",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.4": {
+   "mc": "Schedule_Compression",
+   "name": "Schedule Compression Index",
+   "qualifierRendered": "Proxy: a custom compression ratio; no network-based crashing model or calibrated bands",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A2.5": {
+   "mc": "Float_Consumption",
+   "name": "Float Consumption Rate",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.6": {
+   "mc": "SCurve_Deviation",
+   "name": "S-Curve Deviation",
+   "qualifierRendered": "Proxy: a single planned versus actual snapshot, not a longitudinal S-curve analysis",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A2.7": {
+   "mc": "Milestone_Trend",
+   "name": "Milestone Trend Analysis",
+   "qualifierRendered": "Proxy: a simplified shift summary on real milestone history, bands uncalibrated",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A2.8": {
+   "mc": "Lookahead_Health",
+   "name": "Look-Ahead Schedule Health",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.9": {
+   "mc": "Resource_Loading",
+   "name": "Resource Loading Index",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.10": {
+   "mc": "Schedule_Risk_Analysis",
+   "name": "Schedule Risk Analysis P80",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A2.11": {
+   "mc": "Critical_Path_Index",
+   "name": "Critical Path Index",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A3.1": {
+   "mc": "Reference_Class_Forecasting",
+   "name": "Reference Class Forecasting",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A3.2": {
+   "mc": "Contingency_Burn_Rate",
+   "name": "Contingency Burn Rate",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A3.3": {
+   "mc": "Labor_Productivity",
+   "name": "Labor Productivity Index",
+   "qualifierRendered": "Proxy: a labour-hours ratio, not an earned-output productivity model",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A3.4": {
+   "mc": "Material_Cost_Variance",
+   "name": "Material Cost Variance",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A3.5": {
+   "mc": "Overhead_Absorption",
+   "name": "Overhead Absorption Rate",
+   "qualifierRendered": "Proxy: a transparent ratio; validity depends on whether the indirect plan is total or period-to-date",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A3.6": {
+   "mc": "Cost_Risk_Analysis",
+   "name": "Cost Risk Analysis P80",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A3.7": {
+   "mc": "Analogous_Estimating",
+   "name": "Analogous Estimating Ratio",
+   "qualifierRendered": "Proxy: an analogous-cost ratio; project selection, normalisation and adaptation ungoverned",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A3.8": {
+   "mc": "Parametric_Cost",
+   "name": "Parametric Cost Index",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A3.9": {
+   "mc": "Inflation_Adjustment",
+   "name": "Inflation Adjustment Index",
+   "qualifierRendered": "Proxy: a material-escalation ratio with no external price index, time base or geography",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A4.1": {
+   "mc": "Doc_Risk_Cat4",
+   "name": "Document Risk Score",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A4.2": {
+   "mc": "RFI_Velocity",
+   "name": "RFI Velocity",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A4.3": {
+   "mc": "Submittal_Rejection",
+   "name": "Submittal Rejection Rate",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A4.4": {
+   "mc": "NCR_Rate",
+   "name": "NCR Rate",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A4.5": {
+   "mc": "Weather_Impact",
+   "name": "Weather Day Impact",
+   "qualifierRendered": "Proxy: a lost-days over available-float proxy with fallback behaviour and ungoverned bands",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A4.6": {
+   "mc": "CO_Frequency",
+   "name": "Change Order Frequency",
+   "qualifierRendered": "Proxy: contract growth plus a raw count; no time or exposure denominator",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A4.7": {
+   "mc": "Dispute_Escalation",
+   "name": "Dispute Escalation Index",
+   "qualifierRendered": "Proxy: an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A4.8": {
+   "mc": "Subcontractor_Performance",
+   "name": "Subcontractor Performance",
+   "qualifierRendered": "Proxy: a precomputed compliance score; provenance and construction unvalidated",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A4.9": {
+   "mc": "Procurement_Lead_Time",
+   "name": "Procurement Lead Time Monitor",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A4.10": {
+   "mc": "Spec_Conflict_Density",
+   "name": "Specification Conflict Density",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A5.1": {
+   "mc": "DSM_Rework_Cat5",
+   "name": "DSM Rework Propagation",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A5.2": {
+   "mc": "Sensitivity_Analysis",
+   "name": "Sensitivity Analysis",
+   "qualifierRendered": "Proxy: local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A5.3": {
+   "mc": "Tornado_Diagram",
+   "name": "Tornado Risk Ranking",
+   "qualifierRendered": "Proxy: a ranking of four present-state deviations; no outcome-response ranges estimated",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A5.4": {
+   "mc": "Scenario_Modeling",
+   "name": "Scenario Modeling",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A5.5": {
+   "mc": "Rework_Feedback",
+   "name": "Rework Feedback Loop",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A5.6": {
+   "mc": "Queueing_Bottleneck",
+   "name": "Queueing Theory Bottleneck",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A5.7": {
+   "mc": "Agent_Supply_Chain",
+   "name": "Agent-Based Supply Chain",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A5.8": {
+   "mc": "Discrete_Event_Sim",
+   "name": "Discrete Event Simulation",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B1.1": {
+   "mc": "Conservative_Dominance",
+   "name": "Conservative Dominance",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B1.2": {
+   "mc": "Weighted_Voting",
+   "name": "Weighted Voting",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B1.3": {
+   "mc": "Majority_Rules",
+   "name": "Majority Rules",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B1.4": {
+   "mc": "Worst_N_of_M",
+   "name": "Worst-N-of-M",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.1": {
+   "mc": "DST_Evidence_Combination",
+   "name": "Dempster-Shafer",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.2": {
+   "mc": "Rough_Sets_Classification",
+   "name": "Rough Sets",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.3": {
+   "mc": "Neutrosophic_Logic",
+   "name": "Neutrosophic Logic",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.4": {
+   "mc": "Interval_Fuzzy_Sets",
+   "name": "Interval Fuzzy Sets",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.5": {
+   "mc": "Z_Numbers",
+   "name": "Z-numbers",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.6": {
+   "mc": "PLTS",
+   "name": "PLTS",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.7": {
+   "mc": "Plithogenic_Sets",
+   "name": "Plithogenic Sets",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.8": {
+   "mc": "Belief_Rule_Base",
+   "name": "Belief Rule Base",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.9": {
+   "mc": "Quantum_Probability",
+   "name": "Quantum Probability",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.10": {
+   "mc": "Pythagorean_Fuzzy",
+   "name": "Pythagorean Fuzzy Sets",
+   "qualifierRendered": "Proxy: hard-coded transformations of raw CPI, SPI and document risk",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.11": {
+   "mc": "Picture_Fuzzy",
+   "name": "Picture Fuzzy Sets",
+   "qualifierRendered": "Proxy: hard-coded memberships consuming raw metrics; no calibration evidenced",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.12": {
+   "mc": "Hesitant_Fuzzy",
+   "name": "Hesitant Fuzzy Sets",
+   "qualifierRendered": "Proxy: designed perturbations, not elicited or observed hesitant assessments",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.13": {
+   "mc": "Type2_Fuzzy",
+   "name": "Type-2 Fuzzy Sets",
+   "qualifierRendered": "Proxy: membership intervals that are designed constants",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.14": {
+   "mc": "Maximum_Entropy",
+   "name": "Maximum Entropy",
+   "qualifierRendered": "Proxy: entropy over designed state probabilities; measures the lookup, not the project",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.15": {
+   "mc": "Possibility_Theory",
+   "name": "Possibility Theory",
+   "qualifierRendered": "Proxy: fixed mappings from raw metrics; no governed possibility distribution",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.16": {
+   "mc": "Spherical_Fuzzy",
+   "name": "Spherical Fuzzy Sets",
+   "qualifierRendered": "Proxy: algebraically bounded but fixed memberships on raw unqualified inputs",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.17": {
+   "mc": "Fermatean_Fuzzy",
+   "name": "Fermatean Fuzzy Sets",
+   "qualifierRendered": "Proxy: formula-shaped with designed memberships, no empirical or elicitation basis",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B2.18": {
+   "mc": "MARCOS",
+   "name": "MARCOS Ranking",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.19": {
+   "mc": "CRITIC_TOPSIS",
+   "name": "CRITIC-TOPSIS",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B2.20": {
+   "mc": "Hypersoft_Sets",
+   "name": "Hypersoft Sets",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B3.1": {
+   "mc": "ABM_Governance",
+   "name": "Agent-Based Governance Model",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B3.2": {
+   "mc": "EVMS_Applicability",
+   "name": "FAR/Agency EVMS Applicability Monitor",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B3.3": {
+   "mc": "A11_Conformance",
+   "name": "Versioned A-11 Capital Programming Conformance Check",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B3.4": {
+   "mc": "EVMS_Reporting_Compliance",
+   "name": "EVMS Reporting Compliance Monitor",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B3.5": {
+   "mc": "Modification_Governance",
+   "name": "Contract Modification Governance Check",
+   "qualifierRendered": "Proxy: a raw modification count; not a frequency without a denominator",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "A6.1": {
+   "mc": "Quality_Compliance",
+   "name": "Quality Compliance Index",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A6.2": {
+   "mc": "Safety_Performance",
+   "name": "Safety Performance Index",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A6.3": {
+   "mc": "Environmental_Compliance",
+   "name": "Environmental Compliance Rate",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "A6.4": {
+   "mc": "Contractor_Performance",
+   "name": "Contractor Performance Assessment Signal",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "C1.1": {
+   "mc": "Missing_Data_Index",
+   "name": "Missing Data Index",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "C1.2": {
+   "mc": "Data_Timeliness_Score",
+   "name": "Data Timeliness Score",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "C1.3": {
+   "mc": "Source_Reliability_Weighting",
+   "name": "Source Reliability Weighting",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "C1.4": {
+   "mc": "Audit_Trail_Completeness",
+   "name": "Audit Trail Completeness",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "C1.5": {
+   "mc": "Information_Completeness_Ratio",
+   "name": "Information Completeness Ratio",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "C1.6": {
+   "mc": "Cross_Doc_Consistency",
+   "name": "Cross-document Consistency Score",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "C1.7": {
+   "mc": "Reporting_Frequency_Index",
+   "name": "Reporting Frequency Index",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B4.1": {
+   "mc": "Multi_Objective_Optimization",
+   "name": "Multi-Objective Optimization",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B4.2": {
+   "mc": "Linear_Programming",
+   "name": "Linear Programming",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B4.3": {
+   "mc": "Constraint_Satisfaction",
+   "name": "Constraint Satisfaction Analysis",
+   "qualifierRendered": "Proxy: an explainable four-rule checklist, not a constraint-satisfaction solver",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B4.4": {
+   "mc": "WhatIf_Scenario_Matrix",
+   "name": "What-If Scenario Matrix",
+   "qualifierRendered": "Proxy: four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "B4.5": {
+   "mc": "Decision_Sensitivity_Matrix",
+   "name": "Decision Sensitivity Matrix",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B4.6": {
+   "mc": "Pareto_Frontier",
+   "name": "Pareto Frontier Analysis",
+   "qualifierRendered": null,
+   "disabledRendered": true,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "B4.7": {
+   "mc": "Minimax_Regret_Decision_Rule",
+   "name": "Minimax Regret Decision Rule",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "D1.1": {
+   "mc": "Isolation_Forest",
+   "name": "Isolation Forest",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "D1.2": {
+   "mc": "Portfolio_Outlier",
+   "name": "Portfolio Outlier Detection",
+   "qualifierRendered": "Proxy: an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated",
+   "disabledRendered": false,
+   "lookupResult": "content"
+  },
+  "D1.3": {
+   "mc": "Trajectory_Classifier",
+   "name": "Signal Trajectory Classifier",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "D1.4": {
+   "mc": "Cross_Project_Pattern",
+   "name": "Cross-project Pattern Detector",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  },
+  "D1.5": {
+   "mc": "Anomaly_Score",
+   "name": "Anomaly Score",
+   "qualifierRendered": null,
+   "disabledRendered": false,
+   "lookupResult": "undefined (no Status line rendered)"
+  }
+ },
+ "keys": {
+  "CUSUM": {
+   "resolvesToModule": "A1.2",
+   "moduleName": "CUSUM Anomaly Monitor",
+   "rendered": "Proxy: hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma floor and Amber band uncalibrated",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Bayesian_EAC": {
+   "resolvesToModule": "A1.3",
+   "moduleName": "Bayesian EAC",
+   "rendered": "Proxy: Normal-normal updating with designed constant variances, not a governed Bayesian model",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Kalman_Filter": {
+   "resolvesToModule": "A1.4",
+   "moduleName": "Kalman Filter SPI Smoother",
+   "rendered": "Proxy: Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering claim",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Budget_Execution_Rate": {
+   "resolvesToModule": "A1.9",
+   "moduleName": "Budget Execution Rate",
+   "rendered": "Proxy: an expenditure-versus-progress control ratio, not a standardised statistical test",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Schedule_Compression": {
+   "resolvesToModule": "A2.4",
+   "moduleName": "Schedule Compression Index",
+   "rendered": "Proxy: a custom compression ratio; no network-based crashing model or calibrated bands",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "SCurve_Deviation": {
+   "resolvesToModule": "A2.6",
+   "moduleName": "S-Curve Deviation",
+   "rendered": "Proxy: a single planned versus actual snapshot, not a longitudinal S-curve analysis",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Milestone_Trend": {
+   "resolvesToModule": "A2.7",
+   "moduleName": "Milestone Trend Analysis",
+   "rendered": "Proxy: a simplified shift summary on real milestone history, bands uncalibrated",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Labor_Productivity": {
+   "resolvesToModule": "A3.3",
+   "moduleName": "Labor Productivity Index",
+   "rendered": "Proxy: a labour-hours ratio, not an earned-output productivity model",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Overhead_Absorption": {
+   "resolvesToModule": "A3.5",
+   "moduleName": "Overhead Absorption Rate",
+   "rendered": "Proxy: a transparent ratio; validity depends on whether the indirect plan is total or period-to-date",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Analogous_Estimating": {
+   "resolvesToModule": "A3.7",
+   "moduleName": "Analogous Estimating Ratio",
+   "rendered": "Proxy: an analogous-cost ratio; project selection, normalisation and adaptation ungoverned",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Inflation_Adjustment": {
+   "resolvesToModule": "A3.9",
+   "moduleName": "Inflation Adjustment Index",
+   "rendered": "Proxy: a material-escalation ratio with no external price index, time base or geography",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Weather_Impact": {
+   "resolvesToModule": "A4.5",
+   "moduleName": "Weather Day Impact",
+   "rendered": "Proxy: a lost-days over available-float proxy with fallback behaviour and ungoverned bands",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "CO_Frequency": {
+   "resolvesToModule": "A4.6",
+   "moduleName": "Change Order Frequency",
+   "rendered": "Proxy: contract growth plus a raw count; no time or exposure denominator",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Dispute_Escalation": {
+   "resolvesToModule": "A4.7",
+   "moduleName": "Dispute Escalation Index",
+   "rendered": "Proxy: an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Subcontractor_Performance": {
+   "resolvesToModule": "A4.8",
+   "moduleName": "Subcontractor Performance",
+   "rendered": "Proxy: a precomputed compliance score; provenance and construction unvalidated",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Sensitivity_Analysis": {
+   "resolvesToModule": "A5.2",
+   "moduleName": "Sensitivity Analysis",
+   "rendered": "Proxy: local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Tornado_Diagram": {
+   "resolvesToModule": "A5.3",
+   "moduleName": "Tornado Risk Ranking",
+   "rendered": "Proxy: a ranking of four present-state deviations; no outcome-response ranges estimated",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Pythagorean_Fuzzy": {
+   "resolvesToModule": "B2.10",
+   "moduleName": "Pythagorean Fuzzy Sets",
+   "rendered": "Proxy: hard-coded transformations of raw CPI, SPI and document risk",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Picture_Fuzzy": {
+   "resolvesToModule": "B2.11",
+   "moduleName": "Picture Fuzzy Sets",
+   "rendered": "Proxy: hard-coded memberships consuming raw metrics; no calibration evidenced",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Hesitant_Fuzzy": {
+   "resolvesToModule": "B2.12",
+   "moduleName": "Hesitant Fuzzy Sets",
+   "rendered": "Proxy: designed perturbations, not elicited or observed hesitant assessments",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Type2_Fuzzy": {
+   "resolvesToModule": "B2.13",
+   "moduleName": "Type-2 Fuzzy Sets",
+   "rendered": "Proxy: membership intervals that are designed constants",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Maximum_Entropy": {
+   "resolvesToModule": "B2.14",
+   "moduleName": "Maximum Entropy",
+   "rendered": "Proxy: entropy over designed state probabilities; measures the lookup, not the project",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Possibility_Theory": {
+   "resolvesToModule": "B2.15",
+   "moduleName": "Possibility Theory",
+   "rendered": "Proxy: fixed mappings from raw metrics; no governed possibility distribution",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Spherical_Fuzzy": {
+   "resolvesToModule": "B2.16",
+   "moduleName": "Spherical Fuzzy Sets",
+   "rendered": "Proxy: algebraically bounded but fixed memberships on raw unqualified inputs",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Fermatean_Fuzzy": {
+   "resolvesToModule": "B2.17",
+   "moduleName": "Fermatean Fuzzy Sets",
+   "rendered": "Proxy: formula-shaped with designed memberships, no empirical or elicitation basis",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Modification_Governance": {
+   "resolvesToModule": "B3.5",
+   "moduleName": "Contract Modification Governance Check",
+   "rendered": "Proxy: a raw modification count; not a frequency without a denominator",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Constraint_Satisfaction": {
+   "resolvesToModule": "B4.3",
+   "moduleName": "Constraint Satisfaction Analysis",
+   "rendered": "Proxy: an explainable four-rule checklist, not a constraint-satisfaction solver",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "WhatIf_Scenario_Matrix": {
+   "resolvesToModule": "B4.4",
+   "moduleName": "What-If Scenario Matrix",
+   "rendered": "Proxy: four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  },
+  "Portfolio_Outlier": {
+   "resolvesToModule": "D1.2",
+   "moduleName": "Portfolio Outlier Detection",
+   "rendered": "Proxy: an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated",
+   "lookupEmptyBecauseNoModuleUsesThisKey": false
+  }
+ },
+ "serverQualifiersBeforeChange": {
+  "A1.2": "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma floor and Amber band uncalibrated",
+  "B3.5": "a raw modification count; not a frequency without a denominator",
+  "B4.3": "an explainable four-rule checklist, not a constraint-satisfaction solver",
+  "B4.4": "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
+  "D1.2": "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated"
+ },
+ "capturedAtCommit": "19a70556fe1b6ee8d17706cfbbc5d72e12051086"
+}

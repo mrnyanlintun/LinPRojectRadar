@@ -27,6 +27,25 @@
    ============================================================ */
 
 
+/* GENERATED BLOCK. Do not edit by hand.
+
+   Written by server/tools/build_client_taxonomy.py from TWO authorities, and neither
+   this file nor its sibling is hand-maintained. Editing the array below cannot change
+   what ships: the guard regenerates from the authorities and compares, so a hand edit
+   is reverted or caught. Change an authority and regenerate.
+
+     name, method_class, disabled   server/app/simulation/registry.py (and the
+                                    portfolio dispatch table) -- the identifiers the
+                                    production runners actually emit
+     everything else                server/tools/taxonomy_authority.json -- category
+                                    identity, colour, description, and each module's
+                                    id, num, required inputs, sectors and level flags
+
+   WHY. categories.js and taxonomy.js each carried a hand-maintained copy of the same
+   101-module taxonomy. index.html loads taxonomy.js and not categories.js, so a fix
+   made in the wrong copy passed every source check while the live page stayed broken;
+   and the two had already drifted apart on their own, with nine modules carrying
+   `disabled: true` in one and not the other. */
 window.LIN_CATEGORIES = [
   {
     id: 'a1', num: 'A1', name: 'Cost and EVM Performance',
@@ -75,11 +94,6 @@ window.LIN_CATEGORIES = [
       { id: 'a3_1', num: 'A3.1', name: 'Reference Class Forecasting', method_class: 'Reference_Class_Forecasting', active: true, required: ['bac','cpi'] },
       { id: 'a3_2', num: 'A3.2', name: 'Contingency Burn Rate', method_class: 'Contingency_Burn_Rate', active: true, required: ['originalContingency','remainingContingency','actualPctComplete'] },
       { id: 'a3_3', num: 'A3.3', name: 'Labor Productivity Index', method_class: 'Labor_Productivity', active: true, required: ['plannedLaborHours','actualLaborHours','actualPctComplete'] },
-      /* RUN 16. Disabled from operational execution pending an evidence and context
-         requirement decision, NOT because its arithmetic is in question. The server
-         refuses it (registry.DISABLED_EVIDENCE_UNDER_REVIEW) and this flag is what keeps
-         the browser from presenting it as available; the row stays, reading as not
-         available for production use, exactly as the eight concept-only rows do. */
       { id: 'a3_4', num: 'A3.4', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: true, disabled: true, required: ['materialCostBaseline','materialCostCurrent'] },
       { id: 'a3_5', num: 'A3.5', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: true, required: ['indirectCostPlan','indirectCostActual'] },
       { id: 'a3_6', num: 'A3.6', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] },
@@ -206,30 +220,29 @@ window.LIN_CATEGORIES = [
     id: 'c1', num: 'C1', name: 'Data Integrity',
     group: 'C', groupName: 'Data and Evidence Health',
     color: '#94a3b8',
-    authoringOnly: true, excludeFromProjectStatus: true,
     description: 'Evidence quality of the underlying document set. Authoring-time only: these describe how trustworthy the evidence is, never the condition of the project.',
     modules: [
-      { id: 'c1_1', num: 'C1.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_2', num: 'C1.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, required: ['docDate'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_3', num: 'C1.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_4', num: 'C1.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_5', num: 'C1.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_6', num: 'C1.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, required: ['ev','ac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_7', num: 'C1.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, required: ['docDate'], authoringOnly: true, excludeFromProjectStatus: true }
+      { id: 'c1_1', num: 'C1.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_2', num: 'C1.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['docDate'] },
+      { id: 'c1_3', num: 'C1.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_4', num: 'C1.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_5', num: 'C1.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_6', num: 'C1.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['ev','ac'] },
+      { id: 'c1_7', num: 'C1.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['docDate'] }
     ]
   },
   {
     id: 'd1', num: 'D1', name: 'Portfolio Health',
     group: 'D', groupName: 'Portfolio Level',
     color: '#64748b',
-    level: 'portfolio', portfolioLevel: true, parked: false,
     description: 'Portfolio-wide pattern detection. Requires three or more projects and is parked on the portfolio page.',
+    level: 'portfolio',
     modules: [
-      { id: 'd1_1', num: 'D1.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, required: ['portfolioVectors'], portfolioLevel: true },
-      { id: 'd1_2', num: 'D1.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, required: ['portfolioVectors'], portfolioLevel: true },
-      { id: 'd1_3', num: 'D1.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, required: ['signalHistory'], portfolioLevel: true },
-      { id: 'd1_4', num: 'D1.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, required: ['portfolioVectors'], portfolioLevel: true },
-      { id: 'd1_5', num: 'D1.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, required: ['portfolioVectors'], portfolioLevel: true }
+      { id: 'd1_1', num: 'D1.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
+      { id: 'd1_2', num: 'D1.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
+      { id: 'd1_3', num: 'D1.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, portfolioLevel: true, required: ['signalHistory'] },
+      { id: 'd1_4', num: 'D1.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
+      { id: 'd1_5', num: 'D1.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, portfolioLevel: true, required: ['portfolioVectors'] }
     ]
   }
 ];
@@ -425,7 +438,12 @@ window.projectLevelCategories = function () {
      above. Returns undefined when the class is unknown, which callers treat as "no such
      module" -- distinct from "module present but abstaining". */
   function numForMethodClass(methodClass) {
-    var num = numForMethodClass(methodClass);
+    // RUN 32 FINAL CLOSURE. THIS LINE READ `numForMethodClass(methodClass)` AND CALLED ITSELF.
+    // A blanket rewrite of the three call sites in the previous closure caught the resolver's own
+    // body as a fourth, so every status and result lookup on a project with a stored row threw
+    // RangeError: Maximum call stack size exceeded. Nothing anywhere went red, because every
+    // guard on this file compared STRINGS and the one execution probe used the other client file.
+    var num = METHOD_TO_NUM[methodClass];
     if (num) return num;
     var hist = window.LIN_HISTORICAL_METHOD_CLASS || {};
     for (var cur in hist) {
