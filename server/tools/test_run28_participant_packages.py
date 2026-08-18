@@ -99,6 +99,12 @@ V8_RECORD = "code_audit/run32_closure_participant_package_v8_checksums.sha256"
 V8_COMMIT = "6e7ce204567a3a3331ee894436cd21748bde381e"
 V9_IDENTITY = "og-participant-2026.08-v9"
 V9_RECORD = "code_audit/run32_b3_participant_package_v9_checksums.sha256"
+# THE QUALIFIER RECONCILIATION. v9 IS A PREDECESSOR NOW and v10 describes the live tree: 27 client
+# proxy qualifiers and 3 stale server ones were withdrawn, and both client taxonomy artifacts came
+# under one generator. v9 is PINNED and NOT regenerated.
+V9_COMMIT = "19a70556fe1b6ee8d17706cfbbc5d72e12051086"
+V10_IDENTITY = "og-participant-2026.08-v10"
+V10_RECORD = "code_audit/run32_qualifier_participant_package_v10_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -360,21 +366,40 @@ _v8_bad = sorted(rel for rel, digest in _v8.items()
 check(not _v8_bad,
       f"every one of v8's seventy checksums holds against commit {V8_COMMIT[:7]}, which is where "
       f"that package's bytes live now that it is a predecessor", str(_v8_bad))
+# v9 IS NOW A PREDECESSOR TOO, so the live tree is not its evidence either.
 _v9 = parse((ROOT / V9_RECORD).read_text(encoding="utf-8"))
 _v9_bad = sorted(rel for rel, digest in _v9.items()
-                 if not (ROOT / rel).is_file()
-                 or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                 if hashlib.sha256(git_bytes(rel, V9_COMMIT) or b"").hexdigest() != digest)
 check(not _v9_bad,
-      "and every one of v9's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v9_bad))
+      f"every one of v9's seventy checksums holds against commit {V9_COMMIT[:7]}, which is where "
+      f"that package's bytes live now that it is a predecessor", str(_v9_bad))
+_v10 = parse((ROOT / V10_RECORD).read_text(encoding="utf-8"))
+_v10_bad = sorted(rel for rel, digest in _v10.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v10_bad,
+      "and every one of v10's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v10_bad))
+_seq10 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
+                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v9.get(rel))
+check(not _seq10,
+      "THE EXPERIMENTAL SEQUENCE IS UNCHANGED across v9 to v10: every file carrying evidence "
+      "review, preliminary judgment, preliminary lock, AI reveal, final judgment, capture, final "
+      "lock and period advancement is byte for byte identical to v9", str(_seq10))
+_moved10 = sorted(rel for rel, digest in _v9.items()
+                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved10 == sorted(PP.V9_TO_V10_CHANGED),
+      "and the files v10 moved are exactly the four it declares, so nothing rode along with the "
+      "qualifier reconciliation", str(_moved10))
 _seq9_bad = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
-                   if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v8.get(rel))
+                   if hashlib.sha256(git_bytes(rel, V9_COMMIT) or b"").hexdigest()
+                   != _v8.get(rel))
 check(not _seq9_bad,
       "THE EXPERIMENTAL SEQUENCE IS UNCHANGED across v8 to v9: every file carrying evidence "
       "review, preliminary judgment, preliminary lock, AI reveal, final judgment, capture, final "
       "lock and period advancement is byte for byte identical to v8", str(_seq9_bad))
 _moved9 = sorted(rel for rel, digest in _v8.items()
-                 if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                 if hashlib.sha256(git_bytes(rel, V9_COMMIT) or b"").hexdigest() != digest)
 check(_moved9 == sorted(PP.V8_TO_V9_CHANGED),
       "and the files v9 moved are exactly the three it declares, so nothing rode along with the "
       "identifier propagation", str(_moved9))
@@ -440,21 +465,21 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V9_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V10_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
-          V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY],
+          V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 9
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 10
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all nine are present, so no link shares a record "
+      "each link has its OWN record file and all ten are present, so no link shares a record "
       "with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all eight predecessors name the commit "
+      "and only the current link reads the working tree; all nine predecessors name the commit "
       "their bytes live in")
 # THE v3 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes commit 01e943e
 # wrote, which is what stops the Run-28 closure's own defect from recurring here.

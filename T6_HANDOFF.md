@@ -9,6 +9,74 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-18 - Run 32 FINAL CLOSURE: proxy qualifiers, single client authority, handbook surface
+
+**Branch `run32-qualifier-authority` from `main` at `19a7055`.** Still Run 32. Report:
+`REPORT_2026-08-18_run32-proxy-qualifier-and-client-authority-closure.md`.
+
+**Simulation: `sim-2026.08-v20`, UNCHANGED** - the 95-module dispatched profile digest is
+byte-identical (`a9577151e71ab7211bde450a2b69f82827fde130b7e89c0a1a015f18e137f45a`), so no
+successor was minted even though `registry.py` changed (the change withdraws proxy qualifiers,
+which are metadata and enter no computation).
+**Participant package: `og-participant-2026.08-v10`** (v9 pinned to `19a7055`).
+
+## FIVE THINGS THAT MUST NOT BE LOST
+
+**1. THE PREVIOUS CLOSURE SHIPPED A `RangeError` TO THE PARTICIPANT SURFACE.** Its blanket rewrite
+made `numForMethodClass` in `taxonomy.js` call itself. Every guard on that file compared STRINGS,
+and the single execution probe drove `categories.js` - the file the live page does not load. The
+fix is in place and is now guarded BY EXECUTION (`test_run32_method_class_agreement.py` section
+4c executes `getModuleStatus`/`getModuleResult`/`getModuleAbstentionReason` from `taxonomy.js`
+against a `storedResult` fixture for all 101 modules). **Do not add a string-only check to a file
+whose behaviour a participant depends on.**
+
+**2. A QUALIFIER IS NOT WITHDRAWN MERELY BECAUSE THE SERVER LACKS IT.** Intent was established
+from Run 28/29/30 doctrine, not from absence. Reconciliation: 29 client entries, **27 WITHDRAWN,
+2 CURRENT_REQUIRED** (`CUSUM` = A1.2, `Portfolio_Outlier` = D1.2), 0 HISTORICAL_ONLY, 0
+CURRENT_SERVER_QUALIFIER_MISSING, 0 BACKWARD_ALIAS_ONLY, 0 unclassified, 0 duplicates, all 5
+pre-existing server qualifiers accounted for. Server `PROXY_QUALIFIERS` went 5 -> 2 (stale `B3.5`,
+`B4.3`, `B4.4` withdrawn); no canonical-layer module retains a qualifier.
+`code_audit/run32_proxy_qualifier_reconciliation.csv`, and the PRE-change lookup measurement in
+`code_audit/run32_pre_change_qualifier_measurement.json` (taken before the evidence was destroyed).
+
+**3. THERE IS NOW EXACTLY ONE AUTHORITY FOR THE CLIENT TAXONOMY.**
+`server/tools/taxonomy_authority.json` (12 categories, 101 modules; only fields the registry does
+not govern) + generator `server/tools/build_client_taxonomy.py`, which emits the same generated
+block into BOTH `assets/js/categories.js` and `assets/js/taxonomy.js` and has a `--check` mode.
+**Neither client file is the oracle for the other.** `test_run32_client_authority.py` (18/18)
+takes its oracle from the registry + server qualifier authority + generator `--check`. Do not
+hand-edit either generated block.
+
+**4. THE HANDBOOK SURFACE EXISTS: `CURRENT_REQUIRED_SURFACE`.** It was recorded NOT_VERIFIED twice
+before. It is reachable behind `hb-tab-methods` -> `[data-topic]` -> `[id^=body-modref-]`. The
+earlier probe also had a bug: bodies are `display:none`, so `innerText` is empty - read
+`textContent`. Browser verification is authenticated and real: 17 rows, 17/17 PASS, 101 module
+sections rendered (`code_audit/run32_proxy_qualifier_browser_verification.csv`),
+`test_run32_handbook_surface.py` 9/9.
+
+**5. FAULT CAMPAIGN 14/14, HONESTLY.** 14 required, 14 applied, 14 RED for the intended reason,
+14 restored GREEN; NOT_APPLIED 0, crashes-accepted-as-RED 0, unrelated-failure 0. First pass was
+12/14: fault 6 mutated an alias branch unreachable for current identifiers (the campaign correctly
+refused to credit it) and was repointed at the primary lookup; fault 14's baseline was red because
+the recursion fix post-dated the v10 mint, fixed by regenerating v10 (the CURRENT record, never a
+predecessor). `code_audit/run32_qualifier_fault_injection.csv`.
+
+## Verification on the final head
+
+Qualifier drift 0; mixed method classes 0; empty lookups 0; client authority sources 1; browser
+failures 0; defensibility 101/101; simulation v20; voting exactly 2 (A1.7 TCPI, A1.8 VAC);
+Material Cost Variance disabled; Plithogenic disabled; Quantum archived; Hypersoft disabled;
+Category-9 qualification gate unchanged; bypasses 0; participant experimental sequence unchanged;
+production Postgres not accessed.
+
+## Run 33 requirements (UNCHANGED - not launched here)
+
+Calibration and empirical validation for the Category-8/9 targets, plus the parsimony work. Every
+canonical quantity still carries `calibration_pending` and asserts no `status_color`. Nothing in
+Run 32 is empirically validated.
+
+---
+
 # 2026-08-18 - Run 32 FINAL CLOSURE: method-class identifier propagation
 
 **Branch `run32-b3-method-class` from `main` at `6e7ce20`.** Still Run 32. Closes the finding the

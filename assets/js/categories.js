@@ -31,6 +31,25 @@
    modules that consume it (categories.js then signals.js then detail.js etc).
    ============================================================ */
 
+/* GENERATED BLOCK. Do not edit by hand.
+
+   Written by server/tools/build_client_taxonomy.py from TWO authorities, and neither
+   this file nor its sibling is hand-maintained. Editing the array below cannot change
+   what ships: the guard regenerates from the authorities and compares, so a hand edit
+   is reverted or caught. Change an authority and regenerate.
+
+     name, method_class, disabled   server/app/simulation/registry.py (and the
+                                    portfolio dispatch table) -- the identifiers the
+                                    production runners actually emit
+     everything else                server/tools/taxonomy_authority.json -- category
+                                    identity, colour, description, and each module's
+                                    id, num, required inputs, sectors and level flags
+
+   WHY. categories.js and taxonomy.js each carried a hand-maintained copy of the same
+   101-module taxonomy. index.html loads taxonomy.js and not categories.js, so a fix
+   made in the wrong copy passed every source check while the live page stayed broken;
+   and the two had already drifted apart on their own, with nine modules carrying
+   `disabled: true` in one and not the other. */
 window.LIN_CATEGORIES = [
   {
     id: 'a1', num: 'A1', name: 'Cost and EVM Performance',
@@ -79,11 +98,11 @@ window.LIN_CATEGORIES = [
       { id: 'a3_1', num: 'A3.1', name: 'Reference Class Forecasting', method_class: 'Reference_Class_Forecasting', active: true, required: ['bac','cpi'] },
       { id: 'a3_2', num: 'A3.2', name: 'Contingency Burn Rate', method_class: 'Contingency_Burn_Rate', active: true, required: ['originalContingency','remainingContingency','actualPctComplete'] },
       { id: 'a3_3', num: 'A3.3', name: 'Labor Productivity Index', method_class: 'Labor_Productivity', active: true, required: ['plannedLaborHours','actualLaborHours','actualPctComplete'] },
-      { id: 'a3_4', num: 'A3.4', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: true, required: ['materialCostBaseline','materialCostCurrent'] },
+      { id: 'a3_4', num: 'A3.4', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: true, disabled: true, required: ['materialCostBaseline','materialCostCurrent'] },
       { id: 'a3_5', num: 'A3.5', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: true, required: ['indirectCostPlan','indirectCostActual'] },
       { id: 'a3_6', num: 'A3.6', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] },
       { id: 'a3_7', num: 'A3.7', name: 'Analogous Estimating Ratio', method_class: 'Analogous_Estimating', active: true, required: ['analogousOverrunPct','bac'] },
-      { id: 'a3_8', num: 'A3.8', name: 'Parametric Cost Index', method_class: 'Parametric_Cost', active: true, required: ['bac','ev','ac','actualPctComplete'] },
+      { id: 'a3_8', num: 'A3.8', name: 'Parametric Cost Index', method_class: 'Parametric_Cost', active: true, disabled: true, required: ['bac','ev','ac','actualPctComplete'] },
       { id: 'a3_9', num: 'A3.9', name: 'Inflation Adjustment Index', method_class: 'Inflation_Adjustment', active: true, required: ['materialCostBaseline','materialCostCurrent'] }
     ]
   },
@@ -157,9 +176,9 @@ window.LIN_CATEGORIES = [
       { id: 'b2_4', num: 'B2.4', name: 'Interval Fuzzy Sets', method_class: 'Interval_Fuzzy_Sets', active: true, required: ['cpi','spi'] },
       { id: 'b2_5', num: 'B2.5', name: 'Z-numbers', method_class: 'Z_Numbers', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_6', num: 'B2.6', name: 'PLTS', method_class: 'PLTS', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_7', num: 'B2.7', name: 'Plithogenic Sets', method_class: 'Plithogenic_Sets', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b2_7', num: 'B2.7', name: 'Plithogenic Sets', method_class: 'Plithogenic_Sets', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_8', num: 'B2.8', name: 'Belief Rule Base', method_class: 'Belief_Rule_Base', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_9', num: 'B2.9', name: 'Quantum Probability', method_class: 'Quantum_Probability', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b2_9', num: 'B2.9', name: 'Quantum Probability', method_class: 'Quantum_Probability', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_10', num: 'B2.10', name: 'Pythagorean Fuzzy Sets', method_class: 'Pythagorean_Fuzzy', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_11', num: 'B2.11', name: 'Picture Fuzzy Sets', method_class: 'Picture_Fuzzy', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_12', num: 'B2.12', name: 'Hesitant Fuzzy Sets', method_class: 'Hesitant_Fuzzy', active: true, required: ['cpi','spi'] },
@@ -170,7 +189,7 @@ window.LIN_CATEGORIES = [
       { id: 'b2_17', num: 'B2.17', name: 'Fermatean Fuzzy Sets', method_class: 'Fermatean_Fuzzy', active: true, required: ['cpi','spi'] },
       { id: 'b2_18', num: 'B2.18', name: 'MARCOS Ranking', method_class: 'MARCOS', active: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b2_19', num: 'B2.19', name: 'CRITIC-TOPSIS', method_class: 'CRITIC_TOPSIS', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_20', num: 'B2.20', name: 'Hypersoft Sets', method_class: 'Hypersoft_Sets', active: true, required: ['cpi','spi','docRiskScore'] }
+      { id: 'b2_20', num: 'B2.20', name: 'Hypersoft Sets', method_class: 'Hypersoft_Sets', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] }
     ]
   },
   {
@@ -192,12 +211,12 @@ window.LIN_CATEGORIES = [
     color: '#a78bfa',
     description: 'Decision optimisation and trade-off analysis over the available courses of action.',
     modules: [
-      { id: 'b4_1', num: 'B4.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_2', num: 'B4.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, required: ['bac','ev','ac','cpi'] },
+      { id: 'b4_1', num: 'B4.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b4_2', num: 'B4.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, disabled: true, required: ['bac','ev','ac','cpi'] },
       { id: 'b4_3', num: 'B4.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
       { id: 'b4_4', num: 'B4.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] },
-      { id: 'b4_5', num: 'B4.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_6', num: 'B4.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b4_5', num: 'B4.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
+      { id: 'b4_6', num: 'B4.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
       { id: 'b4_7', num: 'B4.7', name: 'Minimax Regret Decision Rule', method_class: 'Minimax_Regret_Decision_Rule', active: true, required: ['cpi','spi','bac'] }
     ]
   },
@@ -205,30 +224,29 @@ window.LIN_CATEGORIES = [
     id: 'c1', num: 'C1', name: 'Data Integrity',
     group: 'C', groupName: 'Data and Evidence Health',
     color: '#94a3b8',
-    authoringOnly: true, excludeFromProjectStatus: true,
     description: 'Evidence quality of the underlying document set. Authoring-time only: these describe how trustworthy the evidence is, never the condition of the project.',
     modules: [
-      { id: 'c1_1', num: 'C1.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_2', num: 'C1.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, required: ['docDate'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_3', num: 'C1.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_4', num: 'C1.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_5', num: 'C1.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, required: ['bac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_6', num: 'C1.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, required: ['ev','ac'], authoringOnly: true, excludeFromProjectStatus: true },
-      { id: 'c1_7', num: 'C1.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, required: ['docDate'], authoringOnly: true, excludeFromProjectStatus: true }
+      { id: 'c1_1', num: 'C1.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_2', num: 'C1.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['docDate'] },
+      { id: 'c1_3', num: 'C1.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_4', num: 'C1.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_5', num: 'C1.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
+      { id: 'c1_6', num: 'C1.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['ev','ac'] },
+      { id: 'c1_7', num: 'C1.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['docDate'] }
     ]
   },
   {
     id: 'd1', num: 'D1', name: 'Portfolio Health',
     group: 'D', groupName: 'Portfolio Level',
     color: '#64748b',
-    level: 'portfolio', portfolioLevel: true, parked: false,
     description: 'Portfolio-wide pattern detection. Requires three or more projects and is parked on the portfolio page.',
+    level: 'portfolio',
     modules: [
-      { id: 'd1_1', num: 'D1.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, required: ['portfolioVectors'], portfolioLevel: true },
-      { id: 'd1_2', num: 'D1.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, required: ['portfolioVectors'], portfolioLevel: true },
-      { id: 'd1_3', num: 'D1.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, required: ['signalHistory'], portfolioLevel: true },
-      { id: 'd1_4', num: 'D1.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, required: ['portfolioVectors'], portfolioLevel: true },
-      { id: 'd1_5', num: 'D1.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, required: ['portfolioVectors'], portfolioLevel: true }
+      { id: 'd1_1', num: 'D1.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
+      { id: 'd1_2', num: 'D1.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
+      { id: 'd1_3', num: 'D1.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, portfolioLevel: true, required: ['signalHistory'] },
+      { id: 'd1_4', num: 'D1.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
+      { id: 'd1_5', num: 'D1.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, portfolioLevel: true, required: ['portfolioVectors'] }
     ]
   }
 ];

@@ -1380,36 +1380,28 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
   // presentation only, duplicated because the frontend has no import path into the backend
   // package). Keyed by method_class, matching the m.mc values below.
   const RUN1_PROXY_QUALIFIER = {
+    // RUN 32 FINAL CLOSURE. TWENTY-SEVEN ENTRIES WITHDRAWN, NOT DELETED SILENTLY.
+    //
+    // This map mirrors registry.PROXY_QUALIFIERS, which is the source of truth, and it had
+    // drifted to twenty-nine keys against the server's five. A proxy qualifier describes the
+    // PROXY a module was computing instead of the method its name claims. When Runs 28 to 32
+    // repointed a module onto its canonical method the proxy stopped existing, and the run
+    // that did it withdrew the qualifier: Run 29 removed six because the six modules they
+    // described now perform their canonical methods, and Run 30 took eight to none. The
+    // client mirror was never updated, so the handbook went on telling a reader that
+    // twenty-seven canonical modules were proxies.
+    //
+    // WITHDRAWAL WAS ESTABLISHED FROM THE PRODUCTION ROUTE, NOT FROM THE SERVER'S SILENCE.
+    // Each withdrawn module resolves into a canonical layer and requires a governed
+    // structure; absence of a server string is not evidence of intent. The full record, one
+    // row per entry with its classification and the run that withdrew it, is
+    // code_audit/run32_proxy_qualifier_reconciliation.csv.
+    //
+    // WHAT REMAINS IS EXACTLY WHAT THE SERVER STILL HOLDS FOR A MODULE THAT IS STILL A
+    // PROXY. Do not add a key here without adding it to registry.PROXY_QUALIFIERS first.
     CUSUM: "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma floor and Amber band uncalibrated",
-    Bayesian_EAC: "Normal-normal updating with designed constant variances, not a governed Bayesian model",
-    Kalman_Filter: "Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering claim",
-    Budget_Execution_Rate: "an expenditure-versus-progress control ratio, not a standardised statistical test",
-    Schedule_Compression: "a custom compression ratio; no network-based crashing model or calibrated bands",
-    SCurve_Deviation: "a single planned versus actual snapshot, not a longitudinal S-curve analysis",
-    Milestone_Trend: "a simplified shift summary on real milestone history, bands uncalibrated",
-    Labor_Productivity: "a labour-hours ratio, not an earned-output productivity model",
-    Overhead_Absorption: "a transparent ratio; validity depends on whether the indirect plan is total or period-to-date",
-    Analogous_Estimating: "an analogous-cost ratio; project selection, normalisation and adaptation ungoverned",
-    Inflation_Adjustment: "a material-escalation ratio with no external price index, time base or geography",
-    Weather_Impact: "a lost-days over available-float proxy with fallback behaviour and ungoverned bands",
-    CO_Frequency: "contract growth plus a raw count; no time or exposure denominator",
-    Dispute_Escalation: "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
-    Subcontractor_Performance: "a precomputed compliance score; provenance and construction unvalidated",
-    Sensitivity_Analysis: "local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
-    Tornado_Diagram: "a ranking of four present-state deviations; no outcome-response ranges estimated",
-    Pythagorean_Fuzzy: "hard-coded transformations of raw CPI, SPI and document risk",
-    Picture_Fuzzy: "hard-coded memberships consuming raw metrics; no calibration evidenced",
-    Hesitant_Fuzzy: "designed perturbations, not elicited or observed hesitant assessments",
-    Type2_Fuzzy: "membership intervals that are designed constants",
-    Maximum_Entropy: "entropy over designed state probabilities; measures the lookup, not the project",
-    Possibility_Theory: "fixed mappings from raw metrics; no governed possibility distribution",
-    Spherical_Fuzzy: "algebraically bounded but fixed memberships on raw unqualified inputs",
-    Fermatean_Fuzzy: "formula-shaped with designed memberships, no empirical or elicitation basis",
-    Modification_Governance: "a raw modification count; not a frequency without a denominator",
-    Constraint_Satisfaction: "an explainable four-rule checklist, not a constraint-satisfaction solver",
-    WhatIf_Scenario_Matrix: "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
     Portfolio_Outlier: "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated"
-  };
+    };
   const RUN1_DISABLED = {
     Parametric_Cost: true, Plithogenic_Sets: true, Quantum_Probability: true, Hypersoft_Sets: true,
     Multi_Objective_Optimization: true, Linear_Programming: true, Decision_Sensitivity_Matrix: true,
