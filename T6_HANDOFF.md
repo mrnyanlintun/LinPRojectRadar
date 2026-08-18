@@ -9,6 +9,89 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-18 - Run 33 FINAL CLOSURE: the PH.1 fixed-forest fidelity oracle
+
+**Branch `run33-ph1-fixed-forest-oracle` from `main` at `4395f5a`.** Still Run 33. Report section:
+"5a. PH.1 oracle correction" in `REPORT_2026-08-18_run33-portfolio-health-v21.md`.
+
+**Simulation: `sim-2026.08-v21`, UNCHANGED** - fixed-forest equivalence PASSED, so no analytical
+fix was required and a test/report closure does not move the stamp.
+**Participant package: `og-participant-2026.08-v11`, UNCHANGED.**
+**Synthetic package: `OG-SYNTH-0.5`, UNCHANGED** - no fixture byte moved.
+
+## FIVE THINGS THAT MUST NOT BE LOST
+
+**1. A SINGLE-SEED CORRELATION BETWEEN TWO RANDOMIZED ENSEMBLES IS NOT A FIDELITY TEST.** The
+withdrawn Run-33 acceptance condition - Spearman >= 0.99 against scikit-learn - could never have
+distinguished implementation fidelity from independent ensemble randomness. Equivalent algorithms
+need not build identical forests from nominally corresponding seeds; the seeds index different
+generators consumed in different orders. **The measurement that settles fidelity is FIXED-FOREST
+SCORING EQUIVALENCE**: freeze the forest, then require two independently written scorers to agree
+on the same points over the same trees. Result: **worst score difference 0.000e+00 and worst
+per-tree path difference 0.000e+00** across 100 trees x 10 points, tolerance 1e-12.
+
+**2. THE PROOF IS THE SELF-STABILITY COLUMN, AND IT IS THE HEART OF THE CLOSURE.** In the
+predeclared 30-seed campaign, at t=100 this implementation agrees with **ITSELF across seeds at
+0.986049** and with scikit-learn at **0.986057**. Indistinguishable. The cross-implementation
+shortfall is therefore entirely Monte Carlo ensemble variation and carries NO information about
+algorithm fidelity. **Do not let a future run re-read 0.9875 as a defect.** t=400: 0.995628 /
+self 0.995392. t=1000: 0.997821 / self 0.997836.
+
+**3. THE ORACLE MUST NEVER DELEGATE TO PRODUCTION, AND FAULT 10 IS WHY.**
+`server/tools/run33_frozen_forest.py` reimplements c(n), the traversal, the ensemble mean and the
+score from the published definition and evaluates FROZEN TREE STRUCTURES recorded as plain data.
+Independence is proved TWO ways: structurally, on the PARSED source (its import set contains
+nothing from `app`; its executable code references none of `_path_length`, `c_factor`,
+`anomaly_score`, `mean_path_length`, `harmonic`; the two files share no literal text even for
+Euler's constant) - a substring search was tried first and was wrong, because the oracle's own
+docstring names the module it checks. And behaviourally: perturb production's `_path_length` in
+process, and production's score moves while the oracle's does not. **The equivalence guard CANNOT
+catch a delegating oracle** - it would agree trivially - which is exactly why the independence
+proof is a separate guard.
+
+**4. FAULT 3 IS A TRAP THAT WAS CAUGHT BEFORE IT COUNTED.** "Wrong c(psi) denominator" reads
+naturally as `c_factor(len(training))` instead of `c_factor(self.subsample)`. On the compact PH.1
+fixture those are THE SAME NUMBER - psi = min(256, 10) = 10 = len(training) - so the mutation
+applies and changes nothing, and a campaign that credited it would have credited a fault it never
+proved. It is expressed as a genuinely wrong denominator and exercised on the 300-point fixture
+where psi = 256 differs from n = 300. **The same shape cost six faults a first pass in the main
+Run-33 campaign. Check that the mutation changes what the guard reads.**
+
+**5. PRODUCTION STAYS AT t = 100 AND THE ARTIFACT SAYS SO EXPLICITLY.** Raising the tree count to
+cross a test threshold would be tuning production to a fixture. The convergence study is
+DESCRIPTIVE and is not converted into a production threshold; no statement is made that 400 or
+1,000 is the correct operational setting. **Tree-count calibration is Run-34 work.**
+
+## The six assurance layers, deliberately NOT collapsed
+
+`code_audit/run33_ph1_oracle_closure.csv`. Canonical tree construction VERIFIED; fixed-forest
+score equivalence PASS; reproducibility PASS; cross-implementation comparison classified as
+CROSS_IMPLEMENTATION_STOCHASTIC_COMPARISON (descriptive, not a verdict); tree-count calibration
+PENDING_RUN_34; threshold calibration PENDING_RUN_34. **A single green cell would destroy the
+distinction this closure exists to draw.**
+
+## Where the new suites live, and why in two places
+
+`server/tests/test_run33_ph1_fixed_forest.py` (132/132) and
+`server/tests/test_run33_ph1_fault_campaign.py` (46/46) hold the bodies; thin shims at
+`server/tools/test_run33_ph1_*.py` EXECUTE them, because `run_all_suites.sh` globs
+`tools/test_*.py` and a file under `server/tests/` is never reached by the acceptance gate. That
+is Run 32's finding applied: a correct oracle outside the runner is an unenforced oracle.
+
+## Verification on the final head
+
+The 0.9875/0.9955/0.9975 observations are PRESERVED and RECLASSIFIED, never deleted. Frozen 0.576
+threshold unchanged and still schema-bound - no flag under any other feature schema. scikit-learn
+still dev-only; `server/requirements.txt` unchanged. PH.2-PH.5 untouched. Voting exactly 2.
+Participant protocol unchanged. Production Postgres not accessed.
+
+## Run 34 requirements (NOT launched here)
+
+Tree-count calibration and operational/contamination threshold calibration for PH.1, plus the
+PH.2-PH.5 calibration work already recorded below. Nothing here is empirically validated.
+
+---
+
 # 2026-08-18 - Run 33: Portfolio Health PH.1-PH.5 canonical remediation, sim-2026.08-v21
 
 **Branch `run33-portfolio-health-v21` from `main` at `54409af`.** Report:

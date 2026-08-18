@@ -91,12 +91,118 @@ four v20 status bands hung off it are gone.
   asserted**: fixture, psi and seed held fixed, only the ensemble size raised, for both
   implementations. **No production parameter was changed to obtain it.** Production keeps t = 100.
 
+> **SUPERSEDED AS A FIDELITY VERDICT — see "PH.1 oracle correction" below.** These three
+> measurements are preserved unchanged, but the `>= 0.99` acceptance condition they were judged
+> against has been withdrawn: it was never a canonical requirement and it could not distinguish
+> implementation fidelity from independent ensemble randomness. The fidelity question is now
+> settled by fixed-forest scoring equivalence, and these figures are retained as
+> `CROSS_IMPLEMENTATION_STOCHASTIC_COMPARISON`.
+
 **Degenerate and small-n cases** all behave: one project → abstain under `INSUFFICIENT_COHORT`,
 no flag of any kind; two projects → computes with an explicit small-sample limitation claiming no
 predictive validity; identical vectors → no project more anomalous than another; zero-variance
 feature → the published construction never selects an attribute admitting no split; missing
 qualified feature → abstain, and the missing value is never zero; mixed periods and mixed feature
 schemas → rejected for all five modules alike.
+
+## 5a. PH.1 oracle correction (Run-33 final closure)
+
+**The original single-seed `>= 0.99` Spearman requirement was not a canonical literature
+requirement, and it has been withdrawn as a fidelity condition.** It conflated two different
+things. Both implementations construct *randomized* ensembles, and equivalent algorithms need not
+generate identical forests from nominally corresponding seeds — the seeds index different
+generators consumed in different orders. One observed rank correlation is therefore a single draw
+from a distribution that mixes algorithm fidelity with Monte Carlo ensemble variation, and a low
+draw is not evidence of an implementation defect.
+
+**The measurement that does separate them is fixed-forest scoring equivalence, and it is now the
+primary method-fidelity proof.** `server/tests/test_run33_ph1_fixed_forest.py` (132/132, wired
+into the acceptance runner by `server/tools/test_run33_ph1_fixed_forest.py`) freezes the forest
+and requires two independently written scorers to agree on the same points over the same trees.
+Ensemble randomness is held constant and only the arithmetic is under test.
+
+- `server/tools/run33_frozen_forest.py` reimplements `c(n)`, the path-length traversal, the
+  ensemble mean and the normalized score from the published definition, and evaluates frozen tree
+  structures recorded as plain data: selected feature, split value, left/right children, leaf
+  sample size, path-depth convention, external-node adjustment, `psi` and `c(psi)`.
+- **It never calls the production scorer.** That independence is proved structurally — the
+  oracle's parsed import set contains nothing from `app`, its executable code references none of
+  `_path_length`, `c_factor`, `anomaly_score`, `mean_path_length` or `harmonic`, and the two files
+  share no literal text even for Euler's constant — and *behaviourally*: perturb production's path
+  length in process and production's score moves while the oracle's does not.
+- **Result: exact agreement.** Worst absolute score difference **0.000e+00** and worst per-tree
+  path-length difference **0.000e+00** across 100 trees × 10 points, against a predeclared
+  tolerance of 1e-12 justified by floating-point association alone. `c(psi)`, recomputed
+  independently, matches the constant production divides by.
+
+**Oracles A–D** (hand-built forests, every path calculable): a point isolated at 1 edge outranks
+one isolated at 6; two points with identical adjusted path lengths in every tree receive equal
+scores; hand-specified path lengths `[1,2,2]` and `[3,3,3]` give means `5/3` and `3` and put
+**point A** as the more anomalous, matching `2^(-E[h]/c(10))` computed by hand; and a terminal node
+holding 7 samples contributes `depth + c(7)` where a single-sample node contributes raw depth, so
+the adjustment is observable rather than assumed.
+
+**Production stayed at 100 trees.** Raising the tree count to clear a test threshold would be
+tuning production to a fixture, and it was not done.
+
+**Cross-implementation correlation is retained as convergence evidence, not as a verdict.** A
+predeclared repeated-seed campaign — fixture, seeds, tree counts and statistics committed at
+`200aec1` *before* the campaign was run — over 30 independent seeds per tree count on the frozen
+300-project graded fixture:
+
+| t | seeds | mean | median | min | max | sd | top-1 agreement | **same implementation vs. itself across seeds** |
+|---|---|---|---|---|---|---|---|---|
+| 100 | 30 | 0.986057 | 0.986461 | 0.977038 | 0.992606 | 0.002975 | 9/30 | **0.986049** |
+| 400 | 30 | 0.995628 | 0.995500 | 0.994230 | 0.997408 | 0.000714 | 16/30 | 0.995392 |
+| 1000 | 30 | 0.997821 | 0.997884 | 0.996843 | 0.998503 | 0.000478 | 25/30 | 0.997836 |
+
+**The last column is decisive.** At t = 100 this implementation agrees with **itself** across
+seeds at **0.986049** and with scikit-learn at **0.986057** — indistinguishable. The
+cross-implementation shortfall is therefore *entirely* ensemble Monte Carlo variation and carries
+no information about algorithm fidelity, which is precisely why the single-seed correlation could
+never have been a fidelity requirement. Increasing the tree count reduced Monte Carlo ranking
+variation on this frozen fixture; **no claim is made that 400 or 1,000 is therefore the correct
+operational setting.**
+
+**The original observations are preserved, not deleted:** t=100 **0.9875**, t=400 0.9955, t=1000
+0.9975, retained in `code_audit/run33_ph1_sklearn_oracle.csv` and restated in
+`code_audit/run33_ph1_cross_implementation_convergence.csv`. They are **reclassified** from
+`CANONICAL_FIDELITY_FAILURE` to `CROSS_IMPLEMENTATION_STOCHASTIC_COMPARISON`, and that
+reclassification was applied only *after* fixed-forest equivalence was measured to pass.
+
+**Reproducibility.** Same cohort, feature schema, `psi`, tree count, seed and model version give
+an identical frozen-forest digest and identical scores. A different seed gives a different forest
+and may give different scores — the method is randomized, and that is the method behaving, not a
+nondeterminism failure.
+
+**The six assurance layers are kept separate** in `code_audit/run33_ph1_oracle_closure.csv`, with
+genuinely different statuses:
+
+| layer | status |
+|---|---|
+| canonical tree construction | VERIFIED |
+| fixed-forest score equivalence | **PASS** |
+| reproducibility | **PASS** |
+| cross-implementation stochastic comparison | CROSS_IMPLEMENTATION_STOCHASTIC_COMPARISON (descriptive) |
+| tree-count calibration | **PENDING_RUN_34** |
+| threshold calibration | **PENDING_RUN_34** |
+| PH.1 final disposition | CANONICAL_IMPLEMENTATION_PROVEN_CALIBRATION_PENDING |
+
+**Simulation version unchanged.** Fixed-forest equivalence passed, so no analytical fix was
+required and `sim-2026.08-v21` stands: a test and report closure does not move the stamp.
+
+**Ten-fault non-vacuity campaign: 10 required, 10 applied, 10 RED for the intended reason, 10
+restored GREEN, NOT_APPLIED 0, crashes accepted as RED 0**
+(`code_audit/run33_ph1_fault_injection_results.csv`). Two are worth recording. Fault 3 could not
+be expressed as "use `len(training)` instead of `psi`" on the compact fixture, because there
+`psi = min(256, 10) = 10 = len(training)` and the mutation would have applied while changing
+nothing; it is exercised on the 300-point fixture where `psi = 256` differs from `n = 300`. Fault
+10 cannot be caught by the equivalence guard at all — an oracle that *delegates* to production
+agrees with it trivially — so its guard is the independence proof instead.
+
+**No empirical validation is claimed by any of this.** Fixed-forest equivalence is a statement
+about arithmetic, and the convergence study is a comparison of two implementations on a synthetic
+fixture. Neither is evidence about any real project.
 
 ## 6. PH.2 — the descriptive-ranking result
 
