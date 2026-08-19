@@ -111,6 +111,12 @@ V10_RECORD = "code_audit/run32_qualifier_participant_package_v10_checksums.sha25
 V10_COMMIT = "54409af2a07ac989489447379e8379cc9f95e15f"
 V11_IDENTITY = "og-participant-2026.08-v11"
 V11_RECORD = "code_audit/run33_participant_package_v11_checksums.sha256"
+#: RUN 36. v11 is a PREDECESSOR now, so it is verified against its own git object rather than
+#: against the live tree. The commit is the Run-35 closure head, which is the tree its record
+#: describes.
+V11_COMMIT = "dafc35d35bafe5af76e1ce48ef7daceab9daed2c"
+V12_IDENTITY = "og-participant-2026.08-v12"
+V12_RECORD = "code_audit/run36_participant_package_v12_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -399,20 +405,22 @@ check(_moved10 == sorted(PP.V9_TO_V10_CHANGED),
       "and the files v10 moved are exactly the four it declares, so nothing rode along with the "
       "qualifier reconciliation", str(_moved10))
 
-# ---- v11, THE CURRENT LINK -------------------------------------------------------------------
+# ---- v11, NOW A PREDECESSOR ------------------------------------------------------------------
+# RUN 36. v11's record is verified against ITS OWN GIT OBJECT, not the live tree. Leaving it on
+# the live tree would make two records claim the same tree, which is the masquerade this chain
+# exists to forbid, and it is the defect the Run-28 closure had to correct in the v2 record.
 _v11 = parse((ROOT / V11_RECORD).read_text(encoding="utf-8"))
 _v11_bad = sorted(rel for rel, digest in _v11.items()
-                  if not (ROOT / rel).is_file()
-                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V11_COMMIT) or b"").hexdigest() != digest)
 check(not _v11_bad,
-      "and every one of v11's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v11_bad))
+      f"and every one of v11's seventy checksums holds against its own git object "
+      f"{V11_COMMIT[:7]}, so the predecessor reconstructs", str(_v11_bad))
 check(sorted(_v11) == sorted(_v10),
       "v11 covers exactly the same file inventory as v10, so a successor cannot quietly drop a "
       "participant-visible file out of the package",
       str(sorted(set(_v10) ^ set(_v11))))
 _moved11 = sorted(rel for rel, digest in _v10.items()
-                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V11_COMMIT) or b"").hexdigest() != digest)
 check(_moved11 == sorted(PP.V10_TO_V11_CHANGED),
       "and the files v11 moved are exactly the three it declares, so nothing rode along with the "
       "Portfolio Health remediation", str(_moved11))
@@ -421,7 +429,7 @@ check(_moved11 == sorted(PP.V10_TO_V11_CHANGED),
 # blanket claim is stronger: every other sequence-bearing file is byte-identical, AND the
 # workspace.js delta is confined to the Portfolio Health rendering block.
 _seq11 = sorted(rel for rel in PP.V10_TO_V11_SEQUENCE_UNCHANGED
-                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v10.get(rel))
+                if hashlib.sha256(git_bytes(rel, V11_COMMIT) or b"").hexdigest() != _v10.get(rel))
 check(not _seq11,
       "THE EXPERIMENTAL SEQUENCE IS UNCHANGED across v10 to v11: decision.js, decision-ui.js, "
       "deepdive.js and both questionnaires are byte for byte identical to v10", str(_seq11))
@@ -435,7 +443,7 @@ check("assets/js/workspace.js" not in PP.V10_TO_V11_SEQUENCE_UNCHANGED
 # and less brittle statement than a vocabulary of tokens, which cannot classify the continuation
 # lines of a multi-line expression and has to be widened until it accepts anything.
 _old_ws = (git_bytes("assets/js/workspace.js", V10_COMMIT) or b"").decode("utf-8")
-_new_ws = (ROOT / "assets/js/workspace.js").read_text(encoding="utf-8")
+_new_ws = (git_bytes("assets/js/workspace.js", V11_COMMIT) or b"").decode("utf-8")
 _anchor = PP.V11_WORKSPACE_PORTFOLIO_ANCHOR
 check(_anchor in _old_ws and _anchor in _new_ws,
       "the Portfolio Health block's own anchor line is present in BOTH versions, so the prefix "
@@ -450,6 +458,36 @@ check(_old_ws[:_old_ws.index(_anchor)] == _new_ws[:_new_ws.index(_anchor)],
 check(_old_ws[_old_ws.index(_anchor):] != _new_ws[_new_ws.index(_anchor):],
       "and the change really is inside that block, so the prefix equality above is not simply "
       "the whole file being unchanged")
+
+# ---- v12, THE CURRENT LINK -------------------------------------------------------------------
+# RUN 36. ONE file moved, and it is GENERATED: the served defensibility evidence object. A1.1 was
+# described to the participant as requiring a governed structure and returning Not Estimable
+# without it; execution disproves both, so the statement was corrected.
+_v12 = parse((ROOT / V12_RECORD).read_text(encoding="utf-8"))
+_v12_bad = sorted(rel for rel, digest in _v12.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v12_bad,
+      "and every one of v12's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v12_bad))
+check(sorted(_v12) == sorted(_v11),
+      "v12 covers exactly the same file inventory as v11, so a successor cannot quietly drop a "
+      "participant-visible file out of the package",
+      str(sorted(set(_v11) ^ set(_v12))))
+_moved12 = sorted(rel for rel, digest in _v11.items()
+                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved12 == sorted(PP.V11_TO_V12_CHANGED),
+      "and the file v12 moved is exactly the one it declares, so nothing rode along with the "
+      "defensibility correction", str(_moved12))
+_seq12 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
+                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v11.get(rel))
+check(not _seq12,
+      "THE EXPERIMENTAL SEQUENCE IS UNCHANGED across v11 to v12: every file carrying evidence "
+      "review, preliminary judgment, preliminary lock, AI reveal, final judgment, capture, final "
+      "lock and period advancement is byte for byte identical to v11", str(_seq12))
+check("assets/js/workspace.js" not in PP.V11_TO_V12_CHANGED,
+      "and workspace.js did not move at all this time, so the Portfolio Health confinement "
+      "argument is not even needed for v12")
 _seq9_bad = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
                    if hashlib.sha256(git_bytes(rel, V9_COMMIT) or b"").hexdigest()
                    != _v8.get(rel))
@@ -524,21 +562,22 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V11_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V12_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
-          V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY],
+          V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY,
+          V12_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 11
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 12
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all eleven are present, so no link shares a record "
+      "each link has its OWN record file and all twelve are present, so no link shares a record "
       "with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all ten predecessors name the commit "
+      "and only the current link reads the working tree; all eleven predecessors name the commit "
       "their bytes live in")
 # THE v3 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes commit 01e943e
 # wrote, which is what stops the Run-28 closure's own defect from recurring here.
