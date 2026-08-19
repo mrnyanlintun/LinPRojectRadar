@@ -1,0 +1,30 @@
+surface,requirement,surface_reached,result,evidence
+participant authentication,the provisioned participant authenticates on the real research route and is placed at the evidence stage of period one,YES,PASS,"{""ok"": true, ""current_stage"": ""evidence"", ""period"": ""P1""}"
+participant application,the real participant application is the page under test,YES,PASS,39 scripts
+client arithmetic boundary,the historical client arithmetic is not served to the participant,YES,PASS,
+project/period workflow,the five stage cards of the governed sequence are on the served page,YES,PASS,
+fixed evidence review,the fixed evidence package is visible before any judgment is offered,YES,PASS,
+AI reveal boundary,the AI recommendation is NOT in the served page before the preliminary lock,YES,PASS,
+preliminary judgment lock,"with dialogs suppressed the confirm-gated commit no-ops and nothing is submitted, so the gate is doing its job",YES,PASS,evidence
+preliminary judgment lock,the preliminary judgment is submitted from the real control and LOCKED,YES,PASS,awaiting_reveal
+preliminary judgment lock,"and the SERVER refuses a direct route edit of the locked preliminary judgment, so the lock is not merely a disabled button",YES,PASS,"{'ok': False, 'error': 'preliminary judgment is already locked and cannot be resubmitted'}"
+AI reveal,the recommendation is still absent after the lock and before the reveal,YES,PASS,
+AI reveal,after the participant presses reveal the recommendation is inspectable,YES,PASS,
+corrected A1.7 behaviour,"A1.7 carries its canonical value at full precision beside a separate rounded display value, so presentation rounding cannot reach the band",YES,PASS,"{""tcpi"": 1.005586592178771, ""tcpi_display"": 1.006, ""status_color"": ""Amber""}"
+corrected A1.8 behaviour,A1.8's analytical variance at completion is not replaced by its formatted output,YES,PASS,"{""vac"": -195121.95121951215, ""vac_display"": -195122, ""status_color"": ""Amber""}"
+"A1.1 disabled for insufficient canonical input, on the participant surface","A1.1 shows no status colour and no forecast figure, and the participant is told the method is not defined completely enough to run",YES,PASS,"{""status_color"": null, ""p80_eac"": null, ""overrun_pct_p80"": null, ""abstention_reason_code"": ""CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED""}"
+final judgment fields,"the participant records a final action, a disposition, a confidence, evidence and a free-text rationale",YES,PASS,monitor / accept
+final lock,the final judgment is submitted from the real control and LOCKED,YES,PASS,complete
+final lock,and the SERVER refuses a direct route edit of the locked final judgment,YES,PASS,"{'ok': False, 'error': 'a final decision has already been recorded for this assignment'}"
+evidence and rationale capture,the stored row holds the rationale and the evidence items the participant supplied,YES,PASS,"{""rationale"": true, ""evidence_items"": true}"
+governed timestamp order,"preliminary lock, then reveal, then final submission, in that order",YES,PASS,2026-08-19 13:19:52 -> 2026-08-19 13:20:01 -> 2026-08-19 13:20:04
+next-period transition,the advance control is offered once the period is complete,YES,PASS,
+next-period transition,the governed transition to the next reporting period occurred and it starts at evidence again,YES,PASS,"{""period"": ""P2"", ""sequence_number"": null, ""current_stage"": ""evidence""}"
+next-period transition,"and the preliminary judgment card renders again, so the second period can actually be started",YES,PASS,
+no unintended disabled or archive exposure,no disabled or archived method is presented to the participant as a live reading,YES,PASS,[]
+handbook / method reference surface,"the method reference surface is reachable through hb-tab-methods, a topic and a module-reference body, and it renders",YES,PASS,entry=hb-tab-methods topic=cat1-modules modref_bodies=11
+controlled-study population,the enumerated stimuli hold exactly 6 study projects,YES,PASS,"6: ['PRJ-AIR', 'PRJ-DCT', 'PRJ-HSP', 'PRJ-HWY', 'PRJ-RAL', 'PRJ-WTR']"
+controlled-study population,and exactly 6 periods for every one of them,YES,PASS,"{""PRJ-AIR"": 6, ""PRJ-HSP"": 6, ""PRJ-DCT"": 6, ""PRJ-RAL"": 6, ""PRJ-HWY"": 6, ""PRJ-WTR"": 6}"
+controlled-study population,"and exactly 36 unique project-periods, with no duplicate and no missing combination",YES,PASS,36 unique of 36 rows
+no JavaScript console crash,no uncaught page error was raised anywhere in the authenticated sequence,YES,PASS,
+console errors,console error messages observed during the sequence,YES,OBSERVED,"error:The Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element.; error:Error: <svg> attribute preserveAspectRatio: Unrecognized enumerated value, ""xMidYEnd slice"".; error:The Content Security Policy directive 'frame-ancestors' is ignored when delivered v"

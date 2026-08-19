@@ -77,7 +77,11 @@ def write(out_dir, name, header, data):
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(header)
         w.writerows(data)
-    print(f"wrote {p.relative_to(ROOT)}: {len(data)} rows")
+    try:
+        shown = p.relative_to(ROOT)
+    except ValueError:                                           # a temp --out dir, from the guard
+        shown = p
+    print(f"wrote {shown}: {len(data)} rows")
 
 
 # =================================================================================================

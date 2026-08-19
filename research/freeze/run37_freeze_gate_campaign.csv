@@ -1,0 +1,16 @@
+fault,blocker_class,injection,named_blocker,gate_state,red_for_intended_reason,gate_output,restored_green,counted
+1,the candidate identity is made dirty: a governed file moves after the digest was taken,APPLIED,run37.gate.B01,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+2,the scientific population is changed,APPLIED,run37.gate.B02,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+3,a controlled stimulus period is removed,APPLIED,run37.gate.B03,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+4,a participant sequence-bearing file drifts,APPLIED,run37.gate.B04,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+5,a served defensibility statement is made false,APPLIED,run37.gate.B05,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+6,a scientific target raises instead of abstaining,APPLIED,run37.gate.B06,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+7,Category 9 is made a contributor to project status,APPLIED,run37.gate.B07,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+8,a Category-10 output is made human-authoritative,APPLIED,run37.gate.B08,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+9,a third voter is added,APPLIED,run37.gate.B09,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+10,a second taxonomy authority is created by unhooking a generated mirror,APPLIED,run37.gate.B10,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+11,a sealed predecessor participant package record is rewritten in place,APPLIED,run37.gate.B11,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+12,a browser qualification surface is recorded as failed,APPLIED,run37.gate.B12,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+13,an unresolved Run-36 blocking defect is reintroduced,APPLIED,run37.gate.B13,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+14,an empirical field-validation claim is asserted,APPLIED,run37.gate.B14,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
+15,candidate ANALYTICAL BEHAVIOUR is changed after the candidate identity was established,APPLIED,run37.gate.B15,GREEN,NO,RESULT: 20/22 checks passed,YES,NOT_COUNTED
