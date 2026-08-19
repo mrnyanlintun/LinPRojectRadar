@@ -292,6 +292,37 @@ check(_blocking == 1,
       "reports FREEZE_BLOCKED", str(_blocking))
 
 # =================================================================================================
+head("10b. SECTIONS 11 AND 17: ONE ENGINE PER IDENTITY, AND ALL 101 THROUGH THE REAL LOOKUP")
+# =================================================================================================
+import collections                                                # noqa: E402
+_eng = collections.Counter()
+for _m, _e in REG.VALIDATED.items():
+    _fn = _e[1]
+    _inner = getattr(_fn, "__wrapped__", _fn)   # functools.wraps hides identity from naive checks
+    _eng[f"{_inner.__module__}.{_inner.__name__}"] += 1
+_dups = {k: v for k, v in _eng.items() if v > 1}
+check(not _dups,
+      "no analytical engine is shared by two registered module identities, so no duplicate "
+      "implementation was introduced. Read through __wrapped__, because functools.wraps masks "
+      "route identity from naive introspection", str(_dups))
+for _mid, _name in (("B2.18", "MARCOS"), ("B2.19", "CRITIC_TOPSIS")):
+    _e = REG.VALIDATED.get(_mid)
+    _inner = getattr(_e[1], "__wrapped__", _e[1]) if _e else None
+    check(bool(_e) and _e[0] == _name and _eng[f"{_inner.__module__}.{_inner.__name__}"] == 1,
+          f"{_mid} has ONE stable identity and ONE engine", str(_e[0]) if _e else "missing")
+_lookup_bad = []
+for _m in _idx:
+    try:
+        REG.method_label(_m)
+        REG.group_of(_m)
+        REG.parameter_provenance(_m)
+    except Exception as _exc:                                     # noqa: BLE001
+        _lookup_bad.append((_m, f"{type(_exc).__name__}"))
+check(not _lookup_bad and len(_idx) == 101,
+      "all 101 registered modules resolve through the real lookup paths with no silent undefined "
+      "and no recursion", str(_lookup_bad))
+
+# =================================================================================================
 head("11. SECTION 18: THE AUTHENTICATED BROWSER QUALIFICATION ARTEFACT")
 # =================================================================================================
 _bq = load("run36_authenticated_browser_qualification.csv")
@@ -311,6 +342,26 @@ for _need in ("participant authentication", "preliminary judgment lock", "AI rev
           f"the study path surface '{_need}' was reached and passed; an unreachable study path "
           f"would itself be a blocking defect",
           str([(r["result"], r["surface_reached"]) for r in _hit]))
+
+# =================================================================================================
+head("12. SECTION 21: THE REPRODUCIBILITY INVENTORY, AND THE HISTORICAL INCOMPLETENESS")
+# =================================================================================================
+_repro = load("run36_reproducibility_inventory.csv")
+check(bool(_repro), "the reproducibility inventory exists", len(_repro))
+check(not [r for r in _repro if r["sha256"] == "MISSING"],
+      "every freeze-candidate component named in the inventory is present",
+      str([r["role"] for r in _repro if r["sha256"] == "MISSING"]))
+import hashlib as _hl                                             # noqa: E402
+_drift = [r["file_path"] for r in _repro
+          if r["sha256"] not in ("MISSING", "directory")
+          and _hl.sha256((ROOT / r["file_path"]).read_bytes()).hexdigest() != r["sha256"]]
+check(not _drift, "and every recorded checksum still matches the file on disk", str(_drift))
+_synth01 = [r for r in _repro if "OG-SYNTH-0.1" in r["file_path"]]
+check(len(_synth01) == 1 and "HISTORICALLY INCOMPLETE" in _synth01[0]["reproducibility_status"]
+      and "504" in _synth01[0]["reproducibility_status"],
+      "OG-SYNTH-0.1's historical incompleteness stays VISIBLE: 519 manifest entries against 504 "
+      "recovered, and no completeness is claimed for it",
+      str(_synth01)[:200])
 
 print()
 print("=" * 94)
