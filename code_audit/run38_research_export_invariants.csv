@@ -1,0 +1,12 @@
+invariant,required,observed,result
+duplicate participant/project/period rows,0,0,PASS
+unknown project,0,0,PASS
+unknown period,0,0,PASS
+final response without preliminary lock,0,0,PASS
+final response without AI reveal,0,0,PASS
+AI reveal before preliminary lock,0,0,PASS
+invalid state transition,0,0,PASS
+impossible timestamp ordering,0,0,PASS
+missing frozen-instrument version identity,0,0,PASS
+direct identifiers,0,0,PASS
+test/live record ambiguity,0,0,PASS

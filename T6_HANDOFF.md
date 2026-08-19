@@ -9,6 +9,80 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-19 - Run 38: STUDY EXECUTION READY. The frozen instrument can run the study.
+
+**Report:** `REPORT_2026-08-19_run38-study-execution-readiness.md`.
+**Manifest:** `research/study_execution/STUDY_EXECUTION_READINESS_MANIFEST.json`.
+**Runbook:** `research/study_execution/STUDY_ADMINISTRATION_RUNBOOK.md`.
+
+**Disposition: `STUDY_EXECUTION_READY`. Blockers 0** across all eighteen blocker classes, each
+fault-injected and each detected. **Run 38 changed no frozen byte**: it modified zero
+pre-existing files, and every change against the release is an addition.
+
+## WHAT RUN 38 ESTABLISHED
+
+The frozen instrument was driven end to end on isolated test databases with TEST_ONLY
+identities: 2 participants x 6 projects x 6 periods = 36 project-periods, in the API and in a
+real browser. All 36 route identities reachable, duplicates 0, missing 0. The readiness gate is
+`server/tools/test_run38_readiness.py` (107 checks) and it is wired into `run_all_suites.sh`.
+
+**The analysis pipeline now exists and is qualified.** `server/tools/run38_analysis_export.py`
+composes the governed export builders into one flat, deidentified, checksummed CSV
+(`og-analysis-2026.08-v1`, 58 columns, grain participant x project x period), and
+`research/study_execution/run38_ingest_qualification.R` ingests it in **base R, actually
+executed, 35/35**, with no manual cleanup and no inferential analysis.
+
+## FIVE MEASURED FACTS A LATER RUN MUST NOT UNLEARN
+
+1. **The final lock has no database trigger.** The preliminary lock has two layers -- the route
+   AND `trg_decisions_pre_lock_guard`. The final lock has one: `research_decision.py` is the
+   only application writer of the final-judgment columns and refuses a second submission, but a
+   raw SQL UPDATE succeeds. Not a server-boundary bypass, so not a blocker. Closing it is
+   SUCCESSOR-CANDIDATE work (a migration on the participant data path), never an in-place fix.
+
+2. **No research row stores the instrument version.** `EXPORT_COLUMNS` has scenario, config,
+   package and hash, but nothing naming the simulation or participant package. Run 38 stamps
+   them at export time, which proves which instrument produced the FILE, not which instrument a
+   historical ROW was collected under. **Export within the release you collected under.**
+
+3. **The AI recommendation is not in the governed flat CSV.** It is on the workbook's Stimulus
+   sheet, joinable on `instance_id`. Revision direction relative to the AI is underivable from
+   the governed CSV alone. Run 38's export does the join; do not assume a later flat export does.
+
+4. **Free text reaches the governed export verbatim.** Measured: an email typed into `rationale`
+   through the real route lands in the `participant_inputs` CSV. There is no scrubber, no
+   governed review procedure and no rationale coding protocol. The analysis dataset therefore
+   EXCLUDES free text by construction and carries only presence flags and character counts. Do
+   not add raw free text to the analysis dataset without a governed process first.
+
+5. **`decisions` has no UNIQUE constraint on `(assignment_id, period)`.** Uniqueness holds
+   because periods are server-derived. It is checked at export, and that check must stay.
+
+## THREE DEFECTS THE FAULT CAMPAIGN FOUND IN RUN 38'S OWN GATE
+
+Recorded because the pattern keeps recurring:
+ * the six-project check compared against the driver's own constant -- a self-referential oracle
+   that could not fail. It now reads the governed corpus. **Sixth occurrence of
+   infer-instead-of-measure in this programme.**
+ * the provenance invariant did not require `synthetic_package`, so breaking it stayed green;
+ * the revision section raised KeyError on a missing column -- a CRASH, not a RED.
+
+None was found by reading. All three were found by injecting the fault.
+
+## WHAT IS STILL NOT CLAIMED
+
+Empirical field validation remains **0/100**. No study was conducted, no participant enrolled,
+no final study dataset exists. Every record Run 38 created is `TEST_ONLY` and none of it is a
+study observation. Voting remains exactly 2 (A1.7 TCPI, A1.8 VAC).
+
+## ONE LIMITATION OF THE QUALIFICATION ENVIRONMENT
+
+Under swiftshader software rendering, an in-place navigation of an already-loaded workspace page
+did not complete in 180 s (a bare page: 0.2 s; after `openProject`: 97.4 s). A fresh page with
+the same token resumes instantly and correctly. This container has no GPU, so the run cannot
+tell "slow under software rendering" from "slow everywhere" and does not claim to. Verify on GPU
+hardware before collection.
+
 # 2026-08-19 - Run 37: FINAL FREEZE ACCEPTED. THE FROZEN STUDY INSTRUMENT.
 
 **This is the current instrument reference.** Release record:
