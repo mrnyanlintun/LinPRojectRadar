@@ -39,6 +39,7 @@ import run38_analysis_export as AX                                    # noqa: E4
 import run38_dryrun as D                                              # noqa: E402
 import run39_dataset_class as DC                                      # noqa: E402
 import run39_launch_gate as LG                                        # noqa: E402
+import run39_main_study_freeze as FZ                                  # noqa: E402
 import participant_packages as PP                                     # noqa: E402
 from app.research_models import (                                     # noqa: E402
     Assignment, AuditEvent, Decision, Participant,
@@ -713,6 +714,75 @@ gov = (REPO / "research/study_execution/STUDY_ADMINISTRATION_RUNBOOK.md").read_t
 check("withdraw" not in gov.lower(),
       "the governed material defines no participant-withdrawal state, so Run 39 defines none")
 
+# ===================================================================== 13. freeze procedure
+print()
+print("=" * 78)
+print("SECTION 13  MAIN-STUDY DATA FREEZE PROCEDURE, EXECUTED")
+print("=" * 78)
+
+# Asked for the main study right now, the procedure must REFUSE: there is nothing to freeze, and
+# an empty artifact would look like a study dataset.
+with D.SessionFactory() as s:
+    try:
+        FZ.freeze_dataset(s, pathlib.Path(tempfile.mkdtemp()), "must_not_exist")
+        refused = False
+        why = "it produced an artifact from zero observations"
+    except FZ.EmptyDatasetError as exc:
+        refused, why = True, str(exc)[:80]
+check(refused, "the freeze procedure refuses to produce a MAIN_STUDY artifact from zero "
+               "observations", why)
+
+# Rehearsed on the PILOT class, which is how determinism and checksum reproduction are proved
+# without fabricating a study observation.
+fz_dir = pathlib.Path(tempfile.mkdtemp())
+with D.SessionFactory() as s:
+    record = FZ.freeze_dataset(s, fz_dir, "run39_pilot_freeze_rehearsal", "PILOT", registry)
+check(record["dataset_class"] == "PILOT", "the freeze record names the artifact's governed class")
+check(record["invariant_violations"] == 0,
+      "every pre-freeze invariant passed before the checksum was taken",
+      str(record["invariant_violations"]))
+check(len(record["invariants_checked"]) >= 10,
+      f"{len(record['invariants_checked'])} invariants were actually checked, not asserted")
+problems = FZ.verify_frozen(fz_dir / "run39_pilot_freeze_rehearsal.csv",
+                            fz_dir / "run39_pilot_freeze_rehearsal.freeze.json")
+check(not problems, "the frozen artifact re-verifies from disk alone", "; ".join(problems))
+check(record["sha256"] == hashlib.sha256(
+          (fz_dir / "run39_pilot_freeze_rehearsal.csv").read_bytes()).hexdigest(),
+      "the freeze checksum reproduces from the written file")
+check(all(record.get(f) for f in ("simulation_version", "participant_package",
+                                  "synthetic_package", "freeze_candidate_commit",
+                                  "schema_version", "row_grain")),
+      "the freeze record carries complete schema/version/package provenance")
+
+# Determinism of the whole procedure: freeze twice, compare the CSV bytes.
+fz_dir2 = pathlib.Path(tempfile.mkdtemp())
+with D.SessionFactory() as s:
+    record2 = FZ.freeze_dataset(s, fz_dir2, "again", "PILOT", registry)
+a_bytes = (fz_dir / "run39_pilot_freeze_rehearsal.csv").read_bytes().split(b"\n")
+b_bytes = (fz_dir2 / "again.csv").read_bytes().split(b"\n")
+# exported_at is the one column the frozen contract says varies between exports; the freeze
+# procedure stamps it once per artifact, so it is normalised for the comparison rather than
+# waved away.
+ea = AX.ANALYSIS_COLUMNS.index("exported_at")
+
+
+def strip_exported_at(lines):
+    out = []
+    for i, ln in enumerate(lines):
+        if i == 0 or not ln:
+            out.append(ln)
+            continue
+        parts = ln.split(b",")
+        parts[ea] = b"<normalised>"
+        out.append(b",".join(parts))
+    return out
+
+
+check(strip_exported_at(a_bytes) == strip_exported_at(b_bytes),
+      "two independent freezes of identical source state produce identical bytes apart from the "
+      "single documented timestamp column")
+FREEZE_REHEARSAL_SHA = record["sha256"]
+
 # ===================================================================== summary
 print()
 print("=" * 78)
@@ -721,5 +791,6 @@ for ok, label, detail in results:
     if not ok:
         print(f"FAILED: {label}   {detail}")
 print(f"PILOT EXPORT SHA256: {PILOT_CHECKSUM}")
+print(f"FREEZE REHEARSAL SHA256: {FREEZE_REHEARSAL_SHA}")
 print(f"RESULT: {passed}/{len(results)} checks passed")
 sys.exit(0 if passed == len(results) else 1)
