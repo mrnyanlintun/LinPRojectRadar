@@ -1,0 +1,15 @@
+RUN 40 FINDING S1 — Stored XSS / content-type spoofing on GET /documents/{id}/content
+Reproduced through the real HTTP surface (FastAPI TestClient), fresh migrated SQLite.
+- Authenticated PM uploads bytes "<html>..<script>..</script>" with client-supplied mimeType="text/html".
+- Server (a_projectupload) stores mime_type verbatim; no MIME/content validation.
+- GET /documents/{id}/content returns:
+    Content-Type: text/html; charset=utf-8   (attacker-controlled)
+    Content-Disposition: inline; filename="evil".pdf"  (filename unsanitized, quote breakout)
+    X-Content-Type-Options: (absent)
+- assets/js/files.js:199 loads this URL in a same-origin <iframe>. preview_kind() enables the
+  iframe on a ".pdf" filename regardless of real bytes, so evil.pdf + text/html renders/executes
+  attacker script in the app origin -> sessionStorage token theft / act-as-victim.
+Reachability: CONFIRMED reachable via real UI (iframe preview). Cross-member within a project.
+Fix: serve boundary — X-Content-Type-Options: nosniff; inline only for a safe type allowlist,
+     else application/octet-stream + Content-Disposition: attachment; sanitize header filename.
+No persisted-decision behavior changes -> no simulation/participant version boundary.
