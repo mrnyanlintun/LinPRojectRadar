@@ -582,26 +582,32 @@ print("=" * 78)
 print("SECTION 7+16  REVISION AND CONFIDENCE DERIVATION")
 print("=" * 78)
 
-directions = {r["revision_direction"] for r in arows if r["revision_direction"]}
+# .get() THROUGHOUT THIS SECTION, DELIBERATELY. A gate that raises KeyError when a column is
+# absent CRASHES instead of failing, and a crash is not a RED -- it is the first of the five
+# ways a check has lied in this programme. The Run-38 fault campaign caught exactly that here:
+# removing revision_direction killed the gate rather than turning it red.
+directions = {r.get("revision_direction") for r in arows if r.get("revision_direction")}
 check(directions <= set(AX.CATEGORICAL_LEVELS["revision_direction"]),
       "every observed revision_direction is inside the closed vocabulary", str(directions))
 # Re-derive independently from the raw fields rather than trusting the exporter.
 mismatch = 0
 for r in arows:
-    pre, fin, ai = r["pre_action"], r["final_action"], r["ai_recommended_action"]
+    pre, fin, ai = (r.get("pre_action"), r.get("final_action"),
+                    r.get("ai_recommended_action"))
     if pre is None or fin is None or ai is None:
         continue
     want = ("none" if pre == fin else "toward_ai" if fin == ai
             else "away_from_ai" if pre == ai else "lateral")
-    if want != r["revision_direction"]:
+    if want != r.get("revision_direction"):
         mismatch += 1
 check(mismatch == 0, "revision_direction re-derives from pre/final/AI action independently",
       str(mismatch))
-check(all((r["confidence_change"] is None) or
-          (r["confidence_change"] == r["final_confidence"] - r["pre_confidence"])
+check(all((r.get("confidence_change") is None) or
+          (r.get("confidence_change") == r.get("final_confidence", 0)
+           - r.get("pre_confidence", 0))
           for r in arows), "confidence_change re-derives from the two confidence columns")
-check({"increase", "decrease", "unchanged"} >= {r["confidence_direction"] for r in arows
-                                                 if r["confidence_direction"]},
+check({"increase", "decrease", "unchanged"} >= {r.get("confidence_direction") for r in arows
+                                                 if r.get("confidence_direction")},
       "confidence_direction is inside its closed vocabulary")
 check("expert_reference_score" not in AX.ANALYSIS_COLUMNS,
       "no correctness label is introduced into the analysis dataset")
@@ -620,7 +626,7 @@ with D.SessionFactory() as s:
                  if d.final_submitted_at and d.reveal_at and d.final_submitted_at < d.reveal_at]
 check(not bad_order, "reveal never precedes the preliminary lock in persisted data", str(bad_order))
 check(not bad_final, "the final decision never precedes the reveal", str(bad_final))
-check(all((r["deliberation_seconds"] is None) or (r["deliberation_seconds"] >= 0)
+check(all((r.get("deliberation_seconds") is None) or (r.get("deliberation_seconds") >= 0)
           for r in arows), "no negative duration is derivable")
 check(all(c in AX.ANALYSIS_COLUMNS for c in
           ("pre_locked_at", "reveal_at", "final_submitted_at", "deliberation_seconds")),
@@ -724,37 +730,37 @@ def inv(label: str, observed: int, required: int = 0) -> None:
     check(ok, f"invariant: {label} = {required}", str(observed))
 
 
-keys = [(r["study_participant_id"], r["scenario_id"], r["period"]) for r in a2]
+keys = [(r.get("study_participant_id"), r.get("scenario_id"), r.get("period")) for r in a2]
 inv("duplicate participant/project/period rows", len(keys) - len(set(keys)))
-inv("unknown project", sum(1 for r in a2 if not r["evidence_project_id"]))
-inv("unknown period", sum(1 for r in a2 if r["period"] not in D.ROUTE_PERIODS))
+inv("unknown project", sum(1 for r in a2 if not r.get("evidence_project_id")))
+inv("unknown period", sum(1 for r in a2 if r.get("period") not in D.ROUTE_PERIODS))
 inv("final response without preliminary lock",
-    sum(1 for r in a2 if r["final_submitted_at"] and not r["pre_locked_at"]))
+    sum(1 for r in a2 if r.get("final_submitted_at") and not r.get("pre_locked_at")))
 inv("final response without AI reveal",
-    sum(1 for r in a2 if r["final_submitted_at"] and not r["reveal_at"]))
+    sum(1 for r in a2 if r.get("final_submitted_at") and not r.get("reveal_at")))
 inv("AI reveal before preliminary lock",
-    sum(1 for r in a2 if r["reveal_at"] and r["pre_locked_at"] and
+    sum(1 for r in a2 if r.get("reveal_at") and r.get("pre_locked_at") and
         r["reveal_at"] < r["pre_locked_at"]))
 inv("invalid state transition",
-    sum(1 for r in a2 if r["completion_state"] not in AX.CATEGORICAL_LEVELS["completion_state"]))
+    sum(1 for r in a2 if r.get("completion_state") not in AX.CATEGORICAL_LEVELS["completion_state"]))
 inv("impossible timestamp ordering",
-    sum(1 for r in a2 if r["final_submitted_at"] and r["reveal_at"] and
+    sum(1 for r in a2 if r.get("final_submitted_at") and r.get("reveal_at") and
         r["final_submitted_at"] < r["reveal_at"]))
 inv("missing frozen-instrument version identity",
-    sum(1 for r in a2 if not (r["simulation_version"] and r["participant_package"]
-                              and r["synthetic_package"] and r["schema_version"]
-                              and r["freeze_candidate_commit"])))
+    sum(1 for r in a2 if not (r.get("simulation_version") and r.get("participant_package")
+                              and r.get("synthetic_package") and r.get("schema_version")
+                              and r.get("freeze_candidate_commit"))))
 # EXACT column-name equality, not substring: `participant_id` is a substring of the
 # pseudonymous `study_participant_id`, and a substring test would have reported the study
 # identifier itself as a direct identifier.
 inv("direct identifiers", sum(1 for c in AX.DIRECT_IDENTIFIER_TOKENS
                               if c in AX.ANALYSIS_COLUMNS))
 inv("test/live record ambiguity",
-    sum(1 for r in a2 if r["record_class"] not in AX.RECORD_CLASSES))
+    sum(1 for r in a2 if r.get("record_class") not in AX.RECORD_CLASSES))
 write_csv(AUDIT / "run38_research_export_invariants.csv", INV_HEADER, inv_rows)
 
-check(all(r["record_class"] == "TEST_ONLY" for r in a2),
-      "every dry-run row is labelled TEST_ONLY", str({r["record_class"] for r in a2}))
+check(all(r.get("record_class") == "TEST_ONLY" for r in a2),
+      "every dry-run row is labelled TEST_ONLY", str({r.get("record_class") for r in a2}))
 
 # Determinism: build twice, compare bytes with exported_at held fixed.
 with D.SessionFactory() as s:
