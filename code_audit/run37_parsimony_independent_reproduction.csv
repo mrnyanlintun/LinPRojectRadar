@@ -1,0 +1,7 @@
+row_type,measure,run37_reproduced,run36_recorded,rule,result
+REPRODUCTION,ESTABLISHED REDUNDANCY,0,0,"execution-confirmed equivalence: same measured primitive profile, same analytical family, at least one member actually produces a reading, and no output either produces that the other does not",PASS
+REPRODUCTION,STRUCTURAL OVERLAP: SAME GOVERNED STRUCTURE,19,19,DISTINCT under R2: sharing the object a method is defined on is not performing the same method,PASS
+REPRODUCTION,SHARED INPUTS: IDENTICAL PRIMITIVE INPUT SET,5,5,DISTINCT under R3: shared inputs alone do not make a target redundant,PASS
+REPRODUCTION,SUBSET OR SUPERSET,1,1,DISTINCT under R4,PASS
+REPRODUCTION,TARGETS PRODUCING A READING,5,5,the population over which redundancy is decidable at all,PASS
+STATED_LIMITATION,0 ESTABLISHED REDUNDANCY IS NOT 0 POSSIBLE REDUNDANCY,-,-,"Most scientific targets abstain on the controlled corpus. ABSENCE OF EXECUTION EVIDENCE CANNOT ESTABLISH INDEPENDENCE OR UNIQUENESS, and it cannot establish redundancy either. The four categories above are kept apart deliberately and must not be collapsed into one number.",STATED
