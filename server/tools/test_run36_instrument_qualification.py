@@ -273,9 +273,19 @@ check(len(_unresolved) == 77, "lineage UNRESOLVED for 77 of 100, derived here", 
 # =================================================================================================
 head("9. SECTIONS 25 AND 26: THE VERSION AND PACKAGE DECISIONS")
 # =================================================================================================
-check(SIMULATION_VERSION == "sim-2026.08-v25", "the simulation stamp is sim-2026.08-v25",
+# RESTATED BY RUN 41, RUN 36'S FINDING PRESERVED. This pinned the LIVE stamp to Run 36's own
+# stamp, which was true until the next authorised append. Run 41 appends v26, the successor
+# carrying the two behaviour changes the owner authorised after Run 40. What is an INVARIANT --
+# and what is still asserted here -- is that v25 remains in the history at the position Run 36
+# put it, directly after v24. The v25 expectation is not overwritten: it is asserted as a
+# HISTORICAL position rather than as the live stamp, which is the same discipline Run 32 and
+# Run 33 applied to their predecessors.
+check("sim-2026.08-v25" in SIMULATION_VERSION_HISTORY,
+      "Run 36's sim-2026.08-v25 is still in the append-only history",
       SIMULATION_VERSION)
-check(SIMULATION_VERSION_HISTORY[-2:] == ("sim-2026.08-v24", "sim-2026.08-v25"),
+check(SIMULATION_VERSION_HISTORY[SIMULATION_VERSION_HISTORY.index("sim-2026.08-v25") - 1:
+                                 SIMULATION_VERSION_HISTORY.index("sim-2026.08-v25") + 1]
+      == ("sim-2026.08-v24", "sim-2026.08-v25"),
       "and v25 directly follows v24 in an append-only history",
       str(SIMULATION_VERSION_HISTORY[-2:]))
 check(PP.CURRENT.identifier == "og-participant-2026.08-v13",

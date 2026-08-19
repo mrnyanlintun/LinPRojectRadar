@@ -259,11 +259,26 @@ RUN16_NON_ANALYTICAL_SCOPE = {"server/app/writes.py", "server/app/research_expor
 # where canonical_v3's own guards put it. `writes.py` (the `saveprojectdata` action that reaches
 # it) is already named by Run 16 above, and `documents.py` (the one merge point) by Run 11.
 RUN28_CLOSURE_NON_ANALYTICAL_SCOPE = {"server/app/project_data.py"}
+# RESTATED BY RUN 41, ORIGINAL FINDING PRESERVED. Run 41 closes the two HIGH defects Run 40
+# confirmed and the owner ruled must be fixed before participant use. One of them, finding S1,
+# lives at the document-serving boundary in `main.py`: the client-supplied MIME stored at upload
+# was echoed as the response Content-Type, inline and without nosniff, so an uploaded document
+# containing markup executed as script in this application's origin when a project member
+# previewed it. That was reproduced in a real browser before it was fixed - 4 of 4 payloads
+# executed - and 0 of 4 execute after.
+#
+# The file is NAMED here rather than the rule being widened to "server/app/". Nothing analytical
+# is touched by it: the change is a response-header policy over bytes that are already stored,
+# and the whole registered module population emits byte-identical rows across the boundary, which
+# build_run41_v25_v26_execution_proof.py demonstrates by executing both lines rather than reading
+# the diff. The run's other defect, S2, is closed in a migration rather than under server/app/,
+# so it needs no entry here.
+RUN41_NON_ANALYTICAL_SCOPE = {"server/app/main.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
           or d in RUN14_NON_ANALYTICAL_SCOPE or d in RUN16_NON_ANALYTICAL_SCOPE
-          or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE
+          or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE or d in RUN41_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning

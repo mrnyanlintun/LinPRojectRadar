@@ -312,7 +312,11 @@ with Session() as s:
     from app.research_models import Assignment
     arow = s.scalar(select(Assignment).where(Assignment.participant_id == res_id))
     drow = s.scalar(select(Decision).where(Decision.assignment_id == arow.assignment_id))
-    drow.final_action = "TAMPERED-AFTER-EXPORT"
+    # RUN 41. The subject is the checksum noticing an out-of-band change to exported data, not
+    # the particular column. final_action is now immutable after the final lock (migration 0026),
+    # so the same demonstration is made through pre_assessment, which is exported and is not
+    # covered by either lock guard.
+    drow.pre_assessment = "TAMPERED-AFTER-EXPORT"
     s.commit()
 
 tampered = post({"action": "adminexportfetch", "session_token": admin,

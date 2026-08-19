@@ -336,9 +336,23 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: run35 closure manifest is NOT rewritten: it stays exactly as that release wrote it and this
 #: successor names it as its parent. The guard was observed reporting exactly that one changed
 #: file and nothing else before this manifest was written.
-PINNED = ROOT / "code_audit" / "run36_production_tree.sha256"
-#: The Run-35 closure manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 41 SUCCESSOR. Run 40 confirmed two HIGH defects and the owner ruled that both be fixed
+#: before participant use rather than accepted for the study period, which is what made this a
+#: freeze successor rather than a repair inside v25. Three production files move and only three:
+#: `server/app/main.py` (finding S1 - the document-serving boundary stops echoing the
+#: client-supplied MIME and stops serving untrusted bytes inline), the ADDED migration
+#: `server/alembic/versions/0026_final_lock_guard.py` (finding S2 - substantive final responses
+#: become database-immutable after the final lock) and `server/app/simulation/models.py` (the
+#: stamp advances to sim-2026.08-v26 with the boundary recorded). The run36 manifest is NOT
+#: rewritten: it stays exactly as that release wrote it and this successor names it as its
+#: parent. The guard was observed reporting exactly those files, and nothing else, before this
+#: manifest was written.
+PINNED = ROOT / "code_audit" / "run41_production_tree.sha256"
+#: The Run-36 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
+PINNED_RUN36 = ROOT / "code_audit" / "run36_production_tree.sha256"
+#: The Run-35 closure manifest, kept addressable so a guard can prove the supersession is a real
+#: change and not a silent rewrite.
 PINNED_RUN35_CLOSURE = ROOT / "code_audit" / "run35_closure_production_tree.sha256"
 #: The Run-34 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.

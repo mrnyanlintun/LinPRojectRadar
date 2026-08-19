@@ -1,4 +1,16 @@
-# Owner website acceptance checklist (Run 40, Fable)
+# Owner website acceptance checklist (Run 41 successor, sim-2026.08-v26)
+
+> **What changed since the Run-40 checklist.** Run 40 confirmed two HIGH defects and left them
+> open for your decision. You ruled that both be fixed before participant use. They are now
+> fixed, and this checklist is the manual confirmation of that:
+>
+> 1. **S1 - stored XSS / content-type spoofing.** An uploaded document could execute script in
+>    the application's own origin when previewed. Now closed. **CONFIRMED_FIXED.**
+> 2. **S2 - final-lock database integrity.** A direct database edit could silently rewrite a
+>    participant's final answer after it was locked. Now closed. **CONFIRMED_FIXED.**
+>
+> **You do not need database access for any test below.** Everything is verifiable through the
+> website. The S2 test is written as something you can see rather than something you must query.
 
 Practical manual test for the owner before any real participant. Everything below uses
 NON-CONFIDENTIAL synthetic documents only. Do not use real project documents.
@@ -38,9 +50,32 @@ NON-CONFIDENTIAL synthetic documents only. Do not use real project documents.
   filename. Path-traversal filenames are harmless: storage is content-addressed in the DB and the
   filename is a display label only.
 
-## XSS fix verification (finding S1)
-- Open the `evil.pdf` (HTML bytes) preview. It MUST download as an opaque file, NOT render, and
-  the response MUST carry `X-Content-Type-Options: nosniff`. A genuine PDF still previews inline.
+## Documents - what to test by hand (finding S1, now CONFIRMED_FIXED)
+
+**1. Ordinary document preview - must still work.**
+- Upload the small genuine `.pdf`. Open its preview.
+- EXPECTED: it renders inline, in place, exactly as before. The fix must not have cost you
+  ordinary document viewing.
+- Upload the `.txt` note and open it. EXPECTED: it displays as text.
+
+**2. Spoofed content - must NOT render.**
+- Upload `evil.pdf`, the file whose NAME ends in `.pdf` but whose BYTES are
+  `<html><script>...</script></html>`. Open its preview.
+- EXPECTED: the browser offers it as a DOWNLOAD, or shows nothing. It must NOT render as a web
+  page, and no script in it may run. If you see the page render, or see any pop-up or alert from
+  the file, STOP.
+- The same applies to a `.svg` containing a `<script>` tag: SVG can carry script, so it now
+  downloads instead of displaying. That is intended, not a fault.
+
+**3. Malformed upload - must be refused or handled cleanly, never crash.**
+- Upload a truncated/corrupt PDF, a zero-byte file, and a file over 20 MB.
+- EXPECTED: a plain readable message each time. No stack trace, no internal file path, no blank
+  error page.
+
+**4. Download still works.**
+- Use the download control on each uploaded document.
+- EXPECTED: the file downloads and opens correctly in its normal application. The bytes are
+  unchanged by the fix - only how the browser is told to treat them changed.
 
 ## Login / logout
 - Log in, act, log out; a replayed request after logout is refused.
@@ -53,13 +88,39 @@ NON-CONFIDENTIAL synthetic documents only. Do not use real project documents.
 - Reveal only unlocks after the preliminary judgment is locked. The SAME recommendation appears
   for every period of a given project (this is the governed per-project treatment; see below).
 
-## Final lock
-- Submit a final decision; confirm no application route can alter it afterward
-  (`final_submitted_at` guard; only one writer).
-- KNOWN GAP (S2, owner decision): a direct raw-SQL edit of `final_action`/`final_confidence`/
-  `rationale` on a final-locked row currently succeeds and is undetectable (no trigger, no
-  updated_at, no audit row). The preliminary judgment IS storage-protected; the final judgment is
-  NOT. See the manifest for the recommended symmetric-trigger remedy and its version consequence.
+## Final lock - what to test by hand (finding S2, now CONFIRMED_FIXED)
+
+**1. Complete a decision.**
+- Work one project-period through: evidence, preliminary response, preliminary lock, AI reveal,
+  final response.
+- EXPECTED: each step is offered in that order, and the AI recommendation appears only AFTER the
+  preliminary judgment is locked - never before.
+
+**2. Final lock.**
+- Submit the final decision.
+- EXPECTED: it is accepted, and the screen moves to the completed state.
+
+**3. Try to change it.**
+- Attempt to submit a final decision again for the same period, by any route the site offers.
+- EXPECTED: refused, with a message saying a final decision has already been recorded. Your
+  original answer must still be the one shown.
+
+**4. Reload.**
+- Reload the page. Then log out, log back in, and return to the same project-period.
+- EXPECTED: the final response is still there, word for word, with the same action, the same
+  confidence and the same rationale you entered. Nothing is blank, nothing has reverted, and
+  nothing has silently changed.
+
+**5. Come back later.**
+- Return the next day and look at the same completed decision.
+- EXPECTED: identical again.
+
+> **What changed underneath, in one sentence:** the database itself now refuses to alter a
+> final-locked response, so a mistaken or malicious edit made outside the website cannot rewrite
+> what a participant decided. The preliminary judgment already had this protection; the final
+> judgment now has the same protection, covering every substantive part of the final answer -
+> the action, the confidence, the rationale, the disposition toward the recommendation, the
+> evidence cited, the reason code, the roles, the deadline and the residual risk.
 
 ## Reload / resume
 - Reload mid-sequence: state resumes at the correct stage. (In-place browser render was NOT
@@ -73,5 +134,11 @@ NON-CONFIDENTIAL synthetic documents only. Do not use real project documents.
 - STOP if any uploaded document renders active script in the app origin.
 - STOP if any participant can read/write another participant's project or document.
 - STOP if extraction emits a value for a fact absent from the source document.
-- STOP before launch until the S2 final-lock owner decision is made and (if remediated) the
-  simulation successor + refreeze/readiness requalification is complete.
+- STOP if a final-locked decision reads differently after a reload, a re-login, or a day later.
+- STOP if a spoofed-content upload renders as a page instead of downloading.
+
+## Closed since Run 40
+- S1 stored XSS / content-type spoofing: **CONFIRMED_FIXED** (sim-2026.08-v26).
+- S2 final-lock database integrity: **CONFIRMED_FIXED** (migration 0026, sim-2026.08-v26).
+- Unresolved HIGH security blockers: **0**. The Run-40 condition that held launch - the S2 owner
+  decision, and the successor/refreeze requalification it implied - is discharged.

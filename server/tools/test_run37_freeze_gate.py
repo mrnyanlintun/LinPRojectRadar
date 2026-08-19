@@ -40,8 +40,19 @@ def check(name, ok, why, got=""):
         print(f"FAIL  {name}  {why}  [{got}]")
 
 
+# RUN 41. This gate is the Run-37-equivalent freeze qualification, re-executed against the
+# SUCCESSOR candidate. Run 37 accepted v25; Run 40 found two HIGH defects on it; the owner
+# authorised remediation; Run 41 is the successor. The gate is not edited to say PASS - it is the
+# same fifteen blocker classes, regenerated from the live tree and evaluated against the
+# successor's own identity, gate and release records. The v25 artefacts are untouched and remain
+# the historical evidence for that release.
+SUCCESSOR_GATE = "run41_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN41_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN41_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN41_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+
 print("=" * 94)
-print("RUN 37 FINAL FREEZE GATE")
+print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-41 SUCCESSOR")
 print("=" * 94)
 
 _TMP = pathlib.Path(tempfile.mkdtemp(prefix="run37-gate-"))
@@ -61,8 +72,8 @@ def rows(p):
         return list(csv.DictReader(fh))
 
 
-_fresh = rows(_TMP / "run37_final_freeze_gate.csv")
-_committed = rows(ROOT / "research" / "freeze" / "run37_final_freeze_gate.csv")
+_fresh = rows(_TMP / SUCCESSOR_GATE)
+_committed = rows(ROOT / "research" / "freeze" / SUCCESSOR_GATE)
 check("run37.gate.artifact_present", bool(_committed),
       "the committed freeze gate exists", len(_committed))
 check("run37.gate.reproduces",
@@ -90,9 +101,20 @@ check("run37.gate.blocking_defects_zero", len(_blocked) == 0,
       str([r["blocker_id"] for r in _blocked]))
 
 # ------------------------------------------------------------------ the release-record coupling
-_record = ROOT / "research" / "freeze" / "INSTRUMENT_FINAL_FREEZE_RECORD.json"
-_report = ROOT / "research" / "freeze" / "INSTRUMENT_FINAL_FREEZE_REPORT.md"
-_sums = ROOT / "research" / "freeze" / "INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv"
+_record = ROOT / "research" / "freeze" / SUCCESSOR_RECORD
+_report = ROOT / "research" / "freeze" / SUCCESSOR_REPORT
+_sums = ROOT / "research" / "freeze" / SUCCESSOR_CHECKSUMS
+
+# THE PREDECESSOR'S OWN RELEASE RECORDS MUST STILL BE THERE, UNCHANGED. A successor that quietly
+# replaced them would destroy the evidence for everything computed under v25.
+_v25_record = ROOT / "research" / "freeze" / "INSTRUMENT_FINAL_FREEZE_RECORD.json"
+check("run37.gate.predecessor_release_preserved",
+      _v25_record.is_file()
+      and json.loads(_v25_record.read_text(encoding="utf-8")).get("simulation_version")
+      == "sim-2026.08-v25",
+      "the v25 release record is still present and still says v25, so the successor superseded "
+      "it rather than rewriting it",
+      str(_v25_record.is_file()))
 check("run37.gate.no_release_while_blocked",
       not (_blocked and (_record.is_file() or _report.is_file())),
       "NO FINAL RELEASE RECORD MAY EXIST WHILE ANY BLOCKER STANDS",
@@ -124,6 +146,9 @@ if _record.is_file():
     check("run37.gate.no_self_reference",
           "PENDING_FINAL_COMMIT" not in _record.read_text(encoding="utf-8")
           and _rec.get("freeze_candidate_commit")
+          and _rec.get("freeze_candidate_commit")
+          != "6142d877856ea651ef8d7e905f6d27604b3244f1"
+          and _rec.get("supersedes_candidate")
           == "6142d877856ea651ef8d7e905f6d27604b3244f1"
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),

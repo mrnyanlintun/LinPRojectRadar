@@ -130,10 +130,30 @@ for surface in SURFACES:
     out = diff_worktree(CANDIDATE, surface)
     if out:
         changed_surfaces.extend(out.splitlines())
-check(not changed_surfaces,
+# RESTATED BY RUN 41, RUN 38'S FINDING PRESERVED. Until Run 41 this asserted byte-identity with
+# the v25 freeze candidate, and that was the correct assertion for Run 38: Run 38 changed nothing
+# here and still does not. Run 40 then confirmed two HIGH defects and the OWNER RULED that both
+# be fixed before participant use rather than accepted for the study period, which is what makes
+# Run 41 a freeze SUCCESSOR rather than a violation of this one.
+#
+# The guard is therefore not relaxed, it is made exact: the frozen surfaces may differ from the
+# v25 candidate ONLY by the files Run 41 was authorised to change, and that set is NAMED here so
+# it cannot quietly grow. Anything else appearing in a frozen surface still fails, which is the
+# property this check exists for. server/alembic/ is not a SURFACE, so migration 0026 does not
+# appear in this list.
+RUN41_AUTHORISED_SUCCESSOR_CHANGES = {
+    "server/app/main.py",                    # finding S1: the document-serving boundary
+    "server/app/simulation/models.py",       # the stamp advances to sim-2026.08-v26
+}
+_surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
+_unauthorised = [p for p in _surface_paths if p not in RUN41_AUTHORISED_SUCCESSOR_CHANGES]
+check(not _unauthorised,
       "the served client, the production server application, the controlled stimulus corpus "
-      "and the served page are byte-identical to the freeze candidate",
-      "; ".join(changed_surfaces[:12]))
+      "and the served page differ from the freeze candidate ONLY by Run 41's owner-authorised "
+      "successor changes",
+      "; ".join(_unauthorised[:12]))
+print(f"    frozen-surface differences vs the v25 candidate: {_surface_paths} "
+      f"(all owner-authorised Run-41 successor changes)")
 
 # ---- surface 3: the version identities themselves.
 sys.path.insert(0, str(ROOT / "server"))
@@ -148,10 +168,15 @@ check(record["release_disposition"] == "FINAL_FREEZE_ACCEPTED",
       "the final freeze is still FINAL_FREEZE_ACCEPTED", record["release_disposition"])
 check(record["freeze_candidate_commit"] == CANDIDATE,
       "the freeze record still names the same candidate")
-check(SIMULATION_VERSION == "sim-2026.08-v25",
-      "the simulation version is unchanged at sim-2026.08-v25", SIMULATION_VERSION)
-check(record["simulation_version"] == SIMULATION_VERSION,
-      "the freeze record and the code agree on the simulation version")
+# RESTATED BY RUN 41. The v25 freeze record is NOT rewritten - it still says v25, and that is
+# asserted here rather than assumed, because a successor that edited its predecessor's record
+# would destroy the evidence the predecessor is. What advances is the live stamp.
+check(record["simulation_version"] == "sim-2026.08-v25",
+      "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
+      record["simulation_version"])
+check(SIMULATION_VERSION == "sim-2026.08-v26",
+      "and the live simulation version is the Run-41 successor sim-2026.08-v26",
+      SIMULATION_VERSION)
 check(PP.CURRENT.identifier == "og-participant-2026.08-v13",
       "the participant package is unchanged at og-participant-2026.08-v13",
       PP.CURRENT.identifier)
@@ -164,8 +189,15 @@ check(record["synthetic_package"] == "OG-SYNTH-0.6",
 run38 = [ln.split("\t", 1) for ln in diff_committed(RELEASE).splitlines() if ln]
 in_frozen = [p for st, p in run38
              if any(p == s or p.startswith(s + "/") for s in SURFACES)]
-check(not in_frozen, "nothing Run 38 added or changed lands inside a frozen surface",
-      "; ".join(in_frozen[:10]))
+# RESTATED BY RUN 41, same reasoning as the surface check above: what Run 38 itself contributed
+# is still required to land outside every frozen surface, and Run 41's owner-authorised successor
+# changes are named rather than allowed to widen the rule.
+_in_frozen_unauthorised = [p for p in in_frozen
+                           if p not in RUN41_AUTHORISED_SUCCESSOR_CHANGES]
+check(not _in_frozen_unauthorised,
+      "nothing Run 38 added or changed lands inside a frozen surface, and the only frozen-surface "
+      "paths that moved since are Run 41's owner-authorised successor changes",
+      "; ".join(_in_frozen_unauthorised[:10]))
 # MODIFICATIONS ARE ENUMERATED, NOT FORBIDDEN WHOLESALE -- and the permitted set is named here
 # so it cannot quietly grow. Run 38 is REQUIRED by its controlling specification to update
 # T6_HANDOFF.md, and its two methodology documents land inside an AUTHORITY_ROOT, which forces
@@ -182,6 +214,28 @@ PERMITTED_MODIFICATIONS = {
     # it. Named here explicitly so the addition is auditable rather than absorbed by a looser
     # check. Nothing executable, frozen, or named by the freeze checksum manifest is involved.
     "REPORT_2026-08-19_run38-study-execution-readiness.md",
+} | RUN41_AUTHORISED_SUCCESSOR_CHANGES | {
+    # RUN 41. The owner-authorised successor also necessarily moves the pinned production-tree
+    # manifest pointer and the suites that assert the superseded version stamp or that used to
+    # reach a now-protected column. Each is named, none is executable production or client code
+    # beyond the two files already named above, and the frozen-surface rule above still applies
+    # to all of them.
+    "server/tools/production_tree.py",
+    "server/tools/test_run10_state_protection.py",
+    "server/tools/test_run22_production_tree_completeness.py",
+    "server/tools/test_run31_version_boundaries.py",
+    "server/tools/test_run32_closure_version_boundary.py",
+    "server/tools/test_run36_closure_guards.py",
+    "server/tools/test_run36_instrument_qualification.py",
+    "server/tools/test_run37_freeze_gate.py",
+    "server/tools/test_run38_frozen_immutability.py",
+    "server/tools/test_run39_frozen_immutability.py",
+    "server/tools/test_run39_launch_gate.py",
+    "server/tools/build_run37_acceptance.py",
+    "server/tools/test_export.py",
+    "server/tools/test_admin_ops_t7t8.py",
+    "server/tools/test_decision_ui_t4.py",
+    "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md",
 }
 modified = [p for st, p in run38 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]

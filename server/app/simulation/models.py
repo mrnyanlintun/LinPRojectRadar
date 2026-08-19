@@ -420,12 +420,30 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # The legitimate NON-divergence: every module that is not A1.1 returns byte-identical results
 # under both lines. That is proved by executing both packages, not by reading the diff.
-SIMULATION_VERSION = "sim-2026.08-v25"
+# -------------------------------------------------------------------------------------------
+# RUN 41: THE v25 -> v26 BOUNDARY. TWO BEHAVIOUR CHANGES, NEITHER OF THEM ANALYTICAL.
+#
+# Run 40 confirmed two HIGH defects and the owner ruled that both be fixed before participant
+# use rather than accepted for the study period. Fixing them changes persisted-response
+# behaviour and document-serving behaviour, so v25 is superseded rather than edited under its
+# own stamp: results already computed under v25 remain interpretable against v25.
+#
+#       v25 -> v26  1. untrusted document content can no longer execute through the same-origin
+#                      document-content response
+#                   2. substantive final responses become database-immutable after final lock
+#
+# Nothing else. Neither change touches a module, a formula, a qualification rule, a vote, a
+# stimulus, the participant sequence or the AI binding. That is not asserted here: it is proved
+# by executing the whole registered population on both lines from their own git objects, which
+# is what build_run41_v25_v26_execution_proof.py does, and by the digest comparisons in
+# test_run41_preservation.py.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v26"
 
-#: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
-#: historical audit baseline is without reading the comment above. Every stamp from
+#: THE LINE RUN 41 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
+#: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v24"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v25"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -437,6 +455,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
+    "sim-2026.08-v26",
 )
 
 
