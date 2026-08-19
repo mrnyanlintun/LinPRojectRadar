@@ -1604,9 +1604,25 @@ for mid, key, expected, why in (
 # The production status vocabulary is recognised by the one place that recognises it.
 import app.simulation.fusion as fusion  # noqa: E402
 
+# RUN 36. A row that ASSERTS NO BAND has no band to recognise, and requiring one of it would be
+# requiring the very thing the Run-36 A1.1 closure removed: a colour drawn over an uncalibrated
+# quantity. The calibration-pending rows are therefore excluded from the vocabulary check and
+# checked separately below, so the exclusion cannot become a hole a real unrecognised band could
+# slip through -- it must say so explicitly, and only those rows are let past.
+_pending_rows = sorted(m for m in UNRESOLVED_27
+                       if m in _by_id and _by_id[m].get("calibration_pending")
+                       and not _by_id[m].get("insufficient_data"))
 _unrecognised = sorted(m for m in UNRESOLVED_27
                        if m in _by_id
+                       and m not in _pending_rows
                        and fusion.normalise_status(_by_id[m]["status_color"]) is None)
+ka(_pending_rows, ["A1.1"],
+   "and the only row excused from the vocabulary is A1.1, which asserts no band at all after "
+   "the Run-36 closure", "A1.1", "production_path",
+   "its ladder is UNSUPPORTED and no calibration set exists")
+ka([m for m in _pending_rows if _by_id[m].get("status_color") is not None], [],
+   "and an excused row really does carry no colour, so the exclusion cannot hide one", "",
+   "production_path", "calibration_pending is not a licence to band")
 ka(_unrecognised, [], "every band the 27 store is recognised by the status vocabulary", "",
    "production_path")
 

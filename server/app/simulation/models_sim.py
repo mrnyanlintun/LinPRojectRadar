@@ -169,6 +169,23 @@ def cusum_series(series, target: float = 1.0, sigma=None, h_units: float = 5) ->
 
 
 def mc_status(overrun_pct_p80: float) -> str:
+    """
+    RUN 36, A1.1 CLOSURE, OUTCOME D. HISTORICAL ONLY -- NOT REACHED FROM PRODUCTION.
+
+    This ladder is classified UNSUPPORTED in `parameters.py`: the ten and five per cent
+    boundaries are cited to nothing inside or outside this repository, and no calibration set
+    exists from which they could be fitted or tested. Until Run 36 it was nevertheless applied,
+    and A1.1 was the ONE scientific target in the whole instrument that emitted an authoritative
+    status colour from an unresolved parameter on the governed corpus -- measured, not asserted.
+
+    The supervisory specification's own pass ceiling for A1.1 is METHOD_PASS_CALIBRATION_PENDING,
+    and rule 2 of `canonical_v3.py` is explicit: where no boundary has been established from
+    evidence, "the caller emits the number with calibration pending and asserts no colour".
+    A1.1 now does exactly that, which is the same governed treatment A6.1, A6.2 and A6.3 already
+    receive. The function is PRESERVED rather than deleted -- this programme does not erase
+    scientific history -- and `test_run36_instrument_qualification.py` proves production cannot
+    reach it.
+    """
     if overrun_pct_p80 >= 10:
         return "red"
     if overrun_pct_p80 >= 5:
@@ -217,7 +234,18 @@ def run_monte_carlo(si: dict, rand, seed: int) -> dict[str, Any]:
     )
     return {
         "method_class": "Monte_Carlo",
-        "status_color": mc_status(mc["overrunPctP80"]),
+        # RUN 36, A1.1 CLOSURE, OUTCOME D. No colour is asserted over an uncalibrated quantity.
+        # The figure still reaches the ledger, the interface and the export, because
+        # `registry.record` routes a calibration-pending row to `computed` rather than to the
+        # abstentions; only the band is withheld. Fusion is unaffected: it reads the two voting
+        # modules and A1.1 is not one of them.
+        "status_color": None,
+        "band_asserted": False,
+        "calibration_pending": True,
+        "calibration_pending_reason": (
+            "The forecast is reported as a figure without a colour. The boundaries that would "
+            "turn a percentage overrun into a status are not established from evidence held "
+            "here, so no status is claimed."),
         "p50_eac": mc["p50"],
         "p80_eac": mc["p80"],
         "overrun_pct_p50": mc["overrunPctP50"],

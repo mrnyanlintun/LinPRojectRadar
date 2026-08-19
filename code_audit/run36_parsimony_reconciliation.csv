@@ -1,0 +1,105 @@
+row_type,module_id,canonical_name,profile_kind,primitive_sources,overlap_type,closest_overlapping_targets,distinct_analytical_function,current_operational_necessity
+TARGET,A1.1,Monte Carlo EAC Forecast,STRUCTURE,costDriverDistributions,NONE,,YES,BOUNDED ADVISORY
+TARGET,A1.10,CPI Shrinkage Forecast,STRUCTURE,cpiReferenceClass,NONE,,YES,NO - abstains on the current corpus
+TARGET,A1.11,Independent EAC Reconciliation Index,STRUCTURE,independentEacPair,NONE,,YES,NO - abstains on the current corpus
+TARGET,A1.2,CUSUM Anomaly Monitor,SCALARS,spi,NONE,,YES,NO - abstains on the current corpus
+TARGET,A1.3,Bayesian EAC,STRUCTURE,bayesianEacModel,NONE,,YES,NO - abstains on the current corpus
+TARGET,A1.4,Kalman Filter SPI Smoother,STRUCTURE,kalmanStateSpaceModel,NONE,,YES,NO - abstains on the current corpus
+TARGET,A1.5,ARIMA CPI Forecast,SCALARS,cpi,PRIMITIVE_SOURCE_SUBSET,A1.8,YES,NO - abstains on the current corpus
+TARGET,A1.6,Earned Schedule,STRUCTURE,timePhasedBaseline,SHARED_GOVERNED_STRUCTURE (same primitive source object),A2.6,YES,NO - abstains on the current corpus
+TARGET,A1.7,TCPI,SCALARS,"ac, bac, ev",NONE,,YES,YES - voting
+TARGET,A1.8,Variance at Completion,SCALARS,"bac, cpi",NONE,,YES,YES - voting
+TARGET,A1.9,Budget Execution Rate,STRUCTURE,expenditureBaseline,NONE,,YES,NO - abstains on the current corpus
+TARGET,A2.1,PERT Network Criticality,STRUCTURE,scheduleNetwork,SHARED_GOVERNED_STRUCTURE (same primitive source object),"A2.10, A2.11, A2.4, A2.5",YES,NO - abstains on the current corpus
+TARGET,A2.10,Schedule Risk Analysis P80,STRUCTURE,scheduleNetwork,SHARED_GOVERNED_STRUCTURE (same primitive source object),"A2.1, A2.11, A2.4, A2.5",NO,NO - abstains on the current corpus
+TARGET,A2.11,Critical Path Index,STRUCTURE,scheduleNetwork,SHARED_GOVERNED_STRUCTURE (same primitive source object),"A2.1, A2.10, A2.4, A2.5",NO,NO - abstains on the current corpus
+TARGET,A2.2,Line of Balance,STRUCTURE,lobStructure,NONE,,YES,NO - abstains on the current corpus
+TARGET,A2.3,CCPM Buffer Health,STRUCTURE,ccpmStructure,NONE,,YES,NO - abstains on the current corpus
+TARGET,A2.4,Schedule Compression Index,STRUCTURE,scheduleNetwork,SHARED_GOVERNED_STRUCTURE (same primitive source object),"A2.1, A2.10, A2.11, A2.5",NO,NO - abstains on the current corpus
+TARGET,A2.5,Float Consumption Rate,STRUCTURE,scheduleNetwork,SHARED_GOVERNED_STRUCTURE (same primitive source object),"A2.1, A2.10, A2.11, A2.4",NO,NO - abstains on the current corpus
+TARGET,A2.6,S-Curve Deviation,STRUCTURE,timePhasedBaseline,SHARED_GOVERNED_STRUCTURE (same primitive source object),A1.6,NO,NO - abstains on the current corpus
+TARGET,A2.7,Milestone Trend Analysis,STRUCTURE,milestoneForecastHistory,NONE,,YES,NO - abstains on the current corpus
+TARGET,A2.8,Look-Ahead Schedule Health,STRUCTURE,lookAheadSchedule,NONE,,YES,NO - abstains on the current corpus
+TARGET,A2.9,Resource Loading Index,STRUCTURE,resourceProfile,NONE,,YES,NO - abstains on the current corpus
+TARGET,A3.1,Reference Class Forecasting,STRUCTURE,referenceClassPopulation,NONE,,YES,NO - abstains on the current corpus
+TARGET,A3.2,Contingency Burn Rate,SCALARS,none measured on this corpus,IDENTICAL_PRIMITIVE_SOURCE_SET,"B1.1, B1.3, B1.4, B2.9",YES,NO - abstains on the current corpus
+TARGET,A3.3,Labor Productivity Index,STRUCTURE,productionOutputRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,A3.5,Overhead Absorption Rate,STRUCTURE,overheadAllocationBase,NONE,,YES,NO - abstains on the current corpus
+TARGET,A3.6,Cost Risk Analysis P80,STRUCTURE,costRiskModel,NONE,,YES,NO - abstains on the current corpus
+TARGET,A3.7,Analogous Estimating Ratio,STRUCTURE,analogEstimate,NONE,,YES,NO - abstains on the current corpus
+TARGET,A3.8,Parametric Cost Index,STRUCTURE,parametricCostModel,NONE,,YES,NO - disabled or archived
+TARGET,A3.9,Inflation Adjustment Index,STRUCTURE,externalCostIndex,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.1,Document Risk Score,STRUCTURE,documentRiskEvidence,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.10,Specification Conflict Density,STRUCTURE,specificationConflictRegister,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.2,RFI Velocity,STRUCTURE,rfiEventLog,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.3,Submittal Rejection Rate,STRUCTURE,submittalDecisionRegister,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.4,NCR Rate,STRUCTURE,auditedNonconformanceCohort,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.5,Weather Day Impact,STRUCTURE,weatherImpactEvents,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.6,Change Order Frequency,STRUCTURE,changeEventRegister,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.7,Dispute Escalation Index,STRUCTURE,claimDisputeRegister,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.8,Subcontractor Performance,STRUCTURE,subcontractorAssessments,NONE,,YES,NO - abstains on the current corpus
+TARGET,A4.9,Procurement Lead Time Monitor,STRUCTURE,procurementItems,NONE,,YES,NO - abstains on the current corpus
+TARGET,A5.1,DSM Rework Propagation,STRUCTURE,dsmDependencyModel,NONE,,YES,NO - abstains on the current corpus
+TARGET,A5.2,Sensitivity Analysis,STRUCTURE,sensitivityModel,SHARED_GOVERNED_STRUCTURE (same primitive source object),A5.3,YES,NO - abstains on the current corpus
+TARGET,A5.3,Tornado Risk Ranking,STRUCTURE,sensitivityModel,SHARED_GOVERNED_STRUCTURE (same primitive source object),A5.2,NO,NO - abstains on the current corpus
+TARGET,A5.4,Scenario Modeling,STRUCTURE,scenarioSet,NONE,,YES,NO - abstains on the current corpus
+TARGET,A5.5,Rework Feedback Loop,STRUCTURE,systemDynamicsModel,NONE,,YES,NO - abstains on the current corpus
+TARGET,A5.6,Queueing Theory Bottleneck,STRUCTURE,queueStructure,NONE,,YES,NO - abstains on the current corpus
+TARGET,A5.7,Agent-Based Supply Chain,STRUCTURE,abmStructure,NONE,,YES,NO - abstains on the current corpus
+TARGET,A5.8,Discrete Event Simulation,STRUCTURE,desProcessModel,NONE,,YES,NO - abstains on the current corpus
+TARGET,A6.1,Quality Compliance Index,STRUCTURE,qualityRequirementRegister,NONE,,YES,BOUNDED ADVISORY
+TARGET,A6.2,Safety Performance Index,STRUCTURE,safetyPerformanceRecord,NONE,,YES,BOUNDED ADVISORY
+TARGET,A6.3,Environmental Compliance Rate,STRUCTURE,auditedPermitCompliance,NONE,,YES,BOUNDED ADVISORY
+TARGET,A6.4,Contractor Performance Assessment Signal,STRUCTURE,contractorAssessmentRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,B1.1,Conservative Dominance,SCALARS,none measured on this corpus,IDENTICAL_PRIMITIVE_SOURCE_SET,"A3.2, B1.3, B1.4, B2.9",NO,NO - abstains on the current corpus
+TARGET,B1.2,Weighted Voting,STRUCTURE,signalWeightPolicy,NONE,,YES,NO - abstains on the current corpus
+TARGET,B1.3,Majority Rules,SCALARS,none measured on this corpus,IDENTICAL_PRIMITIVE_SOURCE_SET,"A3.2, B1.1, B1.4, B2.9",NO,NO - abstains on the current corpus
+TARGET,B1.4,Worst-N-of-M,SCALARS,none measured on this corpus,IDENTICAL_PRIMITIVE_SOURCE_SET,"A3.2, B1.1, B1.3, B2.9",NO,NO - abstains on the current corpus
+TARGET,B2.1,Dempster-Shafer,STRUCTURE,evidenceMassFunctions,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.10,Pythagorean Fuzzy Sets,STRUCTURE,pythagoreanFuzzyAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.11,Picture Fuzzy Sets,STRUCTURE,pictureFuzzyAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.12,Hesitant Fuzzy Sets,STRUCTURE,hesitantFuzzyAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.13,Type-2 Fuzzy Sets,STRUCTURE,type2FuzzyAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.14,Maximum Entropy,STRUCTURE,maximumEntropyProblem,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.15,Possibility Theory,STRUCTURE,possibilityAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.16,Spherical Fuzzy Sets,STRUCTURE,sphericalFuzzyAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.17,Fermatean Fuzzy Sets,STRUCTURE,fermateanFuzzyAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.18,MARCOS Ranking,STRUCTURE,decisionAlternatives,SHARED_GOVERNED_STRUCTURE (same primitive source object),"B2.19, B4.1, B4.6",YES,NO - abstains on the current corpus
+TARGET,B2.19,CRITIC-TOPSIS,STRUCTURE,decisionAlternatives,SHARED_GOVERNED_STRUCTURE (same primitive source object),"B2.18, B4.1, B4.6",NO,NO - abstains on the current corpus
+TARGET,B2.2,Rough Sets,STRUCTURE,roughDecisionTable,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.20,Hypersoft Sets,STRUCTURE,hypersoftLabStructure,NONE,,YES,NO - disabled or archived
+TARGET,B2.3,Neutrosophic Logic,STRUCTURE,neutrosophicAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.4,Interval Fuzzy Sets,STRUCTURE,intervalFuzzyAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.5,Z-numbers,STRUCTURE,zNumberAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.6,PLTS,STRUCTURE,probabilisticLinguisticAssessment,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.7,Plithogenic Sets,STRUCTURE,plithogenicLabStructure,NONE,,YES,NO - disabled or archived
+TARGET,B2.8,Belief Rule Base,STRUCTURE,beliefRuleBase,NONE,,YES,NO - abstains on the current corpus
+TARGET,B2.9,Quantum Probability,SCALARS,none measured on this corpus,IDENTICAL_PRIMITIVE_SOURCE_SET,"A3.2, B1.1, B1.3, B1.4",NO,NO - disabled or archived
+TARGET,B3.1,Agent-Based Governance Model,STRUCTURE,abmGovernanceModel,NONE,,YES,NO - abstains on the current corpus
+TARGET,B3.2,FAR/Agency EVMS Applicability Monitor,STRUCTURE,evmsApplicabilityEvidence,NONE,,YES,NO - abstains on the current corpus
+TARGET,B3.3,Versioned A-11 Capital Programming Conformance Check,STRUCTURE,a11RuleRegister,NONE,,YES,NO - abstains on the current corpus
+TARGET,B3.4,EVMS Reporting Compliance Monitor,STRUCTURE,evmsReportingRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,B3.5,Contract Modification Governance Check,STRUCTURE,contractModificationRegister,NONE,,YES,NO - abstains on the current corpus
+TARGET,B4.1,Multi-Objective Optimization,STRUCTURE,decisionAlternatives,SHARED_GOVERNED_STRUCTURE (same primitive source object),"B2.18, B2.19, B4.6",NO,NO - disabled or archived
+TARGET,B4.2,Linear Programming,STRUCTURE,linearProgramModel,NONE,,YES,NO - disabled or archived
+TARGET,B4.3,Constraint Satisfaction Analysis,STRUCTURE,constraintSatisfactionProblem,NONE,,YES,NO - abstains on the current corpus
+TARGET,B4.4,What-If Scenario Matrix,STRUCTURE,actionScenarioMatrix,SHARED_GOVERNED_STRUCTURE (same primitive source object),B4.7,YES,NO - abstains on the current corpus
+TARGET,B4.5,Decision Sensitivity Matrix,STRUCTURE,decisionSensitivityModel,NONE,,YES,NO - disabled or archived
+TARGET,B4.6,Pareto Frontier Analysis,STRUCTURE,decisionAlternatives,SHARED_GOVERNED_STRUCTURE (same primitive source object),"B2.18, B2.19, B4.1",NO,NO - disabled or archived
+TARGET,B4.7,Minimax Regret Decision Rule,STRUCTURE,actionScenarioMatrix,SHARED_GOVERNED_STRUCTURE (same primitive source object),B4.4,NO,NO - abstains on the current corpus
+TARGET,C1.1,Missing Data Index,STRUCTURE,requiredInputContract,NONE,,YES,NO - abstains on the current corpus
+TARGET,C1.2,Data Timeliness Score,STRUCTURE,evidenceTimelinessRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,C1.3,Source Reliability Weighting,STRUCTURE,sourceProvenanceRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,C1.4,Audit Trail Completeness,STRUCTURE,auditChainRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,C1.5,Information Completeness Ratio,STRUCTURE,informationPackageRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,C1.6,Cross-document Consistency Score,STRUCTURE,crossDocumentFactSet,NONE,,YES,NO - abstains on the current corpus
+TARGET,C1.7,Reporting Frequency Index,STRUCTURE,reportingCadenceRecord,NONE,,YES,NO - abstains on the current corpus
+TARGET,D1.1,Isolation Forest,STRUCTURE,portfolioCohort,SHARED_GOVERNED_STRUCTURE (same primitive source object),"D1.2, D1.4, D1.5",YES,NO - abstains on the current corpus
+TARGET,D1.2,Portfolio Outlier Detection,STRUCTURE,portfolioCohort,SHARED_GOVERNED_STRUCTURE (same primitive source object),"D1.1, D1.4, D1.5",NO,NO - abstains on the current corpus
+TARGET,D1.3,Signal Trajectory Classifier,STRUCTURE,portfolioSignalHistory,NONE,,YES,NO - abstains on the current corpus
+TARGET,D1.4,Cross-project Pattern Detector,STRUCTURE,portfolioCohort,SHARED_GOVERNED_STRUCTURE (same primitive source object),"D1.1, D1.2, D1.5",NO,NO - abstains on the current corpus
+TARGET,D1.5,Anomaly Score,STRUCTURE,portfolioCohort,SHARED_GOVERNED_STRUCTURE (same primitive source object),"D1.1, D1.2, D1.4",NO,NO - abstains on the current corpus
+ACCEPTANCE_COUNTER,-,DISTINCT PRIMITIVE-SOURCE PROFILES,-,83,-,-,-,measured by ablation
+ACCEPTANCE_COUNTER,-,TARGETS SHARING A PROFILE WITH AT LEAST ONE OTHER,-,24,-,-,-,identical set or shared governed structure
+ACCEPTANCE_COUNTER,-,TARGETS ADDING NO DISTINCT ANALYTICAL FUNCTION,-,17,-,-,-,"A2.10, A2.11, A2.4, A2.5, A2.6, A5.3, B1.1, B1.3, B1.4, B2.19, B2.9, B4.1, B4.6, B4.7, D1.2, D1.4, D1.5"
+REPORTED_DISCREPANCY,-,RUN-35 COMPARISON,-,17,-,-,-,"Run 35 recorded 22 of 100 adding no distinct analytical function under a DIFFERENT measure: its overlap taxonomy counted declared shared structures and subset relations, and its 'unique_analytical_contribution' column marked NO for 22. Run 36 measures the primitive-source profile BY ABLATION through the real entry point and counts a target as adding nothing only when another target already occupies the identical profile. The two figures answer different questions and neither is forced to the other. DISCREPANCY REPORTED, NOT RECONCILED AWAY."

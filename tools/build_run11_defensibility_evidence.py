@@ -28,8 +28,45 @@ from app.simulation.registry import (  # noqa: E402
     VALIDATED, load_registry,
 )
 from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
+from app.simulation import registry as _REG  # noqa: E402
 
 NONE = "none in the repository"
+
+#: RUN 36. A PROBE PROJECT CARRYING NO GOVERNED STRUCTURE, used to MEASURE whether a module that
+#: declares one actually refuses without it. Scalars only -- the controlled corpus supplies no
+#: governed structure, which is precisely the condition the word "conditional" is a claim about.
+#: A qualified assessment is included so that the Category-9 gate is not what does the refusing.
+_PROBE_SI = {
+    "bac": 1_000_000.0, "ev": 400_000.0, "ac": 440_000.0, "pv": 450_000.0,
+    "cpi": 0.909, "spi": 0.889, "docRiskScore": 0.35,
+    "actualPctComplete": 40.0, "plannedPctComplete": 45.0,
+    "evidenceQualification": {"qualification_state": "QUALIFIED",
+                              "timeliness_status": "TIMELY",
+                              "verification_status": "verified",
+                              "source_authority": "system_of_record"},
+}
+
+
+def _abstains_without_structure(mid: str) -> bool:
+    """
+    Whether `mid` REFUSES on a project that supplies no governed structure.
+
+    RUN 36. This function exists because the state below was inferred from the presence of a
+    DECLARATION rather than measured. A module was described to the participant as requiring a
+    named defining structure, and as returning Not Estimable without one, purely because a key
+    was declared for it. Exactly one module was misdescribed, and it was found by measuring:
+    A1.1 Monte Carlo EAC Forecast declares `costDriverDistributions`, the governed intake accepts
+    it, no route reads it, and A1.1 computes from the budget and the indices whether it is
+    supplied or not. A statement that cannot be falsified by execution is not evidence.
+
+    A module that cannot be executed at all is treated as NOT measured-to-compute, so the
+    conditional sentence is retained rather than replaced on the strength of a failure to run.
+    """
+    try:
+        row = _REG.run_module(mid, dict(_PROBE_SI), (lambda: 0.5), "2026-06-30")
+    except Exception:                                            # noqa: BLE001
+        return True
+    return bool(row.get("insufficient_data")) or row.get("estimable") is False
 
 
 def _archived() -> set[str]:
@@ -246,11 +283,20 @@ def build() -> str:
             state = "PORTFOLIO_COMPUTED"
             implementation = ("the current portfolio runner computes this reading across the "
                               "portfolio rather than from a single project's governed evidence")
-        elif structure_key:
+        elif structure_key and _abstains_without_structure(mid):
             state = "CONDITIONAL_ON_GOVERNED_STRUCTURE"
             implementation = ("the canonical production runner exists, but execution requires a "
                               "named defining structure; when that structure is absent the "
                               "module returns Not Estimable")
+        elif structure_key:
+            # RUN 36. Declares a structure and computes without it. Saying it "returns Not
+            # Estimable" would be false, and so would saying it requires the structure.
+            state = "COMPUTES_FROM_AVAILABLE_EVIDENCE"
+            # The implementation sentence is the plain computing one, and the declared-but-unread
+            # structure is stated in `canonicalStructure` below rather than duplicated here. Two
+            # copies of one fact in two generated fields is how the pair drifts apart.
+            implementation = ("the current production runner computes the canonical method from "
+                              "the governed evidence the platform already holds")
         else:
             state = "COMPUTES_FROM_AVAILABLE_EVIDENCE"
             implementation = ("the current production runner computes the canonical method from "
@@ -271,6 +317,16 @@ def build() -> str:
         if structure_key and state == "SUPPLIED_VALUE":
             canonical = ("declared in the canonical-structure layer but enforced by no current "
                          "route, because the platform does not compute this value")
+            structure_required = False
+        elif structure_key and state == "COMPUTES_FROM_AVAILABLE_EVIDENCE":
+            # RUN 36. The OTHER way a declared structure can be unenforced, and it is not the
+            # same fact. A4.1 reaches the sentence above because nothing computes it at all.
+            # A1.1 reaches this one because it computes perfectly well WITHOUT the structure it
+            # declares. Saying "the platform does not compute this value" of a module that
+            # computes every period would be a second untrue sentence put in place of the first.
+            canonical = ("declared in the canonical-structure layer and accepted by the intake, "
+                         "but read by no current route, so the reading is produced whether it "
+                         "is supplied or not")
             structure_required = False
         elif structure_key:
             canonical = "required and enforced by the canonical-structure layer"

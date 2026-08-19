@@ -213,7 +213,11 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v11",
         "code_audit/run33_participant_package_v11_checksums.sha256",
-        None,
+        # RUN 36 CLOSURE: v11 is a predecessor now, so it is pinned to the commit whose blobs it
+        # describes rather than left reading the working tree. Leaving it on None would make TWO
+        # records claim the live tree, which is exactly the masquerade this chain forbids. The
+        # commit is the Run-35 closure head, which is the tree v11's record was taken from.
+        "dafc35d35bafe5af76e1ce48ef7daceab9daed2c",
         "THE CANONICAL PORTFOLIO HEALTH LAYER. Three participant-visible files moved: "
         "workspace.js, knowledge.js and the generated defensibility evidence object. THE "
         "PORTFOLIO HEALTH CARD NO LONGER SHOWS A STATUS DOT: every one of the five bands the v20 "
@@ -231,6 +235,34 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "randomization, no server contract and no append-only record moved. The v10 record is "
         "NOT regenerated.",
     ),
+    Package(
+        "og-participant-2026.08-v12",
+        "code_audit/run36_participant_package_v12_checksums.sha256",
+        None,
+        "RUN 36. ONE participant-visible file moved: the GENERATED defensibility evidence "
+        "object, and the change is confined to ONE module's record. A1.1 Monte Carlo EAC "
+        "Forecast was served to the participant as CONDITIONAL_ON_GOVERNED_STRUCTURE, with "
+        "`canonicalStructureRequired: true` and the sentence 'when that structure is absent the "
+        "module returns Not Estimable'. EXECUTION DISPROVES ALL THREE: A1.1 declares "
+        "`costDriverDistributions`, the governed intake accepts it, no route reads it, and the "
+        "module computes from the budget and the indices whether it is supplied or not. The "
+        "generator was inferring conditionality from the PRESENCE OF A DECLARATION instead of "
+        "measuring it, and the measurement was already sitting unused two lines above. Exactly "
+        "one module was misdescribed, derived by executing all 101 rather than assumed. The "
+        "served record now says the runner computes from available evidence, that the declared "
+        "structure is accepted by the intake but read by no current route so the reading is "
+        "produced whether it is supplied or not, and `canonicalStructureRequired` is false. THE "
+        "EXPERIMENTAL SEQUENCE IS UNCHANGED: decision.js, decision-ui.js, workspace.js, "
+        "deepdive.js and both questionnaires are byte for byte identical to v11, and no step of "
+        "the decision sequence, no reveal gate, no lock, no randomization, no server contract "
+        "and no append-only record moved. The v11 record is NOT regenerated: it is pinned to the "
+        "commit whose blobs it describes.",
+    ),
+)
+
+#: RUN 36. The files whose bytes moved between v11 and v12. ONE file, and it is generated.
+V11_TO_V12_CHANGED = (
+    "assets/js/ds_defensibility_evidence.js",
 )
 
 #: The one link that describes the working tree.

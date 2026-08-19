@@ -9,6 +9,169 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-19 - Run 36: FINAL SCIENTIFIC RE-AUDIT AND INSTRUMENT QUALIFICATION - **FREEZE_BLOCKED**
+
+**Branch `run36-wip` from `main` at `dafc35d3`.** Report:
+`REPORT_2026-08-19_run36-final-scientific-reaudit-and-instrument-qualification.md`.
+
+**Simulation `sim-2026.08-v24`** (v23 preserved and pinned at
+`dafc35d35bafe5af76e1ce48ef7daceab9daed2c`). **Participant package
+`og-participant-2026.08-v12`** (v11 pinned to the same commit). **Synthetic `OG-SYNTH-0.6`
+RETAINED.** Complete suite **174 suites / 13596 checks green**.
+
+---
+
+## THE BLOCKING DEFECT, AND THE EXACT DECISION NEEDED TO CLOSE IT
+
+**NO FREEZE MANIFEST WAS CREATED AND NONE MAY BE CREATED UNTIL THIS IS ANSWERED.**
+`server/tools/test_run36_instrument_qualification.py` fails if one appears while the blocking count
+is non-zero, and fault 40 of the campaign proves that gate can go red.
+
+### A1.1 - `DECLARED_STRUCTURE_UNCONSUMED`
+
+`A1.1 Monte Carlo EAC Forecast` declares governed structure `costDriverDistributions`. The governed
+intake **accepts** it. **No current route reads it** - proved by supplying it through the real
+intake (`add_revision` -> `apply_to_signal_inputs`, which confirmed it added the key) and getting a
+**byte-identical** emitted row. An owner who supplies it changes nothing.
+
+**THE OWNER MUST DECIDE WHICH CLAUSE OF SUPERVISORY SPECIFICATION s1.1 GOVERNS A1.1.** Both are in
+the same committed document and they point opposite ways:
+
+**(a) The `Required:` list governs.** It demands "explicit uncertain variables/distributions;
+parameter provenance; dependencies/correlation if assumed; **deterministic mapping from sampled
+variables to EAC**; iteration count; seed/reproducibility; P50/P80 extracted from the empirical
+simulated distribution; convergence evidence." Then the structure is a precondition, and the owner
+must supply **the one thing the specification demands and does not define: the deterministic mapping
+from sampled cost drivers to EAC** - whether declared drivers SUM to the EAC, SCALE it, or cover a
+stated PART of it - plus the dependence treatment and the convergence criterion tied to the reported
+percentile. `canonical_v3.declared_cost_driver_model` already reads and validates the structure and
+says in its own docstring that no sampling happens there, so the reader exists and the mapping does
+not.
+
+**(b) The "may retain" permission governs.** The same section says the production model "may retain
+the dedicated BAC/CPI/SPI/document-risk Beta-PERT adaptation", pass ceiling
+`METHOD_PASS_CALIBRATION_PENDING`. Then that adaptation IS A1.1's governed method for this
+instrument, and `costDriverDistributions` should be **WITHDRAWN** from
+`canonical_v3.V3_STRUCTURE_KEYS` and recorded as an unimplemented enrichment, so the intake stops
+accepting a key that reaches nothing.
+
+**Run 36 refused to choose.** Choosing (a) means inventing a canonical method; choosing (b) means
+overriding a committed `Required:` list. Either is an owner decision and neither is a defect a run
+may close on its own authority. Record: `code_audit/run36_a1_1_closure.csv`.
+
+---
+
+## WHAT RUN 36 DID CLOSE, AND WHY THE INSTRUMENT MOVED
+
+**1. A1.1's UNSUPPORTED band is withdrawn - the section-6 hard gate is now 0.** Derived, not
+transcribed: of the 100 scientific targets executed on the controlled corpus, **six** leave the
+abstention branch and **exactly one** carried both a `status_color` and an `UNSUPPORTED` class.
+A1.1 now emits `status_color None`, `band_asserted False`, `calibration_pending True` - what
+`canonical_v3.py` rule 2 already requires and what A6.1/A6.2/A6.3 already do. `mc_status` is
+PRESERVED and production cannot reach it. **NO NUMBER MOVED**: the v23 line from git object
+`dafc35d3` returns `12.104441685525892` on the corpus and `11.983407036630878` on the lineage
+fixture, identical to v24 on both. That is the whole v23->v24 divergence.
+
+**2. A SECOND A1.1 DEFECT RUN 35 DID NOT REPORT.** The served defensibility object called A1.1
+`CONDITIONAL_ON_GOVERNED_STRUCTURE`, `canonicalStructureRequired: true`, "when that structure is
+absent the module returns Not Estimable". **Execution disproves all three.** Root cause: both the
+generator and the Run-32 truth inventory assigned that state from `elif structure_key:` - inferring
+conditionality from the PRESENCE OF A DECLARATION instead of measuring it, with the measurement
+already computed and unused two lines above. All 101 rows were executed against a structure-free
+probe: **exactly one** was misdescribed. That correction is why participant package v12 exists.
+
+**3. THREE GUARD DEFECTS OF ONE FAMILY, FOUND AND REPAIRED. DO NOT REINTRODUCE THEM.**
+`test_run32_closure_version_boundary` and the Run-35 closure boundary guard were asserting SETTLED
+claims about what a PAST run changed while taking their "new" line from the **LIVE TREE**. Any
+legitimate later change falsified them - Run 36's did. Both now extract BOTH lines from git objects
+(v19 at `73297a63`, v20 at `93f08bc`, v23 at `dafc35d3`). **A SCOPE CLAIM ABOUT A PAST RUN MUST BE
+EXECUTED ON THAT RUN'S OWN OBJECTS.** Separately, `test_run10b_canonical_integration` used "a colour
+came back" as a proxy for "the module computed" while printing a sentence about a cost register
+changing nothing; the oracle is now that claim itself.
+
+---
+
+## THE FOUR STATES, KEPT APART
+
+| State | Meaning | Count |
+|---|---|---|
+| **canonical** | performs the method its registered name claims | 92 of 100 |
+| **calibrated** | every applied tunable value has resolved provenance | **100 of 100** - A1.1's was the last one and it is withdrawn |
+| **empirically validated** | scored against an independent observed field outcome | **0 of 100** |
+| **reference-supported** | scored against a published identity, scalar component only | 3 of 100: A1.7, A1.8, A6.2, all PASS at v24 |
+| **operationally retained** | exposed as an authoritative project-status vote | **2 of 100** |
+
+**Final qualification:** `QUALIFIED_FOR_BOUNDED_STUDY_USE` 4 - `QUALIFIED_WITH_ABSTENTION` 87 -
+`DISABLED` 7 - `RESEARCH_ONLY` 1 - `ARCHIVED` 1.
+**Dispositions:** 2 / 2 / 87 / 1 / 5 / 2 / 1, reproducing Run 35 exactly by an independent route.
+**Lineage UNRESOLVED 77 of 100**, also reproduced independently. Unknown lineage is not independent.
+
+---
+
+## POPULATIONS: THREE DIFFERENT COUNTS OF THE SAME SIZE. DO NOT COLLAPSE THEM.
+
+101 registered - 96 project - 95 project scientific - 5 Portfolio Health - **100 scientific
+targets**. Discrepancies 0.
+
+* the **two 95s** intersect at **94**: `registry.VALIDATED` excludes A4.1 (supplied, and a
+  scientific target); the scientific project population excludes A3.4 (disabled under evidence
+  review, and not a scientific target);
+* the **two 100s** intersect at **99**: `GROUP_ASSIGNMENT.md`'s "the analytical server registers
+  100" is `VALIDATED` + portfolio, which excludes A4.1 and INCLUDES A3.4 - the opposite exclusion
+  from the 100 scientific targets. **This third 100 was found in Run 36 and is now recorded.**
+
+---
+
+## SECTION 19: A COUNT THAT IS NOT MECHANICALLY DERIVABLE. REPORTED, NOT FORCED.
+
+The participant SEQUENCE is enforced mechanically - at the route and at the database
+(`ck_decisions_reveal_after_pre_lock`) - and was driven end to end in a real browser. But the
+expected design of **6 projects / 6 periods / 36 project-periods is NOT derivable from the
+participant package or the data contract**: `Scenario.period_count` is a nullable per-scenario
+integer and the project and sequence counts are operator-configured `ConditionSequence` rows. The
+instrument fixes the sequence; it does not fix the counts. **This is a limit of what can be
+verified, not a defect found - and it is not a verified 6x6x36 either.**
+
+---
+
+## PARSIMONY: 17, NOT 22, AND THE DIFFERENCE IS REPORTED
+
+Re-derived by **ablation through the real entry point**. Distinct primitive-source profiles 83;
+sharing a profile 24; **adding no distinct analytical function 17**. Run 35 recorded 22 under a
+different measure. `code_audit/run36_parsimony_reconciliation.csv` carries a `REPORTED_DISCREPANCY`
+row. Neither figure was forced to the other.
+
+---
+
+## THE CAMPAIGN AND THE BROWSER
+
+**Faults declared 40; applied 40; intended RED 40; restored GREEN 40; NOT_APPLIED 0; guards that
+CRASHED 0; crash accepted as RED 0.** Seven were ill-posed on the first pass and are documented as
+repointed. Four shared one cause worth remembering: **a first-occurrence-only text edit does not
+falsify an oracle that tests for ANY occurrence of a property** - the mutation leaves the property in
+place and is a NOT_APPLIED dressed as a fault.
+
+**Browser: 25/25** on the real authenticated participant route against throwaway SQLite. The whole
+study path was reached. Both locks were additionally attacked THROUGH THE ROUTE with the
+participant's own session - a disabled button proves nothing. A1.1's withdrawn band was confirmed on
+the participant surface itself. The handbook surface is reachable via
+`hb-tab-methods -> [data-topic] -> [id^=body-modref-]`, but **only after trying every topic**: the
+first topic is the framework overview and carries no module references.
+
+---
+
+## RUN 37 REQUIREMENTS
+
+1. **Answer the A1.1 governing-clause question above.** Nothing else blocks the freeze.
+2. Re-run the complete suite, the forty-fault campaign and the browser drive on the answer, then
+   create `research/freeze/INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json` and its companion.
+3. Everything else in this handoff stands: 0 empirically field-validated, no band with a measured
+   false-positive or false-negative rate, 96 of 100 producing nothing on the controlled corpus,
+   lineage unresolved for 77, Portfolio Health empirical validation PENDING x5, OG-SYNTH-0.1
+   historically incomplete (519 manifest entries against 504 recovered).
+
+---
+
 # 2026-08-18 - Run 34 FINAL METADATA CLOSURE: holdout/selection provenance
 
 **Branch `run34-holdout-selection-provenance` from `main` at `be87d82`.** Still Run 34. Report

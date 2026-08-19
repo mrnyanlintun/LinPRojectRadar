@@ -360,12 +360,42 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # The legitimate NON-divergence: every module that is not A1.7 or A1.8, and every input on which
 # the rounded and the full-precision value agree, returns byte-identical results under both
 # lines. That is proved by executing both packages, not by reading the diff.
-SIMULATION_VERSION = "sim-2026.08-v23"
+#
+# ------------------------------------------------------------------------------------------
+# RUN 36, sim-2026.08-v24. THE A1.1 BAND WITHDRAWAL.
+#
+# A1.1 Monte Carlo EAC Forecast was the ONE scientific target in the whole instrument still
+# emitting an authoritative status colour from an unresolved parameter on the governed corpus.
+# That is derived and not transcribed: of the 100 scientific targets executed through
+# `registry.run_module` on the controlled corpus, six leave the abstention branch, and exactly
+# one of those six carries both a `status_color` and an UNSUPPORTED parameter classification.
+#
+# The ladder is the ten and five per cent boundaries `models_sim.mc_status` drew over the P80
+# overrun percentage. `parameters.py` classifies them UNSUPPORTED: they are cited to nothing
+# inside or outside this repository, and no calibration set exists here from which they could be
+# fitted or tested. The supervisory specification's own pass ceiling for A1.1 is
+# METHOD_PASS_CALIBRATION_PENDING, and rule 2 of `canonical_v3.py` already requires a caller with
+# no evidence-established boundary to emit the number with calibration pending and assert no
+# colour. A6.1, A6.2 and A6.3 already do exactly that; A1.1 now joins them.
+#
+#       v23  A1.1  Monte Carlo  emits status_color "red"/"amber"/"green" from mc_status
+#       v24  A1.1  Monte Carlo  emits status_color None, band_asserted False,
+#                               calibration_pending True, and the SAME figure
+#
+# NO NUMBER MOVED. The sampling, the seed, the Beta-PERT shape and the percentiles are untouched:
+# the v23 line extracted from git object dafc35d35bafe5af76e1ce48ef7daceab9daed2c returns
+# overrun_pct_p80 12.104441685525892 on the controlled corpus and 11.983407036630878 on the
+# lineage fixture, identical to this line on both. What moved is the colour and nothing else.
+# `mc_status` is PRESERVED rather than deleted, and production cannot reach it.
+#
+# The legitimate NON-divergence: every module that is not A1.1 returns byte-identical results
+# under both lines. That is proved by executing both packages, not by reading the diff.
+SIMULATION_VERSION = "sim-2026.08-v24"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v22"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v23"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -376,7 +406,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
-    "sim-2026.08-v22", "sim-2026.08-v23",
+    "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24",
 )
 
 

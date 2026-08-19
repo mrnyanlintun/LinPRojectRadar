@@ -97,6 +97,15 @@ STRUCT_REQUIRED = "required and enforced by the canonical-structure layer"
 STRUCT_NOT_REQUIRED = "not required by this module"
 STRUCT_DECLARED_NOT_ENFORCED = ("declared in the canonical-structure layer but enforced by no current "
                                 "route, because the platform does not compute this value")
+#: RUN 36. The OTHER way a declared structure can be unenforced, and it is not the same fact.
+#: A4.1 reaches the sentence above because nothing computes it at all. A1.1 reaches this one
+#: because it computes perfectly well WITHOUT the structure it declares: the intake accepts the
+#: structure and no route reads it, so supplying it changes nothing. Saying "the platform does
+#: not compute this value" of a module that computes every period would be a second untrue
+#: sentence put in place of the first.
+STRUCT_DECLARED_NOT_CONSUMED = ("declared in the canonical-structure layer and accepted by the "
+                                "intake, but read by no current route, so the reading is "
+                                "produced whether it is supplied or not")
 
 
 def structure_of(mid: str) -> tuple[str | None, str | None]:
@@ -164,7 +173,16 @@ def expected_for(mid: str, name: str) -> dict:
         execution = EXEC_SUPPLIED
     elif portfolio:
         execution = EXEC_PORTFOLIO
-    elif key:
+    # RUN 36. CONDITIONALITY IS MEASURED, NOT INFERRED FROM A DECLARATION. This arm used to read
+    # `elif key:` -- so a module was described to the participant as requiring a named defining
+    # structure, and as returning Not Estimable without it, on the strength of the DECLARATION
+    # alone. `abstained` above already executes the module with no structure supplied, so the
+    # measurement was available and unused. Exactly ONE module was misdescribed, derived rather
+    # than assumed: A1.1 Monte Carlo EAC Forecast declares `costDriverDistributions`, the intake
+    # accepts it, no consumer exists, and the module computes from the budget and the indices
+    # whether it is supplied or not. Section 16 of the Run-36 contract forbids describing a
+    # method's operational state untruthfully in either direction.
+    elif key and abstained:
         execution = EXEC_CONDITIONAL
     else:
         execution = EXEC_COMPUTES
@@ -177,7 +195,18 @@ def expected_for(mid: str, name: str) -> dict:
         # documentRiskEvidence in canonical_v4 and has no runner at all -- the value is supplied
         # to the platform -- so naming an enforcement no current route performs would be the same
         # class of untrue statement this closure removes everywhere else.
+        # RUN 36 widens the declared-not-enforced arm from `key and supplied` to every case
+        # where a key is declared and the module does NOT abstain without it. A4.1 reached this
+        # sentence because it has no runner at all; A1.1 reaches it because it has a runner that
+        # never reads the key. Both are the same untrue claim -- naming an enforcement no current
+        # route performs -- and both now get the same truthful sentence.
+        # SCOPED TO THE COMPUTING CASE. A portfolio module also does not abstain on a
+        # single-project probe, but its structure IS required by its own route -- it is refused
+        # before the probe reaches it. Keying off the derived execution state rather than off
+        # `abstained` alone keeps the five Portfolio Health rows saying what they said.
         "structure_stmt": (STRUCT_DECLARED_NOT_ENFORCED if (key and supplied)
+                           else STRUCT_DECLARED_NOT_CONSUMED
+                           if (key and execution == EXEC_COMPUTES)
                            else STRUCT_REQUIRED if key else STRUCT_NOT_REQUIRED),
         "supply_path": ("YES: admitted by project_data.governed_structure_keys()"
                         if key and key in governed_structure_keys()

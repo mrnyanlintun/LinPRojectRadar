@@ -444,7 +444,28 @@ print("== no module's reading moved ==")
 # Pinned from the run of this fixture taken BEFORE any declaration was corrected. The casing is
 # pinned as the module emits it, lower-case included, because normalising it here would hide a
 # change in what the module actually returns.
-for mid, want in (("A1.1", "red"), ("A1.7", "Red"), ("A1.8", "Amber")):
+# RUN 36, A1.1 CLOSURE. A1.1 no longer bands at all, for the same reason A3.5 stopped banding
+# below: the ten and five per cent boundaries it used are classified UNSUPPORTED in
+# `parameters.py`, no calibration set exists from which they could be fitted, and the supervisory
+# specification's pass ceiling for A1.1 is METHOD_PASS_CALIBRATION_PENDING. A1.1 was the ONE
+# scientific target in the instrument still emitting an authoritative status colour from an
+# unresolved parameter. WHAT IS PINNED INSTEAD IS THE FIGURE, which did not move: the sampling,
+# the seed and the arithmetic are untouched, so a change here would still be caught.
+_a11_out = registry.run_module("A1.1", _full, lambda: 0.5, None)
+check("A1.1 asserts no band on the fixture, and says so explicitly rather than falling silent",
+      _a11_out.get("status_color") is None
+      and _a11_out.get("band_asserted") is False
+      and _a11_out.get("calibration_pending") is True,
+      f"got {_a11_out.get('status_color')!r} / {_a11_out.get('band_asserted')!r} / "
+      f"{_a11_out.get('calibration_pending')!r}")
+# PINNED BY EXECUTING THE PREDECESSOR, not by reading back what the current line returns: the
+# v23 line was extracted from git object dafc35d3 and run on THIS fixture, and it returned
+# 11.983407036630878 with a colour of "red". The figure is therefore proved unmoved and only
+# the band was withdrawn.
+check("and A1.1's FIGURE is unmoved by the Run-36 band withdrawal, so the forecast itself is "
+      "still pinned", repr(_a11_out["overrun_pct_p80"]) == "11.983407036630878",
+      f"got {_a11_out.get('overrun_pct_p80')!r}")
+for mid, want in (("A1.7", "Red"), ("A1.8", "Amber")):
     out = registry.run_module(mid, _full, lambda: 0.5, None)
     check(f"{mid} still bands {want} on the fixture", out.get("status_color") == want,
           f"got {out.get('status_color')!r}")

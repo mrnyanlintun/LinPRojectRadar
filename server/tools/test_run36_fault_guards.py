@@ -1,0 +1,427 @@
+"""
+RUN 36. THE FORTY NAMED FAULT ORACLES.
+
+ONE NAMED CHECK PER FAULT in the contract's section-24 list, so the campaign can require that the
+GUARD THAT GOES RED IS THE ONE THE FAULT WAS AIMED AT, and not some bystander. Every oracle here
+is derived from live authority or from execution; none asserts a defect's own sentence back at
+itself, and none regenerates the artefact it is reading.
+
+NAMING. Each check is named `run36.faultNN.<what>`. `run36_fault_campaign.py` greps for
+`FAIL  run36.faultNN` and additionally requires the failure line to carry an intended-reason
+fragment, so a check that goes red for an unrelated reason is not credited.
+
+A CRASH IS NOT A RED. Everything that executes a module is wrapped, and a raised exception is
+reported as its own distinct state so it can never be read as an abstention or as a pass.
+"""
+
+from __future__ import annotations
+
+import csv
+import json
+import pathlib
+import re
+import subprocess
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "server"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from app.simulation import registry as REG                       # noqa: E402
+from app.simulation import lineage as LIN                        # noqa: E402
+from app.simulation import canonical_v8 as V8                    # noqa: E402
+from app.simulation import canonical_v7 as V7                    # noqa: E402
+from app.simulation.compute import contributes_to_project_status  # noqa: E402
+from app.simulation.portfolio import PORTFOLIO_VALIDATED         # noqa: E402
+from app.simulation.qualification_contract import ASSESSMENT_MISSING  # noqa: E402
+import participant_packages as PP                                # noqa: E402
+
+PASSED = 0
+FAILED = 0
+FAILURES: list[str] = []
+
+
+def check(name, ok, why, got=""):
+    global PASSED, FAILED
+    if ok:
+        PASSED += 1
+        print(f"  PASS  {name}  {why}")
+    else:
+        FAILED += 1
+        FAILURES.append(f"{name}  {why}")
+        print(f"FAIL  {name}  {why}  [{got}]")
+
+
+CORPUS_SI = {
+    "bac": 1_000_000.0, "ev": 400_000.0, "ac": 440_000.0, "pv": 450_000.0,
+    "cpi": 0.909, "spi": 0.889, "docRiskScore": 0.35,
+    "actualPctComplete": 40.0, "plannedPctComplete": 45.0,
+    "qualityAuditScore": 92, "totalFindings": 18, "criticalFindings": 1,
+    "oshaRecordableIncidents": 3, "totalManhours": 200_000,
+    "environmentalComplianceRate": 0.925, "environmentalViolations": 3,
+    "evidenceQualification": {"qualification_state": "QUALIFIED",
+                              "timeliness_status": "TIMELY",
+                              "verification_status": "verified",
+                              "source_authority": "system_of_record"},
+}
+CUT = "2026-06-30"
+AUDIT = ROOT / "code_audit"
+
+
+def run(mid, si=None):
+    try:
+        r = REG.run_module(mid, dict(si if si is not None else CORPUS_SI), (lambda: 0.5), CUT)
+    except REG.MissingModuleError:
+        return {"__state__": "SUPPLIED"}
+    except REG.PortfolioModuleError:
+        return {"__state__": "PORTFOLIO_ROUTE"}
+    except Exception as exc:                                     # noqa: BLE001
+        return {"__state__": "CRASHED", "__why__": f"{type(exc).__name__}: {exc}"[:200]}
+    r["__state__"] = "ABSTAINS" if r.get("insufficient_data") else "COMPUTES"
+    return r
+
+
+def _declared_structure(mid):
+    """The module's defining governed structure key, read from the canonical layers themselves."""
+    from app.simulation.canonical import CANONICAL_STRUCTURE_KEYS
+    from app.simulation.canonical_v3 import V3_STRUCTURE_KEYS
+    from app.simulation.canonical_v4 import V4_STRUCTURE_KEYS
+    from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS
+    from app.simulation.canonical_v6 import V6_STRUCTURE_KEYS
+    from app.simulation.canonical_v7 import V7_STRUCTURE_KEYS
+    from app.simulation.canonical_v8 import V8_STRUCTURE_KEYS
+    for _m in (CANONICAL_STRUCTURE_KEYS, V3_STRUCTURE_KEYS, V4_STRUCTURE_KEYS, V5_STRUCTURE_KEYS,
+               V6_STRUCTURE_KEYS, V7_STRUCTURE_KEYS, V8_STRUCTURE_KEYS):
+        if mid in _m:
+            return _m[mid]
+    return ""
+
+
+def rows(name):
+    p = AUDIT / name
+    if not p.is_file():
+        return []
+    with p.open(encoding="utf-8") as fh:
+        return list(csv.DictReader(fh))
+
+
+def text(rel):
+    p = ROOT / rel
+    return p.read_text(encoding="utf-8") if p.is_file() else ""
+
+
+TARGETS = rows("run36_100_target_scientific_reaudit.csv")
+QUAL = rows("run36_instrument_qualification.csv")
+POP = rows("run36_population_reconciliation.csv")
+IDX = REG.registry_index()
+SCIENTIFIC = {m for m in IDX if m not in REG.DISABLED_EVIDENCE_UNDER_REVIEW}
+
+print("=" * 94)
+print("RUN 36 FAULT ORACLES")
+print("=" * 94)
+
+# ---------------------------------------------------------------- 1-3 the inventory
+_ids = [r["module_id"] for r in TARGETS]
+check("run36.fault01.inventory_complete", set(_ids) == SCIENTIFIC,
+      "the 100-target inventory holds every scientific target derived from the registry; "
+      "a target is missing",
+      str(sorted(SCIENTIFIC - set(_ids)))[:200])
+check("run36.fault02.no_duplicate_target", len(_ids) == len(set(_ids)),
+      "no scientific target appears twice; a duplicate row would inflate the population",
+      str(sorted({m for m in _ids if _ids.count(m) > 1}))[:200])
+check("run36.fault03.no_fake_target", set(_ids) <= set(IDX),
+      "every row in the inventory is a registered module; an unregistered target is fabricated",
+      str(sorted(set(_ids) - set(IDX)))[:200])
+
+# ---------------------------------------------------------------- 4-5 A1.1
+_ds = text("assets/js/ds_defensibility_evidence.js")
+_m = re.search(r'"A1\.1": \{(.*?)\},\n', _ds, re.S)
+_a11_served = _m.group(1) if _m else ""
+_a11 = run("A1.1")
+_declares_conditional = "CONDITIONAL_ON_GOVERNED_STRUCTURE" in _a11_served
+_actually_abstains = _a11.get("__state__") == "ABSTAINS"
+check("run36.fault04.a1_1_structure_claim_truthful",
+      _declares_conditional == _actually_abstains,
+      "A1.1's served operational state matches what it actually does without its declared "
+      "structure; it claims to consume a required structure it does not consume",
+      f"served_conditional={_declares_conditional} actually_abstains={_actually_abstains}")
+_offenders = []
+for _mid in sorted(SCIENTIFIC):
+    _r = run(_mid)
+    if _r.get("__state__") == "COMPUTES" and _r.get("status_color"):
+        if "UNSUPPORTED" in {p.parameter_class for p in (REG.parameter_provenance(_mid) or [])}:
+            _offenders.append(_mid)
+check("run36.fault05.no_unsupported_authoritative", not _offenders,
+      "no reachable UNSUPPORTED parameter authorizes an authoritative output", str(_offenders))
+
+# ---------------------------------------------------------------- 6-8 the voters
+_a17 = run("A1.7")
+_a18 = run("A1.8")
+check("run36.fault06.a1_7_bands_on_full_precision",
+      _a17.get("tcpi") is not None and _a17.get("tcpi") != _a17.get("tcpi_display")
+      and abs(float(_a17["tcpi"]) - (1_000_000.0 - 400_000.0) / (1_000_000.0 - 440_000.0)) < 1e-12,
+      "A1.7 carries the canonical to-complete index at full precision and not the rounded "
+      "presentation value; rounding before banding is restored",
+      f"tcpi={_a17.get('tcpi')!r} display={_a17.get('tcpi_display')!r}")
+check("run36.fault07.a1_8_not_rounded",
+      _a18.get("vac") is not None
+      and abs(float(_a18["vac"]) - (1_000_000.0 - 1_000_000.0 / 0.909)) < 1e-9
+      and float(_a18["vac"]) != float(_a18.get("vac_display")),
+      "A1.8's analytical variance at completion is the full-precision identity and is not "
+      "replaced by its formatted output",
+      f"vac={_a18.get('vac')!r} display={_a18.get('vac_display')!r}")
+check("run36.fault08.voting_exactly_two",
+      sorted(REG.CORE_VOTING_MODULES) == ["A1.7", "A1.8"]
+      and len([r for r in TARGETS if r["voting"] == "YES"]) == 2,
+      "the voting set is exactly A1.7 and A1.8; a third voter has been added",
+      f"{sorted(REG.CORE_VOTING_MODULES)} / "
+      f"{[r['module_id'] for r in TARGETS if r['voting'] == 'YES']}")
+
+# ---------------------------------------------------------------- 9-10 Category 9
+_unqual = {k: v for k, v in CORPUS_SI.items() if k != "evidenceQualification"}
+_gated = []
+for _mid in ("B1.1", "B2.18", "B4.3", "B4.7"):
+    _r = run(_mid, _unqual)
+    if _r.get("__state__") == "COMPUTES" and not str(
+            _r.get("abstention_reason_code") or _r.get("qualification_state") or ""):
+        _gated.append(_mid)
+check("run36.fault09.category9_gate_not_bypassed",
+      ASSESSMENT_MISSING == "CATEGORY9_ASSESSMENT_MISSING" and not _gated,
+      "a package carrying no Category-9 assessment cannot reach a governed downstream method; "
+      "the gate is bypassed", str(_gated))
+_c_votes = [g for g in ("C",) if contributes_to_project_status(g)]
+check("run36.fault10.category9_not_a_risk_vote",
+      not _c_votes and not (set(r["module_id"] for r in TARGETS
+                                if r["voting"] == "YES") & {m for m in IDX
+                                                            if IDX[m]["group"] == "C"}),
+      "Category 9 is qualification and metadata and does not vote on project status; it has "
+      "become a risk vote", str(_c_votes))
+
+# ---------------------------------------------------------------- 11-12 Category 10
+_v7 = text("server/app/simulation/canonical_v7.py")
+check("run36.fault11.cat10_no_human_authority",
+      '"human_authorization_required": True' in _v7 and "status_color" not in _v7.split(
+          "ANALYTICAL_RESULT = ")[-1].split("def ")[0],
+      "every Category-10 result requires human authorization and exercises no approval authority "
+      "of its own", "human_authorization_required not True on the envelope")
+check("run36.fault12.cat10_no_evidence_feedback",
+      '"creates_project_evidence": False' in _v7,
+      "no Category-10 output re-enters as project-condition evidence; a feedback loop into "
+      "upstream project evidence has been opened",
+      "creates_project_evidence is not False")
+
+# ---------------------------------------------------------------- 13-16 disabled and archived
+for _n, _mid, _label in ((13, "A3.4", "Material Cost Variance"),
+                         (14, "B2.7", "Plithogenic Sets"),
+                         (15, "B2.20", "Hypersoft Sets"),
+                         (16, "B2.9", "Quantum Probability")):
+    _r = run(_mid)
+    check(f"run36.fault{_n}.{_mid.replace('.', '_').lower()}_not_operational",
+          _mid in REG.DISABLED_MODULES and _mid in IDX and not _r.get("status_color")
+          and _r.get("__state__") != "CRASHED",
+          f"{_label} is disabled, still registered, and produces no operational reading; it has "
+          f"been reactivated",
+          f"disabled={_mid in REG.DISABLED_MODULES} state={_r.get('__state__')} "
+          f"colour={_r.get('status_color')!r}")
+
+# ---------------------------------------------------------------- 17-23 Portfolio Health
+_v8 = text("server/app/simulation/canonical_v8.py")
+check("run36.fault17.ph1_threshold_schema_bound",
+      V8.RUN15_FROZEN_THRESHOLD == 0.576 and V8.RUN15_FROZEN_SCHEMA == "run15-synthetic-4feature-v1"
+      and V8.RUN15_THRESHOLD_LABELS["is_project_status_band"] is False
+      and V8.RUN15_THRESHOLD_LABELS["field_validated"] is False,
+      "the 0.576 threshold stays synthetic, schema-bound and not a project-status band; it has "
+      "been applied on the wrong schema",
+      f"{V8.RUN15_FROZEN_THRESHOLD} / {V8.RUN15_FROZEN_SCHEMA} / {V8.RUN15_THRESHOLD_LABELS}")
+_small = V8.cohort_size_policy(4)
+_tiny = V8.cohort_size_policy(2)
+check("run36.fault18.ph1_small_cohort_not_authoritative",
+      V8.MIN_COHORT_FOR_RANKING == 3 and _tiny[0] == "COHORT_BELOW_MINIMUM"
+      and "no reading of any kind" in _tiny[1]
+      and _small[0] == "COHORT_SMALL"
+      and "NO authoritative anomaly flag is produced" in _small[1],
+      "a cohort below the minimum is not estimable and a small cohort carries an explicit "
+      "limitation rather than an authoritative flag", f"{_tiny} / {_small}")
+check("run36.fault19.ph2_no_invented_weights",
+      "composite is NONE" in _v8 and "_governed_weights" in _v8,
+      "PH.2 emits no composite without governed weights; equal weights have been invented",
+      "the governed-weights gate is gone")
+check("run36.fault20.ph3_min_three_observations",
+      V8.MIN_TRAJECTORY_OBSERVATIONS == 3
+      and "if len(times) < MIN_TRAJECTORY_OBSERVATIONS" in _v8,
+      "PH.3 fits no trend below three distinct observations; a trajectory from two observations "
+      "is allowed", str(V8.MIN_TRAJECTORY_OBSERVATIONS))
+check("run36.fault21.ph4_radius_retired",
+      "No match threshold is applied" in _v8 and "0.15 radius is retired" in _v8,
+      "PH.4's unvalidated 0.15 radius stays retired and continuous distance only is reported; "
+      "the radius has been restored", "the retirement sentence is gone")
+_ph5 = [ln for ln in _v8.splitlines() if "PARAMETER_PROVENANCE_BLOCKED" in ln]
+check("run36.fault22.ph5_no_invented_weights", bool(_ph5),
+      "PH.5 returns a null score under PARAMETER_PROVENANCE_BLOCKED rather than a composite "
+      "under invented weights", str(len(_ph5)))
+check("run36.fault23.ph5_no_duplicate_lineage_reinforcement",
+      "D1.5" in _v8 and "relative_distance" in _v8 and "PARAMETER_PROVENANCE_BLOCKED" in _v8,
+      "PH.5 does not reinforce a project's score by counting one lineage twice",
+      "the D1.5 provenance block is gone")
+
+# ---------------------------------------------------------------- 24 lineage
+_indep = [r for r in TARGETS if r["lineage"] == "LINEAGE_ESTABLISHED_INDEPENDENT"]
+check("run36.fault24.unknown_lineage_not_independent",
+      all(r["module_id"] in LIN.MODULE_LINEAGE for r in _indep),
+      "no row claims independent lineage without an actual lineage record; unknown lineage is "
+      "being treated as independent",
+      str([r["module_id"] for r in _indep if r["module_id"] not in LIN.MODULE_LINEAGE]))
+
+# ---------------------------------------------------------------- 25-26 defensibility
+_served = {}
+for _mm in re.finditer(r'"([A-D]\d+\.\d+)": \{(.*?)\},\n', _ds, re.S):
+    _served[_mm.group(1)] = _mm.group(2)
+_lying_conditional = []
+for _mid, _blob in _served.items():
+    if _mid not in SCIENTIFIC or _mid in PORTFOLIO_VALIDATED:
+        continue
+    # SCOPED TO MODULES THAT DECLARE A GOVERNED STRUCTURE. "Computes from the governed evidence
+    # the platform already holds" is a claim about the ROUTE, and it stays true of a module that
+    # abstains this period for want of a scalar. What it may NOT be true of is a module whose
+    # route REFUSES without a declared structure: that one is conditional, and describing it as
+    # computing is the fault. The declaration is read from the structure maps, not from the
+    # served object, so the oracle is not the thing it is checking.
+    if not _declared_structure(_mid):
+        continue
+    _says_computes = "COMPUTES_FROM_AVAILABLE_EVIDENCE" in _blob
+    _r = run(_mid)
+    if _says_computes and _r.get("__state__") == "ABSTAINS":
+        _lying_conditional.append(_mid)
+check("run36.fault25.conditional_not_described_unconditional", not _lying_conditional,
+      "no conditional method is described as unconditionally computing",
+      str(_lying_conditional)[:200])
+_lying_disabled = [m for m in REG.DISABLED_MODULES
+                   if m in _served and "COMPUTES_FROM_AVAILABLE_EVIDENCE" in _served[m]]
+check("run36.fault26.disabled_not_described_active", not _lying_disabled,
+      "no disabled method is described as active", str(_lying_disabled))
+
+# ---------------------------------------------------------------- 27-30 client authority
+_authority = ROOT / "server" / "tools" / "taxonomy_authority.json"
+check("run36.fault27.one_taxonomy_authority",
+      _authority.is_file()
+      and "build_client_taxonomy.py" in text("assets/js/taxonomy.js")
+      and "build_client_taxonomy.py" in text("assets/js/categories.js")
+      and "GENERATED BLOCK" in text("assets/js/taxonomy.js")
+      and "GENERATED BLOCK" in text("assets/js/categories.js"),
+      "there is ONE authoritative taxonomy source and both client surfaces are generated "
+      "mirrors of it; a second authority exists",
+      f"authority={_authority.is_file()}")
+check("run36.fault28.no_stale_proxy_qualifier",
+      all(m in IDX for m in REG.PROXY_QUALIFIERS)
+      and all(m not in REG.DISABLED_MODULES for m in REG.PROXY_QUALIFIERS),
+      "every surviving proxy qualifier names a live registered module; a stale qualifier has "
+      "been restored", str(sorted(REG.PROXY_QUALIFIERS)))
+_cat = text("assets/js/categories.js")
+check("run36.fault29.client_method_class_lookup_intact",
+      'case "Monte_Carlo":' in _cat and "getModuleStatus" in _cat + text("assets/js/knowledge.js")
+      + text("assets/js/workspace.js") + text("assets/js/deepdive.js"),
+      "the client method-class lookup still dispatches; it has been broken so statuses silently "
+      "never render", "the Monte_Carlo case is gone")
+_tax = text("assets/js/taxonomy.js")
+check("run36.fault30.no_recursion_in_taxonomy_path",
+      "function methodClassStatus" not in _tax or "methodClassStatus(" not in _tax.split(
+          "function methodClassStatus", 1)[-1].split("\n}", 1)[0],
+      "no function in the participant taxonomy path calls itself; recursion has been introduced",
+      "a self-call was found in the taxonomy path")
+
+# ---------------------------------------------------------------- 31-36 participant workflow
+_dec = text("server/app/research_decision.py")
+_mod = text("server/app/research_models.py")
+_ui = text("assets/js/decision-ui.js")
+check("run36.fault31.preliminary_lock_enforced",
+      "preliminary judgment is already locked and cannot be resubmitted" in _dec,
+      "a locked preliminary judgment cannot be resubmitted; the lock has been broken",
+      "the refusal is gone from research_decision.py")
+check("run36.fault32.no_reveal_before_preliminary_lock",
+      "ck_decisions_reveal_after_pre_lock" in _mod
+      and "reveal_at IS NULL OR (pre_locked_at IS NOT NULL AND pre_locked_at <= reveal_at)" in _mod
+      and "preliminary judgment must be submitted and locked before the decision" in _dec,
+      "the AI package cannot be revealed before the preliminary judgment is locked, at the "
+      "database and at the route; the reveal has been let through early",
+      "the reveal-after-lock constraint is gone")
+check("run36.fault33.no_edit_after_final_lock",
+      "a final decision has already been recorded for this assignment" in _dec,
+      "a final response cannot be edited after the final lock; the refusal has been removed",
+      "the final-lock refusal is gone from research_decision.py")
+check("run36.fault34.no_skipped_project_period",
+      "ConditionSequence" in text("server/app/research_assignment.py")
+      and "position" in text("server/app/research_assignment.py"),
+      "project-periods are drawn from an ordered condition sequence and none may be skipped",
+      "the ordered condition sequence is gone")
+_seq_files = PP.SEQUENCE_BEARING_FILES
+_v11 = {}
+for _ln in (AUDIT / "run33_participant_package_v11_checksums.sha256").read_text(
+        encoding="utf-8").splitlines():
+    if re.match(r"^[0-9a-f]{64}  ", _ln):
+        _h, _p = _ln.split("  ", 1)
+        _v11[_p] = _h
+import hashlib                                                    # noqa: E402
+_moved_seq = sorted(f for f in _seq_files
+                    if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != _v11.get(f))
+check("run36.fault35.participant_sequence_unaltered", not _moved_seq,
+      "every file carrying the participant experimental sequence is byte-identical to the frozen "
+      "v11 package; the sequence has been altered", str(_moved_seq))
+check("run36.fault36.evidence_and_rationale_captured",
+      "decision.rationale = payload.get(\"rationale\")" in _dec
+      and "decision.evidence_items = evidence_items" in _dec
+      and 'evidence_items must be a list' in _dec,
+      "the final response captures both the evidence items and the free-text rationale; capture "
+      "has been omitted", "the rationale or evidence capture is gone")
+
+# ---------------------------------------------------------------- 37 sealed packages
+_sealed_bad = []
+for _pkg in PP.PARTICIPANT_PACKAGES[:-1]:
+    _p = subprocess.run(["git", "show", f"{_pkg.source_commit}:{_pkg.record}"],
+                        cwd=ROOT, capture_output=True, text=True)
+    if _p.returncode != 0:
+        continue
+    if _p.stdout != (ROOT / _pkg.record).read_text(encoding="utf-8"):
+        _sealed_bad.append(_pkg.identifier)
+check("run36.fault37.sealed_predecessor_package_intact", not _sealed_bad,
+      "no sealed predecessor package record has been rewritten in place", str(_sealed_bad))
+
+# ---------------------------------------------------------------- 38-39 validation honesty
+_par = rows("run36_parameter_provenance_reaudit.csv")
+_emp_claims = [r for r in _par
+               if r["row_type"] == "PARAMETER" and "EMPIRICAL" in r["empirical_validation_state"]
+               and "PENDING" not in r["empirical_validation_state"]]
+check("run36.fault38.synthetic_not_called_empirical",
+      not _emp_claims
+      and not any(r["empirical_validation_class"] == "EMPIRICALLY_VALIDATABLE_NOW"
+                  for r in TARGETS),
+      "no synthetic laboratory calibration is recorded as empirical field validation",
+      str([r["module"] for r in _emp_claims])[:200])
+_bad_pass = [r for r in QUAL if r["row_type"] == "SCIENTIFIC_TARGET"
+             and r["final_qualification"] == "QUALIFIED_FOR_BOUNDED_STUDY_USE"
+             and r["empirical_validation"] in ("STRUCTURE_OR_DATA_ABSENT",)
+             and r["module_id"] not in ("A1.1",)]
+check("run36.fault39.not_applicable_not_pass",
+      not _bad_pass,
+      "a target with no evidence to score is not promoted to a bounded-use pass; NOT_APPLICABLE "
+      "is being read as PASS", str([r["module_id"] for r in _bad_pass])[:200])
+
+# ---------------------------------------------------------------- 40 the freeze gate itself
+_instr = [r for r in QUAL if r["row_type"] == "INSTRUMENT_BLOCKING_DEFECT"]
+_target_blocking = [r for r in TARGETS if r["blocking_defect"] != "NO"]
+_blocking = len(_instr) + len(_target_blocking)
+_manifest = ROOT / "research" / "freeze" / "INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json"
+_companion = ROOT / "research" / "freeze" / "INSTRUMENT_FREEZE_CANDIDATE.md"
+check("run36.fault40.no_freeze_while_blocked",
+      not (_blocking > 0 and (_manifest.is_file() or _companion.is_file())),
+      "no freeze candidate exists while a blocking defect remains; the freeze gate has been "
+      "opened with a defect standing",
+      f"blocking={_blocking} manifest={_manifest.is_file()} companion={_companion.is_file()}")
+
+print()
+print("=" * 94)
+if FAILURES:
+    print("FAILURES:")
+    for f in FAILURES:
+        print(f"  - {f}")
+print(f"RESULT: {PASSED}/{PASSED + FAILED} checks passed")
+raise SystemExit(1 if FAILED else 0)
