@@ -288,8 +288,14 @@ def target_row(mid, reg_row, gov_keys):
     declared = key or "none"
     accepted = "YES" if (key and key in gov_keys) else ("n/a" if not key else "NO")
     supplied_on_corpus = "NO - the controlled corpus carries no governed structure" if key else "n/a"
-    consumed = ("NO - accepted by the intake and read by no route" if mid == "A1.1"
-                else ("YES when supplied - the runner refuses without it" if key else "n/a"))
+    if mid in REG.DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+        consumed = ("NOT SATISFIED - the canonical input contract needs the declared structure "
+                    "AND an authoritative driver-to-EAC mapping; the specification requires the "
+                    "mapping and does not define it, so none was invented")
+    elif key:
+        consumed = "YES when supplied - the runner refuses without it"
+    else:
+        consumed = "n/a"
     # 6. PARAMETER PROVENANCE.
     prov = REG.parameter_provenance(mid) or []
     classes = sorted({p.parameter_class for p in prov}) or ["none - carries no tunable value"]
@@ -344,6 +350,10 @@ def target_row(mid, reg_row, gov_keys):
     # 11. OPERATIONAL DISPOSITION, from section 15's seven-value closed vocabulary.
     if archived:
         disposition = "ARCHIVED"
+    elif mid in REG.DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+        # THE OWNER'S A1.1 RULING OF 2026-08-19. Read from the registry rather than named here,
+        # so the disposition follows the governed set and cannot drift from it.
+        disposition = "DISABLED_INSUFFICIENT_INPUT"
     elif concept_disabled and mid in ("B4.1", "B4.2", "B4.5", "B4.6", "A3.8"):
         disposition = "DISABLED_INSUFFICIENT_INPUT"
     elif concept_disabled:
@@ -711,19 +721,27 @@ def main() -> int:
     # THE FREEZE DECISION IS NOT TAKEN FROM THE 100 ROWS ALONE. A blocking defect can be an
     # instrument-level fact that no single row carries, and section 23 names one explicitly:
     # "known scientific contradiction like the A1.1 issue left unresolved".
-    qrows.append(["INSTRUMENT_BLOCKING_DEFECT", "A1.1", "Monte Carlo EAC Forecast",
-                  "YES", "YES", "DECLARED_STRUCTURE_UNCONSUMED", "UNSUPPORTED band withdrawn",
-                  "NO_CALIBRATION_SET", "CALIBRATION_GAP_BLOCKS_VALIDATION",
-                  "LINEAGE_ESTABLISHED_DEPENDENT", "CANONICAL_REACHED", "KEEP_ADVISORY", "NO",
-                  "YES",
-                  "YES - section 23: a known scientific contradiction left unresolved. A1.1 "
-                  "declares costDriverDistributions, canonical theory requires it, the intake "
-                  "accepts it and no route reads it. Closing it requires the deterministic "
-                  "driver-to-EAC mapping the specification demands and does not define.",
-                  "QUALIFIED_FOR_BOUNDED_STUDY_USE"])
+    # THE RUN-36 INSTRUMENT-LEVEL BLOCKING DEFECT, AND ITS CLOSURE. The row is KEPT, not deleted:
+    # the finding is part of the scientific record and its resolution is recorded beside it.
+    qrows.append(["INSTRUMENT_BLOCKING_DEFECT_CLOSED", "A1.1", "Monte Carlo EAC Forecast",
+                  "ESTABLISHED", "RETAINED ADAPTATION PRESERVED, PRODUCTION-UNREACHABLE",
+                  "NOT SATISFIED - structure and driver-to-EAC mapping both absent",
+                  "no unresolved parameter is applied; the UNSUPPORTED ladder stays withdrawn",
+                  "NO_CALIBRATION_SET", "STRUCTURE_OR_DATA_ABSENT", "LINEAGE_NOT_APPLICABLE",
+                  "DISABLED", "DISABLED_INSUFFICIENT_INPUT", "NO", "NO",
+                  "CLOSED - the owner ruled on 2026-08-19 that supervisory specification s1.1's "
+                  "Required list governs canonical Monte Carlo execution and that the permission "
+                  "to retain the scalar adaptation preserves it as historical code without "
+                  "waiving the input contract. A1.1 no longer executes operationally, the "
+                  "adaptation is preserved and cannot be reached from production, and NO "
+                  "driver-to-EAC mapping was invented. The contradiction Run 36 reported - a "
+                  "module declaring a structure it did not consume while presenting itself as "
+                  "canonical - no longer exists.",
+                  "DISABLED"])
     write(out, "run36_instrument_qualification.csv", HDR_QUAL, qrows)
     print(f"BLOCKING DEFECTS ON TARGET ROWS: {len(blocking)}")
-    print("INSTRUMENT-LEVEL BLOCKING DEFECTS: 1 (A1.1 declared structure unconsumed)")
+    print("INSTRUMENT-LEVEL BLOCKING DEFECTS: 0 (the Run-36 A1.1 contradiction is CLOSED by "
+          "the owner ruling of 2026-08-19)")
     return 0
 
 

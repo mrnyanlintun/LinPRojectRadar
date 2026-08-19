@@ -231,13 +231,28 @@ def g10_metric_not_changed_after_results():
 
 def g11_disabled_not_activated_for_a_score():
     """FAULT 11. A disabled module activated to obtain a score."""
-    expected = {"A3.8", "B2.7", "B2.9", "B2.20", "B4.1", "B4.2", "B4.5", "B4.6", "A3.4"}
+    # RUN 36 CLOSURE. The Run-35 disabled set, and the ONE module disabled since, named rather
+    # than folded in: the owner's 2026-08-19 ruling disabled A1.1 for insufficient canonical
+    # input. Naming it keeps this oracle's real property intact -- no disabled module produces a
+    # reading -- while still going red if any OTHER module joins or leaves the set.
+    run35_expected = {"A3.8", "B2.7", "B2.9", "B2.20", "B4.1", "B4.2", "B4.5", "B4.6", "A3.4"}
+    disabled_since_run35 = {"A1.1"}
+    expected = run35_expected | disabled_since_run35
     bad = []
     if set(REG.DISABLED_MODULES) != expected:
         bad.append(f"disabled set moved: {sorted(set(REG.DISABLED_MODULES) ^ expected)}")
     res = {r["module_id"]: r for r in rows("run35_empirical_validation_results.csv")}
     for mid in expected:
+        # A3.4 was already excused. A1.1 is excused from the VERDICT comparison only, and for a
+        # stated reason: Run 35's validation results are that run's HISTORICAL record, taken while
+        # A1.1 still computed, and rewriting them to agree with a later disablement would falsify
+        # the record. Its EXECUTION is still checked below with every other disabled module.
         if mid == "A3.4":
+            continue
+        if mid == "A1.1":
+            row = run(mid)
+            if not row.get("insufficient_data"):
+                bad.append("A1.1 executed and produced a reading")
             continue
         row = run(mid)
         if not row.get("insufficient_data"):
@@ -384,9 +399,14 @@ def g21_duplicate_lineage_is_not_independent_confirmation():
 def g22_unknown_lineage_is_not_independent():
     """FAULT 22. Unknown lineage treated as independent lineage."""
     bad = []
+    # RUN 36 CLOSURE. The Run-35 parsimony artefact is RUN 35's record and is not rewritten. Its
+    # applicability was taken against the disabled set AS IT STOOD THEN, so the comparison is made
+    # against that set here. A1.1 -- disabled since, by the owner's 2026-08-19 ruling -- is
+    # asserted separately below, so the exclusion is visible rather than a hole.
+    _run35_disabled = set(REG.DISABLED_MODULES) - {"A1.1"}
     for r in rows("run35_parsimony_reconciliation.csv"):
         mid = r["module_id"]
-        live = lineage_status(mid, applicable=mid not in REG.DISABLED_MODULES)
+        live = lineage_status(mid, applicable=mid not in _run35_disabled)
         if r["primary_lineage"] != live:
             bad.append(f"{mid} records lineage {r['primary_lineage']}, live says {live}")
         claimed = f"independence established: {independence_established(live)}"
@@ -394,6 +414,13 @@ def g22_unknown_lineage_is_not_independent():
             bad.append(f"{mid} evidence does not carry the live independence answer")
         if independence_established(live) and live != "LINEAGE_ESTABLISHED_INDEPENDENT":
             bad.append(f"{mid} establishes independence from a non-independent state")
+    # THE ONE MODULE EXCLUDED ABOVE, ASSERTED BY NAME. Its live lineage state is NOT_APPLICABLE
+    # now that it is disabled, and NOT_APPLICABLE must never establish independence either.
+    _a11_live = lineage_status("A1.1", applicable="A1.1" not in REG.DISABLED_MODULES)
+    if _a11_live != "LINEAGE_NOT_APPLICABLE":
+        bad.append(f"A1.1 live lineage is {_a11_live}, expected LINEAGE_NOT_APPLICABLE")
+    if independence_established(_a11_live):
+        bad.append("A1.1 establishes independence from a not-applicable state")
     return not bad, "; ".join(bad[:4])
 
 

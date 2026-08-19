@@ -460,9 +460,16 @@ def _check_activation() -> bool:
 
 
 def _check_disabled() -> bool:
+    # RUN 36 CLOSURE. A THIRD disjoint disabled set exists: DISABLED_CANONICAL_INPUT_NOT_GOVERNED,
+    # carrying A1.1 under the owner's 2026-08-19 ruling. The composition property this guard is
+    # about -- that DISABLED_MODULES is exactly the union of its declared components and gains no
+    # member from anywhere else -- is unchanged and is still what is asserted.
     return (REG.DISABLED_EVIDENCE_UNDER_REVIEW == {"A3.4": "Material Cost Variance"}
+            and REG.DISABLED_CANONICAL_INPUT_NOT_GOVERNED
+            == {"A1.1": "Monte Carlo EAC Forecast"}
             and set(REG.DISABLED_MODULES) ==
-            set(REG.DISABLED_CONCEPT_ONLY) | set(REG.DISABLED_EVIDENCE_UNDER_REVIEW))
+            set(REG.DISABLED_CONCEPT_ONLY) | set(REG.DISABLED_EVIDENCE_UNDER_REVIEW)
+            | set(REG.DISABLED_CANONICAL_INPUT_NOT_GOVERNED))
 
 
 def _check_mutation_control() -> bool:
