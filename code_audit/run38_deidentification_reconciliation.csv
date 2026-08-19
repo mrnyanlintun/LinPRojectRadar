@@ -1,0 +1,13 @@
+identifier_class,exists_in_system,reaches_governed_export,reaches_analysis_dataset,evidence,result
+name,yes (participant-authored free text),yes,no,planted through researchdecision/researchprejudgment and searched in the serialised bytes of both exports,PASS
+email,yes (participant-authored free text),yes,no,planted through researchdecision/researchprejudgment and searched in the serialised bytes of both exports,PASS
+phone in free text,yes (participant-authored free text),yes,no,planted through researchdecision/researchprejudgment and searched in the serialised bytes of both exports,PASS
+employee identifier,yes (participant-authored free text),yes,no,planted through researchdecision/researchprejudgment and searched in the serialised bytes of both exports,PASS
+login identifier / access token hash,yes,no,no,searched the serialised analysis bytes for each live value,PASS
+raw database primary key (participant_id),yes,no,no,searched the serialised analysis bytes for each live value,PASS
+IP address,in the participant model,no,no,column-name census over ANALYSIS_COLUMNS,PASS
+authentication token,in the data model,no,no,column-name census over ANALYSIS_COLUMNS,PASS
+session secret,in the participant model,no,no,column-name census over ANALYSIS_COLUMNS,PASS
+email column,in the participant model,no,no,column-name census over ANALYSIS_COLUMNS,PASS
+display name column,in the participant model,no,no,column-name census over ANALYSIS_COLUMNS,PASS
+free-text metadata containing identity,yes,"yes, flagged review_required",no,"excluded by construction: the analysis column list contains no free-text field, following the analysis_long precedent. No automated scrubber is claimed.",PASS

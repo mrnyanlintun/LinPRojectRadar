@@ -1,0 +1,18 @@
+construct,source_fields,persisted,exportable,deterministic_derivation,missing,ambiguity,result
+preliminary action/assessment,pre_action;pre_assessment,yes,yes,direct,no,none,PASS
+preliminary confidence,pre_confidence,yes,yes,direct,no,none,PASS
+final action/assessment,final_action,yes,yes,direct,no,none,PASS
+final confidence,final_confidence,yes,yes,direct,no,none,PASS
+AI recommendation presented,package_id;package_hash,yes,yes,join to the frozen package,no,none,PASS
+agreement/disagreement,pre_action;final_action,yes,yes,compare to ai_recommended_action,no,none,PASS
+disposition toward AI,disposition,yes,yes,"direct, closed vocabulary",no,none,PASS
+rationale,rationale,yes,yes,"free text, excluded from the analysis dataset by construction",no,none,PASS
+evidence use,evidence_items;reason_code,yes,yes,count and closed vocabulary,no,none,PASS
+judgment revision,pre_action;final_action;pre_confidence;final_confidence,yes,yes,"action_revised, revision_direction, confidence_change",no,none,PASS
+timing/duration,pre_submitted_at;pre_locked_at;reveal_at;final_submitted_at,yes,yes,server-assigned differences,no,none,PASS
+project,assignment_id,yes,yes,assignment -> scenario.evidence_package_id,no,none,PASS
+reporting period,period,yes,yes,direct,no,none,PASS
+participant/session identity,assignment_id,yes,yes,assignment -> participant -> pseudonymous_code,no,none,PASS
+simulation/package version,(none),no,yes,NOT persisted on the decision; stamped by the Run-38 export from the frozen instrument at export time,no,none,PASS
+treatment/AI identity,package_id;package_hash,yes,yes,direct,no,none,PASS
+lock timestamps,pre_locked_at;final_submitted_at,yes,yes,direct,no,none,PASS
