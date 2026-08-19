@@ -6,8 +6,8 @@
   "freeze_candidate_commit": "6142d877856ea651ef8d7e905f6d27604b3244f1",
   "candidate_identity_digest": "60236d1cac6e2ca900d8f64e67202f558788989978b86c29c4cda3580d8c42e4",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "be17abbdcc7cc39b0f8bc533630b0460000f57bd9ed4fd09c0b89790b9f5970b",
-  "release_content_digest_method": "sha256 over the ordered 'sha256  path' lines of research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv's members. Content-addressed and reproducible from the tree alone.",
+  "release_content_digest": "4c1690781212f2d862399d56b31fee90bd7a5297d87c32e35b13025035de2c1d",
+  "release_content_digest_method": "sha256 over the ordered 'sha256  path' lines of research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv, EXCLUDING the row for this record itself. The exclusion is not a convenience: this record CONTAINS the digest, so including its own hash would make the value unreproducible the instant it was written - the same self-reference the section-14 rule forbids for commit hashes. Every other governed freeze-critical file is covered, and the digest is reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v25",
   "simulation_version_history": [
@@ -177,6 +177,11 @@
     "participant_predecessor": "og-participant-2026.08-v12 at 822d80928367c0f422fac5f2564705279e718dd1"
   },
   "complete_suite": {
-    "note": "recorded by the exact-final run on the merged head; see the report"
+    "suites": 176,
+    "checks": "13646/13646",
+    "failed": 0,
+    "run_on": "the exact merged head, fresh migrated SQLite per suite file",
+    "production_postgres_accessed": false,
+    "note": "Recorded by a post-merge attestation commit, as section 19 step 9 provides for. The suite was then run again on the resulting head."
   }
 }

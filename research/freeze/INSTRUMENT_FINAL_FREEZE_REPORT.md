@@ -71,6 +71,8 @@ no crash and no stale-method population.
 **Browser:** 28/28, executed fresh. **Fault campaign:** 15/15 applied, RED for intent, restored
 GREEN; crashes accepted as RED 0.
 
+**Complete suite on the exact merged head: 176 suites / 13646 checks, failed 0**, fresh migrated SQLite per suite file. Production Postgres was never accessed.
+
 ---
 
 ## The limitation contract
