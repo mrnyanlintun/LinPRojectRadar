@@ -344,6 +344,24 @@ for _need in ("participant authentication", "preliminary judgment lock", "AI rev
           str([(r["result"], r["surface_reached"]) for r in _hit]))
 
 # =================================================================================================
+head("11b. SECTION 15: PARSIMONY, AND THE DISCREPANCY IT REPORTS")
+# =================================================================================================
+_pars = load("run36_parsimony_reconciliation.csv")
+_ptargets = [r for r in _pars if r["row_type"] == "TARGET"]
+check(len(_ptargets) == 100 and {r["module_id"] for r in _ptargets} == _scientific,
+      "the parsimony reconciliation covers exactly the 100 scientific targets",
+      f"{len(_ptargets)} rows")
+_OVERLAP = {"NONE", "SHARED_GOVERNED_STRUCTURE (same primitive source object)",
+            "IDENTICAL_PRIMITIVE_SOURCE_SET", "PRIMITIVE_SOURCE_SUBSET"}
+check({r["overlap_type"] for r in _ptargets} <= _OVERLAP,
+      "and every overlap value is one Run 35 established; the vocabulary was not extended",
+      str({r["overlap_type"] for r in _ptargets} - _OVERLAP))
+_disc = [r for r in _pars if r["row_type"] == "REPORTED_DISCREPANCY"]
+check(len(_disc) == 1 and "22" in _disc[0]["current_operational_necessity"],
+      "and the disagreement with Run 35's figure of 22 is REPORTED as a discrepancy rather than "
+      "reconciled away or padded to match", str(len(_disc)))
+
+# =================================================================================================
 head("12. SECTION 21: THE REPRODUCIBILITY INVENTORY, AND THE HISTORICAL INCOMPLETENESS")
 # =================================================================================================
 _repro = load("run36_reproducibility_inventory.csv")

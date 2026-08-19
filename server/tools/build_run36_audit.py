@@ -566,6 +566,101 @@ def qualification_rows(targets):
     return rows
 
 
+# =================================================================================================
+# SECTION 15. PARSIMONY, RE-DERIVED BY ABLATION THROUGH THE REAL ENTRY POINT.
+#
+# THE PRIMITIVE-SOURCE PROFILE IS MEASURED, NOT DECLARED. For a target with a governed structure
+# the profile is that structure -- two modules defined on one structure read one object. For a
+# target without one, each controlled-corpus scalar is REMOVED IN TURN and the module re-executed
+# through `registry.run_module`; a scalar whose removal changes the emitted row is one the module
+# actually reads. That is a measurement of consumption rather than a reading of a declaration,
+# which is the distinction the A1.1 finding turns on.
+#
+# THE OVERLAP VOCABULARY IS THE ONE RUN 35 ESTABLISHED and is not extended.
+# =================================================================================================
+def parsimony_rows():
+    _idx, _project, _portfolio, scientific = populations()
+    scalars = [k for k in CORPUS_SI if k != "evidenceQualification"]
+    profile = {}
+    for m in sorted(scientific):
+        key, _layer = structure_of(m)
+        if key:
+            profile[m] = ("STRUCTURE", (key,))
+            continue
+        base = execute(m)
+        reads = []
+        for k in scalars:
+            si = {kk: vv for kk, vv in CORPUS_SI.items() if kk != k}
+            try:
+                alt = REG.run_module(m, si, NOOP, CUT)
+            except Exception:                                    # noqa: BLE001
+                alt = {"__state__": "REFUSED"}
+            b = {kk: vv for kk, vv in base.items() if kk != "__state__"}
+            a = {kk: vv for kk, vv in alt.items() if kk != "__state__"}
+            if a != b:
+                reads.append(k)
+        profile[m] = ("SCALARS", tuple(sorted(reads)))
+
+    import collections
+    groups = collections.defaultdict(list)
+    for m, p in profile.items():
+        groups[p].append(m)
+
+    rows = []
+    identical = subset = shared_structure = 0
+    no_distinct = []
+    for m in sorted(scientific):
+        kind, keys = profile[m]
+        peers = [x for x in groups[(kind, keys)] if x != m]
+        if peers and kind == "STRUCTURE":
+            overlap = "SHARED_GOVERNED_STRUCTURE (same primitive source object)"
+            shared_structure += 1
+        elif peers:
+            overlap = "IDENTICAL_PRIMITIVE_SOURCE_SET"
+            identical += 1
+        else:
+            # a strict subset relation is an overlap too, and it is not caught by equality
+            sub = [x for x in scientific
+                   if x != m and profile[x][0] == kind == "SCALARS"
+                   and set(keys) and set(keys) < set(profile[x][1])]
+            if sub:
+                overlap = "PRIMITIVE_SOURCE_SUBSET"
+                subset += 1
+                peers = sub
+            else:
+                overlap = "NONE"
+        distinct = "NO" if (peers and overlap != "NONE"
+                            and sorted(groups[(kind, keys)])[0] != m) else "YES"
+        if distinct == "NO":
+            no_distinct.append(m)
+        rows.append(["TARGET", m, _idx[m]["module_name"], kind,
+                     ", ".join(keys) or "none measured on this corpus",
+                     overlap, ", ".join(sorted(peers)[:4]), distinct,
+                     "YES - voting" if m in REG.CORE_VOTING_MODULES
+                     else ("NO - disabled or archived" if m in REG.DISABLED_MODULES
+                           else "NO - abstains on the current corpus"
+                           if execute(m).get("__state__") != "COMPUTES" else "BOUNDED ADVISORY")])
+    rows.append(["ACCEPTANCE_COUNTER", "-", "DISTINCT PRIMITIVE-SOURCE PROFILES", "-",
+                 str(len(groups)), "-", "-", "-", "measured by ablation"])
+    rows.append(["ACCEPTANCE_COUNTER", "-",
+                 "TARGETS SHARING A PROFILE WITH AT LEAST ONE OTHER", "-",
+                 str(len([m for m, p in profile.items() if len(groups[p]) > 1])), "-", "-", "-",
+                 "identical set or shared governed structure"])
+    rows.append(["ACCEPTANCE_COUNTER", "-", "TARGETS ADDING NO DISTINCT ANALYTICAL FUNCTION", "-",
+                 str(len(no_distinct)), "-", "-", "-", ", ".join(no_distinct)])
+    rows.append(["REPORTED_DISCREPANCY", "-", "RUN-35 COMPARISON", "-", str(len(no_distinct)),
+                 "-", "-", "-",
+                 "Run 35 recorded 22 of 100 adding no distinct analytical function under a "
+                 "DIFFERENT measure: its overlap taxonomy counted declared shared structures and "
+                 "subset relations, and its 'unique_analytical_contribution' column marked NO for "
+                 "22. Run 36 measures the primitive-source profile BY ABLATION through the real "
+                 "entry point and counts a target as adding nothing only when another target "
+                 "already occupies the identical profile. The two figures answer different "
+                 "questions and neither is forced to the other. DISCREPANCY REPORTED, NOT "
+                 "RECONCILED AWAY."])
+    return rows
+
+
 HDR_TARGET = ["module_id", "canonical_name", "category", "canonical_method_exists",
               "method_implemented", "route_reaches_canonical", "legacy_route_reachable",
               "governed_structure_declared", "governed_structure_accepted_by_intake",
@@ -601,6 +696,10 @@ def main() -> int:
           ["row_type", "module", "parameter", "classification", "applied",
            "calibration_state", "empirical_validation_state", "allowed_under_policy",
            "provenance"], parameter_rows())
+    write(out, "run36_parsimony_reconciliation.csv",
+          ["row_type", "module_id", "canonical_name", "profile_kind", "primitive_sources",
+           "overlap_type", "closest_overlapping_targets", "distinct_analytical_function",
+           "current_operational_necessity"], parsimony_rows())
     qrows = qualification_rows(targets)
     blocking = [t for t in targets if t["blocking_defect"] != "NO"]
     qrows.append(["ACCEPTANCE_COUNTER", "-", "SCIENTIFIC TARGET ROWS", str(len(targets)),
