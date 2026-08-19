@@ -1,0 +1,14 @@
+field,written_by_final_response_route,appears_in_analysis_export,role,named_in_owner_prompt,protected_by_trigger,protection_reason
+final_action,yes,yes,substantive final response content,yes,yes,persisted component of the final participant judgment
+disposition,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+rationale,yes,yes,substantive final response content,yes,yes,persisted component of the final participant judgment
+final_confidence,yes,yes,substantive final response content,yes,yes,persisted component of the final participant judgment
+escalation_level,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+owner_role,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+authority_role,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+resource_constraint,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+evidence_items,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+reason_code,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+deadline,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+residual_risk,yes,yes,substantive final response content,no,yes,persisted component of the final participant judgment
+final_submitted_at,yes,yes,final lock timestamp,no,yes,the guard's own precondition - if it can be cleared or moved the trigger is bypassable in two statements
