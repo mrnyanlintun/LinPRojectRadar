@@ -182,9 +182,21 @@ _grep = subprocess.run(["git", "grep", "-l", PLACEHOLDER, "--", "."],
                        cwd=ROOT, capture_output=True, text=True)
 _files = sorted(f for f in _grep.stdout.split() if f)
 _release_facing = sorted(set(_files) - GUARD_SOURCES)
-check("run37doc.occurrence_set_is_the_expected_three", len(_files) == 3,
-      "exactly three files carry the literal, enumerated live from git rather than assumed",
-      str(_files))
+# THE COUNT IS OVER RELEASE-FACING FILES ONLY, and that correction was forced by this guard
+# failing on itself. While this file was untracked `git grep` could not see it, so the occurrence
+# set read three; the moment it was committed it became a fourth tracked occurrence and the raw
+# count went red. GUARD SOURCE COUNT IS NOT A GOVERNED PROPERTY -- a guard that reasons about a
+# literal must contain it -- so what is asserted is the release-facing set, by name, which is the
+# thing that actually matters and does not move when tooling is added.
+check("run37doc.guard_sources_are_excluded_by_name",
+      set(GUARD_SOURCES) <= set(_files),
+      "every file excused as a guard source really does carry the literal, so the exclusion list "
+      "cannot silently hide a file that stopped being one",
+      str(sorted(set(GUARD_SOURCES) - set(_files))))
+check("run37doc.release_facing_occurrence_count", len(_release_facing) == 2,
+      "exactly two RELEASE-FACING files carry the literal, enumerated live from git rather than "
+      "assumed; guard sources are excluded by name and counted separately",
+      str(_release_facing))
 check("run37doc.no_unexpected_release_facing_occurrence",
       set(_release_facing) == {"research/freeze/INSTRUMENT_FINAL_FREEZE_REPORT.md",
                                "research/freeze/INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json"},
