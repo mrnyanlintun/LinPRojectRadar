@@ -3,7 +3,7 @@
   "not": "This is a freeze CANDIDATE, not a final immutable release. No existing owner authority defines that transition, so none is claimed.",
   "created": "2026-08-19",
   "authority": "owner ruling of 2026-08-19 (Run 36 blocker closure), sections 13 and 16",
-  "exact_final_git_commit": "327ad983f064e253df10e245cc1c7854be78ed68",
+  "exact_final_git_commit": "PENDING_FINAL_COMMIT",
   "simulation_version": "sim-2026.08-v25",
   "simulation_version_history": [
     "sim-2026.07-v1",
@@ -200,8 +200,9 @@
     "run36_freeze_blocked_report": "REPORT_2026-08-19_run36-final-scientific-reaudit-and-instrument-qualification.md"
   },
   "complete_suite": {
-    "suites": null,
-    "checks": null,
-    "note": "filled by the exact-final run on the merged head"
+    "suites": 175,
+    "checks": "13618/13618",
+    "failed": 0,
+    "run_on": "the exact merged head"
   }
 }
