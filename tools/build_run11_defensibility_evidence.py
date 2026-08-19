@@ -24,8 +24,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "server"))
 
 from app.simulation.registry import (  # noqa: E402
-    CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, DISABLED_EVIDENCE_UNDER_REVIEW, PROXY_QUALIFIERS,
-    VALIDATED, load_registry,
+    CORE_VOTING_MODULES, DISABLED_CANONICAL_INPUT_NOT_GOVERNED, DISABLED_CONCEPT_ONLY,
+    DISABLED_EVIDENCE_UNDER_REVIEW, PROXY_QUALIFIERS, VALIDATED, load_registry,
 )
 from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
 from app.simulation import registry as _REG  # noqa: E402
@@ -223,6 +223,10 @@ def build() -> str:
         "                                                     without it",
         "                  PORTFOLIO_COMPUTED                 computed across the portfolio",
         "                  DISABLED_CONCEPT_ONLY              engine exists, not operational",
+        "                  DISABLED_INSUFFICIENT_INPUT        canonical input contract not",
+        "                                                     governed; the retained",
+        "                                                     approximation is preserved",
+        "                                                     but is not operational.",
         "                  DISABLED_EVIDENCE_UNDER_REVIEW     disabled pending an evidence",
         "                                                     -design decision",
         "                  ARCHIVED_FUTURE_RESEARCH           research record, not a runnable",
@@ -267,6 +271,18 @@ def build() -> str:
             state = "ARCHIVED_FUTURE_RESEARCH"
             implementation = ("historical implementation and scientific record are preserved, "
                               "but the method is not a runnable current capability")
+        elif mid in DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+            # RUN 36 CLOSURE, THE OWNER'S A1.1 RULING. Its own state, because it is its own
+            # fact: the canonical method's INPUT CONTRACT is not governed. The guard requires
+            # this state to agree with what EXECUTION does, so it is measured and not asserted.
+            state = "DISABLED_INSUFFICIENT_INPUT"
+            implementation = ("canonical execution requires the governed cost-driver "
+                              "distribution structure AND an authoritative rule for turning "
+                              "drawn driver figures into a forecast of the final cost; neither "
+                              "is established, so the module is operationally disabled for "
+                              "insufficient input and produces no live project reading. The "
+                              "earlier budget-and-index approximation is preserved in the record "
+                              "for traceability and is not the canonical operational method")
         elif mid in DISABLED_EVIDENCE_UNDER_REVIEW:
             state = "DISABLED_EVIDENCE_UNDER_REVIEW"
             implementation = ("the module is disabled pending an evidence-design decision and "
@@ -318,6 +334,17 @@ def build() -> str:
             canonical = ("declared in the canonical-structure layer but enforced by no current "
                          "route, because the platform does not compute this value")
             structure_required = False
+        elif structure_key and state == "DISABLED_INSUFFICIENT_INPUT":
+            # RUN 36 CLOSURE. The Run-36 "declared and accepted but read by no route"
+            # sentence was true while the module computed WITHOUT the structure. It does
+            # not compute any more, so that sentence would now be false in the other
+            # direction. What is true is that the structure is required and is not the
+            # only thing missing.
+            canonical = ("required by the canonical method, together with an "
+                         "authoritative rule for turning drawn driver figures into a "
+                         "forecast; neither is established, so no canonical result is "
+                         "produced")
+            structure_required = True
         elif structure_key and state == "COMPUTES_FROM_AVAILABLE_EVIDENCE":
             # RUN 36. The OTHER way a declared structure can be unenforced, and it is not the
             # same fact. A4.1 reaches the sentence above because nothing computes it at all.
@@ -336,8 +363,13 @@ def build() -> str:
             structure_required = False
         voting = ("votes on the governed status" if mid in CORE_VOTING_MODULES
                   else "does not vote")
-        if state in ("DISABLED_CONCEPT_ONLY", "DISABLED_EVIDENCE_UNDER_REVIEW",
-                     "ARCHIVED_FUTURE_RESEARCH"):
+        if state == "DISABLED_INSUFFICIENT_INPUT":
+            claim = ("No claim. The method this module is named for is not defined "
+                     "completely enough here to run, so it does not run and nothing is "
+                     "reported from it. The earlier approximation kept in the record is "
+                     "not that method.")
+        elif state in ("DISABLED_CONCEPT_ONLY", "DISABLED_EVIDENCE_UNDER_REVIEW",
+                       "ARCHIVED_FUTURE_RESEARCH"):
             claim = "No claim. The module is disabled and does not compute."
         elif state == "SUPPLIED_VALUE":
             claim = ("No claim about server-side arithmetic. The platform does not compute this "

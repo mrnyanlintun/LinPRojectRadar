@@ -371,9 +371,18 @@ check(first["computed"] == second["computed"],
       "and the same scenario and period reproduce every figure exactly")
 other = run_all(dict(MC_SI), "S-STOCH", "P2", CUTOFF)
 check(other["seed"] != first["seed"], "a different period draws a different stream")
-mc_first = next((m for m in first["computed"] if m["module_id"] == "A1.1"), None)
-check(mc_first is not None and mc_first.get("seed") == first["seed"],
-      "the forecast module records the seed it drew on, so a figure can be reproduced")
+# RUN 36 CLOSURE. A1.1 publishes no computed row after the owner's ruling, so the seed cannot be
+# read off it. THE GUARANTEE IS UNCHANGED AND IS STILL PROVED: the seed is recorded on the RUN,
+# it is derived from (scenario, period) alone, and it is what any stochastic module would draw on.
+# What is asserted instead is the stronger pair -- the run carries the seed, and A1.1 carries no
+# row at all -- so a silent reappearance of the retained adaptation would be caught here too.
+check(first.get("seed") is not None and other.get("seed") is not None,
+      "the run records the seed it drew on, so a figure can be reproduced",
+      f"{first.get('seed')} vs {other.get('seed')}")
+check(not any(m["module_id"] == "A1.1" for m in first["computed"]),
+      "and the forecast module publishes no computed row, because its canonical input contract "
+      "is not governed",
+      str([m["module_id"] for m in first["computed"] if m["module_id"] == "A1.1"]))
 # The deterministic limiting case: a generator returning a constant collapses the simulation to
 # a single point, and the reported percentiles must then coincide.
 det = run_module("A1.1", dict(MC_SI), lambda: 0.5, CUTOFF)
