@@ -446,8 +446,23 @@ check(len(set(order)) == 36, "duplicates = 0", str(len(order) - len(set(order)))
 check(set(order) == {(p, q) for p in projects for q in periods}, "missing = 0")
 check(all(r[-1] == "PASS" for r in stim_rows), "every project-period is reachable on the "
       "participant route", str([r[:3] for r in stim_rows if r[-1] != "PASS"]))
-check(sorted(projects) == sorted(D.STUDY_PROJECTS),
-      "the six driven projects are the six study projects", str(projects))
+# THE AUTHORITY IS THE GOVERNED CONTRACT, NOT THE DRIVER'S OWN CONSTANT.
+# This check previously compared the driven projects against run38_dryrun.STUDY_PROJECTS --
+# the very tuple the driver used to create them. It could not fail, and the Run-38 fault
+# campaign caught it: mutating that tuple left the gate green. The contract is read from
+# research/methodology/controlled_study_design_contract.json and the corpus underneath it.
+_contract = json.loads((REPO / "research/methodology/controlled_study_design_contract.json")
+                       .read_text(encoding="utf-8"))
+_cs = _contract["controlled_stimulus"]
+_proj_csv = REPO / _cs["root"] / _cs["project_table"]
+with _proj_csv.open(encoding="utf-8", newline="") as _fh:
+    _governed = sorted({r["project_id"] for r in csv.DictReader(_fh)
+                        if str(r.get("study_project_candidate", "")).strip().lower() == "true"})
+check(len(_governed) == 6, "the governed stimulus corpus names exactly 6 study projects",
+      str(_governed))
+check(sorted(projects) == _governed,
+      "the six driven projects are the six projects the governed corpus names",
+      f"driven={sorted(projects)} governed={_governed}")
 
 # Resilience: reload mid-flow, duplicate POST, resume, completed-study resume.
 b_ev = post({"action": "researchevidenceget", "session_token": B["token"]})
@@ -727,7 +742,8 @@ inv("impossible timestamp ordering",
         r["final_submitted_at"] < r["reveal_at"]))
 inv("missing frozen-instrument version identity",
     sum(1 for r in a2 if not (r["simulation_version"] and r["participant_package"]
-                              and r["schema_version"] and r["freeze_candidate_commit"])))
+                              and r["synthetic_package"] and r["schema_version"]
+                              and r["freeze_candidate_commit"])))
 # EXACT column-name equality, not substring: `participant_id` is a substring of the
 # pseudonymous `study_participant_id`, and a substring test would have reported the study
 # identifier itself as a direct identifier.
