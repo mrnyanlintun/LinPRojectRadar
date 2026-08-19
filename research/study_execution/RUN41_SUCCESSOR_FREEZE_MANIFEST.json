@@ -1,0 +1,199 @@
+{
+  "run": 41,
+  "model": "Opus 5",
+  "date": "2026-08-19",
+  "title": "Successor freeze candidate: close S1 stored XSS and S2 final-lock database integrity",
+  "starting_identity": {
+    "head": "4bd14684abadd3ab8a94d68964b686993a5d6718",
+    "head_equals_main_equals_origin": true,
+    "tree_clean_at_start": true,
+    "simulation_version": "sim-2026.08-v25",
+    "participant_package": "og-participant-2026.08-v13",
+    "synthetic_package": "OG-SYNTH-0.6",
+    "analysis_schema": "og-analysis-2026.08-v1",
+    "run40_disposition": "FABLE_ACCEPTANCE_BLOCKED",
+    "unresolved_blockers_at_start": [
+      "S1",
+      "S2"
+    ],
+    "main_study_observations": 0,
+    "voting": 2,
+    "predecessor_freeze_candidate": "6142d877856ea651ef8d7e905f6d27604b3244f1",
+    "predecessor_accepted_release": "f983bb020f7a184a5742e1fff09d690b0170f0de",
+    "verified_mechanically": true
+  },
+  "owner_ruling": "FIX BOTH BEFORE PARTICIPANT USE. Neither risk accepted for the study period.",
+  "S1": {
+    "title": "stored XSS / content-type spoofing on GET /documents/{id}/content",
+    "severity": "HIGH",
+    "reproduction_before_fix": "Re-reproduced on current v25 rather than taken from the Run-40 artifact. The client-supplied mimeType is stored verbatim at upload and echoed as the response Content-Type with Content-Disposition: inline and no nosniff. In real Chromium, loading the route in a same-origin iframe exactly as assets/js/files.js previews documents, 4 of 4 attacker payloads (text/html under a .pdf name, .html, image/svg+xml, and a stored-MIME mismatch) reached the boundary at HTTP 200 and EXECUTED script in the application origin.",
+    "remediation": "server/app/main.py: Content-Type drawn from a server-controlled inline-safe allowlist (application/pdf, png, jpeg, jpg, gif, webp, text/plain); everything else, including text/html, image/svg+xml, xhtml and xml, served as application/octet-stream with Content-Disposition: attachment; X-Content-Type-Options: nosniff on every response; Content-Disposition filename sanitised against quotes, backslashes and control characters. Reuses the implementation proven in commit a3fd8b6, reconstructed and re-checked against current main first. Stored bytes, authorization, extraction and evidence meaning untouched.",
+    "result_after_fix": "0 of 4 attacker payloads execute; all 4 still reach the serving boundary at HTTP 200, so the refusal is this boundary's and not an unrelated gate's. Legitimate PDF and text documents still serve inline with bytes unchanged.",
+    "intended_functional_consequence": "image/svg+xml is script-capable and is now downloaded rather than rendered inline. Retrieval still works; only in-place SVG rendering changes.",
+    "final_status": "CONFIRMED_FIXED"
+  },
+  "S2": {
+    "title": "final-lock database integrity on the primary outcome data",
+    "severity": "HIGH",
+    "reproduction_before_fix": "Reproduced on the v25 schema in an isolated SQLite with the decision driven to final lock entirely through the real application routes (researchevidenceget -> researchprejudgment -> researchreveal -> researchdecision). With final_submitted_at set, 13 of 13 direct raw-SQL UPDATEs succeeded, rewriting every substantive final-response field and clearing final_submitted_at itself.",
+    "remediation": "Migration 0026 adds trg_decisions_final_lock_guard, mirroring migration 0003's preliminary-lock guard onto the final side, on Postgres (plpgsql, SQLSTATE OG002) and SQLite.",
+    "protected_field_set_derivation": "DERIVED MECHANICALLY, NOT TAKEN FROM THE PROMPT. server/tools/run41_derive_final_fields.py reads the AST of a_researchdecision, the only route that records a final response, and cross-checks every decision.<attr> assignment against EXPORT_COLUMNS in research_export.py. Both authorities agree on the same 13 names.",
+    "protected_fields": [
+      "final_action",
+      "disposition",
+      "rationale",
+      "final_confidence",
+      "escalation_level",
+      "owner_role",
+      "authority_role",
+      "resource_constraint",
+      "evidence_items",
+      "reason_code",
+      "deadline",
+      "residual_risk",
+      "final_submitted_at"
+    ],
+    "discrepancy_with_prompt": "The owner's prompt named 3 fields (final_action, final_confidence, rationale). The live model has 12 substantive final-response fields. The 9 the prompt did not name are disposition (the participant's stance toward the AI recommendation), evidence_items (evidence use), reason_code, escalation_level, owner_role, authority_role, resource_constraint, deadline and residual_risk. All 12 are analysis-export variables. Protecting only the named 3 would have left 9 components of the primary outcome editable. Reported rather than absorbed.",
+    "lock_timestamp_also_protected": "final_submitted_at is protected as a 13th column because it is the guard's own predicate; a trigger keyed off a timestamp it permits to be cleared is bypassable in two statements.",
+    "predeclared_idempotent_write": "PERMITTED. An UPDATE setting a protected field to the value it already holds is allowed, matching trg_decisions_pre_lock_guard's IS DISTINCT FROM semantics: the guard exists to stop the final response CHANGING, and refusing a write that changes nothing would break ordinary ORM flushes and obstruct normal operation, which section 7 forbids.",
+    "result_after_fix": "0 of 13 raw-SQL mutations succeed after final lock. Every attack proved to reach the trigger: the identical UPDATE is run on a control decision stopped just before the final lock, where 13 of 13 SUCCEED, so the post-lock refusal is the lock state and nothing else. Pre-lock writes, unprotected columns, reads, sessions, reload and export are unaffected.",
+    "final_status": "CONFIRMED_FIXED"
+  },
+  "versions": {
+    "simulation": "sim-2026.08-v26 (successor; supersedes sim-2026.08-v25)",
+    "participant_package": "og-participant-2026.08-v13 (RETAINED - 0 of 70 governed bytes moved, 0 of 6 sequence-bearing files moved)",
+    "synthetic_package": "OG-SYNTH-0.6 (RETAINED - byte-identical to the pinned predecessor)",
+    "analysis_schema": "og-analysis-2026.08-v1 (RETAINED - byte-identical to the pinned predecessor)"
+  },
+  "behavioural_delta_v25_to_v26": [
+    "untrusted document content can no longer execute through the same-origin document-content response",
+    "substantive final responses become database-immutable after final lock"
+  ],
+  "preservation_proofs": {
+    "scientific": {
+      "method": "both lines executed from their own git objects",
+      "modules_executed_each_line": 101,
+      "rows_moved": 0,
+      "artifact": "code_audit/run41_v25_v26_execution_proof.csv"
+    },
+    "ai_binding": {
+      "positions": 36,
+      "digests_moved": 0,
+      "unique_project_exposures_each_line": 6,
+      "artifacts": [
+        "code_audit/run41_ai_binding_v25.json",
+        "code_audit/run41_ai_binding_v26.json"
+      ]
+    },
+    "participant_sequence": {
+      "governed_package_files": 70,
+      "moved": 0,
+      "sequence_bearing_files": 6,
+      "sequence_bearing_moved": 0
+    },
+    "voting": 2,
+    "category_9_gate": "unchanged",
+    "category_10_boundary": "unchanged"
+  },
+  "fault_campaign": {
+    "faults": 12,
+    "applied": 12,
+    "intended_red": 12,
+    "restored_green": 12,
+    "crashes_accepted_as_red": 0,
+    "unrelated_red_credited": 0,
+    "undetected": 0,
+    "artifact": "code_audit/run41_fault_campaign_results.csv",
+    "repointed": [
+      "Fault 11 first renamed the migration's revision id, which changed bytes and nothing else - the file still chained from 0025 so the trigger was still present and the oracle stayed green. Repointed to delete the migration outright, which is what 'absent on a fresh database' means.",
+      "The campaign recorded a RED verdict whose truncated evidence column did not contain the intended-reason fragment it claimed. It now records the exact failing line that carried the fragment, and the enforcing suite checks the verdict against that line."
+    ]
+  },
+  "requalification": {
+    "freeze_qualification_run37_equivalent": {
+      "executed": true,
+      "blocker_classes": 15,
+      "blocked": 0,
+      "disposition": "FINAL_FREEZE_ACCEPTED"
+    },
+    "study_execution_readiness_run38_equivalent": {
+      "executed": true,
+      "disposition": "STUDY_EXECUTION_READY"
+    },
+    "main_study_launch_run39_equivalent": {
+      "executed": true,
+      "disposition": "MAIN_STUDY_LAUNCH_READY"
+    },
+    "functional_security_acceptance_run40_affected": {
+      "executed": true,
+      "S1": "CONFIRMED_FIXED",
+      "S2": "CONFIRMED_FIXED",
+      "unresolved_high_blockers": 0
+    },
+    "note": "Executed, not copied forward. Old manifests were not edited to say PASS."
+  },
+  "security_acceptance": {
+    "attacks": 11,
+    "reached_intended_boundary": 11,
+    "adverse_outcomes": 0,
+    "artifact": "code_audit/run41_security_acceptance.csv"
+  },
+  "unresolved_high_security_blockers": 0,
+  "successor_identity": {
+    "freeze_candidate_commit": "489c9f14962899cc88213c045b87b95c2721e21e",
+    "candidate_identity_digest": "32c7f974dce2a3b52bcceb3b71dbeada9cb986000a6a60c2f953a944cdc0fc97",
+    "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
+    "release_content_digest": "7c46bfc7307d8942c47f46229661f0a2fb52d5442ee8c811618969cd96ed5d31",
+    "supersedes_candidate": "6142d877856ea651ef8d7e905f6d27604b3244f1",
+    "supersedes_release": "f983bb020f7a184a5742e1fff09d690b0170f0de"
+  },
+  "predecessor_preserved": {
+    "v25_reconstructs_from_its_git_object": true,
+    "v25_records_unchanged": true,
+    "statement": "sim-2026.08-v25, its candidate, its release, its identity, its gate and its behaviour digest are unchanged. That they still say v25 is asserted by the requalified gates, not assumed."
+  },
+  "codex_cleanup_performed": false,
+  "real_participant_collection_performed": false,
+  "main_study_observations": 0,
+  "owner_checklist": "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md",
+  "artifacts": [
+    "code_audit/run41_successor_scope.csv",
+    "code_audit/run41_final_judgment_field_derivation.csv",
+    "code_audit/run41_s1_prefix_reproduction.json",
+    "code_audit/run41_s1_prefix_browser_proof.json",
+    "code_audit/run41_s1_postfix_reproduction.json",
+    "code_audit/run41_s1_postfix_browser_proof.json",
+    "code_audit/run41_s2_prefix_reproduction.json",
+    "code_audit/run41_s2_postfix_reproduction.json",
+    "code_audit/run41_v25_v26_execution_proof.csv",
+    "code_audit/run41_ai_binding_v25.json",
+    "code_audit/run41_ai_binding_v26.json",
+    "code_audit/run41_fault_campaign_results.csv",
+    "code_audit/run41_security_acceptance.csv",
+    "code_audit/run41_security_findings_closure.csv",
+    "code_audit/run41_production_tree.sha256",
+    "research/freeze/run41_freeze_candidate_identity.json",
+    "research/freeze/run41_successor_freeze_gate.csv",
+    "research/freeze/run41_candidate_behaviour_digest.json",
+    "research/freeze/RUN41_SUCCESSOR_FREEZE_RECORD.json",
+    "research/freeze/RUN41_SUCCESSOR_FREEZE_REPORT.md",
+    "research/freeze/RUN41_SUCCESSOR_FREEZE_CHECKSUMS.csv",
+    "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md"
+  ],
+  "final_disposition": "SUCCESSOR_FREEZE_ACCEPTED",
+  "disposition_conditions": {
+    "s1_fixed": true,
+    "s2_fixed": true,
+    "unresolved_high_security_blockers_zero": true,
+    "scientific_behaviour_unchanged": true,
+    "participant_sequence_unchanged": true,
+    "ai_binding_unchanged": true,
+    "v25_predecessor_preserved": true,
+    "v26_correctly_stamped": true,
+    "freeze_qualification_green": true,
+    "study_execution_readiness_green": true,
+    "main_study_launch_readiness_green": true,
+    "functional_security_acceptance_green": true,
+    "full_suite_green": "PENDING_FINAL_MAIN_RUN"
+  }
+}

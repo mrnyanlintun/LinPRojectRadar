@@ -181,6 +181,14 @@ from run33_production_changes import RUN33_NEW_PRODUCTION_FILES  # noqa: E402
 # subtraction below is a no-op that is kept for symmetry with every earlier run's manifest.
 from run36_production_changes import (  # noqa: E402
     RUN36_NEW_PRODUCTION_FILES, RUN36_PRODUCTION_CHANGES)
+# RUN 41 declares the ONE production file it changed -- main.py, closing finding S1 at the
+# document-serving boundary -- and the ONE it created, the alembic migration closing finding S2.
+# models.py is NOT in it, because Run 28 already declares it and no path may appear in two
+# manifests. Same construction, same property: the union must still equal the differing set
+# EXACTLY, so an undeclared production edit is still red and a declared file that was never
+# touched is still red.
+from run41_production_changes import (  # noqa: E402
+    RUN41_NEW_PRODUCTION_FILES, RUN41_PRODUCTION_CHANGES)
 run30_declared = {entry[1] for entry in RUN30_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN30_NEW_PRODUCTION_FILES}
 run31_declared = {entry[1] for entry in RUN31_PRODUCTION_CHANGES.values()
@@ -189,9 +197,11 @@ run32_declared = {entry[1] for entry in RUN32_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN32_NEW_PRODUCTION_FILES}
 run36_declared = {entry[1] for entry in RUN36_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN36_NEW_PRODUCTION_FILES}
+run41_declared = {entry[1] for entry in RUN41_PRODUCTION_CHANGES.values()
+                  if entry[1] not in RUN41_NEW_PRODUCTION_FILES}
 declared = (run20_declared | run21_declared | run23_declared | run25_declared
             | run26_declared | run28_declared | run29_declared | run30_declared
-            | run31_declared | run32_declared | run36_declared)
+            | run31_declared | run32_declared | run36_declared | run41_declared)
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",

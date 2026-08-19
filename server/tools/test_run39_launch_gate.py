@@ -113,8 +113,15 @@ identity("study execution disposition", "STUDY_EXECUTION_READY",
          readiness["final_disposition"], "STUDY_EXECUTION_READINESS_MANIFEST.json")
 identity("run38 blocker count", "0", str(readiness["blocker_count"]),
          "STUDY_EXECUTION_READINESS_MANIFEST.json")
-identity("simulation", "sim-2026.08-v25", SIMULATION_VERSION,
+# RESTATED BY RUN 41, RUN 39'S FINDING PRESERVED. This pinned the live stamp to v25, which was
+# correct for Run 39 and remained correct until the owner authorised the S1/S2 remediation. The
+# launch gate must track the instrument that will actually be launched, so it now requires the
+# successor stamp - and separately requires that the v25 freeze record still says v25, so the
+# advance is a supersession and not a rewrite of the predecessor.
+identity("simulation", "sim-2026.08-v26", SIMULATION_VERSION,
          "app.simulation.models.SIMULATION_VERSION (live code)")
+identity("v25 freeze record preserved", "sim-2026.08-v25", freeze["simulation_version"],
+         "INSTRUMENT_FINAL_FREEZE_RECORD.json (the predecessor, not rewritten)")
 identity("participant package", "og-participant-2026.08-v13", PP.CURRENT.identifier,
          "tools/participant_packages.CURRENT (live code)")
 identity("synthetic package", "OG-SYNTH-0.6", freeze["synthetic_package"],

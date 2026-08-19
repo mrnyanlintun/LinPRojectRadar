@@ -1,0 +1,262 @@
+{
+  "observed_order": [
+    "PRJ-AIR|P1",
+    "PRJ-AIR|P2",
+    "PRJ-AIR|P3",
+    "PRJ-AIR|P4",
+    "PRJ-AIR|P5",
+    "PRJ-AIR|P6",
+    "PRJ-DCT|P1",
+    "PRJ-DCT|P2",
+    "PRJ-DCT|P3",
+    "PRJ-DCT|P4",
+    "PRJ-DCT|P5",
+    "PRJ-DCT|P6",
+    "PRJ-HSP|P1",
+    "PRJ-HSP|P2",
+    "PRJ-HSP|P3",
+    "PRJ-HSP|P4",
+    "PRJ-HSP|P5",
+    "PRJ-HSP|P6",
+    "PRJ-HWY|P1",
+    "PRJ-HWY|P2",
+    "PRJ-HWY|P3",
+    "PRJ-HWY|P4",
+    "PRJ-HWY|P5",
+    "PRJ-HWY|P6",
+    "PRJ-RAL|P1",
+    "PRJ-RAL|P2",
+    "PRJ-RAL|P3",
+    "PRJ-RAL|P4",
+    "PRJ-RAL|P5",
+    "PRJ-RAL|P6",
+    "PRJ-WTR|P1",
+    "PRJ-WTR|P2",
+    "PRJ-WTR|P3",
+    "PRJ-WTR|P4",
+    "PRJ-WTR|P5",
+    "PRJ-WTR|P6"
+  ],
+  "position_count": 36,
+  "positions": {
+    "PRJ-AIR|P1": {
+      "package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommendation_digest": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommended_action": "escalate",
+      "served_package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f"
+    },
+    "PRJ-AIR|P2": {
+      "package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommendation_digest": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommended_action": "escalate",
+      "served_package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f"
+    },
+    "PRJ-AIR|P3": {
+      "package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommendation_digest": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommended_action": "escalate",
+      "served_package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f"
+    },
+    "PRJ-AIR|P4": {
+      "package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommendation_digest": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommended_action": "escalate",
+      "served_package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f"
+    },
+    "PRJ-AIR|P5": {
+      "package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommendation_digest": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommended_action": "escalate",
+      "served_package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f"
+    },
+    "PRJ-AIR|P6": {
+      "package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommendation_digest": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f",
+      "recommended_action": "escalate",
+      "served_package_hash": "872680ee26fc42e22762bcffe36dc7b08e8f667a5dd6938e04aa8fc411f4011f"
+    },
+    "PRJ-DCT|P1": {
+      "package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommendation_digest": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommended_action": "escalate",
+      "served_package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941"
+    },
+    "PRJ-DCT|P2": {
+      "package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommendation_digest": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommended_action": "escalate",
+      "served_package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941"
+    },
+    "PRJ-DCT|P3": {
+      "package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommendation_digest": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommended_action": "escalate",
+      "served_package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941"
+    },
+    "PRJ-DCT|P4": {
+      "package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommendation_digest": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommended_action": "escalate",
+      "served_package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941"
+    },
+    "PRJ-DCT|P5": {
+      "package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommendation_digest": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommended_action": "escalate",
+      "served_package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941"
+    },
+    "PRJ-DCT|P6": {
+      "package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommendation_digest": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941",
+      "recommended_action": "escalate",
+      "served_package_hash": "82fa41b857e25c8719ddb3a7c826bf726c5190367ead1399a196764cd6d1e941"
+    },
+    "PRJ-HSP|P1": {
+      "package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommendation_digest": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommended_action": "escalate",
+      "served_package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f"
+    },
+    "PRJ-HSP|P2": {
+      "package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommendation_digest": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommended_action": "escalate",
+      "served_package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f"
+    },
+    "PRJ-HSP|P3": {
+      "package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommendation_digest": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommended_action": "escalate",
+      "served_package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f"
+    },
+    "PRJ-HSP|P4": {
+      "package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommendation_digest": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommended_action": "escalate",
+      "served_package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f"
+    },
+    "PRJ-HSP|P5": {
+      "package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommendation_digest": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommended_action": "escalate",
+      "served_package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f"
+    },
+    "PRJ-HSP|P6": {
+      "package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommendation_digest": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f",
+      "recommended_action": "escalate",
+      "served_package_hash": "adebdbec4631eef7060b54c5fe928cf18b027f38c30c27a49672c8ca62dae63f"
+    },
+    "PRJ-HWY|P1": {
+      "package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommendation_digest": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommended_action": "escalate",
+      "served_package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135"
+    },
+    "PRJ-HWY|P2": {
+      "package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommendation_digest": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommended_action": "escalate",
+      "served_package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135"
+    },
+    "PRJ-HWY|P3": {
+      "package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommendation_digest": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommended_action": "escalate",
+      "served_package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135"
+    },
+    "PRJ-HWY|P4": {
+      "package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommendation_digest": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommended_action": "escalate",
+      "served_package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135"
+    },
+    "PRJ-HWY|P5": {
+      "package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommendation_digest": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommended_action": "escalate",
+      "served_package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135"
+    },
+    "PRJ-HWY|P6": {
+      "package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommendation_digest": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135",
+      "recommended_action": "escalate",
+      "served_package_hash": "90d9762ea2410724584d7b16d2280e924250ff9e7c716c24a5c9d1caa9049135"
+    },
+    "PRJ-RAL|P1": {
+      "package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommendation_digest": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommended_action": "escalate",
+      "served_package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d"
+    },
+    "PRJ-RAL|P2": {
+      "package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommendation_digest": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommended_action": "escalate",
+      "served_package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d"
+    },
+    "PRJ-RAL|P3": {
+      "package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommendation_digest": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommended_action": "escalate",
+      "served_package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d"
+    },
+    "PRJ-RAL|P4": {
+      "package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommendation_digest": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommended_action": "escalate",
+      "served_package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d"
+    },
+    "PRJ-RAL|P5": {
+      "package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommendation_digest": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommended_action": "escalate",
+      "served_package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d"
+    },
+    "PRJ-RAL|P6": {
+      "package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommendation_digest": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d",
+      "recommended_action": "escalate",
+      "served_package_hash": "8a514f9cefb0942711f4dce792bc21ab34378c5c88f8051828a455867d78470d"
+    },
+    "PRJ-WTR|P1": {
+      "package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommendation_digest": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommended_action": "escalate",
+      "served_package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8"
+    },
+    "PRJ-WTR|P2": {
+      "package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommendation_digest": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommended_action": "escalate",
+      "served_package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8"
+    },
+    "PRJ-WTR|P3": {
+      "package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommendation_digest": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommended_action": "escalate",
+      "served_package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8"
+    },
+    "PRJ-WTR|P4": {
+      "package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommendation_digest": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommended_action": "escalate",
+      "served_package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8"
+    },
+    "PRJ-WTR|P5": {
+      "package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommendation_digest": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommended_action": "escalate",
+      "served_package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8"
+    },
+    "PRJ-WTR|P6": {
+      "package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommendation_digest": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8",
+      "recommended_action": "escalate",
+      "served_package_hash": "7a9e626229482aec585ad201d259bb88d2c61fa1af9e080988bea1534e5368b8"
+    }
+  },
+  "projects_with_one_recommendation_across_all_periods": 6,
+  "simulation_version": "sim-2026.08-v25",
+  "unique_recommendation_digests": 6
+}

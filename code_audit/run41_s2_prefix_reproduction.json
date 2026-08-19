@@ -1,0 +1,73 @@
+{
+  "decision_id": "01M0DV78Y5YTZYECR7QHX6HJ1R",
+  "flow_ok": true,
+  "mutations": {
+    "final_action": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED ACTION",
+      "error": null
+    },
+    "final_confidence": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "1",
+      "error": null
+    },
+    "rationale": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED RATIONALE",
+      "error": null
+    },
+    "disposition": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "reject",
+      "error": null
+    },
+    "escalation_level": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED",
+      "error": null
+    },
+    "owner_role": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED",
+      "error": null
+    },
+    "authority_role": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED",
+      "error": null
+    },
+    "resource_constraint": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED",
+      "error": null
+    },
+    "evidence_items": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "['TAMPERED']",
+      "error": null
+    },
+    "reason_code": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED",
+      "error": null
+    },
+    "deadline": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "1999-01-01",
+      "error": null
+    },
+    "residual_risk": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "TAMPERED",
+      "error": null
+    },
+    "final_submitted_at": {
+      "raw_sql_mutation_succeeded": true,
+      "value_after": "None",
+      "error": null
+    }
+  },
+  "successful_raw_mutations": 13,
+  "total_attempted": 13
+}

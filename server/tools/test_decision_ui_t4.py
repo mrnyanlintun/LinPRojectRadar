@@ -478,13 +478,19 @@ st3 = post({"action": "researchsequencestate", "session_token": relogin})
 check(st3["current_stage"] == st1["current_stage"],
       "stage identical after sign-out and sign-in", st3["current_stage"])
 
-# a simulated multi-day gap: age every timestamp on the row by a week
+# A simulated multi-day gap: age the row's timestamps by a week.
+#
+# RUN 41. final_submitted_at is deliberately NOT aged here any more. Migration 0026 makes it
+# immutable once set, because it is the predicate the final-lock guard keys off and a guard whose
+# predicate can be moved is bypassable in two statements. The gap is therefore simulated on the
+# three timestamps that remain movable, which is sufficient for what this check actually asserts:
+# derive_stage reads whether final_submitted_at is set, never how old it is, so an aged row still
+# exercises the reload path across a multi-day absence.
 with Session() as s:
     s.execute(text("UPDATE decisions SET pre_submitted_at = :t, pre_locked_at = :t, "
-                   "reveal_at = :t2, final_submitted_at = :t3 WHERE decision_id = :d"),
+                   "reveal_at = :t2 WHERE decision_id = :d"),
               {"t": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
                "t2": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
-               "t3": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
                "d": fresh_did})
     s.commit()
 st4 = post({"action": "researchsequencestate", "session_token": relogin})

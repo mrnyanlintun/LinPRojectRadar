@@ -265,9 +265,16 @@ print("=" * 78)
 print("GUARANTEE 3: tampering is detected loudly")
 print("=" * 78)
 
+# RUN 41. This guarantee is about the EXPORT CHECKSUM noticing that the underlying data moved,
+# not about which column moved. It used to demonstrate that by rewriting `rationale` on a
+# final-locked decision; migration 0026 now refuses exactly that, because rationale is part of
+# the final participant judgment. The subject under test is unchanged - an exported column is
+# altered behind the export's back - but it is done through `pre_assessment`, which is exported
+# and is not covered by either lock guard.
 with Session() as s:
     d = s.scalar(select(Decision).where(Decision.rationale == "escalated after review"))
-    s.execute(text("UPDATE decisions SET rationale = 'TAMPERED' WHERE decision_id = :i"),
+    ORIGINAL_PRE_ASSESSMENT = d.pre_assessment
+    s.execute(text("UPDATE decisions SET pre_assessment = 'TAMPERED' WHERE decision_id = :i"),
               {"i": d.decision_id})
     s.commit()
 
@@ -282,8 +289,8 @@ with Session() as s:
 check(n >= 1, "the mismatch was audited")
 
 with Session() as s:
-    s.execute(text("UPDATE decisions SET rationale = 'escalated after review' "
-                   "WHERE rationale = 'TAMPERED'"))
+    s.execute(text("UPDATE decisions SET pre_assessment = :orig "
+                   "WHERE pre_assessment = 'TAMPERED'"), {"orig": ORIGINAL_PRE_ASSESSMENT})
     s.commit()
 restored = post({"action": "adminexportfetch", "session_token": admin,
                  "export_id": exp["export_id"]})

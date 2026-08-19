@@ -1,0 +1,3 @@
+module_id,expected,observed,v25_state,v26_state,v25_row,v26_row,result,why_this_module
+POPULATION,IDENTICAL,IDENTICAL,101,101,,,PASS,the set of registered modules must not move across an S1/S2 boundary
+ACCEPTANCE_COUNTER,0,0,-,-,modules whose emitted row moved across the v25->v26 boundary,(none),PASS,all 101 registered modules executed on BOTH lines; zero must move

@@ -47,7 +47,28 @@ import participant_packages as PP                                # noqa: E402
 
 AUDIT = ROOT / "code_audit"
 FREEZE = ROOT / "research" / "freeze"
-CANDIDATE = "6142d877856ea651ef8d7e905f6d27604b3244f1"
+
+# ---------------------------------------------------------------------------------------------
+# RUN 41. THE SUCCESSOR CANDIDATE.
+#
+# Run 37 accepted a final freeze at candidate 6142d877 stamped sim-2026.08-v25. Run 40 then
+# confirmed two HIGH defects on that instrument - stored XSS at the document-serving boundary, and
+# raw-SQL mutability of the final participant judgment after the final lock - and the owner ruled
+# that BOTH be fixed before participant use rather than accepted for the study period. Fixing them
+# changes executable behaviour, so the freeze is SUPERSEDED rather than amended.
+#
+# This generator therefore evaluates the SUCCESSOR. The Run-37 artefacts it produced for v25 are
+# NOT rewritten: run37_freeze_candidate_identity.json, run37_final_freeze_gate.csv,
+# run37_candidate_behaviour_digest.json and the v25 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v25. The
+# successor writes beside them under its own names.
+PREDECESSOR_CANDIDATE = "6142d877856ea651ef8d7e905f6d27604b3244f1"
+PREDECESSOR_VERSION = "sim-2026.08-v25"
+CANDIDATE = "489c9f14962899cc88213c045b87b95c2721e21e"
+EXPECTED_VERSION = "sim-2026.08-v26"
+IDENTITY_FILE = "run41_freeze_candidate_identity.json"
+GATE_FILE = "run41_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run41_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
@@ -349,7 +370,7 @@ def freeze_gate():
                   "PASS" if count == 0 else "BLOCKED"])
 
     # B01 dirty candidate identity ---------------------------------------------------------
-    ident_path = FREEZE / "run37_freeze_candidate_identity.json"
+    ident_path = FREEZE / IDENTITY_FILE
     ident = json.loads(ident_path.read_text(encoding="utf-8")) if ident_path.is_file() else {}
     dirty = 0
     recomputed = {}
@@ -475,17 +496,23 @@ def freeze_gate():
                            cwd=ROOT, capture_output=True, text=True)
         if r.returncode != 0 or r.stdout != (ROOT / pkg.record).read_text(encoding="utf-8"):
             pkg_bad.append(pkg.identifier)
-    v25_ok = SIMULATION_VERSION == "sim-2026.08-v25"
-    v24_obj = subprocess.run(
-        ["git", "show", f"{CANDIDATE}:server/app/simulation/models.py"],
+    stamp_ok = SIMULATION_VERSION == EXPECTED_VERSION
+    # THE PREDECESSOR MUST STILL RECONSTRUCT AS ITSELF. Run 41 supersedes v25; it must not have
+    # rewritten it. This reads the PREDECESSOR candidate's own git object and requires it to still
+    # be stamped v25, which is the property that makes the v25 line reconstructable and keeps
+    # every result already computed under it interpretable.
+    pred_obj = subprocess.run(
+        ["git", "show", f"{PREDECESSOR_CANDIDATE}:server/app/simulation/models.py"],
         cwd=ROOT, capture_output=True, text=True).stdout
+    pred_ok = f'SIMULATION_VERSION = "{PREDECESSOR_VERSION}"' in pred_obj
     v13_bad = sorted(p for p, h in v13.items()
                      if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
     blocker(11, "package or predecessor mutation",
-            len(pkg_bad) + len(v13_bad) + (0 if v25_ok else 1)
-            + (0 if 'sim-2026.08-v25"' in v24_obj else 1),
+            len(pkg_bad) + len(v13_bad) + (0 if stamp_ok else 1) + (0 if pred_ok else 1),
             f"rewritten predecessor package records: {pkg_bad or 'none'}; v13 files not matching "
-            f"their record: {v13_bad or 'none'}; live stamp {SIMULATION_VERSION}")
+            f"their record: {v13_bad or 'none'}; live stamp {SIMULATION_VERSION} "
+            f"(expected {EXPECTED_VERSION}); predecessor {PREDECESSOR_CANDIDATE[:12]} still "
+            f"stamped {PREDECESSOR_VERSION}: {pred_ok}")
 
     # B12 browser qualification failure -----------------------------------------------------------
     b = rows(AUDIT / "run37_browser_qualification.csv") \
@@ -515,7 +542,7 @@ def freeze_gate():
 
     # B15 candidate behaviour changed during Run 37 ----------------------------------------------------
     behav = behaviour_digest()
-    prior = (FREEZE / "run37_candidate_behaviour_digest.json")
+    prior = (FREEZE / BEHAVIOUR_FILE)
     changed = 0
     detail = "first evaluation: behaviour digest recorded"
     if prior.is_file():
@@ -527,7 +554,7 @@ def freeze_gate():
         else:
             detail = (f"behaviour digest reproduced identically: "
                       f"{behav['behaviour_digest']}")
-    blocker(15, "candidate behaviour changed during Run 37", changed, detail)
+    blocker(15, "candidate behaviour changed during the run", changed, detail)
     return g, drows, crows
 
 
@@ -573,7 +600,7 @@ def main() -> int:
     write(oa, "run37_parsimony_independent_reproduction.csv",
           ["row_type", "measure", "run37_reproduced", "run36_recorded", "rule", "result"],
           parsimony_reproduction())
-    write(of, "run37_final_freeze_gate.csv",
+    write(of, GATE_FILE,
           ["blocker_id", "blocker", "count", "requirement", "evidence", "result"], gate)
 
     # THE BEHAVIOUR DIGEST IS WRITTEN LAST AND ONLY WHEN THE GATE IS CLEAN, so that a run which
@@ -585,9 +612,9 @@ def main() -> int:
         bd["note"] = ("Recorded AFTER the gate passed. It is the digest of what the instrument "
                       "DOES on the frozen controlled corpus, so a later behaviour change is "
                       "detected by blocker B15 even when every file digest still matches.")
-        (of / "run37_candidate_behaviour_digest.json").write_text(
+        (of / BEHAVIOUR_FILE).write_text(
             json.dumps(bd, indent=2) + "\n", encoding="utf-8")
-        print(f"wrote research/freeze/run37_candidate_behaviour_digest.json: "
+        print(f"wrote research/freeze/{BEHAVIOUR_FILE}: "
               f"{bd['behaviour_digest'][:16]}")
     print(f"\nFREEZE GATE: {len(gate)} blockers evaluated, "
           f"{len(blocked)} BLOCKED -> "

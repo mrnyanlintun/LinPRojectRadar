@@ -386,11 +386,18 @@ check(H[:len(_prev)] == _prev,
 # v16 history, which is Run 31's finding preserved; v20 is Run 32's own single authorised append.
 # RESTATED BY RUN 33, same reasoning again: Run 31's three stamps and Run 32's one are still
 # exactly the first four that follow the v16 history, and v21 is Run 33's own single append.
+# RESTATED BY RUN 41, same reasoning again: every earlier run's stamps are still exactly the
+# prefix they were, and v26 is Run 41's own single authorised append - the successor that carries
+# the two behaviour changes the owner authorised after Run 40 (untrusted document content can no
+# longer execute same-origin; substantive final responses become database-immutable after final
+# lock).
 check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19",
                          "sim-2026.08-v20", "sim-2026.08-v21", "sim-2026.08-v22",
-                         "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25"),
+                         "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
+                         "sim-2026.08-v26"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
-      "added, the one Run 34 adds, the one the Run-35 closure adds and the one Run 36 adds",
+      "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds and the "
+      "one Run 41 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.

@@ -120,10 +120,18 @@ check("run36c.fault05.defensibility_does_not_call_the_adaptation_canonical",
 _v24 = subprocess.run(["git", "show",
                        "822d80928367c0f422fac5f2564705279e718dd1:server/app/simulation/models.py"],
                       cwd=ROOT, capture_output=True, text=True)
+# RESTATED BY RUN 41, RUN 36'S FINDING PRESERVED. The subject of this guard is that the v24
+# PREDECESSOR was not rewritten when v25 superseded it, and that claim is unchanged and still
+# checked below. What cannot survive an authorised append is the clause pinning the LIVE stamp to
+# v25; Run 41 appends v26. It is replaced by the invariant it was standing in for: v25 is still
+# present exactly once, still directly after v24, so v25 was appended BESIDE v24 rather than over
+# it and has itself since been superseded rather than overwritten.
 check("run36c.fault06.v24_predecessor_not_rewritten",
       _v24.returncode == 0 and 'SIMULATION_VERSION = "sim-2026.08-v24"' in _v24.stdout
-      and SIMULATION_VERSION == "sim-2026.08-v25"
-      and SIMULATION_VERSION_HISTORY.count("sim-2026.08-v24") == 1,
+      and SIMULATION_VERSION_HISTORY.count("sim-2026.08-v24") == 1
+      and SIMULATION_VERSION_HISTORY.count("sim-2026.08-v25") == 1
+      and (SIMULATION_VERSION_HISTORY.index("sim-2026.08-v25")
+           == SIMULATION_VERSION_HISTORY.index("sim-2026.08-v24") + 1),
       "the v24 predecessor reconstructs from its own git object and still says v24, and v25 was "
       "appended beside it rather than over it",
       f"live={SIMULATION_VERSION}")

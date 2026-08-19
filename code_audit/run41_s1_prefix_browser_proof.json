@@ -1,0 +1,74 @@
+{
+  "label": "PREFIX",
+  "base": "http://127.0.0.1:40327",
+  "cases": {
+    "legitimate_pdf": {
+      "filename": "report.pdf",
+      "client_mime": "application/pdf",
+      "is_attack": false,
+      "boundary_reached_http_200": true,
+      "served_content_type": "application/pdf",
+      "served_content_disposition": "inline; filename=\"report.pdf\"",
+      "served_nosniff": null,
+      "active_content_executed": false,
+      "downloads_triggered": 0
+    },
+    "legitimate_txt": {
+      "filename": "notes.txt",
+      "client_mime": "text/plain",
+      "is_attack": false,
+      "boundary_reached_http_200": true,
+      "served_content_type": "text/plain; charset=utf-8",
+      "served_content_disposition": "inline; filename=\"notes.txt\"",
+      "served_nosniff": null,
+      "active_content_executed": false,
+      "downloads_triggered": 0
+    },
+    "spoofed_html_as_pdf": {
+      "filename": "quarterly.pdf",
+      "client_mime": "text/html",
+      "is_attack": true,
+      "boundary_reached_http_200": true,
+      "served_content_type": "text/html; charset=utf-8",
+      "served_content_disposition": "inline; filename=\"quarterly.pdf\"",
+      "served_nosniff": null,
+      "active_content_executed": true,
+      "downloads_triggered": 0
+    },
+    "script_payload_html_ext": {
+      "filename": "payload.html",
+      "client_mime": "text/html",
+      "is_attack": true,
+      "boundary_reached_http_200": true,
+      "served_content_type": "text/html; charset=utf-8",
+      "served_content_disposition": "inline; filename=\"payload.html\"",
+      "served_nosniff": null,
+      "active_content_executed": true,
+      "downloads_triggered": 0
+    },
+    "svg_active_content": {
+      "filename": "chart.svg",
+      "client_mime": "image/svg+xml",
+      "is_attack": true,
+      "boundary_reached_http_200": true,
+      "served_content_type": "image/svg+xml",
+      "served_content_disposition": "inline; filename=\"chart.svg\"",
+      "served_nosniff": null,
+      "active_content_executed": true,
+      "downloads_triggered": 0
+    },
+    "stored_mime_mismatch": {
+      "filename": "chart.png",
+      "client_mime": "text/html",
+      "is_attack": true,
+      "boundary_reached_http_200": true,
+      "served_content_type": "text/html; charset=utf-8",
+      "served_content_disposition": "inline; filename=\"chart.png\"",
+      "served_nosniff": null,
+      "active_content_executed": true,
+      "downloads_triggered": 0
+    }
+  },
+  "attacker_executions": 4,
+  "all_attacks_reached_boundary": true
+}

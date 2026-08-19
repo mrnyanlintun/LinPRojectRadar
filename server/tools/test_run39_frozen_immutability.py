@@ -77,11 +77,24 @@ for surface in SURFACES:
     out = diff_worktree(CANDIDATE, surface)
     if out:
         changed_surfaces.extend(out.splitlines())
-check(not changed_surfaces,
+# RESTATED BY RUN 41, RUN 39'S FINDING PRESERVED. This asserted byte-identity with the v25
+# freeze candidate, which was correct for Run 39 and remains true of everything Run 39 did. Run 40
+# then confirmed two HIGH defects and the OWNER RULED that both be fixed before participant use,
+# making Run 41 an authorised freeze SUCCESSOR rather than a violation. The guard is made exact
+# rather than relaxed: the frozen surfaces may differ from the v25 candidate ONLY by the files
+# Run 41 was authorised to change, NAMED here so the set cannot quietly grow.
+RUN41_AUTHORISED_SUCCESSOR_CHANGES = {
+    "server/app/main.py",                    # finding S1: the document-serving boundary
+    "server/app/simulation/models.py",       # the stamp advances to sim-2026.08-v26
+}
+_surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
+_unauthorised = [p for p in _surface_paths if p not in RUN41_AUTHORISED_SUCCESSOR_CHANGES]
+check(not _unauthorised,
       "the production server application, the participant/client assets, the served page, the "
       "controlled stimuli, the frozen methodology specification and the participant sequence "
-      "authority are all byte-identical to the freeze candidate",
-      "; ".join(changed_surfaces[:12]))
+      "authority differ from the freeze candidate ONLY by Run 41's owner-authorised successor "
+      "changes",
+      "; ".join(_unauthorised[:12]))
 
 # ---- surface 2: the governed freeze checksum manifest.
 manifest_paths: list[str] = []
@@ -99,7 +112,11 @@ BOOKKEEPING = {
     "research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv",
     "research/freeze/INSTRUMENT_FINAL_FREEZE_RECORD.json",
 }
-targets = sorted(set(manifest_paths) - BOOKKEEPING)
+# RESTATED BY RUN 41, RUN 39'S FINDING PRESERVED. The subject is that RUN 39 changed no governed
+# file, still asserted below. Run 41's owner-authorised successor changes are subtracted BY NAME,
+# not by widening the comparison, so any other manifest file that moved would still fail.
+RUN41_AUTHORISED_MANIFEST_CHANGES = {"server/app/simulation/models.py"}
+targets = sorted(set(manifest_paths) - BOOKKEEPING - RUN41_AUTHORISED_MANIFEST_CHANGES)
 vs_ready = [p for p in targets if diff_committed(RUN38_READY, p)]
 check(not vs_ready,
       "no file named by the governed freeze checksum manifest differs from the Run-38 readiness "
@@ -123,8 +140,13 @@ check(freeze["freeze_candidate_commit"] == CANDIDATE,
       "the freeze record still names the same candidate")
 check(readiness["final_disposition"] == "STUDY_EXECUTION_READY",
       "the Run-38 readiness disposition is unchanged")
-check(SIMULATION_VERSION == "sim-2026.08-v25",
-      "the simulation is unchanged at sim-2026.08-v25", SIMULATION_VERSION)
+# RESTATED BY RUN 41. The v25 freeze record is not rewritten - asserted, not assumed - and the
+# live stamp advances to the authorised successor.
+check(freeze["simulation_version"] == "sim-2026.08-v25",
+      "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
+      freeze["simulation_version"])
+check(SIMULATION_VERSION == "sim-2026.08-v26",
+      "and the live simulation is the Run-41 successor sim-2026.08-v26", SIMULATION_VERSION)
 check(PP.CURRENT.identifier == "og-participant-2026.08-v13",
       "the participant package is unchanged at og-participant-2026.08-v13",
       PP.CURRENT.identifier)
@@ -157,19 +179,51 @@ PERMITTED_MODIFICATIONS = {
     # dataset-classification contract lands inside an AUTHORITY_ROOT. Run-34, 35 and 38
     # precedent; prior manifests stay addressable.
     "server/tools/production_tree.py",
+} | RUN41_AUTHORISED_SUCCESSOR_CHANGES | {
+    # RUN 41's owner-authorised successor. Each pre-existing file it must touch is named: the
+    # pinned production-tree pointer, the suites that asserted the superseded stamp or the old
+    # freeze anchors, the three suites that used to reach a column the S2 trigger now protects,
+    # and the owner checklist the specification requires be updated to v26.
+    "server/tools/test_run10_state_protection.py",
+    "server/tools/test_run22_production_tree_completeness.py",
+    "server/tools/test_run31_version_boundaries.py",
+    "server/tools/test_run32_closure_version_boundary.py",
+    "server/tools/test_run36_closure_guards.py",
+    "server/tools/test_run36_instrument_qualification.py",
+    "server/tools/test_run37_freeze_gate.py",
+    "server/tools/test_run39_frozen_immutability.py",
+    "server/tools/test_run39_launch_gate.py",
+    "server/tools/build_run37_acceptance.py",
+    "server/tools/test_export.py",
+    "server/tools/test_admin_ops_t7t8.py",
+    "server/tools/test_decision_ui_t4.py",
+    # RUN 41, second pass. Four further pinned guards had to be told which file the successor
+    # was authorised to change: the two production-baseline comparisons, the declared-changes
+    # manifest guard, and the pinned-manifest chain. Each names the file rather than widening its
+    # rule, so all four keep their full force over everything else.
+    "server/tools/test_run6_known_answer.py",
+    "server/tools/test_run8_retest_classify_27.py",
+    "server/tools/test_run20_declared_production_changes.py",
+    "server/tools/test_run25_rail_removal.py",
+    "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md",
 }
 run39 = [ln.split("\t", 1) for ln in diff_committed(RUN38_READY).splitlines() if ln]
 in_frozen = [p for st, p in run39
              if any(p == s or p.startswith(s + "/") for s in SURFACES)]
-check(not in_frozen, "nothing Run 39 added or changed lands inside a frozen surface",
-      "; ".join(in_frozen[:10]))
+_in_frozen_unauthorised = [p for p in in_frozen
+                           if p not in RUN41_AUTHORISED_SUCCESSOR_CHANGES]
+check(not _in_frozen_unauthorised,
+      "nothing Run 39 added or changed lands inside a frozen surface, and the only frozen-surface "
+      "paths that moved since are Run 41's owner-authorised successor changes",
+      "; ".join(_in_frozen_unauthorised[:10]))
 
 modified = [p for st, p in run39 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]
 check(not unexpected, "Run 39 modified no pre-existing file outside the named permitted set",
       "; ".join(unexpected[:12]))
-check(not (set(modified) & set(manifest_paths)),
-      "and no modified file is named by the governed freeze checksum manifest",
+check(not ((set(modified) & set(manifest_paths)) - RUN41_AUTHORISED_MANIFEST_CHANGES),
+      "and no modified file is named by the governed freeze checksum manifest, apart from "
+      "Run 41's owner-authorised successor changes",
       "; ".join(sorted(set(modified) & set(manifest_paths))[:8]))
 
 print(f"    Run 39 changes {len(run39)} paths against the Run-38 readiness commit: "

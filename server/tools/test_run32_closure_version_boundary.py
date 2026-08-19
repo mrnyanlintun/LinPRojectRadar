@@ -120,10 +120,14 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"the history recorded at commit {V19_COMMIT} is a strict PREFIX of the history now, read "
       f"out of git rather than out of a note, so this run appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
+# RESTATED BY RUN 41, same discipline: the earlier stamps are still exactly the prefix they were,
+# and v26 is Run 41's own single authorised append for the S1/S2 successor.
 check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-2026.08-v21",
                                                        "sim-2026.08-v22", "sim-2026.08-v23",
-                                                       "sim-2026.08-v24", "sim-2026.08-v25"),
-      "and it grew by exactly the stamps Runs 32, 33, 34, 35 and 36 were each authorised to add",
+                                                       "sim-2026.08-v24", "sim-2026.08-v25",
+                                                       "sim-2026.08-v26"),
+      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36 and 41 were each authorised to "
+      "add",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v19",
       "and the line this run supersedes is the line that commit shipped", str(_old_stamps[-1]))

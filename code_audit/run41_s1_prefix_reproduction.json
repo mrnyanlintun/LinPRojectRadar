@@ -1,0 +1,35 @@
+{
+  "html_spoofed_as_pdf_name": {
+    "filename": "quarterly.pdf",
+    "client_supplied_mime": "text/html",
+    "stored_mime_type": "text/html",
+    "http_status": 200,
+    "response_content_type": "text/html; charset=utf-8",
+    "response_content_disposition": "inline; filename=\"quarterly.pdf\"",
+    "x_content_type_options": null,
+    "bytes_echoed_verbatim": true,
+    "preview_kind_client_uses": "native"
+  },
+  "svg_active_content": {
+    "filename": "chart.svg",
+    "client_supplied_mime": "image/svg+xml",
+    "stored_mime_type": "image/svg+xml",
+    "http_status": 200,
+    "response_content_type": "image/svg+xml",
+    "response_content_disposition": "inline; filename=\"chart.svg\"",
+    "x_content_type_options": null,
+    "bytes_echoed_verbatim": true,
+    "preview_kind_client_uses": "native"
+  },
+  "genuine_pdf": {
+    "filename": "report.pdf",
+    "client_supplied_mime": "application/pdf",
+    "stored_mime_type": "application/pdf",
+    "http_status": 200,
+    "response_content_type": "application/pdf",
+    "response_content_disposition": "inline; filename=\"report.pdf\"",
+    "x_content_type_options": null,
+    "bytes_echoed_verbatim": true,
+    "preview_kind_client_uses": "native"
+  }
+}
