@@ -47,6 +47,25 @@ def git(*args: str) -> str:
                           text=True).stdout
 
 
+# TWO DIFFERENT QUESTIONS, ASKED OF TWO DIFFERENT THINGS, AND THE DISTINCTION IS LOAD-BEARING.
+#
+# "What did this run change?" is a question about COMMITTED history. Asking it of the working
+# tree makes the answer depend on which other suites happened to run first: several suites in
+# this repository legitimately rewrite their own audit CSVs as a side effect (run8, run9, run10,
+# run20, run17/coverage), and those rewrites are restored rather than committed. Measured
+# against the working tree this gate passed alone and failed inside the runner, which is an
+# order-dependent oracle and therefore not an oracle at all.
+#
+# "Has a frozen byte moved?" is a question about WHAT IS ON DISK RIGHT NOW, because an
+# uncommitted edit to a frozen surface must be caught too. That one keeps the working tree.
+def diff_committed(ref: str, *paths: str) -> str:
+    return git("diff", "--name-status", ref, "HEAD", "--", *paths).strip()
+
+
+def diff_worktree(ref: str, *paths: str) -> str:
+    return git("diff", "--name-status", ref, "--", *paths).strip()
+
+
 known = git("cat-file", "-t", CANDIDATE).strip()
 check(known == "commit", f"the freeze candidate {CANDIDATE[:12]} is present in this repository",
       known)
@@ -84,10 +103,8 @@ check(git("cat-file", "-t", RELEASE).strip() == "commit",
       f"the accepted release {RELEASE[:12]} is present in this repository")
 
 manifest_targets = sorted(set(manifest_paths) - BOOKKEEPING)
-vs_candidate = [p for p in manifest_targets
-                if git("diff", "--name-only", CANDIDATE, "--", p).strip()]
-vs_release = [p for p in manifest_targets
-              if git("diff", "--name-only", RELEASE, "--", p).strip()]
+vs_candidate = [p for p in manifest_targets if diff_committed(CANDIDATE, p)]
+vs_release = [p for p in manifest_targets if diff_committed(RELEASE, p)]
 check(not vs_release,
       "no file named by the governed freeze manifest differs from the ACCEPTED RELEASE, so "
       "Run 38 changed none of them", "; ".join(vs_release[:10]))
@@ -108,7 +125,9 @@ check(not non_artifact,
 # ---- surface 2: the executable surfaces, taken wholesale.
 changed_surfaces = []
 for surface in SURFACES:
-    out = git("diff", "--name-status", CANDIDATE, "--", surface).strip()
+    # Working tree, deliberately: an uncommitted edit to a frozen surface is exactly what
+    # this must catch, and no suite in this repository writes into these paths.
+    out = diff_worktree(CANDIDATE, surface)
     if out:
         changed_surfaces.extend(out.splitlines())
 check(not changed_surfaces,
@@ -142,8 +161,7 @@ check(record["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6", record["synthetic_package"])
 
 # ---- surface 4: everything Run 38 DID add, enumerated, and proved non-executable-in-production.
-run38 = [ln.split("\t", 1) for ln in
-         git("diff", "--name-status", RELEASE).strip().splitlines() if ln]
+run38 = [ln.split("\t", 1) for ln in diff_committed(RELEASE).splitlines() if ln]
 in_frozen = [p for st, p in run38
              if any(p == s or p.startswith(s + "/") for s in SURFACES)]
 check(not in_frozen, "nothing Run 38 added or changed lands inside a frozen surface",
