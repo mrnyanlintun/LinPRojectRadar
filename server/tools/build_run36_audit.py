@@ -170,6 +170,23 @@ def population_rows():
                  else "DISCREPANCY",
                  "94, because each excludes a module the other keeps: A4.1 supplied, A3.4 "
                  "disabled under evidence review"])
+    # A THIRD 100 EXISTS AND IT IS NOT THE SCIENTIFIC 100. GROUP_ASSIGNMENT.md's "the analytical
+    # server registers 100 of them" is registry.VALIDATED (95) plus the portfolio registry (5),
+    # which EXCLUDES A4.1 and INCLUDES A3.4 -- the exact opposite exclusion from the scientific
+    # population. Recorded here so the two hundreds cannot be read as one another, which is the
+    # same trap the two ninety-fives set.
+    _served = len(REG.VALIDATED) + len(portfolio)
+    rows.append(["POPULATION_DISTINCTION", "modules the analytical server registers "
+                 "(GROUP_ASSIGNMENT.md)", _served, 100,
+                 "RECONCILED" if _served == 100 else "DISCREPANCY",
+                 "registry.VALIDATED + the portfolio registry. EXCLUDES A4.1 and INCLUDES A3.4, "
+                 "the opposite exclusion from the 100 SCIENTIFIC targets. The two hundreds "
+                 "intersect at 99 and are not the same set."])
+    rows.append(["POPULATION_DISTINCTION", "the two hundreds intersected",
+                 len((set(REG.VALIDATED) | set(portfolio)) & set(scientific)), 99,
+                 "RECONCILED" if len((set(REG.VALIDATED) | set(portfolio))
+                                     & set(scientific)) == 99 else "DISCREPANCY",
+                 "99, because each excludes a module the other keeps"])
     rows.append(["VOTING", "voting population", len(REG.CORE_VOTING_MODULES), 2,
                  "RECONCILED" if len(REG.CORE_VOTING_MODULES) == 2 else "DISCREPANCY",
                  "registry.CORE_VOTING_MODULES = " + ", ".join(sorted(REG.CORE_VOTING_MODULES))])

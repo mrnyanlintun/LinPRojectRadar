@@ -7,6 +7,8 @@ POPULATION,scientific targets,100,100,RECONCILED,derived from server/app/simulat
 POPULATION_DISTINCTION,registry.VALIDATED (dispatched project modules),95,95,RECONCILED,"EXCLUDES A4.1 Document Risk Score, which is SUPPLIED rather than computed and IS a scientific target"
 POPULATION_DISTINCTION,project scientific targets,95,95,RECONCILED,"EXCLUDES A3.4 Material Cost Variance, which is registered but DISABLED_EVIDENCE_UNDER_REVIEW and is NOT a scientific target. The two 95s are different sets and are not collapsed."
 POPULATION_DISTINCTION,the two 95s intersected,94,94,RECONCILED,"94, because each excludes a module the other keeps: A4.1 supplied, A3.4 disabled under evidence review"
+POPULATION_DISTINCTION,modules the analytical server registers (GROUP_ASSIGNMENT.md),100,100,RECONCILED,"registry.VALIDATED + the portfolio registry. EXCLUDES A4.1 and INCLUDES A3.4, the opposite exclusion from the 100 SCIENTIFIC targets. The two hundreds intersect at 99 and are not the same set."
+POPULATION_DISTINCTION,the two hundreds intersected,99,99,RECONCILED,"99, because each excludes a module the other keeps"
 VOTING,voting population,2,2,RECONCILED,"registry.CORE_VOTING_MODULES = A1.7, A1.8"
 DISABLED,disabled population (all),9,9,RECONCILED,8 concept-only plus A3.4 under evidence review
 DISABLED,disabled INSIDE the 100 scientific targets,8,8,RECONCILED,A3.4 is the one disabled module outside the scientific population
