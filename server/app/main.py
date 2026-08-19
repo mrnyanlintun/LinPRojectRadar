@@ -456,9 +456,57 @@ def document_content(document_id: str, project_id: str, session_token: str):
             for i in range(0, len(data), size):
                 yield data[i:i + size]
 
+        # RUN 40 (finding S1). The stored mime_type is CLIENT-SUPPLIED at upload and never
+        # validated, and this route is loaded inside a same-origin <iframe> by the file preview
+        # (assets/js/files.js). Honouring an arbitrary Content-Type here therefore let an
+        # authenticated uploader serve active content — text/html or image/svg+xml carrying
+        # <script> — that executes in this application's origin when any project member previews
+        # the document. Two controls close it, both at this serving boundary, neither of which
+        # touches persisted decision behaviour:
+        #   1. Content-Type is drawn from a small allowlist of formats that browsers render
+        #      WITHOUT script. Anything else — including text/html and svg — is served as an
+        #      opaque download (application/octet-stream + attachment), so it is saved, not run.
+        #   2. X-Content-Type-Options: nosniff stops the browser from re-sniffing an
+        #      octet-stream body back into text/html.
+        # The filename is sanitised for the header so a quote or control character cannot break
+        # out of the quoted-string or split the response.
+        served_type, disposition = _safe_serve_type(doc.mime_type, doc.filename)
+        safe_name = _sanitize_header_filename(doc.filename)
         return StreamingResponse(
             chunks(content),
-            media_type=doc.mime_type or "application/octet-stream",
-            headers={"Content-Disposition": f'inline; filename="{doc.filename}"',
+            media_type=served_type,
+            headers={"Content-Disposition": f'{disposition}; filename="{safe_name}"',
+                    "X-Content-Type-Options": "nosniff",
                     "Content-Length": str(len(content))},
         )
+
+
+# RUN 40 (finding S1) — serving policy for uploaded bytes. See document_content above.
+#
+# INLINE_SAFE lists the media types the browser renders without executing script, so they may be
+# shown inline in the preview iframe. Everything else is downloaded, never rendered. text/html,
+# image/svg+xml, application/xhtml+xml and application/xml are deliberately absent: all can carry
+# script that would run in this origin.
+_INLINE_SAFE = frozenset({
+    "application/pdf",
+    "image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp",
+    "text/plain",
+})
+
+
+def _safe_serve_type(mime_type: str | None, filename: str | None) -> tuple[str, str]:
+    normalized = (mime_type or "").split(";", 1)[0].strip().lower()
+    if normalized in _INLINE_SAFE:
+        return normalized, "inline"
+    return "application/octet-stream", "attachment"
+
+
+def _sanitize_header_filename(filename: str | None) -> str:
+    # Keep only characters that are safe inside a quoted HTTP header value: drop quotes,
+    # backslashes and any control character (CR/LF included), collapse path separators. The
+    # result is a display label only — it never chooses a storage location, which is content
+    # addressed by sha256.
+    raw = (filename or "document")
+    cleaned = "".join(ch for ch in raw if ch >= " " and ch not in '"\\')
+    cleaned = cleaned.replace("/", "_").replace("\\", "_").strip()
+    return cleaned or "document"
