@@ -1,0 +1,17 @@
+question,package,measurement,finding,decision,evidence
+participant_dispatched_bytes,og-participant-2026.08-v11,70 files re-hashed against code_audit/run33_participant_package_v11_checksums.sha256,UNCHANGED,RETAIN og-participant-2026.08-v11,the closure edited server/app/simulation and server/tools only; no dispatched participant file is under either path
+participant_visible_analytical_output,og-participant-2026.08-v11,"8 A1.7/A1.8 executions on both pinned lines, over every controlled corpus scalar set AND a constructed boundary probe","UNCHANGED on every controlled corpus scenario (0 of 6 moved). THE CONSTRUCTED BOUNDARY PROBE DOES MOVE (Green -> Amber), which is the defect being repaired and is recorded rather than hidden: it is not a governed corpus scenario and no participant sees it.",RETAIN og-participant-2026.08-v11,"measured by executing the v22 package from its git object beside the current one, not inferred from the diff. THE RETENTION IS BOUNDED: it says the governed corpus scenarios are unchanged, NOT that A1.7 can never move a participant-visible status."
+participant_experimental_sequence,og-participant-2026.08-v11,no file under the declared protocol surface was touched,UNCHANGED,RETAIN,fixed evidence -> preliminary judgment/confidence -> lock -> AI reveal -> final judgment/confidence/disposition/evidence/rationale -> final lock -> next period
+participant_predecessor_preservation,og-participant-2026.08-v10 and earlier,11 links in the chain,every predecessor pinned to its own commit and not regenerated,PRESERVED,v11 remains the current record and is not rewritten by this closure
+synthetic_package,OG-SYNTH-0.6,3 sealed files re-hashed against the package's own CHECKSUMS record,UNCHANGED,RETAIN OG-SYNTH-0.6,"no governed expected output lives inside the package for A1.7 or A1.8, so a corrected analytical value changes no package byte; nothing was regenerated in place"
+
+"--- participant-visible A1.7/A1.8 executions, both lines ---"
+scalar_set,runner,v22_status,v23_status,v22_displayed,v23_displayed,result
+boundary neighbourhood (1.0001),run_tcpi,Green,Amber,"TCPI: 1, the cost efficiency the remaining work must achieve to finish within bu","TCPI: 1, the cost efficiency the remaining work must achieve to finish within bu",MOVED
+boundary neighbourhood (1.0001),run_vac,Amber,Amber,"VAC: $111,111 over budget (11.1%)","VAC: $111,111 over budget (11.1%)",SAME
+controlled corpus (distressed),run_tcpi,Amber,Amber,"TCPI: 1.071, the cost efficiency the remaining work must achieve to finish withi","TCPI: 1.071, the cost efficiency the remaining work must achieve to finish withi",SAME
+controlled corpus (distressed),run_vac,Amber,Amber,"VAC: $100,110 over budget (10%)","VAC: $100,110 over budget (10%)",SAME
+controlled corpus (healthy),run_tcpi,Green,Green,"TCPI: 0.889, the cost efficiency the remaining work must achieve to finish withi","TCPI: 0.889, the cost efficiency the remaining work must achieve to finish withi",SAME
+controlled corpus (healthy),run_vac,Green,Green,"VAC: $82,569 under budget (8.3%)","VAC: $82,569 under budget (8.3%)",SAME
+controlled corpus (on-budget),run_tcpi,Green,Green,"TCPI: 1, the cost efficiency the remaining work must achieve to finish within bu","TCPI: 1, the cost efficiency the remaining work must achieve to finish within bu",SAME
+controlled corpus (on-budget),run_vac,Green,Green,VAC: $0 under budget (0%),VAC: $0 under budget (0%),SAME

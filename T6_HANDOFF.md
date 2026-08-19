@@ -11796,8 +11796,11 @@ governed corpus. **No remediation was attempted in this closure, by owner decisi
 `code_audit/run35_a1_1_run36_handoff.json`. Guard: `run35c.fault15`.
 
 **Versions after the closure:** simulation **`sim-2026.08-v23`** (v22 preserved and pinned at
-`034cf03be257f4582bc1a856262c56ea11bb4558`); participant package and synthetic package decisions
-recorded below.
+`034cf03be257f4582bc1a856262c56ea11bb4558`); **participant package `og-participant-2026.08-v11`
+RETAINED** (70/70 dispatched files re-hashed, 0 moved; A1.7/A1.8 executed on both lines over every
+controlled-corpus scalar set, 0 of 6 moved; a constructed boundary probe does move and is
+recorded, bounding the claim) and **synthetic package `OG-SYNTH-0.6` RETAINED** (sealed files
+re-hashed against the package's own record, 0 moved; nothing regenerated in place).
 
 **What changed and why.** Run 35 scored the two voting modules against the PMI identities that
 define them and recorded genuine FAILs. Both came from a presentation rounding applied to the

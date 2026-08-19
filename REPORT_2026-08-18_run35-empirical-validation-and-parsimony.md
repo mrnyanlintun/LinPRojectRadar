@@ -438,7 +438,30 @@ declared; the intake accepts it; **consumers found = 0**, re-measured by search 
 asserted; production computes from `bac`, `cpi`, `spi` and `docRiskScore`; and the instrument's
 only reachable unresolved parameter remains. No remediation was attempted.
 
-## 19. Closure fault campaign
+## 19. Closure package decisions, measured
+
+`code_audit/run35_closure_package_decision.csv`.
+
+- **Participant package `og-participant-2026.08-v11` RETAINED.** All **70** files the v11
+  checksum record names were re-hashed against that record: **0 moved**. The closure edited only
+  `server/app/simulation/` and `server/tools/`, and no dispatched participant file is under either
+  path. The declared protocol surface was not touched, so the experimental sequence — fixed
+  evidence, preliminary judgment and confidence, lock, AI reveal, final judgment/confidence/
+  disposition/evidence/rationale, final lock, next period — is unchanged. v11 stays the current
+  record and is not rewritten; every predecessor stays pinned to its own commit.
+- **Participant-VISIBLE analytical outputs measured, not assumed.** A1.7 and A1.8 were executed
+  on both pinned lines over every controlled-corpus earned-value scalar set: **0 of 6 moved** —
+  identical status and byte-identical displayed sentence. A **constructed boundary probe does
+  move** (Green → Amber); that is the defect being repaired, it is recorded rather than hidden,
+  and it is not a governed corpus scenario. **The retention is bounded accordingly: it says the
+  governed corpus scenarios are unchanged, not that A1.7 can never move a participant-visible
+  status.**
+- **Synthetic package `OG-SYNTH-0.6` RETAINED.** Its sealed files were re-hashed against the
+  package's own `CHECKSUMS.sha256`: **0 moved**. No governed expected output for A1.7 or A1.8
+  lives inside the package, so a corrected analytical value moves no package byte. Nothing was
+  regenerated in place.
+
+## 20. Closure fault campaign
 
 Fifteen failure modes, each injected into a real file, confirmed applied by re-reading bytes, each
 turning **one named guard** red for its own reason, restored byte-for-byte and re-verified green:
