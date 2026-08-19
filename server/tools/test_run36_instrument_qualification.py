@@ -291,6 +291,27 @@ check(_blocking == 1,
       "and Run 36's honest count is exactly ONE instrument-level blocking defect, so this run "
       "reports FREEZE_BLOCKED", str(_blocking))
 
+# =================================================================================================
+head("11. SECTION 18: THE AUTHENTICATED BROWSER QUALIFICATION ARTEFACT")
+# =================================================================================================
+_bq = load("run36_authenticated_browser_qualification.csv")
+check(bool(_bq), "the authenticated browser qualification artefact exists", len(_bq))
+_bfail = [r for r in _bq if r["result"] == "FAIL"]
+check(not _bfail, "no participant surface FAILED in the real browser",
+      str([r["surface"] for r in _bfail]))
+_bnv = [r for r in _bq if r["result"] == "NOT_VERIFIED"]
+check(all(r["surface_reached"] == "NO" for r in _bnv),
+      "and any NOT_VERIFIED row really did fail to REACH its surface, so it is a recorded "
+      "limitation rather than a quiet pass", str([r["surface"] for r in _bnv]))
+for _need in ("participant authentication", "preliminary judgment lock", "AI reveal",
+              "final lock", "next-period transition", "evidence and rationale capture",
+              "no JavaScript console crash"):
+    _hit = [r for r in _bq if r["surface"] == _need]
+    check(bool(_hit) and all(r["result"] == "PASS" for r in _hit),
+          f"the study path surface '{_need}' was reached and passed; an unreachable study path "
+          f"would itself be a blocking defect",
+          str([(r["result"], r["surface_reached"]) for r in _hit]))
+
 print()
 print("=" * 94)
 if FAILURES:
