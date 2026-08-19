@@ -1170,15 +1170,22 @@ RUN31_V19_GATED = {"B1.1", "B1.2", "B1.3", "B1.4",
                    "B2.10", "B2.11", "B2.12", "B2.13", "B2.14", "B2.15", "B2.16", "B2.17",
                    "B2.18", "B2.19", "B2.20",
                    "B4.1", "B4.2", "B4.3", "B4.4", "B4.5", "B4.6", "B4.7"}
-check(set(_moved) <= (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
-                      | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED
-                      | RUN30_CORRECTED | RUN31_CORRECTED
-                      | RUN31_V19_GATED),
+# RUN 35 FINAL CLOSURE corrected the two VOTING identities. A1.7 and A1.8 now emit their
+# canonical value at the application's own precision instead of a presentation rounding, and A1.7
+# derives its band from that value instead of from the rounded one. On a fully reported project
+# the emitted number therefore moves, and on inputs near a band edge the STATUS moves with it.
+# That is the remediation Run 35's own reference-standard validation demanded, not a regression:
+# `code_audit/run35_v22_v23_voter_execution_proof.csv` proves it by executing both pinned lines,
+# and `code_audit/run35_partial_reference_revalidation_v23.csv` records the FAIL -> PASS.
+RUN35_CLOSURE_CORRECTED = {"A1.7", "A1.8"}
+_ACCEPTED = (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
+             | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED
+             | RUN30_CORRECTED | RUN31_CORRECTED | RUN31_V19_GATED
+             | RUN35_CLOSURE_CORRECTED)
+check(set(_moved) <= _ACCEPTED,
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "one of the later runs' corrected lists",
-      str(sorted(set(_moved) - (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
-                                | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED
-                                | RUN29_CORRECTED))))
+      str(sorted(set(_moved) - _ACCEPTED)))
 check(_moved, "and the comparison is live: some modules DID move", str(sorted(_moved)))
 
 

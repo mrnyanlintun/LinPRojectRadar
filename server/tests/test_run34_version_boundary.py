@@ -64,10 +64,24 @@ from app.simulation.models import (                                    # noqa: E
     SIMULATION_VERSION, SIMULATION_VERSION_HISTORY, SIMULATION_VERSION_SUPERSEDED,
 )
 
-check(SIMULATION_VERSION == "sim-2026.08-v22", "the current stamp is sim-2026.08-v22",
+# RESTATED BY THE RUN-35 FINAL CLOSURE. The assertion below pinned the CURRENT stamp to the
+# stamp its own run appended, which was true until the next authorised append. The closure
+# appends v23, because A1.7 and A1.8 now compute their canonical value at the application's
+# own precision and A1.7 bands from it. What is an INVARIANT -- and what is still asserted --
+# is that this run's stamp is present, in order, at the position this run added it, and that
+# the earlier history is a strict prefix read out of git. The precedent is Run 29's identical
+# restatement in test_run28_version_boundary.py and Run 31's in run31_restate_version_suites.
+check("sim-2026.08-v22" in SIMULATION_VERSION_HISTORY,
+      "the stamp Run 34 appended, sim-2026.08-v22, is present in the history",
       SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v21",
-      "and the line it supersedes is named as v21", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY THE RUN-35 FINAL CLOSURE, same reason as the stamp pin above: the SUPERSEDED
+# field names the line the CURRENT stamp replaced, so it moves whenever a later authorised
+# run appends. What is an invariant is the ORDER of the two stamps this run's boundary is
+# about, which is asserted from the history instead.
+check(SIMULATION_VERSION_HISTORY.index("sim-2026.08-v22")
+      == SIMULATION_VERSION_HISTORY.index("sim-2026.08-v21") + 1,
+      "and v22 directly follows the v21 line it superseded",
+      SIMULATION_VERSION_SUPERSEDED)
 check(SIMULATION_VERSION_HISTORY.index("sim-2026.08-v22")
       == SIMULATION_VERSION_HISTORY.index("sim-2026.08-v21") + 1,
       "it directly follows sim-2026.08-v21 in the history")
@@ -80,8 +94,9 @@ _old = tuple(s.strip().strip('",') for s in _seg.replace("\n", " ").split()
 check(SIMULATION_VERSION_HISTORY[:len(_old)] == _old,
       f"the history at {V21_COMMIT[:7]} is a strict PREFIX of the history now, read out of git",
       f"{len(_old)} -> {len(SIMULATION_VERSION_HISTORY)}")
-check(SIMULATION_VERSION_HISTORY[len(_old):] == ("sim-2026.08-v22",),
-      "and it grew by exactly the one stamp this run is authorised to add")
+check(SIMULATION_VERSION_HISTORY[len(_old):][:1] == ("sim-2026.08-v22",),
+      "and Run 34 grew it by exactly the one stamp it was authorised to add, at its own "
+      "position; later authorised appends follow it")
 check('SIMULATION_VERSION = "sim-2026.08-v21"' in _old_src,
       "PREDECESSOR RECONSTRUCTION: the v21 line reconstructs from its own git object and still "
       "says v21, so no predecessor stamp was regenerated to describe v22 behaviour")
@@ -240,8 +255,35 @@ check(_same_abs,
 _SI = {"bac": 1000000.0, "ac": 520000.0, "ev": 480000.0, "pv": 500000.0,
        "actual_pct_complete": 48.0, "planned_pct_complete": 50.0, "eac": 1080000.0}
 _o_t = old_models.VALIDATED["A1.7"][1](dict(_SI), lambda: 0.5, "2026-01-31")
-from app.simulation.models import VALIDATED as NEWV                    # noqa: E402
-_n_t = NEWV["A1.7"][1](dict(_SI), lambda: 0.5, "2026-01-31")
+# RESTATED BY THE RUN-35 FINAL CLOSURE, AND THE CLAIM IS UNWEAKENED. This check proves that
+# THIS RUN's change was scoped to Portfolio Health and left the voting modules alone. It proved it
+# by comparing the predecessor package against the LIVE tree, which was the same thing until a
+# LATER authorised run changed a voting module for an unrelated reason: the Run-35 closure
+# corrected A1.7 and A1.8 to compute their canonical value at full precision and made A1.7 band
+# from it. Comparing against the live tree would now report that later change as though it were
+# this run's, which is exactly backwards. The comparison is therefore made against THE LINE THIS
+# RUN SHIPPED, extracted from its own git object -- a fixed target, so the claim stays this run's
+# claim forever. `code_audit/run35_v22_v23_voter_execution_proof.csv` carries the separate proof
+# of what the Run-35 closure changed.
+_SHIPPED_COMMIT = "034cf03be257f4582bc1a856262c56ea11bb4558"
+_shipped_dir = pathlib.Path(tempfile.mkdtemp(prefix="shipped-evm-"))
+_shipped_pkg = _shipped_dir / "repo" / "server" / "app" / "shippedevm"
+_shipped_pkg.mkdir(parents=True)
+(_shipped_dir / "repo" / "p0-baseline").mkdir(parents=True)
+(_shipped_dir / "repo" / "p0-baseline" / "module_renumbering_map.csv").write_text(
+    subprocess.run(["git", "show", f"{_SHIPPED_COMMIT}:p0-baseline/module_renumbering_map.csv"],
+                   cwd=ROOT, capture_output=True, text=True, check=True).stdout, encoding="utf-8")
+for _n in subprocess.run(["git", "ls-tree", "--name-only", _SHIPPED_COMMIT,
+                          "server/app/simulation/"], cwd=ROOT, capture_output=True, text=True,
+                         check=True).stdout.split():
+    if _n.endswith(".py"):
+        (_shipped_pkg / pathlib.Path(_n).name).write_text(
+            subprocess.run(["git", "show", f"{_SHIPPED_COMMIT}:{_n}"], cwd=ROOT,
+                           capture_output=True, text=True, check=True).stdout, encoding="utf-8")
+(_shipped_pkg / "__init__.py").write_text("", encoding="utf-8")
+sys.path.insert(0, str(_shipped_pkg.parent))
+import shippedevm.models as _shipped_models                             # noqa: E402
+_n_t = _shipped_models.VALIDATED["A1.7"][1](dict(_SI), lambda: 0.5, "2026-01-31")
 _same_t = json.dumps(_o_t, sort_keys=True, default=str) == json.dumps(_n_t, sort_keys=True,
                                                                      default=str)
 ROWS.append(["NON_DIVERGENCE", "A1.7 To-Complete Performance Index",

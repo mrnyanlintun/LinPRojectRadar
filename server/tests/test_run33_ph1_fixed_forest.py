@@ -525,7 +525,14 @@ from app.simulation.models import SIMULATION_VERSION_HISTORY as _H            # 
 
 check("sim-2026.08-v21" in _H,
       "the v21 stamp Run 33 closed under is still in the history, unmoved", str(_H[-3:]))
-check(SIMULATION_VERSION == "sim-2026.08-v22",
+# RESTATED BY THE RUN-35 FINAL CLOSURE. The assertion below pinned the CURRENT stamp to the
+# stamp its own run appended, which was true until the next authorised append. The closure
+# appends v23, because A1.7 and A1.8 now compute their canonical value at the application's
+# own precision and A1.7 bands from it. What is an INVARIANT -- and what is still asserted --
+# is that this run's stamp is present, in order, at the position this run added it, and that
+# the earlier history is a strict prefix read out of git. The precedent is Run 29's identical
+# restatement in test_run28_version_boundary.py and Run 31's in run31_restate_version_suites.
+check("sim-2026.08-v22" in _H,
       "and the live stamp is v22, moved by Run 34's calibration changes to PH.1, PH.2 and PH.3 "
       "and not by anything this fixed-forest oracle found", SIMULATION_VERSION)
 
