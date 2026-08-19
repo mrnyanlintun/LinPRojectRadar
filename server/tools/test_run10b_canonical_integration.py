@@ -611,9 +611,15 @@ _mc_no_ac = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore":
 check(_mc_full.get("status_color") == _mc_no_ac.get("status_color"),
       "and an actual cost and an earned value change nothing about it, because it reads neither",
       f"{_mc_full.get('status_color')} vs {_mc_no_ac.get('status_color')}")
-check(run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95,
-                      "cost_register": [{"low": 1, "mode": 2, "high": 3}]},
-                 lambda: 0.5, CUTOFF).get("status_color") is not None,
+# RUN 36. This check used "a colour came back" as its proxy for "the module computed", and the
+# A1.1 band withdrawal exposed the proxy: A1.1 asserts no colour now, so the old form would have
+# gone red for a reason that has nothing to do with the cost register. THE ORACLE IS NOW THE
+# THING THE SENTENCE ACTUALLY CLAIMS -- that handing it a cost register changes NOTHING -- which
+# is a strictly stronger test than the presence of a band.
+_mc_register = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3,
+                               "cost_register": [{"low": 1, "mode": 2, "high": 3}]},
+                          lambda: 0.5, CUTOFF)
+check(_mc_register == _mc_full,
       "and a cost register handed to it is simply not read, so no second method is smuggled in "
       "under the same name")
 

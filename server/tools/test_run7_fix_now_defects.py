@@ -1178,10 +1178,18 @@ RUN31_V19_GATED = {"B1.1", "B1.2", "B1.3", "B1.4",
 # `code_audit/run35_v22_v23_voter_execution_proof.csv` proves it by executing both pinned lines,
 # and `code_audit/run35_partial_reference_revalidation_v23.csv` records the FAIL -> PASS.
 RUN35_CLOSURE_CORRECTED = {"A1.7", "A1.8"}
+# RUN 36, A1.1 CLOSURE. A1.1 withdrew its band. Its ten and five per cent boundaries are
+# classified UNSUPPORTED in `parameters.py`, no calibration set exists from which they could be
+# fitted, and A1.1 was the ONE scientific target in the instrument still emitting an authoritative
+# status colour from an unresolved parameter on the governed corpus. The FIGURE did not move --
+# the v23 line extracted from git object dafc35d3 returns the identical overrun percentage on the
+# controlled corpus and on the lineage fixture -- so what moved is the colour and nothing else.
+# `code_audit/run36_a1_1_closure.csv` records the measurement and the four reproduced claims.
+RUN36_A1_1_BAND_WITHDRAWN = {"A1.1"}
 _ACCEPTED = (FIX_NOW | RUN10_CORRECTED | RUN14_CORRECTED | RUN20_CORRECTED
              | RUN20_CYCLE9_CORRECTED | RUN28_CORRECTED | RUN29_CORRECTED
              | RUN30_CORRECTED | RUN31_CORRECTED | RUN31_V19_GATED
-             | RUN35_CLOSURE_CORRECTED)
+             | RUN35_CLOSURE_CORRECTED | RUN36_A1_1_BAND_WITHDRAWN)
 check(set(_moved) <= _ACCEPTED,
       "every module whose result moved on a fully reported project is in the fix-now list or "
       "one of the later runs' corrected lists",

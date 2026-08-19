@@ -331,7 +331,15 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: NOT rewritten: it stays exactly as that release wrote it and this successor names it as its
 #: parent. The guard was turned red FIRST and observed reporting exactly those three changed
 #: files and nothing else.
-PINNED = ROOT / "code_audit" / "run35_closure_production_tree.sha256"
+#: RUN 36 SUCCESSOR. Run 36's A1.1 closure changed exactly ONE production file --
+#: models_sim.py, where A1.1 withdrew a status band drawn over an UNSUPPORTED parameter. The
+#: run35 closure manifest is NOT rewritten: it stays exactly as that release wrote it and this
+#: successor names it as its parent. The guard was observed reporting exactly that one changed
+#: file and nothing else before this manifest was written.
+PINNED = ROOT / "code_audit" / "run36_production_tree.sha256"
+#: The Run-35 closure manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN35_CLOSURE = ROOT / "code_audit" / "run35_closure_production_tree.sha256"
 #: The Run-34 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN34 = ROOT / "code_audit" / "run34_production_tree.sha256"

@@ -34,6 +34,17 @@ sys.path.insert(0, str(ROOT / "server"))
 #: The exact commit Run 31 merged to main. The v19 line is read from this git object.
 V19_COMMIT = "73297a63949004472889f0dac5510292d219ce29"
 
+#: RUN 36 REPAIR. The exact commit Run 32 merged to main, where the stamp reads sim-2026.08-v20.
+#: THE DEFECT THIS CLOSES. Section 3 below is a claim about what RUN 32 changed, and it was
+#: taking its "new" line from the LIVE TREE. That made a historical, settled claim depend on
+#: every future run: the moment a later run legitimately changed a module outside Category 10 --
+#: which Run 36 did, withdrawing A1.1's unsupported band -- the non-divergence assertion went red
+#: for a reason that has nothing to do with Run 32. A scope claim about a past run must be
+#: EXECUTED ON THAT RUN'S OWN OBJECTS. Both lines are now extracted from git, so the assertion is
+#: fixed forever and still fails if either pinned object is rewritten, which is the thing it is
+#: really guarding.
+V20_COMMIT = "93f08bc"
+
 PASSED = 0
 FAILED = 0
 FAILURES: list[str] = []
@@ -147,7 +158,32 @@ sys.path.insert(0, str(_PKG.parent))
 
 import oldsim32.models as old_models            # noqa: E402
 
-from app.simulation import models as new_models  # noqa: E402
+# THE v20 LINE, EXTRACTED FROM ITS OWN GIT OBJECT rather than read out of the working tree. See
+# the V20_COMMIT note above for why.
+_TMP20 = tempfile.mkdtemp(prefix="run32-v20-")
+_FAKE_ROOT20 = pathlib.Path(_TMP20) / "repo"
+_PKG20 = _FAKE_ROOT20 / "server" / "app" / "newsim32"
+_PKG20.mkdir(parents=True)
+(_FAKE_ROOT20 / "p0-baseline").mkdir(parents=True)
+(_FAKE_ROOT20 / "p0-baseline" / "module_renumbering_map.csv").write_text(
+    git_show("p0-baseline/module_renumbering_map.csv", V20_COMMIT), encoding="utf-8")
+_names20 = subprocess.run(["git", "ls-tree", "--name-only", V20_COMMIT,
+                           "server/app/simulation/"],
+                          cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+_py20 = [n for n in _names20 if n.endswith(".py")]
+if len(_py20) < 10:
+    raise SystemExit("v20 extraction found no simulation sources at the pinned commit; refusing "
+                     "to run half of every proof")
+for _n in _py20:
+    (_PKG20 / pathlib.Path(_n).name).write_text(git_show(_n, V20_COMMIT), encoding="utf-8")
+(_PKG20 / "__init__.py").write_text("", encoding="utf-8")
+sys.path.insert(0, str(_PKG20.parent))
+
+import newsim32.models as new_models            # noqa: E402
+
+check(new_models.SIMULATION_VERSION == "sim-2026.08-v20",
+      f"the package extracted from git object {V20_COMMIT} is stamped v20, so it is the line "
+      f"this run produced and not the working tree", new_models.SIMULATION_VERSION)
 
 check(old_models.SIMULATION_VERSION == "sim-2026.08-v19",
       f"the package extracted from git object {V19_COMMIT} is stamped v19, so it is the line "
@@ -160,7 +196,7 @@ check(_old_b41.__module__.startswith("oldsim32"),
       "module, which is the defect this run corrects", _old_b41.__module__)
 _new_b41 = new_models.VALIDATED["B4.1"][1]
 _new_inner = getattr(_new_b41, "__wrapped__", _new_b41)
-check(_new_inner.__module__ == "app.simulation.models_cat10",
+check(_new_inner.__module__.endswith("models_cat10"),
       "while the current line routes it to the canonical Category-10 layer",
       _new_inner.__module__)
 
