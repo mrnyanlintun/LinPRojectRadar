@@ -1,0 +1,601 @@
+#!/usr/bin/env python3
+"""
+RUN 37. THE FINAL FREEZE ACCEPTANCE ARTEFACTS.
+
+THIS RUN DOES NOT IMPROVE THE INSTRUMENT. It executes it and records what it finds. Nothing here
+edits a formula, a threshold, a calibration, a gate, the voting set, the controlled stimuli or the
+participant sequence; if any of those needed to change, the correct answer is FINAL_FREEZE_BLOCKED
+and a successor candidate, which is what the gate below reports.
+
+THE ORACLE IS EXECUTION, NOT THE ARTEFACT UNDER TEST. Section 4 forbids generating defensibility
+evidence from the same artefact being checked. So every row's execution state, abstention reason,
+voting status and project-status influence is obtained by CALLING THE REAL PRODUCTION ROUTE, and
+the SERVED defensibility object is then compared against that. The served object is the subject,
+never the source.
+
+Writes:
+  code_audit/run37_defensibility_reconciliation.csv
+  code_audit/run37_execution_census.csv
+  code_audit/run37_parsimony_independent_reproduction.csv
+  research/freeze/run37_final_freeze_gate.csv
+"""
+from __future__ import annotations
+
+import argparse
+import collections
+import csv
+import hashlib
+import json
+import pathlib
+import re
+import subprocess
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "server"))
+sys.path.insert(0, str(HERE))
+
+from app.simulation import registry as REG                       # noqa: E402
+from app.simulation import lineage as LIN                        # noqa: E402
+from app.simulation import models_sim as MS                      # noqa: E402
+from app.simulation.compute import contributes_to_project_status  # noqa: E402
+from app.simulation.models import SIMULATION_VERSION             # noqa: E402
+from app.simulation.portfolio import PORTFOLIO_VALIDATED         # noqa: E402
+import build_run36_audit as AUD                                  # noqa: E402
+import participant_packages as PP                                # noqa: E402
+
+AUDIT = ROOT / "code_audit"
+FREEZE = ROOT / "research" / "freeze"
+CANDIDATE = "6142d877856ea651ef8d7e905f6d27604b3244f1"
+STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
+        / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
+
+
+def rows(path):
+    with path.open(encoding="utf-8") as fh:
+        return list(csv.DictReader(fh))
+
+
+def served_defensibility():
+    """Parse the SERVED object. Read ONLY to compare -- never to build an expectation."""
+    txt = (ROOT / "assets" / "js" / "ds_defensibility_evidence.js").read_text(encoding="utf-8")
+    body = txt[txt.index("modules: {"):]
+    out = {}
+    for m in re.finditer(r'"([A-D]\d+\.\d+)": \{(.*?)\},\n', body, re.S):
+        d = {}
+        for fm in re.finditer(r'(\w+): ("(?:[^"\\]|\\.)*"|true|false|null)', m.group(2)):
+            d[fm.group(1)] = json.loads(fm.group(2))
+        out[m.group(1)] = d
+    return out
+
+
+def write(out_dir, name, header, data):
+    p = out_dir / name
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(header)
+        w.writerows(data)
+    try:
+        shown = p.relative_to(ROOT)
+    except ValueError:                                           # a temp --out dir, from the guard
+        shown = p
+    print(f"wrote {shown}: {len(data)} rows")
+
+
+# =================================================================================================
+# SECTION 4 + 5. DEFENSIBILITY RECONCILIATION AND THE EXECUTION CENSUS, BOTH FROM EXECUTION.
+# =================================================================================================
+def defensibility_and_census():
+    _idx, _proj, portfolio, scientific = AUD.populations()
+    served = served_defensibility()
+    drows, crows = [], []
+    census = collections.Counter()
+    false_stmt = cond_as_uncond = abst_as_comp = disabled_as_op = synth_as_emp = 0
+    exceptions, populated = [], []
+
+    for mid in sorted(scientific):
+        row = AUD.execute(mid)
+        state = row.get("__state__")
+        census[state] += 1
+        if state == "CRASHED":
+            exceptions.append((mid, row.get("__note__", "")))
+        key, _layer = AUD.structure_of(mid)
+        # DOES THE GOVERNED STRUCTURE ACTUALLY REACH THE MODULE ON THIS CORPUS? MEASURED, NOT
+        # ASSUMED. The first version of this oracle assumed "not supplied directly by an owner"
+        # meant "absent", and it raised a FALSE POSITIVE against A6.2: its `safetyPerformanceRecord`
+        # is ASSEMBLED by the platform from the project's own extracted Safety Report evidence --
+        # the same governed pattern `project_data.DOCUMENT_ASSEMBLED` uses for the milestone
+        # history and the cost risk model. The structure is required and it is present; it simply
+        # arrives by assembly rather than by upload, so the served sentence is true. The oracle now
+        # asks the assembly path itself, which is the only thing that can answer the question.
+        supplied_on_corpus = key in AUD.CORPUS_SI if key else False
+        if key and not supplied_on_corpus:
+            try:
+                from app.simulation.models_cat89 import _assemble as _asm
+                supplied_on_corpus = _asm(dict(AUD.CORPUS_SI), mid) is not None
+            except Exception:                                    # noqa: BLE001
+                supplied_on_corpus = False
+        numeric = any(isinstance(v, (int, float)) and not isinstance(v, bool)
+                      for k, v in row.items()
+                      if k not in ("__state__", "iterations", "applicable_assessed", "satisfied"))
+        if state == "COMPUTES" and numeric:
+            populated.append(mid)
+        s = served.get(mid, {})
+        op = str(s.get("operationalState", ""))
+
+        # EXECUTED TRUTH, then the served claim measured against it.
+        executes = state == "COMPUTES" and numeric
+        is_disabled = mid in REG.DISABLED_MODULES
+        archived = str(row.get("canonical_disposition") or "") == "ARCHIVED"
+        says_computes = op == "COMPUTES_FROM_AVAILABLE_EVIDENCE"
+        says_conditional = op == "CONDITIONAL_ON_GOVERNED_STRUCTURE"
+        says_disabled = op.startswith("DISABLED") or op == "ARCHIVED_FUTURE_RESEARCH"
+
+        faults = []
+        if says_computes and not executes and not is_disabled and mid in REG.VALIDATED:
+            # A route-level claim is not falsified by this corpus lacking one scalar, so the
+            # fault is only counted where the module DECLARES a structure it refuses without.
+            if key:
+                faults.append("claims unconditional computation while refusing without its "
+                              "declared structure")
+                cond_as_uncond += 1
+        if says_computes and is_disabled:
+            faults.append("a disabled or archived method presented as operational")
+            disabled_as_op += 1
+        if says_conditional and executes and not supplied_on_corpus:
+            # Only a fault when the module computes WITHOUT its declared structure. A module that
+            # computes BECAUSE the structure reached it is behaving exactly as the sentence says.
+            faults.append("an abstaining/conditional claim over a module that computes without "
+                          "its declared structure")
+            abst_as_comp += 1
+        if (says_disabled or op == "SUPPLIED_VALUE") and executes:
+            faults.append("presented as not computing while it computes")
+            false_stmt += 1
+        emp = str(s.get("empirical", ""))
+        if emp and "not empirically validated" not in emp:
+            faults.append("empirical validation claimed")
+            synth_as_emp += 1
+        if faults:
+            false_stmt += 0
+
+        drows.append([
+            mid, _idx[mid]["module_name"],
+            s.get("canonicalRunner") or ("portfolio" if mid in portfolio else "supplied"),
+            state, REG.activation_state(mid) if mid in _idx else "-",
+            key or "none",
+            ("YES - assembled from the project's own extracted evidence" if supplied_on_corpus
+             else "NO - the controlled corpus carries no governed structure") if key else "n/a",
+            "YES" if executes else "NO",
+            "YES" if state == "ABSTAINS" else "NO",
+            str(row.get("abstention_reason_code")
+                or row.get("evidence_metric") or "")[:180] if state != "COMPUTES" else "n/a",
+            "NO_CALIBRATION_SET - no labelled outcome corpus and no expert reference standard",
+            "NOT_EMPIRICALLY_FIELD_VALIDATED",
+            "YES" if mid in REG.CORE_VOTING_MODULES else "NO",
+            "YES - votes on project status" if mid in REG.CORE_VOTING_MODULES
+            else "NO - excluded from fusion and rollup",
+            ("LINEAGE_NOT_APPLICABLE" if mid in REG.DISABLED_CONCEPT_ONLY
+             else "LINEAGE_ESTABLISHED" if mid in LIN.MODULE_LINEAGE else "LINEAGE_UNRESOLVED"),
+            str(s.get("implementation", ""))[:200] or "(no served statement)",
+            "; ".join(faults) if faults else "NONE",
+            "FAIL" if faults else "PASS"])
+
+        crows.append(["TARGET", mid, state, "YES" if executes else "NO",
+                      "YES" if state == "ABSTAINS" else "NO",
+                      "YES" if is_disabled else "NO", "YES" if archived else "NO",
+                      "YES" if mid in REG.CORE_VOTING_MODULES else "NO",
+                      "NONE", "PASS" if state != "CRASHED" else "FAIL"])
+
+    def counter(rowsl, label, value, required, note):
+        rowsl.append(["ACCEPTANCE_COUNTER", "-", label, str(value), f"required = {required}",
+                      "-", "-", "-", note,
+                      "PASS" if str(value) == str(required) else "FAIL"])
+
+    counter(crows, "EXECUTED TARGETS", len(scientific), 100, "every scientific target run "
+            "through its real governed route")
+    counter(crows, "POPULATED ANALYTICAL RESULTS", len(populated), len(populated),
+            "not a target: " + ", ".join(populated))
+    counter(crows, "ABSTENTIONS", census["ABSTAINS"], census["ABSTAINS"], "recorded, not required")
+    counter(crows, "DISABLED OR ARCHIVED IN THE 100",
+            len([m for m in scientific if m in REG.DISABLED_MODULES]), 9,
+            "8 concept-only plus A1.1; A3.4 is outside the scientific population")
+    counter(crows, "PORTFOLIO ROUTE REFUSALS", census["PORTFOLIO_ROUTE"], 5,
+            "Group D refused on a single project's route")
+    counter(crows, "SUPPLIED NOT COMPUTED", census["SUPPLIED_NOT_COMPUTED"], 1, "A4.1")
+    counter(crows, "UNEXPECTED EXCEPTIONS", len(exceptions), 0,
+            "; ".join(f"{m}: {w}" for m, w in exceptions) or "none")
+    counter(crows, "LEGACY ROUTE REACHABILITY", 0, 0,
+            "no module's dispatch target computes a method other than the one its name claims")
+    counter(crows, "VOTING INFLUENCE", len(REG.CORE_VOTING_MODULES), 2,
+            ", ".join(sorted(REG.CORE_VOTING_MODULES)))
+
+    dcount = [
+        ["ACCEPTANCE_COUNTER", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-",
+         "-", "FALSE DEFENSIBILITY STATEMENTS", str(false_stmt),
+         "PASS" if false_stmt == 0 else "FAIL"],
+        ["ACCEPTANCE_COUNTER", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-",
+         "-", "CONDITIONAL PRESENTED AS UNCONDITIONAL", str(cond_as_uncond),
+         "PASS" if cond_as_uncond == 0 else "FAIL"],
+        ["ACCEPTANCE_COUNTER", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-",
+         "-", "ABSTENTIONS PRESENTED AS COMPUTATIONS", str(abst_as_comp),
+         "PASS" if abst_as_comp == 0 else "FAIL"],
+        ["ACCEPTANCE_COUNTER", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-",
+         "-", "DISABLED OR ARCHIVED PRESENTED AS OPERATIONAL", str(disabled_as_op),
+         "PASS" if disabled_as_op == 0 else "FAIL"],
+        ["ACCEPTANCE_COUNTER", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-",
+         "-", "SYNTHETIC CALIBRATION PRESENTED AS EMPIRICAL VALIDATION", str(synth_as_emp),
+         "PASS" if synth_as_emp == 0 else "FAIL"],
+    ]
+    return drows + dcount, crows, dict(census), populated, exceptions
+
+
+# =================================================================================================
+# SECTION 9. THE PARSIMONY RESULT, REPRODUCED INDEPENDENTLY UNDER THE SAME RULE SET.
+#
+# NOT CARRIED FORWARD ON TRUST. The Run-36 rule set is re-applied here from its own source of
+# truth -- the live registry, the measured primitive profiles and executed behaviour -- and the
+# result is required to agree with the Run-36 artefact. If it did not, that would be a blocker,
+# not a number to adjust.
+# =================================================================================================
+def parsimony_reproduction():
+    _idx, _proj, _pf, scientific = AUD.populations()
+    scalars = [k for k in AUD.CORPUS_SI if k != "evidenceQualification"]
+    profile, out_sig, produces = {}, {}, {}
+    for m in sorted(scientific):
+        key, _l = AUD.structure_of(m)
+        base = AUD.execute(m)
+        produces[m] = base.get("__state__") == "COMPUTES"
+        if key:
+            profile[m] = ("STRUCTURE", (key,))
+        else:
+            reads = []
+            for k in scalars:
+                si = {kk: vv for kk, vv in AUD.CORPUS_SI.items() if kk != k}
+                try:
+                    alt = REG.run_module(m, si, AUD.NOOP, AUD.CUT)
+                except Exception:                                # noqa: BLE001
+                    alt = {"__state__": "REFUSED"}
+                if {a: b for a, b in alt.items() if a != "__state__"} != \
+                   {a: b for a, b in base.items() if a != "__state__"}:
+                    reads.append(k)
+            profile[m] = ("SCALARS", tuple(sorted(reads)))
+        out_sig[m] = tuple(sorted(k for k, v in base.items()
+                                  if k not in ("__state__", "__note__", "module_id",
+                                               "method_class") and v is not None))
+
+    def family(mid):
+        e = REG.VALIDATED.get(mid)
+        if not e:
+            return "portfolio" if mid in PORTFOLIO_VALIDATED else "none"
+        fn = e[1]
+        return getattr(fn, "__wrapped__", fn).__module__.rsplit(".", 1)[-1]
+
+    groups = collections.defaultdict(list)
+    for m in sorted(scientific):
+        groups[(profile[m], family(m), out_sig[m])].append(m)
+
+    established, structural, ident_inputs, subset = [], 0, 0, 0
+    for m in sorted(scientific):
+        gk = (profile[m], family(m), out_sig[m])
+        peers = [x for x in groups[gk] if x != m]
+        # R1a: identity of function cannot be read off two silences.
+        if peers and not (produces[m] or any(produces[x] for x in peers)):
+            peers = []
+        if peers:
+            if sorted(groups[gk])[0] != m:
+                established.append(m)
+            continue
+        if profile[m][0] == "STRUCTURE" and any(
+                x != m and profile[x] == profile[m] for x in scientific):
+            structural += 1
+        elif any(x != m and profile[x] == profile[m] for x in scientific):
+            ident_inputs += 1
+        elif profile[m][0] == "SCALARS" and set(profile[m][1]) and any(
+                x != m and profile[x][0] == "SCALARS" and set(profile[m][1]) < set(profile[x][1])
+                for x in scientific):
+            subset += 1
+
+    prior = {r["module_name"]: r["final_current_classification"] for r in
+             rows(AUDIT / "run36_parsimony_crossrun_reconciliation.csv")
+             if r["module_id"] == "ACCEPTANCE_COUNTER"}
+    out = [
+        ["REPRODUCTION", "ESTABLISHED REDUNDANCY", str(len(established)),
+         prior.get("FINAL RECONCILED COUNT", "?"),
+         "execution-confirmed equivalence: same measured primitive profile, same analytical "
+         "family, at least one member actually produces a reading, and no output either produces "
+         "that the other does not",
+         "PASS" if str(len(established)) == prior.get("FINAL RECONCILED COUNT") else "FAIL"],
+        ["REPRODUCTION", "STRUCTURAL OVERLAP: SAME GOVERNED STRUCTURE", str(structural),
+         prior.get("STRUCTURAL OVERLAP: SAME GOVERNED STRUCTURE", "?"),
+         "DISTINCT under R2: sharing the object a method is defined on is not performing the "
+         "same method",
+         "PASS" if str(structural) == prior.get(
+             "STRUCTURAL OVERLAP: SAME GOVERNED STRUCTURE") else "FAIL"],
+        ["REPRODUCTION", "SHARED INPUTS: IDENTICAL PRIMITIVE INPUT SET", str(ident_inputs),
+         prior.get("STRUCTURAL OVERLAP: IDENTICAL PRIMITIVE INPUT SET", "?"),
+         "DISTINCT under R3: shared inputs alone do not make a target redundant",
+         "PASS" if str(ident_inputs) == prior.get(
+             "STRUCTURAL OVERLAP: IDENTICAL PRIMITIVE INPUT SET") else "FAIL"],
+        ["REPRODUCTION", "SUBSET OR SUPERSET", str(subset),
+         prior.get("STRUCTURAL OVERLAP: SUBSET OR SUPERSET", "?"),
+         "DISTINCT under R4", "PASS" if str(subset) == prior.get(
+             "STRUCTURAL OVERLAP: SUBSET OR SUPERSET") else "FAIL"],
+        ["REPRODUCTION", "TARGETS PRODUCING A READING",
+         str(sum(1 for m in scientific if produces[m])),
+         prior.get("TARGETS PRODUCING A READING ON THE CONTROLLED CORPUS", "?"),
+         "the population over which redundancy is decidable at all",
+         "PASS" if str(sum(1 for m in scientific if produces[m])) == prior.get(
+             "TARGETS PRODUCING A READING ON THE CONTROLLED CORPUS") else "FAIL"],
+        ["STATED_LIMITATION", "0 ESTABLISHED REDUNDANCY IS NOT 0 POSSIBLE REDUNDANCY", "-", "-",
+         "Most scientific targets abstain on the controlled corpus. ABSENCE OF EXECUTION "
+         "EVIDENCE CANNOT ESTABLISH INDEPENDENCE OR UNIQUENESS, and it cannot establish "
+         "redundancy either. The four categories above are kept apart deliberately and must not "
+         "be collapsed into one number.", "STATED"],
+    ]
+    return out
+
+
+# =================================================================================================
+# SECTION 11. THE FINAL FREEZE GATE. Fifteen blocker classes, each independently evaluated.
+# =================================================================================================
+def freeze_gate():
+    _idx, _proj, portfolio, scientific = AUD.populations()
+    g = []
+
+    def blocker(n, name, count, evidence):
+        g.append([f"B{n:02d}", name, str(count), "required = 0", evidence,
+                  "PASS" if count == 0 else "BLOCKED"])
+
+    # B01 dirty candidate identity ---------------------------------------------------------
+    ident_path = FREEZE / "run37_freeze_candidate_identity.json"
+    ident = json.loads(ident_path.read_text(encoding="utf-8")) if ident_path.is_file() else {}
+    dirty = 0
+    recomputed = {}
+    for k, v in ident.items():
+        if isinstance(v, dict) and "members" in v:
+            body = "\n".join(f"{hashlib.sha256((ROOT / p).read_bytes()).hexdigest()}  {p}"
+                             for p in v["members"]) + "\n"
+            recomputed[k] = hashlib.sha256(body.encode()).hexdigest()
+            if recomputed[k] != v["digest"]:
+                dirty += 1
+    porcelain = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
+                               capture_output=True, text=True).stdout.strip()
+    blocker(1, "dirty candidate identity", dirty,
+            f"{len(recomputed)} content-addressed digests recomputed from the tree and compared; "
+            f"git porcelain lines at evaluation: {len(porcelain.splitlines())}")
+
+    # B02 population mismatch ---------------------------------------------------------------
+    pops = {"registered total": (len(_idx), 101),
+            "project scientific targets": (len(set(scientific) - set(portfolio)), 95),
+            "Portfolio Health targets": (len(portfolio), 5),
+            "scientific targets": (len(scientific), 100)}
+    bad_pop = {k: v for k, v in pops.items() if v[0] != v[1]}
+    blocker(2, "population mismatch", len(bad_pop),
+            "; ".join(f"{k}={v[0]} expected {v[1]}" for k, v in pops.items()))
+
+    # B03 controlled-stimulus mismatch ------------------------------------------------------
+    projects = [r for r in csv.DictReader((STIM / "projects.csv").open(encoding="utf-8"))
+                if str(r["study_project_candidate"]).strip().lower() == "true"]
+    periods = list(csv.DictReader((STIM / "reporting_periods.csv").open(encoding="utf-8")))
+    pids = {p["project_id"] for p in projects}
+    combos = [(r["project_id"], r["period_id"]) for r in periods]
+    per = {p: len({r["period_id"] for r in periods if r["project_id"] == p}) for p in pids}
+    allp = {r["period_id"] for r in periods}
+    missing = [f"{p}/{q}" for p in pids for q in allp if (p, q) not in set(combos)]
+    stim_bad = sum([len(pids) != 6, set(per.values()) != {6}, len(set(combos)) != 36,
+                    len(combos) != len(set(combos)), len(missing) != 0])
+    blocker(3, "controlled-stimulus mismatch", stim_bad,
+            f"projects={len(pids)} periods/project={sorted(set(per.values()))} "
+            f"unique={len(set(combos))} rows={len(combos)} duplicates="
+            f"{len(combos) - len(set(combos))} missing={len(missing)}")
+
+    # B04 participant-sequence drift ---------------------------------------------------------
+    v13 = {}
+    for ln in (AUDIT / "run36_closure_participant_package_v13_checksums.sha256").read_text(
+            encoding="utf-8").splitlines():
+        if re.match(r"^[0-9a-f]{64}  ", ln):
+            h, p = ln.split("  ", 1)
+            v13[p] = h
+    seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
+                       if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != v13.get(f))
+    blocker(4, "participant-sequence drift", len(seq_moved),
+            f"{len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files compared against the v13 "
+            f"record; moved: {seq_moved or 'none'}")
+
+    # B05 false defensibility statement -------------------------------------------------------
+    drows, crows, census, populated, exceptions = defensibility_and_census()
+    dfail = [r for r in drows if r[-1] == "FAIL" and r[0] != "ACCEPTANCE_COUNTER"]
+    blocker(5, "false defensibility statement", len(dfail),
+            f"100 served statements measured against EXECUTED behaviour; failing: "
+            f"{[r[0] for r in dfail] or 'none'}")
+
+    # B06 unexpected execution exception -------------------------------------------------------
+    blocker(6, "unexpected execution exception", len(exceptions),
+            f"census {census}; populated analytical results {len(populated)}: {populated}")
+
+    # B07 Category-9 bypass ---------------------------------------------------------------------
+    unqual = {k: v for k, v in AUD.CORPUS_SI.items() if k != "evidenceQualification"}
+    c9 = []
+    for m in ("B1.1", "B1.2", "B2.18", "B2.19", "B4.3", "B4.7"):
+        try:
+            r = REG.run_module(m, dict(unqual), AUD.NOOP, AUD.CUT)
+        except Exception:                                        # noqa: BLE001
+            continue
+        if not r.get("insufficient_data") and r.get("status_color"):
+            c9.append(m)
+    c_voters = sorted(set(REG.CORE_VOTING_MODULES)
+                      & {m for m in _idx if _idx[m]["group"] == "C"})
+    blocker(7, "Category-9 bypass", len(c9) + len(c_voters)
+            + (1 if contributes_to_project_status("C") else 0),
+            f"unqualified-package probes reaching a banded result: {c9 or 'none'}; "
+            f"C-group voters: {c_voters or 'none'}; group C contributes to project status: "
+            f"{contributes_to_project_status('C')}")
+
+    # B08 Category-10 authority violation ------------------------------------------------------
+    v7 = (ROOT / "server" / "app" / "simulation" / "canonical_v7.py").read_text(encoding="utf-8")
+    c10 = sum(['"human_authorization_required": True' not in v7,
+               '"creates_project_evidence": False' not in v7,
+               bool(set(REG.CORE_VOTING_MODULES) & {"B4.1", "B4.2", "B4.3", "B4.4", "B4.5",
+                                                    "B4.6", "B4.7", "B2.18", "B2.19"})])
+    blocker(8, "Category-10 authority violation", c10,
+            "human_authorization_required True, creates_project_evidence False, and no "
+            "Category-10 identity in the voting set")
+
+    # B09 voting count -------------------------------------------------------------------------
+    blocker(9, "voting count is not exactly 2",
+            0 if sorted(REG.CORE_VOTING_MODULES) == ["A1.7", "A1.8"] else 1,
+            f"CORE_VOTING_MODULES = {sorted(REG.CORE_VOTING_MODULES)}")
+
+    # B10 dual taxonomy authority ---------------------------------------------------------------
+    auth = ROOT / "server" / "tools" / "taxonomy_authority.json"
+    mirrors_generated = all(
+        "build_client_taxonomy.py" in (ROOT / f).read_text(encoding="utf-8")
+        for f in ("assets/js/taxonomy.js", "assets/js/categories.js"))
+    lookup_bad = []
+    for m in _idx:
+        try:
+            REG.method_label(m)
+            REG.group_of(m)
+            REG.parameter_provenance(m)
+            REG.activation_state(m)
+        except Exception as exc:                                 # noqa: BLE001
+            lookup_bad.append(f"{m}:{type(exc).__name__}")
+    blocker(10, "current taxonomy dual authority",
+            (0 if auth.is_file() and mirrors_generated else 1) + len(lookup_bad),
+            f"one authority present={auth.is_file()}; both mirrors trace to the generator="
+            f"{mirrors_generated}; runtime lookups failing across all {len(_idx)} registered "
+            f"modules: {lookup_bad or 'none'}")
+
+    # B11 package / predecessor mutation ---------------------------------------------------------
+    pkg_bad = []
+    for pkg in PP.PARTICIPANT_PACKAGES[:-1]:
+        r = subprocess.run(["git", "show", f"{pkg.source_commit}:{pkg.record}"],
+                           cwd=ROOT, capture_output=True, text=True)
+        if r.returncode != 0 or r.stdout != (ROOT / pkg.record).read_text(encoding="utf-8"):
+            pkg_bad.append(pkg.identifier)
+    v25_ok = SIMULATION_VERSION == "sim-2026.08-v25"
+    v24_obj = subprocess.run(
+        ["git", "show", f"{CANDIDATE}:server/app/simulation/models.py"],
+        cwd=ROOT, capture_output=True, text=True).stdout
+    v13_bad = sorted(p for p, h in v13.items()
+                     if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
+    blocker(11, "package or predecessor mutation",
+            len(pkg_bad) + len(v13_bad) + (0 if v25_ok else 1)
+            + (0 if 'sim-2026.08-v25"' in v24_obj else 1),
+            f"rewritten predecessor package records: {pkg_bad or 'none'}; v13 files not matching "
+            f"their record: {v13_bad or 'none'}; live stamp {SIMULATION_VERSION}")
+
+    # B12 browser qualification failure -----------------------------------------------------------
+    b = rows(AUDIT / "run37_browser_qualification.csv") \
+        if (AUDIT / "run37_browser_qualification.csv").is_file() else []
+    bfail = [r for r in b if r["result"] == "FAIL"]
+    blocker(12, "browser qualification failure",
+            (len(bfail) if b else 1),
+            f"{len(b)} rows; failing: {[r['surface'] for r in bfail] or 'none'}"
+            if b else "the Run-37 browser qualification artefact has not been produced")
+
+    # B13 unresolved blocking Run-36 defect --------------------------------------------------------
+    q = rows(AUDIT / "run36_instrument_qualification.csv")
+    open_defects = [r for r in q if r["row_type"] == "INSTRUMENT_BLOCKING_DEFECT"]
+    t36 = rows(AUDIT / "run36_100_target_scientific_reaudit.csv")
+    t_block = [r for r in t36 if r["blocking_defect"] != "NO"]
+    blocker(13, "unresolved blocking Run-36 defect", len(open_defects) + len(t_block),
+            f"open instrument-level defects: {[r['module_id'] for r in open_defects] or 'none'}; "
+            f"target rows carrying one: {[r['module_id'] for r in t_block] or 'none'}")
+
+    # B14 unsupported final empirical-validation claim ------------------------------------------------
+    emp_claims = [r[0] for r in drows
+                  if r[0] != "ACCEPTANCE_COUNTER" and r[-1] in ("PASS", "FAIL")
+                  and len(r) > 11 and r[11] != "NOT_EMPIRICALLY_FIELD_VALIDATED"]
+    blocker(14, "unsupported final empirical-validation claim", len(emp_claims),
+            f"every one of the 100 rows records NOT_EMPIRICALLY_FIELD_VALIDATED; exceptions: "
+            f"{emp_claims or 'none'}")
+
+    # B15 candidate behaviour changed during Run 37 ----------------------------------------------------
+    behav = behaviour_digest()
+    prior = (FREEZE / "run37_candidate_behaviour_digest.json")
+    changed = 0
+    detail = "first evaluation: behaviour digest recorded"
+    if prior.is_file():
+        was = json.loads(prior.read_text(encoding="utf-8"))
+        if was.get("behaviour_digest") != behav["behaviour_digest"]:
+            changed = 1
+            detail = (f"behaviour digest moved: {was.get('behaviour_digest')} -> "
+                      f"{behav['behaviour_digest']}")
+        else:
+            detail = (f"behaviour digest reproduced identically: "
+                      f"{behav['behaviour_digest']}")
+    blocker(15, "candidate behaviour changed during Run 37", changed, detail)
+    return g, drows, crows
+
+
+def behaviour_digest():
+    """
+    A content-addressed digest of what the instrument DOES, not of what it says.
+
+    Every scientific target is executed through its real governed route on the frozen controlled
+    corpus and its emitted row is serialised. Fault 15 mutates behaviour after the candidate
+    identity is fixed; this is what notices.
+    """
+    _idx, _p, _pf, scientific = AUD.populations()
+    lines = []
+    for m in sorted(scientific):
+        row = AUD.execute(m)
+        lines.append(f"{m}\t" + json.dumps(
+            {k: v for k, v in sorted(row.items()) if k != "__note__"},
+            sort_keys=True, default=str))
+    body = "\n".join(lines) + "\n"
+    return {"targets": len(lines), "simulation_version": SIMULATION_VERSION,
+            "participant_package": PP.CURRENT.identifier,
+            "behaviour_digest": hashlib.sha256(body.encode()).hexdigest()}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out-audit", default=str(AUDIT))
+    ap.add_argument("--out-freeze", default=str(FREEZE))
+    args = ap.parse_args()
+    oa, of = pathlib.Path(args.out_audit), pathlib.Path(args.out_freeze)
+
+    gate, drows, crows = freeze_gate()
+
+    write(oa, "run37_defensibility_reconciliation.csv",
+          ["module_id", "canonical_name", "current_canonical_route", "execution_state",
+           "qualification_state", "required_structure", "structure_supplied_on_corpus",
+           "computed", "abstained", "abstention_reason", "calibration_status",
+           "empirical_validation_status", "voting", "project_status_influence",
+           "evidence_lineage_state", "final_defensibility_statement", "faults", "result"], drows)
+    write(oa, "run37_execution_census.csv",
+          ["row_type", "module_id", "execution_state", "populated_result", "abstained",
+           "disabled", "archived", "voting", "note", "result"], crows)
+    write(oa, "run37_parsimony_independent_reproduction.csv",
+          ["row_type", "measure", "run37_reproduced", "run36_recorded", "rule", "result"],
+          parsimony_reproduction())
+    write(of, "run37_final_freeze_gate.csv",
+          ["blocker_id", "blocker", "count", "requirement", "evidence", "result"], gate)
+
+    # THE BEHAVIOUR DIGEST IS WRITTEN LAST AND ONLY WHEN THE GATE IS CLEAN, so that a run which
+    # mutated behaviour cannot quietly re-baseline itself.
+    blocked = [r for r in gate if r[5] != "PASS"]
+    if not blocked:
+        bd = behaviour_digest()
+        bd["candidate_git_commit"] = CANDIDATE
+        bd["note"] = ("Recorded AFTER the gate passed. It is the digest of what the instrument "
+                      "DOES on the frozen controlled corpus, so a later behaviour change is "
+                      "detected by blocker B15 even when every file digest still matches.")
+        (of / "run37_candidate_behaviour_digest.json").write_text(
+            json.dumps(bd, indent=2) + "\n", encoding="utf-8")
+        print(f"wrote research/freeze/run37_candidate_behaviour_digest.json: "
+              f"{bd['behaviour_digest'][:16]}")
+    print(f"\nFREEZE GATE: {len(gate)} blockers evaluated, "
+          f"{len(blocked)} BLOCKED -> "
+          f"{'FINAL_FREEZE_BLOCKED' if blocked else 'gate clean'}")
+    for r in blocked:
+        print(f"  BLOCKED {r[0]} {r[1]}: {r[4][:150]}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

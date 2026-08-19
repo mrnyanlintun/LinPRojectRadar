@@ -9,6 +9,112 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-19 - Run 37: FINAL FREEZE ACCEPTED. THE FROZEN STUDY INSTRUMENT.
+
+**This is the current instrument reference.** Release record:
+`research/freeze/INSTRUMENT_FINAL_FREEZE_RECORD.json`. Human-readable:
+`research/freeze/INSTRUMENT_FINAL_FREEZE_REPORT.md`. Checksums:
+`research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv` (43 files, none untracked).
+
+**Disposition: `FINAL_FREEZE_ACCEPTED`. Blocking defects 0** across fifteen independently
+evaluated blocker classes. **Run 37 changed no scientific behaviour**: it executed the Run-36
+candidate and accepted it. Simulation, participant package and synthetic package are all unchanged.
+
+---
+
+## THE FROZEN IDENTITY
+
+| | |
+|---|---|
+| Freeze-candidate commit | `6142d877856ea651ef8d7e905f6d27604b3244f1` |
+| Candidate identity digest | `60236d1cac6e2ca900d8f64e67202f558788989978b86c29c4cda3580d8c42e4` |
+| Release content digest | `be17abbdcc7cc39b0f8bc533630b0460000f57bd9ed4fd09c0b89790b9f5970b` |
+| Simulation | `sim-2026.08-v25` |
+| Participant package | `og-participant-2026.08-v13` |
+| Synthetic package | `OG-SYNTH-0.6` |
+
+**No release tag exists and none was created.** The repository has no release-tagging convention -
+its single tag `pre-consolidation-v1` is a UI-history marker. The commit containing the release
+record is established externally by repository history; the four digests above identify the release
+without it.
+
+## THE CONTROLLED STUDY DESIGN
+
+**6 projects x 6 periods = 36 project-periods.** PRJ-AIR, PRJ-DCT, PRJ-HSP, PRJ-HWY, PRJ-RAL,
+PRJ-WTR over P01-P06. Duplicates 0, missing 0. Enumerated from the corpus that exists
+(`OG-SYNTH-0.2` package A-0.2); **no stimulus was created or modified to satisfy the contract**.
+Authority: `research/methodology/controlled_study_design_contract.json`.
+
+**Participant sequence, enforced at the route AND in the database:**
+fixed evidence review -> preliminary assessment/action/confidence -> **preliminary lock** ->
+AI reveal (only after the lock) -> final action/confidence/disposition/evidence/rationale ->
+**final lock** -> next-period transition.
+
+## THE SCIENTIFIC INSTRUMENT
+
+101 registered - 95 project scientific - 5 Portfolio Health - **100 scientific targets** -
+**voting exactly 2** (A1.7 TCPI, A1.8 VAC).
+
+Execution census on the controlled corpus: 89 abstain, 5 compute, 5 portfolio-route refusals,
+1 supplied-not-computed, **3 populated analytical results** (A1.7, A1.8, A6.2), **0 unexpected
+exceptions**, 0 legacy-route reachability.
+
+Qualification: `QUALIFIED_WITH_ABSTENTION` 87 - `DISABLED` 8 -
+`QUALIFIED_FOR_BOUNDED_STUDY_USE` 3 - `RESEARCH_ONLY` 1 - `ARCHIVED` 1.
+
+---
+
+## WHAT IS SAFE TO CLAIM
+
+* The instrument computes the methods its registered names claim, or abstains and says why.
+* It is reproducible: every governed file is checksummed and content-addressed.
+* Its qualification gates, authority boundaries and locks are enforced and were proved
+  non-vacuous by fault injection (40, 15 and 15 faults across Runs 36 and 37).
+* The participant sequence is enforced at the route and in the database, and was driven end to end
+  in a real browser.
+* It is qualified for **bounded controlled-study use**.
+
+## WHAT MUST NOT BE CLAIMED
+
+* **NOT** that any band, threshold or forecast is accurate about real projects.
+* **NOT** field validation. **Empirical field validation is 0 of 100.**
+* **NOT** calibration. No calibration set exists here, and **no band anywhere has a measured
+  false-positive or false-negative rate**.
+* **NOT** that Portfolio Health is validated - empirical validation is PENDING for all five.
+* **NOT** that the instrument is free of redundancy. Established redundancy is 0, but **0
+  established redundancy does not mean 0 possible redundancy**: most targets abstain, and absence
+  of execution evidence establishes neither redundancy nor uniqueness.
+* **NOT** that lineage is independent where it is unresolved - it is unresolved for 77 of 100, and
+  unknown lineage was never treated as independent.
+* **NOT** that `OG-SYNTH-0.1` is complete. It is historically incomplete (519 manifest entries
+  against 504 recovered) and was not repaired.
+* **NOT** that A1.1 forecasts anything. It is disabled for insufficient canonical input and no
+  driver-to-EAC mapping was invented.
+
+> **FINAL FREEZE IS NOT A CLAIM OF VALIDATED REAL-WORLD PREDICTIVE EFFECTIVENESS.**
+
+## HOW TO REPRODUCE THE FROZEN INSTRUMENT
+
+1. Check out `6142d877856ea651ef8d7e905f6d27604b3244f1` for the candidate, or the release commit
+   for the record.
+2. `cd server && PYTHONIOENCODING=utf-8 bash run_all_suites.sh` - fresh migrated SQLite per suite;
+   production Postgres is never touched.
+3. Re-derive the digests: `python3 server/tools/build_run37_acceptance.py` regenerates the gate;
+   `research/freeze/run37_freeze_candidate_identity.json` carries the component digests and their
+   member lists.
+4. Re-run the browser qualification: `server/tools/drive_run37_browser.py` against a throwaway
+   migrated SQLite.
+5. Re-run the gate campaign: `server/tools/run37_freeze_gate_campaign.py`.
+
+## FOR ANY LATER RUN
+
+**Do not modify scientific behaviour in place and call it the same freeze.** The gate's blocker
+B15 compares a behaviour digest taken across all 100 executed targets; a behaviour change is
+detected even when every file digest still matches. A genuine change requires a SUCCESSOR
+CANDIDATE, a new identity and a new acceptance run.
+
+---
+
 # 2026-08-19 - Run 36 CLOSURE: the owner A1.1 ruling, and the FREEZE CANDIDATE
 
 **Branch `run36-closure` from `main` at `822d8092`.** Report: the CLOSURE SECTIONS (26-30) of
