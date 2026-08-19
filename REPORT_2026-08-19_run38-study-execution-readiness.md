@@ -361,3 +361,25 @@ enrolled, and no final study dataset exists.
 | `server/tools/drive_run38_browser.py` | the browser driver |
 | `server/tools/run38_build_manifest.py` | the manifest builder |
 | `code_audit/run38_authority_tree.sha256` | the repointed scientific-authority manifest |
+
+
+---
+
+## ERRATUM (recorded by Run 39, 2026-08-19)
+
+**The column count stated in section 9 of this report is wrong.** This report says the analysis
+dataset has "58 columns". The live authority `run38_analysis_export.ANALYSIS_COLUMNS` holds
+**59**, and the machine-generated `STUDY_EXECUTION_READINESS_MANIFEST.json` produced by the same
+run independently recorded `export_column_count: 59`.
+
+The error was in the report prose only. No code, no schema, no manifest and no exported artifact
+was affected: the manifest, the CSV header and the R validator all read the live tuple, so every
+executable path used 59 throughout. The frozen analysis dataset contract states no numeric column
+count, so it is not affected either.
+
+The cause is the one this programme has repeatedly named: **a count was typed into prose instead
+of being derived.** Run 39 found it by asserting the number mechanically and getting a mismatch.
+
+The body of this report is left as written, because a superseded record is kept addressable
+rather than silently rewritten. Run 39's gate now derives the count from the live authority on
+both sides of the comparison so the same error cannot recur.

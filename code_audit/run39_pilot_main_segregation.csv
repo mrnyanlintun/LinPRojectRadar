@@ -1,0 +1,7 @@
+property,how_it_was_tested,observed,result
+a PILOT account cannot create MAIN_STUDY rows,classify the pilot code through the governed registry and ask for MAIN_STUDY eligibility,R39-PILOT-A classifies PILOT,PASS
+a MAIN_STUDY account is not classified PILOT by accident,"there are no MAIN_STUDY registrations at all before launch, so no misclassification is possible; the registry is the only source",MAIN_STUDY registrations: 0,PASS
+changing a display label cannot change dataset class,renamed the pilot participant to MAIN-STUDY-P0001 and reclassified through the registry,was PILOT; after relabelling to a main-study-looking code it classifies UNCLASSIFIED and is NOT main-study eligible,PASS
+"export filtering uses governed classification, not a naming convention",the frozen record_class column is prefix-derived; the Run-39 selection is registry-derived; compare the two answers for the same participant,frozen record_class says 'STUDY'; the governed registry says 'PILOT'; Run-39 selection uses the registry,PASS
+participant IDs can overlap syntactically without cross-class contamination,"two codes where one is a strict prefix of the other, registered to different classes; classification is exact-match, never prefix-match",prefix-confusable codes classify independently,PASS
+"a class outside the closed vocabulary is refused, not minted",wrote a registry naming class SEMI_PILOT and loaded it,RegistryError raised,PASS

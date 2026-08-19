@@ -176,6 +176,12 @@ check(not in_frozen, "nothing Run 38 added or changed lands inside a frozen surf
 PERMITTED_MODIFICATIONS = {
     "T6_HANDOFF.md",                       # the run is instructed to update it
     "server/tools/production_tree.py",     # repoints PINNED_AUTHORITY, Run-34/35 precedent
+    # Run 39 appended an ERRATUM to the Run-38 report: its prose said the analysis dataset has
+    # 58 columns, while the live ANALYSIS_COLUMNS tuple and the machine-generated Run-38
+    # manifest both say 59. The report body is not rewritten; a correction is appended beneath
+    # it. Named here explicitly so the addition is auditable rather than absorbed by a looser
+    # check. Nothing executable, frozen, or named by the freeze checksum manifest is involved.
+    "REPORT_2026-08-19_run38-study-execution-readiness.md",
 }
 modified = [p for st, p in run38 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]

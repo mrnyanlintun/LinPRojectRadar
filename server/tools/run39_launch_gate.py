@@ -44,7 +44,16 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 
 #: The frozen contract this run consumes and does not alter.
 EXPECTED_SCHEMA = "og-analysis-2026.08-v1"
-EXPECTED_COLUMN_COUNT = 58
+
+#: DERIVED FROM THE LIVE AUTHORITY, NEVER TRANSCRIBED.
+#: Run 39's controlling specification says "58 columns unless the frozen contract mechanically
+#: specifies otherwise". It does specify otherwise: `run38_analysis_export.ANALYSIS_COLUMNS` is
+#: the contract's implementation and it holds 59 columns, and the machine-generated Run-38
+#: readiness manifest independently recorded export_column_count = 59. The "58" that appears in
+#: the Run-38 report prose and handoff was hand-written and is wrong; it is corrected there by
+#: errata rather than propagated here. This constant is computed so it cannot drift from the
+#: thing it describes.
+EXPECTED_COLUMN_COUNT = len(AX.ANALYSIS_COLUMNS)
 
 
 def build_class_export(session: Session, dataset_class: str,

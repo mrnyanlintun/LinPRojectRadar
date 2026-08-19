@@ -28,7 +28,7 @@ real browser. All 36 route identities reachable, duplicates 0, missing 0. The re
 
 **The analysis pipeline now exists and is qualified.** `server/tools/run38_analysis_export.py`
 composes the governed export builders into one flat, deidentified, checksummed CSV
-(`og-analysis-2026.08-v1`, 58 columns, grain participant x project x period), and
+(`og-analysis-2026.08-v1`, 59 columns, grain participant x project x period), and
 `research/study_execution/run38_ingest_qualification.R` ingests it in **base R, actually
 executed, 35/35**, with no manual cleanup and no inferential analysis.
 

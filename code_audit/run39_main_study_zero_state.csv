@@ -1,0 +1,6 @@
+property,required,observed,evidence,result
+MAIN_STUDY registrations before launch,0,0,governed dataset class registry,PASS
+MAIN_STUDY observations persisted before launch,0,0,join participants -> assignments -> decisions for registry MAIN_STUDY codes,PASS
+MAIN_STUDY rows in the analysis export before launch,0,0,partition the frozen analysis rows by governed class,PASS
+pilot observations wrongly counted as MAIN_STUDY,0,0,search the MAIN_STUDY partition for pilot identities,PASS
+pilot/test evidence retained and segregated rather than deleted,retained,PILOT=47 TEST_ONLY=0 UNCLASSIFIED=0,partition counts over the same analysis rows,PASS
