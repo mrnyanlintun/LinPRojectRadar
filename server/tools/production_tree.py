@@ -404,7 +404,19 @@ PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: frozen moved: no file under assets/, server/app/, research_fixtures/synthetic/ or index.html
 #: changed, and neither this file nor any authority manifest is named by
 #: research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv.
-PINNED_AUTHORITY = ROOT / "code_audit" / "run38_authority_tree.sha256"
+#: RUN 39 REPOINTS IT AGAIN, by the same mechanism and for the same kind of reason. Run 39 added
+#: research/methodology/run39_dataset_classification_contract.md at the path its controlling
+#: specification names. research/methodology IS an AUTHORITY_ROOT, so the pin refused, correctly.
+#: That document governs which dataset an observation belongs to -- which of TEST_ONLY, PILOT or
+#: MAIN_STUDY it is, and therefore what may ever be analysed -- so it belongs inside the
+#: authority tree rather than beside it. The Run-38, Run-35, Run-34 and Run-22 records are kept
+#: addressable below and are NOT rewritten. Nothing frozen moved: no file under assets/,
+#: server/app/, research_fixtures/synthetic/ or index.html changed, and neither this file nor any
+#: authority manifest is named by research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv.
+PINNED_AUTHORITY = ROOT / "code_audit" / "run39_authority_tree.sha256"
+#: The Run-38 authority manifest, kept addressable so the supersession is a real change and not a
+#: silent rewrite.
+PINNED_AUTHORITY_RUN38 = ROOT / "code_audit" / "run38_authority_tree.sha256"
 #: The Run-35 authority manifest, kept addressable so the supersession is a real change and not a
 #: silent rewrite.
 PINNED_AUTHORITY_RUN35 = ROOT / "code_audit" / "run35_authority_tree.sha256"

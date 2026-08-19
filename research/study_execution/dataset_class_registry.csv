@@ -1,0 +1,7 @@
+study_participant_id,dataset_class,registered_on,registering_authority,note
+R39-PILOT-A,PILOT,2026-08-19,Run 39 launch gate,Synthetic pilot-equivalent identity used for launch qualification. Not a real participant and not a study observation.
+R39-PILOT-B,PILOT,2026-08-19,Run 39 launch gate,Second isolated synthetic pilot-equivalent identity. Not a real participant.
+R38-TESTONLY-A,TEST_ONLY,2026-08-19,Run 39 launch gate,Run 38 dry-run identity. Retained as evidence and segregated; never exportable as MAIN_STUDY.
+R38-TESTONLY-B,TEST_ONLY,2026-08-19,Run 39 launch gate,Run 38 dry-run identity. Retained as evidence and segregated.
+R38-TESTONLY-C-LOCKS,TEST_ONLY,2026-08-19,Run 39 launch gate,Run 38 lock-integrity identity. Retained as evidence and segregated.
+R38-TESTONLY-BROWSER,TEST_ONLY,2026-08-19,Run 39 launch gate,Run 38 browser qualification identity. Retained as evidence and segregated.

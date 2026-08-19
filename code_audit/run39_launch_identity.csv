@@ -1,0 +1,16 @@
+identity,expected,observed,live_authority,drift,result
+freeze candidate commit,6142d877856ea651ef8d7e905f6d27604b3244f1,6142d877856ea651ef8d7e905f6d27604b3244f1,INSTRUMENT_FINAL_FREEZE_RECORD.json,no,PASS
+freeze disposition,FINAL_FREEZE_ACCEPTED,FINAL_FREEZE_ACCEPTED,INSTRUMENT_FINAL_FREEZE_RECORD.json,no,PASS
+study execution disposition,STUDY_EXECUTION_READY,STUDY_EXECUTION_READY,STUDY_EXECUTION_READINESS_MANIFEST.json,no,PASS
+run38 blocker count,0,0,STUDY_EXECUTION_READINESS_MANIFEST.json,no,PASS
+simulation,sim-2026.08-v25,sim-2026.08-v25,app.simulation.models.SIMULATION_VERSION (live code),no,PASS
+participant package,og-participant-2026.08-v13,og-participant-2026.08-v13,tools/participant_packages.CURRENT (live code),no,PASS
+synthetic package,OG-SYNTH-0.6,OG-SYNTH-0.6,INSTRUMENT_FINAL_FREEZE_RECORD.json,no,PASS
+analysis export schema,og-analysis-2026.08-v1,og-analysis-2026.08-v1,run38_analysis_export.ANALYSIS_SCHEMA_VERSION (live code),no,PASS
+analysis column count,59,59,run38_analysis_export.ANALYSIS_COLUMNS vs the Run-38 readiness manifest,no,PASS
+controlled projects,6,6,controlled_study_design_contract.json,no,PASS
+periods per project,6,6,controlled_study_design_contract.json,no,PASS
+project-periods,36,36,controlled_study_design_contract.json,no,PASS
+participant sequence digest,b24955127839c18bf22d38968cc62afc65abb69aa46724caae6834484a3463a0,b24955127839c18bf22d38968cc62afc65abb69aa46724caae6834484a3463a0,STUDY_EXECUTION_READINESS_MANIFEST.json,no,PASS
+controlled stimuli digest,b9e8548bfc60ba4d836aa60133b7d31af15a0f67eae9130a860ff64257f15c29,b9e8548bfc60ba4d836aa60133b7d31af15a0f67eae9130a860ff64257f15c29,STUDY_EXECUTION_READINESS_MANIFEST.json,no,PASS
+voting modules,exactly 2,not exposed as a live constant,server/app/simulation/lineage.py; server/app/simulation/models.py; server/app/simulation/models_evm.py,unknown,NOT_VERIFIED_HERE

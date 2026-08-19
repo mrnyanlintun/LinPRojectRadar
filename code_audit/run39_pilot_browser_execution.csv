@@ -1,0 +1,26 @@
+step,reached,observed,result
+start / authentication,yes,"39 scripts, decision-ui.js present",PASS
+P1 evidence review + pre-lock leakage,yes,149 chars evidence; server responses carry no package content; visible AI content = 0; hidden DOM residue of this participant's own previous-period reveal = 0,PASS
+P1 preliminary entry + confidence,yes,pre_action=monitor pre_confidence=58,PASS
+P1 preliminary lock,yes,stage=awaiting_reveal pre_locked_at=2026-08-19T18:03:46,PASS
+P1 AI reveal,yes,detected_condition rendered only after the preliminary lock,PASS
+P1 final entry + confidence + disposition,yes,final_action=defer disposition=accept final_confidence=74,PASS
+P1 rationale / evidence interaction,yes,rationale 50 chars typed into the real field; evidence item checked=False,PASS
+P1 final lock,yes,stage=complete; post-lock edit refused: 'a final decision has already been recorded for this assignment',PASS
+P1 -> next period transition,yes,now period=P2 stage=evidence,PASS
+P2 evidence review + pre-lock leakage,yes,149 chars evidence; server responses carry no package content; visible AI content = 0; hidden DOM residue of this participant's own previous-period reveal = 3,PASS
+"P2 hidden DOM residue (recorded, not a leak of future information)",yes,"#dc-reveal is display:none but retains 3 marker(s) from the PREVIOUS period's reveal, which this participant was legitimately shown; no future period, no other project, and nothing the server sent this period",RECORDED_NOT_BLOCKING
+P2 preliminary entry + confidence,yes,pre_action=monitor pre_confidence=58,PASS
+P2 preliminary lock,yes,stage=awaiting_reveal pre_locked_at=2026-08-19T18:04:07,PASS
+P2 AI reveal,yes,detected_condition rendered only after the preliminary lock,PASS
+P2 final entry + confidence + disposition,yes,final_action=defer disposition=accept final_confidence=74,PASS
+P2 rationale / evidence interaction,yes,rationale 50 chars typed into the real field; evidence item checked=False,PASS
+P2 final lock,yes,stage=complete; post-lock edit refused: 'a final decision has already been recorded for this assignment',PASS
+P2 -> next period transition,yes,now period=P3 stage=evidence,PASS
+"in-place reload of the loaded workspace page (Run-38 NOT_VERIFIED, re-tested)",attempted,180.0s under swiftshader software rasterisation; did not complete -- limitation persists; server answered immediately when probed; a fresh page resumes at once,NOT_VERIFIED_CONTAINER_LIMITATION
+logout / resume behaviour,yes,"fresh page, same session token: period=P3 stage=evidence",PASS
+re-authentication,yes,period=P3 stage=evidence,PASS
+javascript errors,yes,0 page errors,PASS
+36 route identities,yes,36 of 36 reached,PASS
+completion,yes,all_assignments_complete=True,PASS
+persisted observations,yes,36 decisions rows,PASS
