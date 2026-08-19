@@ -1,0 +1,97 @@
+{
+  "administrative_authority_classifications": {
+    "direct SQL write to participant responses": "OPERATIONALLY_PROHIBITED ONLY",
+    "edit a participant response through an administrative route": "PREVENTED",
+    "export research data": "PERMITTED and AUDITED",
+    "monitor participant progress": "PERMITTED (read-only, no substantive answers)",
+    "post-final-lock change to disposition": "DETECTABLE",
+    "post-final-lock change to final_action": "OPERATIONALLY_PROHIBITED",
+    "post-final-lock change to final_confidence": "OPERATIONALLY_PROHIBITED",
+    "post-final-lock change to pre_action": "PREVENTED",
+    "post-final-lock change to pre_confidence": "PREVENTED",
+    "post-final-lock change to rationale": "OPERATIONALLY_PROHIBITED",
+    "write a participant response through the application": "PREVENTED (after lock)"
+  },
+  "administrative_authority_result": "PASS (11 rows)",
+  "blocker_count": 0,
+  "browser_not_verified": [
+    {
+      "observed": "180.0s under swiftshader software rasterisation; did not complete -- limitation persists; server answered immediately when probed; a fresh page resumes at once",
+      "step": "in-place reload of the loaded workspace page (Run-38 NOT_VERIFIED, re-tested)"
+    }
+  ],
+  "browser_result": "PASS (25 rows)",
+  "browser_steps_passed": 23,
+  "browser_steps_recorded": 25,
+  "controlled_stimuli_digest": "b9e8548bfc60ba4d836aa60133b7d31af15a0f67eae9130a860ff64257f15c29",
+  "controlled_study_population": {
+    "duplicates": 0,
+    "governed_contract": "OG-STUDY-DESIGN-2026.08-v1",
+    "periods_per_project": 6,
+    "project_periods_driven": 36,
+    "projects": 6,
+    "unreachable": 0
+  },
+  "created": "2026-08-19",
+  "dataset_class_registry_sha256": "5060acf8aea49bdeb860aab113cf66758d54163687e1f535d943998b14131975",
+  "dataset_class_vocabulary": [
+    "TEST_ONLY",
+    "PILOT",
+    "MAIN_STUDY"
+  ],
+  "export_column_count": 59,
+  "export_schema": "og-analysis-2026.08-v1",
+  "fault_campaign": {
+    "applied": 20,
+    "crash_accepted_as_red": 0,
+    "crashes_observed": 0,
+    "faults": 20,
+    "intended_red": 20,
+    "not_applied": 0,
+    "restored_green": 20
+  },
+  "final_freeze_disposition": "FINAL_FREEZE_ACCEPTED",
+  "final_freeze_release_commit": "f983bb020f7a184a5742e1fff09d690b0170f0de",
+  "final_lock_auditability": {
+    "disposition": "DETECTABLE",
+    "final_action": "OPERATIONALLY_PROHIBITED",
+    "final_confidence": "OPERATIONALLY_PROHIBITED",
+    "note": "Measured by tampering with a pilot row through raw SQL. The preliminary judgment is refused by database trigger. A changed disposition contradicts the final_decision_submitted audit event, which records the original value. A changed final_action, final_confidence or rationale is WHOLLY UNDETECTABLE from every governed record: there is no trigger, no updated_at, no row version, no audit metadata carrying the original, and the tamper writes no audit row.",
+    "pre_action": "PREVENTED",
+    "pre_confidence": "PREVENTED",
+    "rationale": "OPERATIONALLY_PROHIBITED"
+  },
+  "freeze_candidate_commit": "6142d877856ea651ef8d7e905f6d27604b3244f1",
+  "launch_blockers": [],
+  "launch_disposition": "MAIN_STUDY_LAUNCH_READY",
+  "main_study_prelaunch_row_count": 0,
+  "manifest_id": "OG-MAIN-STUDY-LAUNCH-2026.08-v1",
+  "not_study_findings": "Every observation exercised by this run is synthetic pilot-equivalent or TEST_ONLY data. None of it is a study observation. Empirical field validation remains 0/100 until real study observations are collected.",
+  "participant_package": "og-participant-2026.08-v13",
+  "participant_sequence_digest": "b24955127839c18bf22d38968cc62afc65abb69aa46724caae6834484a3463a0",
+  "pilot_dataset_identity": {
+    "classification": "PILOT",
+    "note": "Synthetic pilot-equivalent identities exercised by the Run-39 launch gate and browser driver. No real person was enrolled, contacted or consented.",
+    "participants": [
+      "R39-PILOT-A",
+      "R39-PILOT-B"
+    ]
+  },
+  "pilot_export_checksum": "regenerated per run; the artifact's own *.class.json and *.manifest.json carry the checksum of the bytes actually written",
+  "primary_collection_started": false,
+  "r_rehearsal_result": "PASS (executed, base R, no manual cleanup, no inferential statistics)",
+  "recorded_findings_not_blocking": [
+    "The AI decision-support package is attached PER ASSIGNMENT, so all six periods of a project disclose the IDENTICAL recommendation. Verified mechanically: PRJ-AIR's six periods carry one package identity and one checksum. A participant therefore forms their preliminary judgment genuinely blind only in period 1; from period 2 they already know that project's AI recommendation. This is a property of the ACCEPTED FROZEN DESIGN, present since Run 38 and visible in Run 38's own stimulus artifact. Run 39 records it and does not change it. Any change would require a successor freeze candidate.",
+    "From period 2 the hidden #dc-reveal card retains the previous period's package markup at display:none. Measured: the SERVER emits no package content before the period's lock, and NOTHING is visible to the participant. The residue is this participant's own prior legitimate reveal of the same package, so it discloses nothing new.",
+    "A post-final-lock raw-SQL change to final_action, final_confidence or rationale is undetectable from every governed record. Not an application-path bypass, so not blocking; closing it needs a migration on the participant data path, which is successor-candidate work.",
+    "The deployment provisions exactly one database credential and no read-only or restricted role, so whoever operates the study holds unrestricted write access. Routine administration requires no direct mutation -- zero administrative routes write a response column -- so the control is OPERATIONAL, not technical, and is described that way rather than as immutability.",
+    "An in-place browser reload of an already-loaded workspace page did not complete within 180 s under this container's software rasterisation. Re-tested in Run 39; the limitation persists and the Run-38 NOT_VERIFIED is preserved rather than reworded. A fresh page resumes correctly and immediately.",
+    "R is not vendored in this repository. It must be installed in the analysis environment; the Run-39 rehearsal used R 4.3.3."
+  ],
+  "run": "Run 39",
+  "run38_disposition": "STUDY_EXECUTION_READY",
+  "run38_readiness_commit": "dd2e355b55008fe08f440c8a9e87378db98ad399",
+  "simulation": "sim-2026.08-v25",
+  "synthetic_package": "OG-SYNTH-0.6",
+  "what_this_is": "The machine-readable record of whether the frozen instrument may begin primary data collection. Every field is read from a live authority or an audit artifact this run produced; the disposition is computed from the blocker count."
+}

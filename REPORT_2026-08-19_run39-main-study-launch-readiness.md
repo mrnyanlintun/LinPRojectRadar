@@ -1,7 +1,8 @@
 # Run 39: controlled pilot launch gate and study-data collection qualification
 
 **Date:** 2026-08-19
-**Disposition:** _see section 17_
+**Disposition:** `MAIN_STUDY_LAUNCH_READY`
+**Blocking defects:** 0
 **Frozen behaviour changed:** NO
 
 > **Pilot and test observations in this run are not study findings.** Every identity exercised
@@ -313,11 +314,68 @@ validators or pilot data — which is everything this run produced.
 
 ## 16. Launch blockers
 
-_filled from the manifest; see section 17._
+All twenty blocker classes were fault-injected and every one is detected.
+`code_audit/run39_fault_campaign_results.csv`.
+
+**faults = 20 · applied = 20 · intended RED = 20 · restored GREEN = 20 · NOT_APPLIED = 0 ·
+crash accepted as RED = 0 (crashes observed 0) · unrelated RED = 0 · undetected = 0.**
+
+The four the owner named specifically:
+
+- **Fault 5** — a PILOT row made eligible for MAIN_STUDY export → gate RED, restored GREEN.
+- **Fault 7** — main-study zero state given one prelaunch observation → gate RED.
+- **Fault 9** — information needed to reconstruct action revision removed → gate RED.
+- **Fault 19** — the deterministic/checksummed freeze procedure broken → gate RED.
+
+Faults 2, 3 and 14 are the only ones that touch a frozen file, each for a single oracle
+invocation, restored and re-verified byte for byte. They have to: blockers 2, 3 and 14 are about
+frozen and application-path behaviour, and the honest way to prove those are detected is to
+change such a byte and watch the gate refuse.
+
+**The campaign was not 20/20 on the first attempt, and the difference was real work.**
+It ran five times. Across those runs it exposed **six genuine defects, all in Run 39's own
+machinery, none in the frozen instrument**:
+
+1. **The campaign read the wrong RESULT line.** `test_run39_launch_gate.py` prints the R
+   validator's canonical `RESULT: N/M checks passed` verbatim, which matches the same pattern the
+   gate's own line does. The campaign took the last one it saw — sometimes R's — and so reported
+   three faults "undetected" and three "unrelated" when the gate had actually died before
+   printing its own summary. The gate now emits `RUN39_GATE_SUMMARY_BEGIN`; the campaign parses
+   only what follows it; **a missing sentinel is a CRASH, never a GREEN.**
+2. **The helper raised where the gate should have judged.** `build_class_export` raised on schema
+   or column-count drift, killing the gate mid-run. A process that dies without a verdict is a
+   crash, not a detection. The helper now builds; the gate judges.
+3. **`.get(k, 0)` returns `None` when the key exists with value `None`** — the default only
+   applies to a *missing* key. A nulled confidence column therefore raised `TypeError` instead of
+   failing.
+4. **A detail string still indexed the freeze record directly**, so a correctly-refused freeze
+   raised `KeyError` while formatting the message for the check that was already failing.
+5. **An empty class selection was unguarded**, so a promotion bug produced an `IndexError`
+   instead of a named failure.
+6. **Fault 14 was ill-posed and is recorded as repointed.** It added `"period"` to the writer
+   census tuple, but `period` is set as a *constructor keyword* in `research_decision.py`, never
+   as `decision.period = ...`, so the mutation landed in the file and changed nothing — a
+   NOT_APPLIED dressed as an APPLIED. It now introduces a real second application writer.
+
+Five of the six are the same defect class this programme keeps finding: **a check that crashes
+has not detected anything.** Run 38's gate had it too. None was found by reading; all were found
+by injecting the fault.
 
 ## 17. Final disposition
 
-_filled below._
+`MAIN_STUDY_LAUNCH_READY` — blockers = 0.
+
+**What this authorises and what it does not.** It authorises beginning primary data collection on
+this frozen instrument, following `MAIN_STUDY_LAUNCH_CHECKLIST.md`. It does **not** constitute
+ethical approval: no governed document in this repository establishes an IRB approval, a protocol
+number or an approved consent text, and none is asserted anywhere in this run's output.
+
+**Run 39 did not begin collection of the primary study dataset**, and the main-study dataset
+remains at zero rows.
+
+**Not claimed.** Pilot and test observations are not study findings. Nothing here is empirical
+validation; empirical field validation remains **0/100**. No hypothesis test, effect estimate,
+confidence interval or p-value was computed.
 
 ---
 

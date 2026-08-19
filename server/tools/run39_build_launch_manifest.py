@@ -34,11 +34,22 @@ def rows(name: str) -> list[dict]:
         return list(csv.DictReader(fh))
 
 
-def verdict(name: str, good: tuple[str, ...] = ("PASS",)) -> str:
+def verdict(name: str, good: tuple[str, ...] = ("PASS",), column: str = "result") -> str:
+    """
+    Read the artifact's OWN verdict column.
+
+    Not every Run-39 artifact carries a column called `result`: the administrative-authority
+    boundary records a `classification` per capability, because "PASS" is the wrong word for
+    "this capability exists and is prohibited operationally". Defaulting to `result` for it
+    reported FAIL (11/11) for an artifact in which nothing had failed -- a reporting bug, caught
+    by reading the header instead of assuming it.
+    """
     r = rows(name)
     if not r:
         return "NOT_PRODUCED"
-    bad = [x for x in r if x.get("result") not in good]
+    if column not in (r[0] or {}):
+        return f"MALFORMED (no {column!r} column; has {sorted(r[0])[:4]})"
+    bad = [x for x in r if x.get(column) not in good]
     return f"PASS ({len(r)} rows)" if not bad else f"FAIL ({len(bad)}/{len(r)} rows)"
 
 
@@ -133,7 +144,13 @@ manifest = {
         for r in browser if r["result"].startswith("NOT_VERIFIED")],
     "administrative_authority_result": verdict(
         "run39_administrative_authority_boundary.csv",
-        good=("PASS", "PREVENTED", "DETECTABLE", "OPERATIONALLY_PROHIBITED")),
+        good=("PREVENTED", "PREVENTED (after lock)", "DETECTABLE",
+              "OPERATIONALLY_PROHIBITED", "OPERATIONALLY_PROHIBITED ONLY",
+              "PERMITTED (read-only, no substantive answers)", "PERMITTED and AUDITED"),
+        column="classification"),
+    "administrative_authority_classifications": {
+        r["capability"]: r["classification"]
+        for r in rows("run39_administrative_authority_boundary.csv")},
     "final_lock_auditability": {
         "pre_action": "PREVENTED",
         "pre_confidence": "PREVENTED",

@@ -9,6 +9,71 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-19 - Run 39: MAIN STUDY LAUNCH READY. Collection may begin; it has not begun.
+
+**Report:** `REPORT_2026-08-19_run39-main-study-launch-readiness.md`.
+**Manifest:** `research/study_execution/MAIN_STUDY_LAUNCH_MANIFEST.json`.
+**Checklist:** `research/study_execution/MAIN_STUDY_LAUNCH_CHECKLIST.md`.
+
+**Disposition: `MAIN_STUDY_LAUNCH_READY`. Blockers 0** across all twenty classes, each
+fault-injected and each detected (20 applied / 20 intended RED / 20 restored GREEN / 0 crashes).
+**Run 39 changed no frozen byte.** The main-study dataset is at **zero rows** and **collection
+has not begun**.
+
+## THE ONE THING TO DO BEFORE THE FIRST REAL PARTICIPANT
+
+Add a row to `research/study_execution/dataset_class_registry.csv` with
+`dataset_class = MAIN_STUDY`. **Classification is governed data, never a naming convention.** A
+participant the registry does not name is `UNCLASSIFIED` and can never be exported as
+MAIN_STUDY -- forgetting to register someone excludes them, it never silently includes them.
+After the first registration the zero-state check will legitimately fail; that is correct, zero
+state is a pre-launch condition and not a permanent invariant.
+
+## SIX MEASURED FACTS A LATER RUN MUST NOT UNLEARN
+
+1. **A post-final-lock raw-SQL edit to `final_action`, `final_confidence` or `rationale` is
+   WHOLLY UNDETECTABLE.** Measured by tampering and restoring. There is no trigger, no
+   `updated_at`, no row version, no audit metadata carrying the original, and the tamper writes
+   no audit row. `disposition` IS detectable (the audit event holds the original) and the
+   preliminary judgment IS prevented (database trigger). The three-way vocabulary is
+   PREVENTED / DETECTABLE / OPERATIONALLY_PROHIBITED. **Do not describe this as immutability.**
+
+2. **The deployment has exactly one database credential and no restricted role.** Whoever
+   operates the study holds unrestricted write access. Routine administration needs none -- zero
+   admin routes write a response column -- so the control is operational, not technical.
+
+3. **The AI package is attached PER ASSIGNMENT: all six periods of a project disclose the
+   IDENTICAL recommendation.** Verified mechanically (PRJ-AIR: one package identity, one
+   checksum across its six periods). A participant is genuinely blind only in period 1; from
+   period 2 they already know that project's recommendation. This is the ACCEPTED FROZEN DESIGN,
+   not a defect Run 39 introduced. It has analytic implications. Changing it needs a successor
+   freeze candidate.
+
+4. **The analysis dataset has 59 columns, not 58.** The Run-38 report prose said 58; the live
+   `ANALYSIS_COLUMNS` and the machine-generated Run-38 manifest both say 59. Executable paths
+   always used 59. Derive counts; never transcribe them. (Seventh occurrence of this class here.)
+
+5. **`record_class` in the frozen export is PREFIX-derived and is NOT the classification
+   authority.** `run39_dataset_class.classify()` -- the governed registry -- is. The two can and
+   do disagree for the same participant; that disagreement is asserted by the gate.
+
+6. **R is not vendored.** Install it in the analysis environment; the Run-39 rehearsal used
+   R 4.3.3.
+
+## WHAT IS STILL NOT CLAIMED
+
+Empirical field validation remains **0/100**. No study was conducted, no participant enrolled or
+contacted, no primary dataset exists. **This repository does not establish IRB approval, a
+protocol number or an approved consent text**, and no Run-39 document asserts one. Every
+observation Run 39 created is PILOT or TEST_ONLY and none is a study finding. No hypothesis test,
+effect estimate, confidence interval or p-value was computed anywhere.
+
+## ONE LIMITATION, RE-TESTED AND PRESERVED
+
+The Run-38 in-place-reload `NOT_VERIFIED` was re-tested as required: **180 s, still does not
+complete** under this container's software rasterisation. Preserved as NOT_VERIFIED, not reworded
+to PASS. A fresh page resumes correctly and immediately. Verify on GPU hardware before collection.
+
 # 2026-08-19 - Run 38: STUDY EXECUTION READY. The frozen instrument can run the study.
 
 **Report:** `REPORT_2026-08-19_run38-study-execution-readiness.md`.
