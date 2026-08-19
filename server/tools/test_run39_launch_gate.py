@@ -59,6 +59,22 @@ def check(ok: bool, label: str, detail: str = "") -> bool:
     return bool(ok)
 
 
+def attempt(label: str, fn, default=None):
+    """
+    Run something that may raise, and turn a raise into a NAMED FAILURE.
+
+    A GATE THAT CRASHES HAS NOT DETECTED ANYTHING. The Run-39 fault campaign proved this five
+    times over: mutations that this gate genuinely should catch instead took the process down
+    before it printed its own result, and a process that dies without a verdict is a crash, which
+    this programme never counts as a detection. Every fragile call below goes through here.
+    """
+    try:
+        return True, fn()
+    except Exception as exc:                                          # noqa: BLE001
+        check(False, label, f"{type(exc).__name__}: {exc}"[:220])
+        return False, default
+
+
 def write_csv(path: pathlib.Path, header: list[str], rows: list[list]) -> None:
     with path.open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
@@ -551,17 +567,43 @@ print("SECTION 10  PILOT EXPORT THROUGH THE FROZEN ROUTE")
 print("=" * 78)
 
 with D.SessionFactory() as s:
-    pilot_rows, pilot_bytes, sidecar = LG.build_class_export(s, "PILOT", registry)
-    pilot_rows2, pilot_bytes2, _ = LG.build_class_export(s, "PILOT", registry)
+    _ok, _built = attempt("the pilot export builds without raising",
+                          lambda: LG.build_class_export(s, "PILOT", registry),
+                          ([], b"", {}))
+    pilot_rows, pilot_bytes, sidecar = _built
+    _ok2, _built2 = attempt("the pilot export rebuilds without raising",
+                            lambda: LG.build_class_export(s, "PILOT", registry),
+                            ([], b"", {}))
+    pilot_rows2, pilot_bytes2, _ = _built2
 
 check(len(pilot_rows) == 47, "the pilot export carries the 47 driven pilot observations",
       str(len(pilot_rows)))
-check(sidecar["schema_version"] == "og-analysis-2026.08-v1",
-      "schema is the frozen og-analysis-2026.08-v1", sidecar["schema_version"])
-check(sidecar["column_count"] == len(AX.ANALYSIS_COLUMNS)
+# EVERY ASSERTION BELOW READS pilot_rows. If the selection returned nothing -- which is exactly
+# what a promotion bug like fault 5 produces -- indexing it would crash the gate instead of
+# failing it. Guard once, here, and let the rest run against an explicit empty result.
+if not pilot_rows:
+    check(False, "the pilot export is non-empty, so its properties can be judged at all",
+          "PILOT selection returned no rows")
+    pilot_rows = [{c: None for c in AX.ANALYSIS_COLUMNS}]
+    pilot_rows2 = [dict(pilot_rows[0])]
+    pilot_bytes = AX.serialise_csv(pilot_rows)
+    sidecar = dict(sidecar or {})
+    sidecar.setdefault("schema_version", None)
+    sidecar.setdefault("column_count", None)
+    sidecar.setdefault("artifact_dataset_class", None)
+    sidecar.setdefault("classification_registry_sha256", None)
+    sidecar.setdefault("participants", [])
+    sidecar.setdefault("dataset_sha256", None)
+# JUDGED HERE, NOT RAISED IN THE HELPER. build_class_export used to raise on schema or column
+# drift, which killed this gate before it could report anything -- a CRASH, and a crash is never
+# a RED. The helper now builds and this gate judges, so a drifted schema turns the gate red with
+# a named failure instead of taking the process down.
+check(sidecar.get("schema_version") == "og-analysis-2026.08-v1",
+      "schema is the frozen og-analysis-2026.08-v1", sidecar.get("schema_version"))
+check(sidecar.get("column_count") == len(AX.ANALYSIS_COLUMNS)
       == readiness["export_column_count"],
       f"{len(AX.ANALYSIS_COLUMNS)} columns, as the frozen contract mechanically specifies",
-      str(sidecar["column_count"]))
+      str(sidecar.get("column_count")))
 header = pilot_bytes.decode("utf-8").split("\n")[0].split(",")
 check(header == list(AX.ANALYSIS_COLUMNS), "the column list is the frozen list, in frozen order")
 
@@ -584,25 +626,28 @@ check(not any(v.encode() in pilot_bytes for v in live_tokens + live_pids),
 check(not (set(AX.FREE_TEXT_COLUMNS_EXCLUDED) & set(AX.ANALYSIS_COLUMNS)),
       "free text remains excluded as governed")
 
-keys = [(r["study_participant_id"], r["scenario_id"], r["period"]) for r in pilot_rows]
+keys = [(r.get("study_participant_id"), r.get("scenario_id"), r.get("period"))
+        for r in pilot_rows]
 check(len(keys) == len(set(keys)), "participant/project/period key is unique",
       str(len(keys) - len(set(keys))))
-check(all(r["simulation_version"] and r["participant_package"] and r["synthetic_package"]
-          and r["schema_version"] and r["freeze_candidate_commit"] for r in pilot_rows),
+check(all(r.get("simulation_version") and r.get("participant_package")
+          and r.get("synthetic_package") and r.get("schema_version")
+          and r.get("freeze_candidate_commit") for r in pilot_rows),
       "version provenance is complete on every row")
-check(sidecar["artifact_dataset_class"] == "PILOT"
-      and sidecar["classification_registry_sha256"] == DC.registry_digest(),
+check(sidecar.get("artifact_dataset_class") == "PILOT"
+      and sidecar.get("classification_registry_sha256") == DC.registry_digest(),
       "the artifact declares its governed class and pins the registry that produced it")
-check(set(sidecar["participants"]) == {"R39-PILOT-A", "R39-PILOT-B"},
-      "and names exactly the pilot participants", str(sidecar["participants"]))
-check(not any(DC.classify(r["study_participant_id"], registry) != "PILOT" for r in pilot_rows),
+check(set(sidecar.get("participants", [])) == {"R39-PILOT-A", "R39-PILOT-B"},
+      "and names exactly the pilot participants", str(sidecar.get("participants", [])))
+check(not any(DC.classify(r.get("study_participant_id"), registry) != "PILOT"
+              for r in pilot_rows),
       "no non-PILOT observation leaked into the pilot artifact")
 
 out_dir = pathlib.Path(tempfile.mkdtemp())
 written = LG.write_export(out_dir, "run39_pilot_export", pilot_bytes, pilot_rows, sidecar)
-check(hashlib.sha256(written["csv"].read_bytes()).hexdigest() == sidecar["dataset_sha256"],
+check(hashlib.sha256(written["csv"].read_bytes()).hexdigest() == sidecar.get("dataset_sha256"),
       "the written pilot file reproduces its recorded checksum")
-PILOT_CHECKSUM = sidecar["dataset_sha256"]
+PILOT_CHECKSUM = sidecar.get("dataset_sha256")
 
 # ===================================================================== 11. R rehearsal
 print()
@@ -613,7 +658,8 @@ print("=" * 78)
 # The frozen R validator asserts a COMPLETE 36-row participant population, which is the study
 # design. Rehearse it against the complete pilot participant; the incomplete one is reported by
 # the completeness classification, not smuggled into the validator to make it pass.
-complete_rows = [r for r in pilot_rows if r["study_participant_id"] == "R39-PILOT-A"]
+complete_rows = [r for r in pilot_rows
+                 if r.get("study_participant_id") == "R39-PILOT-A"] or pilot_rows[:1]
 complete_bytes = AX.serialise_csv(complete_rows)
 complete_manifest = AX.freeze_manifest(complete_bytes, complete_rows)
 r_dir = pathlib.Path(tempfile.mkdtemp())
@@ -651,19 +697,23 @@ print("=" * 78)
 print("SECTION 12  PRIMARY-OUTCOME RECONSTRUCTABILITY FROM PILOT RECORDS ONLY")
 print("=" * 78)
 
+# .get() THROUGHOUT, DELIBERATELY. A construct whose column has been removed must make this
+# gate RED, not make it raise KeyError and die -- the crash-instead-of-fail defect the fault
+# campaign found here and in Run 38's gate before it.
 RECON = [
-    ("preliminary action", lambda r: r["pre_action"]),
-    ("final action", lambda r: r["final_action"]),
-    ("action revision", lambda r: r["action_revised"]),
-    ("movement toward AI", lambda r: r["revision_direction"]),
-    ("movement away from AI", lambda r: r["revision_direction"]),
-    ("preliminary confidence", lambda r: r["pre_confidence"]),
-    ("final confidence", lambda r: r["final_confidence"]),
-    ("confidence change", lambda r: r["confidence_change"]),
-    ("AI disposition", lambda r: r["disposition"]),
-    ("evidence variables", lambda r: r["evidence_items_count"]),
-    ("rationale variables (governed: presence/length only)", lambda r: r["rationale_present"]),
-    ("timing variables", lambda r: r["deliberation_seconds"]),
+    ("preliminary action", lambda r: r.get("pre_action")),
+    ("final action", lambda r: r.get("final_action")),
+    ("action revision", lambda r: r.get("action_revised")),
+    ("movement toward AI", lambda r: r.get("revision_direction")),
+    ("movement away from AI", lambda r: r.get("revision_direction")),
+    ("preliminary confidence", lambda r: r.get("pre_confidence")),
+    ("final confidence", lambda r: r.get("final_confidence")),
+    ("confidence change", lambda r: r.get("confidence_change")),
+    ("AI disposition", lambda r: r.get("disposition")),
+    ("evidence variables", lambda r: r.get("evidence_items_count")),
+    ("rationale variables (governed: presence/length only)",
+     lambda r: r.get("rationale_present")),
+    ("timing variables", lambda r: r.get("deliberation_seconds")),
 ]
 for name, getter in RECON:
     present = all(getter(r) is not None for r in complete_rows)
@@ -672,18 +722,19 @@ for name, getter in RECON:
 # Re-derive independently rather than trusting the exporter.
 bad = 0
 for r in complete_rows:
-    pre, fin, ai = r["pre_action"], r["final_action"], r["ai_recommended_action"]
+    pre, fin, ai = (r.get("pre_action"), r.get("final_action"),
+                    r.get("ai_recommended_action"))
     want = ("none" if pre == fin else "toward_ai" if fin == ai
             else "away_from_ai" if pre == ai else "lateral")
-    if want != r["revision_direction"]:
+    if want != r.get("revision_direction"):
         bad += 1
-    if r["confidence_change"] != r["final_confidence"] - r["pre_confidence"]:
+    if r.get("confidence_change") != r.get("final_confidence", 0) - r.get("pre_confidence", 0):
         bad += 1
 check(bad == 0, "revision direction and confidence change re-derive independently", str(bad))
 check("expert_reference_score" not in AX.ANALYSIS_COLUMNS
       and not any("correct" in c for c in AX.ANALYSIS_COLUMNS),
       "no correctness label is present: AI agreement is not treated as accuracy")
-check({r["revision_direction"] for r in complete_rows} <= set(
+check({r.get("revision_direction") for r in complete_rows} <= set(
           AX.CATEGORICAL_LEVELS["revision_direction"]),
       "every observed revision direction is inside the frozen closed vocabulary")
 
@@ -736,30 +787,47 @@ check(refused, "the freeze procedure refuses to produce a MAIN_STUDY artifact fr
 # without fabricating a study observation.
 fz_dir = pathlib.Path(tempfile.mkdtemp())
 with D.SessionFactory() as s:
-    record = FZ.freeze_dataset(s, fz_dir, "run39_pilot_freeze_rehearsal", "PILOT", registry)
-check(record["dataset_class"] == "PILOT", "the freeze record names the artifact's governed class")
-check(record["invariant_violations"] == 0,
+    _fok, record = attempt(
+        "the freeze procedure completes for a class that has observations",
+        lambda: FZ.freeze_dataset(s, fz_dir, "run39_pilot_freeze_rehearsal", "PILOT", registry),
+        {})
+record = record or {}
+check(record.get("dataset_class") == "PILOT",
+      "the freeze record names the artifact's governed class")
+check(record.get("invariant_violations") == 0,
       "every pre-freeze invariant passed before the checksum was taken",
       str(record["invariant_violations"]))
-check(len(record["invariants_checked"]) >= 10,
-      f"{len(record['invariants_checked'])} invariants were actually checked, not asserted")
-problems = FZ.verify_frozen(fz_dir / "run39_pilot_freeze_rehearsal.csv",
-                            fz_dir / "run39_pilot_freeze_rehearsal.freeze.json")
-check(not problems, "the frozen artifact re-verifies from disk alone", "; ".join(problems))
-check(record["sha256"] == hashlib.sha256(
-          (fz_dir / "run39_pilot_freeze_rehearsal.csv").read_bytes()).hexdigest(),
-      "the freeze checksum reproduces from the written file")
-check(all(record.get(f) for f in ("simulation_version", "participant_package",
-                                  "synthetic_package", "freeze_candidate_commit",
-                                  "schema_version", "row_grain")),
+check(len(record.get("invariants_checked") or []) >= 10,
+      f"{len(record.get('invariants_checked') or [])} invariants were actually checked, "
+      f"not asserted")
+_vok, problems = attempt(
+    "the frozen artifact can be re-verified from disk at all",
+    lambda: FZ.verify_frozen(fz_dir / "run39_pilot_freeze_rehearsal.csv",
+                             fz_dir / "run39_pilot_freeze_rehearsal.freeze.json"),
+    ["the artifact or its freeze record is absent"])
+check(not problems, "the frozen artifact re-verifies from disk alone", "; ".join(problems or []))
+_cok, _actual = attempt(
+    "the written frozen artifact can be read back for checksum comparison",
+    lambda: hashlib.sha256(
+        (fz_dir / "run39_pilot_freeze_rehearsal.csv").read_bytes()).hexdigest(), None)
+check(record.get("sha256") is not None and record.get("sha256") == _actual,
+      "the freeze checksum reproduces from the written file",
+      f"recorded {record.get('sha256')} actual {_actual}")
+check(bool(record) and all(record.get(f) for f in
+          ("simulation_version", "participant_package",
+           "synthetic_package", "freeze_candidate_commit", "schema_version", "row_grain")),
       "the freeze record carries complete schema/version/package provenance")
 
 # Determinism of the whole procedure: freeze twice, compare the CSV bytes.
 fz_dir2 = pathlib.Path(tempfile.mkdtemp())
 with D.SessionFactory() as s:
-    record2 = FZ.freeze_dataset(s, fz_dir2, "again", "PILOT", registry)
-a_bytes = (fz_dir / "run39_pilot_freeze_rehearsal.csv").read_bytes().split(b"\n")
-b_bytes = (fz_dir2 / "again.csv").read_bytes().split(b"\n")
+    _dok, record2 = attempt("a second freeze of identical state completes",
+                            lambda: FZ.freeze_dataset(s, fz_dir2, "again", "PILOT", registry), {})
+_rok, a_bytes = attempt("the first frozen artifact is readable",
+                        lambda: (fz_dir / "run39_pilot_freeze_rehearsal.csv")
+                        .read_bytes().split(b"\n"), [b""])
+_rok2, b_bytes = attempt("the second frozen artifact is readable",
+                         lambda: (fz_dir2 / "again.csv").read_bytes().split(b"\n"), [b"?"])
 # exported_at is the one column the frozen contract says varies between exports; the freeze
 # procedure stamps it once per artifact, so it is normalised for the comparison rather than
 # waved away.
@@ -781,11 +849,18 @@ def strip_exported_at(lines):
 check(strip_exported_at(a_bytes) == strip_exported_at(b_bytes),
       "two independent freezes of identical source state produce identical bytes apart from the "
       "single documented timestamp column")
-FREEZE_REHEARSAL_SHA = record["sha256"]
+FREEZE_REHEARSAL_SHA = record.get("sha256")
 
 # ===================================================================== summary
 print()
 print("=" * 78)
+# THE SENTINEL EXISTS BECAUSE THIS GATE PRINTS A SUB-RUN'S OUTPUT.
+# The R rehearsal emits its own canonical "RESULT: N/M checks passed" line, which matches the
+# same pattern this gate's line does. A reader that simply took the last RESULT line could take
+# R's -- and the Run-39 fault campaign did exactly that, reporting three faults as undetected
+# and three as unrelated when the gate had actually died before printing its own summary.
+# Everything after this sentinel belongs to THIS gate and nothing else.
+print("RUN39_GATE_SUMMARY_BEGIN")
 passed = sum(1 for ok, _, _ in results if ok)
 for ok, label, detail in results:
     if not ok:

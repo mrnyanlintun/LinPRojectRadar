@@ -128,13 +128,18 @@ FAULTS = [
           'check(tamper_result["pre_action"] == "ALLOWED"\n'
           '      and tamper_result["pre_confidence"] == "REFUSED_BY_TRIGGER",'),
      "gate", "PREVENTED at the database"),
+    # FAULT 14 IS REPOINTED, AND THE REASON IS RECORDED RATHER THAN HIDDEN.
+    # It first added "period" to the census's column tuple. `period` is set as a constructor
+    # KEYWORD in research_decision.py, never as `decision.period = ...`, so the census found no
+    # new writer and the oracle stayed green: the mutation landed in the file and changed no
+    # behaviour, which is a NOT_APPLIED in substance dressed as an APPLIED. Blocker 14 is "a
+    # second application path can write the final judgment", so the honest probe INTRODUCES one.
+    # This touches a frozen file for a single oracle invocation and is restored and re-verified
+    # byte for byte, exactly as faults 2 and 3 are.
     (14, "final-lock application-path bypass",
-     text(GATE, "    for col in (\"final_action\", \"final_submitted_at\", \"disposition\", "
-                "\"final_confidence\",\n                    \"pre_action\", \"pre_confidence\", "
-                "\"rationale\"):",
-          "    for col in (\"final_action\", \"final_submitted_at\", \"disposition\", "
-          "\"final_confidence\",\n                    \"pre_action\", \"pre_confidence\", "
-          "\"rationale\", \"period\"):"),
+     text(ROOT / "server" / "app" / "research_audit.py",
+          "\n", "\n\n\ndef _run39_fault_probe(decision):\n"
+                "    decision.final_action = \"bypass\"\n", False),
      "gate", "sole application writer"),
     (15, "AI visible before preliminary lock",
      text(DRY, '                  "period_count": len(ROUTE_PERIODS),',
@@ -211,11 +216,26 @@ def apply_one(mut):
     raise ValueError(kind)
 
 
-def _verdict(out: str) -> tuple[str, str, str]:
-    result = [ln for ln in out.splitlines() if ln.startswith("RESULT: ")]
+#: Oracles that embed a sub-run's output must delimit their own summary, or a reader cannot tell
+#: whose RESULT line it is holding. test_run39_launch_gate.py prints the R validator's canonical
+#: RESULT line verbatim; without this sentinel this campaign read R's line as the gate's and
+#: reported six faults wrongly.
+SENTINEL = "RUN39_GATE_SUMMARY_BEGIN"
+
+
+def _verdict(out: str, sentinel: str | None = None) -> tuple[str, str, str]:
+    body = out
+    if sentinel:
+        if sentinel not in out:
+            # The oracle never reached its own summary. That is a CRASH, whatever else the
+            # output happens to contain.
+            tail = (out.strip().splitlines() or ["no output"])[-1][:200]
+            return "CRASH", f"summary sentinel absent; last line: {tail}", ""
+        body = out.split(sentinel, 1)[1]
+    result = [ln for ln in body.splitlines() if ln.startswith("RESULT: ")]
     if not result:
-        return "CRASH", (out.strip().splitlines() or ["no output"])[-1][:200], ""
-    failed = [ln for ln in out.splitlines() if ln.startswith("FAILED: ")]
+        return "CRASH", (body.strip().splitlines() or ["no output"])[-1][:200], ""
+    failed = [ln for ln in body.splitlines() if ln.startswith("FAILED: ")]
     passed, total = result[-1].removeprefix("RESULT: ").split(" ")[0].split("/")
     if passed == total and not failed:
         return "GREEN", result[-1], ""
@@ -239,7 +259,7 @@ def run_gate() -> tuple[str, str, str]:
                                        "DATABASE_URL": f"sqlite:///{db}",
                                        "SESSION_SECRET": "run39-fault-campaign"})
     shutil.rmtree(tmp, ignore_errors=True)
-    return _verdict(p.stdout + p.stderr)
+    return _verdict(p.stdout + p.stderr, SENTINEL)
 
 
 def run_immut() -> tuple[str, str, str]:
@@ -263,8 +283,17 @@ def run_browser_artifact() -> tuple[str, str, str]:
         return "CRASH", "the browser artifact has not been produced", ""
     with art.open(encoding="utf-8", newline="") as fh:
         rows = list(csv.DictReader(fh))
+    # THE THREE ACCEPTED LABELS, AND WHY EACH IS ACCEPTED.
+    #   PASS                            -- the step was exercised and behaved.
+    #   NOT_VERIFIED_CONTAINER_LIMITATION -- the step could not be verified in this environment
+    #                                      and is recorded as unverified rather than passed.
+    #   RECORDED_NOT_BLOCKING           -- a measured finding, explicitly classified, that the
+    #                                      run judged non-blocking and stated rather than hid.
+    # Anything else -- most importantly a bare FAIL -- turns this oracle red, which is what
+    # fault 17 exercises.
     bad = [r for r in rows
-           if r["result"] not in ("PASS", "NOT_VERIFIED_CONTAINER_LIMITATION")]
+           if r["result"] not in ("PASS", "NOT_VERIFIED_CONTAINER_LIMITATION",
+                                  "RECORDED_NOT_BLOCKING")]
     total = len(rows) + 1
     if bad:
         return "RED", f"RESULT: {len(rows) - len(bad) + 1}/{total} checks passed", \

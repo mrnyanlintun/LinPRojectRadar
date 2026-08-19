@@ -70,10 +70,11 @@ def build_class_export(session: Session, dataset_class: str,
     payload = AX.serialise_csv(rows)
     manifest = AX.freeze_manifest(payload, rows)
 
-    if manifest["schema_version"] != EXPECTED_SCHEMA:
-        raise RuntimeError(f"frozen schema drift: {manifest['schema_version']}")
-    if manifest["column_count"] != EXPECTED_COLUMN_COUNT:
-        raise RuntimeError(f"frozen column count drift: {manifest['column_count']}")
+    # DELIBERATELY NO RAISE HERE. Schema and column-count drift are JUDGED by
+    # test_run39_launch_gate.py, which turns red and names the failure. Raising here killed the
+    # gate mid-run instead, and a process that dies without printing its result is a crash, not
+    # a detection -- the distinction this programme insists on. The values are surfaced in the
+    # sidecar below so the caller can judge them.
 
     sidecar = {
         "artifact_dataset_class": dataset_class,
