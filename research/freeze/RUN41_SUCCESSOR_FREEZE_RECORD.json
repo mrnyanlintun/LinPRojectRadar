@@ -1,0 +1,112 @@
+{
+  "release_disposition": "FINAL_FREEZE_ACCEPTED",
+  "label": "Opus Gubernatio research instrument, Run-41 successor freeze (sim-2026.08-v26)",
+  "created": "2026-08-19",
+  "authority": "The owner's ruling of 2026-08-19 on the two HIGH defects Run 40 confirmed: FIX BOTH BEFORE PARTICIPANT USE. Neither risk is accepted for the study period.",
+  "supersedes_release": "f983bb020f7a184a5742e1fff09d690b0170f0de",
+  "supersedes_candidate": "6142d877856ea651ef8d7e905f6d27604b3244f1",
+  "supersedes_simulation_version": "sim-2026.08-v25",
+  "history": [
+    "Run 37 accepted the final freeze of the v25 instrument at candidate 6142d877856ea651ef8d7e905f6d27604b3244f1, released at f983bb020f7a184a5742e1fff09d690b0170f0de.",
+    "Run 40 executed a functional and security acceptance against that release and confirmed two HIGH defects: S1, stored XSS and content-type spoofing at GET /documents/{id}/content, and S2, raw-SQL mutability of the substantive final participant judgment after the final lock. Run 40 ended FABLE_ACCEPTANCE_BLOCKED with both left open for owner decision, because remediating either moves a frozen byte and neither may be applied silently.",
+    "The owner authorised remediation of both before participant use.",
+    "Run 41 reproduced both defects on v25 first, closed them, stamped the successor sim-2026.08-v26, and requalified every downstream gate by executing it.",
+    "The v25 release remains historical evidence and is not rewritten. Results computed under v25 remain interpretable against the v25 records."
+  ],
+  "freeze_candidate_commit": "6966b4fa2aa5891c51ce4783d540d6a060c0e0be",
+  "candidate_identity_digest": "dc6b4f38c9cae8a3a72a3ac0ac5e7798ec061d281c7e8d41fae0e4ba9fc98a86",
+  "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
+  "release_content_digest": "a9e85858039bc32e19ef6779e66acdcce82396150f8581311a18b466c9b0e1ce",
+  "release_content_digest_method": "sha256 over RUN41_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
+  "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
+  "simulation_version": "sim-2026.08-v26",
+  "simulation_version_history": [
+    "sim-2026.07-v1",
+    "sim-2026.08-v2",
+    "sim-2026.08-v3",
+    "sim-2026.08-v4",
+    "sim-2026.08-v5",
+    "sim-2026.08-v6",
+    "sim-2026.08-v7",
+    "sim-2026.08-v8",
+    "sim-2026.08-v9",
+    "sim-2026.08-v10",
+    "sim-2026.08-v11",
+    "sim-2026.08-v12",
+    "sim-2026.08-v13",
+    "sim-2026.08-v14",
+    "sim-2026.08-v15",
+    "sim-2026.08-v16",
+    "sim-2026.08-v17",
+    "sim-2026.08-v18",
+    "sim-2026.08-v19",
+    "sim-2026.08-v20",
+    "sim-2026.08-v21",
+    "sim-2026.08-v22",
+    "sim-2026.08-v23",
+    "sim-2026.08-v24",
+    "sim-2026.08-v25",
+    "sim-2026.08-v26"
+  ],
+  "participant_package": "og-participant-2026.08-v13",
+  "participant_package_decision": "RETAINED. Not one of the 70 governed participant-package bytes moved, and the 6 sequence-bearing files are byte-identical to the v13 record. A successor was NOT minted merely because server behaviour changed.",
+  "synthetic_package": "OG-SYNTH-0.6",
+  "analysis_schema": "og-analysis-2026.08-v1",
+  "behavioural_delta_v25_to_v26": [
+    "untrusted document content can no longer execute through the same-origin document-content response",
+    "substantive final responses become database-immutable after final lock"
+  ],
+  "behavioural_delta_scope_statement": "Exactly these two, and nothing else. Proved by executing both lines from their own git objects: all 101 registered modules emit byte-identical rows across the boundary, and the AI recommendation is digest-identical at all 36 project-period positions.",
+  "findings_closed": {
+    "S1": {
+      "title": "stored XSS / content-type spoofing on GET /documents/{id}/content",
+      "original_severity": "HIGH",
+      "final_status": "CONFIRMED_FIXED",
+      "evidence": "code_audit/run41_s1_prefix_browser_proof.json (4 of 4 attacker payloads executed in real Chromium) vs code_audit/run41_s1_postfix_browser_proof.json (0 of 4), with all 4 still reaching the serving boundary at HTTP 200"
+    },
+    "S2": {
+      "title": "final-lock database integrity on the primary outcome data",
+      "original_severity": "HIGH",
+      "final_status": "CONFIRMED_FIXED",
+      "evidence": "code_audit/run41_s2_prefix_reproduction.json (13 of 13 raw SQL mutations succeeded after final lock) vs code_audit/run41_s2_postfix_reproduction.json (0 of 13), via migration 0026 trg_decisions_final_lock_guard"
+    }
+  },
+  "unresolved_high_security_blockers": 0,
+  "freeze_gate": {
+    "blockers_evaluated": 15,
+    "blocked": 0,
+    "artifact": "research/freeze/run41_successor_freeze_gate.csv"
+  },
+  "fault_campaign": {
+    "faults": 12,
+    "applied": 12,
+    "intended_red": 12,
+    "restored_green": 12,
+    "crashes_accepted_as_red": 0,
+    "artifact": "code_audit/run41_fault_campaign_results.csv"
+  },
+  "blocking_defects": 0,
+  "limitation_contract": {
+    "empirical_field_validation": "0 of 100. No scientific target in this instrument has been validated against an independent observed real-world outcome.",
+    "portfolio_health_empirical_validation": "PENDING for all five (PH.1-PH.5).",
+    "calibration": "No calibration set exists in this repository: no labelled outcome corpus and no expert reference standard. No band anywhere has a measured false-positive or false-negative rate.",
+    "lineage": "Unresolved for 77 of 100 targets. Unknown lineage was never treated as independent.",
+    "abstention": "Most scientific targets abstain on the controlled corpus: 3 of 100 produce a populated analytical result.",
+    "synthetic_package_history": "OG-SYNTH-0.1 is historically INCOMPLETE - 519 manifest entries against 504 recovered, 15 unrecoverable rows over 5 unique paths. It is not repaired and no completeness is claimed for it.",
+    "a1_1": "A1.1 Monte Carlo EAC Forecast is DISABLED_INSUFFICIENT_INPUT. Its canonical driver-to-EAC mapping is defined by no authority and none was invented.",
+    "scope_of_qualification": "This freeze qualifies the instrument for BOUNDED CONTROLLED-STUDY USE only.",
+    "what_this_is_not": "FINAL FREEZE IS NOT A CLAIM OF VALIDATED REAL-WORLD PREDICTIVE EFFECTIVENESS. It is not field validation, not calibration, and not evidence that any band, threshold or forecast in this instrument is accurate about real projects."
+  },
+  "predecessor_references": {
+    "v25_release_record": "research/freeze/INSTRUMENT_FINAL_FREEZE_RECORD.json",
+    "v25_release_report": "research/freeze/INSTRUMENT_FINAL_FREEZE_REPORT.md",
+    "v25_release_checksums": "research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv",
+    "v25_candidate_identity": "research/freeze/run37_freeze_candidate_identity.json",
+    "v25_freeze_gate": "research/freeze/run37_final_freeze_gate.csv",
+    "v25_behaviour_digest": "research/freeze/run37_candidate_behaviour_digest.json",
+    "statement": "All of these are preserved unchanged. That they still record v25 is asserted by the requalified gates, not assumed."
+  },
+  "governed_files_moved_since_v25": [
+    "server/app/simulation/models.py"
+  ]
+}
