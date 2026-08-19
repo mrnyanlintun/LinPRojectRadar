@@ -238,7 +238,9 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v12",
         "code_audit/run36_participant_package_v12_checksums.sha256",
-        None,
+        # RUN 36 CLOSURE: v12 is a predecessor now, pinned to the commit whose blobs it describes
+        # rather than left reading the working tree, so only one record claims the live tree.
+        "822d80928367c0f422fac5f2564705279e718dd1",
         "RUN 36. ONE participant-visible file moved: the GENERATED defensibility evidence "
         "object, and the change is confined to ONE module's record. A1.1 Monte Carlo EAC "
         "Forecast was served to the participant as CONDITIONAL_ON_GOVERNED_STRUCTURE, with "
@@ -258,11 +260,39 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "and no append-only record moved. The v11 record is NOT regenerated: it is pinned to the "
         "commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v13",
+        "code_audit/run36_closure_participant_package_v13_checksums.sha256",
+        None,
+        "THE OWNER'S A1.1 RULING OF 2026-08-19. Three participant-visible files moved and ALL "
+        "THREE ARE GENERATED from the registry: the served defensibility evidence object and both "
+        "client taxonomy mirrors. A1.1 Monte Carlo EAC Forecast is operationally disabled for "
+        "insufficient canonical input -- canonical execution needs the declared cost-driver "
+        "distribution structure AND an authoritative rule for turning drawn driver figures into a "
+        "forecast, the specification requires that rule and does not define it, and inventing one "
+        "was refused. So the taxonomy mirrors gain its disabled flag and the defensibility record "
+        "stops describing it as a module that computes. The retained budget-and-index "
+        "approximation is preserved in the code and cannot be reached from production. THE "
+        "EXPERIMENTAL SEQUENCE IS UNCHANGED: decision.js, decision-ui.js, workspace.js, "
+        "deepdive.js and both questionnaires are byte for byte identical to v12, and no step of "
+        "the decision sequence, no reveal gate, no lock, no randomization, no server contract and "
+        "no append-only record moved. The v12 record is NOT regenerated: it is pinned to the "
+        "commit whose blobs it describes.",
+    ),
 )
 
 #: RUN 36. The files whose bytes moved between v11 and v12. ONE file, and it is generated.
 V11_TO_V12_CHANGED = (
     "assets/js/ds_defensibility_evidence.js",
+)
+
+#: RUN 36 CLOSURE. The files whose bytes moved between v12 and v13. THREE, and ALL THREE ARE
+#: GENERATED from the registry: the served defensibility object and both client taxonomy mirrors.
+#: Not one of them is hand-authored and not one carries a step of the experimental sequence.
+V12_TO_V13_CHANGED = (
+    "assets/js/categories.js",
+    "assets/js/ds_defensibility_evidence.js",
+    "assets/js/taxonomy.js",
 )
 
 #: The one link that describes the working tree.

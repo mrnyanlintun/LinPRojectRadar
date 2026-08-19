@@ -190,14 +190,22 @@ def population_rows():
     rows.append(["VOTING", "voting population", len(REG.CORE_VOTING_MODULES), 2,
                  "RECONCILED" if len(REG.CORE_VOTING_MODULES) == 2 else "DISCREPANCY",
                  "registry.CORE_VOTING_MODULES = " + ", ".join(sorted(REG.CORE_VOTING_MODULES))])
-    rows.append(["DISABLED", "disabled population (all)", len(REG.DISABLED_MODULES), 9,
-                 "RECONCILED" if len(REG.DISABLED_MODULES) == 9 else "DISCREPANCY",
-                 "8 concept-only plus A3.4 under evidence review"])
+    # THE OWNER'S A1.1 RULING OF 2026-08-19 MOVED THESE TWO COUNTS, AND THE EXPECTATION MOVES
+    # WITH THE REASON RECORDED rather than the observation being suppressed. Nine became ten and
+    # eight became nine because A1.1 joined a THIRD disjoint disabled set,
+    # DISABLED_CANONICAL_INPUT_NOT_GOVERNED. The registered total and the scientific-target total
+    # are unmoved, which is what section 18 freezes: A1.1 is not in
+    # DISABLED_EVIDENCE_UNDER_REVIEW, and that is the set the scientific population subtracts.
+    rows.append(["DISABLED", "disabled population (all)", len(REG.DISABLED_MODULES), 10,
+                 "RECONCILED" if len(REG.DISABLED_MODULES) == 10 else "DISCREPANCY",
+                 "8 concept-only, plus A3.4 under evidence review, plus A1.1 whose canonical "
+                 "input contract is not governed"])
     rows.append(["DISABLED", "disabled INSIDE the 100 scientific targets",
-                 len([m for m in REG.DISABLED_MODULES if m in scientific]), 8,
-                 "RECONCILED" if len([m for m in REG.DISABLED_MODULES if m in scientific]) == 8
+                 len([m for m in REG.DISABLED_MODULES if m in scientific]), 9,
+                 "RECONCILED" if len([m for m in REG.DISABLED_MODULES if m in scientific]) == 9
                  else "DISCREPANCY",
-                 "A3.4 is the one disabled module outside the scientific population"])
+                 "A3.4 remains the one disabled module OUTSIDE the scientific population; A1.1 is "
+                 "disabled and stays inside it"])
     _arch = sorted(m for m in scientific
                    if str(execute(m).get("canonical_disposition") or "") == "ARCHIVED"
                    or str(execute(m).get("disposition") or "") == "ARCHIVED")
@@ -282,14 +290,35 @@ def target_row(mid, reg_row, gov_keys):
 
     # 4. LEGACY REACHABILITY. A proxy qualifier is the platform's own statement that a module
     #    computes something other than the method its name claims.
-    legacy = ("YES - proxy qualifier held: " + str(REG.PROXY_QUALIFIERS[mid])[:70]
-              if mid in REG.PROXY_QUALIFIERS else "NO")
+    # A PROXY QUALIFIER IS NOT AUTOMATICALLY A LEGACY ROUTE, and conflating the two overstates
+    # the finding. The qualifier is the platform's disclosure about a module; it can disclose that
+    # the module computes something OTHER than its named method (a legacy/proxy route), or that it
+    # computes the named method with UNCALIBRATED constants (a calibration disclosure). A1.2 is
+    # the second: it carries out the two-sided tabular CUSUM its name claims, on the project's
+    # real schedule-index history, and what its qualifier discloses is that k, H, the sigma floor
+    # and the Amber band are uncalibrated -- which is true of the whole instrument and is recorded
+    # in the parameter register, not a substituted method. The distinction is drawn from the
+    # module's OWN dispatch target, not from the presence of a qualifier.
+    if mid in REG.PROXY_QUALIFIERS:
+        _q = str(REG.PROXY_QUALIFIERS[mid])
+        _substitutes = ("instead of" in _q or "rather than" in _q or "in place of" in _q)
+        legacy = (("YES - the disclosed route computes something other than the named method: "
+                   + _q[:90]) if _substitutes
+                  else ("NO - calibration disclosure, not a substituted method: " + _q[:90]))
+    else:
+        legacy = "NO"
     # 5. GOVERNED INPUT SUFFICIENCY.
     declared = key or "none"
     accepted = "YES" if (key and key in gov_keys) else ("n/a" if not key else "NO")
     supplied_on_corpus = "NO - the controlled corpus carries no governed structure" if key else "n/a"
-    consumed = ("NO - accepted by the intake and read by no route" if mid == "A1.1"
-                else ("YES when supplied - the runner refuses without it" if key else "n/a"))
+    if mid in REG.DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+        consumed = ("NOT SATISFIED - the canonical input contract needs the declared structure "
+                    "AND an authoritative driver-to-EAC mapping; the specification requires the "
+                    "mapping and does not define it, so none was invented")
+    elif key:
+        consumed = "YES when supplied - the runner refuses without it"
+    else:
+        consumed = "n/a"
     # 6. PARAMETER PROVENANCE.
     prov = REG.parameter_provenance(mid) or []
     classes = sorted({p.parameter_class for p in prov}) or ["none - carries no tunable value"]
@@ -344,6 +373,10 @@ def target_row(mid, reg_row, gov_keys):
     # 11. OPERATIONAL DISPOSITION, from section 15's seven-value closed vocabulary.
     if archived:
         disposition = "ARCHIVED"
+    elif mid in REG.DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+        # THE OWNER'S A1.1 RULING OF 2026-08-19. Read from the registry rather than named here,
+        # so the disposition follows the governed set and cannot drift from it.
+        disposition = "DISABLED_INSUFFICIENT_INPUT"
     elif concept_disabled and mid in ("B4.1", "B4.2", "B4.5", "B4.6", "A3.8"):
         disposition = "DISABLED_INSUFFICIENT_INPUT"
     elif concept_disabled:
@@ -711,19 +744,27 @@ def main() -> int:
     # THE FREEZE DECISION IS NOT TAKEN FROM THE 100 ROWS ALONE. A blocking defect can be an
     # instrument-level fact that no single row carries, and section 23 names one explicitly:
     # "known scientific contradiction like the A1.1 issue left unresolved".
-    qrows.append(["INSTRUMENT_BLOCKING_DEFECT", "A1.1", "Monte Carlo EAC Forecast",
-                  "YES", "YES", "DECLARED_STRUCTURE_UNCONSUMED", "UNSUPPORTED band withdrawn",
-                  "NO_CALIBRATION_SET", "CALIBRATION_GAP_BLOCKS_VALIDATION",
-                  "LINEAGE_ESTABLISHED_DEPENDENT", "CANONICAL_REACHED", "KEEP_ADVISORY", "NO",
-                  "YES",
-                  "YES - section 23: a known scientific contradiction left unresolved. A1.1 "
-                  "declares costDriverDistributions, canonical theory requires it, the intake "
-                  "accepts it and no route reads it. Closing it requires the deterministic "
-                  "driver-to-EAC mapping the specification demands and does not define.",
-                  "QUALIFIED_FOR_BOUNDED_STUDY_USE"])
+    # THE RUN-36 INSTRUMENT-LEVEL BLOCKING DEFECT, AND ITS CLOSURE. The row is KEPT, not deleted:
+    # the finding is part of the scientific record and its resolution is recorded beside it.
+    qrows.append(["INSTRUMENT_BLOCKING_DEFECT_CLOSED", "A1.1", "Monte Carlo EAC Forecast",
+                  "ESTABLISHED", "RETAINED ADAPTATION PRESERVED, PRODUCTION-UNREACHABLE",
+                  "NOT SATISFIED - structure and driver-to-EAC mapping both absent",
+                  "no unresolved parameter is applied; the UNSUPPORTED ladder stays withdrawn",
+                  "NO_CALIBRATION_SET", "STRUCTURE_OR_DATA_ABSENT", "LINEAGE_NOT_APPLICABLE",
+                  "DISABLED", "DISABLED_INSUFFICIENT_INPUT", "NO", "NO",
+                  "CLOSED - the owner ruled on 2026-08-19 that supervisory specification s1.1's "
+                  "Required list governs canonical Monte Carlo execution and that the permission "
+                  "to retain the scalar adaptation preserves it as historical code without "
+                  "waiving the input contract. A1.1 no longer executes operationally, the "
+                  "adaptation is preserved and cannot be reached from production, and NO "
+                  "driver-to-EAC mapping was invented. The contradiction Run 36 reported - a "
+                  "module declaring a structure it did not consume while presenting itself as "
+                  "canonical - no longer exists.",
+                  "DISABLED"])
     write(out, "run36_instrument_qualification.csv", HDR_QUAL, qrows)
     print(f"BLOCKING DEFECTS ON TARGET ROWS: {len(blocking)}")
-    print("INSTRUMENT-LEVEL BLOCKING DEFECTS: 1 (A1.1 declared structure unconsumed)")
+    print("INSTRUMENT-LEVEL BLOCKING DEFECTS: 0 (the Run-36 A1.1 contradiction is CLOSED by "
+          "the owner ruling of 2026-08-19)")
     return 0
 
 

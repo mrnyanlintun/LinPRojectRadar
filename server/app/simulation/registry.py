@@ -104,11 +104,48 @@ EVIDENCE_UNDER_REVIEW_REASON = (
     "are retained."
 )
 
+#: RUN 36 CLOSURE, THE OWNER'S A1.1 RULING OF 2026-08-19. A THIRD, DISJOINT REASON.
+#:
+#: The owner resolved the specification ambiguity Run 36 identified: the `Required:` input list in
+#: supervisory specification s1.1 GOVERNS what qualifies as canonical A1.1 Monte Carlo EAC
+#: Forecast. The permission to "retain" the scalar BAC/CPI/SPI/document-risk adaptation permits it
+#: to be PRESERVED as scientific and historical code. It does NOT waive the canonical input
+#: contract and does NOT authorize the adaptation to stand in for canonical Monte Carlo execution.
+#:
+#: Canonical A1.1 requires TWO governed elements: the declared `costDriverDistributions` structure,
+#: and an authoritative deterministic mapping from the sampled cost drivers to EAC. The
+#: specification requires that mapping and DOES NOT DEFINE IT. Inventing one would be inventing
+#: the canonical method, which this programme refuses. Until both exist, A1.1 does not execute
+#: operationally as the canonical method.
+#:
+#: THIS IS NOT A SOFTWARE FAILURE AND THE SENTENCE BELOW DOES NOT SAY IT IS. Nothing is broken:
+#: the arithmetic is intact, the structure reader is intact, and the module is not called unsafe.
+#: What is absent is a governed scientific input contract, which is why the reason code is
+#: CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED and not a missing-value code.
+DISABLED_CANONICAL_INPUT_NOT_GOVERNED: dict[str, str] = {
+    "A1.1": "Monte Carlo EAC Forecast",
+}
+
+#: The machine-readable reason code, kept distinct from every ordinary missing-input code so that
+#: an absent scientific CONTRACT is never read as an absent VALUE.
+CANONICAL_INPUT_NOT_GOVERNED_CODE = "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED"
+
+CANONICAL_INPUT_NOT_GOVERNED_REASON = (
+    "The cost forecast is not produced. The method this module is named for draws from a declared "
+    "set of uncertain cost drivers, and two things it needs are not established: the declared set "
+    "of drivers itself, and the rule that turns drawn driver figures into a forecast of the final "
+    "cost. The second of those has never been written down anywhere this platform can read, so "
+    "there is no defensible way to produce the forecast and none is produced. This is a limit of "
+    "the evidence and the method definition, not a fault in the computation. The earlier "
+    "budget-and-index approximation is kept in the record for traceability and is not used here."
+)
+
 #: Every module this server refuses to execute, whatever the reason. This is the set the
 #: enforcement points read, so a new disablement reason cannot be added without every gate
 #: picking it up. The two component sets stay separate above because they mean different things
 #: and because the eight remain, individually, part of the scientific review population.
-DISABLED_MODULES: dict[str, str] = {**DISABLED_CONCEPT_ONLY, **DISABLED_EVIDENCE_UNDER_REVIEW}
+DISABLED_MODULES: dict[str, str] = {**DISABLED_CONCEPT_ONLY, **DISABLED_EVIDENCE_UNDER_REVIEW,
+                                    **DISABLED_CANONICAL_INPUT_NOT_GOVERNED}
 
 #: The seven CORE modules the audit approves to vote on project status, on an interim basis,
 #: until Run 4 validates them and Run 4's acceptance criterion restores voting on a durable
@@ -273,6 +310,10 @@ def activation_state(new_id: str) -> str:
     # RUN 16. Its own state, not DISABLED_UNSAFE: this module is not being called unsafe.
     if new_id in DISABLED_EVIDENCE_UNDER_REVIEW:
         return "DISABLED_EVIDENCE_UNDER_REVIEW"
+    # RUN 36 CLOSURE. Its own state again, and again not DISABLED_UNSAFE: the module is not being
+    # called unsafe. Its canonical input contract is not governed.
+    if new_id in DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+        return "DISABLED_INSUFFICIENT_INPUT"
     if new_id in CORE_VOTING_MODULES:
         return "ENABLED_QUALIFIED"
     return "ADVISORY_ONLY"
@@ -408,6 +449,28 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
             "insufficient_data": True,
             "activation_state": "DISABLED_EVIDENCE_UNDER_REVIEW",
             "evidence_metric": EVIDENCE_UNDER_REVIEW_REASON,
+        }
+    # RUN 36 CLOSURE, THE OWNER'S A1.1 RULING. Short-circuited in the SAME PLACE and on the same
+    # footing as the other two disjoint reasons: before the module's formula function is reached.
+    # That is what makes the retained scalar adaptation production-unreachable rather than merely
+    # deprecated -- it cannot be entered at all, so it cannot become a fallback when the canonical
+    # inputs are absent, and it cannot supply a project status. `models_sim.run_monte_carlo` and
+    # `monte_carlo_eac` are untouched and remain reconstructable as scientific history.
+    if new_id in DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+        return {
+            # THE MODULE'S IDENTITY SURVIVES ITS DISABLEMENT, and it is read from the dispatch
+            # table rather than restated here, so the identity cannot drift from the function the
+            # registry points at. A1.1 is still Monte Carlo EAC Forecast; it is not executing.
+            "method_class": VALIDATED[new_id][0] if new_id in VALIDATED else None,
+            "status_color": None,
+            "band_asserted": False,
+            "insufficient_data": True,
+            "activation_state": "DISABLED_INSUFFICIENT_INPUT",
+            "abstention_reason_code": CANONICAL_INPUT_NOT_GOVERNED_CODE,
+            "canonical_disposition": "CANONICAL_INPUT_CONTRACT_NOT_SATISFIED",
+            "retained_adaptation": "preserved in app.simulation.models_sim.run_monte_carlo as "
+                                   "historical research implementation; not reached from here",
+            "evidence_metric": CANONICAL_INPUT_NOT_GOVERNED_REASON,
         }
     if new_id not in VALIDATED:
         raise MissingModuleError(

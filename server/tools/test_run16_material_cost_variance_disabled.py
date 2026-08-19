@@ -210,9 +210,18 @@ check("disabled: true" in entry[0],
       "and it is flagged disabled, so the browser presents it as unavailable", entry[0][:100])
 disabled_entries = [ln for ln in taxonomy.splitlines()
                     if "disabled: true" in ln and "method_class:" in ln]
-check(len(disabled_entries) == 9,
-      "nine taxonomy entries are flagged disabled: the eight and this one",
+# RUN 36 CLOSURE. TEN now, not nine: the owner's 2026-08-19 ruling disabled A1.1 Monte Carlo EAC
+# Forecast for insufficient canonical input, and the client taxonomy is GENERATED from the
+# registry so the flag followed. The eight concept-only modules and Material Cost Variance -- the
+# subject of this file -- are unchanged, and both facts are asserted rather than one count being
+# quietly raised.
+check(len(disabled_entries) == 10,
+      "ten taxonomy entries are flagged disabled: the eight concept-only, this one, and A1.1",
       str(len(disabled_entries)))
+check(sum(1 for ln in disabled_entries if "'A1.1'" in ln or '"A1.1"' in ln) == 1,
+      "and exactly one of them is A1.1, so the tenth entry is the one the owner's ruling "
+      "disabled and not some other module drifting into the set",
+      str([ln.strip()[:40] for ln in disabled_entries if "A1.1" in ln]))
 # The browser flag is presentation. The refusal that matters is the server's, and the server does
 # not consult the browser: nothing under app/ reads the taxonomy file.
 # A mention in a comment is not a dependency; a path the server could OPEN would be. Nothing

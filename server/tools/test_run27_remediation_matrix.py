@@ -47,7 +47,8 @@ import run31_qualified_fixture as _R31Q                                       # 
 _R31Q.install()
 
 from app.simulation.registry import (  # noqa: E402
-    CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, DISABLED_MODULES, load_registry,
+    CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, DISABLED_EVIDENCE_UNDER_REVIEW,
+    DISABLED_MODULES, load_registry,
 )
 from run27_curation import (  # noqa: E402
     CORPUS_STATES, FUTURE_RUNS, PARSIMONY_CLASSES, PRIORITIES, REMEDIATION_TYPES,
@@ -303,12 +304,30 @@ section("8. RUN 27 CHANGED NO OPERATIONAL STATE")
 
 check("the eight concept-only modules remain disabled", len(DISABLED_CONCEPT_ONLY) == 8,
       str(len(DISABLED_CONCEPT_ONLY)))
-check("no disabled module is proposed for activation by any matrix row",
+# RUN 36 CLOSURE. THIS CHECK WAS A HISTORICAL CLAIM EVALUATED AGAINST A DRIFTING LIVE SET, which
+# is the same defect shape Run 36 found in three version-boundary guards. The matrix is RUN 27's
+# record of what Run 27 proposed, and the claim it carries is that Run 27 proposed activating
+# nothing that was disabled WHEN IT WAS WRITTEN. Comparing it against today's disabled set makes
+# every future disablement falsify a settled statement about a past run. It is therefore scoped
+# to the two sets that existed at Run 27, and the one module disabled since is asserted BY NAME
+# immediately below rather than silently excused -- an exclusion nobody can see is a hole.
+_RUN27_DISABLED = {**DISABLED_CONCEPT_ONLY, **DISABLED_EVIDENCE_UNDER_REVIEW}
+check("no module disabled at Run 27 is proposed for activation by any matrix row",
       all("remains disabled" in r["proposed_operational_destination"]
-          for r in matrix if r["canonical_id"] in DISABLED_MODULES),
+          for r in matrix if r["canonical_id"] in _RUN27_DISABLED),
       str([r["canonical_id"] for r in matrix
-           if r["canonical_id"] in DISABLED_MODULES
+           if r["canonical_id"] in _RUN27_DISABLED
            and "remains disabled" not in r["proposed_operational_destination"]]))
+_since = sorted(set(DISABLED_MODULES) - set(_RUN27_DISABLED))
+check("and the only module disabled since Run 27 is A1.1, whose Run-27 row is SUPERSEDED by the "
+      "owner's 2026-08-19 ruling rather than still standing as a live proposal",
+      _since == ["A1.1"], str(_since))
+_a11_row = next((r for r in matrix if r["canonical_id"] == "A1.1"), None)
+check("Run 27's own record of what it proposed for A1.1 is preserved unrewritten, so the "
+      "supersession is visible rather than erased",
+      _a11_row is not None
+      and "advisory" in _a11_row["proposed_operational_destination"],
+      str(_a11_row["proposed_operational_destination"])[:90] if _a11_row else "row missing")
 check("no row proposes a removal as an action rather than a recommendation",
       all("RECOMMENDATION" in r["owner_decision_required"]
           for r in matrix if r["redundancy_candidate"] == "yes"),

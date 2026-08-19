@@ -138,13 +138,24 @@ _ds = text("assets/js/ds_defensibility_evidence.js")
 _m = re.search(r'"A1\.1": \{(.*?)\},\n', _ds, re.S)
 _a11_served = _m.group(1) if _m else ""
 _a11 = run("A1.1")
-_declares_conditional = "CONDITIONAL_ON_GOVERNED_STRUCTURE" in _a11_served
-_actually_abstains = _a11.get("__state__") == "ABSTAINS"
+# RUN 36 CLOSURE. The served state must be the state EXECUTION produces, in either direction.
+# Before the owner's ruling the lie was "conditional" over a module that computed; the mirror-image
+# lie would be "computes" over a module that does not, and both are caught by comparing the served
+# state to the executed one rather than by naming one wrong string.
+_a11_served_state = ""
+_sm = re.search(r'operationalState: "([A-Z_]+)"', _a11_served)
+if _sm:
+    _a11_served_state = _sm.group(1)
+_a11_executes = _a11.get("__state__") == "COMPUTES"
+_a11_says_computes = _a11_served_state == "COMPUTES_FROM_AVAILABLE_EVIDENCE"
+_a11_says_conditional = _a11_served_state == "CONDITIONAL_ON_GOVERNED_STRUCTURE"
 check("run36.fault04.a1_1_structure_claim_truthful",
-      _declares_conditional == _actually_abstains,
+      _a11_served_state == "DISABLED_INSUFFICIENT_INPUT"
+      and not _a11_executes and not _a11_says_computes and not _a11_says_conditional,
       "A1.1's served operational state matches what it actually does without its declared "
-      "structure; it claims to consume a required structure it does not consume",
-      f"served_conditional={_declares_conditional} actually_abstains={_actually_abstains}")
+      "structure; it claims to consume a required structure it does not consume, or claims to "
+      "compute when it does not",
+      f"served={_a11_served_state!r} executes={_a11_executes}")
 _offenders = []
 for _mid in sorted(SCIENTIFIC):
     _r = run(_mid)

@@ -1616,10 +1616,18 @@ _unrecognised = sorted(m for m in UNRESOLVED_27
                        if m in _by_id
                        and m not in _pending_rows
                        and fusion.normalise_status(_by_id[m]["status_color"]) is None)
-ka(_pending_rows, ["A1.1"],
-   "and the only row excused from the vocabulary is A1.1, which asserts no band at all after "
-   "the Run-36 closure", "A1.1", "production_path",
-   "its ladder is UNSUPPORTED and no calibration set exists")
+# RUN 36 CLOSURE. The excused list is now EMPTY, and that is a strengthening rather than a
+# weakening: A1.1 was the one calibration-pending row, and under the owner's 2026-08-19 ruling it
+# no longer computes at all, so nothing is excused from the vocabulary check by anything. The
+# assertion is kept and pinned at zero rather than deleted, so a future row quietly excusing
+# itself would still be caught.
+ka(_pending_rows, [],
+   "and NO row is excused from the status vocabulary any more: the one that used to be, A1.1, "
+   "is disabled for insufficient canonical input and computes nothing", "", "production_path",
+   "the excusing arm is retained and pinned at zero so it cannot silently readmit a row")
+ka([m for m in UNRESOLVED_27 if m in _by_id and m == "A1.1"], [],
+   "and A1.1 publishes no stored row at all on the production path", "A1.1", "production_path",
+   "operationally disabled: CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED")
 ka([m for m in _pending_rows if _by_id[m].get("status_color") is not None], [],
    "and an excused row really does carry no colour, so the exclusion cannot hide one", "",
    "production_path", "calibration_pending is not a licence to band")

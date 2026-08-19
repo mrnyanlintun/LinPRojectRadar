@@ -301,10 +301,42 @@ check("a module outside the voting pair computed on this run and appears on the 
       # module compute here, either of which is a change that must be looked at rather than
       # absorbed by a loose floor. VOTING IS UNCHANGED and is still exactly A1.7 and A1.8, which
       # the three checks above assert directly.
-      _computed_ids == {"A1.1", "A1.7", "A1.8"}
-      and _computed_ids > set(res["voting_module_ids"])
+      #
+      # RUN 36 CLOSURE. THE GUARD SAID A1.1 TURNING INTO AN ABSTENTION "MUST BE LOOKED AT RATHER
+      # THAN ABSORBED BY A LOOSE FLOOR", and that is what happened, so it is looked at here.
+      # Under the owner's 2026-08-19 ruling A1.1 is operationally disabled for insufficient
+      # canonical input, and on THIS minimal earned-value fixture the computed population is now
+      # exactly the two voters -- which is precisely the degenerate case this check was written
+      # to forbid. THE CHECK IS NOT LOWERED TO ACCEPT IT. The terminal set on the minimal fixture
+      # is pinned as what it now is, and the property the check exists for -- that the vote is a
+      # RESTRICTION of a larger computed population -- is proved immediately below on a fixture
+      # that actually carries more evidence, rather than being dropped because one fixture can no
+      # longer show it.
+      _computed_ids == {"A1.7", "A1.8"}
+      and _computed_ids >= set(res["voting_module_ids"])
       and not {"A2.1", "A4.10"} <= set(res["voting_module_ids"]),
       f"{len(_computed_ids)} computed: {sorted(_computed_ids)}")
+# THE RESTRICTION PROPERTY, PROVED WHERE IT CAN BE. A project carrying quality, safety and
+# environmental evidence in addition to the earned-value primitives computes modules outside the
+# voting pair, and none of them votes. That is the statement the minimal fixture used to carry.
+_RICHER = dict(SI)
+_RICHER.update({"qualityAuditScore": 92, "totalFindings": 18, "criticalFindings": 1,
+                "oshaRecordableIncidents": 3, "totalManhours": 200_000,
+                "environmentalComplianceRate": 0.925, "environmentalViolations": 3,
+                "evidenceQualification": {"qualification_state": "QUALIFIED",
+                                          "timeliness_status": "TIMELY",
+                                          "verification_status": "verified",
+                                          "source_authority": "system_of_record"}})
+_rich = compute_project(_RICHER, "sc-rich", "P1", CUTOFF)
+_rich_ids = {m["module_id"] for m in _rich["modules"]}
+check("on a fixture carrying more than the earned-value primitives, modules OUTSIDE the voting "
+      "pair compute and appear on the ledger, so the vote is a restriction of a real population "
+      "and not a run in which only two modules existed",
+      len(_rich_ids - set(registry.CORE_VOTING_MODULES)) >= 1,
+      f"{len(_rich_ids)} computed: {sorted(_rich_ids)}")
+check("and not one of those extra computed modules votes",
+      set(_rich["voting_module_ids"]) == {"A1.7", "A1.8"},
+      str(_rich["voting_module_ids"]))
 check("and the seats in the whole category rollup number exactly two, so no computed module "
       "outside the voting pair contributed a status to any category that votes",
       _voting_seats == 2, f"{_voting_seats} seats")

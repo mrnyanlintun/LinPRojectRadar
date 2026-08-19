@@ -236,13 +236,29 @@ def cat1() -> None:
     mid = "1.1"
     si = dict(BASE_EVM)
     out = run("A1.1", si)
-    check(mid, "positive: executes on a complete EVM input", not abstained(out), str(out))
-    p50, p80 = out.get("p50_eac"), out.get("p80_eac")
-    check(mid, "positive: reports both a P50 and a P80 from the simulated distribution",
-          p50 is not None and p80 is not None, f"keys {sorted(out)}")
-    check(mid, "structure: the iteration count is reported", out.get("iterations") is not None)
-    check(mid, "structure: the uncertain-variable driver is named",
-          out.get("spread_driver") is not None)
+    # RUN 36 CLOSURE, THE OWNER'S A1.1 RULING. The owner resolved the ambiguity Run 36 found: the
+    # `Required:` input list in supervisory specification s1.1 GOVERNS what qualifies as canonical
+    # Monte Carlo. Canonical execution needs the declared cost-driver distribution structure AND
+    # an authoritative rule for turning drawn driver figures into a forecast of the final cost.
+    # The specification requires that rule and does not define it, so the module does not execute
+    # operationally and the retained budget-and-index approximation is preserved but unreachable.
+    check(mid, "governed: does NOT execute on a complete EVM input alone, because a complete EVM "
+          "input is not the canonical input contract", abstained(out), str(out)[:160])
+    check(mid, "governed: and the reason distinguishes an ungoverned method definition from an "
+          "ordinary missing value",
+          out.get("abstention_reason_code") == "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED",
+          str(out.get("abstention_reason_code")))
+    # THE SCIENTIFIC RECORD OF THE PRESERVED ARITHMETIC IS NOT LOST. Every structural assertion
+    # this audit made about the adaptation is still made, driven against the preserved function
+    # directly. That is a test exercising historical code on purpose; production cannot.
+    from app.simulation.models_sim import run_monte_carlo as _retained  # noqa: E402
+    kept = _retained(dict(BASE_EVM), lambda: 0.5, 0)
+    p50, p80 = kept.get("p50_eac"), kept.get("p80_eac")
+    check(mid, "preserved: the retained adaptation still reports both a P50 and a P80 from the "
+          "simulated distribution", p50 is not None and p80 is not None, f"keys {sorted(kept)}")
+    check(mid, "preserved: the iteration count is reported", kept.get("iterations") is not None)
+    check(mid, "preserved: the uncertain-variable driver is named",
+          kept.get("spread_driver") is not None)
     if p50 is not None and p80 is not None:
         check(mid, "invariant: P50 <= P80", p50 <= p80, f"{p50} vs {p80}")
     # Beta-PERT lambda=4 analytic mean, the specification's own oracle, checked against the
@@ -255,7 +271,10 @@ def cat1() -> None:
     r1 = REG.run_all(dict(BASE_EVM), "scenario-x", "P1", CUTOFF, only=["A1.1"])
     r2 = REG.run_all(dict(BASE_EVM), "scenario-x", "P1", CUTOFF, only=["A1.1"])
     check(mid, "reproducibility: identical seed gives identical result",
-          r1["computed"] == r2["computed"])
+          r1["computed"] == r2["computed"] and r1["abstained"] == r2["abstained"])
+    check(mid, "governed: and A1.1 publishes no computed row at all through the real runner",
+          not any(m["module_id"] == "A1.1" for m in r1["computed"]),
+          str([m["module_id"] for m in r1["computed"]]))
     r3 = REG.run_all(dict(BASE_EVM), "scenario-y", "P1", CUTOFF, only=["A1.1"])
     check(mid, "stochastic diagnostic: a different seed moves the sample",
           r3["seed"] != r1["seed"])

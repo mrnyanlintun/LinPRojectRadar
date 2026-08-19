@@ -57,7 +57,7 @@ window.LIN_CATEGORIES = [
     color: '#4ea0ff',
     description: 'Cost and schedule performance indices derived from verified pay applications and schedules.',
     modules: [
-      { id: 'a1_1', num: 'A1.1', name: 'Monte Carlo EAC Forecast', method_class: 'Monte_Carlo', active: true, required: ['bac','cpi','spi'] },
+      { id: 'a1_1', num: 'A1.1', name: 'Monte Carlo EAC Forecast', method_class: 'Monte_Carlo', active: true, disabled: true, required: ['bac','cpi','spi'] },
       { id: 'a1_2', num: 'A1.2', name: 'CUSUM Anomaly Monitor', method_class: 'CUSUM', active: true, required: ['spi'] },
       { id: 'a1_3', num: 'A1.3', name: 'Bayesian EAC', method_class: 'Bayesian_EAC', active: true, required: ['bac','ev','ac','cpi'] },
       { id: 'a1_4', num: 'A1.4', name: 'Kalman Filter SPI Smoother', method_class: 'Kalman_Filter', active: true, required: ['spi','spiHistory'] },

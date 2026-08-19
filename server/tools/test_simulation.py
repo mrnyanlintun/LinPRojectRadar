@@ -113,8 +113,21 @@ other = compute_project(DISTRESSED, "sc-2", "P1", CUTOFF)
 # unchanged and is read off the forecast module instead, which is seeded from the same
 # (scenario_id, period) pair through the same holder and is the other stochastic module in the
 # registry. Nothing about the seeding rule is relaxed here; only which module demonstrates it.
-def mc(run):
-    return next(m for m in run["modules"] if m["module_id"] == "A1.1")
+# RUN 36 CLOSURE, THE OWNER'S A1.1 RULING. A1.1 no longer publishes a stored row at all: its
+# canonical input contract is not governed, so it is operationally disabled for insufficient input
+# and the retained budget-and-index approximation is not reached from production. THE SEEDING
+# GUARANTEE IS UNCHANGED AND IS STILL PROVED HERE -- it is read off the RETAINED ADAPTATION driven
+# directly with the seeds compute_project derives, which is where that arithmetic still lives.
+# This is a test calling preserved historical code on purpose; the assertion three lines below is
+# what proves production cannot do the same.
+from app.simulation.models_sim import run_monte_carlo as _retained_mc  # noqa: E402
+
+_MC_SI = {"bac": 1_000_000.0, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3}
+
+
+def mc(run, si=None):
+    """The retained adaptation, driven with the seed THIS run derived. Never a production route."""
+    return _retained_mc(dict(si or _MC_SI), lambda: 0.5, run["seed"])
 
 
 check(mc(p1a)["p80_eac"] == mc(p1b)["p80_eac"],
@@ -124,15 +137,21 @@ check(mc(p1a)["p80_eac"] != mc(p2)["p80_eac"],
       f"P1={mc(p1a)['p80_eac']} P2={mc(p2)['p80_eac']}")
 check(mc(p1a)["p80_eac"] != mc(other)["p80_eac"],
       "different scenario -> different P80")
-check(mc(p1a)["seed"] == p1a["seed"], "seed recorded on the stochastic module result")
+check(all(m["module_id"] != "A1.1" for m in p1a["modules"]),
+      "and A1.1 publishes NO stored row, because its canonical input contract is not governed",
+      str([m["module_id"] for m in p1a["modules"] if m["module_id"] == "A1.1"]))
 check(seed_from("sc-1", "P1") == p1a["seed"], "seed derives from (scenario_id, period) only")
 check(all(m["module_id"] != "A2.1" for m in p1a["modules"]),
       "the criticality module publishes no stored row without an activity network")
 _h = compute_project(HEALTHY, "sc-1", "P1", CUTOFF)
 _h2 = compute_project(HEALTHY, "sc-1", "P2", CUTOFF)
-check(mc(_h)["p80_eac"] == mc(_h2)["p80_eac"],
+# THE DETERMINISTIC COLLAPSE is a property of the HEALTHY project's own indices -- at or above
+# plan on both, the spread driver is nought and the Beta-PERT degenerates -- so the retained
+# adaptation is driven with THOSE inputs rather than the generic ones above. Two different seeds
+# must still give one answer, which is what "deterministic" means here.
+check(mc(_h, HEALTHY)["p80_eac"] == mc(_h2, HEALTHY)["p80_eac"],
       "a project at or above plan on both indices collapses to one deterministic forecast",
-      str(mc(_h)["p80_eac"]))
+      str(mc(_h, HEALTHY)["p80_eac"]))
 
 print()
 print("=" * 78)

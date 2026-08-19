@@ -84,6 +84,12 @@ EXEC_CONDITIONAL = ("the canonical production runner exists, but execution requi
                     "Estimable")
 EXEC_DISABLED = ("the canonical laboratory engine exists, but the module is operationally "
                  "disabled and produces no live project reading")
+EXEC_DISABLED_INPUT = (
+    "canonical execution requires the governed cost-driver distribution structure AND an "
+    "authoritative rule for turning drawn driver figures into a forecast of the final cost; "
+    "neither is established, so the module is operationally disabled for insufficient input and "
+    "produces no live project reading. The earlier budget-and-index approximation is preserved in "
+    "the record for traceability and is not the canonical operational method")
 EXEC_DISABLED_EVIDENCE = ("the module is disabled pending an evidence-design decision and "
                           "produces no live project reading")
 EXEC_ARCHIVED = ("historical implementation and scientific record are preserved, but the method "
@@ -103,6 +109,10 @@ STRUCT_DECLARED_NOT_ENFORCED = ("declared in the canonical-structure layer but e
 #: structure and no route reads it, so supplying it changes nothing. Saying "the platform does
 #: not compute this value" of a module that computes every period would be a second untrue
 #: sentence put in place of the first.
+STRUCT_REQUIRED_PLUS_MAPPING = ("required by the canonical method, together with an "
+                                "authoritative rule for turning drawn driver figures into a "
+                                "forecast; neither is established, so no canonical result is "
+                                "produced")
 STRUCT_DECLARED_NOT_CONSUMED = ("declared in the canonical-structure layer and accepted by the "
                                 "intake, but read by no current route, so the reading is "
                                 "produced whether it is supplied or not")
@@ -165,6 +175,11 @@ def expected_for(mid: str, name: str) -> dict:
 
     if archived:
         execution = EXEC_ARCHIVED
+    elif mid in REG.DISABLED_CANONICAL_INPUT_NOT_GOVERNED:
+        # RUN 36 CLOSURE, THE OWNER'S A1.1 RULING. Its own state: the canonical INPUT CONTRACT is
+        # not governed, which is not the same fact as concept-only and not the same fact as an
+        # evidence-design decision under review.
+        execution = EXEC_DISABLED_INPUT
     elif disabled_evidence:
         execution = EXEC_DISABLED_EVIDENCE
     elif disabled_concept:
@@ -204,7 +219,13 @@ def expected_for(mid: str, name: str) -> dict:
         # single-project probe, but its structure IS required by its own route -- it is refused
         # before the probe reaches it. Keying off the derived execution state rather than off
         # `abstained` alone keeps the five Portfolio Health rows saying what they said.
+        # RUN 36 CLOSURE. A module disabled BECAUSE its canonical input contract is not
+        # governed gets the sentence that is true of it: the structure is required, and it is
+        # not the only thing missing. The Run-36 "declared but read by no route" sentence was
+        # true while it computed without the structure and would now be false the other way.
         "structure_stmt": (STRUCT_DECLARED_NOT_ENFORCED if (key and supplied)
+                           else STRUCT_REQUIRED_PLUS_MAPPING
+                           if (key and execution == EXEC_DISABLED_INPUT)
                            else STRUCT_DECLARED_NOT_CONSUMED
                            if (key and execution == EXEC_COMPUTES)
                            else STRUCT_REQUIRED if key else STRUCT_NOT_REQUIRED),
@@ -229,6 +250,7 @@ STATE_OF_EXECUTION = {
     EXEC_COMPUTES: "COMPUTES_FROM_AVAILABLE_EVIDENCE",
     EXEC_CONDITIONAL: "CONDITIONAL_ON_GOVERNED_STRUCTURE",
     EXEC_DISABLED: "DISABLED_CONCEPT_ONLY",
+    EXEC_DISABLED_INPUT: "DISABLED_INSUFFICIENT_INPUT",
     EXEC_DISABLED_EVIDENCE: "DISABLED_EVIDENCE_UNDER_REVIEW",
     EXEC_ARCHIVED: "ARCHIVED_FUTURE_RESEARCH",
     EXEC_SUPPLIED: "SUPPLIED_VALUE",

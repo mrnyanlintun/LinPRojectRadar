@@ -604,8 +604,18 @@ check("cost_elements" not in _src and "cost_risk_ground_truth" not in _src,
 # and it reads neither actual cost nor earned value.
 _mc_full = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3},
                       lambda: 0.5, CUTOFF)
-check(not abstains(_mc_full), "the production forecast computes from budget, indices and "
-      "document risk exactly as before", str(_mc_full.get("status_color")))
+# RUN 36 CLOSURE. The claim this section exists to protect is that the bottom-up cost register and
+# the forecast module are NOT given one identity. That claim is unchanged. What changed is the
+# other side of it: after the owner's ruling the production forecast does not compute at all,
+# because its canonical input contract is not governed. Asserting "computes exactly as before"
+# would now be false, so the true statement is asserted instead and the section's own claim is
+# strengthened -- neither method computes here, and they are still not merged.
+check(abstains(_mc_full)
+      and _mc_full.get("abstention_reason_code")
+      == "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED",
+      "the production forecast is operationally disabled for insufficient canonical input, and "
+      "names the ungoverned driver-to-EAC mapping rather than a missing value",
+      f"{_mc_full.get('insufficient_data')!r} / {_mc_full.get('abstention_reason_code')!r}")
 _mc_no_ac = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3,
                             "ac": 999_999_999.0, "ev": 1.0}, lambda: 0.5, CUTOFF)
 check(_mc_full.get("status_color") == _mc_no_ac.get("status_color"),

@@ -1,10 +1,18 @@
 # Run 36 — Final 100-target scientific re-audit, instrument qualification, and the freeze decision
 
-**Outcome: `FREEZE_BLOCKED`.** One blocking defect remains and it requires an owner decision that
-no existing authority resolves. The instrument is otherwise green, the forty-fault campaign is
-complete, and the authenticated participant path qualifies in a real browser — but a green suite
-is not a qualification, and this run did not manufacture one.
+> **CLOSURE ADDENDUM, 2026-08-19.** Run 36 ended `FREEZE_BLOCKED` on one defect, and that was the
+> correct call: it produced the owner ruling that closed it. The owner ruled the same day, the
+> ruling was implemented, and the instrument is now **`FREEZE_CANDIDATE`** at
+> `research/freeze/INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json`. **Sections 1 to 25 below are the
+> original Run-36 report and are preserved unchanged as the record of the blocked state.** The
+> four closure sections are appended at the end. Where the two disagree, the closure sections are
+> current: simulation `sim-2026.08-v25`, participant package `og-participant-2026.08-v13`, A1.1
+> `DISABLED_INSUFFICIENT_INPUT`, blocking defects 0.
 
+**Original outcome: `FREEZE_BLOCKED`.** One blocking defect remained and it required an owner
+decision that no existing authority resolved. The instrument was otherwise green, the forty-fault
+campaign complete, and the authenticated participant path qualified in a real browser — but a green
+suite is not a qualification, and this run did not manufacture one.
 ---
 
 ## 1. Exact starting commit, verified rather than assumed
@@ -490,3 +498,143 @@ question — which clause of the specification governs A1.1 — is open.
 
 There is no "100% scientifically validated" figure in this instrument and this report does not
 report one.
+
+
+---
+---
+
+# CLOSURE SECTIONS (2026-08-19, after the owner ruling)
+
+## 26. A1.1 owner-authority closure
+
+**The owner ruled**, resolving the ambiguity Run 36 identified rather than having a run resolve it:
+the **`Required:` input list in supervisory specification §1.1 governs canonical Monte Carlo
+execution.** The permission to "retain" the scalar BAC/CPI/SPI/document-risk adaptation permits it
+to be **preserved as scientific and historical code**. It does not waive the canonical input
+contract and does not authorize the adaptation to stand in for canonical execution.
+
+- **No driver→EAC mapping was invented.** The specification requires one and does not define one.
+  That remains true and is recorded as an unresolved non-blocking research limitation.
+- **A1.1 is operationally disabled for insufficient canonical input.** Disposition
+  `DISABLED_INSUFFICIENT_INPUT`, final qualification `DISABLED`, voting false, authoritative status
+  none, authoritative colour none. The reason code is
+  `CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED`, deliberately distinct from every ordinary
+  missing-value code so that an absent scientific *contract* is never read as an absent *value*.
+  The participant-facing sentence says the method is not defined completely enough to run — it does
+  not describe a software failure.
+- **The retained adaptation remains preserved and is production-unreachable.**
+  `registry.run_module` short-circuits A1.1 before the dispatch table is consulted, in the same
+  place and on the same footing as the two pre-existing disjoint disabled reasons.
+  `models_sim.assert_retained_adaptation_not_reachable` derives the proof from the **live source of
+  the gate**, then executes A1.1 on inputs the adaptation would happily have computed from and
+  requires no figure and no colour.
+- **The prior unsupported authoritative colour remains withdrawn**, and reachable UNSUPPORTED
+  parameters producing authoritative output remain 0.
+
+**The pre-change measurement was taken first**, from the pinned v24 git object, into
+`code_audit/run36_a1_1_prechange_measurement.json`.
+
+**Version boundary, proved by executing both pinned lines** — not inferred from a diff. A1.1
+DIVERGED; A1.7, A1.8, A6.2, B4.3 (Category 10) and D1.1 (Portfolio Health) all IDENTICAL; and all
+101 registered modules were executed on both lines, with the set that moved being exactly
+`['A1.1']`. Simulation `sim-2026.08-v25`; v24 preserved and pinned.
+
+**The closure campaign found a real defect in this run's own proof.**
+`assert_retained_adaptation_not_reachable` originally probed A1.1 with scalars only, so the
+**Category-9 gate** refused the module before the A1.1 gate was reached — and the proof passed while
+fault 1 had the retained adaptation live and reachable. A guard satisfied by somebody else's refusal
+proves nothing about its own subject. The probe now carries a qualified assessment.
+
+## 27. Parsimony cross-run reconciliation
+
+`code_audit/run36_parsimony_crossrun_reconciliation.csv`. The rule set (R1–R8) was fixed **before**
+any discrepancy was examined and applied uniformly to all 100.
+
+| | |
+|---|---|
+| Run 35 count | **22** |
+| Run 36 initial count | **17** |
+| Discrepancies | **7** — A1.6, A2.1, A5.2, B2.18, B2.9, B4.4, D1.1 |
+| Unresolved discrepancies | **0** |
+| **Final reconciled (established)** | **0** |
+
+**Why they differed.** Run 35 counted a *shared governed structure* as non-distinctness; Run 36
+counted an *identical measured primitive-input set*. Neither is wrong about what it measured and
+neither measured what the phrase asks. R2 holds that sharing the object a method is defined on is
+not performing the same method; R3 holds that shared inputs alone do not make a target redundant.
+Both are the contract's own words.
+
+**R1a is load-bearing and was added after the first application exposed the defect.** Two targets
+that both abstain have identical output signatures because both produce nothing, so output identity
+is vacuously satisfied. Without a produces-a-reading condition the five Category-2 schedule-network
+methods were being declared one function purely because none can run on a corpus carrying no
+schedule network — an artefact of the corpus, not a fact about the methods. **Identity of function
+cannot be read off two silences.**
+
+**0 established is not a claim that the instrument is free of redundancy,** and the artefact says so
+in a `REPORTED_LIMITATION` row. Only 5 of 100 targets leave the abstention branch, so execution can
+establish redundancy for none of them. Structural overlap is recorded separately and is not zero:
+19 shared-structure, 5 identical-input, 1 subset.
+
+## 28. Controlled-study population authority
+
+**Enumerated first, contract written second, and the stimuli were not generated from the contract.**
+
+| | Enumerated | Owner contract |
+|---|---|---|
+| Study projects | **6** | 6 |
+| Periods per project | **6** (identical for every project) | 6 |
+| Unique project-periods | **36** | 36 |
+| Duplicates | **0** | 0 |
+| Missing | **0** | 0 |
+
+PRJ-AIR, PRJ-DCT, PRJ-HSP, PRJ-HWY, PRJ-RAL, PRJ-WTR over P01–P06, from
+`research_fixtures/synthetic/OG-SYNTH-0.2/.../package_A_project_structures` — the root the **live**
+fixture loader reads, and the only governed, versioned, checksummed project-period corpus in the
+repository. **The section-10 STOP did not fire.** No stimulus was created or removed.
+
+The authority is `research/methodology/controlled_study_design_contract.json`, and an independent
+guard enumerates the CSVs and fails when the two disagree in either direction. Faults 11–14 remove
+a project, remove a period, introduce a duplicate and make the record claim a design the stimuli do
+not carry; all four go red.
+
+**Two limitations are declared rather than papered over.** The contract binds the stimulus *corpus*
+and the participant *sequence*; it does not assert that a participant database holds 36 assignments,
+because `Scenario.period_count` is nullable and `ConditionSequence` rows are operator configuration
+— which is exactly what Run 36 reported, and that report is not withdrawn. And
+`research_fixtures/README.md` bars these synthetic records from any operational or participant
+database.
+
+## 29. Freeze decision
+
+**Blocking defects: 0**, re-derived independently over sixteen named checks. Two read red on the
+first pass and both were classification errors in the check itself, corrected rather than excused:
+a proxy *qualifier* was being counted as a legacy *route* (A1.2 executes its canonical CUSUM; its
+qualifier discloses uncalibrated constants), and two disabled counts had stale expectations that the
+owner's ruling legitimately moved.
+
+**`FREEZE_CANDIDATE` created:**
+- `research/freeze/INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json`
+- `research/freeze/INSTRUMENT_FREEZE_CANDIDATE.md`
+
+Labelled `FREEZE_CANDIDATE`, not a final immutable release: no existing owner authority defines that
+transition and none is claimed.
+
+**The freeze gate is not vacuous.** Fault 15 of the closure campaign and fault 40 of the Run-36
+campaign each inject a blocking defect *and* a manifest together and require the gate to go red.
+That is the guard protecting every other conclusion here.
+
+## 30. Final closure statement, with the layers still kept apart
+
+- **Canonical correctness.** 91 of 100 targets perform the method their registered name claims. A1.1
+  no longer claims to: its canonical identity is recorded as requiring two governed elements, one of
+  which no authority defines.
+- **Implementation qualification.** Legacy/proxy production routes 0. Duplicate engines 0.
+  Unclassified parameters 0. Reachable unsupported parameters authorizing output 0.
+- **Calibration.** Nothing is calibrated. No calibration set exists.
+- **Empirical validation.** **0 of 100** against an independent observed field outcome.
+- **Bounded controlled-study qualification.** 3 fit for the bounded role assigned, 87 scientifically
+  retained and correctly abstaining, 8 disabled, 1 research-only, 1 archived.
+
+There is no "100% scientifically validated" figure in this instrument and this report does not report
+one.

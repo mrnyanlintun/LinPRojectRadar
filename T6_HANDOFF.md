@@ -9,7 +9,105 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
-# 2026-08-19 - Run 36: FINAL SCIENTIFIC RE-AUDIT AND INSTRUMENT QUALIFICATION - **FREEZE_BLOCKED**
+# 2026-08-19 - Run 36 CLOSURE: the owner A1.1 ruling, and the FREEZE CANDIDATE
+
+**Branch `run36-closure` from `main` at `822d8092`.** Report: the CLOSURE SECTIONS (26-30) of
+`REPORT_2026-08-19_run36-final-scientific-reaudit-and-instrument-qualification.md`. The Run-36
+sections below are PRESERVED UNCHANGED as the record of the blocked state.
+
+**THE INSTRUMENT IS A FREEZE CANDIDATE.**
+`research/freeze/INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json` is now the current instrument
+reference, with `research/freeze/INSTRUMENT_FREEZE_CANDIDATE.md` as its human-readable companion.
+It is labelled `FREEZE_CANDIDATE` and **not** a final immutable release: no existing owner
+authority defines that transition and none is claimed.
+
+**Simulation `sim-2026.08-v25`** (v24 preserved and pinned at
+`822d80928367c0f422fac5f2564705279e718dd1`). **Participant package `og-participant-2026.08-v13`**
+(v12 pinned at the same commit). **Synthetic `OG-SYNTH-0.6` RETAINED.**
+**Blocking defects 0.** Voting still exactly **A1.7, A1.8**. Registered **101**, scientific **100**.
+
+---
+
+## THE OWNER RULING, AND WHAT IT DID AND DID NOT AUTHORIZE
+
+Supervisory specification s1.1's **`Required:` input list GOVERNS** what qualifies as canonical
+Monte Carlo. The permission to "retain" the scalar adaptation **preserves it as historical code**
+and does **not** waive the input contract.
+
+**A1.1 is `DISABLED_INSUFFICIENT_INPUT`.** Reason code
+`CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED` - deliberately distinct from every ordinary
+missing-value code so an absent scientific CONTRACT is never read as an absent VALUE. **NO
+DRIVER-TO-EAC MAPPING WAS INVENTED**, and that remains an unresolved non-blocking research
+limitation, not a closed item.
+
+**DO NOT "FIX" A1.1 BY RESTORING THE APPROXIMATION.** The retained scalar adaptation is preserved
+in `models_sim.run_monte_carlo` and is **production-unreachable**: `registry.run_module`
+short-circuits A1.1 before the dispatch table is consulted, under a THIRD disjoint disabled set
+`DISABLED_CANONICAL_INPUT_NOT_GOVERNED`. Scientific targets stay 100 because A1.1 is NOT in
+`DISABLED_EVIDENCE_UNDER_REVIEW`, and that is the set the population subtracts.
+
+---
+
+## FOUR THINGS THIS CLOSURE LEARNED THAT MUST NOT BE LOST
+
+**1. A GUARD SATISFIED BY SOMEBODY ELSE'S REFUSAL PROVES NOTHING ABOUT ITS OWN SUBJECT.**
+`assert_retained_adaptation_not_reachable` probed A1.1 with scalars only, so the CATEGORY-9 GATE
+refused the module before the A1.1 gate was reached - and the proof PASSED while fault 1 had the
+retained adaptation live and reachable. The closure fault campaign caught it. The probe now carries
+a QUALIFIED assessment. **Check what is actually doing the refusing.**
+
+**2. IDENTITY OF FUNCTION CANNOT BE READ OFF TWO SILENCES.** The first parsimony rule set declared
+the five Category-2 schedule-network methods one function because all five abstain on a corpus
+carrying no schedule network, so their output signatures were vacuously identical. R1a now requires
+that at least one target of a pair actually PRODUCES A READING before identity can be established.
+
+**3. A HISTORICAL CLAIM MUST NOT BE EVALUATED AGAINST A DRIFTING LIVE SET.** Run 36 found this in
+three version-boundary guards; this closure found two more (test_run27's matrix against today's
+disabled set, and two Run-35 fault oracles against the live registry). In every case the historical
+record is left UNREWRITTEN, the comparison is scoped to the set as it stood, and the one module
+disabled since is asserted BY NAME so the exclusion is visible rather than a hole.
+
+**4. AN ANCHOR THAT OCCURS TWICE MUTATES THE WRONG ONE.** Closure fault 1's anchor appeared in both
+`activation_state` and `run_module`; a single-occurrence replace edited the label function and left
+the gate untouched, so the fault was not the fault it claimed to be.
+
+---
+
+## THE NUMBERS, ALL MECHANICALLY DERIVED
+
+**Final qualification:** `QUALIFIED_WITH_ABSTENTION` 87 - `DISABLED` 8 -
+`QUALIFIED_FOR_BOUNDED_STUDY_USE` 3 - `RESEARCH_ONLY` 1 - `ARCHIVED` 1.
+**Dispositions:** 87 abstention-capable, 6 disabled-insufficient-input, 2 operational, 2
+disabled-insufficient-provenance, 1 advisory, 1 research-only, 1 archived.
+
+**PARSIMONY, RECONCILED.** Run 35 = 22, Run 36 = 17, discrepancies 7 (A1.6, A2.1, A5.2, B2.18,
+B2.9, B4.4, D1.1), unresolved 0, **final ESTABLISHED = 0**. The rule set was fixed BEFORE the
+discrepancies were examined. **0 is NOT a claim that the instrument is free of redundancy**: only
+5 of 100 targets leave the abstention branch, so execution can establish redundancy for none.
+Structural overlap is recorded separately and is 19 / 5 / 1.
+
+**CONTROLLED STUDY: 6 x 6 = 36, ENUMERATED BEFORE THE CONTRACT WAS WRITTEN.** PRJ-AIR, PRJ-DCT,
+PRJ-HSP, PRJ-HWY, PRJ-RAL, PRJ-WTR over P01-P06, duplicates 0, missing 0, from the root the LIVE
+fixture loader reads. The section-10 STOP did not fire and **no stimulus was created or removed**.
+Authority: `research/methodology/controlled_study_design_contract.json`. **The contract binds the
+stimulus CORPUS and the participant SEQUENCE, not the number of assignments in any participant
+database** - those are operator configuration, exactly as Run 36 reported, and that report stands.
+
+**Browser 28/28** on the real authenticated route. **Faults 40/40 and 15/15**, every one applied,
+RED for its intended reason, restored GREEN; crashes accepted as RED 0.
+
+---
+
+## WHAT REMAINS TRUE AND UNCHANGED
+
+0 of 100 empirically field-validated. No calibration set exists. 95 of 100 produce nothing on the
+controlled corpus. Lineage unresolved for 77 of 100. Portfolio Health empirical validation PENDING
+x5. OG-SYNTH-0.1 historically INCOMPLETE (519 manifest entries against 504 recovered). Category-9
+bypasses 0. Category-10 authority violations 0. Production Postgres never accessed.
+
+---
+
+# 2026-08-19 - Run 36: FINAL SCIENTIFIC RE-AUDIT AND INSTRUMENT QUALIFICATION - **FREEZE_BLOCKED** (SUPERSEDED BY THE CLOSURE ABOVE; PRESERVED AS THE RECORD OF THE BLOCKED STATE)
 
 **Branch `run36-wip` from `main` at `dafc35d3`.** Report:
 `REPORT_2026-08-19_run36-final-scientific-reaudit-and-instrument-qualification.md`.

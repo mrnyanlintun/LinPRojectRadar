@@ -1,5 +1,5 @@
 row_type,module_id,canonical_name,profile_kind,primitive_sources,overlap_type,closest_overlapping_targets,distinct_analytical_function,current_operational_necessity
-TARGET,A1.1,Monte Carlo EAC Forecast,STRUCTURE,costDriverDistributions,NONE,,YES,BOUNDED ADVISORY
+TARGET,A1.1,Monte Carlo EAC Forecast,STRUCTURE,costDriverDistributions,NONE,,YES,NO - disabled or archived
 TARGET,A1.10,CPI Shrinkage Forecast,STRUCTURE,cpiReferenceClass,NONE,,YES,NO - abstains on the current corpus
 TARGET,A1.11,Independent EAC Reconciliation Index,STRUCTURE,independentEacPair,NONE,,YES,NO - abstains on the current corpus
 TARGET,A1.2,CUSUM Anomaly Monitor,SCALARS,spi,NONE,,YES,NO - abstains on the current corpus

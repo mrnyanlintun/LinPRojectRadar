@@ -390,12 +390,42 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # The legitimate NON-divergence: every module that is not A1.1 returns byte-identical results
 # under both lines. That is proved by executing both packages, not by reading the diff.
-SIMULATION_VERSION = "sim-2026.08-v24"
+#
+# ------------------------------------------------------------------------------------------
+# RUN 36 CLOSURE, sim-2026.08-v25. THE OWNER'S A1.1 RULING OF 2026-08-19.
+#
+# The owner resolved the specification ambiguity Run 36 identified. The `Required:` input list in
+# supervisory specification s1.1 GOVERNS what qualifies as canonical A1.1 Monte Carlo EAC
+# Forecast. The permission to "retain" the scalar BAC/CPI/SPI/document-risk adaptation permits it
+# to be PRESERVED as scientific and historical code; it does NOT waive the canonical input
+# contract and does NOT authorize the adaptation to stand in for canonical Monte Carlo execution.
+#
+# Canonical A1.1 needs TWO governed elements: the declared `costDriverDistributions` structure,
+# and an authoritative deterministic mapping from sampled cost drivers to EAC. The specification
+# REQUIRES that mapping and DOES NOT DEFINE IT. None was invented. Until both exist A1.1 does not
+# execute operationally.
+#
+#       v24  A1.1  computes from bac, cpi, spi and docRiskScore and reports a figure with no band
+#       v25  A1.1  operationally disabled for insufficient canonical input; no figure, no band,
+#                  reason code CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED
+#
+# THE RETAINED ADAPTATION IS PRESERVED AND UNREACHABLE. `models_sim.run_monte_carlo` and
+# `monte_carlo_eac` are untouched and still reproduce their historical figures when driven
+# directly; `registry.run_module` short-circuits A1.1 BEFORE the dispatch table is consulted, so
+# no production route can enter them and none can fall back to them. That is asserted from the
+# live source of the gate by `models_sim.assert_retained_adaptation_not_reachable`.
+#
+# THIS IS NOT A SOFTWARE FAILURE. Nothing is broken. What is absent is a governed scientific input
+# contract, which is why the reason code is its own and not a missing-value code.
+#
+# The legitimate NON-divergence: every module that is not A1.1 returns byte-identical results
+# under both lines. That is proved by executing both packages, not by reading the diff.
+SIMULATION_VERSION = "sim-2026.08-v25"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v23"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v24"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -406,7 +436,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
-    "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24",
+    "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
 )
 
 

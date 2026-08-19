@@ -231,15 +231,23 @@ def main() -> int:
                  and a18.get("vac") != a18.get("vac_display"),
                  json.dumps({k: (a18 or {}).get(k) for k in ("vac", "vac_display",
                                                             "status_color")}))
-            gate("A1.1 band withdrawal on the participant surface",
-                 "A1.1 is still present and still reports its figure, and shows NO status colour",
-                 bool(a11) and a11.get("status_color") in (None, "")
-                 and a11.get("p80_eac") is not None,
+            # RUN 36 CLOSURE, THE OWNER'S A1.1 RULING OF 2026-08-19. A1.1 is operationally
+            # disabled for insufficient canonical input, so on the participant surface it must
+            # produce NO figure and NO colour, and it must say why in words rather than fall
+            # silent. The retained approximation must not appear here under any guise.
+            gate("A1.1 disabled for insufficient canonical input, on the participant surface",
+                 "A1.1 shows no status colour and no forecast figure, and the participant is "
+                 "told the method is not defined completely enough to run",
+                 (not a11) or (a11.get("status_color") in (None, "")
+                               and a11.get("p80_eac") is None
+                               and a11.get("overrun_pct_p80") is None),
                  json.dumps({k: (a11 or {}).get(k) for k in ("status_color", "p80_eac",
-                                                             "band_asserted")}))
+                                                             "overrun_pct_p80",
+                                                             "abstention_reason_code")}))
         else:
             for _s in ("corrected A1.7 behaviour", "corrected A1.8 behaviour",
-                       "A1.1 band withdrawal on the participant surface"):
+                       "A1.1 disabled for insufficient canonical input, on the participant "
+                       "surface"):
                 rec(_s, "the per-module signal array was not reachable on this route",
                     "NO", "NOT_VERIFIED",
                     "the signals response carried no module array; recorded rather than passed")
@@ -371,6 +379,33 @@ def main() -> int:
                 "NO", "NOT_VERIFIED",
                 f"entry={reached!r} topic={topic!r} modref_bodies={modref}; recorded as not "
                 f"verified rather than passed. This is an AUXILIARY surface, not a study path.")
+
+        # -------- SECTION 11: the controlled-study population, against the owner contract
+        import csv as _csv                                                    # noqa: E402
+        _pkgroot = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
+                    / "Opus_Gubernatio_Synthetic_Programme_v0.2"
+                    / "package_A_project_structures")
+        _contract = json.loads((ROOT / "research" / "methodology"
+                                / "controlled_study_design_contract.json").read_text("utf-8"))
+        _projects = [r for r in _csv.DictReader((_pkgroot / "projects.csv").open(encoding="utf-8"))
+                     if str(r["study_project_candidate"]).strip().lower() == "true"]
+        _periods = list(_csv.DictReader((_pkgroot / "reporting_periods.csv").open(encoding="utf-8")))
+        _pids = {p["project_id"] for p in _projects}
+        _combos = {(r["project_id"], r["period_id"]) for r in _periods}
+        _per = {p: len({r["period_id"] for r in _periods if r["project_id"] == p}) for p in _pids}
+        _d = _contract["design"]
+        gate("controlled-study population",
+             f"the enumerated stimuli hold exactly {_d['project_count']} study projects",
+             len(_pids) == _d["project_count"], f"{len(_pids)}: {sorted(_pids)}")
+        gate("controlled-study population",
+             f"and exactly {_d['period_count_per_project']} periods for every one of them",
+             set(_per.values()) == {_d["period_count_per_project"]}, json.dumps(_per))
+        gate("controlled-study population",
+             f"and exactly {_d['project_period_count']} unique project-periods, with no "
+             f"duplicate and no missing combination",
+             len(_combos) == _d["project_period_count"] == len(_periods)
+             and len(_combos) == len(_pids) * _d["period_count_per_project"],
+             f"{len(_combos)} unique of {len(_periods)} rows")
 
         # -------- console health, over the whole sequence
         gate("no JavaScript console crash",

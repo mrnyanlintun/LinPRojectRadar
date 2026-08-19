@@ -1,0 +1,48 @@
+{
+  "pinned_git_object": "822d80928367c0f422fac5f2564705279e718dd1",
+  "simulation_version": "sim-2026.08-v24",
+  "canonical_required_structure": "costDriverDistributions",
+  "canonical_required_mapping": "deterministic mapping from sampled cost drivers to EAC - REQUIRED by supervisory specification s1.1 and NOT DEFINED by it",
+  "intake_accepts_structure": true,
+  "consumer_count": 0,
+  "files_mentioning_the_key_at_this_object": [
+    "822d80928367c0f422fac5f2564705279e718dd1:assets/js/ds_defensibility_evidence.js",
+    "822d80928367c0f422fac5f2564705279e718dd1:server/app/simulation/canonical_v3.py",
+    "822d80928367c0f422fac5f2564705279e718dd1:server/tools/build_run32_defensibility_inventory.py",
+    "822d80928367c0f422fac5f2564705279e718dd1:server/tools/build_run35_eligibility.py",
+    "822d80928367c0f422fac5f2564705279e718dd1:server/tools/build_run36_audit.py",
+    "822d80928367c0f422fac5f2564705279e718dd1:server/tools/participant_packages.py",
+    "822d80928367c0f422fac5f2564705279e718dd1:server/tools/test_run35_closure_voter_identities.py",
+    "822d80928367c0f422fac5f2564705279e718dd1:server/tools/test_run36_instrument_qualification.py"
+  ],
+  "scalar_inputs_actually_consumed": [
+    "bac",
+    "cpi",
+    "spi",
+    "docRiskScore"
+  ],
+  "retained_adaptation_path": "oldsim.models.run_monte_carlo_module -> models_sim.run_monte_carlo -> monte_carlo_eac",
+  "retained_adaptation_path_reached": true,
+  "unresolved_parameter_state": "UNSUPPORTED four-band ladder mc_status PRESERVED and UNREACHABLE from production since Run 36",
+  "numeric_output": {
+    "p50_eac": 1106667.4124324322,
+    "p80_eac": 1121044.4168552589,
+    "overrun_pct_p50": 10.666741243243226,
+    "overrun_pct_p80": 12.104441685525892,
+    "spread_driver": 0.1488,
+    "iterations": 5000
+  },
+  "status_output": {
+    "status_color": null,
+    "band_asserted": false,
+    "calibration_pending": true
+  },
+  "insufficient_data": null,
+  "evidence_metric": "P80 EAC 1121044 vs BAC 1000000 (+12.1%); 5000 iterations",
+  "operational_disposition_at_v24": "KEEP_ADVISORY",
+  "final_qualification_at_v24": "QUALIFIED_FOR_BOUNDED_STUDY_USE",
+  "voting": false,
+  "defensibility_statement_at_v24": " name: \"Monte Carlo EAC Forecast\", implementation: \"the current production runner computes the canonical method from the governed evidence the platform already holds\", operationalState: \"COMPUTES_FROM_AVAILABLE_EVIDENCE\", canonicalStructureRequired: false, definingStructure: \"costDriverDistributions\", canonicalRunner: \"app.simulation.models.run_monte_carlo_module\", knownAnswer: \"none in the repository\", boundary: \"domain and boundary enumeration recorded in a committed audit artefact\", calibration: \"not calibrated; no calibration set exists in this repository\", empirical: \"not empirically validated; no comparison against real project outcomes exists\", canonicalStructure: \"declared in the canonical-structure layer and accepted by the intake, but read by no current route, so the reading is produced whether it is supplied or not\", voting: \"does not vote\", permittedClaim: \"Implemented as sta",
+  "participant_exposure_at_v24": "A1.1 appears on the participant surface reporting its P80 figure with NO status colour (Run-36 browser qualification, row 'A1.1 band withdrawal on the participant surface')",
+  "measured_before_modification": true
+}

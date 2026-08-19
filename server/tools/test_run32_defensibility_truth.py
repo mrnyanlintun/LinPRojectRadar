@@ -93,7 +93,11 @@ for m in reg:
         wrong_state.append(f"{mid}: served {s.get('operationalState')!r} vs {INV.state_of(e)!r}")
     if s.get("canonicalStructure") != e["structure_stmt"]:
         wrong_struct.append(f"{mid}: served {str(s.get('canonicalStructure'))[:50]!r}")
-    want_req = e["structure_stmt"] == INV.STRUCT_REQUIRED
+    # RUN 36 CLOSURE. The structure is REQUIRED in two sentences now, not one: the plain
+    # required sentence, and the one that says it is required together with a driver-to-EAC
+    # mapping that is also absent. Both mean canonicalStructureRequired is true, and reading
+    # only the first would tell a program the structure is optional for A1.1.
+    want_req = e["structure_stmt"] in (INV.STRUCT_REQUIRED, INV.STRUCT_REQUIRED_PLUS_MAPPING)
     if bool(s.get("canonicalStructureRequired")) != want_req:
         wrong_req.append(f"{mid}: served {s.get('canonicalStructureRequired')} vs {want_req}")
     if s.get("canonicalRunner") != e["runner"]:

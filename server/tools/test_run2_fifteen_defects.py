@@ -978,9 +978,26 @@ try:
     # They were not evidence any project supplied, so on this project -- which carries no mass
     # function -- the correct behaviour is an abstention naming the absent structure, and it is
     # asserted as such below rather than dropped.
-    for mid in ("A6.1", "A6.4", "A1.1", "B1.1"):
+    # RUN 36 CLOSURE REMOVED A1.1 FROM THIS LIST, with the reason recorded rather than the
+    # expectation quietly rewritten, exactly as A3.6, A4.9 and B2.1 were removed above. The owner
+    # ruled that the `Required:` input list in supervisory specification s1.1 governs what
+    # qualifies as canonical Monte Carlo. Canonical execution needs the declared cost-driver
+    # distribution structure AND an authoritative rule for turning drawn driver figures into a
+    # forecast; the specification requires that rule and does not define it, and inventing one
+    # would be inventing the method. So the module is operationally disabled for insufficient
+    # input, and the retained budget-and-index approximation is preserved but not reached. Its
+    # new behaviour is asserted immediately below rather than dropped.
+    for mid in ("A6.1", "A6.4", "B1.1"):
         check(mid in comp, f"{FIFTEEN[mid]} produces a finding on the real path",
               str(abst.get(mid, {}).get("reason"))[:90])
+    check("A1.1" not in comp and "A1.1" in abst,
+          f"{FIFTEEN['A1.1']} produces NO finding on the real path, because the canonical input "
+          f"contract its method is defined on is not governed",
+          str(abst.get("A1.1", {}).get("reason"))[:120])
+    check(abst.get("A1.1", {}).get("abstention_reason_code")
+          == "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED",
+          "and the ledger row distinguishes an ungoverned method definition from an ordinary "
+          "missing value", str(abst.get("A1.1", {}).get("abstention_reason_code")))
     check("B2.1" not in comp and "B2.1" in abst,
           f"{FIFTEEN['B2.1']} abstains on the real path where no body of evidence carries a "
           f"mass over a stated frame, rather than combining masses that are literals in the "

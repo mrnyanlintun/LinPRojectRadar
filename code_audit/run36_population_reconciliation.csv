@@ -10,8 +10,8 @@ POPULATION_DISTINCTION,the two 95s intersected,94,94,RECONCILED,"94, because eac
 POPULATION_DISTINCTION,modules the analytical server registers (GROUP_ASSIGNMENT.md),100,100,RECONCILED,"registry.VALIDATED + the portfolio registry. EXCLUDES A4.1 and INCLUDES A3.4, the opposite exclusion from the 100 SCIENTIFIC targets. The two hundreds intersect at 99 and are not the same set."
 POPULATION_DISTINCTION,the two hundreds intersected,99,99,RECONCILED,"99, because each excludes a module the other keeps"
 VOTING,voting population,2,2,RECONCILED,"registry.CORE_VOTING_MODULES = A1.7, A1.8"
-DISABLED,disabled population (all),9,9,RECONCILED,8 concept-only plus A3.4 under evidence review
-DISABLED,disabled INSIDE the 100 scientific targets,8,8,RECONCILED,A3.4 is the one disabled module outside the scientific population
+DISABLED,disabled population (all),10,10,RECONCILED,"8 concept-only, plus A3.4 under evidence review, plus A1.1 whose canonical input contract is not governed"
+DISABLED,disabled INSIDE the 100 scientific targets,9,9,RECONCILED,A3.4 remains the one disabled module OUTSIDE the scientific population; A1.1 is disabled and stays inside it
 ARCHIVED,archived population,1,1,RECONCILED,measured by executing every target and reading its own disposition: B2.9
 SUPPLIED,supplied rather than computed,1,1,RECONCILED,not dispatched by the project runner and not a portfolio module: A4.1
 COMPUTED,computed population inside the 100,94,94,RECONCILED,100 scientific targets minus 5 Portfolio Health minus 1 supplied

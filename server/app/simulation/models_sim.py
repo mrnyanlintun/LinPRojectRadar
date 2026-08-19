@@ -204,6 +204,70 @@ def cusum_status(cu: dict) -> str:
 # ---------------------------------------------------------------- module wrappers
 
 
+#: RUN 36 CLOSURE, THE OWNER'S A1.1 RULING. Declared here beside the code it describes, and
+#: asserted from the LIVE SOURCE of the gate by `assert_retained_adaptation_not_reachable` below.
+RETAINED_ADAPTATION_ROUTE_REACHABLE = False
+
+
+def assert_retained_adaptation_not_reachable(check) -> None:
+    """
+    Prove current production cannot reach the retained scalar Monte Carlo adaptation.
+
+    THE OTHER HALF OF PRESERVING IT. The owner's ruling permits the BAC/CPI/SPI/document-risk
+    adaptation to remain as scientific and historical code, and forbids it from emitting the
+    current operational A1.1 result, from emitting an authoritative status colour, from voting,
+    and from silently substituting for the missing driver-distribution model. Preservation without
+    a reachability proof is just a fallback that has not fired yet.
+
+    DERIVED FROM THE LIVE SOURCE OF THE GATE, not from a list. A list would still say what it said
+    after someone moved the short-circuit. `registry.run_module` is the ONLY production entry point
+    -- `run_all` dispatches through it and nothing else calls the module functions -- so its source
+    is read here and asserted to short-circuit A1.1 before the dispatch table is consulted.
+    """
+    import inspect as _inspect
+
+    from . import registry as _reg
+
+    src = _inspect.getsource(_reg.run_module)
+    check("DISABLED_CANONICAL_INPUT_NOT_GOVERNED" in src,
+          "production's only module entry point short-circuits the canonical-input-not-governed "
+          "set", "the gate is present in run_module")
+    gate = src.index("DISABLED_CANONICAL_INPUT_NOT_GOVERNED")
+    dispatch = src.index("if new_id not in VALIDATED")
+    check(gate < dispatch,
+          "and it short-circuits BEFORE the dispatch table is consulted, so the retained "
+          "adaptation is never entered", f"gate at {gate}, dispatch at {dispatch}")
+    check("A1.1" in _reg.DISABLED_CANONICAL_INPUT_NOT_GOVERNED,
+          "A1.1 is in that set", str(sorted(_reg.DISABLED_CANONICAL_INPUT_NOT_GOVERNED)))
+    check(RETAINED_ADAPTATION_ROUTE_REACHABLE is False,
+          "the retained route is declared unreachable",
+          str(RETAINED_ADAPTATION_ROUTE_REACHABLE))
+    check(callable(run_monte_carlo) and callable(monte_carlo_eac),
+          "while the retained adaptation is PRESERVED for historical reconstruction",
+          "run_monte_carlo and monte_carlo_eac still exist")
+    # THE PROBE MUST CARRY A QUALIFIED ASSESSMENT, and this is a correction the Run-36 closure
+    # fault campaign forced. The first version supplied scalars only, so the CATEGORY-9 GATE
+    # refused the module before this gate was ever reached -- and the proof therefore passed
+    # while the retained adaptation was live and reachable. Fault 1 of the campaign bypasses the
+    # A1.1 short-circuit, and with a bare probe this function stayed green: a guard that is
+    # satisfied by somebody else's refusal is proving nothing about its own subject.
+    row = _reg.run_module("A1.1", {
+        "bac": 1_000_000.0, "cpi": 0.909, "spi": 0.889, "docRiskScore": 0.35,
+        "evidenceQualification": {"qualification_state": "QUALIFIED",
+                                  "timeliness_status": "TIMELY",
+                                  "verification_status": "verified",
+                                  "source_authority": "system_of_record"},
+    }, (lambda: 0.5), None)
+    check(row.get("status_color") is None and row.get("insufficient_data") is True
+          and not any(k in row for k in ("p50_eac", "p80_eac", "overrun_pct_p80")),
+          "and EXECUTED on inputs the adaptation would happily have computed from, A1.1 returns "
+          "no figure and no colour", str(sorted(row))[:200])
+    check(row.get("abstention_reason_code")
+          == "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED",
+          "with the reason code that distinguishes an ungoverned method definition from an "
+          "ordinary missing value", str(row.get("abstention_reason_code")))
+
+
 def run_monte_carlo(si: dict, rand, seed: int) -> dict[str, Any]:
     """
     A1.1. Abstains when bac, cpi or spi is absent, matching the registry's required list, and
