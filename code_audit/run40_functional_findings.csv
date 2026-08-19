@@ -1,0 +1,7 @@
+id,finding,classification,evidence
+F1,AI recommendation identical across all 6 periods of a project (6 unique exposures not 36),DESIGN_DECISION_REQUIRED,governed design specifies per-project recommendation quality (Latin square across projects); per-period content not governed; within-project analytic dependence must be recorded in analysis plan
+F2,serve-path stored XSS,BLOCKING_UNRESOLVED (fix prepared),fix proven green but server/app is frozen; delivery needs freeze successor (commit a3fd8b6 reverted)
+F3,final-lock DB tamper-evidence gap on primary outcome,BLOCKING_UNRESOLVED,owner decision required; version-boundary consequence
+F4,extraction fabrication under real LLM injection,ENVIRONMENT_LIMITATION,no local API key; containment (field allowlist) verified but live numeric behavior NOT_VERIFIED
+F5,in-place browser reload/UI render,ENVIRONMENT_LIMITATION,software-render limitation carried from Run 39
+F6,cross-context / malformed / auth handling,FALSE_POSITIVE,all controlled (run40 idor tests)

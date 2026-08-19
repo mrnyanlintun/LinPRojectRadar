@@ -1,0 +1,8 @@
+stage,link,mechanism,source_file,unknown_stays_unknown
+document_checksum,sha256(bytes),content-addressed key,server/app/documents.py:1817,yes - no doc without bytes
+extracted_fact,checksum->extraction dict,per-type LLM fields filtered to allowlist,server/app/extraction_client.py:497,yes - missing field absent not zero
+governed_structure,extraction->signal_inputs,is_mapped gate; NULL type excluded,server/app/documents.py merge,yes - unmapped contributes nothing
+module,signal_inputs->module compute,canonical method registry,server/app/simulation/registry.py,yes - insufficient input -> abstain
+category,module->category,module_renumbering_map.csv authority,p0-baseline/module_renumbering_map.csv,yes
+qualification,module->qualified/abstained,qualification gating,server/app/simulation/qualification.py,yes - ABSTAIN preserved
+result,qualification->ComputedResult,stored result,server/app/research_models.py,yes - no result without traceable evidence

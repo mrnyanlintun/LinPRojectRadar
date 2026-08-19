@@ -1,0 +1,5 @@
+extension,accepted_mime,server_validator,parser,max_size,expected_extraction,storage_behavior,notes
+.pdf,any (client-supplied; not validated),none at upload,AnthropicExtractor/StubExtractor via base64 content block,20MB bytes / ~3.75MB base64,per-doc-type typed fields,DB BYTEA content-addressed by sha256,primary supported type; preview_kind native
+.docx,any,none,extractor docx branch (extraction_client),20MB,per-doc-type typed fields,DB BYTEA,office branch present in extractor
+.txt/text,text/plain,none,text content block,20MB,per-doc-type typed fields,DB BYTEA,text submission path sets mimeType text/plain
+other/unknown,any,none (mime not validated),classify_with_confidence -> UNMAPPED if unknown,20MB,{} empty when UNMAPPED,DB BYTEA,reference docs stored WITHOUT extraction (doc_type NULL)
