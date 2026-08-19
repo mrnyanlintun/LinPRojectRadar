@@ -197,6 +197,14 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_export.py",
     "server/tools/test_admin_ops_t7t8.py",
     "server/tools/test_decision_ui_t4.py",
+    # RUN 41, second pass. Four further pinned guards had to be told which file the successor
+    # was authorised to change: the two production-baseline comparisons, the declared-changes
+    # manifest guard, and the pinned-manifest chain. Each names the file rather than widening its
+    # rule, so all four keep their full force over everything else.
+    "server/tools/test_run6_known_answer.py",
+    "server/tools/test_run8_retest_classify_27.py",
+    "server/tools/test_run20_declared_production_changes.py",
+    "server/tools/test_run25_rail_removal.py",
     "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md",
 }
 run39 = [ln.split("\t", 1) for ln in diff_committed(RUN38_READY).splitlines() if ln]
