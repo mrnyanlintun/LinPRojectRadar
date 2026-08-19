@@ -1,0 +1,73 @@
+{
+  "decision_id": "01M0DVKNADZENBZ05BV2ZJJRJX",
+  "flow_ok": true,
+  "mutations": {
+    "final_action": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "final_confidence": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "rationale": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "disposition": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "escalation_level": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "owner_role": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "authority_role": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "resource_constraint": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "evidence_items": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "reason_code": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "deadline": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "residual_risk": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    },
+    "final_submitted_at": {
+      "raw_sql_mutation_succeeded": false,
+      "value_after": "None",
+      "error": "IntegrityError: (sqlite3.IntegrityError) final response is locked: the substantive final judgment is immutable after final_sub"
+    }
+  },
+  "successful_raw_mutations": 0,
+  "total_attempted": 13
+}
