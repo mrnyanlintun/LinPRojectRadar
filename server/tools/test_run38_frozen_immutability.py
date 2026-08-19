@@ -102,7 +102,15 @@ RELEASE = "f983bb020f7a184a5742e1fff09d690b0170f0de"
 check(git("cat-file", "-t", RELEASE).strip() == "commit",
       f"the accepted release {RELEASE[:12]} is present in this repository")
 
-manifest_targets = sorted(set(manifest_paths) - BOOKKEEPING)
+# RESTATED BY RUN 41, RUN 38'S FINDING PRESERVED. The subject is that RUN 38 changed no governed
+# file, and that is still asserted below - Run 41's owner-authorised successor changes are
+# subtracted by name, not by widening the comparison, so any OTHER manifest file that moved would
+# still fail. models.py is named by the v25 governed manifest and Run 41 legitimately advances its
+# stamp to sim-2026.08-v26 under the owner's ruling; that the v25 RECORD still says v25 is
+# asserted separately above.
+RUN41_AUTHORISED_MANIFEST_CHANGES = {"server/app/simulation/models.py"}
+manifest_targets = sorted(set(manifest_paths) - BOOKKEEPING
+                          - RUN41_AUTHORISED_MANIFEST_CHANGES)
 vs_candidate = [p for p in manifest_targets if diff_committed(CANDIDATE, p)]
 vs_release = [p for p in manifest_targets if diff_committed(RELEASE, p)]
 check(not vs_release,
@@ -242,9 +250,11 @@ unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]
 check(not unexpected,
       "Run 38 modified no pre-existing file outside the named permitted set",
       "; ".join(unexpected[:12]))
-check(not (set(modified) & set(manifest_paths)),
-      "and no modified file is named by the governed freeze checksum manifest",
-      "; ".join(sorted(set(modified) & set(manifest_paths))[:8]))
+_manifest_modified = (set(modified) & set(manifest_paths)) - RUN41_AUTHORISED_MANIFEST_CHANGES
+check(not _manifest_modified,
+      "and no modified file is named by the governed freeze checksum manifest, apart from "
+      "Run 41's owner-authorised successor changes",
+      "; ".join(sorted(_manifest_modified)[:8]))
 print(f"    Run 38 changes {len(run38)} paths against the release: "
       f"{len(run38) - len(modified)} additions, {len(modified)} permitted modifications "
       f"({', '.join(sorted(modified))}), {len(in_frozen)} frozen.")

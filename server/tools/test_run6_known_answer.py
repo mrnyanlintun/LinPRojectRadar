@@ -560,7 +560,15 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # this named set, which is why the two files are listed rather than the
                    # comparison being relaxed.
                    - {"server/app/simulation/canonical_v8.py",
-                      "server/app/simulation/portfolio_health.py"})
+                      "server/app/simulation/portfolio_health.py"}
+                   # RUN 41: the document-serving boundary, where finding S1 is closed under the
+                   # owner's ruling that both Run-40 HIGH defects be fixed before participant
+                   # use. An uploaded document's client-supplied MIME can no longer make its
+                   # bytes execute as script in this application's origin. Pinned in
+                   # run41_production_tree.sha256; the file is named rather than the comparison
+                   # being relaxed, so the check keeps full force outside it. The run's other
+                   # defect is closed in an alembic migration, outside this surface.
+                   - {"server/app/main.py"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

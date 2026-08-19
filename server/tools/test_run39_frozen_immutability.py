@@ -112,7 +112,11 @@ BOOKKEEPING = {
     "research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv",
     "research/freeze/INSTRUMENT_FINAL_FREEZE_RECORD.json",
 }
-targets = sorted(set(manifest_paths) - BOOKKEEPING)
+# RESTATED BY RUN 41, RUN 39'S FINDING PRESERVED. The subject is that RUN 39 changed no governed
+# file, still asserted below. Run 41's owner-authorised successor changes are subtracted BY NAME,
+# not by widening the comparison, so any other manifest file that moved would still fail.
+RUN41_AUTHORISED_MANIFEST_CHANGES = {"server/app/simulation/models.py"}
+targets = sorted(set(manifest_paths) - BOOKKEEPING - RUN41_AUTHORISED_MANIFEST_CHANGES)
 vs_ready = [p for p in targets if diff_committed(RUN38_READY, p)]
 check(not vs_ready,
       "no file named by the governed freeze checksum manifest differs from the Run-38 readiness "
@@ -209,8 +213,9 @@ modified = [p for st, p in run39 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]
 check(not unexpected, "Run 39 modified no pre-existing file outside the named permitted set",
       "; ".join(unexpected[:12]))
-check(not (set(modified) & set(manifest_paths)),
-      "and no modified file is named by the governed freeze checksum manifest",
+check(not ((set(modified) & set(manifest_paths)) - RUN41_AUTHORISED_MANIFEST_CHANGES),
+      "and no modified file is named by the governed freeze checksum manifest, apart from "
+      "Run 41's owner-authorised successor changes",
       "; ".join(sorted(set(modified) & set(manifest_paths))[:8]))
 
 print(f"    Run 39 changes {len(run39)} paths against the Run-38 readiness commit: "

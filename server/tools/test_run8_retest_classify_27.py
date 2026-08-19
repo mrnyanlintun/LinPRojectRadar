@@ -510,6 +510,18 @@ RUN33_SCOPED_FILES = {
     "server/app/simulation/portfolio_health.py",
 }
 
+# RUN 41 is authorised by the owner's ruling of 2026-08-19 on the two HIGH defects Run 40
+# confirmed: fix both before participant use, accepting neither risk for the study period. ONE
+# production file under server/app/ carries that remediation -- main.py, where finding S1 is
+# closed at the document-serving boundary so an uploaded document's client-supplied MIME can no
+# longer make its bytes execute as script in this application's origin. The run's other defect,
+# S2, is closed in an alembic migration, which is outside the surface this check covers. Pinned
+# in code_audit/run41_production_tree.sha256; named here rather than the rule being widened, so
+# the check keeps its full force over every other production file.
+RUN41_SCOPED_FILES = {
+    "server/app/main.py",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -520,7 +532,8 @@ _prod = [p for p in _diff
          and p not in RUN23_SCOPED_FILES and p not in RUN28_SCOPED_FILES
          and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
          and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES
-         and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES]
+         and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES
+         and p not in RUN41_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
