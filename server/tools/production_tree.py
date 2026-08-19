@@ -323,7 +323,18 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: sim-2026.08-v22). The run33 manifest is NOT rewritten: it stays exactly as that release wrote
 #: it and this successor names it as its parent. The guard was turned red FIRST and observed
 #: reporting exactly those three changed files and nothing else.
-PINNED = ROOT / "code_audit" / "run34_production_tree.sha256"
+#: RUN 35 FINAL CLOSURE SUPERSEDES IT. Three production files moved and only three:
+#: models_evm.py (A1.7 and A1.8 now compute their canonical value at the application's own
+#: precision, A1.7 bands from it, and the rounded numbers become explicit display fields),
+#: models.py (the stamp advances to sim-2026.08-v23 with the boundary recorded) and
+#: method_labels.py (the stale B1.2 and B4.4 proxy labels are withdrawn). The run34 manifest is
+#: NOT rewritten: it stays exactly as that release wrote it and this successor names it as its
+#: parent. The guard was turned red FIRST and observed reporting exactly those three changed
+#: files and nothing else.
+PINNED = ROOT / "code_audit" / "run35_closure_production_tree.sha256"
+#: The Run-34 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN34 = ROOT / "code_audit" / "run34_production_tree.sha256"
 #: The Run-33 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN33 = ROOT / "code_audit" / "run33_production_tree.sha256"
