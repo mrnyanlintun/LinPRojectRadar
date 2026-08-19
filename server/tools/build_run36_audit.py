@@ -190,14 +190,22 @@ def population_rows():
     rows.append(["VOTING", "voting population", len(REG.CORE_VOTING_MODULES), 2,
                  "RECONCILED" if len(REG.CORE_VOTING_MODULES) == 2 else "DISCREPANCY",
                  "registry.CORE_VOTING_MODULES = " + ", ".join(sorted(REG.CORE_VOTING_MODULES))])
-    rows.append(["DISABLED", "disabled population (all)", len(REG.DISABLED_MODULES), 9,
-                 "RECONCILED" if len(REG.DISABLED_MODULES) == 9 else "DISCREPANCY",
-                 "8 concept-only plus A3.4 under evidence review"])
+    # THE OWNER'S A1.1 RULING OF 2026-08-19 MOVED THESE TWO COUNTS, AND THE EXPECTATION MOVES
+    # WITH THE REASON RECORDED rather than the observation being suppressed. Nine became ten and
+    # eight became nine because A1.1 joined a THIRD disjoint disabled set,
+    # DISABLED_CANONICAL_INPUT_NOT_GOVERNED. The registered total and the scientific-target total
+    # are unmoved, which is what section 18 freezes: A1.1 is not in
+    # DISABLED_EVIDENCE_UNDER_REVIEW, and that is the set the scientific population subtracts.
+    rows.append(["DISABLED", "disabled population (all)", len(REG.DISABLED_MODULES), 10,
+                 "RECONCILED" if len(REG.DISABLED_MODULES) == 10 else "DISCREPANCY",
+                 "8 concept-only, plus A3.4 under evidence review, plus A1.1 whose canonical "
+                 "input contract is not governed"])
     rows.append(["DISABLED", "disabled INSIDE the 100 scientific targets",
-                 len([m for m in REG.DISABLED_MODULES if m in scientific]), 8,
-                 "RECONCILED" if len([m for m in REG.DISABLED_MODULES if m in scientific]) == 8
+                 len([m for m in REG.DISABLED_MODULES if m in scientific]), 9,
+                 "RECONCILED" if len([m for m in REG.DISABLED_MODULES if m in scientific]) == 9
                  else "DISCREPANCY",
-                 "A3.4 is the one disabled module outside the scientific population"])
+                 "A3.4 remains the one disabled module OUTSIDE the scientific population; A1.1 is "
+                 "disabled and stays inside it"])
     _arch = sorted(m for m in scientific
                    if str(execute(m).get("canonical_disposition") or "") == "ARCHIVED"
                    or str(execute(m).get("disposition") or "") == "ARCHIVED")
@@ -282,8 +290,23 @@ def target_row(mid, reg_row, gov_keys):
 
     # 4. LEGACY REACHABILITY. A proxy qualifier is the platform's own statement that a module
     #    computes something other than the method its name claims.
-    legacy = ("YES - proxy qualifier held: " + str(REG.PROXY_QUALIFIERS[mid])[:70]
-              if mid in REG.PROXY_QUALIFIERS else "NO")
+    # A PROXY QUALIFIER IS NOT AUTOMATICALLY A LEGACY ROUTE, and conflating the two overstates
+    # the finding. The qualifier is the platform's disclosure about a module; it can disclose that
+    # the module computes something OTHER than its named method (a legacy/proxy route), or that it
+    # computes the named method with UNCALIBRATED constants (a calibration disclosure). A1.2 is
+    # the second: it carries out the two-sided tabular CUSUM its name claims, on the project's
+    # real schedule-index history, and what its qualifier discloses is that k, H, the sigma floor
+    # and the Amber band are uncalibrated -- which is true of the whole instrument and is recorded
+    # in the parameter register, not a substituted method. The distinction is drawn from the
+    # module's OWN dispatch target, not from the presence of a qualifier.
+    if mid in REG.PROXY_QUALIFIERS:
+        _q = str(REG.PROXY_QUALIFIERS[mid])
+        _substitutes = ("instead of" in _q or "rather than" in _q or "in place of" in _q)
+        legacy = (("YES - the disclosed route computes something other than the named method: "
+                   + _q[:90]) if _substitutes
+                  else ("NO - calibration disclosure, not a substituted method: " + _q[:90]))
+    else:
+        legacy = "NO"
     # 5. GOVERNED INPUT SUFFICIENCY.
     declared = key or "none"
     accepted = "YES" if (key and key in gov_keys) else ("n/a" if not key else "NO")
