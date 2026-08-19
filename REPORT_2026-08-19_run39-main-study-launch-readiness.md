@@ -361,6 +361,26 @@ Five of the six are the same defect class this programme keeps finding: **a chec
 has not detected anything.** Run 38's gate had it too. None was found by reading; all were found
 by injecting the fault.
 
+## 16b. Complete-suite verification
+
+Run on the WIP head and again on exact final `main`, each suite against its own freshly migrated
+SQLite (never `:memory:`). Production Postgres was never accessed.
+
+**Suites run: 181. Total checks: 13905/13905. ALL SUITES GREEN.**
+
+The Run-38 figure of 179 suites / 13788 checks is **not inherited**. Run 39 adds two suites —
+`test_run39_launch_gate.py` (99 checks) and `test_run39_frozen_immutability.py` (18 checks) —
+which accounts for +2 suites and +117 checks exactly.
+
+One legitimate failure appeared on the first pass and was resolved without weakening anything:
+`test_run22_production_tree_completeness.py` refused because Run 39's dataset-classification
+contract lands inside the pinned scientific-authority tree. `PINNED_AUTHORITY` was repointed to
+`code_audit/run39_authority_tree.sha256` by the same mechanism Runs 34, 35 and 38 used, with the
+Run-38, Run-35, Run-34 and Run-22 records kept addressable and not rewritten.
+
+Self-rewriting audit artifacts from earlier runs (run8, run9, run10, run20, run17/coverage) and
+the three regenerated Run-38 CSVs were **restored, not committed**, before every commit.
+
 ## 17. Final disposition
 
 `MAIN_STUDY_LAUNCH_READY` — blockers = 0.
