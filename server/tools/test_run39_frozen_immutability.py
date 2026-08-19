@@ -153,6 +153,10 @@ PERMITTED_MODIFICATIONS = {
     "T6_HANDOFF.md",
     "REPORT_2026-08-19_run38-study-execution-readiness.md",
     "server/tools/test_run38_frozen_immutability.py",
+    # Repoints PINNED_AUTHORITY to code_audit/run39_authority_tree.sha256, because Run 39's
+    # dataset-classification contract lands inside an AUTHORITY_ROOT. Run-34, 35 and 38
+    # precedent; prior manifests stay addressable.
+    "server/tools/production_tree.py",
 }
 run39 = [ln.split("\t", 1) for ln in diff_committed(RUN38_READY).splitlines() if ln]
 in_frozen = [p for st, p in run39
