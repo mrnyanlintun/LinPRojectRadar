@@ -1,0 +1,43 @@
+{
+  "contract_id": "OG-STUDY-DESIGN-2026.08-v1",
+  "authority": "owner ruling of 2026-08-19, Run 36 blocker closure, section 10",
+  "status": "OWNER_AUTHORIZED_STUDY_DESIGN_CONTRACT",
+  "what_this_is": "The owner-authorized controlled-study design counts and participant sequence, stated ONCE and machine-readable so a guard can compare the ACTUAL enumerated stimuli against them. The stimuli are NOT generated from this file: this file is written down and the corpus is enumerated independently, and the guard fails when the two disagree in either direction.",
+  "controlled_stimulus": {
+    "identity": "OG-SYNTH-0.2",
+    "package_version": "A-0.2",
+    "root": "research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/package_A_project_structures",
+    "project_table": "projects.csv",
+    "period_table": "reporting_periods.csv",
+    "study_project_selector": "study_project_candidate == True",
+    "why_this_root": "It is the root the LIVE loader server/tests/synthetic_fixtures/importers/fixture_loader.py reads, and it is the only governed, versioned, checksummed project-period corpus in the repository."
+  },
+  "design": {
+    "project_count": 6,
+    "period_count_per_project": 6,
+    "project_period_count": 36,
+    "every_project_has_all_periods": true,
+    "duplicate_project_periods_permitted": 0,
+    "missing_project_periods_permitted": 0
+  },
+  "participant_sequence": [
+    "fixed evidence review",
+    "preliminary assessment, action and confidence",
+    "preliminary lock",
+    "AI reveal, permitted only after the preliminary lock",
+    "final action, confidence, disposition, evidence and rationale",
+    "final lock",
+    "next-period transition"
+  ],
+  "participant_sequence_enforcement": {
+    "preliminary_lock": "server/app/research_decision.py refuses resubmission of a locked preliminary judgment",
+    "reveal_after_lock": "server/app/research_models.py CheckConstraint ck_decisions_reveal_after_pre_lock, enforced in the database itself",
+    "final_lock": "server/app/research_decision.py refuses a second final decision for an assignment",
+    "evidence_and_rationale_capture": "server/app/research_decision.py stores decision.rationale and decision.evidence_items"
+  },
+  "declared_limitations": [
+    "This contract binds the controlled STIMULUS CORPUS and the participant SEQUENCE. It does not assert that any participant database currently holds 36 assignments: Scenario.period_count is a nullable per-scenario integer and ConditionSequence rows are operator-configured. Run 36 reported that and the report is not withdrawn.",
+    "research_fixtures/README.md bars these synthetic records from entering an operational or participant database. The corpus is the controlled evidence the instrument computes over; it is not bulk-imported into a participant store, and nothing here authorizes that.",
+    "Nothing in this contract is empirical validation. The corpus carries not_for_empirical_validation = true on every row."
+  ]
+}
