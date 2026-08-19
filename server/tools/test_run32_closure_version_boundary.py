@@ -121,8 +121,9 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"out of git rather than out of a note, so this run appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
 check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-2026.08-v21",
-                                                       "sim-2026.08-v22", "sim-2026.08-v23"),
-      "and it grew by exactly the stamps Runs 32, 33 and 34 were each authorised to add",
+                                                       "sim-2026.08-v22", "sim-2026.08-v23",
+                                                       "sim-2026.08-v24"),
+      "and it grew by exactly the stamps Runs 32, 33, 34, 35 and 36 were each authorised to add",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v19",
       "and the line this run supersedes is the line that commit shipped", str(_old_stamps[-1]))

@@ -72,10 +72,22 @@ from app.simulation.models import (                                    # noqa: E
     SIMULATION_VERSION, SIMULATION_VERSION_HISTORY, SIMULATION_VERSION_SUPERSEDED,
 )
 
-check(SIMULATION_VERSION == "sim-2026.08-v23", "the current stamp is sim-2026.08-v23",
-      SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v22",
-      "and the line it supersedes is named as v22", SIMULATION_VERSION_SUPERSEDED)
+# RUN 36 REPAIR, the same defect and the same repair as `test_run32_closure_version_boundary`.
+# These are settled claims about what the RUN-35 CLOSURE did, and they were being taken from the
+# LIVE TREE, so any legitimate later append falsified them -- which Run 36 did, adding v24 for
+# the A1.1 band withdrawal. A boundary claim about a past run must be read from that run's own
+# object. What stays a LIVE assertion is the only property that genuinely is one: that v23
+# survives in the history exactly once, so a later run appended beside it rather than over it.
+V23_COMMIT = "dafc35d35bafe5af76e1ce48ef7daceab9daed2c"
+_v23_src = git_show("server/app/simulation/models.py", V23_COMMIT)
+check('SIMULATION_VERSION = "sim-2026.08-v23"' in _v23_src,
+      f"the stamp at the Run-35 closure head {V23_COMMIT[:7]} is sim-2026.08-v23, read out of "
+      f"git rather than out of the working tree")
+check('SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v22"' in _v23_src,
+      "and the line it superseded is named there as v22")
+check(SIMULATION_VERSION_HISTORY.count("sim-2026.08-v23") == 1,
+      "and v23 survives exactly once in the live history, so a later run appended beside it "
+      "rather than overwriting it", SIMULATION_VERSION)
 check(SIMULATION_VERSION_HISTORY.index("sim-2026.08-v23")
       == SIMULATION_VERSION_HISTORY.index("sim-2026.08-v22") + 1,
       "it directly follows sim-2026.08-v22 in the history")
@@ -88,8 +100,16 @@ _old = tuple(s.strip().strip('",') for s in _seg.replace("\n", " ").split()
 check(SIMULATION_VERSION_HISTORY[:len(_old)] == _old,
       f"the history at {V22_COMMIT[:7]} is a strict PREFIX of the history now, read out of git",
       f"{len(_old)} -> {len(SIMULATION_VERSION_HISTORY)}")
-check(SIMULATION_VERSION_HISTORY[len(_old):] == ("sim-2026.08-v23",),
-      "and it grew by exactly the one stamp this closure is authorised to add")
+_v23_seg = _v23_src.split("SIMULATION_VERSION_HISTORY: tuple[str, ...] = (")[1].split(")")[0]
+_v23_hist = tuple(x.strip().strip('",') for x in _v23_seg.replace("\n", " ").split()
+                  if x.strip().strip('",').startswith("sim-"))
+check(_v23_hist[len(_old):] == ("sim-2026.08-v23",),
+      "and AT THE CLOSURE HEAD it had grown by exactly the one stamp this closure was authorised "
+      "to add", str(_v23_hist[len(_old):]))
+check(SIMULATION_VERSION_HISTORY[:len(_v23_hist)] == _v23_hist,
+      "and the closure head's history is still a strict PREFIX of the live history, so nothing "
+      "this closure recorded has been rewritten since",
+      f"{len(_v23_hist)} -> {len(SIMULATION_VERSION_HISTORY)}")
 check('SIMULATION_VERSION = "sim-2026.08-v22"' in _old_src,
       "PREDECESSOR RECONSTRUCTION: the v22 line reconstructs from its own git object and still "
       "says v22, so no predecessor stamp was regenerated to describe v23 behaviour")

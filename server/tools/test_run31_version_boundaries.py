@@ -388,9 +388,9 @@ check(H[:len(_prev)] == _prev,
 # exactly the first four that follow the v16 history, and v21 is Run 33's own single append.
 check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19",
                          "sim-2026.08-v20", "sim-2026.08-v21", "sim-2026.08-v22",
-                         "sim-2026.08-v23"),
+                         "sim-2026.08-v23", "sim-2026.08-v24"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
-      "added and the one stamp Run 34 adds",
+      "added, the one Run 34 adds, the one the Run-35 closure adds and the one Run 36 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.
