@@ -13,10 +13,10 @@
     "Run 41 reproduced both defects on v25 first, closed them, stamped the successor sim-2026.08-v26, and requalified every downstream gate by executing it.",
     "The v25 release remains historical evidence and is not rewritten. Results computed under v25 remain interpretable against the v25 records."
   ],
-  "freeze_candidate_commit": "6966b4fa2aa5891c51ce4783d540d6a060c0e0be",
-  "candidate_identity_digest": "dc6b4f38c9cae8a3a72a3ac0ac5e7798ec061d281c7e8d41fae0e4ba9fc98a86",
+  "freeze_candidate_commit": "d6c79b5c0cbf2adddf6347e62e6a3dda419d06ce",
+  "candidate_identity_digest": "dccc795b4dd6d4b85b8226218a7197a57c14fdf59217333bdf3e38fe644f2237",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "a9e85858039bc32e19ef6779e66acdcce82396150f8581311a18b466c9b0e1ce",
+  "release_content_digest": "0a6905c31674074e8a58a9a8e2c6d35c14da3462a7d644e113f6af638799ca4a",
   "release_content_digest_method": "sha256 over RUN41_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v26",

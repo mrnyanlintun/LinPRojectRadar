@@ -77,7 +77,7 @@ computed under v25 remains interpretable against the v25 records.
 
 ## Identity
 
-- successor candidate commit: `6966b4fa2aa5891c51ce4783d540d6a060c0e0be`
-- candidate identity digest: `dc6b4f38c9cae8a3a72a3ac0ac5e7798ec061d281c7e8d41fae0e4ba9fc98a86`
+- successor candidate commit: `d6c79b5c0cbf2adddf6347e62e6a3dda419d06ce`
+- candidate identity digest: `dccc795b4dd6d4b85b8226218a7197a57c14fdf59217333bdf3e38fe644f2237`
 - candidate behaviour digest: `8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1`
-- release content digest: `a9e85858039bc32e19ef6779e66acdcce82396150f8581311a18b466c9b0e1ce`
+- release content digest: `0a6905c31674074e8a58a9a8e2c6d35c14da3462a7d644e113f6af638799ca4a`

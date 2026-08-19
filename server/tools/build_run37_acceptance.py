@@ -64,7 +64,7 @@ FREEZE = ROOT / "research" / "freeze"
 # successor writes beside them under its own names.
 PREDECESSOR_CANDIDATE = "6142d877856ea651ef8d7e905f6d27604b3244f1"
 PREDECESSOR_VERSION = "sim-2026.08-v25"
-CANDIDATE = "6966b4fa2aa5891c51ce4783d540d6a060c0e0be"
+CANDIDATE = "d6c79b5c0cbf2adddf6347e62e6a3dda419d06ce"
 EXPECTED_VERSION = "sim-2026.08-v26"
 IDENTITY_FILE = "run41_freeze_candidate_identity.json"
 GATE_FILE = "run41_successor_freeze_gate.csv"

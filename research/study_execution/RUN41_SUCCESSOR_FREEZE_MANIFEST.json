@@ -140,10 +140,10 @@
   },
   "unresolved_high_security_blockers": 0,
   "successor_identity": {
-    "freeze_candidate_commit": "6966b4fa2aa5891c51ce4783d540d6a060c0e0be",
-    "candidate_identity_digest": "dc6b4f38c9cae8a3a72a3ac0ac5e7798ec061d281c7e8d41fae0e4ba9fc98a86",
+    "freeze_candidate_commit": "d6c79b5c0cbf2adddf6347e62e6a3dda419d06ce",
+    "candidate_identity_digest": "dccc795b4dd6d4b85b8226218a7197a57c14fdf59217333bdf3e38fe644f2237",
     "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-    "release_content_digest": "a9e85858039bc32e19ef6779e66acdcce82396150f8581311a18b466c9b0e1ce",
+    "release_content_digest": "0a6905c31674074e8a58a9a8e2c6d35c14da3462a7d644e113f6af638799ca4a",
     "supersedes_candidate": "6142d877856ea651ef8d7e905f6d27604b3244f1",
     "supersedes_release": "f983bb020f7a184a5742e1fff09d690b0170f0de"
   },
