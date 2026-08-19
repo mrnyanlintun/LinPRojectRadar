@@ -377,19 +377,45 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
             "the budget at completion, so there is no remaining funding for the efficiency this "
             "measure states",
         )
-    tcpi = _round3(remaining_work / remaining_budget)
+    # RUN 35 FINAL CLOSURE. ROUNDING IS PRESENTATION, AND IT NO LONGER REACHES THE BAND.
+    #
+    # THE DEFECT RUN 35 MEASURED AND THIS CLOSURE REPAIRS. This line used to read
+    # `tcpi = _round3(remaining_work / remaining_budget)`, and every use below -- the band, the
+    # emitted analytical field, the displayed string -- read that one rounded number. Two
+    # consequences followed, and the second is the serious one:
+    #
+    #   1. the emitted analytical value was not the published identity. On the Run-35 governed
+    #      corpus it differed from (BAC - EV) / (BAC - AC) by exactly -3/7000, which is why the
+    #      Run-35 partial reference standard recorded a genuine FAIL against PMI's definition.
+    #
+    #   2. THE BAND WAS ASSIGNED FROM THE ROUNDED VALUE, so premature rounding could change a
+    #      STATUS and not merely a displayed number. The pre-change measurement pinned at
+    #      `code_audit/run35_voter_prechange_measurement.json` found twenty-eight governed
+    #      inputs on which this module answered Green while the full-precision index was above
+    #      1.00 and implied Amber. This module is one of the two that vote on project status, so
+    #      that is a wrong vote, not a cosmetic one.
+    #
+    # THE SEPARATION IS NOW EXPLICIT AND IS THE WHOLE FIX. `tcpi` is the canonical numeric value
+    # at the full precision the application already carries; the band is derived from it; and
+    # `tcpi_display` is a presentation value that nothing analytical reads. NO NEW PRECISION IS
+    # INTRODUCED -- this is a separation of concerns, not a precision upgrade, and `_round3` is
+    # the same presentation helper it always was. No presentation helper mutates the analytical
+    # value: `_round3` is called on a copy and its result is never fed back.
+    tcpi = remaining_work / remaining_budget
     color = ("Green" if tcpi <= _TCPI_PLANNED_EFFICIENCY
              else "Amber" if tcpi <= _TCPI_BEYOND_OBSERVED else "Red")
     word = ("within the efficiency already planned" if tcpi <= _TCPI_PLANNED_EFFICIENCY
             else "above the efficiency planned" if tcpi <= _TCPI_BEYOND_OBSERVED
             else "beyond the improvement a cumulative cost index is observed to make")
+    tcpi_display = _round3(tcpi)
     return {
         "method_class": "TCPI",
         "status_color": color,
         "tcpi": tcpi,
+        "tcpi_display": tcpi_display,
         "evidence_metric": (
-            f"TCPI: {_js_str(tcpi)}, the cost efficiency the remaining work must achieve to "
-            f"finish within budget, {word}"
+            f"TCPI: {_js_str(tcpi_display)}, the cost efficiency the remaining work must achieve "
+            f"to finish within budget, {word}"
         ),
     }
 
@@ -451,11 +477,27 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
         return insufficient("VAC")  # bac=0: JS NaN fallthrough, refused likewise
     color = ("Green" if vac_pct >= _VAC_BUDGET_MET_PCT
              else "Amber" if vac_pct >= _VAC_BEYOND_OBSERVED_PCT else "Red")
+    # RUN 35 FINAL CLOSURE. THE SAME SEPARATION, FOR THE SAME REASON.
+    #
+    # The band here was ALREADY derived from the full-precision percentage, so this module never
+    # had A1.7's status defect and none is claimed. What it did have is the first consequence:
+    # the emitted analytical field was `int(js_round(vac))`, a whole-dollar presentation value,
+    # and on the Run-35 governed corpus that differed from the published identity
+    # BAC - BAC/CPI by exactly +10/909. The Run-35 reference comparison read that field, so the
+    # FAIL it recorded was real.
+    #
+    # `vac` and `vac_pct` are now the canonical values at the precision the application already
+    # carries; `vac_display` and `vac_pct_display` are presentation only. VAC SEMANTICS AND
+    # VOTING DIRECTION ARE UNCHANGED: negative is still a forecast overrun, the band edges are
+    # the same two sourced boundaries, and the displayed sentence is byte-identical to what it
+    # rendered before, because it was already built from the unrounded value.
     return {
         "method_class": "VAC",
         "status_color": color,
-        "vac": int(js_round(vac)),
-        "vac_pct": round1(vac_pct),
+        "vac": vac,
+        "vac_pct": vac_pct,
+        "vac_display": int(js_round(vac)),
+        "vac_pct_display": round1(vac_pct),
         "evidence_metric": (
             f"VAC: {_money(abs(vac))} {'over' if vac < 0 else 'under'} budget "
             f"({_js_str(round1(abs(vac_pct)))}%)"

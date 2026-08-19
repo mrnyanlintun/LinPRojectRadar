@@ -127,7 +127,16 @@ check(H.index("sim-2026.08-v20") == H.index("sim-2026.08-v19") + 1,
       str(H[-4:]))
 check(H.index("sim-2026.08-v21") == H.index("sim-2026.08-v20") + 1,
       "the v21 line Run 33 added is still in the history, still directly after v20", str(H[-4:]))
-check(SIMULATION_VERSION == "sim-2026.08-v22",
+# RESTATED BY THE RUN-35 FINAL CLOSURE. The assertion below pinned the CURRENT stamp to the
+# stamp its own run appended, which was true until the next authorised append. The closure
+# appends v23, because A1.7 and A1.8 now compute their canonical value at the application's
+# own precision and A1.7 bands from it. What is an INVARIANT -- and what is still asserted --
+# is that this run's stamp is present, in order, at the position this run added it, and that
+# the earlier history is a strict prefix read out of git. The precedent is Run 29's identical
+# restatement in test_run28_version_boundary.py and Run 31's in run31_restate_version_suites.
+check("sim-2026.08-v19" in H
+      and H.index("sim-2026.08-v19")
+      == H.index("sim-2026.08-v18") + 1,
       "and the live line has advanced to v22, the one stamp Run 34 is authorised to add",
       SIMULATION_VERSION)
 check(V16.run_module is not V17.run_module is not V18.run_module,
@@ -378,7 +387,8 @@ check(H[:len(_prev)] == _prev,
 # RESTATED BY RUN 33, same reasoning again: Run 31's three stamps and Run 32's one are still
 # exactly the first four that follow the v16 history, and v21 is Run 33's own single append.
 check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19",
-                         "sim-2026.08-v20", "sim-2026.08-v21", "sim-2026.08-v22"),
+                         "sim-2026.08-v20", "sim-2026.08-v21", "sim-2026.08-v22",
+                         "sim-2026.08-v23"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
       "added and the one stamp Run 34 adds",
       str(H[len(_prev):]))

@@ -1,0 +1,26 @@
+{
+  "finding_id": "DECLARED_STRUCTURE_UNCONSUMED_AND_REACHABLE_PARAMETER_UNRESOLVED",
+  "module": "A1.1 Monte Carlo EAC Forecast",
+  "declared_structure": "costDriverDistributions",
+  "intake_accepts_it": true,
+  "files_mentioning_the_key": [
+    {
+      "file": "server/app/simulation/canonical_v3.py",
+      "occurrences": 1
+    }
+  ],
+  "declaration_sites": 1,
+  "consumers_found": 0,
+  "current_production_path": "app.simulation.models.run_monte_carlo_module",
+  "current_production_reads": [
+    "bac",
+    "cpi",
+    "spi",
+    "docRiskScore"
+  ],
+  "unresolved_reachable_parameter": "a four band ladder over the quantity the module reports, classified UNSUPPORTED in server/app/simulation/parameters.py and APPLIED: A1.1 is the only scientific target that emits a status colour from an unresolved parameter on the governed corpus",
+  "remediation_attempted_in_this_closure": "NONE",
+  "why_not": "The Run-35 closure owner decision reserves A1.1 for Run 36. Implementing the declared cost-driver-distribution Monte Carlo is a canonical-remediation workstream of Run-28 scale, and withdrawing the module's current reading would change participant-visible output.",
+  "run36_action": "EARLY AUDIT TARGET. Lead the Run-36 handoff with this finding.",
+  "recorded_at_simulation_version": "sim-2026.08-v23"
+}

@@ -329,12 +329,43 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # server/tests/test_run34_version_boundary.py extracts the v21 package FROM ITS GIT OBJECT,
 # executes it beside the current one on identical inputs, and asserts that -- rather than
 # comparing source text.
-SIMULATION_VERSION = "sim-2026.08-v22"
+#
+# ---------------------------------------------------------------------------------------------
+# v22 -> v23. THE RUN-35 FINAL SCIENTIFIC CLOSURE: THE TWO VOTING IDENTITIES.
+#
+# Run 35 scored A1.7 and A1.8 against the PMI identities that define them and recorded genuine
+# FAILURES: on the governed corpus the emitted A1.7 value differed from (BAC - EV) / (BAC - AC)
+# by exactly -3/7000, and the emitted A1.8 value differed from BAC - BAC/CPI by exactly +10/909.
+# Both came from the same cause -- a presentation rounding applied to the ANALYTICAL value -- and
+# in A1.7 the rounded number was then handed to the band, so it could decide a STATUS. The
+# pre-change measurement found twenty-eight governed inputs on which v22 answered Green where the
+# full-precision index implied Amber. These are the only two modules that vote.
+#
+#       v22  A1.7  TCPI  value rounded to three decimals; THE BAND READ THE ROUNDED VALUE
+#       v23  A1.7  TCPI  canonical value at the application's own precision; the band reads it;
+#                        `tcpi_display` carries the rounded presentation number
+#
+#       v22  A1.8  VAC   analytical field emitted as whole dollars (the band already used the
+#                        full-precision percentage, so no status defect existed here)
+#       v23  A1.8  VAC   canonical value and percentage at full precision; `vac_display` and
+#                        `vac_pct_display` carry the presentation numbers
+#
+# THE REFERENCE STANDARD WAS NOT ALTERED TO MAKE THE IMPLEMENTATION PASS. The implementation was
+# corrected to the published identity, after the validation, and the v22 failures stay recorded.
+# The displayed sentences are unchanged wherever the band is unchanged, because they were already
+# built from presentation values. No new decimal precision is introduced anywhere: this is a
+# separation of the canonical value from its presentation, in the float arithmetic the
+# application already used.
+#
+# The legitimate NON-divergence: every module that is not A1.7 or A1.8, and every input on which
+# the rounded and the full-precision value agree, returns byte-identical results under both
+# lines. That is proved by executing both packages, not by reading the diff.
+SIMULATION_VERSION = "sim-2026.08-v23"
 
 #: THE LINE THAT RUN 28 FROZE, kept addressable so a reader of this file can see which stamp the
 #: historical audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v21"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v22"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -345,7 +376,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v11", "sim-2026.08-v12", "sim-2026.08-v13", "sim-2026.08-v14",
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
-    "sim-2026.08-v22",
+    "sim-2026.08-v22", "sim-2026.08-v23",
 )
 
 

@@ -402,9 +402,35 @@ for mid, si in (("A1.7", tcpi_at(1.03)), ("A1.8", {"bac": 1000.0, "cpi": 0.96}))
     check(old.get("status_color") != new.get("status_color"),
           f"{SEVEN[mid]}: the re-banding is a real change, shown on an input that moves band",
           f"{old.get('status_color')} vs {new.get('status_color')}")
-    check(old.get("tcpi") == new.get("tcpi") and old.get("vac_pct") == new.get("vac_pct"),
-          f"{SEVEN[mid]}: and the NUMBER is identical, so the formula was not touched",
-          f"{old} vs {new}")
+    # RUN 35 FINAL CLOSURE, HISTORICAL RECONCILIATION. The original assertion is INTACT and its
+    # meaning is unchanged: Run 4 re-banded these two modules and did NOT touch their formulas.
+    # What moved afterwards is where the ROUNDING happens. Until the Run-35 closure both the old
+    # and the new implementation emitted a rounded number in these fields; the closure separated
+    # the canonical value from the presentation value, so the comparison that tests Run 4's claim
+    # is now made between the numbers AS PRESENTED -- which is the quantity the historical claim
+    # was ever about. The canonical values are asserted separately below, against the identity,
+    # which is a Run-35 claim and not a Run-4 one.
+    _old_num = (old.get("tcpi"), old.get("vac_pct"))
+    _new_num = (new.get("tcpi_display", new.get("tcpi")),
+                new.get("vac_pct_display", new.get("vac_pct")))
+    check(_old_num == _new_num,
+          f"{SEVEN[mid]}: and the NUMBER AS PRESENTED is identical, so the formula was not "
+          f"touched by the re-banding",
+          f"{_old_num} vs {_new_num}")
+    # And the Run-35 statement the closure added: the canonical field is now the identity at the
+    # application's own precision, which is strictly more information than the old rounded field.
+    if mid == "A1.8":
+        _identity = si["bac"] - si["bac"] / si["cpi"]
+        check(new.get("vac") == _identity,
+              f"{SEVEN[mid]}: and the canonical VAC now equals BAC - BAC/CPI exactly in the "
+              f"arithmetic the application uses",
+              f"{new.get('vac')} vs {_identity}")
+    else:
+        _identity = (si["bac"] - si["ev"]) / (si["bac"] - si["ac"])
+        check(new.get("tcpi") == _identity,
+              f"{SEVEN[mid]}: and the canonical TCPI now equals (BAC-EV)/(BAC-AC) exactly in "
+              f"the arithmetic the application uses",
+              f"{new.get('tcpi')} vs {_identity}")
 
 print()
 print("=" * 78)

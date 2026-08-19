@@ -353,3 +353,118 @@ makes no participant claim.
    was not treated as such.
 
 None of these blocks Run 36; each is a Run-36 input.
+
+
+---
+
+## 16. POST-VALIDATION VOTER CORRECTION (closure, 2026-08-19)
+
+Run 35 identified canonical-reference failures **in the only two modules that vote on project
+status**, and this closure repaired them. The order matters and the git history shows it: the
+protocol was frozen first, the validation was scored second, and the implementation was corrected
+third. **The reference standard was never altered to make the implementation pass.**
+
+- **Both failures arose from premature rounding behaviour.** A presentation rounding was applied
+  to the analytical value, so the emitted quantity was a rounded rendering of the published
+  identity rather than the identity.
+- **A1.7 additionally used the rounded value for band classification.** That is the serious half.
+  The pre-change measurement (`code_audit/run35_voter_prechange_measurement.json`, taken before a
+  line was edited and pinned to its own commit) *searched* for governed inputs on which the
+  rounded and the full-precision index fall on opposite sides of a band edge, and found
+  **twenty-eight**. On every one of them v22 answered **Green** where the full-precision index is
+  above 1.00 and implies **Amber**. Premature rounding therefore decided a **status**, not merely
+  a displayed number, on a voting module.
+- **A1.8 had no status defect and none is claimed.** Its band already read the full-precision
+  percentage. What it had was the first consequence only: the emitted analytical field was a
+  whole-dollar presentation value.
+- **The implementation was corrected after Run-35 validation.** `tcpi` and `vac` are now the
+  canonical values at the precision the application already uses, the bands derive from them, and
+  `tcpi_display`, `vac_display` and `vac_pct_display` carry presentation numbers that nothing
+  analytical reads. No new decimal precision was introduced anywhere.
+- **v22 remains preserved as the failing predecessor**, pinned at
+  `034cf03be257f4582bc1a856262c56ea11bb4558`. The boundary proof asserts that object still stamps
+  itself v22 and still carries the defective line, so no predecessor was regenerated.
+- **v23 is the corrected successor**, proved by executing both packages:
+  `code_audit/run35_v22_v23_voter_execution_proof.csv`.
+- **The original empirical findings remain in the historical artifacts unchanged.** The FAIL rows
+  in `code_audit/run35_empirical_validation_results.csv` record what v22 did and are not rewritten.
+
+| Module | v22 result (Run 35) | v23 result (closure) |
+|---|---|---|
+| A1.7 TCPI | `1071/1000`, discrepancy **−3/7000**, **FAIL** | `1.0714285714285714` = the identity in the application's own arithmetic, **PASS** |
+| A1.7 band boundary | Green on 28 governed inputs where the index exceeds 1.00 | Amber on all 28 |
+| A1.8 VAC | `−100110`, discrepancy **+10/909**, **FAIL** | `−100110.01100110007` = the identity, **PASS** |
+| A6.2 Safety | PASS exactly | **unchanged**, PASS exactly |
+
+The acceptance rule applied at v23 is the one the owner's Decision 1 bounds: equality with the
+published identity **evaluated in the arithmetic the application already uses**, tolerance zero.
+Against an infinitely precise rational a residue of order 1e-17 relative (A1.7) and 1e-11 absolute
+(A1.8) remains; that is IEEE-754 double representation, not premature rounding, and no decimal
+precision was invented to remove it.
+
+## 17. STALE METHOD-LABEL CORRECTION (closure, 2026-08-19)
+
+Two modules carried truthful-method labels describing proxies that earlier runs had already
+removed, so the labels had become false **in the opposite direction** — advertising a weakness the
+code does not have, which is the error `method_labels.py` exists to prevent.
+
+| Module | Previous stale label | Canonical existing name | Source of authority |
+|---|---|---|---|
+| B1.2 | "Fixed-weight signal band tally" — "tallies the bands of the assembled signals under four fixed weights" | **Weighted Voting** | `p0-baseline/module_renumbering_map.csv`, the registry authority the client taxonomy is generated from |
+| B4.4 | "Earned value completion forecast range" — "computes four completion forecasts by perturbing the cost index" | **What-If Scenario Matrix** | the same registry authority |
+
+**No arbitrary new naming.** Both names already existed in the registry authority; neither module
+ID, algorithm, category, voting state, lineage nor operational disposition changed
+(`implementation_changed = NO`, measured by resolving the production dispatch entry through
+`__wrapped__`: B1.2 → `models_gov.run_weighted_voting` into `canonical_v5.weighted_voting` with a
+governed weight policy, weight provenance and an eligibility refusal; B4.4 →
+`models_cat10.run_B4_4` on the canonical v7 layer, abstaining without the governed
+action-by-scenario structure). The correction is a **withdrawal**, following this repository's own
+precedent for proxy qualifiers: `MethodLabel` refuses a truthful name equal to the registered
+name, so an entry exists only where the two differ, and with the entry gone the surface presents
+the registry name. The withdrawn sentences are preserved in
+`code_audit/run35_stale_method_label_reconciliation.csv`.
+
+A consequence worth recording: **every remaining truthful-method label now sits on a disabled
+module.** No enabled module carries a claim that its registered name misdescribes it. That is
+asserted mechanically rather than left implicit.
+
+## 18. A1.1 IS NOT REPAIRED IN THIS CLOSURE
+
+By owner decision, and recorded unchanged for Run 36 as
+`DECLARED_STRUCTURE_UNCONSUMED_AND_REACHABLE_PARAMETER_UNRESOLVED`
+(`code_audit/run35_a1_1_run36_handoff.json`): governed structure `costDriverDistributions` is
+declared; the intake accepts it; **consumers found = 0**, re-measured by search rather than
+asserted; production computes from `bac`, `cpi`, `spi` and `docRiskScore`; and the instrument's
+only reachable unresolved parameter remains. No remediation was attempted.
+
+## 19. Closure package decisions, measured
+
+`code_audit/run35_closure_package_decision.csv`.
+
+- **Participant package `og-participant-2026.08-v11` RETAINED.** All **70** files the v11
+  checksum record names were re-hashed against that record: **0 moved**. The closure edited only
+  `server/app/simulation/` and `server/tools/`, and no dispatched participant file is under either
+  path. The declared protocol surface was not touched, so the experimental sequence — fixed
+  evidence, preliminary judgment and confidence, lock, AI reveal, final judgment/confidence/
+  disposition/evidence/rationale, final lock, next period — is unchanged. v11 stays the current
+  record and is not rewritten; every predecessor stays pinned to its own commit.
+- **Participant-VISIBLE analytical outputs measured, not assumed.** A1.7 and A1.8 were executed
+  on both pinned lines over every controlled-corpus earned-value scalar set: **0 of 6 moved** —
+  identical status and byte-identical displayed sentence. A **constructed boundary probe does
+  move** (Green → Amber); that is the defect being repaired, it is recorded rather than hidden,
+  and it is not a governed corpus scenario. **The retention is bounded accordingly: it says the
+  governed corpus scenarios are unchanged, not that A1.7 can never move a participant-visible
+  status.**
+- **Synthetic package `OG-SYNTH-0.6` RETAINED.** Its sealed files were re-hashed against the
+  package's own `CHECKSUMS.sha256`: **0 moved**. No governed expected output for A1.7 or A1.8
+  lives inside the package, so a corrected analytical value moves no package byte. Nothing was
+  regenerated in place.
+
+## 20. Closure fault campaign
+
+Fifteen failure modes, each injected into a real file, confirmed applied by re-reading bytes, each
+turning **one named guard** red for its own reason, restored byte-for-byte and re-verified green:
+**15 declared, 15 applied, 15 intended RED, 15 restored GREEN, NOT_APPLIED 0, crashes accepted as
+RED 0.** Guard suite `server/tools/test_run35_closure_voter_identities.py`; results
+`code_audit/run35_closure_fault_injection.csv`.

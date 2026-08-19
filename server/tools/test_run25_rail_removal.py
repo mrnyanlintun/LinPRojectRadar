@@ -187,7 +187,12 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # Health calibration run CHANGED canonical_v8.py, portfolio_health.py and
                         # models.py and created nothing, so the pin moves to the Run-34 manifest
                         # and the Run-33 manifest is kept addressable as its parent.
-                        "run34_production_tree.sha256"),
+                        "run34_production_tree.sha256",
+                        # THE RUN-35 FINAL CLOSURE extends the chain once more, by the same rule:
+                        # it CHANGED models_evm.py, models.py and method_labels.py and created no
+                        # production file, so the pin moves to the closure manifest and the Run-34
+                        # manifest is kept addressable as its parent.
+                        "run35_closure_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

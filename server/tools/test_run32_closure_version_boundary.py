@@ -73,10 +73,24 @@ head("1. THE STAMP AND ITS HISTORY, APPEND-ONLY AND READ OUT OF GIT")
 # What this suite is FOR -- that v20 was really added, at the right position, after v19, and that
 # the v19 package still reconstructs from its own git object and still behaves as v19 -- is
 # unchanged and is asserted below on v20's HISTORICAL position rather than on the live stamp.
-check(SIMULATION_VERSION == "sim-2026.08-v22",
-      "the current stamp is sim-2026.08-v22", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v21",
-      "and the line it supersedes is named as v21", SIMULATION_VERSION_SUPERSEDED)
+# RESTATED BY THE RUN-35 FINAL CLOSURE. The assertion below pinned the CURRENT stamp to the
+# stamp its own run appended, which was true until the next authorised append. The closure
+# appends v23, because A1.7 and A1.8 now compute their canonical value at the application's
+# own precision and A1.7 bands from it. What is an INVARIANT -- and what is still asserted --
+# is that this run's stamp is present, in order, at the position this run added it, and that
+# the earlier history is a strict prefix read out of git. The precedent is Run 29's identical
+# restatement in test_run28_version_boundary.py and Run 31's in run31_restate_version_suites.
+check("sim-2026.08-v22" in SIMULATION_VERSION_HISTORY,
+      "the stamp this boundary concerns, sim-2026.08-v22, is present in the history",
+      SIMULATION_VERSION)
+# RESTATED BY THE RUN-35 FINAL CLOSURE, same reason as the stamp pin above: the SUPERSEDED
+# field names the line the CURRENT stamp replaced, so it moves whenever a later authorised
+# run appends. What is an invariant is the ORDER of the two stamps this run's boundary is
+# about, which is asserted from the history instead.
+check(SIMULATION_VERSION_HISTORY.index("sim-2026.08-v22")
+      == SIMULATION_VERSION_HISTORY.index("sim-2026.08-v21") + 1,
+      "and v22 directly follows the v21 line it superseded",
+      SIMULATION_VERSION_SUPERSEDED)
 check("sim-2026.08-v20" in SIMULATION_VERSION_HISTORY,
       "the stamp Run 32 added is still present in the history")
 check(SIMULATION_VERSION_HISTORY.index("sim-2026.08-v20")
@@ -96,7 +110,7 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
       f"out of git rather than out of a note, so this run appended and overwrote nothing",
       f"{_old_stamps} vs {SIMULATION_VERSION_HISTORY}")
 check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-2026.08-v21",
-                                                       "sim-2026.08-v22"),
+                                                       "sim-2026.08-v22", "sim-2026.08-v23"),
       "and it grew by exactly the stamps Runs 32, 33 and 34 were each authorised to add",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v19",

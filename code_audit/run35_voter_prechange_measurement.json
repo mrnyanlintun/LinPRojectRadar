@@ -1,0 +1,144 @@
+{
+  "closure": "RUN 35 FINAL SCIENTIFIC CLOSURE, pre-change measurement",
+  "measured_at_git_object": "034cf03be257f4582bc1a856262c56ea11bb4558",
+  "simulation_version_at_measurement": "sim-2026.08-v22",
+  "harness_note": "Every reference value is computed here from the governed inputs with fractions.Fraction, by an implementation written from the published definition. The discrepancies are differences of measured quantities, not constants: a changed production path yields a changed number.",
+  "A1.7": {
+    "module": "A1.7 TCPI",
+    "identity": "PMI: TCPI = (BAC - EV) / (BAC - AC)",
+    "inputs": {
+      "bac": 1000000.0,
+      "ev": 400000.0,
+      "ac": 440000.0
+    },
+    "full_precision_canonical_result": "15/14",
+    "full_precision_canonical_float": 1.0714285714285714,
+    "production_prechange_result": 1.071,
+    "displayed_result": "TCPI: 1.071, the cost efficiency the remaining work must achieve to finish within budget, above the efficiency planned",
+    "band_status_assigned": "Amber",
+    "band_from_full_precision": "Amber",
+    "discrepancy_exact": "-3/7000",
+    "discrepancy_float": -0.00042857142857142855,
+    "downstream_vote": "VOTES (A1.7 is one of the two CORE_VOTING_MODULES)",
+    "execution_evidence": "registry.run_module('A1.7', governed corpus scalars)"
+  },
+  "A1.8": {
+    "module": "A1.8 VAC",
+    "identity": "PMI: VAC = BAC - EAC, index-based EAC = BAC / CPI",
+    "inputs": {
+      "bac": 1000000.0,
+      "cpi": 0.909
+    },
+    "full_precision_canonical_result": "-91000000/909",
+    "full_precision_canonical_float": -100110.01100110011,
+    "production_prechange_result": -100110,
+    "displayed_result": "VAC: $100,110 over budget (10%)",
+    "band_status_assigned": "Amber",
+    "band_from_full_precision": "Amber",
+    "discrepancy_exact": "10/909",
+    "discrepancy_float": 0.011001100110011002,
+    "downstream_vote": "VOTES (A1.8 is one of the two CORE_VOTING_MODULES)",
+    "execution_evidence": "registry.run_module('A1.8', governed corpus scalars)"
+  },
+  "A1.7_band_boundary_fixtures": {
+    "search_performed": true,
+    "fixtures_found": 28,
+    "conclusion": "THE PRE-CHANGE IMPLEMENTATION BANDS FROM THE ROUNDED VALUE, and that changes a STATUS rather than only a displayed number.",
+    "fixtures": [
+      {
+        "inputs": {
+          "bac": 1000000.0,
+          "ev": 989999.0,
+          "ac": 990000.0
+        },
+        "full_precision_tcpi": "10001/10000",
+        "full_precision_tcpi_float": 1.0001,
+        "production_tcpi_emitted": 1.0,
+        "band_from_full_precision": "Amber",
+        "band_production_assigned": "Green",
+        "band_that_the_rounded_value_implies": "Green",
+        "edge_crossed": 1.0,
+        "evidence_metric": "TCPI: 1, the cost efficiency the remaining work must achieve to finish within budget, within the efficiency already planned"
+      },
+      {
+        "inputs": {
+          "bac": 1000000.0,
+          "ev": 989998.0,
+          "ac": 990000.0
+        },
+        "full_precision_tcpi": "5001/5000",
+        "full_precision_tcpi_float": 1.0002,
+        "production_tcpi_emitted": 1.0,
+        "band_from_full_precision": "Amber",
+        "band_production_assigned": "Green",
+        "band_that_the_rounded_value_implies": "Green",
+        "edge_crossed": 1.0,
+        "evidence_metric": "TCPI: 1, the cost efficiency the remaining work must achieve to finish within budget, within the efficiency already planned"
+      },
+      {
+        "inputs": {
+          "bac": 1000000.0,
+          "ev": 989997.0,
+          "ac": 990000.0
+        },
+        "full_precision_tcpi": "10003/10000",
+        "full_precision_tcpi_float": 1.0003,
+        "production_tcpi_emitted": 1.0,
+        "band_from_full_precision": "Amber",
+        "band_production_assigned": "Green",
+        "band_that_the_rounded_value_implies": "Green",
+        "edge_crossed": 1.0,
+        "evidence_metric": "TCPI: 1, the cost efficiency the remaining work must achieve to finish within budget, within the efficiency already planned"
+      },
+      {
+        "inputs": {
+          "bac": 1000000.0,
+          "ev": 989996.0,
+          "ac": 990000.0
+        },
+        "full_precision_tcpi": "2501/2500",
+        "full_precision_tcpi_float": 1.0004,
+        "production_tcpi_emitted": 1.0,
+        "band_from_full_precision": "Amber",
+        "band_production_assigned": "Green",
+        "band_that_the_rounded_value_implies": "Green",
+        "edge_crossed": 1.0,
+        "evidence_metric": "TCPI: 1, the cost efficiency the remaining work must achieve to finish within budget, within the efficiency already planned"
+      },
+      {
+        "inputs": {
+          "bac": 1000000.0,
+          "ev": 988999.0,
+          "ac": 990000.0
+        },
+        "full_precision_tcpi": "11001/10000",
+        "full_precision_tcpi_float": 1.1001,
+        "production_tcpi_emitted": 1.1,
+        "band_from_full_precision": "Red",
+        "band_production_assigned": "Amber",
+        "band_that_the_rounded_value_implies": "Amber",
+        "edge_crossed": 1.1,
+        "evidence_metric": "TCPI: 1.1, the cost efficiency the remaining work must achieve to finish within budget, above the efficiency planned"
+      },
+      {
+        "inputs": {
+          "bac": 1000000.0,
+          "ev": 988998.0,
+          "ac": 990000.0
+        },
+        "full_precision_tcpi": "5501/5000",
+        "full_precision_tcpi_float": 1.1002,
+        "production_tcpi_emitted": 1.1,
+        "band_from_full_precision": "Red",
+        "band_production_assigned": "Amber",
+        "band_that_the_rounded_value_implies": "Amber",
+        "edge_crossed": 1.1,
+        "evidence_metric": "TCPI: 1.1, the cost efficiency the remaining work must achieve to finish within budget, above the efficiency planned"
+      }
+    ]
+  },
+  "voting_set_at_measurement": [
+    "A1.7",
+    "A1.8"
+  ]
+}

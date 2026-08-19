@@ -11774,3 +11774,69 @@ NOT_APPLIED 0, crashes accepted as RED 0. Guard suite
 6. 96 unresolved-calibration rows: 95 unreached, 1 applied. No calibration set exists.
 7. Portfolio Health empirical validation PENDING ×5, unchanged from Run 34.
 8. Lineage UNRESOLVED for 77 of 100. Unknown lineage was not treated as independent.
+
+
+---
+
+## Run 35 FINAL SCIENTIFIC CLOSURE — the two voting identities and the stale labels (2026-08-19)
+
+**Lead item for Run 36, before anything else:**
+
+### A1.1 — `DECLARED_STRUCTURE_UNCONSUMED_AND_REACHABLE_PARAMETER_UNRESOLVED`
+
+`A1.1 Monte Carlo EAC Forecast` declares governed structure **`costDriverDistributions`** in
+`canonical_v3.V3_STRUCTURE_KEYS`. The governed intake **accepts** that key —
+`project_data.governed_structure_keys()` unions the v3 map — and **consumers found = 0**,
+re-measured by searching every production source rather than asserted. The production path is
+`app.simulation.models_sim.run_monte_carlo`, which computes from `bac`, `cpi`, `spi` and
+`docRiskScore`. An owner can therefore supply the declared structure and it will silently have no
+effect. A1.1 also carries the instrument's **only reachable unresolved parameter**: a four-band
+ladder classified `UNSUPPORTED` that is nevertheless applied to emit a status colour on the
+governed corpus. **No remediation was attempted in this closure, by owner decision.** Record:
+`code_audit/run35_a1_1_run36_handoff.json`. Guard: `run35c.fault15`.
+
+**Versions after the closure:** simulation **`sim-2026.08-v23`** (v22 preserved and pinned at
+`034cf03be257f4582bc1a856262c56ea11bb4558`); **participant package `og-participant-2026.08-v11`
+RETAINED** (70/70 dispatched files re-hashed, 0 moved; A1.7/A1.8 executed on both lines over every
+controlled-corpus scalar set, 0 of 6 moved; a constructed boundary probe does move and is
+recorded, bounding the claim) and **synthetic package `OG-SYNTH-0.6` RETAINED** (sealed files
+re-hashed against the package's own record, 0 moved; nothing regenerated in place).
+
+**What changed and why.** Run 35 scored the two voting modules against the PMI identities that
+define them and recorded genuine FAILs. Both came from a presentation rounding applied to the
+analytical value; A1.7 additionally handed the rounded number to its band, so premature rounding
+could decide a **status**. The pre-change measurement found **28 governed inputs** on which v22
+answered Green where the full-precision index implies Amber. The implementation was corrected
+after the validation; the reference standard was not altered.
+
+| | v22 | v23 |
+|---|---|---|
+| A1.7 TCPI on the governed corpus | `1071/1000`, discrepancy −3/7000, FAIL | identity in the application's arithmetic, PASS |
+| A1.7 on 28 boundary inputs | Green | Amber |
+| A1.8 VAC on the governed corpus | `−100110`, discrepancy +10/909, FAIL | identity, PASS |
+| A6.2 OSHA | PASS | unchanged, PASS |
+
+**Stale labels reconciled.** B1.2 → **Weighted Voting**, B4.4 → **What-If Scenario Matrix**, both
+names taken from `p0-baseline/module_renumbering_map.csv`, the registry authority; no new name was
+invented, no module ID, algorithm, category, voting state, lineage or disposition changed. Every
+remaining truthful-method label now sits on a **disabled** module.
+
+**Frozen boundaries re-verified:** 100 scientific targets; 101 registered modules; **voting exactly
+2** (A1.7, A1.8) under *Cost Recovery Status*; MCV disabled; Plithogenic disabled; Hypersoft
+disabled; Quantum archived; Category-9 bypasses 0; Category-10 human-authority boundary intact;
+participant experimental sequence unchanged; production Postgres untouched.
+
+**The four states, restated after the closure:**
+
+| State | Meaning | Count |
+|---|---|---|
+| **canonical** | performs the method its registered name claims | 92 of 100 |
+| **calibrated** | every applied tunable value has resolved provenance | 99 of 100; **A1.1 applies one that does not** |
+| **empirically validated** | scored against an independent observed field outcome | **0 of 100** — unchanged by this closure |
+| **reference-supported** | scored against a published identity, scalar component only | 3 of 100: A1.7, A1.8, A6.2 — all three now PASS at v23 |
+| **operationally retained** | exposed as an authoritative project-status vote | **2 of 100** |
+
+**Still open for Run 36:** A1.1 (above, lead item); no target is empirically field-validated and no
+band has measured false-positive or false-negative performance; 96 of 100 targets produce nothing
+on the controlled corpus; 96 unresolved-calibration rows (95 unreached, 1 applied); Portfolio
+Health empirical validation PENDING x5; lineage UNRESOLVED for 77 of 100.

@@ -99,16 +99,30 @@ RESOLVED_BY_RUN_30 = ["B2.2", "B2.14", "B2.18"]
 # treats the critical fields noncompensatorily. Leaving any of these labels would assert a
 # weakness the code no longer has.
 RESOLVED_BY_RUN_31 = ["B3.1", "A6.4", "C1.6", "C1.4"]
+#: RUN 35 FINAL CLOSURE resolves the last two by the same rule and by measurement rather than
+#: assertion: B1.2 routes through `canonical_v5.weighted_voting` with a governed weight policy,
+#: weight provenance and an eligibility refusal; B4.4 routes through the canonical v7 layer and
+#: refuses without the governed action-by-scenario structure. The labels described proxies that
+#: no longer exist, so leaving them would advertise a weakness the code does not have.
+RESOLVED_BY_RUN_35_CLOSURE = ["B1.2", "B4.4"]
 RESOLVED = (RESOLVED_BY_RUN_28 + RESOLVED_BY_RUN_29 + RESOLVED_BY_RUN_30
-            + RESOLVED_BY_RUN_31)
+            + RESOLVED_BY_RUN_31 + RESOLVED_BY_RUN_35_CLOSURE)
 MISMATCH_23_STILL_LABELLED = [m for m in MISMATCH_23 if m not in RESOLVED]
 STRUCTURAL_8_STILL_LABELLED = [m for m in STRUCTURAL_8 if m not in RESOLVED]
 #: The module this suite drives for the "label reaches the result" checks. It must be one that
 #: still carries a label, so it is derived from the list above rather than named, which stops it
 #: silently becoming a module whose label a later run removed.
-LABELLED_PROBE = next(m for m in MISMATCH_23_STILL_LABELLED
-                      if m not in registry.DISABLED_CONCEPT_ONLY
-                      and m not in registry.DISABLED_EVIDENCE_UNDER_REVIEW)
+#: RUN 35 FINAL CLOSURE. The preference is unchanged -- an ENABLED labelled module, so the probe
+#: exercises a live route -- but the fallback is now needed and is itself a finding: after the
+#: closure withdrew B1.2 and B4.4, EVERY remaining truthful-method label sits on a module that is
+#: disabled. That is the correct end state of the Run-19 mismatch programme rather than a gap:
+#: every enabled module now performs the method its registered name claims, and the only labels
+#: left describe modules production refuses to execute at all. The state is asserted below rather
+#: than left implicit, so a later run that re-enables one cannot pass unnoticed.
+_ENABLED_LABELLED = [m for m in MISMATCH_23_STILL_LABELLED
+                     if m not in registry.DISABLED_CONCEPT_ONLY
+                     and m not in registry.DISABLED_EVIDENCE_UNDER_REVIEW]
+LABELLED_PROBE = next(iter(_ENABLED_LABELLED), None) or MISMATCH_23_STILL_LABELLED[0]
 
 
 print("=== 1. EVERY LABEL MISMATCH IS RESOLVED, AND RESOLVED BY NAME ===")
@@ -120,6 +134,9 @@ check("and every row Run 28 DID remediate has had its label removed, because the
       "false statement in the other direction",
       all(ML.method_label(m) is None for m in RESOLVED),
       str([m for m in RESOLVED if ML.method_label(m) is not None]))
+check("EVERY remaining truthful-method label now sits on a DISABLED module: no enabled module "
+      "carries a claim that its registered name misdescribes it",
+      not _ENABLED_LABELLED, str(_ENABLED_LABELLED))
 check("A3.8 kept its label, because it is still disabled and still implements no parametric "
       "estimating relationship in production",
       ML.method_label("A3.8") is not None)
@@ -409,16 +426,22 @@ check("and goes green again once it is restored",
 # LABELLED_PROBE is chosen from the label table alone, and Run 30's v15 made B1.2 abstain
 # without a governed weighting policy, so it no longer appears among the computed rows at all.
 # Taking the probe from the computed rows keeps the guard exercising a real ledger record.
-_LEAK_PROBE = next(m for m in MISMATCH_23_STILL_LABELLED if m in _by_id)
-_probe = dict(_by_id[_LEAK_PROBE])
+# RUN 35 FINAL CLOSURE. The probe now also considers ABSTAINING ledger rows. Every remaining
+# labelled module is disabled, so none appears among the computed rows any more -- but a disabled
+# module still WRITES a ledger row, and a truthful name leaking into that row would reach a
+# participant exactly as readily. Taking the probe from computed rows first and abstaining rows
+# second keeps the guard exercising a real record rather than a constructed one.
+_LEAK_ROWS = {**_ab_by_id, **_by_id}
+_LEAK_PROBE = next(m for m in MISMATCH_23_STILL_LABELLED if m in _LEAK_ROWS)
+_probe = dict(_LEAK_ROWS[_LEAK_PROBE])
 _probe["evidence_metric"] = ML.method_label(_LEAK_PROBE).truthful + " reading"
 _fired = any(ML.method_label(_LEAK_PROBE).truthful in _probe[k]
              for k in _ledger_keys if isinstance(_probe.get(k), str))
 check("the participant-leak guard FIRES when a truthful name is deliberately written into a "
       "ledger key", _fired)
 check("and the real record does not trip it",
-      not any(ML.method_label(_LEAK_PROBE).truthful in _by_id[_LEAK_PROBE][k]
-              for k in _ledger_keys if isinstance(_by_id[_LEAK_PROBE].get(k), str)))
+      not any(ML.method_label(_LEAK_PROBE).truthful in _LEAK_ROWS[_LEAK_PROBE][k]
+              for k in _ledger_keys if isinstance(_LEAK_ROWS[_LEAK_PROBE].get(k), str)))
 
 # 7f. The attachment itself must be capable of NOT firing, or section 3's last check is vacuous.
 _v: dict = {}

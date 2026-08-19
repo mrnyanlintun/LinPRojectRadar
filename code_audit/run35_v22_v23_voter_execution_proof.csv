@@ -1,0 +1,8 @@
+record_type,module,input,v22_behaviour,v23_behaviour,divergence,observed_by,result
+DIVERGENCE,A1.7,Run-35 governed corpus,tcpi=1.071 (Amber),tcpi=1.0714285714285714 (Amber),YES,executed both extracted packages,PASS
+DIVERGENCE,A1.7,band-boundary fixture bac=1e6 ev=989999 ac=990000,tcpi=1.0 band=Green,tcpi=1.0001 band=Amber,YES,executed both extracted packages,PASS
+DIVERGENCE,A1.8,Run-35 governed corpus,vac=-100110 (Amber),vac=-100110.01100110007 (Amber),YES,executed both extracted packages,PASS
+NON_DIVERGENCE,A1.7,exact-at-three-decimals fixture (1.2),tcpi=1.2 band=Red,tcpi=1.2 band=Red,NO,executed both extracted packages,PASS
+NON_DIVERGENCE,A1.7,"Run-35 corpus, displayed sentence","TCPI: 1.071, the cost efficiency the remaining work must achieve to fi","TCPI: 1.071, the cost efficiency the remaining work must achieve to fi",NO,string comparison of both runs,PASS
+NON_DIVERGENCE,A1.8,"Run-35 corpus, displayed sentence","VAC: $100,110 over budget (10%)","VAC: $100,110 over budget (10%)",NO,string comparison of both runs,PASS
+NON_DIVERGENCE,A1.9,Run-35 governed corpus,"{'method_class': 'Budget_Execution_Rate', 'status_color': None, 'insuf","{'method_class': 'Budget_Execution_Rate', 'status_color': None, 'insuf",NO,executed both extracted packages,PASS

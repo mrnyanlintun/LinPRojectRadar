@@ -160,16 +160,6 @@ TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
     # structure the label says is absent, so a label whose structure has arrived turns it red.
 
     # ------------------------------------------------------------------- category 6, ensembles
-    "B1.2": MethodLabel(
-        registered="Weighted Voting",
-        truthful="Fixed-weight signal band tally",
-        performs="tallies the bands of the assembled signals under four fixed weights and "
-                 "reports the heaviest band and its share",
-        absent="provenance for the four weights, which are design constants with no source, and "
-               "the qualified-evidence boundary: the tally reads assembled primary signals "
-               "directly rather than already qualified signal states",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
 
     # ---------------------------------------------------------------- category 7, soft computing
     #
@@ -204,15 +194,6 @@ TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
                "anywhere in the corpus",
         disposition="FUTURE_RESEARCH_ONLY",
     ),
-    "B4.4": MethodLabel(
-        registered="What-If Scenario Matrix",
-        truthful="Earned value completion forecast range",
-        performs="computes four completion forecasts by perturbing the cost index and reports "
-                 "the spread between the widest two as a share of budget",
-        absent="candidate actions with identity as the rows and scenarios as the columns. There "
-               "is one dimension here, not a matrix, and no action is carried",
-        disposition="CORRECT_PROXY_ONLY",
-    ),
     "B4.5": MethodLabel(
         registered="Decision Sensitivity Matrix",
         truthful="Disabled: no decisions and no sensitivities are implemented",
@@ -237,6 +218,38 @@ TRUTHFUL_METHOD_LABELS: dict[str, MethodLabel] = {
 # recorded here so the P2 population is complete in one place and so nothing is disposed of by
 # being left out.
 # ---------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------
+# RUN 35 FINAL CLOSURE. TWO FURTHER ENTRIES ARE GONE -- B1.2 and B4.4 -- and they are gone for
+# exactly the reason Run 28's nine, Run 29's, Run 30's and Run 31's four went: the proxy the
+# label described no longer exists, so the label had become FALSE IN THE OPPOSITE DIRECTION,
+# advertising a weakness the code does not have. That is the error this file warns about in its
+# own header, and Run 35 found it standing.
+#
+# MEASURED THROUGH `__wrapped__`, NOT ASSUMED:
+#
+#   B1.2 Weighted Voting -- the label said the module "tallies the bands of the assembled signals
+#   under four fixed weights", and that "provenance for the four weights" and "the
+#   qualified-evidence boundary" were absent. The production route is
+#   `models_gov.run_weighted_voting` into `canonical_v5.weighted_voting`: it reads a governed
+#   `signalWeightPolicy`, emits `normalised_weights` AND `weight_provenance`, refuses ineligible
+#   signals with `SignalNotEligible`, and abstains without the policy. Every clause of the label
+#   is now untrue.
+#
+#   B4.4 What-If Scenario Matrix -- the label said the module "computes four completion forecasts
+#   by perturbing the cost index", and that the action-by-scenario matrix was absent. Run 32
+#   repointed it onto `models_cat10.run_B4_4` and the canonical v7 layer, where it requires the
+#   governed `V7_STRUCTURE_KEYS["B4.4"]` structure and abstains without it. Run 32 withdrew its
+#   proxy qualifier for this reason and did not withdraw the label; this closure does.
+#
+# NO NEW NAME WAS INVENTED AND NO MODULE ID CHANGED. With the entry removed, the name these two
+# modules present is the one the registry authority already carries -- "Weighted Voting" and
+# "What-If Scenario Matrix" -- which is the whole point of removal rather than replacement:
+# `MethodLabel` REFUSES a truthful name equal to the registered name, because an entry exists
+# only where the two differ. The withdrawn sentences are preserved as history in
+# code_audit/run35_stale_method_label_reconciliation.csv.
+# ---------------------------------------------------------------------------------------------
+
 
 #: module id -> (disposition, the sentence stating what is not established)
 STRUCTURAL_CLAIM_LIMITS: dict[str, tuple[str, str]] = {

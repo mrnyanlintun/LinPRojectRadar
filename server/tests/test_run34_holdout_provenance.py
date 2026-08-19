@@ -277,12 +277,21 @@ check(re.search(r"\*\*not\*\*\s+new calibration evidence", report_text) is not N
 head("6. RUN-34 SCIENTIFIC CONCLUSIONS AND THE PARAMETER POPULATION ARE UNCHANGED")
 # =================================================================================================
 from app.simulation import canonical_v8 as V8                          # noqa: E402
-from app.simulation.models import SIMULATION_VERSION                   # noqa: E402
+from app.simulation.models import (                                    # noqa: E402
+    SIMULATION_VERSION, SIMULATION_VERSION_HISTORY)
 from app.simulation.registry import CORE_VOTING_MODULES                # noqa: E402
 
 check(V8.IF_TREES == 100, "PH.1 tree count is still 100", str(V8.IF_TREES))
 check(V8.RUN15_FROZEN_THRESHOLD == 0.576, "the frozen threshold is still 0.576")
-check(SIMULATION_VERSION == "sim-2026.08-v22", "simulation is still sim-2026.08-v22")
+# RESTATED BY THE RUN-35 FINAL CLOSURE. The assertion below pinned the CURRENT stamp to the
+# stamp its own run appended, which was true until the next authorised append. The closure
+# appends v23, because A1.7 and A1.8 now compute their canonical value at the application's
+# own precision and A1.7 bands from it. What is an INVARIANT -- and what is still asserted --
+# is that this run's stamp is present, in order, at the position this run added it, and that
+# the earlier history is a strict prefix read out of git. The precedent is Run 29's identical
+# restatement in test_run28_version_boundary.py and Run 31's in run31_restate_version_suites.
+check("sim-2026.08-v22" in SIMULATION_VERSION_HISTORY,
+      "the simulation line Run 34 appended, sim-2026.08-v22, is present in the history")
 check(len(CORE_VOTING_MODULES) == 2, "voting is still exactly 2")
 check(_recorded == "100", "the recorded selected tree count is still 100")
 
