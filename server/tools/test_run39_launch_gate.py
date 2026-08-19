@@ -728,7 +728,12 @@ for r in complete_rows:
             else "away_from_ai" if pre == ai else "lateral")
     if want != r.get("revision_direction"):
         bad += 1
-    if r.get("confidence_change") != r.get("final_confidence", 0) - r.get("pre_confidence", 0):
+    fc, pc = r.get("final_confidence"), r.get("pre_confidence")
+    if fc is None or pc is None:
+        # A missing or nulled confidence is a FAILURE of derivability, counted as such. Doing
+        # arithmetic on it would raise TypeError and take the gate down instead.
+        bad += 1
+    elif r.get("confidence_change") != fc - pc:
         bad += 1
 check(bad == 0, "revision direction and confidence change re-derive independently", str(bad))
 check("expert_reference_score" not in AX.ANALYSIS_COLUMNS
@@ -796,7 +801,7 @@ check(record.get("dataset_class") == "PILOT",
       "the freeze record names the artifact's governed class")
 check(record.get("invariant_violations") == 0,
       "every pre-freeze invariant passed before the checksum was taken",
-      str(record["invariant_violations"]))
+      str(record.get("invariant_violations", "no freeze record was produced")))
 check(len(record.get("invariants_checked") or []) >= 10,
       f"{len(record.get('invariants_checked') or [])} invariants were actually checked, "
       f"not asserted")
