@@ -112,4 +112,25 @@ A file cannot contain the hash of the commit that contains it. This record there
   externally by repository history**. The repository has no release-tagging convention (its single
   tag, `pre-consolidation-v1`, is a UI-history marker), so **no tag is created**.
 
-No `PENDING_FINAL_COMMIT` placeholder is used anywhere in this release.
+### Scope of the placeholder statement
+
+**The Run-37 final release record contains no `PENDING_FINAL_COMMIT` placeholder.** That is a claim
+about `research/freeze/INSTRUMENT_FINAL_FREEZE_RECORD.json` and nothing wider.
+
+**The repository does still contain the string, and that is correct, not a defect.** Enumerated
+mechanically, there are exactly three occurrences and they fall into three different classes:
+
+| File | Class | Disposition |
+|---|---|---|
+| `research/freeze/INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json` | historical Run-36 candidate artefact | **retained** |
+| `server/tools/test_run37_freeze_gate.py` | guard source, which must contain the literal in order to assert its absence | **retained** |
+| `research/freeze/INSTRUMENT_FINAL_FREEZE_REPORT.md` | this report's own scoping table | **retained** |
+
+The historical Run-36 freeze-candidate manifest keeps its documented placeholder because **a file
+cannot contain the hash of the commit that contains that same file.** Rewriting that manifest to
+remove the placeholder would be rewriting historical evidence to make a broader sentence true, and
+this programme does not do that.
+
+**Final release identity is established instead through the frozen candidate commit, the release
+content digest, and repository history** — the three mechanisms listed immediately above. A
+historical candidate artefact is not a final release record, and the two are not interchangeable.
