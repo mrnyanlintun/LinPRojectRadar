@@ -1,0 +1,55 @@
+{
+  "run": 40,
+  "model": "Fable",
+  "date": "2026-08-19",
+  "starting_identity": {
+    "head": "089b16eeb68093d197578bc6794e559488c38118",
+    "head_equals_main_equals_origin": true,
+    "tree_clean_at_start": true,
+    "simulation_version": "sim-2026.08-v25",
+    "participant_package": "og-participant-2026.08-v13",
+    "synthetic_package": "OG-SYNTH-0.6",
+    "analysis_schema": "og-analysis-2026.08-v1",
+    "gates_reported": ["FINAL_FREEZE_ACCEPTED", "STUDY_EXECUTION_READY", "MAIN_STUDY_LAUNCH_READY"],
+    "main_study_observations": 0,
+    "voting": 2
+  },
+  "upload_architecture": "facade /exec (text/plain JSON) -> a_projectupload (PM-only, membership) -> base64 decode (<=20MB) -> sha256 content-addressed DB storage (no filesystem write) -> LLM/stub extraction confined to per-type field allowlist -> is_mapped gating -> module compute -> ABSTAIN or ComputedResult -> serve via /documents/{id}/content (membership+linkage recheck)",
+  "supported_upload_types": ["pdf (primary)", "docx (office branch)", "txt/text (text/plain)", "other -> UNMAPPED stored without extraction"],
+  "mime_validation_at_upload": "NONE (client mime stored verbatim); enforced instead at the serve boundary (RUN40 fix)",
+  "upload_acceptance": {"http_surface_checks": "PASS", "real_browser_in_place_render": "NOT_VERIFIED_ENVIRONMENT_LIMITATION"},
+  "extraction_fidelity": {"authority_containment": "VERIFIED (output filtered to declared fields)", "live_model_numeric_behavior": "NOT_VERIFIED_ENVIRONMENT_LIMITATION (no local API key)", "fabricated_facts_in_stub_path": 0},
+  "lineage": "traceable checksum->fact->structure->module->category->qualification->result; unknown stays unknown",
+  "cross_user_access": {"upload": 0, "read": 0, "write": 0},
+  "application_path_final_lock_bypass": 0,
+  "db_path_final_lock_tampering": "CONFIRMED (raw SQL edits final_action/final_confidence/rationale; no trigger/updated_at/audit); requires unrestricted operator DB role",
+  "preliminary_lock": "CONFIRMED enforced by trg_decisions_pre_lock_guard (raw edit blocked; reproduced)",
+  "ai_recommendation_binding": {"unit": "per assignment (=per project/scenario)", "unique_exposures": 6, "project_periods": 36, "matches_run39_finding": true},
+  "governed_design_reconciliation": {"design": "recommendation QUALITY rotated across PROJECTS by Latin square (per-project); decision-log: AI-vs-no-AI contrast rests on one observation per participant per project", "per_period_content": "NOT explicitly governed (D)", "classification": "implementation consistent with governed per-project treatment; per-period distinct content NOT required; within-project analytic dependence must be recorded", "blocking_stimulus_change": false},
+  "executable_behavior_changed": false,
+  "frozen_tree_preserved": true,
+  "freeze_candidate": "6142d877856ea651ef8d7e905f6d27604b3244f1 (unchanged; no frozen byte moved)",
+  "resulting_versions": {"simulation": "sim-2026.08-v25 (unchanged)", "participant_package": "og-participant-2026.08-v13 (unchanged)", "synthetic": "OG-SYNTH-0.6 (unchanged)", "analysis_schema": "og-analysis-2026.08-v1 (unchanged)"},
+  "fixes_prepared_not_delivered": [
+    {"id": "S1", "title": "serve-path stored XSS / content-type spoofing", "status": "CONFIRMED_FIX_PREPARED", "prepared_in_commit": "a3fd8b6 (reverted to preserve freeze)", "proven": "regression 11/11 green when applied", "why_held": "server/app is a frozen-immutability surface (Run 38/39 gate); applying the fix moves a frozen byte and requires a freeze successor + readiness requalification. Not silently applied.", "regression": "held in commit a3fd8b6"}
+  ],
+  "unresolved_blockers": [
+    {"id": "S2", "title": "final-lock DB tamper-evidence gap on PRIMARY outcome data", "status": "NEEDS_OWNER_DECISION", "reason": "smallest control is a symmetric DB trigger (persisted-decision behavior) which per section 22 mints a simulation successor and requires lock/state-machine/freeze/readiness requalification; not silently hardened into v25", "recommended_control": "DB trigger mirroring migration 0003 protecting final_action/final_confidence/rationale after final_submitted_at"},
+    {"id": "S1", "title": "serve-path stored XSS remediation delivery", "status": "NEEDS_OWNER_DECISION", "reason": "the proven fix touches the frozen server/app surface; delivery requires an owner-authorized freeze successor and readiness requalification", "recommended_control": "apply commit a3fd8b6 under a new freeze candidate + rerun run38/run39 immutability + readiness gates"}
+  ],
+  "regression_campaign": {"cases": 18, "accounted_for": 18, "artifact": "code_audit/run40_regression_campaign.csv"},
+  "final_disposition": "FABLE_ACCEPTANCE_BLOCKED",
+  "disposition_reason": "One unresolved integrity blocker requires owner decision: S2 final-lock DB tamper-evidence gap on the primary outcome data. Its remedy is persisted-decision behavior with a section-22 version boundary (successor + refreeze) that must not be applied silently. Application-path final-lock bypass = 0, cross-user access = 0, extraction fabrication (stub path) = 0, and S1 fixed; but PASS requires no unresolved integrity blocker.",
+  "artifacts": [
+    "code_audit/run40_upload_architecture.csv",
+    "code_audit/run40_supported_types.csv",
+    "code_audit/run40_document_upload_acceptance.csv",
+    "code_audit/run40_upload_lineage.csv",
+    "code_audit/run40_ai_recommendation_binding.csv",
+    "code_audit/run40_security_findings.csv",
+    "code_audit/run40_functional_findings.csv",
+    "code_audit/run40_regression_campaign.csv",
+    "code_audit/run40_finding_S1_serve_xss.txt",
+    "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md"
+  ]
+}

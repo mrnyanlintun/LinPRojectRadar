@@ -1,0 +1,16 @@
+check,method,result,evidence
+browser_selects_file,real-browser,NOT_VERIFIED_ENVIRONMENT_LIMITATION,headless Chromium in-place render not driven; software-render limitation carried from Run 39
+upload_request_occurs,HTTP /exec (real surface),PASS,test_documents_b7b + run40 tests POST projectupload
+server_independently_accepts_rejects,HTTP,PASS,membership/PM/base64/size all enforced server-side (run40 idor+decode tests)
+content_integrity_survives,HTTP,PASS,PDF bytes byte-identical on serve (run40 serve test) and sha256 cache (b7b)
+correct_project_assigned,HTTP,PASS,cross-project upload refused (run40 idor)
+correct_period_assigned,HTTP,PASS,period server-derived for research chain (_resolve_period)
+document_identity_stable,HTTP,PASS,content-addressed sha256; first filename wins (b7b)
+parsing_succeeds_where_expected,HTTP (stub),PASS,StubExtractor deterministic; real LLM NOT_VERIFIED (no local key)
+extracted_evidence_corresponds,HTTP (stub),PASS,known-answer stub recordings match (b7b)
+evidence_persisted,HTTP,PASS,Document.extraction + ComputedResult
+evidence_reaches_appropriate_modules,HTTP,PASS,is_mapped gate; UNMAPPED contributes nothing (b7b)
+result_or_abstention_correct,HTTP,PASS,abstention on insufficient evidence (existing suites)
+ui_reflects_state,real-browser,NOT_VERIFIED_ENVIRONMENT_LIMITATION,browser not driven in-place
+reload_preserves_result,real-browser,NOT_VERIFIED_ENVIRONMENT_LIMITATION,carried from Run 39
+duplicate_behavior_deterministic,HTTP,PASS,byte-identical duplicate is cache hit, no second model call (b7b)

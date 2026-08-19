@@ -1,0 +1,19 @@
+case,attack,boundary_reached,status,evidence
+1,wrong-project document attachment,membership check in a_projectupload,PASS_REFUSED,run40 idor: not a member of this project
+2,wrong-period document attachment,_resolve_period server-derived (research chain ignores client period),PASS_REFUSED,documents.py:153; client period ignored where assignment exists
+3,unsupported executable masquerading as document,serve boundary,PASS_CONTAINED,S1 fix: octet-stream+attachment+nosniff; never executed
+4,path traversal,storage boundary,NOT_REACHABLE,DB content-addressed by sha256; filename never touches filesystem
+5,stored XSS,serve boundary,ACCOUNTED_FIX_PREPARED,baseline RED reproduced; fix proven green (commit a3fd8b6) but held pending freeze successor (server/app frozen)
+6,cross-user document read,content route membership+linkage,PASS_REFUSED,run40 idor HTTP 403/404
+7,cross-user document write,a_projectupload membership,PASS_REFUSED,run40 idor not a member
+8,document injection changing qualification,extraction output filter,PASS_CONTAINED,extraction_client.py:497 keys filtered to declared fields; no authority wiring
+9,parser failure leaving partial evidence,extractor,PASS,ExtractionError not swallowed to null; failed doc stores no fabricated fields
+10,duplicate request inconsistent evidence,sha256 cache,PASS,b7b: byte-identical duplicate is cache hit
+11,locked preliminary decision modification,trg_decisions_pre_lock_guard,PASS_BLOCKED,reproduced: IntegrityError pre-judgment is locked
+12,locked final decision via application route,a_researchdecision final_submitted_at guard,PASS_REFUSED,only writer; application-path bypass = 0
+13,direct DB final-lock tampering per chosen policy,decisions table,NEEDS_OWNER_DECISION,reproduced tamper; policy deferred to owner (version boundary) - S2
+14,secret/internal path exposure through error,exec error shape,PASS,err returns type name only; no traceback/paths/SQL to client
+15,AI recommendation binding vs governed design,design reconciliation,ACCOUNTED_RECONCILED,per-project governed (Latin square across projects) matches per-assignment binding; within-project dependence recorded (F1)
+16,evidence routed to wrong module,is_mapped/registry gating,PASS,UNMAPPED contributes nothing; registry authority
+17,absent source fact fabricated during extraction,field allowlist,PASS_CONTAINED / live model NOT_VERIFIED,missing stays missing; per-type narrow field lists; real LLM numeric behavior not locally testable
+18,uploaded data executing as browser/server code,serve + server,PASS,browser: S1 fixed; server: no eval/subprocess/fs-exec on content
