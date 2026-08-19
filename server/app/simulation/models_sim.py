@@ -245,8 +245,19 @@ def assert_retained_adaptation_not_reachable(check) -> None:
     check(callable(run_monte_carlo) and callable(monte_carlo_eac),
           "while the retained adaptation is PRESERVED for historical reconstruction",
           "run_monte_carlo and monte_carlo_eac still exist")
-    row = _reg.run_module("A1.1", {"bac": 1_000_000.0, "cpi": 0.909, "spi": 0.889,
-                                   "docRiskScore": 0.35}, (lambda: 0.5), None)
+    # THE PROBE MUST CARRY A QUALIFIED ASSESSMENT, and this is a correction the Run-36 closure
+    # fault campaign forced. The first version supplied scalars only, so the CATEGORY-9 GATE
+    # refused the module before this gate was ever reached -- and the proof therefore passed
+    # while the retained adaptation was live and reachable. Fault 1 of the campaign bypasses the
+    # A1.1 short-circuit, and with a bare probe this function stayed green: a guard that is
+    # satisfied by somebody else's refusal is proving nothing about its own subject.
+    row = _reg.run_module("A1.1", {
+        "bac": 1_000_000.0, "cpi": 0.909, "spi": 0.889, "docRiskScore": 0.35,
+        "evidenceQualification": {"qualification_state": "QUALIFIED",
+                                  "timeliness_status": "TIMELY",
+                                  "verification_status": "verified",
+                                  "source_authority": "system_of_record"},
+    }, (lambda: 0.5), None)
     check(row.get("status_color") is None and row.get("insufficient_data") is True
           and not any(k in row for k in ("p50_eac", "p80_eac", "overrun_pct_p80")),
           "and EXECUTED on inputs the adaptation would happily have computed from, A1.1 returns "

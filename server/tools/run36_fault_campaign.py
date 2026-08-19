@@ -81,21 +81,29 @@ FAULTS = [
     (3, "a fabricated target added to the inventory",
      addrow(T100, "module_id", "Z9.9"),
      "run36.fault03", "an unregistered target is fabricated"),
-    (4, "A1.1 claims to require a governed structure it does not consume",
+    (4, "A1.1's served record claims it computes when execution says it does not",
+     # REPOINTED after the owner's 2026-08-19 ruling. The original fault injected the OLD lie --
+     # "conditional" over a module that computed. That string is no longer in the served record,
+     # so the injection could not land. The MIRROR-IMAGE lie is injected instead, which is the
+     # one the corrected oracle now guards against: claiming a disabled module computes.
      text(JS / "ds_defensibility_evidence.js",
-          '"A1.1": { name: "Monte Carlo EAC Forecast", implementation: "the current production '
-          'runner computes the canonical method from the governed evidence the platform already '
-          'holds", operationalState: "COMPUTES_FROM_AVAILABLE_EVIDENCE"',
-          '"A1.1": { name: "Monte Carlo EAC Forecast", implementation: "the canonical production '
-          'runner exists, but execution requires a named defining structure; when that structure '
-          'is absent the module returns Not Estimable", '
-          'operationalState: "CONDITIONAL_ON_GOVERNED_STRUCTURE"'),
-     "run36.fault04", "it claims to consume a required structure it does not consume"),
-    (5, "A1.1's unresolved parameter restored to authorize an output",
-     text(S / "models_sim.py",
-          '        "status_color": None,\n        "band_asserted": False,',
-          '        "status_color": mc_status(mc["overrunPctP80"]),\n'
-          '        "band_asserted": False,'),
+          'operationalState: "DISABLED_INSUFFICIENT_INPUT"',
+          'operationalState: "COMPUTES_FROM_AVAILABLE_EVIDENCE"'),
+     "run36.fault04", "or claims to compute when it does not"),
+    (5, "an unresolved parameter restored to authorize an output",
+     # REPOINTED after the owner's 2026-08-19 ruling. A1.1 no longer reaches its runner at all,
+     # so restoring the mc_status call site changes no emitted row and is not a fault. The
+     # PROPERTY the oracle guards -- that no reachable UNSUPPORTED parameter authorizes an
+     # authoritative output -- is attacked instead where it CAN now be reached: A6.2 computes on
+     # the controlled corpus, carries an UNSUPPORTED ladder, and asserts no colour. Giving it one
+     # is exactly the defect section 6 forbids.
+     # The injection removes the DEFENCE, which is where the property actually lives: line 350
+     # of models_cat89 re-asserts `row["status_color"] = None` after the update, with the comment
+     # "no band is invented". A dict-level edit is overridden by it, which is the code working.
+     text(S / "models_cat89.py",
+          '        row["status_color"] = None          # re-asserted after the update; '
+          'no band is invented',
+          '        row["status_color"] = "red"         # INJECTED'),
      "run36.fault05", "no reachable UNSUPPORTED parameter authorizes an authoritative output"),
     (6, "A1.7 banded on the rounded value again",
      text(S / "models_evm.py",
@@ -240,8 +248,15 @@ FAULTS = [
              None, "QUALIFIED_FOR_BOUNDED_STUDY_USE"),
      "run36.fault39", "NOT_APPLICABLE is being read as PASS"),
     (40, "a freeze candidate created while a blocking defect remains",
-     touchfile(ROOT / "research" / "freeze" / "INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json",
-               '{"label": "FREEZE_CANDIDATE", "injected_by": "run36 fault 40"}\n'),
+     # REPOINTED after the owner's 2026-08-19 ruling closed the A1.1 blocking defect. Creating
+     # the manifest alone is no longer a violation, because nothing is blocking: the gate would
+     # be right to stay green. The fault must therefore inject a BLOCKING DEFECT and the manifest
+     # TOGETHER, which is what actually tests the gate rather than the file's absence.
+     ("multi", None, (
+         csvcell(T100, "module_id", "A2.5", "blocking_defect", None,
+                 "YES - injected for fault 40"),
+         touchfile(ROOT / "research" / "freeze" / "INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json",
+                   '{"label": "FREEZE_CANDIDATE", "injected_by": "run36 fault 40"}\n'))),
      "run36.fault40", "the freeze gate has been opened with a defect standing"),
 ]
 
@@ -266,6 +281,12 @@ def _write_csv(path, hdr, r):
 
 def apply_one(mut):
     kind, path = mut[0], mut[1]
+    if kind == "multi":
+        for sub in mut[2]:
+            ok, why = apply_one(sub)
+            if not ok:
+                return False, why
+        return True, ""
     if kind in ("text", "textall"):
         old, new = mut[2]
         s = path.read_text(encoding="utf-8")
@@ -349,16 +370,30 @@ def main():
     rows = []
     counts = {"applied": 0, "red": 0, "restored": 0, "not_applied": 0, "crash_as_red": 0,
               "crashed": 0}
+    def _targets(mut):
+        if mut[0] == "multi":
+            out = []
+            for sub in mut[2]:
+                out += _targets(sub)
+            return out
+        return [(mut[1], mut[0] == "newfile")]
+
     for num, desc, mut, guard, fragment in FAULTS:
-        path = mut[1]
-        created = mut[0] == "newfile"
-        before = None if created else path.read_bytes()
+        targets = _targets(mut)
+        saved = {p: (None if created else p.read_bytes()) for p, created in targets}
+        path, created = targets[0]
+        before = saved[path]
         drop_pycache()
         ok, why = apply_one(mut)
-        landed = ok and (path.exists() if created else path.read_bytes() != before)
+        landed = ok and any((p.exists() if c else p.read_bytes() != saved[p])
+                            for p, c in targets)
         if not landed:
-            if not created and before is not None:
-                path.write_bytes(before)
+            for p, c in targets:
+                if c:
+                    if p.exists():
+                        p.unlink()
+                elif saved[p] is not None:
+                    p.write_bytes(saved[p])
             drop_pycache()
             rows.append([num, desc, "NOT_APPLIED", guard, "", "", why, "", "NOT_COUNTED"])
             counts["not_applied"] += 1
@@ -371,12 +406,15 @@ def main():
             counts["crashed"] += 1
         if intended:
             counts["red"] += 1
-        if created:
-            path.unlink()
-        else:
-            path.write_bytes(before)
+        for p, c in targets:
+            if c:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.write_bytes(saved[p])
         drop_pycache()
-        restored = (not path.exists()) if created else path.read_bytes() == before
+        restored = all((not p.exists()) if c else p.read_bytes() == saved[p]
+                       for p, c in targets)
         state2, detail2 = run_guard(guard)
         good = restored and state2 == "GREEN"
         if good:
