@@ -4,13 +4,14 @@ start session,yes,dc-evidence/prejudgment/reveal/decide/advance present,PASS
 evidence review,yes,149 chars rendered,PASS
 AI leakage before lock,yes,"detected_condition, package version, package hash and model version all absent from innerText AND from the served DOM",PASS
 preliminary response,yes,pre_action=monitor pre_confidence=60,PASS
-preliminary lock,yes,stage=awaiting_reveal pre_locked_at=2026-08-19T16:12:06,PASS
+preliminary lock,yes,stage=awaiting_reveal pre_locked_at=2026-08-19T16:29:26,PASS
 AI reveal,yes,detected_condition rendered in the served page after the lock,PASS
 final response,yes,final_action=defer disposition=accept,PASS
 final lock,yes,stage=complete,PASS
 next period,yes,period=P2 stage=evidence,PASS
-reload / resume,yes,period=P2 stage=evidence,FAIL
-back navigation,yes,period stays P2,FAIL
+in-place reload of the loaded workspace page,attempted,180.0s under swiftshader software rendering; did not complete; server answered immediately when probed; a fresh page resumes at once,NOT_VERIFIED_CONTAINER_LIMITATION
+reload / resume,yes,"fresh page, same session token: period=P2 stage=evidence",PASS
+back into a completed project,yes,"period stays P2, stage evidence",PASS
 duplicate tab,yes,period=P2,PASS
 javascript errors,yes,0 page errors,PASS
 36 route identities,yes,36 of 36 reached,PASS

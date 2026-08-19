@@ -132,7 +132,10 @@ def main() -> int:
             else if (window.LinWorkspace && LinWorkspace.switchPanel)
                 LinWorkspace.switchPanel('decision'); }"""
         page.evaluate(open_decision)
-        page.wait_for_timeout(6000)
+        # WAIT FOR THE MOUNT, DO NOT SLEEP AND HOPE. A fixed sleep made this driver flaky under
+        # container load: the decision card had not mounted and the next evaluate read null.
+        page.wait_for_selector("#dc-pre-action", state="attached", timeout=120000)
+        page.wait_for_timeout(3000)
 
         present = page.evaluate("""() => ['dc-evidence','dc-prejudgment','dc-reveal','dc-decide',
             'dc-advance'].every(id => !!document.getElementById(id))""")
@@ -220,14 +223,15 @@ def main() -> int:
         remount = """() => { if (window.LinWorkspace) {
             LinWorkspace.switchPanel('upload'); LinWorkspace.switchPanel('decision'); } }"""
         page.evaluate(remount)
-        page.wait_for_timeout(6000)
+        page.wait_for_selector("#dc-reveal-btn", state="attached", timeout=120000)
+        page.wait_for_timeout(2000)
         dom = page.evaluate("() => document.body.innerText")
         ok = check("cost variance beyond threshold" not in dom,
                    "the recommendation is STILL absent after the lock and before the reveal")
         ok = check(page.evaluate("() => !!document.getElementById('dc-reveal-btn')"),
                    "the reveal control is offered once the preliminary judgment is locked")
         page.click("#dc-reveal-btn")
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(5000)
         dom = page.evaluate("() => document.body.innerText")
         ok = check("cost variance beyond threshold" in dom,
                    "AI reveal: the frozen package is rendered to the participant after the lock")
@@ -275,7 +279,8 @@ def main() -> int:
 
         # ---------------------------------------------------- next period
         page.evaluate(remount)
-        page.wait_for_timeout(6000)
+        page.wait_for_selector("#dc-advance-btn", state="attached", timeout=120000)
+        page.wait_for_timeout(2000)
         ok = check(page.evaluate("() => !!document.getElementById('dc-advance-btn')"),
                    "next period: the advance control is offered once the period is complete")
         page.click("#dc-advance-btn")

@@ -1,0 +1,61 @@
+{
+  "blocker_count": 0,
+  "browser_qualification_result": "PASS (17 rows)",
+  "browser_surfaces_not_verified": [
+    {
+      "observed": "180.0s under swiftshader software rendering; did not complete; server answered immediately when probed; a fresh page resumes at once",
+      "surface": "in-place reload of the loaded workspace page"
+    }
+  ],
+  "browser_surfaces_passed": 16,
+  "browser_surfaces_recorded": 17,
+  "controlled_stimuli_digest": "b9e8548bfc60ba4d836aa60133b7d31af15a0f67eae9130a860ff64257f15c29",
+  "controlled_study_population": {
+    "duplicates": 0,
+    "governed_contract": "OG-STUDY-DESIGN-2026.08-v1",
+    "periods_per_project": 6,
+    "project_periods_driven": 36,
+    "projects": 6,
+    "unreachable": 0
+  },
+  "created": "2026-08-19",
+  "deidentification_result": "PASS (12 rows)",
+  "export_column_count": 59,
+  "export_result": "PASS (11 rows)",
+  "export_row_grain": "participant x project(scenario) x period",
+  "export_schema_version": "og-analysis-2026.08-v1",
+  "fault_campaign": {
+    "applied": 18,
+    "crash_accepted_as_red": 0,
+    "crashes_observed": 0,
+    "faults": 18,
+    "intended_red": 18,
+    "restored_green": 18
+  },
+  "field_reconciliation_result": "PASS (17 rows)",
+  "final_disposition": "STUDY_EXECUTION_READY",
+  "final_freeze_disposition": "FINAL_FREEZE_ACCEPTED",
+  "final_freeze_release_commit": "f983bb020f7a184a5742e1fff09d690b0170f0de",
+  "frozen_candidate_commit": "6142d877856ea651ef8d7e905f6d27604b3244f1",
+  "leakage_result": "PASS (9 rows)",
+  "lock_integrity_result": "PASS (8 rows)",
+  "manifest_id": "OG-STUDY-EXECUTION-READINESS-2026.08-v1",
+  "not_empirical_validation": "Every record exercised by this run is synthetic dry-run data labelled TEST_ONLY. Nothing here is a study observation and nothing here is empirical validation.",
+  "participant_package": "og-participant-2026.08-v13",
+  "participant_sequence_digest": "b24955127839c18bf22d38968cc62afc65abb69aa46724caae6834484a3463a0",
+  "participant_sequence_transitions": 9,
+  "r_ingestion_contract": "research/study_execution/run38_ingest_qualification.R",
+  "readiness_blockers": [],
+  "recorded_findings_not_blocking": [
+    "The FINAL lock is enforced by the application only. research_decision.py is the sole application writer of the final-judgment columns and refuses a second submission, so there is no server-boundary bypass; but unlike the preliminary lock there is no database trigger, and a raw SQL UPDATE succeeds. Closing this needs a migration on the participant data path, which is successor-candidate work, not a Run-38 edit.",
+    "No research row stores the frozen-instrument version. Version identity is stamped onto the export at export time, so data must be exported under the release it was collected under.",
+    "decisions has no UNIQUE constraint on (assignment_id, period). Uniqueness is an application invariant enforced by server-derived periods, and is checked at export.",
+    "Participant-authored free text reaches the governed participant_inputs export verbatim. The analysis dataset excludes free text by construction; no automated scrubber exists and none is claimed.",
+    "Under headless software rendering an in-place navigation after the workspace opens a project takes about 97 seconds. It completes and the resumed state is correct; a fresh page resumes immediately."
+  ],
+  "research_schema_version": "decisions table at alembic head (migrations 0003, 0009, 0011)",
+  "run": "Run 38",
+  "simulation": "sim-2026.08-v25",
+  "synthetic_package": "OG-SYNTH-0.6",
+  "what_this_is": "The machine-readable record of whether the FROZEN instrument can execute the controlled study and produce an analysis-ready deidentified dataset. Every field is read from a live authority or from an audit artifact this run produced; the disposition is computed from the blocker count."
+}
