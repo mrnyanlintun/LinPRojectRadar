@@ -105,7 +105,9 @@ check("run37.gate.release_present_when_clean",
 # ------------------------------------------------------------------ the limitation contract
 if _record.is_file():
     _rec = json.loads(_record.read_text(encoding="utf-8"))
-    _lim = json.dumps(_rec.get("limitation_contract", {}))
+    # CASE-INSENSITIVE: the requirement is that the statement is PRESENT, not that it is cased a
+    # particular way. The release states two of these in capitals for emphasis.
+    _lim = json.dumps(_rec.get("limitation_contract", {})).lower()
     for _need, _what in (
             ("0 of 100", "empirical field validation is stated as 0 of 100"),
             ("NOT a claim of validated real-world predictive effectiveness",
@@ -114,7 +116,7 @@ if _record.is_file():
             ("OG-SYNTH-0.1", "the historical incompleteness of OG-SYNTH-0.1 is stated"),
             ("bounded controlled-study", "qualification is stated as bounded controlled-study "
              "instrument use")):
-        check(f"run37.gate.limitation_stated", _need in _lim, _what, _need)
+        check("run37.gate.limitation_stated", _need.lower() in _lim, _what, _need)
     check("run37.gate.disposition",
           _rec.get("release_disposition") == "FINAL_FREEZE_ACCEPTED" and not _blocked,
           "the recorded disposition is FINAL_FREEZE_ACCEPTED and the gate agrees",

@@ -68,10 +68,14 @@ FAULTS = [
      text(JS / "decision-ui.js", "/*", "/* run37 fault 4 probe */\n/*"),
      "run37.gate.B04", "participant-sequence drift"),
     (5, "a served defensibility statement is made false",
+     # REPOINTED. The first injection ADDED a second operationalState key ahead of the real one.
+     # The served object is parsed into a dict, so the LAST key wins and the injected value was
+     # silently overwritten by the genuine one -- the mutation landed in the bytes and changed
+     # nothing the oracle could see. The EXISTING value is now overwritten in place, which is
+     # what a false served statement actually looks like.
      text(JS / "ds_defensibility_evidence.js",
-          '"A1.1": { name: "Monte Carlo EAC Forecast", implementation: "canonical execution',
-          '"A1.1": { name: "Monte Carlo EAC Forecast", operationalState: '
-          '"COMPUTES_FROM_AVAILABLE_EVIDENCE", implementation: "canonical execution'),
+          'operationalState: "DISABLED_INSUFFICIENT_INPUT"',
+          'operationalState: "COMPUTES_FROM_AVAILABLE_EVIDENCE"'),
      "run37.gate.B05", "false defensibility statement"),
     (6, "a scientific target raises instead of abstaining",
      text(S / "models_evm.py", "def run_tcpi(", "def run_tcpi(*_a, **_k):\n"

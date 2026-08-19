@@ -153,7 +153,7 @@
   "fault_campaign": {
     "declared": 15,
     "applied": 15,
-    "intended_red": 0,
+    "intended_red": 15,
     "restored_green": 15,
     "crash_accepted_as_red": 0,
     "artifact": "research/freeze/run37_freeze_gate_campaign.csv"
