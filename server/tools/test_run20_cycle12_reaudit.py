@@ -48,6 +48,7 @@ from app.simulation import lineage as LIN                         # noqa: E402
 from app.simulation import method_labels as ML                    # noqa: E402
 from app.simulation import parameters as PAR                      # noqa: E402
 from app.simulation import portfolio as PORT                      # noqa: E402
+from app.simulation import portfolio_health as PHS                # noqa: E402
 
 # =================================================================================================
 # RUN 31 v19: THIS SUITE SUPPLIES THE GOVERNED CATEGORY-9 ASSESSMENT ITS MODULES NOW REQUIRE.
@@ -164,8 +165,21 @@ def gate() -> list[dict]:
     # wrong. A guard that cannot see its own stale key is the vacuity pattern of this whole run.
     live = PORT.compute_portfolio(PORTFOLIO_FIXTURE, "P-CYCLE12", PORTFOLIO_HISTORY, CUTOFF)
     missing = sorted(set(PORTFOLIO_RESULT_KEYS.values()) - set(live.get("results", {})))
-    A.check("POPULATION", "every portfolio result key in the map is one production emits",
-            not missing, f"production does not emit {missing}")
+    A.check("POPULATION",
+            "every portfolio result key in the map is one the preserved v20 route emits, so the "
+            "map cannot carry a key nothing has ever produced",
+            not missing, f"the v20 route does not emit {missing}")
+    # RUN 43, THE RETIREMENT. What PRODUCTION emits is the Portfolio Health snapshot, and it
+    # emits none of these keys, because all five identities are retired from service. Asserted
+    # here so the check above cannot be read as a claim about the production path.
+    _snap = PHS.compute_portfolio_health_snapshot(
+        PORTFOLIO_FIXTURE, "P-CYCLE12", PORTFOLIO_HISTORY, CUTOFF)
+    A.check("POPULATION",
+            "and the PRODUCTION portfolio route emits none of them, because all five identities "
+            "are retired from service",
+            not (set(PORTFOLIO_RESULT_KEYS.values()) & set(_snap.get("results") or {}))
+            and all(REG.is_retired(c) for c in PORTFOLIO_RESULT_KEYS),
+            str(sorted(set(PORTFOLIO_RESULT_KEYS.values()) & set(_snap.get("results") or {}))))
 
     A.check("POPULATION", "no identifier is parsed as a float anywhere in this suite",
             all(isinstance(i, str) for i in ids))
@@ -428,17 +442,39 @@ def audit() -> list[dict]:
             ran, detail = port_ran, port_detail
             out = (port_out or {}).get("results", {}).get(PORTFOLIO_RESULT_KEYS[cid])
             empty_out = None
+            # RUN 43, THE RETIREMENT. All five portfolio targets are retired from service. The
+            # envelope read above is `portfolio.compute_portfolio`, the SUPERSEDED v20 route,
+            # which is deliberately preserved and is reachable from no production path (see
+            # portfolio_health.py:14 and documents.py:1556). It still computes, which is why the
+            # branch above still finds a row -- and scoring the target RAN on that basis would be
+            # scoring an unreachable route. Retirement is checked first, and it is checked
+            # against the registry CSV rather than against the envelope's shape.
+            if REG.is_retired(cid):
+                ran, detail = "RETIRED_FROM_SERVICE", (
+                    "retired from service at Run 43, so no production path enumerates it; the "
+                    "superseded v20 route is preserved and unreachable: "
+                    + REG.retired_modules()[cid])
+                out = None
         else:
             out = full.get(cid)
             # A module absent from the complete run is either UNPORTED, which the run declares
             # by name, or genuinely not reached, which is a defect. The two are distinguished
             # here rather than collapsed, because collapsing them would let a real gap hide
             # inside a truthful refusal.
+            # RUN 43, THE RETIREMENT. There is now a THIRD truthful reason for absence, and it
+            # is distinguished here for exactly the reason the other two are: a real gap must not
+            # be able to hide inside a truthful refusal. A module RETIRED FROM SERVICE is absent
+            # from the complete analytical run BY DESIGN, and it is retired if and only if the
+            # registry CSV says so. NOT_REACHED remains nought, and is still the defect outcome.
             if out is not None:
                 ran, detail = "RAN", ""
             elif cid in unported:
                 ran, detail = "NOT_PORTED", ("declared unported by the complete analytical run "
                                              "and refused rather than approximated")
+            elif REG.is_retired(cid):
+                ran, detail = "RETIRED_FROM_SERVICE", (
+                    "retired from service at Run 43, so the complete analytical run does not "
+                    "enumerate it: " + REG.retired_modules()[cid])
             else:
                 ran, detail = "NOT_REACHED", "absent from the complete analytical run"
             empty_out = empty.get(cid)
@@ -507,6 +543,20 @@ def audit() -> list[dict]:
             len({r["module_id"] for r in rows}) == 100)
     not_reached = [r["module_id"] for r in rows if r["execution_outcome"] == "NOT_REACHED"]
     A.check("REAUDIT", "NOT_REACHED is nought", not not_reached, str(not_reached))
+    _retired_rows = [r["code_id"] for r in rows
+                     if r["execution_outcome"] == "RETIRED_FROM_SERVICE"]
+    A.check("REAUDIT",
+            "and every row recorded RETIRED_FROM_SERVICE is retired in the registry CSV, so the "
+            "outcome cannot absorb a module that is merely unreached",
+            all(REG.is_retired(m) for m in _retired_rows),
+            str(sorted(m for m in _retired_rows if not REG.is_retired(m))))
+    A.check("REAUDIT",
+            "and every retired target in the population carries that outcome, so a retired "
+            "module cannot be recorded as having RUN",
+            sorted(_retired_rows) == sorted(r["code_id"] for r in rows
+                                            if REG.is_retired(r["code_id"])),
+            str(sorted(set(_retired_rows) ^ {r["code_id"] for r in rows
+                                             if REG.is_retired(r["code_id"])})))
     unassessed = [r["module_id"] for r in rows
                   if r["scientific_disposition"] in ("", "NOT_ASSESSED", "UNRECORDED")]
     A.check("REAUDIT", "NOT_ASSESSED is nought", not unassessed, str(unassessed))
