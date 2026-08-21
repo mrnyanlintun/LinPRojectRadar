@@ -45,6 +45,64 @@ PORTFOLIO_STRUCTURE_KEYS: tuple[str, ...] = (COHORT_KEY, SCHEMA_KEY, RECORD_KEY,
 LEGACY_V20_ROUTE_REACHABLE = False
 
 
+# ---------------------------------------------------------------------------------------------
+# RUN 43B, THE PORTFOLIO HEALTH OFFLOAD (section 5.3)
+# ---------------------------------------------------------------------------------------------
+#
+# Run 43 retired D1.1 to D1.5. `canonical_v8` computes those same five readings under the names
+# PH.1 to PH.5, and `canonical_v8.RESULT_KEYS` is the mapping between the two -- so retiring the
+# identifiers in the registry did NOT stop the computation: this dispatcher went on calling
+# `V8.compute_portfolio_health` and storing five readings for five modules that no longer exist
+# in the taxonomy. That is the gap section 5.3 names, and this is the offload.
+#
+# THE OFFLOAD IS DERIVED, NOT DECLARED. `live_portfolio_modules()` intersects the PH-to-D map
+# with the live registry, exactly as `registry.available_modules()` intersects the implemented
+# set with the live registry. There is no list here that says "Portfolio Health is off"; there
+# is a registry that no longer carries D1.1 to D1.5, and a computation that is only performed
+# for identifiers the registry still carries. If a future run reinstates any of the five in
+# `p0-baseline/module_renumbering_map.csv`, this route resumes for exactly those and for no
+# others, with no edit here. That is the ninth repetition of the programme's most-repeated
+# failure avoided: a stated set that drifts from the computed one.
+#
+# THE FORMULAS ARE KEPT, exactly as Run 43 kept the single-project formulas. `canonical_v8` is
+# untouched. Retiring a module is a statement about the taxonomy and the explanation burden, not
+# a claim that its arithmetic is wrong, and Runs 15, 33 and 34 recorded findings ABOUT these
+# five implementations that would become unreadable if the code went. What changes is that no
+# production path reaches them.
+#
+# NO CONTROL WAS ADDED, MOVED OR REMOVED (hard limit 4, stop condition 7.6). The snapshot still
+# has the same shape, is still stored on every compute, and still carries `structure_absent`,
+# `insufficient_data` and `message` -- the three keys the portfolio card already branches on for
+# the abstaining case it has always been able to render. The card's own code is not touched.
+
+
+def live_portfolio_modules() -> tuple[str, ...]:
+    """
+    The Group D portfolio identifiers the registry still carries, in canonical order.
+
+    Empty after Run 43. Derived from the registry rather than restated, so this answers the
+    question by reading the authority instead of remembering it.
+    """
+    from .registry import registry_index
+
+    live = set(registry_index())
+    return tuple(d for d in sorted(V8.RESULT_KEYS) if d in live)
+
+
+#: The reason recorded on every offloaded snapshot. One sentence, written once, so the API, the
+#: stored row and any surface that reads either all quote the same words.
+#: NAMING_AUTHORITY section 4 governs this sentence: no module id and no module number appears
+#: in it, and it names the group and its purpose instead. It says "no longer part of" rather
+#: than "retired from the registry" because the registry is an internal artifact a reader of the
+#: portfolio card has no way to see, and describing a surface by an artifact behind it is how
+#: this programme has repeatedly produced text that only its author could read.
+RETIRED_REASON = (
+    "Portfolio Health is no longer part of the analytical taxonomy, so no portfolio-level "
+    "reading is produced. Project Status is unaffected: Portfolio Health never contributed to "
+    "it."
+)
+
+
 def _histories_from(si: Mapping[str, Any], project_id: str) -> list[dict]:
     raw = si.get(HISTORY_KEY)
     if raw is None:
@@ -123,6 +181,13 @@ def compute_portfolio_health_snapshot(current_id: str, current_si: Mapping[str, 
     Always returns a snapshot, including when the governed structure is absent: an absent cohort
     is a REPORTED ABSTENTION carrying its reason, not a null the ledger has to interpret.
     """
+    # RUN 43B, THE OFFLOAD. Checked BEFORE `assemble`, so a retired Portfolio Health does not
+    # read the cohort, the schema, the feature records, the signal histories or the calibration
+    # record either. An offload that still assembled its inputs would leave the intake path
+    # live and the claim "Portfolio Health computes nowhere" false in the part that matters.
+    if not live_portfolio_modules():
+        return _retired_snapshot(current_id, period_cutoff)
+
     inputs = assemble(current_id, current_si, others)
     run = V8.compute_portfolio_health(inputs["cohort"], inputs["schema"],
                                       inputs["records"], inputs["histories"],
@@ -149,6 +214,39 @@ def compute_portfolio_health_snapshot(current_id: str, current_si: Mapping[str, 
         snapshot["insufficient_data"] = True
         snapshot["message"] = reason
     return snapshot
+
+
+def _retired_snapshot(current_id: str, period_cutoff: Any) -> dict[str, Any]:
+    """
+    The snapshot stored for a project when no Group D module remains in the registry.
+
+    It is a REPORTED RETIREMENT, not a null and not an empty dict. The distinction matters to
+    every reader: `structure_absent` has always meant "the governed cohort was not supplied",
+    which is a statement about this project's evidence and invites supplying it. Retirement is a
+    statement about the taxonomy and no evidence will change it. A surface that cannot tell the
+    two apart would go on inviting a user to supply a cohort for an analysis that no longer
+    exists, so `retired` is carried as its own key and `results` is empty rather than five
+    abstentions -- there are no longer five modules to abstain.
+    """
+    return {
+        "ok": True,
+        "id": str(current_id),
+        "route": "retired",
+        "simulation_layer": None,
+        "evidence_class": V8.PROGRAMME_CONTEXT_EVIDENCE,
+        "use": V8.INFORM_ONLY,
+        "voting": False,
+        "creates_project_evidence": False,
+        "authority_note": V8.AUTHORITY_NOTE,
+        "retired": True,
+        "structure_absent": False,
+        "cohort": None,
+        "portfolio_size": 0,
+        "results": {},
+        "insufficient_data": True,
+        "message": RETIRED_REASON,
+        "period_cutoff": str(period_cutoff),
+    }
 
 
 # ---------------------------------------------------------------------------------------------
