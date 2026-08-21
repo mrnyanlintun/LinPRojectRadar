@@ -54,7 +54,12 @@ CUTOFF = "2026-06-30"
 SI = {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 440_000.0, "pv": 450_000.0,
       "cpi": 0.909, "spi": 0.889, "docRiskScore": 0.35}
 
-CAT7 = sorted((m for m in REG.registry_index() if m.startswith("B2.")),
+# THE POPULATION IN SERVICE, NOT THE WHOLE REGISTRY. registry_index() (registry.py:426)
+# resolves retired identifiers by design; service_index() (registry.py:440) is the roster in
+# service, derived from the retirement notes in p0-baseline/module_renumbering_map.csv. Nineteen
+# of the twenty Category-7 identities are retired, so a ledger built from the registry asserted
+# the pre-retirement population. No count is written down: every figure below is len(CAT7).
+CAT7 = sorted((m for m in REG.service_index() if m.startswith("B2.")),
               key=lambda m: int(m.split(".")[1]))
 
 PASSED = 0
@@ -131,7 +136,8 @@ head("2. EVERY CATEGORY-7 LEDGER ROW SAYS ITS STATE. NONE IS BLANK.")
 # =================================================================================================
 _rows = ledger_rows()
 _missing = [m for m in CAT7 if m not in _rows]
-check(not _missing, "all twenty Category-7 identities reach the ledger", str(_missing))
+check(not _missing,
+      f"all {len(CAT7)} Category-7 identities in service reach the ledger", str(_missing))
 _blank = [m for m in CAT7
           if not (_rows[m].get("lineage") or {}).get("lineage_status")]
 check(not _blank,
@@ -151,12 +157,14 @@ check(not _bodies,
 _disabled = sorted(m for m in CAT7 if m in REG.DISABLED_MODULES)
 check(all((_rows[m]["lineage"] or {}).get("lineage_status") == LIN.LINEAGE_NOT_APPLICABLE
           for m in _disabled),
-      f"the three disabled and archived identities report NOT_APPLICABLE: {_disabled}")
+      f"the {len(_disabled)} disabled and archived identities in service report "
+      f"NOT_APPLICABLE: {_disabled}")
 _operational = [m for m in CAT7 if m not in REG.DISABLED_MODULES]
 check(all((_rows[m]["lineage"] or {}).get("lineage_status") == LIN.LINEAGE_UNRESOLVED
           for m in _operational),
-      "and the seventeen operational identities report UNRESOLVED, which is the truthful state "
-      "of a structure whose assessors' own sources this platform does not know")
+      f"and the {len(_operational)} operational identities in service report UNRESOLVED, which "
+      f"is the truthful state of a structure whose assessors' own sources this platform does "
+      f"not know: {_operational}")
 
 
 # =================================================================================================
@@ -357,9 +365,10 @@ check(FUS.fuse_signals is _real_fuse,
       "and the shipped fusion is restored, so the measurement above changed nothing")
 _names_only = [m for m in CAT7
                if (_rows[m].get("lineage") or {}).get("lineage_status") is not None]
-check(len(_names_only) == 20,
-      "the closure's own contribution is the state NAME on all twenty rows; the eligibility "
-      "behaviour it names was already shipped and is unchanged")
+check(len(_names_only) == len(CAT7),
+      f"the closure's own contribution is the state NAME on all {len(CAT7)} rows in service; the "
+      f"eligibility behaviour it names was already shipped and is unchanged",
+      f"{len(_names_only)} of {len(CAT7)}")
 
 with (ROOT / "code_audit" / "run30_lineage_fault_injection.csv").open(
         "w", encoding="utf-8", newline="\n") as fh:

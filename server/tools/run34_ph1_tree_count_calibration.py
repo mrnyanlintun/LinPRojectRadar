@@ -125,8 +125,13 @@ def selection_decision(metrics):
     from app.simulation import portfolio_health as PH
 
     real = PH.compute_portfolio_health_snapshot("PROBE", {}, [], "2026-01-31")
-    d1 = real["results"]["cat8_1_isolation_forest"]
-    operational_reading = not d1.get("abstained")
+    # RUN 43, THE OFFLOAD. D1.1 is retired from service, so the dispatcher emits no result for
+    # it and the D2 probe reads an empty dict rather than an abstaining row. Both answers the
+    # probe wants are then False, which is exactly what the probe is asking: the live production
+    # route yields no operational reading and permits no authoritative flag. The probe is not
+    # weakened -- it still reads the LIVE route and still decides on what it finds there.
+    d1 = (real.get("results") or {}).get("cat8_1_isolation_forest") or {}
+    operational_reading = bool(d1) and not d1.get("abstained")
     flag_permitted = bool(d1.get("authoritative_flag_permitted"))
     d2_pass = operational_reading and flag_permitted
     if d2_pass:

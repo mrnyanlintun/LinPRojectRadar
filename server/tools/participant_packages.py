@@ -263,7 +263,10 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v13",
         "code_audit/run36_closure_participant_package_v13_checksums.sha256",
-        None,
+        # RUN 43. v13 became a PREDECESSOR when v14 was minted, so it is pinned to the commit
+        # whose blobs it describes rather than being regenerated against the live tree -- the
+        # defect the Run-28 closure had to correct in the v2 record.
+        "428a6c60b189bc64117f30edfe773092d5aae2f6",
         "THE OWNER'S A1.1 RULING OF 2026-08-19. Three participant-visible files moved and ALL "
         "THREE ARE GENERATED from the registry: the served defensibility evidence object and both "
         "client taxonomy mirrors. A1.1 Monte Carlo EAC Forecast is operationally disabled for "
@@ -279,6 +282,37 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "no append-only record moved. The v12 record is NOT regenerated: it is pinned to the "
         "commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v14",
+        "code_audit/run43_participant_package_v14_checksums.sha256",
+        None,
+        "RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. Five participant-visible files moved. "
+        "THREE ARE GENERATED from the registry: both client taxonomy mirrors, which "
+        "build_client_taxonomy.py now emits from registry.service_index() rather than from the "
+        "whole registry so the 38 retired identities carry no taxonomy row at all, and detail.js, "
+        "whose LIN_CATEGORIES comment records the registered Group A count. TWO CARRY A COUNT A "
+        "PARTICIPANT READS -- knowledge.js and index.html -- and each now states three "
+        "populations where it stated two: the registry holds 101 modules, 63 are in service, and "
+        "the analytical server computes 62 of the 63. Retirement is not deletion: every retired "
+        "module keeps its registry entry, its formula function and its audit lineage, and "
+        "run_module() on all 101 identifiers returns output byte-identical to sim-2026.08-v27. "
+        "THE EXPERIMENTAL SEQUENCE IS UNCHANGED: decision.js, decision-ui.js, workspace.js, "
+        "deepdive.js and both questionnaires are byte for byte identical to v13, and no step of "
+        "the decision sequence, no reveal gate, no lock, no randomization, no server contract and "
+        "no append-only record moved. The v13 record is NOT regenerated: it is pinned to the "
+        "commit whose blobs it describes.",
+    ),
+)
+
+#: RUN 43. The files whose bytes moved between v13 and v14. FIVE: three generated from the
+#: registry and two carrying a count a participant reads. Not one carries a step of the
+#: experimental sequence.
+V13_TO_V14_CHANGED = (
+    "assets/js/categories.js",
+    "assets/js/detail.js",
+    "assets/js/knowledge.js",
+    "assets/js/taxonomy.js",
+    "index.html",
 )
 
 #: RUN 36. The files whose bytes moved between v11 and v12. ONE file, and it is generated.

@@ -33,7 +33,7 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 from app.simulation import compute_project  # noqa: E402
 from app.simulation.registry import (  # noqa: E402
     CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, PROXY_QUALIFIERS, VALIDATED,
-    activation_state, run_module,
+    activation_state, is_retired, run_module,
 )
 from app.simulation.rng import make_rng  # noqa: E402
 
@@ -88,8 +88,16 @@ abstained_ids = {a["module_id"] for a in run["abstained"]}
 check(not (set(DISABLED_CONCEPT_ONLY) & computed_ids),
       "none of the eight disabled modules appears among computed results",
       str(sorted(set(DISABLED_CONCEPT_ONLY) & computed_ids)))
-check(set(DISABLED_CONCEPT_ONLY) <= abstained_ids,
-      "all eight disabled modules appear in the abstained list instead",
+# RUN 43, THE RETIREMENT. All eight concept-only modules are also RETIRED FROM SERVICE, so they
+# reach neither the computed list nor the abstained list on the production path. Appearing in the
+# abstained list was the weaker guarantee; reaching no list at all is stronger and is what
+# retirement from service means. The `run_module()` assertions above are unchanged and still hold:
+# retirement removes a module from service, not from the registry, and asking for one BY NAME
+# still short-circuits to DISABLED_UNSAFE.
+check(not (set(DISABLED_CONCEPT_ONLY) & abstained_ids)
+      and all(is_retired(m) for m in DISABLED_CONCEPT_ONLY),
+      "and none of them appears in the abstained list either, because all eight are retired "
+      "from service and the production path enumerates the population in service",
       str(sorted(set(DISABLED_CONCEPT_ONLY) - abstained_ids)))
 for cat, info in run["category_statuses"].items():
     pass  # category_statuses only ever holds CORE-carrying categories; see the voting checks below

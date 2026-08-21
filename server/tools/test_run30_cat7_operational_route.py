@@ -79,8 +79,12 @@ def head(title: str) -> None:
     print("=" * 78)
 
 
-#: The twenty Category-7 identities, derived from the registry index rather than listed.
-CAT7 = sorted((m for m in REG.registry_index() if m.startswith("B2.")),
+#: The Category-7 identities IN SERVICE, derived rather than listed. registry_index()
+#: (registry.py:426) resolves retired identifiers by design; service_index() (registry.py:440)
+#: is the roster in service, derived from p0-baseline/module_renumbering_map.csv. Nineteen of
+#: the twenty Category-7 identities are retired, so the registry index asserted the
+#: pre-retirement population here.
+CAT7 = sorted((m for m in REG.service_index() if m.startswith("B2.")),
               key=lambda m: int(m.split(".")[1]))
 
 #: The canonical fixture each identity's structure is satisfied by. Research fixtures only; every
@@ -115,9 +119,20 @@ def route(mid: str, si: dict):
 # =================================================================================================
 head("1. THE ROUTING TABLE, READ LIVE, AND NOT ONE LEGACY RESOLUTION AMONG THE TWENTY")
 # =================================================================================================
-check(len(CAT7) == 20 and len(set(CAT7)) == 20,
-      "the Category-7 population is twenty identities, derived from the registry index",
-      str(len(CAT7)))
+_cat7_registered = sorted(m for m in REG.registry_index() if m.startswith("B2."))
+_cat7_retired = sorted(m for m in _cat7_registered if REG.is_retired(m))
+check(len(CAT7) == len(set(CAT7)) and len(CAT7) + len(_cat7_retired) == len(_cat7_registered),
+      f"the Category-7 population in service is {len(CAT7)} identities and the twenty registered "
+      f"reconcile as {len(CAT7)} in service plus {len(_cat7_retired)} retired, both derived from "
+      f"the registry rather than listed here",
+      f"{len(CAT7)} + {len(_cat7_retired)} vs {len(_cat7_registered)}")
+check(len(_cat7_registered) == 20,
+      "and the REGISTERED Category-7 population is still twenty, so retirement removed an "
+      "identity from service and not from the registry", str(len(_cat7_registered)))
+# NO RETIRED CATEGORY-7 IDENTITY REACHES THE LEDGER. This is the post-retirement form of what
+# the ledger assertions below used to say about all twenty; it is added, not substituted, so
+# nothing asserted about B2.18 is lost.
+
 _resolved = {m: REG.VALIDATED[m][1].__module__ for m in CAT7}
 _legacy_resolutions = sorted(m for m, mod in _resolved.items() if mod in LEGACY_PROXY_MODULES)
 check(not _legacy_resolutions,
@@ -125,7 +140,7 @@ check(not _legacy_resolutions,
       "enumerates the shipped routing table rather than a list written beside it",
       str(_legacy_resolutions))
 check(all(mod == "app.simulation.models_cat7" for mod in _resolved.values()),
-      "and all twenty resolve to the canonical Category-7 route",
+      f"and all {len(CAT7)} in service resolve to the canonical Category-7 route",
       str(sorted(set(_resolved.values()))))
 # The legacy implementations are PRESERVED. Retired is not deleted.
 from app.simulation.models_evc import EVC_EXTENSIONS              # noqa: E402
@@ -294,15 +309,16 @@ for mid in CAT7:
         _no_fallback.append(mid)
 check(not _no_fallback,
       "GUARD_CAT7_NO_PROXY_FALLBACK_ON_MISSING_CANONICAL_STRUCTURE: with every crisp metric "
-      "present and no governed structure, not one of the twenty reaches a legacy implementation "
-      "or emits a band", str(_no_fallback))
+      f"present and no governed structure, not one of the {len(CAT7)} in service reaches a "
+      f"legacy implementation or emits a band", str(_no_fallback))
 _dispositions = {}
 for mid in CAT7:
     out = REG.run_module(mid, dict(RICH), NOOP, CUTOFF)
     _dispositions[mid] = out.get("canonical_disposition")
 check(all(d in ("NOT_ESTIMABLE_STRUCTURE_ABSENT", "DISABLED", "ARCHIVED")
           for d in _dispositions.values()),
-      "and every one of the twenty names its disposition rather than going quiet",
+      f"and every one of the {len(CAT7)} in service names its disposition rather than going "
+      f"quiet",
       str(sorted({d for d in _dispositions.values()})))
 
 
@@ -314,8 +330,14 @@ _computed = {m["module_id"]: m for m in _res["modules"]}
 _abstained = {m["module_id"]: m for m in _res.get("abstained", [])}
 _rows = {**_abstained, **_computed}
 _missing = [m for m in CAT7 if m not in _rows]
-check(not _missing, "every Category-7 identity appears on the ledger, computed or abstaining",
+check(not _missing,
+      "every Category-7 identity in service appears on the ledger, computed or abstaining",
       str(_missing))
+_retired_on_ledger = sorted(m for m in _cat7_retired if m in _rows)
+check(not _retired_on_ledger,
+      "and NOT ONE of the retired Category-7 identities reaches the ledger, computed or "
+      "abstaining, which is what retirement from service means",
+      str(_retired_on_ledger))
 _bad_source = [m for m in CAT7 if _rows[m].get("result_source") != "CANONICAL_V5_LAYER"]
 check(not _bad_source,
       "every Category-7 ledger row records the canonical v16 route as its result source",
@@ -324,17 +346,17 @@ _no_reason = [m for m in CAT7 if not str(_rows[m].get("abstention_reason") or ""
 check(not _no_reason, "and every abstaining row carries its reason in words", str(_no_reason))
 _no_lineage = [m for m in CAT7 if m not in NON_OPERATIONAL and not _rows[m].get("lineage")]
 check(not _no_lineage, "and every non-disabled row carries its lineage", str(_no_lineage))
-# B2.9 is the one identity with no structure to name, and that is the truth about it rather than
-# an omission: it is ARCHIVED, and what it would need to be restored is a Hilbert-space state
-# space and a measurement model that this platform does not hold and does not solicit. Its row
-# says so in words instead.
+# B2.9 was the one identity with no structure to name -- ARCHIVED, waiting on a Hilbert-space
+# state space this platform does not hold. It is now RETIRED FROM SERVICE, so it reaches no
+# ledger at all and there is no row of its to read. The exclusion below is kept so the intent
+# survives if it is ever reinstated.
 _no_structure = [m for m in CAT7
                  if m != "B2.9" and not _rows[m].get("canonical_structure")]
 check(not _no_structure, "and names the structure it is defined on", str(_no_structure))
-check(_rows["B2.9"].get("canonical_disposition") == "ARCHIVED"
-      and "research record" in str(_rows["B2.9"].get("abstention_reason", "")),
-      "with the archived identity naming its archival instead, because there is no structure it "
-      "is waiting for", str(_rows["B2.9"].get("canonical_disposition")))
+check("B2.9" not in _rows and "B2.9" not in REG.service_index(),
+      "and the archived identity is retired from service, so it names nothing on the ledger "
+      "because it reaches no ledger row at all",
+      str(sorted(set(_rows) & {"B2.9"})))
 _proxy_marked = [m for m in CAT7
                  if _rows[m].get("proxy_qualifier") or _rows[m].get("proxy_label")
                  or _rows[m].get("truthful_method_name")]

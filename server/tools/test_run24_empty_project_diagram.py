@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 FLOW_PATH = ROOT / "assets" / "js" / "neural_flow.js"
@@ -88,13 +89,32 @@ print("=" * 78)
 print(f"        . parsed from taxonomy.js: {ALL_CATS} categories / {ALL_MODS} modules; "
       f"project-level {PROJ_CATS} / {PROJ_MODS}")
 
-check((ALL_CATS, ALL_MODS, PROJ_CATS, PROJ_MODS) == (12, 101, 11, 96),
-      "the registry holds 96 project-level modules in 11 project-level categories, and 101 "
-      "in 12 counting Portfolio Health",
-      f"{ALL_CATS}/{ALL_MODS}/{PROJ_CATS}/{PROJ_MODS}")
-check(ALL_MODS == PROJ_MODS + 5,
+# RUN 43, THE RETIREMENT. taxonomy.js is the participant surface and carries the population IN
+# SERVICE, not the whole registry. The figures below are derived from registry.service_index()
+# (registry.py:440) and registry.registry_index() (registry.py:426) rather than typed in, so
+# reinstating a module in p0-baseline/module_renumbering_map.csv moves both sides together.
+sys.path.insert(0, str(ROOT / "server"))
+from app.simulation import registry as _REG                            # noqa: E402
+_SERVICE = _REG.service_index()
+_REGISTRY = _REG.registry_index()
+_SVC_PROJECT = [m for m in _SERVICE if _REGISTRY[m]["group"] != "D"]
+_SVC_PORTFOLIO = [m for m in _SERVICE if _REGISTRY[m]["group"] == "D"]
+_AUTH_CATS = len({r["category"] for r in _REGISTRY.values()})
+_AUTH_PROJ_CATS = len({r["category"] for r in _REGISTRY.values() if r["group"] != "D"})
+check((ALL_CATS, ALL_MODS, PROJ_CATS, PROJ_MODS)
+      == (_AUTH_CATS, len(_SERVICE), _AUTH_PROJ_CATS, len(_SVC_PROJECT)),
+      f"the taxonomy the browser reads holds {len(_SVC_PROJECT)} project-level modules in "
+      f"{_AUTH_PROJ_CATS} project-level categories and {len(_SERVICE)} in {_AUTH_CATS} counting "
+      f"Portfolio Health, every figure derived from the roster in service",
+      f"{ALL_CATS}/{ALL_MODS}/{PROJ_CATS}/{PROJ_MODS} vs "
+      f"{_AUTH_CATS}/{len(_SERVICE)}/{_AUTH_PROJ_CATS}/{len(_SVC_PROJECT)}")
+check(ALL_MODS == PROJ_MODS + len(_SVC_PORTFOLIO),
       "and the whole-taxonomy figure reconciles to the project-level one",
-      f"{ALL_MODS} != {PROJ_MODS} + 5")
+      f"{ALL_MODS} != {PROJ_MODS} + {len(_SVC_PORTFOLIO)}")
+check(len(_REGISTRY) == 101 and len(_SERVICE) + len(_REG.retired_modules()) == len(_REGISTRY),
+      "and the REGISTRY still holds 101, which the roster in service plus the retired reconcile "
+      "to exactly, so retirement removed modules from service and not from the registry",
+      f"{len(_SERVICE)} + {len(_REG.retired_modules())} vs {len(_REGISTRY)}")
 # The one registry entry the extraction model SUPPLIES rather than the analytical server
 # computing. This is what makes the project-level figure "95 computed plus 1 supplied".
 check(TAXONOMY.count("method_class: 'Doc_Risk_Cat4'") == 1,
@@ -120,13 +140,21 @@ check("projectModuleCount()" in DETAIL and "totalModulesForBadge = projectModule
 # programme lists as encoding the defect's own sentence as the oracle. It could only ever
 # confirm that nobody had reworded the page. The page now has to state THREE scopes, and each
 # figure is checked against the number the registry actually yields.
-check(f"The registry holds {ALL_MODS} modules: {PROJ_MODS} at project level and "
-      f"{ALL_MODS - PROJ_MODS} at portfolio level" in KNOWLEDGE,
-      "the Knowledge page states the registry total and both of its scopes",
-      f"expected the registry's own {ALL_MODS}/{PROJ_MODS}/{ALL_MODS - PROJ_MODS}")
-check(f"The analytical server computes {ALL_MODS - 1} of the {ALL_MODS}" in KNOWLEDGE,
-      "and states the computed count as a scope of the registry rather than as a rival total",
-      f"expected 'computes {ALL_MODS - 1} of the {ALL_MODS}'")
+# RUN 43. The page must now state THREE populations, because the retirement created a third:
+# what the registry holds (101), what is in service (63, which is what the browser renders), and
+# what the analytical server computes of the roster in service (62). Every figure is derived.
+_COMPUTED_IN_SERVICE = len(_REG.available_modules())
+check(f"The registry holds {len(_REGISTRY)} modules, of which {len(_SERVICE)} are in service: "
+      f"{len(_SVC_PROJECT)} at project level and {len(_SVC_PORTFOLIO)} at portfolio level"
+      in KNOWLEDGE,
+      "the Knowledge page states the registry total and the scopes of the roster in service",
+      f"expected the registry's own {len(_REGISTRY)}/{len(_SERVICE)}/{len(_SVC_PROJECT)}/"
+      f"{len(_SVC_PORTFOLIO)}")
+check(f"The analytical server computes {_COMPUTED_IN_SERVICE} of the {len(_SERVICE)}"
+      in KNOWLEDGE,
+      "and states the computed count as a scope of the roster in service rather than as a rival "
+      "total",
+      f"expected 'computes {_COMPUTED_IN_SERVICE} of the {len(_SERVICE)}'")
 check("document risk score, which the extraction model supplies as a value rather than the "
       "server deriving it" in KNOWLEDGE,
       "and names the one module that makes the two figures differ, so they are reconcilable "

@@ -124,12 +124,16 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
 # and v26 is Run 41's own single authorised append for the S1/S2 successor.
 # RESTATED BY RUN 42: v27 is Run 42's own single authorised append for the evidence-provenance
 # successor.
+# RESTATED BY RUN 43: v28 is Run 43's own single authorised append for the retirement of 38
+# modules from service.
 check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-2026.08-v21",
                                                        "sim-2026.08-v22", "sim-2026.08-v23",
                                                        "sim-2026.08-v24", "sim-2026.08-v25",
                                                        "sim-2026.08-v26",
-                                                       "sim-2026.08-v27"),
-      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41 and 42 were each authorised "
+                                                       "sim-2026.08-v27",
+                                                       "sim-2026.08-v28"),
+      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42 and 43 were each "
+      "authorised "
       "to add",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
 check(_old_stamps[-1] == "sim-2026.08-v19",

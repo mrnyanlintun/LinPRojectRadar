@@ -121,8 +121,15 @@ _available = set(registry.available_modules())
 _registry_ids = set(registry.registry_index())
 for mid in _declared:
     check(f"{mid} is a module in this platform's registry", mid in _registry_ids)
-    check(f"{mid} runs either on a single project or across the portfolio",
-          mid in _available or registry.registry_index()[mid]["group"] == "D")
+    # RUN 43, THE RETIREMENT. A third truthful answer exists: a module retired from service runs
+    # NOWHERE, by design, and it is retired if and only if the registry CSV says so. Recorded as
+    # its own disjunct rather than folded into either of the other two, so a module that has
+    # silently stopped running cannot hide behind it.
+    check(f"{mid} runs on a single project, across the portfolio, or is retired from service",
+          mid in _available or registry.registry_index()[mid]["group"] == "D"
+          or registry.is_retired(mid))
+    check(f"{mid}: and if it is retired from service it runs on no single project",
+          not registry.is_retired(mid) or mid not in _available)
 
 
 # ============================================================ 2. THE THREE CORRECTIONS

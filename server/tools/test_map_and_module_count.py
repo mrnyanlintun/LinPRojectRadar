@@ -315,15 +315,46 @@ def main() -> None:
     check(node.returncode == 0, "the taxonomy loads under node", node.stderr.strip()[:120])
     tx = json.loads(node.stdout.strip().splitlines()[-1])
 
-    check(tx["allCats"] > tx["projCats"] and tx["allMods"] > tx["projMods"],
+    # RUN 43D SECTION 5.4, THE ONE SANCTIONED CHANGE TO THIS SUITE. These five checks asserted
+    # the pre-retirement taxonomy: 96 project modules, 101 in all, and Portfolio Health keeping
+    # its five. Run 43 retired thirty-eight modules including all five Group D ones, and Run 43B
+    # offloaded the Portfolio Health computation, so the five assertions and the state of the
+    # instrument cannot both hold. They assert the offloaded state instead. The expected values
+    # are hand-written literals here, deliberately and exactly as before: this suite exists to
+    # catch the browser taxonomy drifting from the registry, and a check that derives its
+    # expectation from the thing under test would catch nothing.
+    check(tx["allCats"] > tx["projCats"],
           "the taxonomy genuinely has a portfolio-level category to exclude "
           "(so the checks below are not vacuous)", json.dumps(tx))
-    check(tx["projMods"] == 96, "a project has 96 modules", str(tx["projMods"]))
+    check(tx["projMods"] == 63, "a project has 63 modules", str(tx["projMods"]))
     check(tx["projCats"] == 11, "across 11 categories", str(tx["projCats"]))
-    check(tx["allMods"] == 101 and tx["allCats"] == 12,
-          "and the whole taxonomy is still 101 across 12, unchanged",
-          f"{tx['allMods']}/{tx['allCats']}")
-    check(tx["d1Modules"] == 5, "Portfolio Health keeps its five modules", str(tx["d1Modules"]))
+    check(tx["allMods"] == 63 and tx["allCats"] == 12,
+          "and the whole in-service taxonomy is 63 across 12, the retired modules appearing in "
+          "no browser population", f"{tx['allMods']}/{tx['allCats']}")
+    check(tx["d1Modules"] == 0,
+          "Portfolio Health computes nowhere: its category container is retained and empty",
+          str(tx["d1Modules"]))
+    # ...AND THE FIVE ARE RETIRED FROM SERVICE RATHER THAN MERELY ABSENT FROM THE BROWSER. An
+    # empty d1 list on its own is also what a taxonomy that simply lost the rows would look like.
+    # This asserts the registry's own account of them: each resolves, each is marked retired, and
+    # each carries the reason it was retired with.
+    import importlib
+    _reg = importlib.import_module("app.simulation.registry")
+    _d1 = ["D1.1", "D1.2", "D1.3", "D1.4", "D1.5"]
+    _retired = _reg.retired_modules()
+    check(all(m in _reg.registry_index() for m in _d1),
+          "the five Group D identifiers still resolve in the registry",
+          str([m for m in _d1 if m not in _reg.registry_index()]))
+    check(all(m in _retired and _retired[m].strip() for m in _d1),
+          "and every one of them is retired from service, with a stated reason",
+          str({m: _retired.get(m) for m in _d1}))
+    check(_reg.live_portfolio_modules_count() == 0
+          if hasattr(_reg, "live_portfolio_modules_count") else
+          len(importlib.import_module("app.simulation.portfolio_health")
+              .live_portfolio_modules()) == 0,
+          "so no Portfolio Health module is live on the portfolio route",
+          str(importlib.import_module("app.simulation.portfolio_health")
+              .live_portfolio_modules()))
     check(not tx["projHasPortfolio"],
           "and no portfolio-level category is in the project-level set")
     # The discriminator is the LEVEL, not `parked`. A fallback in detail.js used `!parked` and

@@ -522,6 +522,16 @@ RUN41_SCOPED_FILES = {
     "server/app/main.py",
 }
 
+# RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. The training surface's abstention population
+# is derived from `registry.service_index()` rather than from the whole registry, so a module
+# retired from service cannot appear as an abstention on a training project. Named here rather
+# than the rule being widened, so the check keeps its full force over every other production
+# file. The retirement's other production paths under server/app/ and assets/ are already inside
+# an earlier run's scope above.
+RUN43_SCOPED_FILES = {
+    "server/app/training.py",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -533,7 +543,7 @@ _prod = [p for p in _diff
          and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
          and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES
          and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES
-         and p not in RUN41_SCOPED_FILES]
+         and p not in RUN41_SCOPED_FILES and p not in RUN43_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
@@ -589,6 +599,17 @@ check(all(m in _registered for m in UNRESOLVED_27),
       "every unresolved id is a module this server actually computes")
 check(not (set(UNRESOLVED_27) & _disabled),
       "no unresolved module is one of the Run 1 disabled concept-only modules")
+# RUN 43, THE RETIREMENT. UNRESOLVED_27 is a REGISTRY-derived universe and is unchanged: the
+# registry still holds all 101 identities and every count above still reconciles. What changed is
+# which of them the PRODUCTION PATH enumerates. Every assertion below that reads a stored row is
+# re-scoped to the population IN SERVICE, derived from registry.is_retired() and therefore from
+# p0-baseline/module_renumbering_map.csv alone. The retired members are asserted ABSENT from the
+# production path instead, which is stronger than the reachability they carried before.
+IN_SERVICE_27 = [m for m in UNRESOLVED_27 if not registry.is_retired(m)]
+RETIRED_27 = [m for m in UNRESOLVED_27 if registry.is_retired(m)]
+ka(len(IN_SERVICE_27) + len(RETIRED_27), len(UNRESOLVED_27),
+   "the 27 split into those in service and those retired, and the split reconciles",
+   kind="derivation", derivation="derived from registry.is_retired(), no list written here")
 print("     " + " ".join(UNRESOLVED_27))
 
 #: The bucket assignment this run defends, written into the code so the classification is in the
@@ -1545,8 +1566,12 @@ _res = compute_project(_PROD_SI, "scenario-run8", "P1", "2025-06-30")
 _by_id = {r["module_id"]: r for r in _res["modules"]}
 _abst = {a["module_id"]: a for a in _res["abstained"]}
 
-_missing = [m for m in UNRESOLVED_27 if m not in _by_id and m not in _abst]
-ka(_missing, [], "every one of the 27 is reached by the production path, computed or abstaining",
+_missing = [m for m in IN_SERVICE_27 if m not in _by_id and m not in _abst]
+ka(_missing, [],
+   "every one of the 27 that is in service is reached by the production path, computed or "
+   "abstaining", "", "production_path")
+ka(sorted(m for m in RETIRED_27 if m in _by_id or m in _abst), [],
+   "and NOT ONE of the 27 retired from service is reached by it, computed or abstaining",
    "", "production_path")
 # The two Bucket 5 modules must be on the abstained list there, not merely absent.
 ka(sorted(m for m in ("A3.1", "A5.1") if m in _abst), ["A3.1", "A5.1"],
@@ -1589,7 +1614,15 @@ ka(sorted(registry.CORE_VOTING_MODULES), ["A1.7", "A1.8"],
 # on the production path. Asserting a value for them would be asserting the proxy is still
 # reachable, which is the opposite of what Run 28 established. The join over the remaining four
 # still does the work it was written for.
+# RUN 43: A2.5 and A2.11 of these four are retired from service and no longer publish any row.
+# Their subject is removed, and what replaces it is the stronger absence assertion. A2.9 and A1.6
+# are in service and their assertions are untouched.
 for _mid in ("A2.9", "A2.5", "A1.6", "A2.11"):
+    if registry.is_retired(_mid):
+        ka(_mid in _abst or _mid in _by_id, False,
+           f"{_mid}: is retired from service, so it publishes no row on the production path at "
+           f"all rather than an abstaining one", _mid, "production_path")
+        continue
     ka(_mid in _abst, True,
        f"{_mid}: abstains on the production path, because the structure its canonical method is "
        f"defined on is not in this fixture", _mid, "production_path")

@@ -734,40 +734,64 @@ for _r in _ph2["feature_records"]:
     apply_to_signal_inputs(_s, _d, 1)
     _sis[_r["project_id"]] = _s
 
+# RUN 43, THE OFFLOAD. All five Portfolio Health identities are retired from service, so the
+# dispatcher no longer assembles a cohort or computes anything: it returns the retired snapshot.
+# THE SCIENTIFIC ORACLE IS NOT LOST. `canonical_v8` is untouched and still computes, and the
+# supplied PH.2 oracle is executed against it directly below, so the arithmetic this section
+# defends is checked exactly as before -- what changed is that no production route reaches it.
 _cur = "P-D"
 _snap = PH.compute_portfolio_health_snapshot(
     _cur, _sis[_cur], [(p, s) for p, s in sorted(_sis.items()) if p != _cur], "2026-01-31")
-check(_snap["structure_absent"] is False and _snap["portfolio_size"] == 4,
-      "THE REAL DISPATCHER assembles the four-project cohort from the projects' own stored "
-      "signal inputs and computes", str(_snap["portfolio_size"]))
-check(_snap["results"]["cat8_2_portfolio_outlier"]["projects"][_cur][
+check(_snap.get("retired") is True and not _snap.get("results")
+      and PH.live_portfolio_modules() == (),
+      "THE REAL DISPATCHER assembles no cohort and computes nothing, because every Portfolio "
+      "Health identity is retired from service",
+      str([_snap.get("retired"), sorted(_snap.get("results") or {})]))
+# THE SUPPLIED PH.2 ORACLE, executed against the preserved library on the same four-project
+# cohort the dispatcher would have assembled. The expected value is the supplied one, 7/8, and
+# it is not read back from the object under test.
+_lib = V8.compute_portfolio_health(_ph2["cohort"], _ph2["feature_schema"],
+                                   _ph2["feature_records"], [])
+check(_lib["results"]["cat8_2_portfolio_outlier"]["projects"][_cur][
           "feature_percentiles_exact"]["f_adverse"] == "7/8",
-      "and the supplied PH.2 oracle holds THROUGH THE PRODUCTION ROUTE, not only in the library",
-      _snap["results"]["cat8_2_portfolio_outlier"]["projects"][_cur][
+      "and the supplied PH.2 oracle holds against the preserved canonical_v8 library, which the "
+      "offload left untouched",
+      _lib["results"]["cat8_2_portfolio_outlier"]["projects"][_cur][
           "feature_percentiles_exact"]["f_adverse"])
 check(_snap["voting"] is False and _snap["creates_project_evidence"] is False
-      and _snap["route"] == "canonical_v8",
+      and _snap["route"] == "retired",
       "and the snapshot itself is stamped non-voting, creating no project evidence, on the "
-      "canonical route")
+      "retired route", str([_snap.get("route"), _snap.get("voting")]))
 
 # A PROJECT THAT IS NOT A DECLARED MEMBER CONTRIBUTES NOTHING, so the cohort is the governed
 # population and not "the rows the query returned".
 _intruder = dict(_sis["P-A"])
 _intruder["portfolioFeatureRecord"] = dict(_ph2["feature_records"][0], project_id="INTRUDER")
+# RUN 43: asserted against the preserved library, for the same reason as the PH.2 oracle above.
+# The dispatcher contributes nothing from ANY project now, declared member or not, so asserting
+# the cohort rule on it would be vacuous.
+_lib2 = V8.compute_portfolio_health(
+    _ph2["cohort"], _ph2["feature_schema"],
+    list(_ph2["feature_records"])
+    + [dict(_ph2["feature_records"][0], project_id="INTRUDER")], [])
+check("INTRUDER" not in _lib2["results"]["cat8_2_portfolio_outlier"]["projects"],
+      "A PROJECT OUTSIDE THE DECLARED COHORT CONTRIBUTES NOTHING, even when it carries a "
+      "feature record", str(sorted(_lib2["results"]["cat8_2_portfolio_outlier"]["projects"])))
 _snap2 = PH.compute_portfolio_health_snapshot(
     _cur, _sis[_cur],
     [(p, s) for p, s in sorted(_sis.items()) if p != _cur] + [("INTRUDER", _intruder)],
     "2026-01-31")
-check(_snap2["portfolio_size"] == 4
-      and "INTRUDER" not in _snap2["cohort"]["eligible_project_ids"],
-      "A PROJECT OUTSIDE THE DECLARED COHORT CONTRIBUTES NOTHING, even when it carries a "
-      "feature record", str(_snap2["cohort"]["eligible_project_ids"]))
+check(_snap2.get("retired") is True and not _snap2.get("results"),
+      "and the dispatcher contributes nothing from any project at all, declared member or not",
+      str(sorted(_snap2.get("results") or {})))
 
 # NO GOVERNED COHORT -> a reported abstention, never an invented comparison.
 _none = PH.compute_portfolio_health_snapshot("X", {}, [], "2026-01-31")
-check(_none["structure_absent"] is True and len(_none["results"]) == 5
-      and all(v["abstained"] and v["abstention_reason"] for v in _none["results"].values()),
-      "WITH NO GOVERNED COHORT all five abstain, addressably, each carrying its reason")
+check(_none.get("retired") is True and not _none.get("results")
+      and "no longer part of the analytical taxonomy" in str(_none.get("message") or ""),
+      "WITH NO GOVERNED COHORT the dispatcher answers the same way it answers WITH one -- the "
+      "identities are retired from service -- and it says so once, in words",
+      str(_none.get("message"))[:120])
 
 
 print()

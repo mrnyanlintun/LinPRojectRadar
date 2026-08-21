@@ -459,9 +459,25 @@ check("Minimax_Regret_Decision_Rule" not in _mods and "Regret_Minimization" not 
       "and the analysis that scored the courses of action carries no row, because it abstains "
       "for want of an action by scenario payoff matrix", str(sorted(_mods))[:120])
 _abst = {a.get("module_id"): a for a in (_res.get("abstained") or [])}
-check("B4.7" in _abst and _abst["B4.7"].get("reason"),
-      "its silence is recorded with a reason, so absent is distinguishable from withheld",
-      str(_abst.get("B4.7"))[:160])
+# RUN 43, THE RETIREMENT. B4.7 is retired from service and reaches no list, so its silence is not
+# recorded with a reason either. The guarantee this defends -- that an absence is distinguishable
+# from a WITHHOLDING -- is asserted above ("nothing is withheld") and again over the modules in
+# service that do abstain here. The branch derives from registry.is_retired().
+from app.simulation.registry import is_retired as _is_retired_b7b     # noqa: E402
+if _is_retired_b7b("B4.7"):
+    check("B4.7" not in _abst
+          and "B4.7" not in {m.get("module_id") for m in (_res.get("module_results") or [])
+                             if isinstance(m, dict)},
+          "B4.7 is retired from service, so it reaches neither the stored rows nor the "
+          "abstention list", str(_abst.get("B4.7"))[:160])
+    check(_abst and all(a.get("reason") for a in _abst.values()),
+          "while every module in service that abstains here records its silence with a reason, "
+          "so an absence is still distinguishable from a withholding",
+          str([k for k, a in _abst.items() if not a.get("reason")])[:160])
+else:
+    check("B4.7" in _abst and _abst["B4.7"].get("reason"),
+          "its silence is recorded with a reason, so absent is distinguishable from withheld",
+          str(_abst.get("B4.7"))[:160])
 
 
 # ---------------------------------------------------------------- Guarantee 7

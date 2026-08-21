@@ -702,12 +702,21 @@ for _mid in sorted(RUN28_STRUCTURE_REQUIRED):
     check(abst.get(_mid, {}).get("abstention_reason_code") == "canonical_structure_absent",
           f"{SEVEN[_mid]}: and says on the stored row that the canonical structure is what is "
           f"absent", str(abst.get(_mid, {}).get("abstention_reason_code")))
+# RUN 43, THE RETIREMENT. A3.4 is retired from service as well as disabled, so it publishes no
+# stored row at all and there is no reason on it to read. "Computes nothing" is unchanged and
+# still asserted; "says on the stored row why" is replaced by the stronger absence of any row.
 for _mid in sorted(RUN16_DISABLED):
     check(_mid not in comp,
           f"{SEVEN[_mid]}: disabled by Run 16, so it computes nothing at all")
-    check("under review" in str(abst.get(_mid, {}).get("reason") or "").lower(),
-          f"{SEVEN[_mid]}: and says on the stored row that its evidence requirement is under "
-          f"review", str(abst.get(_mid, {}).get("reason"))[:90])
+    if registry.is_retired(_mid):
+        check(_mid not in abst,
+              f"{SEVEN[_mid]}: and is retired from service, so it publishes no stored row at "
+              f"all rather than one stating its evidence requirement",
+              str(abst.get(_mid, {}).get("reason"))[:90])
+    else:
+        check("under review" in str(abst.get(_mid, {}).get("reason") or "").lower(),
+              f"{SEVEN[_mid]}: and says on the stored row that its evidence requirement is "
+              f"under review", str(abst.get(_mid, {}).get("reason"))[:90])
 
 for mid in sorted(VOTING_AFTER_RUN4):
     check(comp.get(mid, {}).get("votes") is True,
@@ -810,10 +819,18 @@ regret = comp.get("B4.7")
 check(regret is None,
       "and it has no stored row at all, because it abstains for want of an action by scenario "
       "payoff matrix", str(regret)[:120])
+# RUN 43: B4.7 is retired from service. The exclusion this section defends is doubled again --
+# not in the voting set, no stored row, and now no abstention row either, so nothing about it
+# reaches any surface.
 _r4_abst = {a.get("module_id") for a in (r4.get("abstained") or [])}
-check("B4.7" in _r4_abst,
-      "recorded as an abstention on the same result, so its silence is explained rather than "
-      "unexplained", str(sorted(_r4_abst))[:120])
+if registry.is_retired("B4.7"):
+    check("B4.7" not in _r4_abst,
+          "and it is retired from service, so it is not even recorded as an abstention: it "
+          "reaches no row on this result at all", str(sorted(_r4_abst))[:120])
+else:
+    check("B4.7" in _r4_abst,
+          "recorded as an abstention on the same result, so its silence is explained rather "
+          "than unexplained", str(sorted(_r4_abst))[:120])
 # Layer (c): the decision card reads the fused project status, which layer one restricts.
 check(r4.get("project_status") in ("Green", "Yellow", "Amber", "Red", None),
       "layer three, the decision card: it reads the fused project status, and that status is "

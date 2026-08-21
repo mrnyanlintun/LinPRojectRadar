@@ -16,11 +16,18 @@
 
   /* THE CATEGORIES A SINGLE PROJECT HAS, AND WHY EVERY COUNT ON THIS PAGE USES THEM.
 
-     `LIN_CATEGORIES` is the whole taxonomy: Group A 52 modules, Group B 36, Group C 7 and
-     Group D 5, across twelve categories. Group D is PORTFOLIO LEVEL. Its one category,
-     Portfolio Health, detects patterns ACROSS projects and requires more than one by
-     definition; its five modules all declare `required: ['portfolioVectors']`. They cannot
-     compute for a single project and they do not belong on a single project's page.
+     `LIN_CATEGORIES` is the taxonomy IN SERVICE, across twelve categories. The REGISTRY holds
+     101 modules -- Group A 53, Group B 36, Group C 7, Group D 5 -- and Run 43 retired 38 of
+     them from service on the owner's ruling of 2026-08-21, leaving 63. (This comment read 52
+     for Group A until Run 43; the registry has always held 53 and 101, and only the comment was
+     wrong.) Retirement is a statement about the taxonomy, not about arithmetic: every retired
+     module keeps its registry entry and its audit lineage, and none of them reaches this page.
+
+     Group D is PORTFOLIO LEVEL. Its one category, Portfolio Health, detects patterns ACROSS
+     projects and requires more than one by definition; its five modules all declare
+     `required: ['portfolioVectors']`. They cannot compute for a single project and they do not
+     belong on a single project's page. All five are now retired from service as well, so the
+     category renders with no module rows at all.
 
      Counting the whole taxonomy on this page is how the detail view came to advertise 101
      modules across 12 categories while the Signal Flow diagram in the same page, which already

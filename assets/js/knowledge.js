@@ -551,7 +551,7 @@
         <p>The analytical layer runs explicit rules over the evidence and returns a specific recommended action, a responsible authority role, and the documentation required. The PM still records the decision; the platform makes the recommendation traceable to a rule a reviewer can read aloud.</p>
 
         <h3>The analytical layer</h3>
-        <p>101 registered modules, organised into four groups by purpose: Project Health, what condition the project is in; Recommendation and Governance, what should be done and by whom; Data and Evidence Health, how trustworthy the evidence is; and Portfolio Level, patterns that need more than one project to exist. 96 of the 101 run on a single project; the other 5 are the Portfolio Level modules, which need more than one. Of the 101, the analytical server computes 100: the remaining one, the document risk score, is a value the extraction model supplies rather than one the server computes. Data and Evidence Health and Portfolio Level do not contribute to a project's status.</p>
+        <p>101 registered modules, of which 63 are in service, organised into four groups by purpose: Project Health, what condition the project is in; Recommendation and Governance, what should be done and by whom; Data and Evidence Health, how trustworthy the evidence is; and Portfolio Level, patterns that need more than one project to exist. All 63 in service run on a single project; the Portfolio Level modules are not in service. Of the 63, the analytical server computes 62: the remaining one, the document risk score, is a value the extraction model supplies rather than one the server computes. Data and Evidence Health and Portfolio Level do not contribute to a project's status.</p>
 
         <h3>Evidence to decision</h3>
         <pre class="kn-flow">Documents uploaded for a reporting period
@@ -597,7 +597,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         </ul>
 
         <h3>4. What the registered count includes, and what it does not</h3>
-        <p>The registry holds 101 modules: 96 at project level and 5 at portfolio level. The analytical server computes 100 of the 101. The one it does not is the document risk score, which the extraction model supplies as a value rather than the server deriving it; if it is later computed server-side, the server's count becomes 101. Every registered module draws on standard project documents available in any public capital program, and every status derives from extracted data: a module whose required inputs are absent abstains and reports "Insufficient data" with the specific missing fields. No status is fabricated. Registration is not activation. A module can be registered and still be advisory, disabled, awaiting calibration, or outside a single project's scope, and it keeps its registry entry either way.</p>
+        <p>The registry holds 101 modules, of which 63 are in service: 63 at project level and 0 at portfolio level. The analytical server computes 62 of the 63. The one it does not is the document risk score, which the extraction model supplies as a value rather than the server deriving it; if it is later computed server-side, the server's count becomes 63. The 38 modules not in service were retired at Run 43; they keep their registry entries and their audit lineage, and they compute nothing and appear on no participant surface. Every registered module draws on standard project documents available in any public capital program, and every status derives from extracted data: a module whose required inputs are absent abstains and reports "Insufficient data" with the specific missing fields. No status is fabricated. Registration is not activation. A module can be registered and still be advisory, disabled, awaiting calibration, or outside a single project's scope, and it keeps its registry entry either way.</p>
       `,
     },
     {
@@ -2436,7 +2436,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         "Zadeh, L. A. (1975). The concept of a linguistic variable and its application to approximate reasoning, I. <em>Information Sciences</em>, 8(3), 199-249.",
         "Zadeh, L. A. (2011). A note on Z-numbers. <em>Information Sciences</em>, 181(14), 2923-2932."
       ];
-      return `<p class="kn-lead">APA 7th-edition references for every method actually implemented in the 100 modules the analytical server computes, 95 at project level and 5 Portfolio Health, cited in-text throughout the Method Reference sections above. Only works that genuinely underlie an implemented computation are listed here.</p>
+      return `<p class="kn-lead">APA 7th-edition references for every method actually implemented in the modules the analytical server computes, cited in-text throughout the Method Reference sections above. Only works that genuinely underlie an implemented computation are listed here.</p>
         <ul class="kn-list kn-refs">${refs.sort().map((r) => `<li>${r}</li>`).join("")}</ul>`;
     }
   };

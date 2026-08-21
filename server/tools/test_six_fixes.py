@@ -75,6 +75,11 @@ def check(ok: bool, label: str, detail: str = "") -> None:
         print(f"  ****  {label}" + (f"  [{detail}]" if detail else ""))
 
 
+def _mods_by_id(served):
+    return {m.get("module_id"): m for m in (served.get("module_results") or [])
+            if isinstance(m, dict)}
+
+
 def post(payload: dict) -> dict:
     r = client.post("/exec", content=json.dumps(payload),
                     headers={"Content-Type": "text/plain"})
@@ -276,14 +281,28 @@ try:
     check("Minimax_Regret_Decision_Rule" not in _mods and "Regret_Minimization" not in _mods,
           "and the abstaining module is absent from the stored module rows, as every "
           "abstention is", str(sorted(_mods))[:140])
+    # RUN 43, THE RETIREMENT. B4.7 is retired from service, so it publishes no abstention row at
+    # all rather than one carrying a reason and a code. Reaching neither list is stronger than
+    # reaching the abstention list with a stated reason, and the two assertions about its reason
+    # and its code go with the row. The branch is derived from registry.is_retired().
     _abst = {a.get("module_id"): a for a in (served.get("abstained") or [])}
-    check("B4.7" in _abst and _abst["B4.7"].get("reason"),
-          "while the abstention row carries a reason the ledger can speak",
-          str(_abst.get("B4.7"))[:160])
-    check(_abst.get("B4.7", {}).get("abstention_reason_code")
-          == "canonical_decision_structure_absent",
-          "and the stable code names the structure that is missing, beside the sentence and "
-          "never inside it", str(_abst.get("B4.7", {}).get("abstention_reason_code")))
+    from app.simulation.registry import is_retired as _is_retired      # noqa: E402
+    if _is_retired("B4.7"):
+        check("B4.7" not in _abst and "B4.7" not in _mods_by_id(served),
+              "while B4.7 is retired from service, so it publishes no abstention row at all "
+              "rather than one the ledger could speak",
+              str(_abst.get("B4.7"))[:160])
+        check("B4.7" not in json.dumps(served, default=str),
+              "and no stable code, no sentence and no mention of it survives anywhere in the "
+              "served result")
+    else:
+        check("B4.7" in _abst and _abst["B4.7"].get("reason"),
+              "while the abstention row carries a reason the ledger can speak",
+              str(_abst.get("B4.7"))[:160])
+        check(_abst.get("B4.7", {}).get("abstention_reason_code")
+              == "canonical_decision_structure_absent",
+              "and the stable code names the structure that is missing, beside the sentence and "
+              "never inside it", str(_abst.get("B4.7", {}).get("abstention_reason_code")))
 
     # The helper itself still refuses to invent, which was always its own property.
     check(recommendation_basis(None, None) is None,

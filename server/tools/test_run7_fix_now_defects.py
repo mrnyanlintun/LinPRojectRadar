@@ -904,7 +904,23 @@ check("A2.1" not in _computed_ids and "A2.1" in _abst,
       "and the criticality module is absent from the stored rows and present in the abstention "
       "list, on a real project computed through the real route")
 # And the three whose defining structure is absent do not, whatever the project reports.
+# RUN 43, THE RETIREMENT. B4.7 (the regret module) is retired from service, so it publishes no
+# row at all on the production path rather than an abstaining one. That is stronger than the
+# abstention this asserted, and the two assertions about its reason and code go with the row: a
+# module that reaches no ledger cannot carry a reason into storage. A3.1 and A5.1 are in service
+# and their three assertions are untouched. The branch is derived from registry.is_retired(), so
+# reinstating B4.7 in the registry CSV restores the abstention assertions with no edit here.
 for mid in sorted(GROUP_1_REGRET | {"A3.1", "A5.1"}):
+    if registry.is_retired(mid):
+        check(mid not in _computed_ids and mid not in _abst,
+              f"{mid} is retired from service, so on a real project computed through the real "
+              f"route it reaches neither the stored rows nor the abstention list",
+              str([mid in _computed_ids, mid in _abst]))
+        check(mid not in json.dumps(served.get("module_results") or [], default=str)
+              and mid not in json.dumps(served.get("abstained") or [], default=str),
+              f"{mid} carries no reason and no code into storage, because the served result "
+              f"mentions it nowhere at all")
+        continue
     check(mid not in _computed_ids and mid in _abst,
           f"{mid} is absent from the stored rows and present in the abstention list, on a real "
           f"project computed through the real route", str(mid in _computed_ids))

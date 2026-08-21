@@ -184,7 +184,14 @@ console.log(JSON.stringify(out));
     with _tf.NamedTemporaryFile("w", suffix=".js", delete=False) as _fh2:
         _fh2.write(_probe2)
         _pp = _fh2.name
-    _pairs2 = {m: REG.VALIDATED[m][0] for m in sorted(REG.VALIDATED)}
+    # RUN 43, THE RETIREMENT. The live client consumers resolve a module against the taxonomy
+    # the browser reads, and that taxonomy carries the population IN SERVICE. Probing them with
+    # the whole of VALIDATED asserted the pre-retirement population: a retired identity has no
+    # taxonomy row, so getModuleStatus correctly resolves to null for it. The population is
+    # derived here from service_index() (registry.py:440) rather than listed, and every module in
+    # service that was probed before is probed still.
+    _pairs2 = {m: REG.VALIDATED[m][0]
+               for m in sorted(set(REG.VALIDATED) & set(REG.service_index()))}
     _r2 = _sp.run([_node2, _pp, str(ROOT), _j.dumps(_pairs2)],
                   capture_output=True, text=True, timeout=300)
     check(_r2.returncode == 0, "the live consumers execute without error",

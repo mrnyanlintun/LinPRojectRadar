@@ -62,7 +62,13 @@ def js(value) -> str:
 
 def build() -> str:
     authority = json.loads(AUTHORITY.read_text(encoding="utf-8"))
-    names = {m["new_id"]: m["module_name"] for m in REG.load_registry()}
+    # THE POPULATION IS THE ONE IN SERVICE, NOT THE WHOLE REGISTRY. registry_index() /
+    # load_registry() resolve retired identifiers by design (registry.py:426); service_index()
+    # (registry.py:440) is the population in service, derived from the retirement notes in
+    # p0-baseline/module_renumbering_map.csv and from nothing else. The client taxonomy is a
+    # participant surface, so a retired identity must not reach it. Reinstating a module in the
+    # CSV puts it back here with no edit to this generator.
+    names = {mid: row["module_name"] for mid, row in REG.service_index().items()}
     lines = [
         "/* GENERATED BLOCK. Do not edit by hand.",
         "",
@@ -95,11 +101,15 @@ def build() -> str:
         if "level" in cat:
             lines.append("    level: %s," % js(cat["level"]))
         lines.append("    modules: [")
-        mods = cat["modules"]
+        for _m in cat["modules"]:
+            if _m["num"] not in names and not REG.is_retired(_m["num"]):
+                raise SystemExit(
+                    f"{_m['num']} is in the taxonomy authority and not in the registry")
+        # Retired identities are dropped from the emitted array. The comma/terminator logic below
+        # counts the emitted rows, so the filter happens here rather than inside the loop.
+        mods = [_m for _m in cat["modules"] if _m["num"] in names]
         for mi, m in enumerate(mods):
             mid = m["num"]
-            if mid not in names:
-                raise SystemExit(f"{mid} is in the taxonomy authority and not in the registry")
             parts = ["id: %s" % js(m["id"]), "num: %s" % js(mid),
                      "name: %s" % js(names[mid])]
             # THE IDENTIFIER THE RUNNER ACTUALLY EMITS. A module with no dispatch entry keeps the

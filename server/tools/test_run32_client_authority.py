@@ -103,9 +103,16 @@ live = node_eval(TAXONOMY)
 check(live is not None, "the runtime artifact executes and exposes LIN_CATEGORIES")
 if live is not None:
     rows = {m["num"]: m for c in live for m in c.get("modules", [])}
-    reg = {m["new_id"]: m["module_name"] for m in REG.load_registry()}
+    # THE POPULATION IS THE ONE IN SERVICE. load_registry()/registry_index() resolve retired
+    # identifiers by design (registry.py:426); service_index() (registry.py:440) is the roster
+    # in service, derived from p0-baseline/module_renumbering_map.csv. A retired identity must
+    # not reach the participant taxonomy, so comparing against the whole registry asserted the
+    # pre-retirement population. The name, method-class and disabled loops below iterate this
+    # same mapping, so their per-module coverage is unchanged: every id they reached before is
+    # an id present in `rows`, and `rows` is the in-service set.
+    reg = {mid: row["module_name"] for mid, row in REG.service_index().items()}
     check(set(rows) == set(reg),
-          f"the runtime taxonomy carries exactly the registry's identities ({len(reg)}), derived "
+          f"the runtime taxonomy carries exactly the identities in service ({len(reg)}), derived "
           f"rather than counted here",
           str(sorted(set(rows) ^ set(reg))[:8]))
     bad_name = sorted(f"{k}: {rows[k].get('name')!r} vs {reg[k]!r}"

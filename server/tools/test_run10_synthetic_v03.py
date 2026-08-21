@@ -151,8 +151,26 @@ registry_source = (REPO / "assets" / "js" / "categories.js").read_text(encoding=
 registry_names = dict(
     re.findall(r"num: '([^']+)', name: '([^']+)'", registry_source)
 )
+# RUN 43, THE RETIREMENT. categories.js carries the population IN SERVICE, so a retired
+# identifier has no row there to read a name from. The registry still resolves it -- retirement
+# removes a module from service, not from the registry -- so for a retired id the name is taken
+# from registry_index() and its ABSENCE from the client artifact is asserted as well. The branch
+# derives from registry.is_retired(); nothing is listed here.
+import sys as _sys                                                     # noqa: E402
+_sys.path.insert(0, str(REPO / "server"))
+from app.simulation import registry as _REG                            # noqa: E402
+_reg_index = _REG.registry_index()
 for repo_id, name in [("A1.1", "Monte Carlo EAC"), ("A5.4", "Scenario Modeling"),
                       ("A5.1", "DSM Rework Propagation")]:
+    if _REG.is_retired(repo_id):
+        registry_name = _reg_index[repo_id]["module_name"].replace("_", " ")
+        check(bool(registry_name) and registry_name.startswith(name)
+              and repo_id not in registry_names,
+              f"{repo_id} is retired from service, so it is the REGISTRY's own identifier with "
+              f"the alias name as its stem and it carries no row in the client taxonomy",
+              f"registry says {registry_name!r}, alias says {name!r}, "
+              f"in client taxonomy: {repo_id in registry_names}")
+        continue
     registry_name = registry_names.get(repo_id, "")
     check(bool(registry_name) and registry_name.startswith(name),
           f"{repo_id} is the registry's own identifier and the alias name is the registry "

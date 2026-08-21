@@ -1,0 +1,459 @@
+file,type,count,distinct_retired_ids,retired_ids,lines_also_naming_an_in_service_module
+code_audit/run13_failures_and_anomalies.csv,per-module audit rows (committed artifact),514,14,A2.10 A2.11 A2.4 A2.5 A3.4 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19,46
+T6_HANDOFF.md,documentation / report prose,289,33,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.14 B2.15 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,46
+REPORT_2026-08-14_run27-98-module-remediation-matrix.md,documentation / report prose,264,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,10
+code_audit/run42_baseline_state_chrono.json,per-module audit rows (committed artifact),244,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run42_baseline_state_outoforder.json,per-module audit rows (committed artifact),244,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/signal_flow_authoritative_edges.csv,per-module audit rows (committed artifact),208,33,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+REPORT_2026-08-16_run30-cat6-7-canonical-remediation-v15.md,documentation / report prose,152,21,A1.1 A3.4 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,2
+server/tools/test_run14_disabled_method_functional.py,test suite,149,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+MODULE_RETIREMENT_DECISIONS.md,documentation / report prose,114,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,21
+code_audit/run36_parsimony_reconciliation.csv,per-module audit rows (committed artifact),95,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,21
+server/app/simulation/canonical_v8.py,simulation source (formula/registry/canonical),89,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/test_run15_disabled_root_cause.py,test suite,86,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+code_audit/run32_fault_injection_results.csv,per-module audit rows (committed artifact),80,22,A3.8 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.3 B2.4 B2.5 B2.6 B2.8 B4.1 B4.2 B4.5 B4.6 B4.7,2
+server/tools/test_run7_fix_now_defects.py,test suite,79,33,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,11
+server/tools/test_run19_category_7.py,test suite,71,18,B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+server/tools/test_run35_validation_governance.py,test suite,68,15,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1 D1.2 D1.3 D1.4 D1.5,1
+REPORT_2026-08-12_run15-cusum-isolationforest-disabled-root-cause.md,documentation / report prose,67,11,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1 D1.3 D1.5,0
+server/tools/test_run6_known_answer.py,test suite,67,28,A1.1 A2.4 A2.6 A3.4 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,7
+server/app/simulation/VALIDATION.md,simulation source (formula/registry/canonical),66,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,5
+server/app/simulation/canonical_v5.py,simulation source (formula/registry/canonical),62,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,2
+code_audit/run15_isolation_forest_validation.csv,per-module audit rows (committed artifact),61,2,D1.1 D1.5,0
+REPORT_2026-08-19_run36-final-scientific-reaudit-and-instrument-qualification.md,documentation / report prose,58,17,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A5.3 B2.19 B2.9 B4.1 B4.6 B4.7 D1.1 D1.2 D1.4 D1.5,7
+server/tools/test_run20_cycle9_arch5_siblings.py,test suite,58,9,B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run8_expectation_mutation_proof.csv,per-module audit rows (committed artifact),57,5,A1.1 A2.10 A2.11 A2.5 B2.19,1
+REPORT_2026-08-14_run28-closure.md,documentation / report prose,55,9,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 B2.9,3
+server/tools/test_run8_retest_classify_27.py,test suite,55,7,A1.1 A2.10 A2.11 A2.5 B2.19 B4.7 D1.1,6
+server/tools/build_run33_artifacts.py,audit-artifact generator / tool,54,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run32_suite_reconciliation.csv,per-module audit rows (committed artifact),52,7,A1.1 B2.19 B4.1 B4.2 B4.5 B4.6 B4.7,5
+code_audit/run32_pre_change_qualifier_measurement.json,per-module audit rows (committed artifact),51,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/test_run30_cat7_operational_route.py,test suite,51,20,A3.4 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,1
+code_audit/run13_101_module_evidence.csv,per-module audit rows (committed artifact),48,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run35_parsimony_reconciliation.csv,per-module audit rows (committed artifact),47,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,16
+server/app/simulation/models_cat7.py,simulation source (formula/registry/canonical),46,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,1
+code_audit/run27_98_module_remediation_matrix.csv,per-module audit rows (committed artifact),45,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,2
+code_audit/run34_parameter_class_count_closure.csv,per-module audit rows (committed artifact),45,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/run27_curation.py,audit-artifact generator / tool,45,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,1
+code_audit/run27_remediation_work_packages.csv,per-module audit rows (committed artifact),42,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,9
+server/app/simulation/parameters.py,simulation source (formula/registry/canonical),42,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1 D1.2 D1.3 D1.4 D1.5,6
+assets/js/knowledge.js,browser taxonomy / render source,40,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+assets/js/workspace.js,browser taxonomy / render source,40,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,6
+code_audit/run20_master_remediation_register.csv,per-module audit rows (committed artifact),40,26,A1.1 A3.4 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 D1.5,4
+server/tools/test_run30_closure_non_vacuity.py,test suite,40,12,B2.1 B2.10 B2.11 B2.13 B2.14 B2.16 B2.17 B2.19 B2.2 B2.20 B2.7 B2.9,1
+assets/js/decision-ui.js,browser taxonomy / render source,39,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,8
+code_audit/run36_instrument_qualification.csv,per-module audit rows (committed artifact),39,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run37_execution_census.csv,per-module audit rows (committed artifact),39,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/app/simulation/models.py,simulation source (formula/registry/canonical),39,10,A1.1 B2.14 B4.1 B4.2 B4.6 D1.1 D1.2 D1.3 D1.4 D1.5,3
+server/tools/test_run27_parsimony_proofs.py,test suite,39,17,A2.11 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.3 B2.4 B2.5 B2.6 D1.1 D1.2 D1.3 D1.5,3
+GROUP_ASSIGNMENT.md,documentation / report prose,38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,2
+assets/js/ds_defensibility_evidence.js,browser taxonomy / render source,38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run11_browser_server_parity.csv,per-module audit rows (committed artifact),38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run11_category9_qualification.csv,per-module audit rows (committed artifact),38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,38
+code_audit/run11_defensibility_claim_audit.csv,per-module audit rows (committed artifact),38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run13_master_101_inventory.csv,per-module audit rows (committed artifact),38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run30_supply_path_reconciliation.csv,per-module audit rows (committed artifact),38,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run32_defensibility_metadata_reconciliation.csv,per-module audit rows (committed artifact),38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run35_scientific_target_scope.csv,per-module audit rows (committed artifact),38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run35_unresolved_calibration_inventory.csv,per-module audit rows (committed artifact),38,36,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1 D1.2 D1.3 D1.4 D1.5,0
+p0-baseline/module_renumbering_map.csv,CSV rows,38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/taxonomy_authority.json,audit-artifact generator / tool,38,38,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/test_run20_cycle10_truthful_labels.py,test suite,38,11,A2.10 A2.11 A3.4 A3.8 A5.3 B2.14 B2.2 B4.1 B4.2 B4.5 B4.6,7
+code_audit/run20_cycle12_100_reaudit.csv,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run35_eligibility.json,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run35_empirical_validation_results.csv,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run35_operational_disposition.csv,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run35_validation_metric_contract.csv,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run36_100_target_scientific_reaudit.csv,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run36_parameter_provenance_reaudit.csv,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run37_defensibility_reconciliation.csv,per-module audit rows (committed artifact),37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/run17/method_cards.json,audit-artifact generator / tool,37,37,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/test_run20_cycle8_arch3_clusters.py,test suite,36,14,A3.4 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.20 B4.1 B4.2 B4.5 B4.6,1
+code_audit/run36_parsimony_crossrun_reconciliation.csv,per-module audit rows (committed artifact),35,15,A2.10 A2.11 A2.4 A2.5 A2.6 A5.3 B2.19 B2.9 B4.1 B4.6 B4.7 D1.1 D1.2 D1.4 D1.5,7
+server/tools/test_run2_fifteen_defects.py,test suite,35,7,A1.1 A2.5 B2.1 B4.7 D1.3 D1.4 D1.5,4
+server/tools/build_run34_artifacts.py,audit-artifact generator / tool,34,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/test_run20_b21_dst_lineage.py,test suite,34,2,A1.1 B2.1,0
+code_audit/run28_v3_structure_key_reconciliation.csv,per-module audit rows (committed artifact),33,7,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8,7
+server/tools/test_run32_closure_version_boundary.py,test suite,33,6,A1.1 B4.1 B4.2 B4.5 B4.6 B4.7,1
+REPORT_2026-08-12_run14-targeted-remediation-anomaly-validation-disabled-method-tests.md,documentation / report prose,31,12,A2.11 A3.4 A3.8 B2.19 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1,3
+server/tools/build_run36_audit.py,audit-artifact generator / tool,31,7,A1.1 A3.4 A3.8 B4.1 B4.2 B4.5 B4.6,3
+REPORT_2026-08-14_run28-cat1-3-canonical-remediation-v3.md,documentation / report prose,29,9,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8 B2.9,6
+REPORT_2026-08-21_run43_module_retirement.md,documentation / report prose,29,16,A1.1 A3.4 A3.8 B2.19 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.4 D1.5,1
+server/tools/test_run10b_canonical_integration.py,test suite,29,2,A1.1 B2.19,1
+server/tools/test_run20_cycle12_lineage_and_guards.py,test suite,29,11,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.5,3
+server/tools/run32_fault_campaign.py,audit-artifact generator / tool,28,6,B2.19 B4.1 B4.2 B4.5 B4.6 B4.7,0
+server/app/simulation/registry.py,simulation source (formula/registry/canonical),27,16,A1.1 A2.4 A2.6 A3.4 A3.8 A5.3 B2.10 B2.17 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.2,2
+REPORT_2026-08-10_run1-disable-and-relabel.md,documentation / report prose,26,10,A3.8 B2.1 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,1
+REPORT_2026-08-11_run8-retest-and-classify-27.md,documentation / report prose,26,5,A1.1 A2.10 A2.11 A2.5 B2.19,10
+server/tools/test_run19_category_2.py,test suite,26,5,A2.10 A2.11 A2.4 A2.5 A2.6,1
+code_audit/run13_mutation_proof.csv,per-module audit rows (committed artifact),25,25,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A5.3 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.3 B2.4 B2.5 B2.6 B2.8 B4.7,0
+server/tools/test_run13_module_evidence.py,test suite,25,10,A1.1 B2.19 B4.1 B4.2 B4.5 B4.6 B4.7 D1.3 D1.4 D1.5,1
+server/tools/test_run17_scientific_methods.py,test suite,25,11,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.2,0
+REPORT_2026-08-17_run32-cat10-decision-optimization.md,documentation / report prose,24,11,A1.1 A3.4 B2.19 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,2
+code_audit/run31_downstream_qualification_execution.csv,per-module audit rows (committed artifact),24,24,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+code_audit/run32_defensibility_browser_api_verification.csv,per-module audit rows (committed artifact),24,12,A1.1 A3.4 B2.19 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1,0
+server/tools/test_run20_lineage_declaration_truth.py,test suite,24,2,A1.1 A5.3,5
+server/tools/test_run33_portfolio_health.py,test suite,24,4,D1.1 D1.2 D1.3 D1.4,0
+REPORT_2026-08-18_run35-empirical-validation-and-parsimony.md,documentation / report prose,23,12,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1 D1.5,2
+code_audit/run27_parsimony_property_tests.csv,per-module audit rows (committed artifact),23,17,A2.11 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.3 B2.4 B2.5 B2.6 D1.1 D1.2 D1.3 D1.5,1
+server/app/simulation/lineage.py,simulation source (formula/registry/canonical),23,12,A1.1 A3.4 A5.3 B2.1 B2.14 B2.20 B4.1 B4.2 B4.5 B4.6 D1.2 D1.5,3
+server/app/simulation/models_fuzzy.py,simulation source (formula/registry/canonical),23,10,B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.20,0
+server/tools/test_d1_module_inputs.py,test suite,23,9,B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+server/app/simulation/canonical_v7.py,simulation source (formula/registry/canonical),22,6,B2.19 B4.1 B4.2 B4.5 B4.6 B4.7,1
+server/tools/build_run27_report.py,audit-artifact generator / tool,22,16,A3.4 A3.8 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.2 D1.3 D1.5,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/module_asset_map.csv,research fixture,21,21,A1.1 A2.10 A2.11 A2.5 A3.8 B2.12 B2.13 B2.14 B2.19 B2.2 B2.20 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/module_id_aliases.csv,research fixture,21,21,A1.1 A2.10 A2.11 A2.5 A3.8 B2.12 B2.13 B2.14 B2.19 B2.2 B2.20 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+server/app/research_export.py,server source,21,18,A1.1 A3.4 A3.8 B2.1 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 D1.2,0
+REPORT_2026-08-12_run13-101-module-test-evidence.md,documentation / report prose,20,17,A1.1 A2.11 A3.8 B2.19 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1 D1.2 D1.3 D1.4 D1.5,4
+code_audit/run30_real_corpus_structure_reconciliation.csv,per-module audit rows (committed artifact),20,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/module_asset_map.csv,research fixture,20,20,A2.10 A2.11 A2.5 A3.8 B2.12 B2.13 B2.14 B2.19 B2.2 B2.20 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/module_id_aliases.csv,research fixture,20,20,A2.10 A2.11 A2.5 A3.8 B2.12 B2.13 B2.14 B2.19 B2.2 B2.20 B2.5 B2.6 B2.7 B2.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+server/app/simulation/arm_lineage.py,simulation source (formula/registry/canonical),20,10,A1.1 B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+server/tools/participant_packages.py,audit-artifact generator / tool,20,12,A1.1 A5.3 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B4.7 D1.2,0
+server/tools/run35_fault_campaign.py,audit-artifact generator / tool,20,11,A1.1 A2.5 A3.4 B2.20 B2.7 B2.9 B4.1 D1.1 D1.2 D1.3 D1.5,0
+code_audit/run20_neighbour_sweep_results.csv,per-module audit rows (committed artifact),19,16,A1.1 A3.4 B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.20 B4.1 B4.2 B4.5 B4.6,3
+code_audit/run30_cat6_7_final_closure.csv,per-module audit rows (committed artifact),19,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run30_cat6_7_scope.csv,per-module audit rows (committed artifact),19,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run30_cat7_before_after_ledger_reconciliation.csv,per-module audit rows (committed artifact),19,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run30_cat7_lineage_handoff.csv,per-module audit rows (committed artifact),19,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run30_cat7_operational_execution.csv,per-module audit rows (committed artifact),19,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run30_cat7_operational_route_inventory.csv,per-module audit rows (committed artifact),19,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run30_cat7_real_corpus_route.csv,per-module audit rows (committed artifact),19,19,B2.1 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.19 B2.2 B2.20 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run34_portfolio_parameter_provenance.csv,per-module audit rows (committed artifact),19,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/app/simulation/models_ext.py,simulation source (formula/registry/canonical),19,7,A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8,0
+server/tests/test_run32_cat10_oracles.py,other,19,6,B2.19 B4.1 B4.2 B4.5 B4.6 B4.7,3
+server/tools/test_run32_defensibility_truth.py,test suite,19,8,A1.1 A3.4 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+research/freeze/RUN28_CLOSURE_V12_FREEZE_2026-08-14.json,research fixture,18,10,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,3
+research/freeze/RUN28_PARTICIPANT_V3_FREEZE_2026-08-14.json,research fixture,18,10,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,3
+server/app/simulation/models_evc.py,simulation source (formula/registry/canonical),18,8,B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+server/app/simulation/portfolio.py,simulation source (formula/registry/canonical),18,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+REPORT_2026-08-17_run32-defensibility-metadata-and-b47-name-closure.md,documentation / report prose,17,6,A3.4 B2.20 B2.7 B2.9 B4.1 B4.7,2
+code_audit/REPORT_2026-08-13_run20-cycle8-arch3-clusters.md,per-module audit rows (committed artifact),17,14,A3.4 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.20 B4.1 B4.2 B4.5 B4.6,3
+server/tools/build_run30_closure_freeze.py,audit-artifact generator / tool,17,10,A3.4 B2.13 B2.14 B2.19 B2.2 B2.20 B2.5 B2.7 B2.8 B2.9,1
+server/tools/test_run16_material_cost_variance_disabled.py,test suite,17,10,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,2
+server/tools/test_run19_category_10.py,test suite,17,5,B4.1 B4.2 B4.5 B4.6 B4.7,1
+server/tools/test_run20_advisory_lineage_disclosure.py,test suite,17,1,A5.3,8
+server/tools/test_run20_primitive_lineage.py,test suite,17,12,A1.1 A5.3 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 D1.2 D1.5,3
+server/tools/test_run33_portfolio_fault_injection.py,test suite,17,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/app/simulation/canonical_v3.py,simulation source (formula/registry/canonical),16,7,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8,0
+server/app/simulation/models_sim.py,simulation source (formula/registry/canonical),16,1,A1.1,2
+server/tools/test_run30_closure_version_boundary.py,test suite,16,6,A1.1 B2.13 B2.14 B2.17 B2.2 B2.7,0
+tests_render.html,other,16,4,A1.1 B2.14 B4.7 D1.3,1
+REPORT_2026-08-02_d1-unobtainable-inputs.md,documentation / report prose,15,10,A1.1 B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,1
+REPORT_2026-08-12_run10-production-remediation-and-synthetic-integration.md,documentation / report prose,15,7,A1.1 A2.10 A2.11 A2.5 A2.6 A5.3 B2.19,9
+REPORT_2026-08-18_run34-portfolio-health-calibration.md,documentation / report prose,15,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/REPORT_2026-08-14_run20-cycle9-fusion-arch5-and-p1.md,per-module audit rows (committed artifact),15,11,B2.1 B2.10 B2.15 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run32_closure_fault_injection.csv,per-module audit rows (committed artifact),15,3,B2.9 B4.1 B4.7,0
+server/app/simulation/signal_package.py,simulation source (formula/registry/canonical),15,10,A1.1 B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,2
+server/tools/test_run28_closure.py,test suite,15,3,A1.1 A3.4 A3.8,3
+code_audit/run20_cycle7_neighbour_sweep.csv,per-module audit rows (committed artifact),14,10,A1.1 B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+code_audit/run20_cycle8_material_influence.csv,per-module audit rows (committed artifact),14,14,A3.4 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.20 B4.1 B4.2 B4.5 B4.6,0
+code_audit/run35_fault_injection_results.csv,per-module audit rows (committed artifact),14,12,A1.1 A2.5 A3.4 B2.20 B2.7 B2.9 B4.1 B4.7 D1.1 D1.2 D1.3 D1.5,2
+research/freeze/RUN30_CLOSURE_FREEZE_2026-08-16.json,research fixture,14,9,A3.4 B2.13 B2.14 B2.2 B2.20 B2.5 B2.7 B2.8 B2.9,1
+research/freeze/RUN30_FINAL_CLOSURE_FREEZE_2026-08-16.json,research fixture,14,9,A1.1 A3.4 B2.13 B2.19 B2.20 B2.5 B2.7 B2.8 B2.9,1
+server/app/simulation/models_cat10.py,simulation source (formula/registry/canonical),14,6,B2.19 B4.1 B4.2 B4.5 B4.6 B4.7,1
+server/tools/run20_cycle8_probe.py,audit-artifact generator / tool,14,14,A3.4 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 B2.20 B4.1 B4.2 B4.5 B4.6,3
+server/tools/run36_fault_campaign.py,audit-artifact generator / tool,14,7,A1.1 A2.5 A3.4 B2.20 B2.7 B2.9 D1.1,0
+server/tools/test_run20_lineage_model.py,test suite,14,4,A1.1 B2.1 D1.2 D1.5,2
+code_audit/run32_proxy_qualifier_reconciliation.csv,per-module audit rows (committed artifact),13,12,A2.4 A2.6 A5.3 B2.10 B2.11 B2.12 B2.13 B2.14 B2.15 B2.16 B2.17 D1.2,0
+code_audit/run36_a1_1_closure.csv,per-module audit rows (committed artifact),13,1,A1.1,0
+research/freeze/RUN28_CLOSURE_FREEZE_2026-08-14.json,research fixture,13,10,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,2
+server/app/simulation/method_labels.py,simulation source (formula/registry/canonical),13,10,A2.10 A2.11 A3.8 A5.3 B2.14 B2.2 B4.1 B4.2 B4.5 B4.6,3
+server/app/simulation/models_gov.py,simulation source (formula/registry/canonical),13,11,A1.1 B2.1 B2.10 B2.2 B2.20 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7,0
+server/tools/build_run30_freeze.py,audit-artifact generator / tool,13,9,A3.4 B2.1 B2.13 B2.19 B2.20 B2.5 B2.7 B2.8 B2.9,0
+server/tools/run32_closure_fault_campaign.py,audit-artifact generator / tool,13,3,B2.9 B4.1 B4.7,0
+server/tools/test_run10_bucket2_corrections.py,test suite,13,3,A2.10 A2.11 A2.5,2
+server/tools/test_run3_adapter.py,test suite,13,10,A1.1 B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,2
+code_audit/run22_release_definition.csv,per-module audit rows (committed artifact),12,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+code_audit/run36_closure_fault_results.csv,per-module audit rows (committed artifact),12,3,A1.1 B2.9 D1.1,3
+research/freeze/INSTRUMENT_FREEZE_CANDIDATE_MANIFEST.json,research fixture,12,10,A1.1 A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research/freeze/RUN29_CANONICAL_CAT4_5_FREEZE_2026-08-16.json,research fixture,12,10,A3.4 A3.8 A5.3 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,3
+server/tests/test_run34_fault_campaign.py,other,12,4,D1.1 D1.2 D1.3 D1.4,0
+server/tools/build_run30_final_closure_freeze.py,audit-artifact generator / tool,12,8,A3.4 B2.13 B2.19 B2.20 B2.5 B2.7 B2.8 B2.9,0
+server/tools/test_run4_validate_seven.py,test suite,12,3,A1.1 A3.4 B4.7,0
+REPORT_2026-08-18_run33-portfolio-health-v21.md,documentation / report prose,11,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run14_scope.csv,per-module audit rows (committed artifact),11,11,A2.11 A3.8 B2.19 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1,0
+research/freeze/RUN30_CANONICAL_CAT6_7_FREEZE_2026-08-16.json,research fixture,11,9,A3.4 B2.1 B2.13 B2.19 B2.20 B2.5 B2.7 B2.8 B2.9,1
+server/tools/build_run28_closure_freeze.py,audit-artifact generator / tool,11,3,A1.1 A3.4 A3.8,0
+server/tools/run20_cycle7_mutation_battery.py,audit-artifact generator / tool,11,1,B2.1,0
+server/tools/test_run19_category_3.py,test suite,11,2,A3.4 A3.8,1
+server/tools/test_run20_cycle9_p1_implementation_defects.py,test suite,11,2,B2.10 B2.15,0
+server/tools/test_run33_closure.py,test suite,11,9,A3.8 B2.20 B2.7 B2.9 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/test_run36_fault_guards.py,test suite,11,7,A1.1 A3.4 B2.20 B2.7 B2.9 B4.7 D1.5,1
+REPORT_2026-08-03_chart-abstention-tests.md,documentation / report prose,10,9,B2.1 B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,0
+REPORT_2026-08-13_run20-supervised-scientific-remediation-loop.md,documentation / report prose,10,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+REPORT_2026-08-16_run29-cat4-5-canonical-remediation-v13.md,documentation / report prose,10,3,A3.4 A5.3 B2.19,6
+assets/js/ds_defensibility_data.js,browser taxonomy / render source,10,10,A2.10 A2.11 A3.8 B2.9 B4.1 B4.2 B4.5 B4.6 B4.7 D1.1,0
+code_audit/REPORT_2026-08-11_run5-export.md,per-module audit rows (committed artifact),10,4,A3.4 A3.8 B2.7 B2.9,1
+code_audit/run20_cycle9_arch5_determination.csv,per-module audit rows (committed artifact),10,8,B2.2 B2.3 B2.4 B2.5 B2.6 B2.7 B2.8 B2.9,1
+code_audit/run32_cat10_operational_route_inventory.csv,per-module audit rows (committed artifact),10,5,B4.1 B4.2 B4.5 B4.6 B4.7,0
+code_audit/run33_portfolio_operational_route_inventory.csv,per-module audit rows (committed artifact),10,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run9_abstention_results.csv,per-module audit rows (committed artifact),10,2,A1.1 B2.19,0
+research/freeze/RUN26_COUNTS_WIRING_EMPTY_FREEZE_2026-08-14.json,research fixture,10,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research/freeze/RUN28_CANONICAL_CAT1_3_FREEZE_2026-08-14.json,research fixture,10,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+server/tools/build_run28_scope.py,audit-artifact generator / tool,10,8,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8,1
+server/tools/build_run32_artifacts.py,audit-artifact generator / tool,10,5,B4.1 B4.2 B4.5 B4.6 B4.7,0
+server/tools/build_run37_acceptance.py,audit-artifact generator / tool,10,8,A1.1 A3.4 B2.19 B4.1 B4.2 B4.5 B4.6 B4.7,3
+server/tools/test_run11_neighbour_defects.py,test suite,10,2,A2.6 A5.3,1
+server/tools/test_run20_cycle12_reaudit.py,test suite,10,6,A3.4 D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/test_run36_instrument_qualification.py,test suite,10,5,A1.1 A3.4 B2.20 B2.7 B2.9,0
+REPORT_2026-08-11_run4-validate-seven.md,documentation / report prose,9,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,1
+code_audit/REPORT_2026-08-10_module-source-export.md,per-module audit rows (committed artifact),9,8,A1.1 A2.10 A3.8 B2.1 B2.20 B2.6 B2.8 B4.7,1
+code_audit/run15_scope.csv,per-module audit rows (committed artifact),9,9,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6 D1.1,0
+code_audit/run36_fault_injection_results.csv,per-module audit rows (committed artifact),9,5,A1.1 A2.5 A3.8 B2.7 D1.5,1
+research/freeze/FINAL_RESEARCH_INSTRUMENT_FREEZE_2026-08-14.json,research fixture,9,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research/freeze/POST_RUN22_UI_CORRECTION_FREEZE_2026-08-14.json,research fixture,9,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research/freeze/RUN24_EMPTY_PROJECT_DIAGRAM_FREEZE_2026-08-14.json,research fixture,9,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research/freeze/RUN25_RAIL_REMOVAL_FREEZE_2026-08-14.json,research fixture,9,9,A3.4 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+server/tools/run17/coverage.csv,audit-artifact generator / tool,9,9,A1.1 A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+server/tools/test_run14_mismatch_remediation.py,test suite,9,2,A2.11 B2.19,3
+server/tools/test_run28_participant_packages.py,test suite,9,3,A1.1 A5.3 B4.7,1
+server/tools/test_run36_closure_guards.py,test suite,9,2,A1.1 D1.1,1
+REPORT_2026-08-13_run19-complete-100-module-scientific-audit.md,documentation / report prose,8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+code_audit/run10_no_operational_effect.csv,per-module audit rows (committed artifact),8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+code_audit/run14_disabled_method_functional_tests.csv,per-module audit rows (committed artifact),8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+code_audit/run15_disabled_methods_root_cause.csv,per-module audit rows (committed artifact),8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+code_audit/run28_cat1_3_scope.csv,per-module audit rows (committed artifact),8,8,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.4 A3.8,0
+code_audit/run36_population_reconciliation.csv,per-module audit rows (committed artifact),8,3,A1.1 A3.4 B2.9,2
+code_audit/run9_no_operational_effect.csv,per-module audit rows (committed artifact),8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+remediation_decisions_answered.md,documentation / report prose,8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/package_C_optional_activation_lab/activation_candidates.csv,research fixture,8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/package_C_optional_activation_lab/reuse_manifest.csv,research fixture,8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/package_C_optional_activation_lab/activation_candidates.csv,research fixture,8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/package_C_optional_activation_lab/reuse_manifest.csv,research fixture,8,8,A3.8 B2.20 B2.7 B2.9 B4.1 B4.2 B4.5 B4.6,0
+server/tests/synthetic_fixtures/known_answers/module_oracles.py,other,8,2,A1.1 B2.19,0
+server/tools/build_run35_closure_artifacts.py,audit-artifact generator / tool,8,1,A1.1,0
+server/tools/drive_run36_browser.py,audit-artifact generator / tool,8,1,A1.1,1
+server/tools/drive_run37_browser.py,audit-artifact generator / tool,8,1,A1.1,1
+server/tools/run32_fix_cat10_knowledge.py,audit-artifact generator / tool,8,5,B4.1 B4.2 B4.5 B4.6 B4.7,1
+server/tools/test_run41_preservation.py,test suite,8,6,B2.19 B4.1 B4.2 B4.5 B4.6 B4.7,3
+REPORT_2026-08-02_pipeline-audit.md,documentation / report prose,7,7,B2.2 B2.3 B2.5 B2.6 B2.7 B2.8 B2.9,0
+REPORT_2026-08-11_run7-fix-now-defects.md,documentation / report prose,7,4,A2.11 A2.4 A3.4 B4.7,3
+code_audit/SHARED_MACHINERY.md,per-module audit rows (committed artifact),7,6,A1.1 A2.10 A2.4 A3.4 B2.1 B4.2,5
+code_audit/run28_operational_closure_28.csv,per-module audit rows (committed artifact),7,7,A1.1 A2.10 A2.11 A2.4 A2.5 A2.6 A3.8,0
+code_audit/run33_portfolio_health_final_closure.csv,per-module audit rows (committed artifact),7,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/build_run13_evidence.py,audit-artifact generator / tool,7,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+server/tools/run32_closure_browser_verification.py,audit-artifact generator / tool,7,7,A1.1 A3.4 B2.19 B2.20 B2.7 B2.9 D1.1,2
+server/tools/test_run27_remediation_matrix.py,test suite,7,2,A1.1 B4.7,0
+server/tools/test_run30_lineage_semantics.py,test suite,7,3,A1.1 B2.14 B2.7,1
+tools/build_run11_defensibility_evidence.py,other,7,4,A1.1 A3.4 B4.1 B4.7,2
+REPORT_2026-08-11_run6-known-answer-tests.md,documentation / report prose,6,6,A1.1 A2.10 A2.11 A2.5 B2.19 B4.7,2
+REPORT_2026-08-21_period-binding-mechanism-repair.md,documentation / report prose,6,2,D1.1 D1.5,1
+code_audit/run27_guard_nonvacuity.csv,per-module audit rows (committed artifact),6,1,A2.10,0
+code_audit/run32_marcos_critic_placement.csv,per-module audit rows (committed artifact),6,3,B2.19 B4.1 B4.6,2
+code_audit/run32_proxy_qualifier_browser_verification.csv,per-module audit rows (committed artifact),6,6,B4.1 B4.2 B4.5 B4.6 B4.7 D1.2,0
+server/tests/test_run34_count_fault_campaign.py,other,6,1,D1.4,0
+server/tools/build_run27_remediation_matrix.py,audit-artifact generator / tool,6,5,A1.1 A2.10 A2.6 A3.4 D1.5,2
+server/tools/build_run36_v25_execution_proof.py,audit-artifact generator / tool,6,2,A1.1 D1.1,1
+server/tools/run27_fault_campaign.py,audit-artifact generator / tool,6,1,A2.10,0
+server/tools/run36_closure_fault_campaign.py,audit-artifact generator / tool,6,2,A1.1 A2.5,0
+server/tools/test_run29_fault_campaign.py,test suite,6,1,A5.3,1
+REPORT_2026-08-02_decision-card-routing.md,documentation / report prose,5,1,D1.3,0
+REPORT_2026-08-02_geocode-and-decision-card.md,documentation / report prose,5,1,B4.7,0
+REPORT_2026-08-05_charts-from-stored.md,documentation / report prose,5,2,D1.2 D1.3,0
+REPORT_2026-08-11_synthetic-package-ingest-and-reconciliation.md,documentation / report prose,5,2,A1.1 B2.19,2
+REPORT_2026-08-12_synthetic-v0.3-monte-carlo-dsm-correction.md,documentation / report prose,5,1,A1.1,1
+assets/js/deepdive.js,browser taxonomy / render source,5,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run20_anti_fossilization_register.csv,per-module audit rows (committed artifact),5,4,B2.11 B2.12 B2.13 B2.14,2
+code_audit/run20_cycle6_primitive_lineage_sweep.csv,per-module audit rows (committed artifact),5,4,A1.1 A5.3 D1.2 D1.5,1
+code_audit/run22_final_guard_nonvacuity.csv,per-module audit rows (committed artifact),5,2,A3.4 B4.6,0
+code_audit/run28_supply_path_closure.csv,per-module audit rows (committed artifact),5,5,A2.10 A2.11 A2.4 A2.5 A2.6,5
+code_audit/run32_cat10_final_closure.csv,per-module audit rows (committed artifact),5,5,B4.1 B4.2 B4.5 B4.6 B4.7,0
+code_audit/run32_cat10_scope.csv,per-module audit rows (committed artifact),5,5,B4.1 B4.2 B4.5 B4.6 B4.7,0
+code_audit/run32_decision_supply_path_reconciliation.csv,per-module audit rows (committed artifact),5,5,B4.1 B4.2 B4.5 B4.6 B4.7,0
+code_audit/run32_real_corpus_decision_structure_reconciliation.csv,per-module audit rows (committed artifact),5,5,B4.1 B4.2 B4.5 B4.6 B4.7,0
+code_audit/run33_portfolio_health_scope.csv,per-module audit rows (committed artifact),5,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run33_real_portfolio_structure_reconciliation.csv,per-module audit rows (committed artifact),5,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run34_portfolio_health_calibration_closure.csv,per-module audit rows (committed artifact),5,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run34_portfolio_health_scope.csv,per-module audit rows (committed artifact),5,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run34_real_portfolio_calibration_reconciliation.csv,per-module audit rows (committed artifact),5,5,D1.1 D1.2 D1.3 D1.4 D1.5,0
+code_audit/run8_module_classification.csv,per-module audit rows (committed artifact),5,5,A1.1 A2.10 A2.11 A2.5 B2.19,0
+code_audit/run8_module_test_results.csv,per-module audit rows (committed artifact),5,5,A1.1 A2.10 A2.11 A2.5 B2.19,0
+code_audit/run8_unresolved_27_universe.csv,per-module audit rows (committed artifact),5,5,A1.1 A2.10 A2.11 A2.5 B2.19,0
+research/freeze/INSTRUMENT_FREEZE_CANDIDATE.md,research fixture,5,1,A1.1,0
+server/tools/run22_guard_mutation_campaign.py,audit-artifact generator / tool,5,3,A1.1 A3.4 B4.6,1
+server/tools/run36_production_changes.py,audit-artifact generator / tool,5,1,A1.1,1
+server/tools/test_run20_voting_lineage.py,test suite,5,2,A1.1 B2.1,0
+server/tools/test_run26_counts_and_wiring.py,test suite,5,1,A3.4,0
+server/tools/test_simulation.py,test suite,5,1,A1.1,0
+server/tools/test_six_fixes.py,test suite,5,1,B4.7,0
+tools/report_synthetic_v02.py,other,5,2,A1.1 B2.19,1
+REPORT_2026-08-11_run9-test-only-synthetic-integration.md,documentation / report prose,4,2,A1.1 B2.19,0
+REPORT_2026-08-14_run22-final-freeze-release-qualification.md,documentation / report prose,4,3,A3.4 B2.1 B4.6,0
+REPORT_2026-08-14_sitewide-counts-wiring-and-empty.md,documentation / report prose,4,2,A1.1 A3.4,0
+REPORT_2026-08-21_run41A_condition_survey.md,documentation / report prose,4,3,B4.7 D1.1 D1.5,0
+code_audit/REPORT_2026-08-13_run20-cycle5-lineage-declaration-truth.md,per-module audit rows (committed artifact),4,2,A1.1 B2.1,2
+code_audit/REPORT_2026-08-13_run20-cycle6-primitive-lineage.md,per-module audit rows (committed artifact),4,3,A5.3 B2.1 D1.5,1
+code_audit/run20_fault_injection_results.csv,per-module audit rows (committed artifact),4,2,A1.1 A5.3,0
+code_audit/run33_simulation_version_execution_proof.csv,per-module audit rows (committed artifact),4,4,D1.1 D1.3 D1.4 D1.5,0
+code_audit/run34_count_fault_injection_results.csv,per-module audit rows (committed artifact),4,1,D1.4,0
+code_audit/run8_required_project_corpus_specs.csv,per-module audit rows (committed artifact),4,4,A1.1 A2.10 A2.11 A2.5,1
+remediation_programme.md,documentation / report prose,4,2,B2.1 B2.9,2
+server/app/simulation/portfolio_health.py,simulation source (formula/registry/canonical),4,2,D1.1 D1.5,0
+server/tools/build_run26_freeze.py,audit-artifact generator / tool,4,1,A3.4,0
+server/tools/build_run28_closure_tables.py,audit-artifact generator / tool,4,2,A1.1 A3.4,1
+server/tools/build_run28_freeze.py,audit-artifact generator / tool,4,1,A3.4,0
+server/tools/build_run29_freeze.py,audit-artifact generator / tool,4,2,A3.4 A5.3,1
+server/tools/build_run32_defensibility_inventory.py,audit-artifact generator / tool,4,1,A1.1,1
+server/tools/build_run35_eligibility.py,audit-artifact generator / tool,4,2,A1.1 A3.4,0
+server/tools/production_tree.py,audit-artifact generator / tool,4,2,A1.1 D1.2,0
+server/tools/run28_production_changes.py,audit-artifact generator / tool,4,1,A1.1,0
+server/tools/run32_production_changes.py,audit-artifact generator / tool,4,2,B2.19 B4.7,1
+server/tools/test_run10_monte_carlo_eac_fixture.py,test suite,4,1,A1.1,0
+server/tools/test_run10_synthetic_v03.py,test suite,4,1,A1.1,1
+server/tools/test_run19_category_5.py,test suite,4,1,A5.3,1
+server/tools/test_run20_cycle11_parameter_provenance.py,test suite,4,3,A3.4 D1.1 D1.5,2
+server/tools/test_run29_supply_path_guard.py,test suite,4,1,A5.3,3
+server/tools/test_run30_non_vacuity.py,test suite,4,2,B2.7 B2.9,0
+server/tools/test_run33_version_boundary.py,test suite,4,4,D1.1 D1.3 D1.4 D1.5,0
+REPORT_2026-08-02_d1-implementation.md,documentation / report prose,3,3,B2.1 B2.2 B2.8,0
+REPORT_2026-08-02_detail-page-and-markers.md,documentation / report prose,3,2,A1.1 D1.3,0
+REPORT_2026-08-11_synthetic-v0.2-reingest-and-closure.md,documentation / report prose,3,2,A1.1 B2.19,1
+code_audit/REPORT_2026-08-13_run20-cycle3-lineage-and-category9-gate.md,per-module audit rows (committed artifact),3,2,A3.4 B2.1,0
+code_audit/REPORT_2026-08-13_run20-cycle7-b21-evidence-combination.md,per-module audit rows (committed artifact),3,1,B2.1,0
+code_audit/run10_bucket2_mutation_proof.csv,per-module audit rows (committed artifact),3,3,A2.10 A2.11 A2.5,0
+code_audit/run10_bucket2_scope.csv,per-module audit rows (committed artifact),3,3,A2.10 A2.11 A2.5,0
+code_audit/run20_cycle12_guard_nonvacuity.csv,per-module audit rows (committed artifact),3,3,A1.1 A3.8 D1.5,0
+code_audit/run20_defect_class_cycles.csv,per-module audit rows (committed artifact),3,2,A1.1 A3.4,1
+code_audit/run21_abstention_rendering_results.csv,per-module audit rows (committed artifact),3,3,A2.10 A2.4 A2.5,0
+code_audit/run21_guard_nonvacuity_results.csv,per-module audit rows (committed artifact),3,2,A3.4 A3.8,0
+code_audit/run28_closure_fault_injection.csv,per-module audit rows (committed artifact),3,1,A1.1,0
+code_audit/run29_supply_path_reconciliation.csv,per-module audit rows (committed artifact),3,1,A5.3,1
+code_audit/run34_simulation_version_execution_proof.csv,per-module audit rows (committed artifact),3,3,D1.1 D1.2 D1.3,0
+code_audit/run35_a1_1_run36_handoff.json,per-module audit rows (committed artifact),3,1,A1.1,0
+code_audit/run36_v24_v25_a1_1_execution_proof.csv,per-module audit rows (committed artifact),3,2,A1.1 D1.1,0
+code_audit/synthetic_v02_independent_checks.csv,per-module audit rows (committed artifact),3,2,A1.1 B2.19,1
+research/freeze/run37_freeze_gate_campaign.csv,research fixture,3,2,A1.1 A2.5,1
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/VALIDATION_SUMMARY.md,research fixture,3,1,A1.1,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/validation_report.json,research fixture,3,1,A1.1,0
+server/app/project_data.py,server source,3,3,B2.19 B4.1 B4.6,1
+server/app/simulation/canonical.py,simulation source (formula/registry/canonical),3,1,B2.19,0
+server/app/simulation/canonical_v4.py,simulation source (formula/registry/canonical),3,1,A5.3,1
+server/app/simulation/models_doc.py,simulation source (formula/registry/canonical),3,1,A5.3,0
+server/tests/test_run34_version_boundary.py,other,3,3,D1.1 D1.2 D1.3,0
+server/tools/build_run22_freeze.py,audit-artifact generator / tool,3,1,A3.4,0
+server/tools/build_run23_freeze.py,audit-artifact generator / tool,3,1,A3.4,0
+server/tools/build_run24_freeze.py,audit-artifact generator / tool,3,1,A3.4,0
+server/tools/build_run25_freeze.py,audit-artifact generator / tool,3,1,A3.4,0
+server/tools/build_run30_closure_artifacts.py,audit-artifact generator / tool,3,2,A1.1 B2.1,0
+server/tools/build_run35_results.py,audit-artifact generator / tool,3,3,B2.20 B2.7 B2.9,0
+server/tools/run17/population.py,audit-artifact generator / tool,3,3,A1.1 A3.4 B4.7,0
+server/tools/run20_cycle6_mutation_battery.py,audit-artifact generator / tool,3,2,D1.2 D1.5,0
+server/tools/run26_fault_campaign.py,audit-artifact generator / tool,3,2,A3.4 D1.5,0
+server/tools/run28_closure_fault_campaign.py,audit-artifact generator / tool,3,1,A1.1,0
+server/tools/test_courses_of_action.py,test suite,3,1,B4.7,0
+server/tools/test_documents_b7b.py,test suite,3,1,B4.7,0
+server/tools/test_period_series.py,test suite,3,2,D1.1 D1.3,0
+server/tools/test_run10_state_protection.py,test suite,3,3,A1.1 A3.4 B4.7,1
+server/tools/test_run14_anomaly_detectors.py,test suite,3,1,D1.1,1
+server/tools/test_run15_isolation_forest.py,test suite,3,1,D1.1,0
+server/tools/test_run29_canonical_oracles.py,test suite,3,2,A3.4 A5.3,1
+server/tools/test_run35_closure_voter_identities.py,test suite,3,1,A1.1,0
+REPORT_2026-08-01_fixture-and-taxonomy.md,documentation / report prose,2,2,D1.1 D1.5,0
+REPORT_2026-08-02_notices-and-unported.md,documentation / report prose,2,2,D1.1 D1.5,1
+REPORT_2026-08-12_run10b-critical-voter-and-bucket34-integration.md,documentation / report prose,2,2,A1.1 B2.19,2
+REPORT_2026-08-12_run11-browser-participant-governance-cleanup.md,documentation / report prose,2,2,A2.6 A5.3,0
+REPORT_2026-08-12_run17-scientific-method-audit.md,documentation / report prose,2,1,A3.4,0
+code_audit/RUN20_HANDOFF_AFTER_CYCLE6.md,per-module audit rows (committed artifact),2,1,B2.1,0
+code_audit/run10_neighbour_sweep.csv,per-module audit rows (committed artifact),2,2,A2.6 A5.3,0
+code_audit/run10b_neighbour_findings.csv,per-module audit rows (committed artifact),2,2,A2.6 A5.3,0
+code_audit/run11_neighbour_defects_fixed.csv,per-module audit rows (committed artifact),2,2,A2.6 A5.3,0
+code_audit/run14_mismatch_remediation.csv,per-module audit rows (committed artifact),2,2,A2.11 B2.19,0
+code_audit/run20_cycle6_acceptance_controls.csv,per-module audit rows (committed artifact),2,1,A5.3,2
+code_audit/run32_closure_participant_package_v8_checksums.sha256,per-module audit rows (committed artifact),2,1,B4.7,0
+code_audit/run36_a1_1_prechange_measurement.json,per-module audit rows (committed artifact),2,1,A1.1,0
+code_audit/run36_authenticated_browser_qualification.csv,per-module audit rows (committed artifact),2,1,A1.1,0
+code_audit/run36_closure_participant_package_v13_checksums.sha256,per-module audit rows (committed artifact),2,1,A1.1,0
+code_audit/run36_participant_package_v12_checksums.sha256,per-module audit rows (committed artifact),2,1,A1.1,0
+code_audit/run37_browser_qualification.csv,per-module audit rows (committed artifact),2,1,A1.1,0
+code_audit/run42_defects.csv,per-module audit rows (committed artifact),2,2,D1.1 D1.5,0
+code_audit/run9_alias_overlay_verification.csv,per-module audit rows (committed artifact),2,2,A1.1 B2.19,0
+code_audit/run9_known_answer_results.csv,per-module audit rows (committed artifact),2,2,A1.1 B2.19,0
+code_audit/synthetic_package_integration_plan.csv,per-module audit rows (committed artifact),2,2,A1.1 B2.19,0
+code_audit/synthetic_package_module_reconciliation.csv,per-module audit rows (committed artifact),2,2,A1.1 B2.19,0
+code_audit/synthetic_v02_run8_reconciliation.csv,per-module audit rows (committed artifact),2,2,A1.1 B2.19,0
+research/methodology/run34_portfolio_calibration_protocol.md,research fixture,2,2,D1.1 D1.5,0
+research_fixtures/production_contract/monte_carlo_eac_forecast/contract.json,research fixture,2,1,A1.1,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/generators/build_opus_synthetic_programme_v0_3.py,research fixture,2,1,A1.1,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/generators/validate_synthetic_programme_v0_3.py,research fixture,2,2,A1.1 B2.19,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/package_A_project_structures/monte_carlo_contract.json,research fixture,2,1,A1.1,0
+research_fixtures/synthetic/OG-SYNTH-0.5/README.md,research fixture,2,2,D1.1 D1.5,0
+server/tools/build_run26_authoritative_edges.py,audit-artifact generator / tool,2,1,A1.1,0
+server/tools/build_run29_closure_freeze.py,audit-artifact generator / tool,2,1,A3.4,0
+server/tools/drive_run11_participant_route.py,audit-artifact generator / tool,2,2,A2.6 A5.3,1
+server/tools/drive_run4_validate_seven.py,audit-artifact generator / tool,2,1,A3.4,1
+server/tools/run18_production_hashes.py,audit-artifact generator / tool,2,1,A3.4,0
+server/tools/run29_production_changes.py,audit-artifact generator / tool,2,1,A5.3,1
+server/tools/run37_freeze_gate_campaign.py,audit-artifact generator / tool,2,2,A2.5 A3.4,0
+server/tools/test_decision_ui_t4.py,test suite,2,2,A1.1 D1.5,1
+server/tools/test_export_workbook.py,test suite,2,2,A1.1 B4.7,0
+server/tools/test_run21_instrument_invariants.py,test suite,2,2,A2.5 A3.4,1
+server/tools/test_run31_version_boundaries.py,test suite,2,1,B2.1,2
+server/tools/test_run9_synthetic_integration.py,test suite,2,1,A1.1,1
+server/tools/test_training_detail.py,test suite,2,2,A1.1 B2.14,0
+COPY_GLOSSARY.md,documentation / report prose,1,1,A1.1,0
+REPORT_2026-08-04_training-detail.md,documentation / report prose,1,1,A1.1,0
+REPORT_2026-08-05_chart-group-labels.md,documentation / report prose,1,1,A1.1,0
+REPORT_2026-08-05_module-charts.md,documentation / report prose,1,1,D1.3,0
+REPORT_2026-08-10_google-maps-and-copy.md,documentation / report prose,1,1,A1.1,0
+REPORT_2026-08-14_post-run22-signal-flow-ui-correction.md,documentation / report prose,1,1,A3.4,0
+REPORT_2026-08-18_run32-proxy-qualifier-and-client-authority-closure.md,documentation / report prose,1,1,D1.2,1
+assets/js/taxonomy.js,browser taxonomy / render source,1,1,A1.1,0
+code_audit/GROUP_D_portfolio-level.md,per-module audit rows (committed artifact),1,1,D1.3,0
+code_audit/REPORT_2026-08-13_run20-cycle4-advisory-lineage-disclosure.md,per-module audit rows (committed artifact),1,1,B2.1,0
+code_audit/run10_module_identity.csv,per-module audit rows (committed artifact),1,1,A1.1,0
+code_audit/run10_validator_fault_injection.csv,per-module audit rows (committed artifact),1,1,A1.1,0
+code_audit/run10b_bucket3_integration.csv,per-module audit rows (committed artifact),1,1,A1.1,0
+code_audit/run10b_bucket4_integration.csv,per-module audit rows (committed artifact),1,1,B2.19,0
+code_audit/run14_anomaly_detector_validation.csv,per-module audit rows (committed artifact),1,1,D1.1,0
+code_audit/run20_cycle12_lineage_campaign.csv,per-module audit rows (committed artifact),1,1,A1.1,1
+code_audit/run20_cycle7_b21_arm_lineage.csv,per-module audit rows (committed artifact),1,1,A1.1,0
+code_audit/run20_lineage_results.csv,per-module audit rows (committed artifact),1,1,A1.1,1
+code_audit/run22_final_lineage_results.csv,per-module audit rows (committed artifact),1,1,A1.1,1
+code_audit/run28_closure_participant_package_checksums.sha256,per-module audit rows (committed artifact),1,1,A1.1,0
+code_audit/run28_closure_v3_participant_package_checksums.sha256,per-module audit rows (committed artifact),1,1,A1.1,0
+code_audit/run29_cat4_5_scope.csv,per-module audit rows (committed artifact),1,1,A5.3,1
+code_audit/run29_closure_18_target_table.csv,per-module audit rows (committed artifact),1,1,A5.3,0
+code_audit/run29_fault_injection.csv,per-module audit rows (committed artifact),1,1,A5.3,1
+code_audit/run29_real_corpus_structure_reconciliation.csv,per-module audit rows (committed artifact),1,1,A5.3,1
+code_audit/run32_participant_package_v7_checksums.sha256,per-module audit rows (committed artifact),1,1,B4.7,0
+code_audit/run32_qualifier_participant_package_v10_checksums.sha256,per-module audit rows (committed artifact),1,1,D1.2,1
+code_audit/run33_participant_package_v11_checksums.sha256,per-module audit rows (committed artifact),1,1,D1.2,0
+code_audit/run33_portfolio_fault_injection_results.csv,per-module audit rows (committed artifact),1,1,D1.3,0
+code_audit/run33_proxy_qualifier_withdrawal.csv,per-module audit rows (committed artifact),1,1,D1.2,0
+code_audit/run35_closure_fault_injection.csv,per-module audit rows (committed artifact),1,1,A1.1,0
+code_audit/run8_required_reference_decision_specs.csv,per-module audit rows (committed artifact),1,1,B2.19,1
+code_audit/synthetic_v02_gap_closure.csv,per-module audit rows (committed artifact),1,1,B2.19,1
+research/freeze/INSTRUMENT_FINAL_FREEZE_RECORD.json,research fixture,1,1,A1.1,0
+research/freeze/INSTRUMENT_FINAL_FREEZE_REPORT.md,research fixture,1,1,A1.1,0
+research/freeze/RUN29_CLOSURE_FREEZE_2026-08-16.json,research fixture,1,1,A3.4,0
+research/freeze/RUN41_SUCCESSOR_FREEZE_RECORD.json,research fixture,1,1,A1.1,0
+research/freeze/RUN42_SUCCESSOR_FREEZE_RECORD.json,research fixture,1,1,A1.1,0
+research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/AUDIT_RESOLUTION_v0.2.md,research fixture,1,1,B2.19,0
+research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/generators/build_opus_synthetic_programme_v0_2.py,research fixture,1,1,B2.19,0
+research_fixtures/synthetic/OG-SYNTH-0.2/Opus_Gubernatio_Synthetic_Programme_v0.2/generators/validate_synthetic_programme_v0_2.py,research fixture,1,1,B2.19,0
+research_fixtures/synthetic/OG-SYNTH-0.3/Opus_Gubernatio_Synthetic_Programme_v0.3/generators/build_opus_synthetic_programme_v0_2.py,research fixture,1,1,B2.19,0
+research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph1_isolation_forest_fixture.json,research fixture,1,1,D1.1,0
+research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph1_rank_agreement_fixture.json,research fixture,1,1,D1.1,0
+research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph2_midrank_percentile_fixture.json,research fixture,1,1,D1.2,0
+research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph3_trajectory_slope_fixture.json,research fixture,1,1,D1.3,0
+research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph4_nearest_neighbour_fixture.json,research fixture,1,1,D1.4,0
+research_fixtures/synthetic/OG-SYNTH-0.5/package_D_portfolio_health/ph5_component_profile_fixture.json,research fixture,1,1,D1.5,0
+research_fixtures/synthetic/module_id_aliases_overlay.csv,research fixture,1,1,A1.1,0
+server/app/documents.py,server source,1,1,B4.7,0
+server/tests/synthetic_fixtures/importers/production_structures.py,other,1,1,B2.19,1
+server/tests/test_run35_closure_version_boundary.py,other,1,1,A1.1,0
+server/tools/build_client_taxonomy.py,audit-artifact generator / tool,1,1,B4.7,0
+server/tools/build_run30_artifacts.py,audit-artifact generator / tool,1,1,B2.1,0
+server/tools/run15_isolation_forest_calibration.py,audit-artifact generator / tool,1,1,D1.1,0
+server/tools/run20_production_changes.py,audit-artifact generator / tool,1,1,A1.1,0
+server/tools/run35_closure_fault_campaign.py,audit-artifact generator / tool,1,1,A1.1,0
+server/tools/test_run19_category_4.py,test suite,1,1,B2.10,0
+server/tools/test_run20_category9_gate.py,test suite,1,1,B2.1,0
+server/tools/test_run20_declared_production_changes.py,test suite,1,1,A1.1,0
+server/tools/test_run25_rail_removal.py,test suite,1,1,A1.1,0
+server/tools/test_run29_corpus_reconciliation.py,test suite,1,1,A5.3,1
+server/tools/test_run30_version_boundary.py,test suite,1,1,B2.1,0
+server/tools/test_run5_export.py,test suite,1,1,A3.8,0
+server/tools/test_workspace_t3t5.py,test suite,1,1,B4.7,0
+tools/audit_synthetic_v02.py,other,1,1,B2.19,1

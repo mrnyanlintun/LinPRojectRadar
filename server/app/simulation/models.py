@@ -472,12 +472,36 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # would undo a deliberate fail-closed choice rather than repair a mechanism. It is reported to
 # the owner as a decision, not silently changed.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v27"
+# -------------------------------------------------------------------------------------------
+# RUN 43, sim-2026.08-v28: THE RETIREMENT OF 38 MODULES FROM SERVICE.
+#
+# WHAT MOVED. Thirty-eight of the 101 registered modules are RETIRED FROM SERVICE. Retirement is
+# a statement about the taxonomy and the explanation burden, not a claim that any arithmetic is
+# wrong: every retired module keeps its registry entry, its formula function and its audit
+# lineage, and `run_module()` on every one of the 101 identifiers returns output byte-identical
+# to sim-2026.08-v27. What changed is which modules the production paths ENUMERATE. The single
+# authority is the `notes` column of p0-baseline/module_renumbering_map.csv; no list of retired
+# identifiers is written anywhere in the tree, and reinstating a module there restores it to
+# service with no other edit.
+#
+# THE POPULATIONS AFTER THE RETIREMENT. The registry holds 101, unchanged. Sixty-three are in
+# service and the analytical server computes 62 of those 63; the one it does not is Document Risk
+# Score, which the extraction model supplies. Group D, Portfolio Health, falls to zero in
+# service, so `portfolio_health.live_portfolio_modules()` returns the empty tuple and the
+# dispatcher produces a retired snapshot. `canonical_v8` is untouched and still computes: the
+# Run-33 supplied oracles are executed against it directly, so no scientific coverage is lost.
+#
+# WHAT DID NOT MOVE. No module in service changed its computed result. Project Status, the
+# category rollup, the fusion and the voting set are untouched -- voting is still exactly A1.7
+# and A1.8, and Group C still does not contribute to project status. Portfolio Health never
+# contributed to Project Status, so its offload does not move a status either.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v28"
 
 #: THE LINE RUN 42 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v26"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v27"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -489,7 +513,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
-    "sim-2026.08-v26", "sim-2026.08-v27",
+    "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28",
 )
 
 

@@ -9,6 +9,228 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-21 - Run 43F: STOPPED AT 7.1 AND 7.6. UNMERGED. THE REFUSAL CLASS IS GONE; THE POPULATION CLASS IS THE WALL.
+
+**Report:** `REPORT_2026-08-21_run43F_retirement_delink.md`.
+**Branch:** `claude/run43F-retirement-delink`, rooted at `22bb7d2`, **unmerged**.
+**Stamp:** still `sim-2026.08-v27`. `sim-2026.08-v28` NOT minted. `main` still `f461630`.
+**Phase G was NOT begun** — the section 2 gate fails on all four conditions.
+
+## WHAT PHASE F SETTLED
+
+Section 5.1 withdrew Phase D's `run_module()` retirement refusal. It is removed — the short-circuit
+in `run_module()`, the `RETIRED_FROM_SERVICE` branch in `activation_state()` (which feeds
+`run_module()`'s output at `registry.py:670` and `:716`), and the reason-code constant. **The
+roster is kept**: the 38 identifiers in the CSV, `retired_modules()`, `is_retired()`,
+`modules_in_service()`, `service_index()`, and every population derived from them.
+
+**`run_module()` is byte-identical to `f461630` for all 101 identifiers** under two input fixtures,
+diffed against a worktree at that commit: 0 lines. Proved failable by re-injecting a short-circuit
+(1,530 lines), then restored to 0. **Phase D's entire refusal-collision class is gone.** Six of the
+fourteen aborting suites now run.
+
+## WHY IT STOPPED, AND IT IS A DIFFERENT WALL
+
+**7.1.** 114 red checks across 34 suites and 8 suites that still abort assert the **pre-retirement
+population** — that a named retired module reaches the ledger, the abstention list, the taxonomy,
+or a results dict. Nothing here asserts a refusal or a reason code. Section 5.1's own requirement 2
+says a retired module must not be in those populations. Both cannot hold, and only a check body
+resolves it. `test_run26_counts_and_wiring` states it most cleanly: it compares `taxonomy.js`
+against `registry_index()` and reports `63 taxonomy ids / 101 registry`. The comparison is right
+against `service_index()` and wrong against `registry_index()`.
+
+**7.6.** All four Portfolio Health suites are **class 1** at section 5.4: each asserts the
+pre-offload state by indexing a results key the offload correctly no longer writes. The offload is
+complete and derived (`live_portfolio_modules()` returns `()`), so class 2 does not apply. Two more
+suites join them, `test_run34_count_fault_campaign.py` and `test_workspace_t3t5.py`.
+
+**No check body was changed and no check was removed.**
+
+## THE COUNT, RECONCILED EXACTLY
+
+`f461630` reproduced on this machine: **188 / 14,176 / 14,176 / 0 red.** Phase F head: **188 /
+13,326 / 13,440 / 114 red.** The 736 shortfall is −733 (8 aborting suites) −4
+(`test_run32_defensibility_truth`, generated per taxonomy row) −2
+(`test_run20_lineage_declaration_truth`) +3 (`test_map_and_module_count`, sanctioned). Nothing is
+left over.
+
+## A CONFLICT IN THE ORDERS THE OWNER MUST SETTLE
+
+Section 1 item 6 says Phase D's `models_sim.py:254` guard change stands. That change asserts the
+retirement reason code, which section 5.1 abolishes. **The guard body was restored to its
+`f461630` text byte for byte** and is green 7/7; `models_sim.py` now diffs empty against the
+baseline worktree. If the owner intends the Phase D guard change to survive, section 5.1 must be
+amended, because the two cannot both stand.
+
+## OPERATIONAL NOTES
+
+- The freeze gate is **24/30**, up from 23/30. B02 and B15 are now zero. B11 is a pinned
+  byte-identity manifest falsified by this retirement's edits and is the one row section 5.5 lets a
+  run reconcile — **it was not reconciled**, because 5.7 was never reached and pinning a tree the
+  owner has not accepted would be worse than leaving it red.
+- The suite rewrote **17** committed audit artifacts this run, not 18, one of them
+  `server/tools/run17/coverage.csv` **outside `code_audit/`**. All 17 restored, none committed.
+- `registry_index()` resolves retired ids. Any caller building a population wants `service_index()`.
+- `git add -A` and `git add .` were not used.
+
+# 2026-08-21 - Run 43B: STOPPED AT 7.1 AND 7.8. UNMERGED. THE WALL IS NOW MEASURED.
+
+**Report:** `REPORT_2026-08-21_run43B_retirement_completion.md`.
+**Branch:** `claude/run43B-retirement-completion`, rooted at `b37f133`, **unmerged**.
+**Stamp:** still `sim-2026.08-v27`. `sim-2026.08-v28` NOT minted. `main` still `f461630`.
+**Phase B was NOT begun** — the section 2 gate fails on all four conditions, not one.
+
+## READ THIS BEFORE RE-COMMISSIONING THE RETIREMENT
+
+Run 43B was told the 73 failing suites "enumerate hard-coded identifier lists" and to repoint
+each onto the live registry without touching a check body. **That premise does not hold, and the
+measurement is the deliverable.**
+
+- **The count is 72, not 73.** 116 `ok` + 72 `FAIL` = 188. The `FAILED SUITES` block has 72
+  entries. The check figures 9671/9817 are confirmed exactly.
+- **53 of the 72 carry a quoted retired identifier in their source, 845 occurrences.** In those
+  the identifier is *inside the check body* — a hand-written per-module block or a hand-computed
+  expected value. There is no enumeration source to repoint.
+- **The other 19 do not fail for a repointable reason either.** They fail on hard-coded expected
+  counts inside check bodies (`96`, `101`, `five`), on pinned byte-identity freeze manifests that
+  Run 43's own edits falsified, on the literal string `RETIRED` leaking out of the renumbering
+  CSV into derived populations, and on `A1.1` surviving in `assets/js/taxonomy.js`.
+- **The cause is not uniform.** 32 `MissingModuleError`, 6 `KeyError`, 34 running-but-failing.
+  Run 43's handoff said "uniform"; that was wrong and it matters, because the difference is what
+  decides whether repointing is possible at all.
+
+**THE IRREDUCIBLE CASE IS PRODUCTION CODE, NOT A TEST.**
+`server/app/simulation/models_sim.py:254`, `assert_retained_adaptation_not_reachable`, proves
+A1.1's retained Monte Carlo adaptation is unreachable by **executing** A1.1 and asserting the
+abstention. Its own comment records that a non-executing version once passed while the adaptation
+was live, and states the rule: *a guard satisfied by somebody else's refusal is proving nothing
+about its own subject.* Post-retirement `run_module` refuses A1.1 first, so it raises. Removing
+the retired ids from the registry constants (what the removal step authorises) was **simulated
+in-process** and makes it fail twice instead of once. No third route exists. Its body must change
+(7.1) or it must go (7.8, and 5.5.1 forbids removing a check).
+
+## WHAT RUN 43B COMPLETED AND COMMITTED
+
+1. **The export's proxy-qualifier mirror is reconciled.** Run 43 left this open as item 2.
+   `research_export._RUN1_PROXY_QUALIFIERS` 30 -> 1, proved identical to
+   `registry.PROXY_QUALIFIERS`. `registry.py`'s "thirty proxy modules" prose corrected.
+2. **Portfolio Health is offloaded.** Run 43 left this open as item 1. `canonical_v8` PH.1-PH.5 no
+   longer runs; `live_portfolio_modules()` derives the answer from the registry rather than
+   declaring it, and the check sits **before** `assemble()` so the intake path is offloaded too.
+   Proved by monkeypatching both to raise. `canonical_v8` is untouched.
+   **The portfolio card renders one line and no per-project cards** — `assets/js/workspace.js`
+   1009-1021, code NOT modified, using the `insufficient_data` branch it already had:
+   *"Portfolio Health is no longer part of the analytical taxonomy, so no portfolio-level reading
+   is produced. Project Status is unaffected: Portfolio Health never contributed to it."*
+   No control added, moved or removed.
+3. **The complete artifact enumeration**, committed as
+   `code_audit/run43B_retired_identifier_artifact_enumeration.csv`: **458 files, 8,340
+   occurrences, 169 files with a line naming a retired module AND a module in service.**
+   **Nothing was removed** — the removal step was never reached.
+
+**The offload cost four previously-green suites**: `test_run33_portfolio_health`,
+`test_run34_holdout_provenance`, `test_run34_provenance_fault_campaign`, `test_period_series`.
+All four have a wholly retired subject and are exactly what the removal step would have removed.
+Suite state on the branch: **188 suites, 9434/9615, 76 red** (was 9671/9817, 72 red).
+
+## THE DECISION, SHARPER THAN RUN 43 STATED IT
+
+Retiring 38 modules necessarily falsifies every check whose subject is one of them and every
+manifest pinning a file the retirement edited. Those checks cannot be repointed. Pick one:
+**(A)** permit check bodies to change where the subject is retired, including a production
+guard's, and say what that guard must assert instead; **(B)** permit whole guards and suites to
+be removed where the subject is wholly retired, accepting the qualification evidence shrinks;
+**(C)** re-pin the frozen manifests as an owner-authorised successor change, as Run 41 did for
+its own, and say whether the retirement counts as one. All three change what the instrument's
+qualification evidence consists of. None may be chosen inside a run.
+
+## PROCEDURAL, COSTS TIME IF NOT READ
+
+- **`git add -A` is unsafe here whenever a suite may be running.** A background fault-injection
+  suite mutates production files in place; an early Run 43B commit captured an injected fault in
+  `canonical_v8.py` mid-injection. Caught by `git show --stat` and amended. **Name paths
+  explicitly on every commit.**
+- **The self-rewriting artifacts reproduced again: 15 this run** (41A saw 13, Run 43 saw 14).
+  All restored, none committed.
+- **Section 1's branch point vs sections 3.3/5.5.4.** `b37f133` is authoritative but does not
+  carry the Run 43 report or decision record; they are on `d8fe98d`. Branch from `b37f133`, then
+  `git checkout d8fe98d -- <the two files>`.
+- **The stamp path in the prompt is still wrong.** It is `server/app/simulation/models.py:475`.
+
+# 2026-08-21 - Run 43: 38 MODULES RETIRED, BUT THE RUN STOPPED. BRANCH UNMERGED.
+
+**Report:** `REPORT_2026-08-21_run43_module_retirement.md`.
+**Decision record:** `MODULE_RETIREMENT_DECISIONS.md` (created fresh by this run; none existed).
+**Branch:** `claude/run43-module-retirement`, **NOT MERGED**, two sound implementing commits.
+
+**Disposition: STOP CONDITION 15.8 FIRED** — the successor freeze cannot be taken without
+weakening the guard. **`sim-2026.08-v28` was NOT minted. The live stamp remains
+`sim-2026.08-v27`.**
+
+## WHAT IS SOUND AND DOES NOT NEED REDOING
+
+- `5282d72` — prose count corrected, 100 -> 101 and Group A 52 -> 53, committed SEPARATELY and
+  FIRST. The live registry and `assets/js/taxonomy.js` both derived 101/53 and agreed; only prose
+  was wrong. `A4.1` Document Risk Score is registered but unported, which is the one-module
+  difference between the registered 101 and the computed 100. Both populations are real; say which
+  one you mean.
+- `b37f133` — 38 modules retired, registry **101 -> 63** (A 53->44, B 36->12, C 7, D 5->0).
+  Reasons 5/10/16/7. Retired in place by the existing `RETIRED` convention in
+  `p0-baseline/module_renumbering_map.csv`; no row deleted, no second registry file.
+  `available_modules()` is now the INTERSECTION of `VALIDATED` with the registry, which is the one
+  change that makes retirement take effect everywhere without deleting formulas.
+- **Preservation proven, not assumed.** Full census captured BEFORE any change and byte-compared:
+  **zero retained modules changed**, project status unchanged. Eight of nine section 13 guarantees
+  verified, each with an injection proving the check could fail.
+
+## THE BLOCKING DECISION — NOTHING ELSE PROCEEDS UNTIL THIS IS MADE
+
+Baseline was re-run and confirmed: **188 suites, 14176/14176, ALL GREEN** at `f461630`.
+After the retirement: **73 suites failing, 9671/9817**. Cause is uniform — **56
+`MissingModuleError`**: the per-module audit, known-answer and fault-campaign suites call
+`run_module()` on every id, and guarantee 13.4 requires retired ids be refused there.
+
+Getting green means deleting ~**4,359 checks** across 73 suites. Section 6.1 forbids removing
+checks. The alternative violates guarantee 13.4. Both routes weaken an owner-mandated check, which
+IS stop condition 15.8.
+
+**Option A — retire from the taxonomy only.** Relax 13.4 so `run_module()` still computes a
+retired module called explicitly by id, while it stays absent from every enumerated path
+(registry, rollup, export, ledger, browser taxonomy). All 14176 checks survive. The defence burden
+the retirement exists to remove is on the taxonomy and the ledger, not on `run_module()`.
+
+**Option B — retire fully and re-baseline the qualification evidence.** Retire the audit suites
+for the 38 as well, with their own authorisation and record. Larger than Run 43; commission it.
+
+Run 43's reading, as input not decision: **Option A matches the stated purpose.**
+
+## ALSO OPEN, FROM THIS RUN
+
+1. **Portfolio Health outlives its modules.** Group D is retired, but the card computes through
+   `canonical_v8.compute_portfolio_health` (PH.1-PH.5 = D1.1-D1.5), not through the module ids.
+   The only place guarantee 13.4 is not fully met. **No control was touched**; the `D1` category
+   container remains with an empty module list. Owner decision, not a run decision.
+2. **The export's proxy-qualifier mirror is 29 entries adrift.** `registry.PROXY_QUALIFIERS` holds
+   1; `research_export._RUN1_PROXY_QUALIFIERS` holds 30, including `B4.4`, whose qualifier Run 32
+   explicitly withdrew. Committee-facing surface. Unacted.
+3. **`B4.4`'s label needed NO correction.** It has no entry in `TRUTHFUL_METHOD_LABELS`,
+   `STRUCTURAL_CLAIM_LIMITS` or `PROXY_QUALIFIERS`; it presents the registry's canonical name
+   "What-If Scenario Matrix". The instruction to correct it rested on a premise Run 35's own
+   closure had already actioned.
+4. **`B2.19` takes reason 3, not reason 4.** The authorising prompt's section 10.2 contradicts its
+   own section 8 under the lowest-numbered rule. Total of 38 unaffected.
+5. **The prompt's freeze-stamp path is wrong.** The stamp is at
+   `server/app/simulation/models.py:475`, not `server/app/models.py:475`.
+
+## PROCEDURAL NOTES THAT COST TIME
+
+- **This clone has no `.venv`.** `server/run_all_suites.sh` already falls back to the interpreter
+  on `PATH`; use the script rather than invoking suites by hand, since it builds a freshly migrated
+  SQLite per file and enforces the canonical `RESULT:` line rule itself.
+- **The Run 41A artifact-rewriting finding reproduced exactly.** Running the suites rewrote **14**
+  committed `code_audit/*.csv` artifacts. All restored; none committed. Check `git status` before
+  every commit.
+
 # 2026-08-19 - Run 39: MAIN STUDY LAUNCH READY. Collection may begin; it has not begun.
 
 **Report:** `REPORT_2026-08-19_run39-main-study-launch-readiness.md`.
@@ -12423,3 +12645,102 @@ routes, pinning the deliberate abstentions as well as the computations. Fault ca
 - Everything carried forward from Run 36 remains open; no target is empirically field-validated.
 - Professionalization observations are listed in section 9 of the Run 42 report — including a stale
   docstring in `_period_history` claiming the P1 portfolio defect is still queued when it was fixed.
+
+---
+
+# Run 43D — retirement from service. UNMERGED, STOP CONDITIONS 7.1 AND 7.4.
+
+**Report:** `REPORT_2026-08-21_run43D_retirement_from_service.md`. **Branch:**
+`claude/run43B-retirement-completion` at `776f130`, four commits above `83c832d`. **`main` and
+`origin/main` remain at `f461630`. The live stamp remains `sim-2026.08-v27`** at
+`server/app/simulation/models.py:475` — note that path; prompts in this programme have cited
+`server/app/models.py:475`, which does not hold it.
+
+**What the run built, and it is right and should not be reverted.** The owner's ruling replacing
+removal-from-existence with **removal from service**. Retired identifiers are restored to
+`p0-baseline/module_renumbering_map.csv` and marked retired in the `notes` column only;
+`registry.py` derives `retired_modules()`, `modules_in_service()` and `service_index()` from that
+one file with no list written anywhere; `run_module()` resolves a retired id and refuses it with
+its stated reason instead of raising.
+
+**Measured, not asserted.** Registry 101, in service 63, available 62. **2,924 checks that could
+not run under Run 43's mechanism now run** — the suite denominator moved 9,615 to 12,539 and red
+suites 76 to 62. The `RETIRED` literal leak is fixed by the restoration itself. Zero modules in
+service changed their computed result, byte-compared against a worktree at `f461630`.
+
+**Both sanctioned check-body changes were made and both were proved failable.**
+`models_sim.assert_retained_adaptation_not_reachable` still proves its own subject — the retained
+Monte Carlo adaptation was made genuinely reachable (`p50_eac = 1106667.41`) and the untouched
+subject-level check caught it. `test_map_and_module_count.py` 68/72 to 75/75, its new assertions
+caught by clearing one row's RETIRED marking.
+
+**Why it stopped.** Section 5.1 says no check body need change because the existing checks "now
+assert the refusal". They run, but they assert **which** refusal, by name, in the body. 181 failing
+checks name a retired module across 26 suites; 14 more suites abort on a body-level index into a
+results dict that no longer carries a retired module's key. That is a third class, not a third
+case — **7.1**. And none of the four suites the Portfolio Health offload turned red returns green —
+**7.4**.
+
+**Phase E was not begun.** The section 2 gate fails on all four conditions. No Phase E file exists.
+
+**The next session cannot start work.** The owner must choose (A) sanction check-body changes as a
+class where the subject is retired, (B) sanction removing the suites whose subject is wholly
+retired, or (C) narrow the retirement. Each changes what the instrument's qualification evidence
+consists of. Section 12 of the Run 43D report states all three with their measured cost.
+
+**Three operational notes for whoever runs next.**
+- The full suite now rewrites **18** committed audit artifacts, not 15. One of them,
+  `server/tools/run17/coverage.csv`, is **outside `code_audit/`** — `git checkout -- code_audit/`
+  alone leaves it modified.
+- `registry_index()` now resolves retired ids and is therefore the wrong function for any caller
+  building a population. Use `service_index()`. Two callers were found and moved.
+- `git add -A` and `git add .` remain forbidden on this repository. Neither was used in Run 43D.
+
+---
+
+## Run 43H — the retirement is complete, gated and merged (2026-08-21)
+
+**Merged to `main`. `sim-2026.08-v28`. `og-participant-2026.08-v14`. 188 suites,
+14,197 / 14,197, 0 red, 0 aborting. Successor freeze gate 31/31, 0 of 15 blocker classes blocked.
+No stop condition fired.**
+
+Full account: `REPORT_2026-08-21_run43H_retirement_completion.md`.
+
+**What the owner's class sanction resolved.** Phase D and Phase F both stopped because a check body
+had to change. Run 43H's section 5.1 sanctioned that as a class. 33 red suites and 8 aborting
+suites were re-scoped from the pre-retirement population to the roster in service. **Not one check
+was deleted and not one in-service module lost coverage** — in several suites coverage rose, most
+sharply in `test_run32_defensibility_truth`, where two checks about one retired module became four
+that range over all 63 in service.
+
+**Counts, all derived, none written down anywhere:** registry **101**, in service **63**, computed
+**62**, Group D in service **0**. `B2` is **1** in service, not 4 as the order's own note said.
+
+**Four operational notes for whoever runs next.**
+
+- **`registry_index()` and `load_registry()` resolve retired ids by design. `service_index()` is
+  the population in service.** Any caller building a population wants the second. Eight sites were
+  found using the first where they meant the second, one of them
+  `server/tools/build_client_taxonomy.py`, which is the ORACLE of the client-authority check — so
+  while it emitted 101 that check asserted the pre-retirement population. It now reproduces the
+  delinked `taxonomy.js` and `categories.js` byte for byte.
+- **The full suite rewrites 18 committed audit artifacts**, one of them
+  `server/tools/run17/coverage.csv`, which is **outside `code_audit/`**. `git checkout --
+  code_audit/` alone leaves it modified. Restore all 18; commit none.
+- **Minting a stamp is a four-step cycle and the order matters.** Commit every production and suite
+  edit first; then set `CANDIDATE` in `build_run37_acceptance.py` to that commit; then run
+  `build_run43_candidate_identity.py`, `build_run37_acceptance.py`,
+  `build_run43_successor_release.py` in that order; then commit only `research/freeze/`, which no
+  identity group measures. Regenerating before the production edits are final makes B01 chase its
+  own tail.
+- **`git add -A` and `git add .` remain forbidden.** Neither was used.
+
+**Two decisions left open for the owner, both stated in the report's section 13.**
+1. The Portfolio Health flyout (`deepdive.js:2373`) states a false reason after the offload.
+   Correcting it moves a **sequence-bearing participant file**, so it was reverted and reported.
+2. `available_modules()`'s docstring at `registry.py:461` still describes the refusal semantics
+   Phase F withdrew. It is a false sentence inside a frozen surface and needs its own
+   authorisation.
+
+**Phase J was NOT begun.** The section 2 gate is satisfied on all four conditions, but the session's
+working budget was exhausted by Phase H. No Phase J file exists and no Phase J finding is claimed.

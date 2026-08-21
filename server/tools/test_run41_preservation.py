@@ -201,18 +201,22 @@ print("-" * 78)
 # in the history exactly where Run 41 put it -- directly after v25 -- and that the live stamp is
 # Run 42's own successor. Asserting the live stamp is still v26 would make this file fail every
 # time a later run legitimately supersedes, which would be a guard measuring the wrong thing.
-check(SIMULATION_VERSION == "sim-2026.08-v27", "the live stamp is Run 42's successor "
-      "sim-2026.08-v27", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v26",
-      "and it records v26, Run 41's stamp, as the stamp it supersedes",
+# RESTATED BY RUN 43, for the same reason Run 42 restated it: this section's subject is that
+# RUN 41's boundary is PRESERVED, not that any later stamp is live forever. Run 43 supersedes
+# v27 with v28 for the retirement of 38 modules from service.
+check(SIMULATION_VERSION == "sim-2026.08-v28", "the live stamp is Run 43's successor "
+      "sim-2026.08-v28", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v27",
+      "and it records v27, Run 42's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
       "the history is append-only and Run 41's boundary is preserved: v26 still directly "
       "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v27"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v26",
-      "and v27 was appended after v26 rather than replacing it",
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v28"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v27"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v26",
+      "and v27 and v28 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-2:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
@@ -250,19 +254,24 @@ for ln in v13_record.read_text(encoding="utf-8").splitlines():
         h, path = ln.split("  ", 1)
         rec[path] = h
 check(len(rec) > 60, "the v13 participant-package record names its governed files", str(len(rec)))
+# RESTATED BY RUN 43. Run 41 retained v13 and that record stands. Run 43 MINTS v14, because the
+# retirement moves five participant-visible bytes, and it declares exactly which five. What this
+# section is for is unchanged and is asserted more strictly: the files that moved are exactly the
+# ones the successor declares, and NOT ONE of them carries a step of the participant sequence.
 moved_pkg = sorted(p for p, h in rec.items()
                    if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
-check(not moved_pkg,
-      f"NOT ONE of the {len(rec)} governed participant-package bytes moved, so v13 is RETAINED "
-      "rather than a successor being minted",
+check(moved_pkg == sorted(PP.V13_TO_V14_CHANGED),
+      f"of the {len(rec)} governed participant-package bytes, exactly the {len(moved_pkg)} the "
+      f"v14 successor declares moved, and no others",
       str(moved_pkg[:8]))
 seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
                    if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != rec.get(f))
 check(not seq_moved,
       f"the {len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files are byte-identical, so the "
       "participant sequence is unchanged", str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v13",
-      "the participant package is retained at og-participant-2026.08-v13",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v14",
+      "the participant package is superseded at og-participant-2026.08-v14, and the v13 record "
+      "is pinned rather than rewritten",
       PP.CURRENT.identifier)
 
 # The synthetic corpus and the analysis schema: measured against the pinned predecessor tree.

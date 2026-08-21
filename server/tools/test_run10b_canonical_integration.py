@@ -35,6 +35,7 @@ from app.simulation import canonical  # noqa: E402
 from app.simulation.compute import compute_project  # noqa: E402
 from app.simulation.models import ABSTAIN_DECISION_STRUCTURE_ABSENT  # noqa: E402
 from app.simulation.models import ABSTAIN_STRUCTURE_ABSENT, VALIDATED  # noqa: E402
+from app.simulation import registry as registry_mod  # noqa: E402
 from app.simulation.registry import (  # noqa: E402
     CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, registry_index, run_module,
 )
@@ -705,9 +706,18 @@ _plain_computed = {m["module_id"] for m in plain["modules"]}
 # scenario set instead, which is supplied above. B2.19 still gains from the decision matrix. So
 # the set is the six plus B2.19 plus A5.4, which is exactly what it was, reached by a different
 # structure for one of them.
-check(_rich_computed - _plain_computed == set(SIX) | set(BUCKET_4),
-      "the modules that gained a reading are exactly the ones given a structure",
-      str(sorted(_rich_computed - _plain_computed)))
+# RUN 43, THE RETIREMENT. B2.19 and A5.4 of this set are retired from service and compute on no
+# path, with or without their structure, so they cannot gain a reading. The expected set is the
+# same one, intersected with the roster IN SERVICE and derived from registry.is_retired(); the
+# retired members are asserted absent from BOTH runs instead, which is stronger.
+_gained_expected = {m for m in set(SIX) | set(BUCKET_4) if not registry_mod.is_retired(m)}
+_gained_retired = {m for m in set(SIX) | set(BUCKET_4) if registry_mod.is_retired(m)}
+check(_rich_computed - _plain_computed == _gained_expected,
+      "the modules in service that gained a reading are exactly the ones given a structure",
+      str(sorted((_rich_computed - _plain_computed) ^ _gained_expected)))
+check(not (_gained_retired & (_rich_computed | _plain_computed)),
+      "and not one of the retired members of that set computes on either run, structure or no "
+      "structure", str(sorted(_gained_retired & (_rich_computed | _plain_computed))))
 check(not (_plain_computed - _rich_computed),
       "and no module lost one", str(sorted(_plain_computed - _rich_computed)))
 
