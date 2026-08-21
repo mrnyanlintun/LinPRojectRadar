@@ -53,7 +53,6 @@ window.LIN_CATEGORIES = [
     color: '#4ea0ff',
     description: 'Cost and schedule performance indices derived from verified pay applications and schedules.',
     modules: [
-      { id: 'a1_1', num: 'A1.1', name: 'Monte Carlo EAC Forecast', method_class: 'Monte_Carlo', active: true, disabled: true, required: ['bac','cpi','spi'] },
       { id: 'a1_2', num: 'A1.2', name: 'CUSUM Anomaly Monitor', method_class: 'CUSUM', active: true, required: ['spi'] },
       { id: 'a1_3', num: 'A1.3', name: 'Bayesian EAC', method_class: 'Bayesian_EAC', active: true, required: ['bac','ev','ac','cpi'] },
       { id: 'a1_4', num: 'A1.4', name: 'Kalman Filter SPI Smoother', method_class: 'Kalman_Filter', active: true, required: ['spi','spiHistory'] },
@@ -75,14 +74,9 @@ window.LIN_CATEGORIES = [
       { id: 'a2_1', num: 'A2.1', name: 'PERT Network Criticality', method_class: 'PERT_Network_Criticality', active: true, required: ['spi','bac'] },
       { id: 'a2_2', num: 'A2.2', name: 'Line of Balance', method_class: 'Line_of_Balance_Velocity', active: true, required: ['spi','actualPctComplete','plannedPctComplete'] },
       { id: 'a2_3', num: 'A2.3', name: 'CCPM Buffer Health', method_class: 'CCPM_Buffer_Health', active: true, required: ['actualPctComplete','plannedPctComplete'] },
-      { id: 'a2_4', num: 'A2.4', name: 'Schedule Compression Index', method_class: 'Schedule_Compression', active: true, required: ['baselineEnd','baselineStart','actualPctComplete'] },
-      { id: 'a2_5', num: 'A2.5', name: 'Float Consumption Rate', method_class: 'Float_Consumption', active: true, required: ['totalFloat','consumedFloat'] },
-      { id: 'a2_6', num: 'A2.6', name: 'S-Curve Deviation', method_class: 'SCurve_Deviation', active: true, required: ['actualPctComplete','plannedPctComplete','ev','pv'] },
       { id: 'a2_7', num: 'A2.7', name: 'Milestone Trend Analysis', method_class: 'Milestone_Trend', active: true, required: ['milestoneHistory'] },
       { id: 'a2_8', num: 'A2.8', name: 'Look-Ahead Schedule Health', method_class: 'Lookahead_Health', active: true, required: ['activitiesPlanned','activitiesConstrained'] },
-      { id: 'a2_9', num: 'A2.9', name: 'Resource Loading Index', method_class: 'Resource_Loading', active: true, required: ['plannedLaborHours','actualLaborHours'] },
-      { id: 'a2_10', num: 'A2.10', name: 'Schedule Risk Analysis P80', method_class: 'Schedule_Risk_Analysis', active: true, required: ['spi','baselineEnd','baselineStart','actualPctComplete'] },
-      { id: 'a2_11', num: 'A2.11', name: 'Critical Path Index', method_class: 'Critical_Path_Index', active: true, required: ['spi','plannedPctComplete','actualPctComplete'] }
+      { id: 'a2_9', num: 'A2.9', name: 'Resource Loading Index', method_class: 'Resource_Loading', active: true, required: ['plannedLaborHours','actualLaborHours'] }
     ]
   },
   {
@@ -94,11 +88,9 @@ window.LIN_CATEGORIES = [
       { id: 'a3_1', num: 'A3.1', name: 'Reference Class Forecasting', method_class: 'Reference_Class_Forecasting', active: true, required: ['bac','cpi'] },
       { id: 'a3_2', num: 'A3.2', name: 'Contingency Burn Rate', method_class: 'Contingency_Burn_Rate', active: true, required: ['originalContingency','remainingContingency','actualPctComplete'] },
       { id: 'a3_3', num: 'A3.3', name: 'Labor Productivity Index', method_class: 'Labor_Productivity', active: true, required: ['plannedLaborHours','actualLaborHours','actualPctComplete'] },
-      { id: 'a3_4', num: 'A3.4', name: 'Material Cost Variance', method_class: 'Material_Cost_Variance', active: true, disabled: true, required: ['materialCostBaseline','materialCostCurrent'] },
       { id: 'a3_5', num: 'A3.5', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: true, required: ['indirectCostPlan','indirectCostActual'] },
       { id: 'a3_6', num: 'A3.6', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] },
       { id: 'a3_7', num: 'A3.7', name: 'Analogous Estimating Ratio', method_class: 'Analogous_Estimating', active: true, required: ['analogousOverrunPct','bac'] },
-      { id: 'a3_8', num: 'A3.8', name: 'Parametric Cost Index', method_class: 'Parametric_Cost', active: true, disabled: true, required: ['bac','ev','ac','actualPctComplete'] },
       { id: 'a3_9', num: 'A3.9', name: 'Inflation Adjustment Index', method_class: 'Inflation_Adjustment', active: true, required: ['materialCostBaseline','materialCostCurrent'] }
     ]
   },
@@ -128,7 +120,6 @@ window.LIN_CATEGORIES = [
     modules: [
       { id: 'a5_1', num: 'A5.1', name: 'DSM Rework Propagation', method_class: 'DSM_Rework_Cat5', active: true, required: ['cpi','spi'] },
       { id: 'a5_2', num: 'A5.2', name: 'Sensitivity Analysis', method_class: 'Sensitivity_Analysis', active: true, required: ['bac','ev','ac','pv','cpi','spi'] },
-      { id: 'a5_3', num: 'A5.3', name: 'Tornado Risk Ranking', method_class: 'Tornado_Diagram', active: true, required: ['cpi','spi','docRiskScore','actualPctComplete','plannedPctComplete'] },
       { id: 'a5_4', num: 'A5.4', name: 'Scenario Modeling', method_class: 'Scenario_Modeling', active: true, required: ['bac','ev','ac','cpi','spi'] },
       { id: 'a5_5', num: 'A5.5', name: 'Rework Feedback Loop', method_class: 'Rework_Feedback', active: true, required: ['cpi','rfiCount','changeOrderCount'] },
       { id: 'a5_6', num: 'A5.6', name: 'Queueing Theory Bottleneck', method_class: 'Queueing_Bottleneck', active: true, required: ['activitiesPlanned','activitiesConstrained'] },
@@ -166,26 +157,7 @@ window.LIN_CATEGORIES = [
     color: '#5ed7ff',
     description: 'Evidence combination under uncertainty: fuzzy, rough, neutrosophic and belief-function methods.',
     modules: [
-      { id: 'b2_1', num: 'B2.1', name: 'Dempster-Shafer', method_class: 'DST_Evidence_Combination', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_2', num: 'B2.2', name: 'Rough Sets', method_class: 'Rough_Sets_Classification', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_3', num: 'B2.3', name: 'Neutrosophic Logic', method_class: 'Neutrosophic_Logic', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_4', num: 'B2.4', name: 'Interval Fuzzy Sets', method_class: 'Interval_Fuzzy_Sets', active: true, required: ['cpi','spi'] },
-      { id: 'b2_5', num: 'B2.5', name: 'Z-numbers', method_class: 'Z_Numbers', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_6', num: 'B2.6', name: 'PLTS', method_class: 'PLTS', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_7', num: 'B2.7', name: 'Plithogenic Sets', method_class: 'Plithogenic_Sets', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_8', num: 'B2.8', name: 'Belief Rule Base', method_class: 'Belief_Rule_Base', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_9', num: 'B2.9', name: 'Quantum Probability', method_class: 'Quantum_Probability', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_10', num: 'B2.10', name: 'Pythagorean Fuzzy Sets', method_class: 'Pythagorean_Fuzzy', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_11', num: 'B2.11', name: 'Picture Fuzzy Sets', method_class: 'Picture_Fuzzy', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_12', num: 'B2.12', name: 'Hesitant Fuzzy Sets', method_class: 'Hesitant_Fuzzy', active: true, required: ['cpi','spi'] },
-      { id: 'b2_13', num: 'B2.13', name: 'Type-2 Fuzzy Sets', method_class: 'Type2_Fuzzy', active: true, required: ['cpi','spi'] },
-      { id: 'b2_14', num: 'B2.14', name: 'Maximum Entropy', method_class: 'Maximum_Entropy', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_15', num: 'B2.15', name: 'Possibility Theory', method_class: 'Possibility_Theory', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_16', num: 'B2.16', name: 'Spherical Fuzzy Sets', method_class: 'Spherical_Fuzzy', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_17', num: 'B2.17', name: 'Fermatean Fuzzy Sets', method_class: 'Fermatean_Fuzzy', active: true, required: ['cpi','spi'] },
-      { id: 'b2_18', num: 'B2.18', name: 'MARCOS Ranking', method_class: 'MARCOS', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_19', num: 'B2.19', name: 'CRITIC-TOPSIS', method_class: 'CRITIC_TOPSIS', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b2_20', num: 'B2.20', name: 'Hypersoft Sets', method_class: 'Hypersoft_Sets', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] }
+      { id: 'b2_18', num: 'B2.18', name: 'MARCOS Ranking', method_class: 'MARCOS', active: true, required: ['cpi','spi','docRiskScore'] }
     ]
   },
   {
@@ -207,13 +179,8 @@ window.LIN_CATEGORIES = [
     color: '#a78bfa',
     description: 'Decision optimisation and trade-off analysis over the available courses of action.',
     modules: [
-      { id: 'b4_1', num: 'B4.1', name: 'Multi-Objective Optimization', method_class: 'Multi_Objective_Optimization', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_2', num: 'B4.2', name: 'Linear Programming', method_class: 'Linear_Programming', active: true, disabled: true, required: ['bac','ev','ac','cpi'] },
       { id: 'b4_3', num: 'B4.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
-      { id: 'b4_4', num: 'B4.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] },
-      { id: 'b4_5', num: 'B4.5', name: 'Decision Sensitivity Matrix', method_class: 'Decision_Sensitivity_Matrix', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_6', num: 'B4.6', name: 'Pareto Frontier Analysis', method_class: 'Pareto_Frontier', active: true, disabled: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b4_7', num: 'B4.7', name: 'Minimax Regret Decision Rule', method_class: 'Minimax_Regret_Decision_Rule', active: true, required: ['cpi','spi','bac'] }
+      { id: 'b4_4', num: 'B4.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] }
     ]
   },
   {
@@ -238,11 +205,6 @@ window.LIN_CATEGORIES = [
     description: 'Portfolio-wide pattern detection. Requires three or more projects and is parked on the portfolio page.',
     level: 'portfolio',
     modules: [
-      { id: 'd1_1', num: 'D1.1', name: 'Isolation Forest', method_class: 'Isolation_Forest', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
-      { id: 'd1_2', num: 'D1.2', name: 'Portfolio Outlier Detection', method_class: 'Portfolio_Outlier', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
-      { id: 'd1_3', num: 'D1.3', name: 'Signal Trajectory Classifier', method_class: 'Trajectory_Classifier', active: true, portfolioLevel: true, required: ['signalHistory'] },
-      { id: 'd1_4', num: 'D1.4', name: 'Cross-project Pattern Detector', method_class: 'Cross_Project_Pattern', active: true, portfolioLevel: true, required: ['portfolioVectors'] },
-      { id: 'd1_5', num: 'D1.5', name: 'Anomaly Score', method_class: 'Anomaly_Score', active: true, portfolioLevel: true, required: ['portfolioVectors'] }
     ]
   }
 ];

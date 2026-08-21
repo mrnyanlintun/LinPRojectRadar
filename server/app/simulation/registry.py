@@ -369,8 +369,28 @@ def registry_index() -> dict[str, dict[str, str]]:
 
 
 def available_modules() -> list[str]:
-    """New ids this server can compute today."""
-    return sorted(VALIDATED)
+    """
+    New ids this server can compute today.
+
+    RUN 43, THE RETIREMENT. This is the INTERSECTION of the implemented set with the registry,
+    not `sorted(VALIDATED)`. The registry CSV is the single authority for which modules exist,
+    and Run 43 retired thirty-eight of them there by the existing `RETIRED` convention in the
+    `new_id` column. `load_registry()` already drops those rows, so intersecting here is what
+    makes the retirement take effect on every path that enumerates modules, without a second
+    registry file and without deleting the formula functions from the dozen `models_*` files
+    that build `VALIDATED`.
+
+    The formulas are deliberately KEPT. Retiring a module is a statement about the taxonomy and
+    the explanation burden, not a claim that its arithmetic is wrong, and the audit lineage for
+    every retired module has to remain readable. A retired id is unreachable because it is not
+    in the registry, which `run_module()` checks first and refuses on; keeping its function
+    reachable-by-name would require someone to call it deliberately, bypassing the registry.
+
+    Deriving the live set rather than restating it is also why this run does not repeat the
+    failure the programme has now made nine times: a stated set that drifted from the computed
+    one. There is no list here to fall out of date.
+    """
+    return sorted(set(VALIDATED) & set(registry_index()))
 
 
 def unported_modules() -> list[str]:
