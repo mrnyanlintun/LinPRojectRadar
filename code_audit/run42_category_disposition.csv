@@ -1,0 +1,13 @@
+category,status_after_run42,modules_computed,modules_abstained,modules_not_reached,modules_registered,computed_module_ids,abstention_reason_codes
+A1,Amber,3,8,0,11,"A1.2, A1.7, A1.8",CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED=1; canonical_structure_absent=6; insufficient_history=1
+A2,(no status),0,11,0,11,(none),canonical_structure_absent=11
+A3,(no status),0,9,0,9,(none),(uncoded)=2; canonical_structure_absent=6; missing_required_input=1
+A4,(no status),0,9,1,10,(none),(uncoded)=2; canonical_structure_absent=7
+A5,(no status),0,8,0,8,(none),canonical_structure_absent=8
+A6,(no status),0,4,0,4,(none),CATEGORY9_ASSESSMENT_MISSING=4
+B1,(no status),0,4,0,4,(none),CATEGORY9_ASSESSMENT_MISSING=4
+B2,(no status),0,20,0,20,(none),(uncoded)=3; CATEGORY9_ASSESSMENT_MISSING=17
+B3,(no status),0,5,0,5,(none),CATEGORY9_ASSESSMENT_MISSING=5
+B4,(no status),0,7,0,7,(none),(uncoded)=4; CATEGORY9_ASSESSMENT_MISSING=3
+C1,(no status),0,7,0,7,(none),canonical_structure_absent=7
+D1,(no status),0,0,5,5,(none),(none)

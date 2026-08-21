@@ -1,0 +1,109 @@
+{
+  "release_disposition": "FINAL_FREEZE_ACCEPTED",
+  "label": "Opus Gubernatio research instrument, Run-42 successor freeze (sim-2026.08-v27)",
+  "created": "2026-08-21",
+  "authority": "The owner's instruction of 2026-08-21: fix the background data-processing and calculation mechanism, and specifically the missing document-to-fact-to-module lineage and the loss of project/period identity.",
+  "supersedes_candidate": "489c9f14962899cc88213c045b87b95c2721e21e",
+  "supersedes_simulation_version": "sim-2026.08-v26",
+  "history": [
+    "Run 37 accepted the final freeze of the v25 instrument.",
+    "Run 40 confirmed two HIGH defects; the owner authorised remediation; Run 41 closed them and stamped the successor sim-2026.08-v26 at candidate 489c9f14962899cc88213c045b87b95c2721e21e.",
+    "Run 42 traced the background data-processing mechanism end to end -- upload, selected-period persistence, extraction, stored facts, module input retrieval, C1/Category-9 qualification, category calculation, project status, brief and decision, longitudinal ordering and lineage -- and proved TWO identity losses in it. Both were losses in the PATH, not absences in the data.",
+    "Run 42 repaired both, stamped the successor sim-2026.08-v27, and requalified every downstream gate by executing it.",
+    "The v25 and v26 releases remain historical evidence and are not rewritten. Results computed under either remain interpretable against their own records."
+  ],
+  "freeze_candidate_commit": "07dccf774d34a0dc7536626b739d7a2fb94dfa4e",
+  "candidate_identity_digest": "a2ee6dbf0849c0cde37acc5f034a4d149695c618437914dea0096b2d9d4ac79a",
+  "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
+  "release_content_digest": "1d1645b9e02fd3d805f332a529040462f7919c88b3e90557d5623d0e5722dd30",
+  "release_content_digest_method": "sha256 over RUN42_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
+  "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
+  "simulation_version": "sim-2026.08-v27",
+  "simulation_version_history": [
+    "sim-2026.07-v1",
+    "sim-2026.08-v2",
+    "sim-2026.08-v3",
+    "sim-2026.08-v4",
+    "sim-2026.08-v5",
+    "sim-2026.08-v6",
+    "sim-2026.08-v7",
+    "sim-2026.08-v8",
+    "sim-2026.08-v9",
+    "sim-2026.08-v10",
+    "sim-2026.08-v11",
+    "sim-2026.08-v12",
+    "sim-2026.08-v13",
+    "sim-2026.08-v14",
+    "sim-2026.08-v15",
+    "sim-2026.08-v16",
+    "sim-2026.08-v17",
+    "sim-2026.08-v18",
+    "sim-2026.08-v19",
+    "sim-2026.08-v20",
+    "sim-2026.08-v21",
+    "sim-2026.08-v22",
+    "sim-2026.08-v23",
+    "sim-2026.08-v24",
+    "sim-2026.08-v25",
+    "sim-2026.08-v26",
+    "sim-2026.08-v27"
+  ],
+  "participant_package": "og-participant-2026.08-v13",
+  "participant_package_decision": "RETAINED. Determined mechanically, not assumed: not one of the 70 governed participant-package bytes moved, the 6 sequence-bearing files are byte-identical to the v13 record, and none of the five production files Run 42 changed is named by that record. A successor was NOT minted merely because server behaviour changed.",
+  "synthetic_package": "OG-SYNTH-0.6",
+  "analysis_schema": "og-analysis-2026.08-v1",
+  "behavioural_delta_v26_to_v27": [
+    "the per-field source record carries the identity of the artefact each field was read from: documentId, documentVersion, asOf and revisionOf",
+    "the qualification record names the project it is about, on the compute path and the read path alike"
+  ],
+  "behavioural_delta_scope_statement": "Exactly these two, and nothing else. Proved by EXECUTING both lines from their own git objects rather than by reading a diff: all 101 registered modules emit byte-identical rows across the boundary, every signal input except the sources record is byte-identical, and the revision and overall qualification dimensions do not move. See code_audit/run42_v26_v27_execution_proof.csv.",
+  "defects_closed": {
+    "D1": {
+      "title": "the per-field source record dropped the document identity",
+      "final_status": "CONFIRMED_FIXED",
+      "evidence": "code_audit/run42_baseline_state_chrono.json recorded 0 of 7 fields carrying a document identity; after the repair 7 of 7 do, and the provenance and timeliness dimensions reach PASS. Fault F1 and F4 in code_audit/run42_fault_campaign.csv both turn the regression suite red when reintroduced."
+    },
+    "D2": {
+      "title": "the qualification record named a null project",
+      "final_status": "CONFIRMED_FIXED",
+      "evidence": "evidence_qualification.project_id was null for every period in the baseline and names the project after the repair. Faults F2 and F3 both turn the regression suite red; F2 is caught only by the direct compute-path section, which is why that section exists."
+    }
+  },
+  "scientific_state_unchanged": "NO input was invented, NO fact fabricated, NO qualification rule relaxed and NO scientific method changed. revision_resolution_status remains NOT_ESTIMABLE and overall_qualification_state therefore remains NOT_ESTIMABLE, which is a deliberate fail-closed decision Run 42 did not overturn and reports to the owner instead. The modules that abstain for want of their governed structure still abstain.",
+  "unresolved_high_security_blockers": 0,
+  "freeze_gate": {
+    "blockers_evaluated": 15,
+    "blocked": 0,
+    "artifact": "research/freeze/run42_successor_freeze_gate.csv"
+  },
+  "fault_campaign": {
+    "faults": 6,
+    "intended_red": 5,
+    "caught": 5,
+    "inert_control_correctly_green": 1,
+    "artifact": "code_audit/run42_fault_campaign.csv"
+  },
+  "blocking_defects": 0,
+  "limitation_contract": {
+    "empirical_field_validation": "0 of 100. No scientific target in this instrument has been validated against an independent observed real-world outcome.",
+    "portfolio_health_empirical_validation": "PENDING for all five (PH.1-PH.5).",
+    "calibration": "No calibration set exists in this repository: no labelled outcome corpus and no expert reference standard. No band anywhere has a measured false-positive or false-negative rate.",
+    "lineage": "Unresolved for 77 of 100 targets. Unknown lineage was never treated as independent.",
+    "abstention": "Most scientific targets abstain on the controlled corpus: 3 of 100 produce a populated analytical result.",
+    "synthetic_package_history": "OG-SYNTH-0.1 is historically INCOMPLETE - 519 manifest entries against 504 recovered, 15 unrecoverable rows over 5 unique paths. It is not repaired and no completeness is claimed for it.",
+    "a1_1": "A1.1 Monte Carlo EAC Forecast is DISABLED_INSUFFICIENT_INPUT. Its canonical driver-to-EAC mapping is defined by no authority and none was invented.",
+    "scope_of_qualification": "This freeze qualifies the instrument for BOUNDED CONTROLLED-STUDY USE only.",
+    "what_this_is_not": "FINAL FREEZE IS NOT A CLAIM OF VALIDATED REAL-WORLD PREDICTIVE EFFECTIVENESS. It is not field validation, not calibration, and not evidence that any band, threshold or forecast in this instrument is accurate about real projects."
+  },
+  "predecessor_references": {
+    "v25_release_record": "research/freeze/INSTRUMENT_FINAL_FREEZE_RECORD.json",
+    "v26_release_record": "research/freeze/RUN41_SUCCESSOR_FREEZE_RECORD.json",
+    "v26_candidate_identity": "research/freeze/run41_freeze_candidate_identity.json",
+    "v26_freeze_gate": "research/freeze/run41_successor_freeze_gate.csv",
+    "statement": "All of these are preserved unchanged. That they still record v25 and v26 is asserted by the requalified gates, not assumed."
+  },
+  "governed_files_moved_since_v26": [
+    "server/app/simulation/models.py",
+    "server/app/simulation/qualification.py"
+  ]
+}

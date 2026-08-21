@@ -66,6 +66,15 @@ TIMELINESS_PARTIAL_REASON = (
     "so a field that is stale inside an applicable period cannot be detected."
 )
 
+PROVENANCE_PASS_REASON = (
+    "Every sourced field records the document type, the document identity and the document "
+    "version it was read from, so each field can be traced to the artefact that produced it."
+)
+TIMELINESS_PASS_REASON = (
+    "Every sourced field records an as-of date, so a field that is stale inside an applicable "
+    "period can be detected against the reporting period cutoff."
+)
+
 
 def _module_ids_for(compute_result: dict[str, Any]) -> tuple[set[str], dict[str, str]]:
     computed = {r["module_id"] for r in compute_result.get("modules", [])}
@@ -120,8 +129,10 @@ def _provenance(si: dict) -> tuple[str, dict[str, Any]]:
             continue
         if entry.get("docType"):
             typed += 1
-        # Recorded only if the repository ever gains a per-field document identity. It does not
-        # have one today, so this stays zero and the dimension stays PARTIAL rather than PASS.
+        # RUN 42. The per-field source record now carries the identity of the artefact the
+        # field was read from -- `extraction_merge._source_entry` copies the winning
+        # observation's document_id and sha256 across. Before that this was structurally
+        # unreachable and the dimension could never leave PARTIAL.
         if entry.get("documentId") and entry.get("documentVersion"):
             identified += 1
     evidence = {
@@ -133,7 +144,10 @@ def _provenance(si: dict) -> tuple[str, dict[str, Any]]:
         return NOT_ESTIMABLE, {**evidence, "reason":
                                "No source record accompanies this period's fields."}
     if identified and identified == typed:
-        return PASS, evidence
+        # RUN 42. The reason must describe the state actually reached. Reporting the PARTIAL
+        # sentence next to a PASS would put a false statement into the qualification record,
+        # which is the one object downstream readers are entitled to trust.
+        return PASS, {**evidence, "reason": PROVENANCE_PASS_REASON}
     return PARTIAL, evidence
 
 
@@ -153,7 +167,7 @@ def _timeliness(si: dict, period_cutoff: Any) -> tuple[str, dict[str, Any]]:
         "reason": TIMELINESS_PARTIAL_REASON,
     }
     if sources and dated == len(sources):
-        return PASS, basis
+        return PASS, {**basis, "reason": TIMELINESS_PASS_REASON}
     return PARTIAL, basis
 
 

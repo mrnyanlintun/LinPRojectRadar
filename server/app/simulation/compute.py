@@ -38,7 +38,7 @@ def contributes_to_project_status(group: str) -> bool:
 
 
 def compute_project(si: dict, scenario_id: str, period: str,
-                    period_cutoff) -> dict[str, Any]:
+                    period_cutoff, project_id: str | None = None) -> dict[str, Any]:
     """
     Run the analytical layer and fuse it into a project status.
 
@@ -188,7 +188,13 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # penalty or a score.
     result["evidence_qualification"] = build_qualification(
         si, result,
-        project_id=si.get("projectId") or si.get("id"),
+        # RUN 42. THE PROJECT'S OWN IDENTITY, PASSED IN. This read `si.get("projectId") or
+        # si.get("id")` and the signal-inputs dict has neither key -- `extraction_merge._KEY_ORDER`
+        # is the reported figures and nothing else -- so the qualification record recorded
+        # project_id as null for every project ever computed, while the caller had the identity
+        # in hand the whole time. The si keys are kept ahead of it so a caller that really does
+        # carry the identity in its inputs still wins.
+        project_id=si.get("projectId") or si.get("id") or project_id,
         reporting_period=period,
         period_cutoff=period_cutoff,
         generated_at=None,

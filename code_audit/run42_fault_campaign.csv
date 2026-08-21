@@ -1,0 +1,7 @@
+fault_id,injected_defect,file,expected,observed,result,why_this_fault
+F1,the per-field source record drops the document identity again (return before _source_entry builds it),server/app/extraction_merge.py,SUITE FAILS,exit 1 -- 107/131,CAUGHT,the primary Run 42 defect; a suite that stayed green here would be asserting nothing about lineage
+F2,the compute path reads project identity only from si keys that do not exist,server/app/simulation/compute.py,SUITE FAILS,exit 1 -- 130/131,CAUGHT,"caught ONLY by the direct compute_project section; the route-level sections stayed green because the read path re-derives the record, which is why section 7 exists"
+F3,the read path hard-codes project_id=None again,server/app/documents.py,SUITE FAILS,exit 1 -- 123/131,CAUGHT,the second identity loss Run 42 repaired
+F4,the per-field source record drops the as-of date,server/app/extraction_merge.py,SUITE FAILS,exit 1 -- 123/131,CAUGHT,the timeliness dimension depends on it and was pinned to PARTIAL by its absence
+F5,a no-op edit that changes no behaviour,server/app/documents.py,SUITE PASSES,exit 0 -- 131/131,CORRECTLY GREEN,"the control: a suite that fails on an inert edit is failing for reasons of its own, not because of the defect"
+F6,"the reporting period is derived from upload order (highest+1) instead of the caller's selection",server/app/documents.py,SUITE FAILS,exit 1 -- 2/11,CAUGHT,"the owner's central rule; the failure names the exact substitution, e.g. requested 4, got 1"

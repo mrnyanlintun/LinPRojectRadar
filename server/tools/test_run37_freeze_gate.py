@@ -46,13 +46,13 @@ def check(name, ok, why, got=""):
 # same fifteen blocker classes, regenerated from the live tree and evaluated against the
 # successor's own identity, gate and release records. The v25 artefacts are untouched and remain
 # the historical evidence for that release.
-SUCCESSOR_GATE = "run41_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN41_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN41_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN41_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+SUCCESSOR_GATE = "run42_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN42_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN42_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN42_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
-print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-41 SUCCESSOR")
+print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
 print("=" * 94)
 
 _TMP = pathlib.Path(tempfile.mkdtemp(prefix="run37-gate-"))
@@ -115,6 +115,18 @@ check("run37.gate.predecessor_release_preserved",
       "the v25 release record is still present and still says v25, so the successor superseded "
       "it rather than rewriting it",
       str(_v25_record.is_file()))
+
+# AND SO MUST RUN 42's IMMEDIATE PREDECESSOR. Run 41's successor record is the evidence for
+# everything computed under v26, exactly as the v25 record is for v25. Checking only the oldest
+# release would let the most recent one be quietly rewritten, which is the mutation this class
+# of check exists to catch.
+_v26_record = ROOT / "research" / "freeze" / "RUN41_SUCCESSOR_FREEZE_RECORD.json"
+check("run37.gate.immediate_predecessor_release_preserved",
+      _v26_record.is_file()
+      and json.loads(_v26_record.read_text(encoding="utf-8")).get("simulation_version")
+      == "sim-2026.08-v26",
+      "the v26 successor release record is still present and still says v26",
+      str(_v26_record.is_file()))
 check("run37.gate.no_release_while_blocked",
       not (_blocked and (_record.is_file() or _report.is_file())),
       "NO FINAL RELEASE RECORD MAY EXIST WHILE ANY BLOCKER STANDS",
@@ -146,10 +158,15 @@ if _record.is_file():
     check("run37.gate.no_self_reference",
           "PENDING_FINAL_COMMIT" not in _record.read_text(encoding="utf-8")
           and _rec.get("freeze_candidate_commit")
+          # RE-ANCHORED BY RUN 42. This named the v25 candidate as the superseded one, which was
+          # right while v26 was the successor. Run 42 supersedes v26, so the record must now name
+          # RUN 41's candidate as its parent. Named explicitly rather than loosened to "any
+          # commit", because the point of the check is that the record cannot point at itself and
+          # cannot silently reparent.
           and _rec.get("freeze_candidate_commit")
-          != "6142d877856ea651ef8d7e905f6d27604b3244f1"
+          != "489c9f14962899cc88213c045b87b95c2721e21e"
           and _rec.get("supersedes_candidate")
-          == "6142d877856ea651ef8d7e905f6d27604b3244f1"
+          == "489c9f14962899cc88213c045b87b95c2721e21e"
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),
           "the record distinguishes freeze_candidate_commit, release_content_digest and "

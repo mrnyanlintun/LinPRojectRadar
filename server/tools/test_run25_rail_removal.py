@@ -204,7 +204,13 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # use; the S1 fix CHANGED main.py and the S2 fix ADDED migration 0026, so
                         # the pin moves to the Run-41 manifest and the Run-36 manifest is kept
                         # addressable as its parent.
-                        "run41_production_tree.sha256"),
+                        "run41_production_tree.sha256",
+                        # RUN 42 extends the chain once more, by the same rule. The owner
+                        # instructed that the background data-processing mechanism be repaired;
+                        # the per-field evidence-provenance fix CHANGED five production files and
+                        # ADDED none, so the pin moves to the Run-42 manifest and the Run-41
+                        # manifest is kept addressable as its parent.
+                        "run42_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

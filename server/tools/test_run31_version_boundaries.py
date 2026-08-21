@@ -391,13 +391,16 @@ check(H[:len(_prev)] == _prev,
 # the two behaviour changes the owner authorised after Run 40 (untrusted document content can no
 # longer execute same-origin; substantive final responses become database-immutable after final
 # lock).
+# RESTATED BY RUN 42, same reasoning once more: v27 is Run 42's own single authorised append -
+# the successor that carries the per-field evidence provenance repair, which moves the stored
+# signal inputs and the qualification object and therefore cannot be made under the v26 stamp.
 check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19",
                          "sim-2026.08-v20", "sim-2026.08-v21", "sim-2026.08-v22",
                          "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
-                         "sim-2026.08-v26"),
+                         "sim-2026.08-v26", "sim-2026.08-v27"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
-      "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds and the "
-      "one Run 41 adds",
+      "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds, the "
+      "one Run 41 adds and the one Run 42 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.

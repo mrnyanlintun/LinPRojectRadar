@@ -347,7 +347,23 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: rewritten: it stays exactly as that release wrote it and this successor names it as its
 #: parent. The guard was observed reporting exactly those files, and nothing else, before this
 #: manifest was written.
-PINNED = ROOT / "code_audit" / "run41_production_tree.sha256"
+#: RUN 42. This moved again, from run41_production_tree.sha256 to the run42 file, on the same
+#: Run-34/35 precedent. Run 42 traced the background data-processing mechanism end to end and
+#: repaired two identity losses in it, and FIVE production files move and only five:
+#: `server/app/extraction_merge.py` (the per-field source record now carries the document
+#: identity every observation already held), `server/app/simulation/qualification.py` (the
+#: provenance and timeliness reason sentences must describe the state actually reached now that
+#: those dimensions can leave PARTIAL), `server/app/simulation/compute.py` and
+#: `server/app/documents.py` (the project's identity reaches the qualification record on the
+#: compute path and the read path), and `server/app/simulation/models.py` (the stamp advances to
+#: sim-2026.08-v27 with the boundary recorded). Nothing is added and nothing is removed. The
+#: run41 manifest is NOT rewritten: it stays exactly as that release wrote it and this successor
+#: names it as its parent. The guard was observed reporting exactly those five files, and
+#: nothing else, before this manifest was written.
+PINNED = ROOT / "code_audit" / "run42_production_tree.sha256"
+#: The Run-41 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN41 = ROOT / "code_audit" / "run41_production_tree.sha256"
 #: The Run-36 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN36 = ROOT / "code_audit" / "run36_production_tree.sha256"

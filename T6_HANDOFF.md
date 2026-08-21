@@ -12346,3 +12346,80 @@ participant experimental sequence unchanged; production Postgres untouched.
 band has measured false-positive or false-negative performance; 96 of 100 targets produce nothing
 on the controlled corpus; 96 unresolved-calibration rows (95 unreached, 1 applied); Portfolio
 Health empirical validation PENDING x5; lineage UNRESOLVED for 77 of 100.
+
+---
+
+# Run 42 (2026-08-21) — the period-binding and evidence-lineage mechanism
+
+**Disposition: SUCCESSOR_FREEZE_ACCEPTED at `sim-2026.08-v27`.** Full suite **188 suites,
+14176/14176, green**. Report: `REPORT_2026-08-21_period-binding-mechanism-repair.md`.
+
+**The instruction.** Fix the background data-processing and calculation mechanism; the reporting
+period the user SELECTS at upload is authoritative and nothing else may determine it.
+
+**What was already right, and this is most of it.** The selected period binds correctly; upload
+order, document date, filename, insertion order and extraction completion order do not reach the
+period (the period is bound *before* extraction runs); there is no cross-period or cross-project
+retrieval; longitudinal series are ordered by reporting-period identity via `_earlier_live_results`.
+Uploading `P4,P1,P3,P2` into a fresh database produces a **byte-identical** analytical state to
+`P1,P2,P3,P4` (`code_audit/run42_outoforder_equivalence.json`).
+
+**Two defects, both losses in the PATH and not absences in the data.**
+
+- **D1.** `extraction_merge` built each per-field `sources` entry as `{docType, value}`, dropping the
+  `document_id`, `sha256`, `revision_of` and `as_of` that **every** observation has always carried.
+  `qualification._provenance` requires both an identity and a version, so it counted **zero traced
+  fields on every project ever computed**, and provenance and timeliness were *structurally* pinned
+  to PARTIAL — no input could ever have moved them. Fixed by `_source_entry`.
+- **D2.** The qualification record's `project_id` came from `si.get("projectId")`, a key the
+  signal-inputs dict has never had, and the read path hard-coded `None`. Fixed by threading the
+  project explicitly. **Note:** the compute path's qualification object is *not persisted* (the read
+  path re-derives it), so that half is a function-boundary repair with no route-observable effect
+  today; it is tested directly, because fault injection showed the route-level checks could not see it.
+
+**What was deliberately NOT done.** `revision_resolution_status` remains hard-coded NOT_ESTIMABLE,
+so `overall_qualification_state` (weakest-of) remains NOT_ESTIMABLE **for every project,
+permanently**. `test_run12_category9_qualification.py` asserts this across five evidence cases: it
+is a deliberate fail-closed decision, and relaxing it to unblock categories would undo a scientific
+choice rather than repair a mechanism. **This is the lead open item for the next run and it needs an
+owner decision.** After D1, revision lineage *is* now joined to the field (`revisionOf`), and
+supersession is already resolved by explicit claims rather than upload order — so the dimension's
+stated premise no longer holds. Whether that suffices is the owner's judgement.
+
+**Scientific state unchanged.** No input invented, no fact fabricated, no rule relaxed, no method
+changed. All **101** module rows are byte-identical across the v26→v27 boundary, proved by executing
+both pinned lines from their own git objects (`code_audit/run42_v26_v27_execution_proof.csv`). On a
+single-project period carrying one monthly report, **3 modules compute, 92 abstain, 6 are not
+reached** (A4.1 refused as unported; D1.1–D1.5 portfolio scope) and one category, A1, carries a
+status. That is the instrument working correctly: the other categories' governed structures are
+genuinely absent from the corpus.
+
+**No source document needs modification.** Both defects were in the code path between storage and
+the module and were fixed without touching a document byte.
+
+**Blast radius, measured:** five production files changed, none added, none removed —
+`extraction_merge.py`, `simulation/qualification.py`, `simulation/compute.py`, `documents.py`,
+`simulation/models.py`. Pinned in `code_audit/run42_production_tree.sha256`.
+
+**Participant package RETAINED `og-participant-2026.08-v13`, determined mechanically** — 70 of 70
+governed bytes identical, 6 of 6 sequence-bearing files identical, and none of the five changed
+files is named by that record. `OG-SYNTH-0.6` and `og-analysis-2026.08-v1` unchanged.
+
+**Gates re-executed (not copied):** freeze gate 15 blockers / 0 blocked and suite 30/30; Run-38
+frozen immutability 17/17; Run-39 launch 100/100 and frozen immutability 19/19; Run-41 preservation
+33/33 (now also asserting v26 reconstructs from its own git object as v26). Where a guard had to
+move it moved by **naming** what changed, never by widening a comparison.
+
+**New suite:** `server/tools/test_run42_period_binding_mechanism.py`, 131 checks through the real
+routes, pinning the deliberate abstentions as well as the computations. Fault campaign of 6
+(`code_audit/run42_fault_campaign.csv`): 5 intended-red all caught, 1 inert control correctly green.
+
+**Still open for the next run.**
+- The revision dimension / permanent NOT_ESTIMABLE overall state — **owner decision** (lead item).
+- **10 of 118 declared extraction fields are consumed by nothing** — the extractor is asked for them
+  and they are stored, but no observation, signal input or module reads them
+  (`code_audit/run42_unconsumed_extraction_fields.csv`). Mapping them is a scientific design change,
+  not a mechanism repair, so it was reported rather than done.
+- Everything carried forward from Run 36 remains open; no target is empirically field-validated.
+- Professionalization observations are listed in section 9 of the Run 42 report — including a stale
+  docstring in `_period_history` claiming the P1 portfolio defect is still queued when it was fixed.

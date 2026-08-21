@@ -62,13 +62,13 @@ FREEZE = ROOT / "research" / "freeze"
 # run37_candidate_behaviour_digest.json and the v25 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v25. The
 # successor writes beside them under its own names.
-PREDECESSOR_CANDIDATE = "6142d877856ea651ef8d7e905f6d27604b3244f1"
-PREDECESSOR_VERSION = "sim-2026.08-v25"
-CANDIDATE = "489c9f14962899cc88213c045b87b95c2721e21e"
-EXPECTED_VERSION = "sim-2026.08-v26"
-IDENTITY_FILE = "run41_freeze_candidate_identity.json"
-GATE_FILE = "run41_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run41_candidate_behaviour_digest.json"
+PREDECESSOR_CANDIDATE = "489c9f14962899cc88213c045b87b95c2721e21e"
+PREDECESSOR_VERSION = "sim-2026.08-v26"
+CANDIDATE = "07dccf774d34a0dc7536626b739d7a2fb94dfa4e"
+EXPECTED_VERSION = "sim-2026.08-v27"
+IDENTITY_FILE = "run42_freeze_candidate_identity.json"
+GATE_FILE = "run42_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run42_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
