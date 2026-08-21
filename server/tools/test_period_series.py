@@ -35,6 +35,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
 import app.main as main  # noqa: E402
+from app.simulation import registry as _REG43  # noqa: E402
 from app.documents import set_extractor_override  # noqa: E402
 from app.extraction_client import StubExtractor  # noqa: E402
 from app.models import Project  # noqa: E402
@@ -189,23 +190,27 @@ snap1 = r1.get("portfolio_snapshot") or {}
 # stored snapshot could not tell an abstention from a module that had never existed. The property
 # this check protects -- one snapshot is not a trend, and nothing is invented from it -- is kept
 # and stated on the reason itself.
+# RUN 43, THE RETIREMENT. D1.3 is retired from service, so it produces nothing at period 1 and
+# carries no snapshot entry to abstain on. The property this check protects -- one snapshot is
+# not a trend, and NOTHING is invented from it -- is asserted directly: no portfolio-level
+# reading of any kind is produced from period 1.
 _t1 = (snap1.get("results") or {}).get("cat8_3_trajectory_classifier") or {}
-check(_t1.get("abstained") is True and bool(_t1.get("abstention_reason")),
-      "the trajectory classifier abstains at period 1: one snapshot is not a trend",
+check(not _t1 and not (snap1.get("results") or {}),
+      "the trajectory classifier invents no trend at period 1: it is retired from service and "
+      "one snapshot produces no portfolio-level reading at all",
       str(sorted((snap1.get("results") or {}).keys())))
 # RESTATED BY RUN 15. D1.1 used to compute here on a two-project portfolio, because a distance
 # from a centroid is defined even when the population is one other point. It is now a real
 # isolation forest, which needs at least two OTHER projects to grow trees on, so it abstains by
 # absence alongside the trajectory classifier. The point of the check is unchanged: the
 # abstention is specific and the rest of the snapshot still computed.
-check(sorted((snap1.get("results") or {})) == [
-          "cat8_1_isolation_forest", "cat8_2_portfolio_outlier",
-          "cat8_3_trajectory_classifier", "cat8_4_cross_project_pattern",
-          "cat8_5_anomaly_score"]
-      and all(v.get("abstention_reason") for v in (snap1.get("results") or {}).values()),
-      "and every Portfolio Health identity is addressable in the snapshot with its own reason, "
-      "so an abstention is distinguishable from a module that was never there",
-      str(sorted(snap1.get("results") or {})))
+check(not (snap1.get("results") or {})
+      and all(_REG43.is_retired(m) for m in ("D1.1", "D1.2", "D1.3", "D1.4", "D1.5"))
+      and "no longer part of the analytical taxonomy" in str(snap1.get("message") or ""),
+      "and no Portfolio Health identity is addressable in the snapshot, because all five are "
+      "retired from service and the snapshot says so once, in words, so the absence is still "
+      "distinguishable from a module that silently vanished",
+      str(sorted(snap1.get("results") or {})) + " | " + str(snap1.get("message"))[:80])
 
 print()
 print("=" * 78)
@@ -261,13 +266,13 @@ snap3 = (r3.get("portfolio_snapshot") or {}).get("results") or {}
 import run33_historical_portfolio as _R33H                                       # noqa: E402
 _R33H.assert_not_reachable(check)
 
+# RUN 43: retired from service. It abstains for no reason of its own because it is not asked.
 _traj21 = snap3.get("cat8_3_trajectory_classifier") or {}
-check(_traj21.get("abstained") is True
-      and "governed portfolio cohort" in (_traj21.get("abstention_reason") or ""),
-      "at v21 the trajectory classifier abstains on this project for want of a governed cohort "
-      "and a governed signal history, and says so",
-      str(_traj21.get("abstention_reason"))[:120])
-check("status_color" not in _traj21 and _traj21.get("voting") is False,
+check(not _traj21 and _REG43.is_retired("D1.3"),
+      "at Run 43 the trajectory classifier is retired from service, so on a real three-period "
+      "series it produces no snapshot entry at all rather than an abstaining one",
+      str(_traj21)[:120])
+check(not _traj21.get("status_color") and not _traj21.get("voting"),
       "carrying no status colour and no vote")
 
 # --- THE HISTORICAL RECORD, executed against the preserved v20 implementation ---------------

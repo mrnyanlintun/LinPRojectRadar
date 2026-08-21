@@ -27,6 +27,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 import app.main as main
+from app.simulation import registry as _REG43
+_PH_IDENTITIES = ("D1.1", "D1.2", "D1.3", "D1.4", "D1.5")
 from app.documents import set_extractor_override
 from app.extraction_client import StubExtractor
 from app.research_identity import hash_access_token
@@ -267,10 +269,13 @@ _reg = next((m for m in (r["module_results"] or [])
 check(_reg is None,
       "the analysis that scored the courses of action carries no row, because it abstains",
       str(_reg)[:160])
+# RUN 43, THE RETIREMENT. B4.7 is retired from service, so it reaches no row on the PM's read at
+# all -- neither a result nor an abstention. What this check is for is unchanged and is asserted
+# immediately above: nothing on this read is WITHHELD.
 _abst_ids = {a.get("module_id") for a in (r.get("abstained") or [])}
-check("B4.7" in _abst_ids,
-      "and its silence is recorded as an abstention on the PM's own read",
-      str(sorted(_abst_ids))[:120])
+check("B4.7" not in _abst_ids and _REG43.is_retired("B4.7"),
+      "and B4.7 is retired from service, so it reaches neither a result row nor an abstention "
+      "row on the PM's own read", str(sorted(_abst_ids))[:120])
 
 
 # ---------------------------------------------------------------- Guarantee 9
@@ -284,11 +289,17 @@ check(snap.get("insufficient_data") is True, "below threshold, reported as insuf
 # anything: Portfolio Health abstains at v21 because no GOVERNED COHORT has been supplied, which
 # is a different and truthful reason. The legacy sentence travels with the legacy implementation
 # it belongs to and is asserted there.
-check("governed portfolio cohort" in (snap.get("message") or ""),
+# RUN 43, THE RETIREMENT. Portfolio Health is offloaded: all five identities are retired from
+# service, `live_portfolio_modules()` returns (), and the snapshot is a RETIRED snapshot rather
+# than a governed-cohort abstention. The reason it states is the retirement reason, and the route
+# it is stamped with is `retired`. The properties this pair of checks exists to hold -- that the
+# server states its OWN reason in words and that the snapshot is non-voting and creates no
+# project evidence -- are unchanged and are both still asserted.
+check("no longer part of the analytical taxonomy" in (snap.get("message") or ""),
       "the server's own abstention reason is present, unmodified", snap.get("message"))
-check(snap.get("route") == "canonical_v8" and snap.get("voting") is False
+check(snap.get("route") == "retired" and snap.get("voting") is False
       and snap.get("creates_project_evidence") is False,
-      "and the snapshot is stamped with the canonical route, non-voting, creating no evidence",
+      "and the snapshot is stamped with the retired route, non-voting, creating no evidence",
       str([snap.get("route"), snap.get("voting"), snap.get("creates_project_evidence")]))
 
 # a second project with real signal data pushes the vector count over the guard
@@ -307,24 +318,28 @@ snap2 = result2b["result"]["portfolio_snapshot"]
 # cohort through `saveprojectdata`, so all five abstain with the SAME reason -- the abstention
 # is a property of the cohort, not five separate opinions about it. This is the correct reading,
 # not a regression from the populated one.
-check(snap2 is not None and snap2.get("structure_absent") is True,
-      "with 2+ live results but NO governed cohort supplied, the snapshot is a reported "
-      "abstention rather than an invented comparison",
+check(snap2 is not None and snap2.get("retired") is True
+      and snap2.get("route") == "retired",
+      "with 2+ live results, the snapshot is a reported RETIREMENT rather than an invented "
+      "comparison: a second project cannot manufacture a portfolio reading either",
       str(snap2)[:150] if snap2 else None)
 # All five are PRESENT as reported abstentions carrying their reason. At v20 an abstaining
 # portfolio module vanished from the map entirely, which is why "the count is 3" was the
 # assertion; a reader of the stored snapshot could not tell an abstention from a module that had
 # never existed. Every one of the five is now addressable, and its reason is readable.
 _res2 = (snap2 or {}).get("results", {})
-check(len(_res2) == 5 and sorted(_res2) == [
-          "cat8_1_isolation_forest", "cat8_2_portfolio_outlier",
-          "cat8_3_trajectory_classifier", "cat8_4_cross_project_pattern",
-          "cat8_5_anomaly_score"],
-      "all five Portfolio Health identities are addressable in the stored snapshot",
-      str(sorted(_res2)))
-check(all(_res2[k].get("abstained") is True and _res2[k].get("abstention_reason")
-          for k in _res2),
-      "and every one of them abstains WITH ITS REASON rather than vanishing")
+# RUN 43, THE RETIREMENT. All five identities are retired from service, so the snapshot carries
+# no per-identity result at all. Addressability existed so that a reader could tell an
+# abstention from a module that had never existed; with the identities retired there is nothing
+# to be addressable, and what replaces it is the snapshot's own single stated reason, which is
+# asserted here so the absence still cannot be silent.
+check(not _res2 and all(_REG43.is_retired(m) for m in _PH_IDENTITIES),
+      "no Portfolio Health identity is addressable in the stored snapshot, because all five are "
+      "retired from service", str(sorted(_res2)))
+check(bool(str(snap2.get("message") or "").strip())
+      and "no longer part of the analytical taxonomy" in str(snap2.get("message") or ""),
+      "and the snapshot states, once, why there is no portfolio-level reading, so the absence "
+      "does not vanish unexplained", str(snap2.get("message"))[:120])
 check(all(_res2[k].get("voting") is False and _res2[k].get("creates_project_evidence") is False
           and "status_color" not in _res2[k] for k in _res2),
       "non-voting, creating no project evidence, and carrying no status colour")
