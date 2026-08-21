@@ -9,6 +9,164 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-21 - Run 43B: STOPPED AT 7.1 AND 7.8. UNMERGED. THE WALL IS NOW MEASURED.
+
+**Report:** `REPORT_2026-08-21_run43B_retirement_completion.md`.
+**Branch:** `claude/run43B-retirement-completion`, rooted at `b37f133`, **unmerged**.
+**Stamp:** still `sim-2026.08-v27`. `sim-2026.08-v28` NOT minted. `main` still `f461630`.
+**Phase B was NOT begun** — the section 2 gate fails on all four conditions, not one.
+
+## READ THIS BEFORE RE-COMMISSIONING THE RETIREMENT
+
+Run 43B was told the 73 failing suites "enumerate hard-coded identifier lists" and to repoint
+each onto the live registry without touching a check body. **That premise does not hold, and the
+measurement is the deliverable.**
+
+- **The count is 72, not 73.** 116 `ok` + 72 `FAIL` = 188. The `FAILED SUITES` block has 72
+  entries. The check figures 9671/9817 are confirmed exactly.
+- **53 of the 72 carry a quoted retired identifier in their source, 845 occurrences.** In those
+  the identifier is *inside the check body* — a hand-written per-module block or a hand-computed
+  expected value. There is no enumeration source to repoint.
+- **The other 19 do not fail for a repointable reason either.** They fail on hard-coded expected
+  counts inside check bodies (`96`, `101`, `five`), on pinned byte-identity freeze manifests that
+  Run 43's own edits falsified, on the literal string `RETIRED` leaking out of the renumbering
+  CSV into derived populations, and on `A1.1` surviving in `assets/js/taxonomy.js`.
+- **The cause is not uniform.** 32 `MissingModuleError`, 6 `KeyError`, 34 running-but-failing.
+  Run 43's handoff said "uniform"; that was wrong and it matters, because the difference is what
+  decides whether repointing is possible at all.
+
+**THE IRREDUCIBLE CASE IS PRODUCTION CODE, NOT A TEST.**
+`server/app/simulation/models_sim.py:254`, `assert_retained_adaptation_not_reachable`, proves
+A1.1's retained Monte Carlo adaptation is unreachable by **executing** A1.1 and asserting the
+abstention. Its own comment records that a non-executing version once passed while the adaptation
+was live, and states the rule: *a guard satisfied by somebody else's refusal is proving nothing
+about its own subject.* Post-retirement `run_module` refuses A1.1 first, so it raises. Removing
+the retired ids from the registry constants (what the removal step authorises) was **simulated
+in-process** and makes it fail twice instead of once. No third route exists. Its body must change
+(7.1) or it must go (7.8, and 5.5.1 forbids removing a check).
+
+## WHAT RUN 43B COMPLETED AND COMMITTED
+
+1. **The export's proxy-qualifier mirror is reconciled.** Run 43 left this open as item 2.
+   `research_export._RUN1_PROXY_QUALIFIERS` 30 -> 1, proved identical to
+   `registry.PROXY_QUALIFIERS`. `registry.py`'s "thirty proxy modules" prose corrected.
+2. **Portfolio Health is offloaded.** Run 43 left this open as item 1. `canonical_v8` PH.1-PH.5 no
+   longer runs; `live_portfolio_modules()` derives the answer from the registry rather than
+   declaring it, and the check sits **before** `assemble()` so the intake path is offloaded too.
+   Proved by monkeypatching both to raise. `canonical_v8` is untouched.
+   **The portfolio card renders one line and no per-project cards** — `assets/js/workspace.js`
+   1009-1021, code NOT modified, using the `insufficient_data` branch it already had:
+   *"Portfolio Health is no longer part of the analytical taxonomy, so no portfolio-level reading
+   is produced. Project Status is unaffected: Portfolio Health never contributed to it."*
+   No control added, moved or removed.
+3. **The complete artifact enumeration**, committed as
+   `code_audit/run43B_retired_identifier_artifact_enumeration.csv`: **458 files, 8,340
+   occurrences, 169 files with a line naming a retired module AND a module in service.**
+   **Nothing was removed** — the removal step was never reached.
+
+**The offload cost four previously-green suites**: `test_run33_portfolio_health`,
+`test_run34_holdout_provenance`, `test_run34_provenance_fault_campaign`, `test_period_series`.
+All four have a wholly retired subject and are exactly what the removal step would have removed.
+Suite state on the branch: **188 suites, 9434/9615, 76 red** (was 9671/9817, 72 red).
+
+## THE DECISION, SHARPER THAN RUN 43 STATED IT
+
+Retiring 38 modules necessarily falsifies every check whose subject is one of them and every
+manifest pinning a file the retirement edited. Those checks cannot be repointed. Pick one:
+**(A)** permit check bodies to change where the subject is retired, including a production
+guard's, and say what that guard must assert instead; **(B)** permit whole guards and suites to
+be removed where the subject is wholly retired, accepting the qualification evidence shrinks;
+**(C)** re-pin the frozen manifests as an owner-authorised successor change, as Run 41 did for
+its own, and say whether the retirement counts as one. All three change what the instrument's
+qualification evidence consists of. None may be chosen inside a run.
+
+## PROCEDURAL, COSTS TIME IF NOT READ
+
+- **`git add -A` is unsafe here whenever a suite may be running.** A background fault-injection
+  suite mutates production files in place; an early Run 43B commit captured an injected fault in
+  `canonical_v8.py` mid-injection. Caught by `git show --stat` and amended. **Name paths
+  explicitly on every commit.**
+- **The self-rewriting artifacts reproduced again: 15 this run** (41A saw 13, Run 43 saw 14).
+  All restored, none committed.
+- **Section 1's branch point vs sections 3.3/5.5.4.** `b37f133` is authoritative but does not
+  carry the Run 43 report or decision record; they are on `d8fe98d`. Branch from `b37f133`, then
+  `git checkout d8fe98d -- <the two files>`.
+- **The stamp path in the prompt is still wrong.** It is `server/app/simulation/models.py:475`.
+
+# 2026-08-21 - Run 43: 38 MODULES RETIRED, BUT THE RUN STOPPED. BRANCH UNMERGED.
+
+**Report:** `REPORT_2026-08-21_run43_module_retirement.md`.
+**Decision record:** `MODULE_RETIREMENT_DECISIONS.md` (created fresh by this run; none existed).
+**Branch:** `claude/run43-module-retirement`, **NOT MERGED**, two sound implementing commits.
+
+**Disposition: STOP CONDITION 15.8 FIRED** — the successor freeze cannot be taken without
+weakening the guard. **`sim-2026.08-v28` was NOT minted. The live stamp remains
+`sim-2026.08-v27`.**
+
+## WHAT IS SOUND AND DOES NOT NEED REDOING
+
+- `5282d72` — prose count corrected, 100 -> 101 and Group A 52 -> 53, committed SEPARATELY and
+  FIRST. The live registry and `assets/js/taxonomy.js` both derived 101/53 and agreed; only prose
+  was wrong. `A4.1` Document Risk Score is registered but unported, which is the one-module
+  difference between the registered 101 and the computed 100. Both populations are real; say which
+  one you mean.
+- `b37f133` — 38 modules retired, registry **101 -> 63** (A 53->44, B 36->12, C 7, D 5->0).
+  Reasons 5/10/16/7. Retired in place by the existing `RETIRED` convention in
+  `p0-baseline/module_renumbering_map.csv`; no row deleted, no second registry file.
+  `available_modules()` is now the INTERSECTION of `VALIDATED` with the registry, which is the one
+  change that makes retirement take effect everywhere without deleting formulas.
+- **Preservation proven, not assumed.** Full census captured BEFORE any change and byte-compared:
+  **zero retained modules changed**, project status unchanged. Eight of nine section 13 guarantees
+  verified, each with an injection proving the check could fail.
+
+## THE BLOCKING DECISION — NOTHING ELSE PROCEEDS UNTIL THIS IS MADE
+
+Baseline was re-run and confirmed: **188 suites, 14176/14176, ALL GREEN** at `f461630`.
+After the retirement: **73 suites failing, 9671/9817**. Cause is uniform — **56
+`MissingModuleError`**: the per-module audit, known-answer and fault-campaign suites call
+`run_module()` on every id, and guarantee 13.4 requires retired ids be refused there.
+
+Getting green means deleting ~**4,359 checks** across 73 suites. Section 6.1 forbids removing
+checks. The alternative violates guarantee 13.4. Both routes weaken an owner-mandated check, which
+IS stop condition 15.8.
+
+**Option A — retire from the taxonomy only.** Relax 13.4 so `run_module()` still computes a
+retired module called explicitly by id, while it stays absent from every enumerated path
+(registry, rollup, export, ledger, browser taxonomy). All 14176 checks survive. The defence burden
+the retirement exists to remove is on the taxonomy and the ledger, not on `run_module()`.
+
+**Option B — retire fully and re-baseline the qualification evidence.** Retire the audit suites
+for the 38 as well, with their own authorisation and record. Larger than Run 43; commission it.
+
+Run 43's reading, as input not decision: **Option A matches the stated purpose.**
+
+## ALSO OPEN, FROM THIS RUN
+
+1. **Portfolio Health outlives its modules.** Group D is retired, but the card computes through
+   `canonical_v8.compute_portfolio_health` (PH.1-PH.5 = D1.1-D1.5), not through the module ids.
+   The only place guarantee 13.4 is not fully met. **No control was touched**; the `D1` category
+   container remains with an empty module list. Owner decision, not a run decision.
+2. **The export's proxy-qualifier mirror is 29 entries adrift.** `registry.PROXY_QUALIFIERS` holds
+   1; `research_export._RUN1_PROXY_QUALIFIERS` holds 30, including `B4.4`, whose qualifier Run 32
+   explicitly withdrew. Committee-facing surface. Unacted.
+3. **`B4.4`'s label needed NO correction.** It has no entry in `TRUTHFUL_METHOD_LABELS`,
+   `STRUCTURAL_CLAIM_LIMITS` or `PROXY_QUALIFIERS`; it presents the registry's canonical name
+   "What-If Scenario Matrix". The instruction to correct it rested on a premise Run 35's own
+   closure had already actioned.
+4. **`B2.19` takes reason 3, not reason 4.** The authorising prompt's section 10.2 contradicts its
+   own section 8 under the lowest-numbered rule. Total of 38 unaffected.
+5. **The prompt's freeze-stamp path is wrong.** The stamp is at
+   `server/app/simulation/models.py:475`, not `server/app/models.py:475`.
+
+## PROCEDURAL NOTES THAT COST TIME
+
+- **This clone has no `.venv`.** `server/run_all_suites.sh` already falls back to the interpreter
+  on `PATH`; use the script rather than invoking suites by hand, since it builds a freshly migrated
+  SQLite per file and enforces the canonical `RESULT:` line rule itself.
+- **The Run 41A artifact-rewriting finding reproduced exactly.** Running the suites rewrote **14**
+  committed `code_audit/*.csv` artifacts. All restored; none committed. Check `git status` before
+  every commit.
+
 # 2026-08-19 - Run 39: MAIN STUDY LAUNCH READY. Collection may begin; it has not begun.
 
 **Report:** `REPORT_2026-08-19_run39-main-study-launch-readiness.md`.

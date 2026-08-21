@@ -451,3 +451,73 @@ so the run stopped, the freeze was not taken, and the branch was left unmerged.
 **This is an owner decision, not a decision for a run.** The two coherent options are recorded in
 the run report. Neither can be chosen inside a run, because both change what the instrument's
 qualification evidence consists of.
+
+---
+
+# Run 43B addendum, 2026-08-21
+
+Run 43B was authorised to complete the retirement: repoint the failing suites onto the live
+registry, remove the artifacts keyed to retired identifiers, offload Portfolio Health, reconcile
+the check count, mint `sim-2026.08-v28` and merge. **It stopped at the same wall as Run 43, one
+step further along, and the wall is now measured rather than predicted.** Stop conditions 7.1 and
+7.8 fired. The branch `claude/run43B-retirement-completion` is unmerged and no successor was
+minted. Full detail in `REPORT_2026-08-21_run43B_retirement_completion.md`.
+
+**Three corrections to what this record said above.**
+
+1. **The failing-suite count is 72, not 73.** The runner's own arithmetic: 116 `ok` plus 72
+   `FAIL` is 188, and the `FAILED SUITES` block holds 72 entries with no duplicates. The check
+   figures, 9671/9817, are confirmed exactly.
+
+2. **"The cause is single and uniform" is not correct.** It is at least five distinct causes, and
+   the difference decides whether the work is possible. 32 suites crash with `MissingModuleError`
+   and 6 with `KeyError`; the remaining 34 run to completion and fail on checks. Among those,
+   separate mechanisms: hard-coded expected counts inside check bodies (`96`, `101`, `five`);
+   pinned byte-identity freeze manifests that Run 43's own edits falsified; the literal string
+   `RETIRED` leaking out of the renumbering CSV into derived populations; and `A1.1` surviving in
+   the browser taxonomy.
+
+3. **"The suites enumerate the module population" is not correct of most of them.** Measured over
+   the 72 source files: 53 carry a quoted retired identifier in the source, 845 occurrences in
+   all. In those, the identifier is the subject of a hand-written per-module block or a
+   hand-computed expected value — it sits *inside the check body*, where there is no enumeration
+   source to repoint. Run 43B's authorising prompt forbids changing a check body, which is why
+   7.1 fired.
+
+**The irreducible case, and it is not a test file.**
+`server/app/simulation/models_sim.py:254`, the production guard
+`assert_retained_adaptation_not_reachable`, proves A1.1's retained Monte Carlo adaptation cannot
+be entered — by *executing* A1.1 and asserting the abstention that comes back. Its own comment
+records that a non-executing version of it once passed while the adaptation was live, and states
+the rule: *a guard that is satisfied by somebody else's refusal is proving nothing about its own
+subject.* After the retirement `run_module` refuses A1.1 first, so the guard raises. Removing the
+retired identifiers from the registry constants — which is what the artifact-removal step
+authorises — was simulated in-process and makes the guard fail twice instead of once. There is no
+third route. The guard's body must change, or the guard must go.
+
+**What Run 43B did complete**, because each was independently ordered and none depends on the
+blocked repointing:
+
+- `research_export._RUN1_PROXY_QUALIFIERS` reconciled from 30 stale entries to the live
+  registry's 1, and `registry.py`'s "thirty proxy modules" prose corrected.
+- The `canonical_v8` PH.1 to PH.5 Portfolio Health path offloaded, derived from the registry
+  rather than declared, with the intake path offloaded too. This is the retirement of `D1.1` to
+  `D1.5` actually taking effect: Run 43 retired the identifiers, but the computation continued
+  under the PH names.
+- The complete enumeration of artifacts keyed to a retired identifier, committed as
+  `code_audit/run43B_retired_identifier_artifact_enumeration.csv`: **458 files, 8,340
+  occurrences, and 169 files carrying at least one line that names a retired module and a module
+  in service together.** Nothing was removed.
+
+**The offload cost four previously-green suites** — `test_run33_portfolio_health`,
+`test_run34_holdout_provenance`, `test_run34_provenance_fault_campaign` and `test_period_series`
+— all four with a wholly retired subject, all four exactly what the artifact-removal step would
+have removed had it been reachable. This is the visible consequence of separating the offload
+from the removal, and it is recorded rather than absorbed.
+
+**The decision remains the owner's, and it is now sharper.** Run 43 framed it as a choice between
+deleting checks and violating guarantee 13.4. Run 43B's measurement narrows it: the retirement
+of 38 modules necessarily falsifies every check whose subject is one of them and every manifest
+pinning a file the retirement edited, and those checks have no enumeration source to repoint. The
+three coherent options are stated in section 12 of the Run 43B report. All three change what the
+instrument's qualification evidence consists of, which is why none may be chosen inside a run.
