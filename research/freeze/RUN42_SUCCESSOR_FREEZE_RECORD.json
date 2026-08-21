@@ -12,10 +12,10 @@
     "Run 42 repaired both, stamped the successor sim-2026.08-v27, and requalified every downstream gate by executing it.",
     "The v25 and v26 releases remain historical evidence and are not rewritten. Results computed under either remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "502ebb346ed558420ff2962699440f56dbc3ffbe",
-  "candidate_identity_digest": "3c4048238b3f6e8b7db6a1321b8597af37dd12cc830ab6f761c24750ca4ee910",
+  "freeze_candidate_commit": "de5158681ca80fafbe7eb8bc74831a207022cad6",
+  "candidate_identity_digest": "983a84a51de0b386b3e1069edb9e8fbd5b072511173118bca8c292fe4058c314",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "cad8ded91008ef2843c64c43773cb7971d230b377facb8ac96f2985cf6e0375e",
+  "release_content_digest": "edb82b652275a1a49ff5cac757aff8157db0ddd6c3c84c7069153d88d3d271c4",
   "release_content_digest_method": "sha256 over RUN42_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v27",

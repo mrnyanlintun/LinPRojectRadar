@@ -1,5 +1,5 @@
 blocker_id,blocker,count,requirement,evidence,result
-B01,dirty candidate identity,0,required = 0,10 content-addressed digests recomputed from the tree and compared; git porcelain lines at evaluation: 1,PASS
+B01,dirty candidate identity,0,required = 0,10 content-addressed digests recomputed from the tree and compared; git porcelain lines at evaluation: 0,PASS
 B02,population mismatch,0,required = 0,registered total=101 expected 101; project scientific targets=95 expected 95; Portfolio Health targets=5 expected 5; scientific targets=100 expected 100,PASS
 B03,controlled-stimulus mismatch,0,required = 0,projects=6 periods/project=[6] unique=36 rows=36 duplicates=0 missing=0,PASS
 B04,participant-sequence drift,0,required = 0,6 sequence-bearing files compared against the v13 record; moved: none,PASS
@@ -13,4 +13,4 @@ B11,package or predecessor mutation,0,required = 0,rewritten predecessor package
 B12,browser qualification failure,0,required = 0,29 rows; failing: none,PASS
 B13,unresolved blocking Run-36 defect,0,required = 0,open instrument-level defects: none; target rows carrying one: none,PASS
 B14,unsupported final empirical-validation claim,0,required = 0,every one of the 100 rows records NOT_EMPIRICALLY_FIELD_VALIDATED; exceptions: none,PASS
-B15,candidate behaviour changed during the run,0,required = 0,first evaluation: behaviour digest recorded,PASS
+B15,candidate behaviour changed during the run,0,required = 0,behaviour digest reproduced identically: 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1,PASS
