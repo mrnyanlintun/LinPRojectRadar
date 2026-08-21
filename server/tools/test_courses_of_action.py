@@ -210,6 +210,8 @@ for legacy, tag in ((OPS, "OPS"), (ABST, "ABST")):
                          "dataBase64": b64(doc(tag))}]})
     post({"action": "projectcompute", "session_token": ops, "id": legacy, "period": 1})
 
+from app.simulation.registry import is_retired as _IS_RETIRED     # noqa: E402
+
 try:
     print("=" * 78)
     print("1. An operational project shows its scored courses, with the stored figures")
@@ -225,9 +227,19 @@ try:
     check(regret is None,
           "the analysis that scored the courses of action carries no stored row: it abstains "
           "for want of an action by scenario payoff matrix", str(regret)[:140])
-    check("B4.7" in abstained_ids(result),
-          "and its silence is recorded as an abstention, so absent is not mistaken for "
-          "withheld", str(sorted(abstained_ids(result)))[:140])
+    # RUN 43, THE RETIREMENT. B4.7 is retired from service, so its silence is not recorded as an
+    # abstention either: it reaches no list on the operational read at all. What this check
+    # exists to prevent -- an absence being mistaken for a WITHHOLDING -- is asserted directly
+    # below and is unchanged. The branch is derived from registry.is_retired().
+    if _IS_RETIRED("B4.7"):
+        check("B4.7" not in abstained_ids(result) and "B4.7" not in set(mods),
+              "and B4.7 is retired from service, so it reaches neither the stored rows nor the "
+              "abstention list on the operational read",
+              str(sorted(abstained_ids(result)))[:140])
+    else:
+        check("B4.7" in abstained_ids(result),
+              "and its silence is recorded as an abstention, so absent is not mistaken for "
+              "withheld", str(sorted(abstained_ids(result)))[:140])
     check(len(mods) > 0,
           "while the rest of the ledger computed for this project", str(len(mods)))
     check(not any(m.get("recommendation_withheld") for m in mods.values()),
@@ -255,11 +267,28 @@ try:
           "the scoring analysis is absent here too, and never reaches the row",
           str(sorted(amods)[:5]))
     _areasons = {a.get("module_id"): a for a in (ares["result"].get("abstained") or [])}
-    check(_areasons.get("B4.7", {}).get("abstention_reason_code")
-          == "canonical_decision_structure_absent",
-          "and its stable reason names a missing structure, not a missing figure, on a project "
-          "that is genuinely missing a figure",
-          str(_areasons.get("B4.7", {}).get("abstention_reason_code")))
+    if _IS_RETIRED("B4.7"):
+        # Retired from service: there is no stable reason to read because there is no row. The
+        # distinction this check defends -- missing structure against missing figure -- is still
+        # asserted over the modules IN SERVICE that abstain on this project, so the guarantee is
+        # not lost with the subject.
+        check("B4.7" not in _areasons,
+              "and B4.7, retired from service, carries no stable reason because it carries no "
+              "row on a project that is genuinely missing a figure",
+              str(_areasons.get("B4.7", {}).get("abstention_reason_code")))
+        _codes = {a.get("abstention_reason_code") for a in _areasons.values()}
+        check("canonical_structure_absent" in _codes
+              and "missing_required_input" in _codes,
+              "while the modules in service that abstain here still distinguish a missing "
+              "STRUCTURE from a missing FIGURE by their stable codes, which is the distinction "
+              "this check defends and it survives the retirement of its former subject",
+              str(sorted(str(c) for c in _codes))[:200])
+    else:
+        check(_areasons.get("B4.7", {}).get("abstention_reason_code")
+              == "canonical_decision_structure_absent",
+              "and its stable reason names a missing structure, not a missing figure, on a "
+              "project that is genuinely missing a figure",
+              str(_areasons.get("B4.7", {}).get("abstention_reason_code")))
     check(len(amods) > 0,
           "while other modules on the same project did compute, so the absence is specific",
           str(len(amods)))
