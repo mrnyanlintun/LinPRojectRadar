@@ -12695,3 +12695,52 @@ consists of. Section 12 of the Run 43D report states all three with their measur
 - `registry_index()` now resolves retired ids and is therefore the wrong function for any caller
   building a population. Use `service_index()`. Two callers were found and moved.
 - `git add -A` and `git add .` remain forbidden on this repository. Neither was used in Run 43D.
+
+---
+
+## Run 43H — the retirement is complete, gated and merged (2026-08-21)
+
+**Merged to `main`. `sim-2026.08-v28`. `og-participant-2026.08-v14`. 188 suites,
+14,197 / 14,197, 0 red, 0 aborting. Successor freeze gate 31/31, 0 of 15 blocker classes blocked.
+No stop condition fired.**
+
+Full account: `REPORT_2026-08-21_run43H_retirement_completion.md`.
+
+**What the owner's class sanction resolved.** Phase D and Phase F both stopped because a check body
+had to change. Run 43H's section 5.1 sanctioned that as a class. 33 red suites and 8 aborting
+suites were re-scoped from the pre-retirement population to the roster in service. **Not one check
+was deleted and not one in-service module lost coverage** — in several suites coverage rose, most
+sharply in `test_run32_defensibility_truth`, where two checks about one retired module became four
+that range over all 63 in service.
+
+**Counts, all derived, none written down anywhere:** registry **101**, in service **63**, computed
+**62**, Group D in service **0**. `B2` is **1** in service, not 4 as the order's own note said.
+
+**Four operational notes for whoever runs next.**
+
+- **`registry_index()` and `load_registry()` resolve retired ids by design. `service_index()` is
+  the population in service.** Any caller building a population wants the second. Eight sites were
+  found using the first where they meant the second, one of them
+  `server/tools/build_client_taxonomy.py`, which is the ORACLE of the client-authority check — so
+  while it emitted 101 that check asserted the pre-retirement population. It now reproduces the
+  delinked `taxonomy.js` and `categories.js` byte for byte.
+- **The full suite rewrites 18 committed audit artifacts**, one of them
+  `server/tools/run17/coverage.csv`, which is **outside `code_audit/`**. `git checkout --
+  code_audit/` alone leaves it modified. Restore all 18; commit none.
+- **Minting a stamp is a four-step cycle and the order matters.** Commit every production and suite
+  edit first; then set `CANDIDATE` in `build_run37_acceptance.py` to that commit; then run
+  `build_run43_candidate_identity.py`, `build_run37_acceptance.py`,
+  `build_run43_successor_release.py` in that order; then commit only `research/freeze/`, which no
+  identity group measures. Regenerating before the production edits are final makes B01 chase its
+  own tail.
+- **`git add -A` and `git add .` remain forbidden.** Neither was used.
+
+**Two decisions left open for the owner, both stated in the report's section 13.**
+1. The Portfolio Health flyout (`deepdive.js:2373`) states a false reason after the offload.
+   Correcting it moves a **sequence-bearing participant file**, so it was reverted and reported.
+2. `available_modules()`'s docstring at `registry.py:461` still describes the refusal semantics
+   Phase F withdrew. It is a false sentence inside a frozen surface and needs its own
+   authorisation.
+
+**Phase J was NOT begun.** The section 2 gate is satisfied on all four conditions, but the session's
+working budget was exhausted by Phase H. No Phase J file exists and no Phase J finding is claimed.

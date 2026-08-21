@@ -592,3 +592,36 @@ of the same section says it must not be. All four Portfolio Health suites are cl
 
 **The owner's choice is the same three options Run 43D stated, now with the refusal class removed
 from their cost.** Nothing in this addendum revises a retirement decision above; all 38 stand.
+
+---
+
+## Addendum — Run 43H, 2026-08-21. The retirement is complete and merged.
+
+The owner's Run 43H order gave the **class sanction** the three previous phases stopped for: any
+check asserting the pre-retirement population is updated to assert the post-retirement population,
+as one sanction covering the whole class. Option (A) of the three Run 43D stated.
+
+**Nothing in this addendum revises a retirement decision. All 38 stand, and all 38 keep their
+registry entry, their formula function and their audit lineage.** `run_module()` on every one of
+the 101 registered identifiers returns output byte-identical to `sim-2026.08-v27`, measured against
+a worktree at that commit and proved failable at 1,530 diff lines.
+
+**What closed.** The 114 red checks across 33 suites and the 8 aborting suites are all green:
+188 suites, **14,197 / 14,197**, 0 red, 0 aborting. The successor freeze gate is **31/31** with 0
+of 15 blocker classes blocked. `sim-2026.08-v28` is stamped and `og-participant-2026.08-v14` is
+minted; the v27 and v13 records are pinned to their own commits, not rewritten.
+
+**Two measured facts the order's own figures did not have.**
+- **`B2` falls from 20 in the registry to 1 in service, not 4.** Only `B2.18` (MARCOS Ranking)
+  remains. `A2` 11 → 6, `B4` 7 → 2 and Group D 5 → 0 are as the order stated.
+- **Every one of the ten modules in `DISABLED_MODULES` is also retired.** `DISABLED_MODULES ∩
+  service_index()` is empty, so the client taxonomy now flags **zero** entries disabled, where it
+  flagged ten.
+
+**One correction was refused and is a decision for the owner.** The Portfolio Health flyout at
+`assets/js/deepdive.js:2373` tells a participant that Portfolio Health "needs at least 3 projects";
+after the offload no number of projects would make it compute. The correction was written and
+verified, then reverted: `deepdive.js` is one of the six `SEQUENCE_BEARING_FILES`, and every
+participant-package record since v10 and the freeze gate's B04 blocker assert those six are
+byte-identical across a successor. Correcting a sentence is not a reason to move the participant
+sequence without the owner saying so.
