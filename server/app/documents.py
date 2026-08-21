@@ -1485,7 +1485,8 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
                     for c in exposure["contributors"]],
             }
 
-    run = compute_project(si, project.legacy_id, f"P{period}", cutoff)
+    run = compute_project(si, project.legacy_id, f"P{period}", cutoff,
+                          project_id=project.legacy_id)
 
     # Portfolio snapshot — CUTOFF-ALIGNED (P1). A portfolio vector for another project is
     # selected by `period_cutoff <= cutoff`, taking that project's latest live result at or
@@ -1668,7 +1669,7 @@ def _redact_module_actions(modules) -> list:
 
 
 def _result_view(row: ComputedResult, *, include_recommendation: bool,
-                 package=None) -> dict:
+                 package=None, project_legacy_id: str | None = None) -> dict:
     """
     The stored result as returned to a member.
 
@@ -1701,7 +1702,10 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
             signal_inputs=row.signal_inputs,
             module_results=row.module_results,
             abstained=row.abstained,
-            project_id=None,
+            # RUN 42. The project's identity, so the read path's record names the same
+            # project the compute path's does. This was hard-coded None while the caller held
+            # the project, which is the same identity loss compute.py carried.
+            project_id=project_legacy_id,
             period=(f"P{row.period}" if row.period is not None else None),
             period_cutoff=row.period_cutoff,
         ),
@@ -2720,7 +2724,8 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
           reveal_gated=gated,
           recommendation_visible=visible)
     session.commit()
-    view = _result_view(row, include_recommendation=visible, package=package)
+    view = _result_view(row, include_recommendation=visible, package=package,
+                        project_legacy_id=project.legacy_id)
 
     # WHAT THE PERIOD'S DOCUMENTS ESTABLISH, read at display time and not frozen into the row.
     # Read from the period's LIVE documents (superseded revisions already excluded), so a
