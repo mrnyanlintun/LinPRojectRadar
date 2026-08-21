@@ -1,5 +1,5 @@
 {
-  "candidate_git_commit": "f2e12121f7dfe58b56d2c1414486c83290c0276f",
+  "candidate_git_commit": "502ebb346ed558420ff2962699440f56dbc3ffbe",
   "candidate_commit_verified_is_head": true,
   "supersedes_candidate": "489c9f14962899cc88213c045b87b95c2721e21e",
   "supersedes_simulation_version": "sim-2026.08-v26",
@@ -67,7 +67,7 @@
   "simulation_authority_digest": {
     "label": "the analytical layer",
     "files": 40,
-    "digest": "a8dcd4ae0a3cdcf24e75d8d601646d86f1bb4f260f5bcd7a9de5e9aef56ebd2d",
+    "digest": "13d7652591def88fbb7570a20d409e948aeceeb28f3a5bbd6c1eb25d6378aad2",
     "members": [
       "server/app/simulation/__init__.py",
       "server/app/simulation/abm.py",
@@ -113,8 +113,8 @@
   },
   "test_suite_identity": {
     "label": "every test_*.py the acceptance runner globs",
-    "files": 187,
-    "digest": "224e6d2be4c2ce6f9922fe912be914f6edd05256a40205b78151066626fde2f2",
+    "files": 188,
+    "digest": "8fa12c17c2d7f56844f678d60f292644046c29c4297a6219ee3116e4b1795735",
     "members": [
       "server/tools/test_admin_ops_t7t8.py",
       "server/tools/test_assignment_blinding.py",
@@ -277,6 +277,7 @@
       "server/tools/test_run41_migration_integrity.py",
       "server/tools/test_run41_preservation.py",
       "server/tools/test_run41_security_acceptance.py",
+      "server/tools/test_run42_period_binding_mechanism.py",
       "server/tools/test_run4_validate_seven.py",
       "server/tools/test_run5_export.py",
       "server/tools/test_run6_known_answer.py",
@@ -341,5 +342,5 @@
     "git_object": "2820f21e93330f9514c7ee37b37744b4d8165098"
   },
   "method": "Every digest is CONTENT-ADDRESSED: sha256 over the ordered 'sha256  path' lines of its member files, so it is reproducible from the tree alone and independent of any commit. NOTHING WAS REGENERATED to make a hash convenient; every file was read as it stands at the candidate commit.",
-  "candidate_identity_digest": "bb8f08b2f435b974dc5c7326ee8eb8d751e3191fdde91015af4e848a0508c3c8"
+  "candidate_identity_digest": "3c4048238b3f6e8b7db6a1321b8597af37dd12cc830ab6f761c24750ca4ee910"
 }

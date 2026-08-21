@@ -62,9 +62,9 @@ FREEZE = ROOT / "research" / "freeze"
 # run37_candidate_behaviour_digest.json and the v25 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v25. The
 # successor writes beside them under its own names.
-PREDECESSOR_CANDIDATE = "f2e12121f7dfe58b56d2c1414486c83290c0276f"
+PREDECESSOR_CANDIDATE = "502ebb346ed558420ff2962699440f56dbc3ffbe"
 PREDECESSOR_VERSION = "sim-2026.08-v26"
-CANDIDATE = "f2e12121f7dfe58b56d2c1414486c83290c0276f"
+CANDIDATE = "502ebb346ed558420ff2962699440f56dbc3ffbe"
 EXPECTED_VERSION = "sim-2026.08-v27"
 IDENTITY_FILE = "run42_freeze_candidate_identity.json"
 GATE_FILE = "run42_successor_freeze_gate.csv"
