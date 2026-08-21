@@ -1,0 +1,99 @@
+# OPUS GUBERNATIO PARTICIPANT PACKAGE og-participant-2026.08-v14
+#
+# SUCCESSOR to og-participant-2026.08-v13, whose checksum record is preserved unchanged at
+# code_audit/run36_closure_participant_package_v13_checksums.sha256 and is pinned to the commit
+# whose blobs it describes, 428a6c60b189bc64117f30edfe773092d5aae2f6. This record describes the LIVE
+# TREE.
+#
+# RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. FIVE of the seventy files moved.
+#
+# THREE ARE GENERATED from the registry and were not hand-edited: assets/js/taxonomy.js and
+# assets/js/categories.js, which server/tools/build_client_taxonomy.py now emits from
+# registry.service_index() rather than from the whole registry, so the 38 retired identities
+# carry no taxonomy row at all; and assets/js/detail.js, whose LIN_CATEGORIES comment records
+# the registered Group A count.
+#
+# TWO CARRY A COUNT A PARTICIPANT READS, and each now states three populations where it stated
+# two: assets/js/knowledge.js and index.html. The registry holds 101 modules, 63 of them are in
+# service, and the analytical server computes 62 of the 63. All three figures are derived from
+# p0-baseline/module_renumbering_map.csv through registry.service_index(); none is typed into a
+# page.
+#
+# RETIREMENT IS NOT DELETION. Every retired module keeps its registry entry, its formula function
+# and its audit lineage. run_module() on all 101 identifiers returns output byte-identical to
+# sim-2026.08-v27, measured against a worktree at that commit, so no module in service changed
+# its computed result and no retired module's arithmetic was altered.
+#
+# THE EXPERIMENTAL SEQUENCE IS UNCHANGED. decision.js, decision-ui.js, workspace.js, deepdive.js
+# and both questionnaires are byte for byte identical to v13.
+#
+dd1c6a327ca6b657eb4c891e022fd8f2efcb1d7b9d42f8b9fc6951ad4c5abb14  assets/css/radar.css
+d6d6b2d7ef569bbc371eeb6c30a7a48c5f68cae4d151ca2d8226961bc0e2b4e3  assets/js/admin-ops.js
+3a7b401893ffc537430dd73f2cc5be70a009dc35fa7814a6e77ffecae8ee803e  assets/js/admin.js
+aba29d78a430211a2b5b33e7bf1c66d33b9bdb9fdd309066ef04b2faaf979e41  assets/js/app.js
+603a080ab2fd52789005591235b8a63d7dc50ae6b03e1001243c003e6828ae29  assets/js/assistant.js
+4a44c6cf6e02a8a79f9594bd1122ee460378a25a731a058179b772a7601e26d3  assets/js/auditor.js
+9d37481b6f138d90f181b42c7e48e8ea929019b5ae48909e52efa5676c53b832  assets/js/auth.js
+500f5f279f324f422d6148021ff81dc5111e6ed967e129a6a56f1826cc78a604  assets/js/categories.js
+6732edb11a969fe1e7e11cb2c3d4cef75528215f91a5a9a18ebfbb33bd2ac376  assets/js/charts3d.js
+870647d8db80109a0a9ec43c7975e3cb7987ebbdd5919b3e0414384a0a9fde25  assets/js/client_algorithm_version.js
+ba183d1cdd857a977c78d59f6f4f34d45af17e26d6faabf36bf12eeef6bbebd1  assets/js/config.js
+110c279b4523659a0a9a5fa36178b7ba9f2888010e89f1bf2466db1be742d6ca  assets/js/data.js
+ae7b057c185fadaf4b351d8961fbf0741a2c202feca6f5fea1cdb59a6be1a099  assets/js/decision-ui.js
+fc44259d6a2ffa0b595cc72532c961be8ce574a317dc2b5c36598aed799a1bdb  assets/js/decision.js
+d2fc71bf61581607e3d4a94ab01e0ca662f9ee21cd9409021842bda596e91599  assets/js/deepdive.js
+60e179799352c94817f84f051ae1dec4ed97962da14d67d33de9099795a48010  assets/js/detail.js
+34e1b7f123e10f9979fbaa26dbe18697052f63cb067a1bbe81aced19286ac6d5  assets/js/disclaimers.js
+dda4f0e48a4e1afe09ff58f662f436f8e26eaf39a8206d5fb640a2c251b71503  assets/js/ds_defensibility_data.js
+4f2aa5779dee712a3879b537cd25706c968f282671e5f751d311ce1a28c2d593  assets/js/ds_defensibility_evidence.js
+061b3079656dfa43d0637677e907974167d7c56b405a6945a1dc4eeea2f57826  assets/js/export.js
+5f6ce1da1b527a42955fc9d6717464665b91d9b9d035c8c6d1292b2cdf4c7233  assets/js/features.js
+62e1c8f581dad95fd825b90e11bb0017f6e3705afef9d17af4a26f48c963343a  assets/js/files.js
+b6262686b1d86e6cda74a0090035fd29e5b25943246606ed88f9643d09dd9e1d  assets/js/globe.js
+d42f6f6ceb649ac9dc785be8e60417f5206908d2aa722e7dd14cf980a5afe498  assets/js/gmap.js
+957718c6a3dfdbfc00d695a7389bbcf7990cc8d2d059d6f1d41d98dad9b050c6  assets/js/ingest.js
+27aeeccc0005274fd4717c5670e399ecfed947e632e3f7d60d46750cb1ca1711  assets/js/knowledge.js
+7aa7220319b8f98178e0bfaf55bc4bf8c876eb59a56b31d6a1fec4be0389f814  assets/js/module_charts.js
+01d359642a297ac56cc7efb12e29f878188bd9e8f3e1fd2e2dd68491bda35170  assets/js/neural_flow.js
+bdadb0742546de55d57fa38888e7dadf1725b2f19aaced199a5f824f10a233b9  assets/js/projectnet2d.js
+cd022ac427b4c39b28bf5ed54885fa0ba168122f1eec9d4c9d617a278519b5dc  assets/js/questionnaires.js
+5bba1b76bacd37df46b4ea94d9cc409cc99cb983613470f6c5bc65b8a90aafe7  assets/js/recommendation_options.js
+931ebed362c3dfbddd93f91cc3a5758f55306d3a58bdc9b0dd546079d07ea7f3  assets/js/signals.js
+2910f84ebd5d1ae592ff1f467cd47a84b1756eb3c5df9463019447a826e1307f  assets/js/sim.js
+1c0d7e9ea9e9454fa9c7011e4abfd50d299630816bec3f45cba4a1de0fe9b1f4  assets/js/simulations.js
+73cf90214e09e208f902dc9e88ecc0a8aa8c1b4425aaf72f786a49034a798505  assets/js/store.js
+15608ba1194d53674a6b92cc14a3d449073593731227630729c8b8c2e2563b3b  assets/js/taxonomy.js
+a2c8afd9d6edbfcc41c14ae396ebe4cc1cbfec2eb581a6b1ecab417e04bfb25c  assets/js/training.js
+eceecf01bfb5ec92c5662d85ad0d747d166d2b32256b791c24539eee30b6c7a9  assets/js/tz.js
+8cd3fe7e89333dba23abdbaab82abfef3bd73ba1cdc58a95471e0fa94d3df539  assets/js/workingrobot.js
+444535e9bb76af7fde3aa3901761480b8c4a4f810de08daa8c9db8ef64b8ca49  assets/js/workspace.js
+8064c60b004706c37dfb88ae6de1f55f56e97014979940baf1645a257ee5b3d8  assets/questionnaires/debrief.json
+400195fb47d8f8d68ab4defda6a1aff7ea6abb714b25d1f9a4040d2b216078b6  assets/questionnaires/intake.json
+d6a807659a01c67372d765a74a1fba6d915bd9cbe0c007b6362c84d45f62a557  assets/vendor/ASSETS.md
+e88adfc1b3d08b68a1624d8f4b600a2ec69816cccf56c7e297f67ce54b6b0b6c  assets/vendor/earth-blue-marble-clouds.jpg
+b2f7f3257d3d90e636863ab1550294279376f53c0cf527e37cbcd35459ba255a  assets/vendor/fonts.css
+ff4f17d21930e36d6d93baba663e624cb767afc3feebf7adaebd82242638de05  assets/vendor/fonts/archivo-500-latin-ext.woff2
+8f704806dbedeaaeca334b11ec348bc3ac3a439d6431544b3afb54f534ee4967  assets/vendor/fonts/archivo-500-latin.woff2
+ff4f17d21930e36d6d93baba663e624cb767afc3feebf7adaebd82242638de05  assets/vendor/fonts/archivo-700-latin-ext.woff2
+8f704806dbedeaaeca334b11ec348bc3ac3a439d6431544b3afb54f534ee4967  assets/vendor/fonts/archivo-700-latin.woff2
+ff4f17d21930e36d6d93baba663e624cb767afc3feebf7adaebd82242638de05  assets/vendor/fonts/archivo-800-latin-ext.woff2
+8f704806dbedeaaeca334b11ec348bc3ac3a439d6431544b3afb54f534ee4967  assets/vendor/fonts/archivo-800-latin.woff2
+6bc0f226a5b7884a8170e3f62c63d7675609d4631bdc5931b5cdab81821f00eb  assets/vendor/fonts/ibm-plex-mono-400-latin-ext.woff2
+08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7  assets/vendor/fonts/ibm-plex-mono-400-latin.woff2
+6bb06407c97584b0867a959e05e8874693bfeb8c317de190811c51598f2d99ea  assets/vendor/fonts/ibm-plex-mono-500-latin-ext.woff2
+01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22  assets/vendor/fonts/ibm-plex-mono-500-latin.woff2
+32057cf50dd14bdb21a2c93766c4a2c43e4abe688ea3922df3203cac7751a98b  assets/vendor/fonts/ibm-plex-mono-600-latin-ext.woff2
+0d1f0b8d0722224e32e9f28261bdc86c79115be73444ae5eceb73976a1bcdf83  assets/vendor/fonts/ibm-plex-mono-600-latin.woff2
+34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956  assets/vendor/fonts/inter-400-latin-ext.woff2
+3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62  assets/vendor/fonts/inter-400-latin.woff2
+34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956  assets/vendor/fonts/inter-500-latin-ext.woff2
+3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62  assets/vendor/fonts/inter-500-latin.woff2
+34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956  assets/vendor/fonts/inter-600-latin-ext.woff2
+3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62  assets/vendor/fonts/inter-600-latin.woff2
+46c6a2a9d1faa6097144647c0b1da87df2539570bdb89e05faa5b43a5544c3a3  assets/vendor/globe.gl.min.js
+7f149a0eda5cb163b29beadc1c287943ccd9dc8a61803fbfbd3ea83aaa0e07a8  assets/vendor/ne_110m_admin_0_countries.geojson
+5b5799e6f8c680663207ac5b42ee14eed2a406fa7af48f50c154f0c0b1566946  assets/vendor/pdf.min.js
+feabdf309770ed24bba31a5467836cdc8cf639c705af27d52b585b041bb8527b  assets/vendor/pdf.worker.min.js
+c9506197caf809a075b6dee1da0d36fb19da7158ffe8a88e7b0c96c5d8623c99  assets/vendor/xlsx.full.min.js
+6a902e934ad1bcd9015a6118f1b15f9c99f5b77fa1d1f2e06674db2144768405  assets/visualizations/pceif_neural_signal_flow.html
+ba572b97b272fbb514d51fb2dccd62e30ebf64edb72ba943b42ab96892cb4049  index.html

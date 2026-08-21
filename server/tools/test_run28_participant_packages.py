@@ -123,6 +123,11 @@ V12_RECORD = "code_audit/run36_participant_package_v12_checksums.sha256"
 V12_COMMIT = "822d80928367c0f422fac5f2564705279e718dd1"
 V13_IDENTITY = "og-participant-2026.08-v13"
 V13_RECORD = "code_audit/run36_closure_participant_package_v13_checksums.sha256"
+# RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. v13 became a PREDECESSOR and v14 is the
+# current link. The commit below is the one whose blobs the v13 record describes.
+V13_COMMIT = "428a6c60b189bc64117f30edfe773092d5aae2f6"
+V14_IDENTITY = "og-participant-2026.08-v14"
+V14_RECORD = "code_audit/run43_participant_package_v14_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -499,24 +504,27 @@ check("assets/js/workspace.js" not in PP.V11_TO_V12_CHANGED,
 # registry: the served defensibility object and both client taxonomy mirrors. A1.1 is
 # operationally disabled for insufficient canonical input, so the mirrors carry its disabled flag
 # and the defensibility record stops describing it as a module that computes.
+# RUN 43: v13 is now a PREDECESSOR, so its checksums are checked against the COMMIT whose blobs
+# it describes and not against the live tree. That is the same treatment every other predecessor
+# gets, and it is what stops a predecessor being quietly rewritten to agree with the present.
 _v13 = parse((ROOT / V13_RECORD).read_text(encoding="utf-8"))
 _v13_bad = sorted(rel for rel, digest in _v13.items()
-                  if not (ROOT / rel).is_file()
-                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V13_COMMIT) or b"").hexdigest() != digest)
 check(not _v13_bad,
-      "and every one of v13's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v13_bad))
+      f"and every one of v13's seventy checksums holds against commit {V13_COMMIT[:7]}, the "
+      f"commit whose blobs that record describes", str(_v13_bad))
 check(sorted(_v13) == sorted(_v12),
       "v13 covers exactly the same file inventory as v12, so a successor cannot quietly drop a "
       "participant-visible file out of the package",
       str(sorted(set(_v12) ^ set(_v13))))
 _moved13 = sorted(rel for rel, digest in _v12.items()
-                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V13_COMMIT) or b"").hexdigest() != digest)
 check(_moved13 == sorted(PP.V12_TO_V13_CHANGED),
       "and the files v13 moved are exactly the three it declares, so nothing rode along with the "
       "A1.1 ruling", str(_moved13))
 _seq13 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
-                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v12.get(rel))
+                if hashlib.sha256(git_bytes(rel, V13_COMMIT) or b"").hexdigest()
+                != _v12.get(rel))
 check(not _seq13,
       "THE EXPERIMENTAL SEQUENCE IS UNCHANGED across v12 to v13: every file carrying evidence "
       "review, preliminary judgment, preliminary lock, AI reveal, final judgment, capture, final "
@@ -599,23 +607,56 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V13_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V14_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
 check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
           V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY,
-          V12_IDENTITY, V13_IDENTITY],
+          V12_IDENTITY, V13_IDENTITY, V14_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 13
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 14
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all thirteen are present, so no link shares a "
+      "each link has its OWN record file and all fourteen are present, so no link shares a "
       "record with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all twelve predecessors name the commit "
-      "their bytes live in")
+      "and only the current link reads the working tree; all thirteen predecessors name the "
+      "commit their bytes live in")
+# ---- v14, THE CURRENT LINK ---------------------------------------------------------------
+# RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. Five files moved: three generated from the
+# registry and two carrying a count a participant reads.
+_v14 = parse((ROOT / V14_RECORD).read_text(encoding="utf-8"))
+_v14_bad = sorted(rel for rel, digest in _v14.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v14_bad,
+      "and every one of v14's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v14_bad))
+check(sorted(_v14) == sorted(_v13),
+      "v14 covers exactly the same file inventory as v13, so a successor cannot quietly drop a "
+      "participant-visible file out of the package",
+      str(sorted(set(_v13) ^ set(_v14))))
+_moved14 = sorted(rel for rel, digest in _v13.items()
+                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved14 == sorted(PP.V13_TO_V14_CHANGED),
+      "and the files v14 moved are exactly the five it declares, so nothing rode along with the "
+      "retirement", str(_moved14))
+_seq14 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
+                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v13.get(rel))
+check(not _seq14,
+      "THE EXPERIMENTAL SEQUENCE IS UNCHANGED across v13 to v14: every file carrying evidence "
+      "review, preliminary judgment, preliminary lock, AI reveal, final judgment, capture, final "
+      "lock and period advancement is byte for byte identical to v13", str(_seq14))
+check(not (set(PP.V13_TO_V14_CHANGED) & set(PP.SEQUENCE_BEARING_FILES)),
+      "and not one file v14 moved carries a step of the sequence",
+      str(sorted(set(PP.V13_TO_V14_CHANGED) & set(PP.SEQUENCE_BEARING_FILES))))
+# THE v13 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes its own commit
+# wrote, which is what stops the Run-28 closure's defect from recurring on this successor.
+check(git_bytes(V13_RECORD, V13_COMMIT) == (ROOT / V13_RECORD).read_bytes(),
+      f"the v13 record in the working tree is BYTE-IDENTICAL to the one commit {V13_COMMIT[:7]} "
+      f"wrote, so Run 43 created a successor rather than rewriting a predecessor")
 # THE v3 RECORD WAS NOT REGENERATED. Its bytes in the tree must be the bytes commit 01e943e
 # wrote, which is what stops the Run-28 closure's own defect from recurring here.
 check(git_bytes(V3_RECORD, V3_COMMIT) == (ROOT / V3_RECORD).read_bytes(),
