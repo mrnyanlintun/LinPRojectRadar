@@ -1489,8 +1489,29 @@ try:
             _rail_base_lines.add("buildSectionNav(root);")
             def _run25_rail_removed(line):
                 return line in _rail_base_lines
+            # RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. `LIN_CATEGORIES` is now the
+            # roster IN SERVICE rather than the whole registry, so the explanatory comment that
+            # describes it had to be corrected or it would state a falsehood on a participant
+            # surface. The allowance is CONFINED TO THAT ONE COMMENT BLOCK, identified by its own
+            # opening line in each file rather than by a list of sentences: a line is excused
+            # only if it lies between "THE CATEGORIES A SINGLE PROJECT HAS" and the "*/" that
+            # closes it. Every other line of this file is still held to the rules above, and no
+            # executable statement is excused by this at all -- the block contains none.
+            def _run43_comment_span(text):
+                lines = text.splitlines()
+                try:
+                    a = next(i for i, ln in enumerate(lines)
+                             if "THE CATEGORIES A SINGLE PROJECT HAS" in ln)
+                except StopIteration:
+                    return set()
+                b = next(i for i in range(a, len(lines)) if lines[i].rstrip().endswith("*/"))
+                return {ln.strip() for ln in lines[a:b + 1] if ln.strip()}
+            _run43_removed_span = _run43_comment_span(base)
+            _run43_added_span = _run43_comment_span(live)
+
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
+                  or ln in _run43_removed_span
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1534,7 +1555,7 @@ try:
             check(all(ln.startswith("//") or ln.startswith("/*") or ln.startswith("*")
                       or "abstained" in ln or ln == "}"
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
-                      or ln in POSTRUN22_LINES
+                      or ln in POSTRUN22_LINES or ln in _run43_added_span
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

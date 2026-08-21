@@ -114,8 +114,25 @@ RUN41_AUTHORISED_MANIFEST_CHANGES = {"server/app/simulation/models.py"}
 # sentences must describe the state actually reached now that the dimensions can leave PARTIAL.
 # Any OTHER manifest file that moved still fails this check.
 RUN42_AUTHORISED_MANIFEST_CHANGES = {"server/app/simulation/qualification.py"}
+# RESTATED BY RUN 43, subtracted by NAME for the same reason. The owner ruled on 2026-08-21 that
+# 38 of the 101 registered modules be retired FROM SERVICE. Four files named by the governed
+# manifest carry that: the registry, which derives the roster in service from the CSV; the two
+# generated client taxonomy mirrors, which a participant reads; and the CSV itself, which is the
+# single authority for which modules are in service. Any OTHER manifest file that moved still
+# fails this check.
+RUN43_AUTHORISED_MANIFEST_CHANGES = {
+    "server/app/simulation/registry.py",
+    "assets/js/taxonomy.js",
+    "assets/js/categories.js",
+    "p0-baseline/module_renumbering_map.csv",
+    # The generator that emits both client taxonomy mirrors. Its population source moves from
+    # the whole registry to registry.service_index(); the mirrors themselves are its output and
+    # are named above.
+    "server/tools/build_client_taxonomy.py",
+}
 AUTHORISED_MANIFEST_CHANGES = (RUN41_AUTHORISED_MANIFEST_CHANGES
-                               | RUN42_AUTHORISED_MANIFEST_CHANGES)
+                               | RUN42_AUTHORISED_MANIFEST_CHANGES
+                               | RUN43_AUTHORISED_MANIFEST_CHANGES)
 manifest_targets = sorted(set(manifest_paths) - BOOKKEEPING
                           - AUTHORISED_MANIFEST_CHANGES)
 vs_candidate = [p for p in manifest_targets if diff_committed(CANDIDATE, p)]
@@ -174,8 +191,28 @@ RUN42_AUTHORISED_SUCCESSOR_CHANGES = {
     "server/app/simulation/compute.py",         # the project identity passed to the record
     "server/app/documents.py",                  # the same identity on the read path
 }
+# RESTATED BY RUN 43, AND THE SAME DISCIPLINE AGAIN. The retirement of 38 modules from service
+# changes which modules the production paths enumerate and which reach a participant, which is
+# executable behaviour, so it is a freeze SUCCESSOR (sim-2026.08-v28) rather than a violation of
+# this guard. The files it was authorised to change are NAMED here for the same reason Run 41's
+# and Run 42's are, so the set cannot quietly grow: anything else appearing in a frozen surface
+# still fails. Nothing is deleted by any of them -- run_module() over all 101 registered
+# identifiers is byte-identical to v27.
+RUN43_AUTHORISED_SUCCESSOR_CHANGES = {
+    "server/app/simulation/registry.py",           # the derived roster and its populations
+    "server/app/simulation/portfolio_health.py",   # the Portfolio Health offload
+    "server/app/research_export.py",               # the populations the export enumerates
+    "server/app/training.py",                      # the training abstention population
+    "assets/js/taxonomy.js",                       # generated from the roster in service
+    "assets/js/categories.js",                     # generated from the roster in service
+    "assets/js/detail.js",                         # the registered Group A count in its comment
+    "assets/js/knowledge.js",                      # the three populations a participant reads
+    "index.html",                                  # the same three populations
+    "p0-baseline/module_renumbering_map.csv",      # the single authority for service
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN42_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN42_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN43_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -205,14 +242,19 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v27",
-      "and the live simulation version is the Run-42 successor sim-2026.08-v27",
+check(SIMULATION_VERSION == "sim-2026.08-v28",
+      "and the live simulation version is the Run-43 successor sim-2026.08-v28",
       SIMULATION_VERSION)
-check(PP.CURRENT.identifier == "og-participant-2026.08-v13",
-      "the participant package is unchanged at og-participant-2026.08-v13",
+# RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
+# and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
+# is the correct historical statement: it is the package that release shipped. What must hold is
+# that the record was not rewritten to name the successor, which is asserted directly below.
+check(PP.CURRENT.identifier == "og-participant-2026.08-v14",
+      "the participant package is superseded at og-participant-2026.08-v14",
       PP.CURRENT.identifier)
-check(record["participant_package"] == PP.CURRENT.identifier,
-      "the freeze record and the package registry agree")
+check(record["participant_package"] == "og-participant-2026.08-v13",
+      "and the v25 freeze record still names v13, the package that release shipped, so the "
+      "successor superseded it rather than rewriting it", record["participant_package"])
 check(record["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6", record["synthetic_package"])
 
@@ -275,6 +317,47 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_run20_declared_production_changes.py",
     "server/tools/test_run25_rail_removal.py",
     "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md",
+} | {
+    # RUN 43, THE RETIREMENT. The suites whose pinned expectation is a population, a stamp or a
+    # manifest pointer the successor legitimately moves. Each names the file rather than widening
+    # its rule, so all of them keep their full force over everything else. Not one is executable
+    # production or client code, not one is named by the freeze checksum manifest, and not one is
+    # inside a frozen surface -- all three asserted separately above and below.
+    "NAMING_AUTHORITY.md",
+    "server/tools/participant_packages.py",
+    "server/tools/build_client_taxonomy.py",
+    "server/tools/build_run34_artifacts.py",
+    "server/tools/run34_ph1_tree_count_calibration.py",
+    "server/tools/test_courses_of_action.py",
+    "server/tools/test_documents_b7b.py",
+    "server/tools/test_map_and_module_count.py",
+    "server/tools/test_period_series.py",
+    "server/tools/test_run10_synthetic_v03.py",
+    "server/tools/test_run10b_canonical_integration.py",
+    "server/tools/test_run14_mismatch_remediation.py",
+    "server/tools/test_run16_material_cost_variance_disabled.py",
+    "server/tools/test_run1_disable_and_relabel.py",
+    "server/tools/test_run20_cycle10_truthful_labels.py",
+    "server/tools/test_run20_cycle12_reaudit.py",
+    "server/tools/test_run20_lineage_declaration_truth.py",
+    "server/tools/test_run24_empty_project_diagram.py",
+    "server/tools/test_run26_counts_and_wiring.py",
+    "server/tools/test_run28_closure.py",
+    "server/tools/test_run28_participant_packages.py",
+    "server/tools/test_run2_fifteen_defects.py",
+    "server/tools/test_run30_cat7_operational_route.py",
+    "server/tools/test_run30_lineage_semantics.py",
+    "server/tools/test_run32_client_authority.py",
+    "server/tools/test_run32_defensibility_truth.py",
+    "server/tools/test_run32_method_class_agreement.py",
+    "server/tools/test_run33_portfolio_health.py",
+    "server/tools/test_run3_adapter.py",
+    "server/tools/test_run41_preservation.py",
+    "server/tools/test_run4_validate_seven.py",
+    "server/tools/test_run7_fix_now_defects.py",
+    "server/tools/test_simulation.py",
+    "server/tools/test_six_fixes.py",
+    "server/tools/test_workspace_t3t5.py",
 }
 modified = [p for st, p in run38 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]

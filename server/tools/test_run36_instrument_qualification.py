@@ -288,8 +288,13 @@ check(SIMULATION_VERSION_HISTORY[SIMULATION_VERSION_HISTORY.index("sim-2026.08-v
       == ("sim-2026.08-v24", "sim-2026.08-v25"),
       "and v25 directly follows v24 in an append-only history",
       str(SIMULATION_VERSION_HISTORY[-2:]))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v13",
-      "the current participant package is v13", PP.CURRENT.identifier)
+# RESTATED BY RUN 43. Run 43 retires 38 modules from service, which moves five
+# participant-visible bytes -- the two generated client taxonomy mirrors, detail.js, knowledge.js
+# and index.html -- so v13 is SUPERSEDED by v14 and pinned to its own commit rather than being
+# rewritten. Asserting v13 is still current would make this file fail every time a later run
+# legitimately mints a successor, which would be a guard measuring the wrong thing.
+check(PP.CURRENT.identifier == "og-participant-2026.08-v14",
+      "the current participant package is v14", PP.CURRENT.identifier)
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
       "and every predecessor names the commit its bytes live in, so only one record claims the "

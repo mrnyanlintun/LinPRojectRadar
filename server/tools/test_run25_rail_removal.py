@@ -210,7 +210,13 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # the per-field evidence-provenance fix CHANGED five production files and
                         # ADDED none, so the pin moves to the Run-42 manifest and the Run-41
                         # manifest is kept addressable as its parent.
-                        "run42_production_tree.sha256"),
+                        "run42_production_tree.sha256",
+                        # RUN 43 extends the chain once more, by the same rule. The owner ruled
+                        # that 38 of the 101 registered modules be retired FROM SERVICE; that
+                        # CHANGED eleven production files and ADDED none, so the pin moves to
+                        # the Run-43 manifest and the Run-42 manifest is kept addressable as its
+                        # parent.
+                        "run43_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)
