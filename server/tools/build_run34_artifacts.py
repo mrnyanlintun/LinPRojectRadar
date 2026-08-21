@@ -324,14 +324,22 @@ def main() -> int:
     # --------------------------------------------------------------------- 3. reconciliation
     snap = PH.compute_portfolio_health_snapshot("PROBE", {}, [], "2026-01-31")
     absent = snap["structure_absent"]
+    # RUN 43, THE OFFLOAD. The dispatcher no longer emits a per-identity result, because every
+    # Portfolio Health identity is retired from service, so there is no per-module abstention
+    # reason to read. The snapshot states ONE reason for all five and it is recorded here for
+    # each, from the snapshot itself rather than from a sentence written in this generator.
+    _reason = (snap.get("message")
+               if snap.get("retired")
+               else None)
     write(AUDIT / "run34_real_portfolio_calibration_reconciliation.csv",
           ["module", "governed_cohort_present", "cohort_size", "feature_schema",
            "history_present", "alternatives_or_weights_present", "calibration_record_present",
            "real_corpus_computation_possible", "continuous_output_possible",
            "authoritative_flag_possible", "abstention_or_limitation_reason", "result"],
-          [[mid, "no" if absent else "yes", "0", "none declared",
+          [[mid, "no" if absent or snap.get("retired") else "yes", "0", "none declared",
             "no", "no", "no", "no", "no", "no",
-            snap["results"][V8.RESULT_KEYS[mid]]["abstention_reason"], "PASS"]
+            _reason if _reason is not None
+            else snap["results"][V8.RESULT_KEYS[mid]]["abstention_reason"], "PASS"]
            for mid in ids])
 
     # --------------------------------------------------------------------- 4. closure
