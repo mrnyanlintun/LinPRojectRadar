@@ -83,9 +83,12 @@ def live_portfolio_modules() -> tuple[str, ...]:
     Empty after Run 43. Derived from the registry rather than restated, so this answers the
     question by reading the authority instead of remembering it.
     """
-    from .registry import registry_index
+    from .registry import service_index
 
-    live = set(registry_index())
+    # RUN 43D. `service_index()`, not `registry_index()`: under section 5.1 the registry still
+    # RESOLVES the five retired Group D identifiers, so intersecting with it would put Portfolio
+    # Health straight back into service. What decides the route is which modules are in service.
+    live = set(service_index())
     return tuple(d for d in sorted(V8.RESULT_KEYS) if d in live)
 
 

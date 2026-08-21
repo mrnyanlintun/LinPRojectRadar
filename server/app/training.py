@@ -62,11 +62,13 @@ def _abstained_by_category(module_results: list | None) -> dict[str, list[str]]:
     per-period abstention.
     """
     from .simulation import unported_modules
-    from .simulation.registry import registry_index
+    from .simulation.registry import service_index
     present = {m.get("module_id") for m in (module_results or []) if isinstance(m, dict)}
     unported = set(unported_modules())
     out: dict[str, list[str]] = {}
-    for module_id, meta in registry_index().items():
+    # RUN 43D: the population is the modules IN SERVICE. A retired module does not abstain; it
+    # is not part of the taxonomy a participant is shown.
+    for module_id, meta in service_index().items():
         if meta.get("group") == "D" or module_id in present or module_id in unported:
             continue
         out.setdefault(meta.get("category") or module_id.split(".")[0], []).append(module_id)

@@ -311,6 +311,11 @@ def activation_state(new_id: str) -> str:
     changes no arithmetic and is not itself consulted by run_module()'s abstention contract
     except for the disabled set, which is short-circuited explicitly below.
     """
+    # RUN 43D. Retirement is a statement about the taxonomy, made ahead of every statement about
+    # a module's arithmetic or its inputs, so it is tested first. A retired module is not called
+    # unsafe and is not said to lack inputs: it is out of service.
+    if is_retired(new_id):
+        return "RETIRED_FROM_SERVICE"
     if new_id in DISABLED_CONCEPT_ONLY:
         return "DISABLED_UNSAFE"
     # RUN 16. Its own state, not DISABLED_UNSAFE: this module is not being called unsafe.
@@ -363,40 +368,107 @@ def proxy_label(new_id: str, canonical_name: str) -> str | None:
     return f"{canonical_name} (proxy: {qualifier}. Advisory, non-voting.)"
 
 
+#: RUN 43D, THE RULING AT SECTION 5.1: RETIREMENT IS REMOVAL FROM SERVICE, NOT REMOVAL FROM
+#: EXISTENCE. Run 43 at b37f133 removed the thirty-eight retired identifiers outright, by writing
+#: the literal `RETIRED` into the `new_id` column. Two things followed and both were measured by
+#: Run 43B rather than predicted. First, every reference to a retired identifier anywhere in the
+#: instrument stopped resolving: thirty-two suites died on `MissingModuleError` and six on
+#: `KeyError`, and 4,359 checks never ran. Second, the literal string `RETIRED` leaked into every
+#: derived population built by a consumer that reads this CSV without going through
+#: `load_registry()`, because to such a consumer `RETIRED` looked like a module identifier and
+#: appeared five times over for the five Group D rows.
+#:
+#: Both are dissolved by keeping the identifier and marking the row. `new_id` is restored to the
+#: identifier the module has always had; the `notes` column carries the RETIRED marking and the
+#: retirement reason Run 43 assigned, which is the form Run 43 already wrote and the form
+#: `MODULE_RETIREMENT_DECISIONS.md` records. The registry therefore still RESOLVES all 101, so no
+#: reference to a retired module raises, while `modules_in_service()` derives the 63 that are in
+#: service and every enumerating path goes through it. There is no second list to drift.
+RETIRED_NOTE_PREFIX = "RETIRED "
+
+#: The abstention reason code a retired module answers with. One code, so a consumer can tell a
+#: retirement apart from missing evidence without parsing the sentence.
+RETIRED_FROM_SERVICE_CODE = "RETIRED_FROM_SERVICE"
+
+
+def _retired_reason(row: dict[str, str]) -> str | None:
+    """
+    The retirement reason a row carries, or None if the module is in service.
+
+    Derived from the row itself. There is deliberately no set of retired identifiers written out
+    anywhere in this file: the CSV is the single authority for which modules exist and which of
+    them are in service, exactly as it is the authority for the 101.
+    """
+    note = (row.get("notes") or "").strip()
+    return note if note.startswith(RETIRED_NOTE_PREFIX) else None
+
+
 def load_registry() -> list[dict[str, str]]:
-    """Every live module from the CSV, in file order."""
+    """
+    Every module the registry declares, in file order: 101 rows, retired ones included.
+
+    The two rows filtered here are NOT retirements. They are pre-existing alias rows that carry
+    the literal `RETIRED` in `new_id` because they have no identifier of their own -- Document
+    Risk Extraction consolidated into A4.1, and the Cat 3 DSM entry consolidated into A5.1. They
+    predate Run 43 and were filtered here before it.
+    """
     with CSV_PATH.open(encoding="utf-8-sig") as fh:
         rows = list(csv.DictReader(fh))
     return [r for r in rows if r["new_id"].strip().upper() != "RETIRED"]
 
 
+def retired_modules() -> dict[str, str]:
+    """{module_id: the retirement reason it carries}, derived from the registry CSV."""
+    return {r["new_id"]: reason for r in load_registry()
+            if (reason := _retired_reason(r)) is not None}
+
+
+def is_retired(new_id: str) -> bool:
+    return new_id in retired_modules()
+
+
 def registry_index() -> dict[str, dict[str, str]]:
+    """
+    Every declared module by id, retired ones included. This is what makes a reference to a
+    retired identifier resolve instead of raising, which is the whole of section 5.1's ruling 2.
+    Callers building a POPULATION want `service_index()`, not this.
+    """
     return {r["new_id"]: r for r in load_registry()}
+
+
+def modules_in_service() -> list[str]:
+    """The 63 modules in service: everything the registry declares, less everything retired."""
+    return sorted(set(registry_index()) - set(retired_modules()))
+
+
+def service_index() -> dict[str, dict[str, str]]:
+    """The registry restricted to modules in service. Every population derives from this."""
+    retired = retired_modules()
+    return {k: v for k, v in registry_index().items() if k not in retired}
 
 
 def available_modules() -> list[str]:
     """
     New ids this server can compute today.
 
-    RUN 43, THE RETIREMENT. This is the INTERSECTION of the implemented set with the registry,
-    not `sorted(VALIDATED)`. The registry CSV is the single authority for which modules exist,
-    and Run 43 retired thirty-eight of them there by the existing `RETIRED` convention in the
-    `new_id` column. `load_registry()` already drops those rows, so intersecting here is what
-    makes the retirement take effect on every path that enumerates modules, without a second
-    registry file and without deleting the formula functions from the dozen `models_*` files
-    that build `VALIDATED`.
+    RUN 43, THE RETIREMENT, AS RULED AT RUN 43D SECTION 5.1. This is the INTERSECTION of the
+    implemented set with the modules IN SERVICE, not `sorted(VALIDATED)` and not the whole
+    registry. The registry CSV is the single authority both for which modules exist and for which
+    of them are in service, so intersecting here is what makes the retirement take effect on every
+    path that enumerates modules, without a second registry file and without deleting the formula
+    functions from the dozen `models_*` files that build `VALIDATED`.
 
     The formulas are deliberately KEPT. Retiring a module is a statement about the taxonomy and
     the explanation burden, not a claim that its arithmetic is wrong, and the audit lineage for
-    every retired module has to remain readable. A retired id is unreachable because it is not
-    in the registry, which `run_module()` checks first and refuses on; keeping its function
-    reachable-by-name would require someone to call it deliberately, bypassing the registry.
+    every retired module has to remain readable. A retired id is unreachable through this list
+    because it is not in service; asking `run_module()` for one by name resolves, and is refused
+    with its stated retirement reason rather than computed.
 
     Deriving the live set rather than restating it is also why this run does not repeat the
     failure the programme has now made nine times: a stated set that drifted from the computed
     one. There is no list here to fall out of date.
     """
-    return sorted(set(VALIDATED) & set(registry_index()))
+    return sorted(set(VALIDATED) & set(service_index()))
 
 
 def unported_modules() -> list[str]:
@@ -410,7 +482,7 @@ def unported_modules() -> list[str]:
 
     No import cycle: portfolio.py imports only from rng.
     """
-    return sorted(set(registry_index()) - set(VALIDATED) - set(PORTFOLIO_VALIDATED))
+    return sorted(set(service_index()) - set(VALIDATED) - set(PORTFOLIO_VALIDATED))
 
 
 def group_of(new_id: str) -> str:
@@ -436,6 +508,34 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
     index = registry_index()
     if new_id not in index:
         raise MissingModuleError(f"{new_id} is not in the module registry")
+    # RUN 43D, SECTION 5.1. THE RETIREMENT REFUSAL, AND IT IS TESTED BEFORE EVERY OTHER REFUSAL
+    # HERE INCLUDING THE GROUP D ROUTING ERROR. A retired module is out of service whatever its
+    # group, whatever its inputs and whatever was previously said about its arithmetic, so a
+    # retired Group D module must answer "retired" rather than "you routed a portfolio module to a
+    # single project": the second sentence invites the caller to supply three projects, and no
+    # number of projects will bring the module back.
+    #
+    # It REFUSES rather than raising. Raising was Run 43's mechanism and it made every reference
+    # to a retired module a crash; refusing lets each of the several hundred existing checks whose
+    # subject is a retired module go on running and assert the refusal, which is the whole reason
+    # the ruling is removal from service rather than removal from existence.
+    retired = retired_modules()
+    if new_id in retired:
+        return {
+            "module_id": new_id,
+            "method_class": VALIDATED[new_id][0] if new_id in VALIDATED else None,
+            "status_color": None,
+            "band_asserted": False,
+            "insufficient_data": True,
+            "retired": True,
+            "activation_state": "RETIRED_FROM_SERVICE",
+            "abstention_reason_code": RETIRED_FROM_SERVICE_CODE,
+            "retired_reason": retired[new_id],
+            "evidence_metric": (
+                f"{index[new_id]['module_name']} is retired from service and is not computed. "
+                f"{retired[new_id]}"
+            ),
+        }
     if index[new_id]["group"] == "D":
         raise PortfolioModuleError(
             f"{new_id} is a Group D portfolio-level module and requires 3 or more projects; "
