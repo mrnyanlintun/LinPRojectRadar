@@ -166,17 +166,47 @@ head("5. THE CLIENT TAXONOMY CARRIES THE CURRENT IDENTITY, NOT A SUPERSEDED ONE"
 
 # The participant-facing taxonomy is a separate surface from the defensibility object and drifted
 # separately, so it is checked against the registry directly rather than against that object.
+# RUN 43, THE RETIREMENT. B4.7 is retired from service, so the participant-facing taxonomy
+# carries no row for it: the guarantee that it must not carry a SUPERSEDED identity is met by its
+# carrying none at all. The subject of this section is unchanged and is asserted over the
+# population IN SERVICE below, so no module in service loses its name/method-class check.
+_B47_RETIRED = REG.is_retired("B4.7")
 for rel in ("assets/js/categories.js", "assets/js/taxonomy.js"):
     txt = (ROOT / rel).read_text(encoding="utf-8")
     m = re.search(r"num: 'B4\.7', name: '([^']*)', method_class: '([^']*)'", txt)
-    check(m is not None, f"{rel}: the B4.7 taxonomy row is present and parseable")
-    if m:
-        want_name = next(r["module_name"] for r in reg if r["new_id"] == "B4.7")
-        check(m.group(1) == want_name,
-              f"{rel}: B4.7's displayed name is the registry's current name", m.group(1))
-        check(m.group(2) == REG.VALIDATED["B4.7"][0],
-              f"{rel}: and its method class is the identifier the runner actually emits",
-              m.group(2))
+    if _B47_RETIRED:
+        check(m is None and "num: 'B4.7'" not in txt,
+              f"{rel}: B4.7 is retired from service, so the client taxonomy carries no row for "
+              f"it, superseded or current", str(m.groups() if m else None))
+    else:
+        check(m is not None, f"{rel}: the B4.7 taxonomy row is present and parseable")
+        if m:
+            want_name = next(r["module_name"] for r in reg if r["new_id"] == "B4.7")
+            check(m.group(1) == want_name,
+                  f"{rel}: B4.7's displayed name is the registry's current name", m.group(1))
+            check(m.group(2) == REG.VALIDATED["B4.7"][0],
+                  f"{rel}: and its method class is the identifier the runner actually emits",
+                  m.group(2))
+    # EVERY module IN SERVICE, not only B4.7: the name and the method class the client publishes
+    # are the registry's own. This replaces the per-module coverage the B4.7 branch carried and
+    # extends it to the whole roster in service, so nothing that was asserted is lost.
+    _names = dict(re.findall(r"num: '([A-D][0-9]+\.[0-9]+)', name: '([^']*)'", txt))
+    _classes = dict(re.findall(
+        r"num: '([A-D][0-9]+\.[0-9]+)', name: '[^']*', method_class: '([^']*)'", txt))
+    _reg_names = {r["new_id"]: r["module_name"] for r in reg}
+    _bad_names = sorted(f"{k}: {_names[k]!r} vs {_reg_names[k]!r}"
+                        for k in REG.service_index()
+                        if k in _names and _names[k] != _reg_names[k])
+    check(not _bad_names,
+          f"{rel}: every displayed name in service is the registry's current name",
+          "; ".join(_bad_names[:3]))
+    _bad_cls = sorted(f"{k}: {_classes[k]!r} vs {REG.VALIDATED[k][0]!r}"
+                      for k in REG.service_index()
+                      if k in _classes and k in REG.VALIDATED
+                      and _classes[k] != REG.VALIDATED[k][0])
+    check(not _bad_cls,
+          f"{rel}: and every method class in service is the identifier the runner emits",
+          "; ".join(_bad_cls[:3]))
 
 head("6. THE METHOD-HELP ENTRIES CARRY NO LEGACY PROXY DESCRIPTION")
 
