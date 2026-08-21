@@ -74,6 +74,9 @@ def section(title: str) -> None:
 section("1. THE REGISTRY POPULATIONS, DERIVED FROM THE REGISTRY")
 
 index = R.registry_index()
+# RUN 43: the roster IN SERVICE, derived. registry_index() resolves retired identifiers by design.
+_in_service_total = len(R.service_index())
+_computed_in_service = len(R.available_modules())
 groups = {}
 for new_id in index:
     groups.setdefault(R.group_of(new_id), []).append(new_id)
@@ -277,10 +280,14 @@ KNOWLEDGE = (ROOT / "assets" / "js" / "knowledge.js").read_text(encoding="utf-8"
 INDEX = (ROOT / "index.html").read_text(encoding="utf-8")
 
 for label, text in (("knowledge.js", KNOWLEDGE), ("index.html", INDEX)):
-    check(f"{label} states the registry total with both of its scopes rather than one "
-          f"unqualified number",
+    # RUN 43, THE RETIREMENT. There are now THREE populations to keep apart, not two: what the
+    # registry holds (101), what is in service (63, which is what a participant sees), and what
+    # the analytical server computes of the roster in service (62). Every figure is derived.
+    check(f"{label} states the registry total with its scopes rather than one unqualified "
+          f"number",
           f"{registered_total} registered modules" in text
-          and f"{project_registered} of the {registered_total}" in text,
+          and f"{_in_service_total} are in service" in text
+          and f"{_computed_in_service} of the {_in_service_total}" in text,
           "scope statement not found")
     check(f"{label} does not claim the assessed targets were scientifically validated",
           not re.search(r"100 (methods|modules|computations) (were )?"
@@ -300,14 +307,16 @@ for label, text in (("knowledge.js", KNOWLEDGE), ("index.html", INDEX)):
 
 # THE FIGURES THE PAGES STATE ARE THE REGISTRY'S OWN, checked against the derived numbers
 # rather than against a copy of the sentence.
-check("the About panel's computed count is the server-computed population and is stated as a "
-      "scope of the registry",
-      f"computes {len(VALIDATED) + len(PORTFOLIO_VALIDATED)} of the {registered_total}"
-      in INDEX)
+check("the About panel's computed count is the server-computed population IN SERVICE and is "
+      "stated as a scope of the roster in service",
+      f"computes {_computed_in_service} of the {_in_service_total}" in INDEX)
 check("and the knowledge page states the same relation",
-      f"the analytical server computes {len(VALIDATED) + len(PORTFOLIO_VALIDATED)}" in KNOWLEDGE
-      or f"computes {len(VALIDATED) + len(PORTFOLIO_VALIDATED)} of the {registered_total}"
-      in KNOWLEDGE)
+      f"computes {_computed_in_service} of the {_in_service_total}" in KNOWLEDGE)
+check("and both pages state the registry total unchanged at 101, so the retirement is reported "
+      "as a change of scope and not as modules ceasing to exist",
+      f"{registered_total} registered modules" in INDEX
+      and f"registry holds {registered_total} modules" in KNOWLEDGE,
+      f"{registered_total}")
 
 # ============================================================ 7. the invariants that must hold
 section("7. THE STANDING INVARIANTS THIS RUN MUST NOT HAVE MOVED")

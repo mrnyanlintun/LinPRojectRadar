@@ -469,10 +469,20 @@ section("6. THE REAL EXECUTION PATH, AND THE PROTECTIONS THAT MUST NOT HAVE MOVE
 # =================================================================================================
 _plain = compute_project(dict(STRUCTURED), "S-RUN14", "P1", CUTOFF)
 _ids = {m["module_id"] for m in _plain["modules"]}
+# RUN 43, THE RETIREMENT. Two of the eight mismatch modules are retired from service and the
+# compute path no longer enumerates them, so "accounted for, computed or abstained" is replaced
+# for those two by the stronger statement that they reach no row at all. MISMATCH itself is
+# Run 13 evidence and is untouched; the branch derives from registry.is_retired().
+_abst_ids = {a.get("module_id") for a in _plain.get("abstained", [])}
 for mid in MISMATCH:
-    check(mid in _ids or mid in {a.get("module_id") for a in _plain.get("abstained", [])},
-          f"{mid}: is accounted for on the application's own compute path, computed or "
-          f"abstained")
+    if _r31h_reg.is_retired(mid):
+        check(mid not in _ids and mid not in _abst_ids,
+              f"{mid}: is retired from service, so it reaches neither the computed rows nor the "
+              f"abstention list on the application's own compute path")
+    else:
+        check(mid in _ids or mid in _abst_ids,
+              f"{mid}: is accounted for on the application's own compute path, computed or "
+              f"abstained")
 _impossible = dict(STRUCTURED)
 _impossible["actualPctComplete"] = 10_000
 _hot = compute_project(_impossible, "S-RUN14", "P1", CUTOFF)
