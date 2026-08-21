@@ -563,3 +563,32 @@ returns green, which is 7.4 in terms.
 measured cost in section 12 of the Run 43D report. The mechanism built by 43D should not be
 reverted whatever is chosen: it is correct, and every option is cheaper on top of it than under
 `b37f133`.
+
+
+---
+
+## Addendum, Run 43F (2026-08-21) — retirement is delinking, and nothing else
+
+**The `run_module()` retirement refusal introduced by Run 43D is withdrawn and removed.** Section
+5.1 of the Run 43F order rules that a retired identifier returns exactly what it returned at
+`f461630`: the same result, or the same refusal, with the same reason, in the same words.
+`DISABLED_UNSAFE` stays `DISABLED_UNSAFE`; `canonical_structure_absent` stays
+`canonical_structure_absent`. **Retirement does not change why a module does or does not produce a
+value.** It is expressed by roster membership and category linkage, and nowhere else.
+
+Measured, not asserted: `run_module()` over all 101 identifiers under two input fixtures is
+byte-identical to a worktree at `f461630`, 0 diff lines, proved failable at 1,530.
+
+**The roster mechanism built by Run 43D stands unchanged** — the 38 identifiers in
+`p0-baseline/module_renumbering_map.csv`, `retired_modules()`, `modules_in_service()`,
+`service_index()`, and the populations derived from them. Registry 101, in service 63, both derived.
+
+**Where it stopped.** Stop conditions **7.1** and **7.6**. The refusal-collision class Run 43D
+measured is gone entirely. What remains is a different and irreducible class: 114 checks across 34
+suites, and 8 suites that abort, assert that a retired module is present in an enumerated
+population — the ledger, the abstention list, the browser taxonomy, a results dict. Requirement 2
+of the same section says it must not be. All four Portfolio Health suites are class 1 at section
+5.4: they assert the pre-offload state, and the offload is correct and derived.
+
+**The owner's choice is the same three options Run 43D stated, now with the refusal class removed
+from their cost.** Nothing in this addendum revises a retirement decision above; all 38 stand.

@@ -9,6 +9,70 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-21 - Run 43F: STOPPED AT 7.1 AND 7.6. UNMERGED. THE REFUSAL CLASS IS GONE; THE POPULATION CLASS IS THE WALL.
+
+**Report:** `REPORT_2026-08-21_run43F_retirement_delink.md`.
+**Branch:** `claude/run43F-retirement-delink`, rooted at `22bb7d2`, **unmerged**.
+**Stamp:** still `sim-2026.08-v27`. `sim-2026.08-v28` NOT minted. `main` still `f461630`.
+**Phase G was NOT begun** — the section 2 gate fails on all four conditions.
+
+## WHAT PHASE F SETTLED
+
+Section 5.1 withdrew Phase D's `run_module()` retirement refusal. It is removed — the short-circuit
+in `run_module()`, the `RETIRED_FROM_SERVICE` branch in `activation_state()` (which feeds
+`run_module()`'s output at `registry.py:670` and `:716`), and the reason-code constant. **The
+roster is kept**: the 38 identifiers in the CSV, `retired_modules()`, `is_retired()`,
+`modules_in_service()`, `service_index()`, and every population derived from them.
+
+**`run_module()` is byte-identical to `f461630` for all 101 identifiers** under two input fixtures,
+diffed against a worktree at that commit: 0 lines. Proved failable by re-injecting a short-circuit
+(1,530 lines), then restored to 0. **Phase D's entire refusal-collision class is gone.** Six of the
+fourteen aborting suites now run.
+
+## WHY IT STOPPED, AND IT IS A DIFFERENT WALL
+
+**7.1.** 114 red checks across 34 suites and 8 suites that still abort assert the **pre-retirement
+population** — that a named retired module reaches the ledger, the abstention list, the taxonomy,
+or a results dict. Nothing here asserts a refusal or a reason code. Section 5.1's own requirement 2
+says a retired module must not be in those populations. Both cannot hold, and only a check body
+resolves it. `test_run26_counts_and_wiring` states it most cleanly: it compares `taxonomy.js`
+against `registry_index()` and reports `63 taxonomy ids / 101 registry`. The comparison is right
+against `service_index()` and wrong against `registry_index()`.
+
+**7.6.** All four Portfolio Health suites are **class 1** at section 5.4: each asserts the
+pre-offload state by indexing a results key the offload correctly no longer writes. The offload is
+complete and derived (`live_portfolio_modules()` returns `()`), so class 2 does not apply. Two more
+suites join them, `test_run34_count_fault_campaign.py` and `test_workspace_t3t5.py`.
+
+**No check body was changed and no check was removed.**
+
+## THE COUNT, RECONCILED EXACTLY
+
+`f461630` reproduced on this machine: **188 / 14,176 / 14,176 / 0 red.** Phase F head: **188 /
+13,326 / 13,440 / 114 red.** The 736 shortfall is −733 (8 aborting suites) −4
+(`test_run32_defensibility_truth`, generated per taxonomy row) −2
+(`test_run20_lineage_declaration_truth`) +3 (`test_map_and_module_count`, sanctioned). Nothing is
+left over.
+
+## A CONFLICT IN THE ORDERS THE OWNER MUST SETTLE
+
+Section 1 item 6 says Phase D's `models_sim.py:254` guard change stands. That change asserts the
+retirement reason code, which section 5.1 abolishes. **The guard body was restored to its
+`f461630` text byte for byte** and is green 7/7; `models_sim.py` now diffs empty against the
+baseline worktree. If the owner intends the Phase D guard change to survive, section 5.1 must be
+amended, because the two cannot both stand.
+
+## OPERATIONAL NOTES
+
+- The freeze gate is **24/30**, up from 23/30. B02 and B15 are now zero. B11 is a pinned
+  byte-identity manifest falsified by this retirement's edits and is the one row section 5.5 lets a
+  run reconcile — **it was not reconciled**, because 5.7 was never reached and pinning a tree the
+  owner has not accepted would be worse than leaving it red.
+- The suite rewrote **17** committed audit artifacts this run, not 18, one of them
+  `server/tools/run17/coverage.csv` **outside `code_audit/`**. All 17 restored, none committed.
+- `registry_index()` resolves retired ids. Any caller building a population wants `service_index()`.
+- `git add -A` and `git add .` were not used.
+
 # 2026-08-21 - Run 43B: STOPPED AT 7.1 AND 7.8. UNMERGED. THE WALL IS NOW MEASURED.
 
 **Report:** `REPORT_2026-08-21_run43B_retirement_completion.md`.
