@@ -62,13 +62,21 @@ FREEZE = ROOT / "research" / "freeze"
 # run37_candidate_behaviour_digest.json and the v25 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v25. The
 # successor writes beside them under its own names.
-PREDECESSOR_CANDIDATE = "489c9f14962899cc88213c045b87b95c2721e21e"
-PREDECESSOR_VERSION = "sim-2026.08-v26"
-CANDIDATE = "07dccf774d34a0dc7536626b739d7a2fb94dfa4e"
-EXPECTED_VERSION = "sim-2026.08-v27"
-IDENTITY_FILE = "run42_freeze_candidate_identity.json"
-GATE_FILE = "run42_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run42_candidate_behaviour_digest.json"
+#
+# RESTATED BY RUN 43, and the reasoning is Run 42's unchanged. Run 43 retires 38 of the 101
+# registered modules FROM SERVICE on the owner's ruling of 2026-08-21. Which modules the
+# production paths enumerate, and which reach a participant surface, is executable behaviour, so
+# the freeze is SUPERSEDED rather than amended. The Run-42 artefacts are NOT rewritten:
+# run42_freeze_candidate_identity.json, run42_successor_freeze_gate.csv,
+# run42_candidate_behaviour_digest.json and the v27 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v27.
+PREDECESSOR_CANDIDATE = "07dccf774d34a0dc7536626b739d7a2fb94dfa4e"
+PREDECESSOR_VERSION = "sim-2026.08-v27"
+CANDIDATE = "b93bc45d26bd01422dd14284b0fba4aaed893e45"
+EXPECTED_VERSION = "sim-2026.08-v28"
+IDENTITY_FILE = "run43_freeze_candidate_identity.json"
+GATE_FILE = "run43_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run43_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
@@ -413,17 +421,24 @@ def freeze_gate():
             f"{len(combos) - len(set(combos))} missing={len(missing)}")
 
     # B04 participant-sequence drift ---------------------------------------------------------
-    v13 = {}
-    for ln in (AUDIT / "run36_closure_participant_package_v13_checksums.sha256").read_text(
-            encoding="utf-8").splitlines():
+    # RUN 43. The record read here is the one the package chain DECLARES CURRENT, not a file name
+    # written into this generator. It was `run36_closure_participant_package_v13_checksums.sha256`
+    # until Run 43 minted og-participant-2026.08-v14 for the retirement; hardcoding a superseded
+    # record would make this blocker measure a predecessor and report drift that is really a
+    # legitimate supersession -- or, worse, stop measuring the package a participant actually
+    # receives. `PP.CURRENT` is the single declaration of which record describes the live tree,
+    # and the package suite asserts that exactly one record in the chain does.
+    current_pkg = {}
+    for ln in (ROOT / PP.CURRENT.record).read_text(encoding="utf-8").splitlines():
         if re.match(r"^[0-9a-f]{64}  ", ln):
             h, p = ln.split("  ", 1)
-            v13[p] = h
+            current_pkg[p] = h
     seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
-                       if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != v13.get(f))
+                       if hashlib.sha256((ROOT / f).read_bytes()).hexdigest()
+                       != current_pkg.get(f))
     blocker(4, "participant-sequence drift", len(seq_moved),
-            f"{len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files compared against the v13 "
-            f"record; moved: {seq_moved or 'none'}")
+            f"{len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files compared against the "
+            f"{PP.CURRENT.identifier} record; moved: {seq_moved or 'none'}")
 
     # B05 false defensibility statement -------------------------------------------------------
     drows, crows, census, populated, exceptions = defensibility_and_census()
@@ -505,12 +520,13 @@ def freeze_gate():
         ["git", "show", f"{PREDECESSOR_CANDIDATE}:server/app/simulation/models.py"],
         cwd=ROOT, capture_output=True, text=True).stdout
     pred_ok = f'SIMULATION_VERSION = "{PREDECESSOR_VERSION}"' in pred_obj
-    v13_bad = sorted(p for p, h in v13.items()
-                     if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
+    current_bad = sorted(p for p, h in current_pkg.items()
+                         if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
     blocker(11, "package or predecessor mutation",
-            len(pkg_bad) + len(v13_bad) + (0 if stamp_ok else 1) + (0 if pred_ok else 1),
-            f"rewritten predecessor package records: {pkg_bad or 'none'}; v13 files not matching "
-            f"their record: {v13_bad or 'none'}; live stamp {SIMULATION_VERSION} "
+            len(pkg_bad) + len(current_bad) + (0 if stamp_ok else 1) + (0 if pred_ok else 1),
+            f"rewritten predecessor package records: {pkg_bad or 'none'}; "
+            f"{PP.CURRENT.identifier} files not matching their record: "
+            f"{current_bad or 'none'}; live stamp {SIMULATION_VERSION} "
             f"(expected {EXPECTED_VERSION}); predecessor {PREDECESSOR_CANDIDATE[:12]} still "
             f"stamped {PREDECESSOR_VERSION}: {pred_ok}")
 

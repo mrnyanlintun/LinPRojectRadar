@@ -46,10 +46,15 @@ def check(name, ok, why, got=""):
 # same fifteen blocker classes, regenerated from the live tree and evaluated against the
 # successor's own identity, gate and release records. The v25 artefacts are untouched and remain
 # the historical evidence for that release.
-SUCCESSOR_GATE = "run42_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN42_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN42_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN42_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 43. The successor is re-evaluated once more, for the retirement of 38 modules from
+# service. The gate is not edited to say PASS -- it is the same fifteen blocker classes,
+# regenerated from the live tree and evaluated against the successor's own identity, gate and
+# release records. The v25, v26 and v27 artefacts are untouched and remain the historical
+# evidence for those releases.
+SUCCESSOR_GATE = "run43_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN43_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN43_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN43_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
@@ -116,17 +121,20 @@ check("run37.gate.predecessor_release_preserved",
       "it rather than rewriting it",
       str(_v25_record.is_file()))
 
-# AND SO MUST RUN 42's IMMEDIATE PREDECESSOR. Run 41's successor record is the evidence for
-# everything computed under v26, exactly as the v25 record is for v25. Checking only the oldest
-# release would let the most recent one be quietly rewritten, which is the mutation this class
-# of check exists to catch.
-_v26_record = ROOT / "research" / "freeze" / "RUN41_SUCCESSOR_FREEZE_RECORD.json"
-check("run37.gate.immediate_predecessor_release_preserved",
-      _v26_record.is_file()
-      and json.loads(_v26_record.read_text(encoding="utf-8")).get("simulation_version")
-      == "sim-2026.08-v26",
-      "the v26 successor release record is still present and still says v26",
-      str(_v26_record.is_file()))
+# AND SO MUST EVERY INTERMEDIATE PREDECESSOR. Each successor record is the evidence for
+# everything computed under its own stamp. Checking only the oldest release would let the most
+# recent one be quietly rewritten, which is the mutation this class of check exists to catch, so
+# every predecessor in the chain is checked and each must still record its OWN stamp.
+for _pred_file, _pred_stamp in (("RUN41_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v26"),
+                                ("RUN42_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v27")):
+    _pr = ROOT / "research" / "freeze" / _pred_file
+    check("run37.gate.immediate_predecessor_release_preserved",
+          _pr.is_file()
+          and json.loads(_pr.read_text(encoding="utf-8")).get("simulation_version")
+          == _pred_stamp,
+          f"the {_pred_stamp} successor release record is still present and still says "
+          f"{_pred_stamp}",
+          str(_pr.is_file()))
 check("run37.gate.no_release_while_blocked",
       not (_blocked and (_record.is_file() or _report.is_file())),
       "NO FINAL RELEASE RECORD MAY EXIST WHILE ANY BLOCKER STANDS",
