@@ -197,8 +197,7 @@ def _state_view(session: Session, run: TrainingRun, project: Project) -> dict[st
         # the recommendation surface in training: there is no researcher-authored package, and
         # a trainee is exactly who they exist for. No reveal gate applies — that gate protects
         # a research pre-judgment, which a training run does not have.
-        "result": (_result_view(row, include_recommendation=True,
-                                project_legacy_id=project.legacy_id) if row else None),
+        "result": _result_view(row, include_recommendation=True) if row else None,
         "abstained_by_category": _abstained_by_category(
             row.module_results if row else None),
     }
