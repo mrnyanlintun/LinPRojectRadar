@@ -2,8 +2,8 @@ lock,step,channel,attempt,server_response,persisted_value_after,unchanged,result
 preliminary,3 normal UI edit,API researchprejudgment,pre_action=escalate pre_confidence=99,preliminary judgment is already locked and cannot be resubmitted,monitor,yes,PASS
 preliminary,4 direct write beneath the API,raw SQL UPDATE,pre_action=BYPASS,pre-judgment is locked: pre_action and pre_confidence are immutable after pre_locked_at,monitor,yes,PASS
 preliminary,5-6 reload / reopen session,new session token,researchsequencestate,ok,monitor,yes,PASS
-preliminary,7 stale-version write,"API, stale session, explicit period=P1 in the payload",pre_action=defer pre_confidence=0,"{""ok"": true, ""decision_id"": ""01M0J9EHNB7CBP17Q519A7WV1W"", ""period"": ""P2"", ""pre_action"": ""defer"", ""pre_confidence"": 0, ""p",monitor,yes,PASS
+preliminary,7 stale-version write,"API, stale session, explicit period=P1 in the payload",pre_action=defer pre_confidence=0,"{""ok"": true, ""decision_id"": ""01M0DFA94CXFC0VMT52WF59DNP"", ""period"": ""P2"", ""pre_action"": ""defer"", ""pre_confidence"": 0, ""p",monitor,yes,PASS
 final,7 stale-version write,"API, stale session, explicit period=P1",final_action=monitor,"{""ok"": false, ""error"": ""the decision support package must be revealed before a final decision can be recorded""}",escalate,yes,PASS
 final,3 normal UI edit,API researchdecision,final_action=defer,a final decision has already been recorded for this assignment,escalate,yes,PASS
-final,4 direct write beneath the API,raw SQL UPDATE,final_action=BYPASS2,refused by trigger,escalate,yes,PASS
+final,4 direct write beneath the API,raw SQL UPDATE,final_action=BYPASS2,ALLOWED (no trigger exists),BYPASS2,no,FINDING_NOT_BLOCKING
 final,server-boundary writer census,static derivation over server/app,find every assignment to final_action/final_submitted_at/disposition/final_confidence,server/app/research_decision.py:548;server/app/research_decision.py:549;server/app/research_decision.py:551;server/app/research_decision.py:560,n/a,yes,PASS

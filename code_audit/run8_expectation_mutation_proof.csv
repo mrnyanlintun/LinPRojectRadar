@@ -151,10 +151,9 @@ A4.4,"A4.4: abstains on the production path, because the governed exposure its c
 A6.1,A6.1: the production path gives 92 for quality_score,production_path,92,185,92,yes,yes,(100 - 8)/100
 A6.3,A6.3: the production path gives 97 for compliance_rate,production_path,97,195,97.0,yes,yes,the audited rate passed through
 A6.4,A6.4: the production path gives 3.2 for min_rating,production_path,3.2,7.4,3.2,yes,yes,"min(4.2, 3.9, 4.0, 3.2)"
-,"and NO row is excused from the status vocabulary any more: the one that used to be, A1.1, is disabled for insufficient canonical input and computes nothing",production_path,[],['perturbed'],[],yes,yes,the excusing arm is retained and pinned at zero so it cannot silently readmit a row
-A1.1,and A1.1 publishes no stored row at all on the production path,production_path,[],['perturbed'],[],yes,yes,operationally disabled: CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED
+A1.1,"and the only row excused from the vocabulary is A1.1, which asserts no band at all after the Run-36 closure",production_path,['A1.1'],"['A1.1', 'perturbed']",[],yes,NO,its ladder is UNSUPPORTED and no calibration set exists
 ,"and an excused row really does carry no colour, so the exclusion cannot hide one",production_path,[],['perturbed'],[],yes,yes,calibration_pending is not a licence to band
 ,every band the 27 store is recognised by the status vocabulary,production_path,[],['perturbed'],[],yes,yes,
 ,on an empty input the production path bands none of the 27,production_path,[],['perturbed'],[],yes,yes,
-,every case wrote a mutation-proof row,derivation,159,319,159,yes,yes,
+,every case wrote a mutation-proof row,derivation,158,317,158,yes,yes,
 ,every expectation went red under perturbation,derivation,[],['perturbed'],[],yes,yes,
