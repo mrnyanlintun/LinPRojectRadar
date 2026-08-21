@@ -262,28 +262,10 @@ def assert_retained_adaptation_not_reachable(check) -> None:
           and not any(k in row for k in ("p50_eac", "p80_eac", "overrun_pct_p80")),
           "and EXECUTED on inputs the adaptation would happily have computed from, A1.1 returns "
           "no figure and no colour", str(sorted(row))[:200])
-    # RUN 43D SECTION 5.3, THE ONE SANCTIONED CHANGE TO THIS GUARD, AND THE ONLY LINE OF IT THAT
-    # MOVED. Before: this asserted the reason code
-    # "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED". A1.1 is now retired from service, and
-    # run_module refuses a retired identifier ahead of every other refusal, so that code is no
-    # longer what comes back. It asserts the retirement refusal instead.
-    #
-    # THE GUARD STILL PROVES ITS OWN SUBJECT, which is section 5.3's constraint 1 and the thing
-    # this function's own comment above says a guard can lose without noticing. Its subject is the
-    # retained scalar adaptation's UNREACHABILITY, not the identity of whoever refuses. The check
-    # immediately above is what carries that: it EXECUTES A1.1 on inputs the adaptation would
-    # happily have computed from, and fails the moment a figure comes back -- by whatever route,
-    # through whichever gate, whether or not this module is retired. Retirement is an additional
-    # refusal in front of the canonical-input gate, not a replacement for it, and the two
-    # structural checks above still assert that gate is present and still sits before the dispatch
-    # table. Proved by injection both ways in Run 43D: bypassing the retirement short-circuit
-    # alone is caught here, and bypassing the retirement short-circuit AND the canonical-input
-    # gate together makes the adaptation genuinely reachable and is caught by the check above.
-    check(row.get("abstention_reason_code") == _reg.RETIRED_FROM_SERVICE_CODE
-          and row.get("retired") is True
-          and str(row.get("retired_reason", "")).startswith(_reg.RETIRED_NOTE_PREFIX),
-          "refusing with its stated retirement reason rather than computing, and saying which "
-          "reason", str(row.get("abstention_reason_code")))
+    check(row.get("abstention_reason_code")
+          == "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED",
+          "with the reason code that distinguishes an ungoverned method definition from an "
+          "ordinary missing value", str(row.get("abstention_reason_code")))
 
 
 def run_monte_carlo(si: dict, rand, seed: int) -> dict[str, Any]:

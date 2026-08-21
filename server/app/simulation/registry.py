@@ -311,11 +311,11 @@ def activation_state(new_id: str) -> str:
     changes no arithmetic and is not itself consulted by run_module()'s abstention contract
     except for the disabled set, which is short-circuited explicitly below.
     """
-    # RUN 43D. Retirement is a statement about the taxonomy, made ahead of every statement about
-    # a module's arithmetic or its inputs, so it is tested first. A retired module is not called
-    # unsafe and is not said to lack inputs: it is out of service.
-    if is_retired(new_id):
-        return "RETIRED_FROM_SERVICE"
+    # RUN 43F, SECTION 5.1. Phase D returned "RETIRED_FROM_SERVICE" here. THAT IS WITHDRAWN.
+    # Retirement is expressed by roster membership and category linkage and nowhere else, so a
+    # retired module's activation state is exactly what it was before it was retired. This
+    # function feeds run_module()'s output at two places, so a retirement branch here would have
+    # changed run_module()'s bytes, which section 5.1 forbids.
     if new_id in DISABLED_CONCEPT_ONLY:
         return "DISABLED_UNSAFE"
     # RUN 16. Its own state, not DISABLED_UNSAFE: this module is not being called unsafe.
@@ -385,10 +385,6 @@ def proxy_label(new_id: str, canonical_name: str) -> str | None:
 #: reference to a retired module raises, while `modules_in_service()` derives the 63 that are in
 #: service and every enumerating path goes through it. There is no second list to drift.
 RETIRED_NOTE_PREFIX = "RETIRED "
-
-#: The abstention reason code a retired module answers with. One code, so a consumer can tell a
-#: retirement apart from missing evidence without parsing the sentence.
-RETIRED_FROM_SERVICE_CODE = "RETIRED_FROM_SERVICE"
 
 
 def _retired_reason(row: dict[str, str]) -> str | None:
@@ -508,34 +504,17 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
     index = registry_index()
     if new_id not in index:
         raise MissingModuleError(f"{new_id} is not in the module registry")
-    # RUN 43D, SECTION 5.1. THE RETIREMENT REFUSAL, AND IT IS TESTED BEFORE EVERY OTHER REFUSAL
-    # HERE INCLUDING THE GROUP D ROUTING ERROR. A retired module is out of service whatever its
-    # group, whatever its inputs and whatever was previously said about its arithmetic, so a
-    # retired Group D module must answer "retired" rather than "you routed a portfolio module to a
-    # single project": the second sentence invites the caller to supply three projects, and no
-    # number of projects will bring the module back.
+    # RUN 43F, SECTION 5.1. PHASE D REFUSED A RETIRED IDENTIFIER HERE, WITH A NEW RETIREMENT
+    # REASON CODE. THAT REQUIREMENT IS WITHDRAWN AND THE REFUSAL IS REMOVED. run_module() on a
+    # retired identifier returns exactly what it returned at f461630: the same result, or the
+    # same refusal, with the same reason, in the same words. DISABLED_UNSAFE stays
+    # DISABLED_UNSAFE; canonical_structure_absent stays canonical_structure_absent. Retirement
+    # does not change why a module does or does not produce a value.
     #
-    # It REFUSES rather than raising. Raising was Run 43's mechanism and it made every reference
-    # to a retired module a crash; refusing lets each of the several hundred existing checks whose
-    # subject is a retired module go on running and assert the refusal, which is the whole reason
-    # the ruling is removal from service rather than removal from existence.
-    retired = retired_modules()
-    if new_id in retired:
-        return {
-            "module_id": new_id,
-            "method_class": VALIDATED[new_id][0] if new_id in VALIDATED else None,
-            "status_color": None,
-            "band_asserted": False,
-            "insufficient_data": True,
-            "retired": True,
-            "activation_state": "RETIRED_FROM_SERVICE",
-            "abstention_reason_code": RETIRED_FROM_SERVICE_CODE,
-            "retired_reason": retired[new_id],
-            "evidence_metric": (
-                f"{index[new_id]['module_name']} is retired from service and is not computed. "
-                f"{retired[new_id]}"
-            ),
-        }
+    # Retirement is expressed by roster membership (`retired_modules()` / `service_index()`,
+    # derived from the registry CSV) and by category linkage, and nowhere else. Downstream
+    # calculation reads categories, so it takes no retired module into account; a caller that
+    # names a retired identifier directly is answered as it always was.
     if index[new_id]["group"] == "D":
         raise PortfolioModuleError(
             f"{new_id} is a Group D portfolio-level module and requires 3 or more projects; "
