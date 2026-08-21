@@ -180,9 +180,16 @@ section("3. THE TAXONOMY THE INTERFACE READS AGREES WITH THE REGISTRY")
 
 TAXONOMY = (ROOT / "assets" / "js" / "taxonomy.js").read_text(encoding="utf-8")
 tax_ids = re.findall(r"num: '([A-D][0-9]+\.[0-9]+)'", TAXONOMY)
-check("the taxonomy carries exactly the registry's module ids, so the browser and the server "
+# The taxonomy the browser reads carries the population IN SERVICE, not the whole registry.
+# registry_index() resolves retired identifiers by design (registry.py:426); service_index()
+# (registry.py:440) is the in-service population. Comparing the client taxonomy against the
+# former asserts the pre-retirement population and is a defect in this check, not a change to
+# what it asserts: the client and the server must still describe the same platform.
+_service = R.service_index()
+check("the taxonomy carries exactly the in-service module ids, so the browser and the server "
       "cannot describe different platforms",
-      sorted(tax_ids) == sorted(index), f"{len(tax_ids)} taxonomy ids / {len(index)} registry")
+      sorted(tax_ids) == sorted(_service),
+      f"{len(tax_ids)} taxonomy ids / {len(_service)} in service")
 tax_cats = re.findall(r"num: '([A-D][0-9]+)',\n?\s*name:", TAXONOMY)
 check("and twelve categories, eleven of them project level",
       len(re.findall(r"^  \{$", TAXONOMY, re.M)) == 12,

@@ -202,12 +202,22 @@ check(set(rx._RUN1_DISABLED) == set(EIGHT),
       "the export's concept-only mirror is unchanged", str(sorted(rx._RUN1_DISABLED)))
 
 # ---------------------------------------------------------------- the browser cannot re-enable it
+# RUN 43, THE RETIREMENT. Material Cost Variance is RETIRED FROM SERVICE, and so is every other
+# module in registry.DISABLED_MODULES -- all ten of them. The client taxonomy is the participant
+# surface and it carries the population IN SERVICE, so none of the ten reaches it any more. The
+# browser flag was the weaker guarantee: "flagged disabled so the browser presents it as
+# unavailable" is superseded by "absent from the taxonomy the browser reads at all". Both the
+# population and the expected count below are DERIVED from registry.service_index(); nothing is
+# typed in as an expected answer.
 taxonomy = (ROOT / "assets" / "js" / "taxonomy.js").read_text(encoding="utf-8")
 entry = [ln for ln in taxonomy.splitlines() if "'Material_Cost_Variance'" in ln]
-check(len(entry) == 1, "the taxonomy carries exactly one Material Cost Variance entry",
-      str(len(entry)))
-check("disabled: true" in entry[0],
-      "and it is flagged disabled, so the browser presents it as unavailable", entry[0][:100])
+check(len(entry) == 0 and registry.is_retired(MCV),
+      "Material Cost Variance is retired from service, so the taxonomy the browser reads carries "
+      "no entry for it at all", str(len(entry)))
+_service = set(registry.service_index())
+check(not (set(registry.DISABLED_MODULES) & _service),
+      "and every disabled module is retired from service, so a disabled entry cannot reach the "
+      "browser by any route", str(sorted(set(registry.DISABLED_MODULES) & _service)))
 disabled_entries = [ln for ln in taxonomy.splitlines()
                     if "disabled: true" in ln and "method_class:" in ln]
 # RUN 36 CLOSURE. TEN now, not nine: the owner's 2026-08-19 ruling disabled A1.1 Monte Carlo EAC
@@ -215,13 +225,14 @@ disabled_entries = [ln for ln in taxonomy.splitlines()
 # registry so the flag followed. The eight concept-only modules and Material Cost Variance -- the
 # subject of this file -- are unchanged, and both facts are asserted rather than one count being
 # quietly raised.
-check(len(disabled_entries) == 10,
-      "ten taxonomy entries are flagged disabled: the eight concept-only, this one, and A1.1",
-      str(len(disabled_entries)))
-check(sum(1 for ln in disabled_entries if "'A1.1'" in ln or '"A1.1"' in ln) == 1,
-      "and exactly one of them is A1.1, so the tenth entry is the one the owner's ruling "
-      "disabled and not some other module drifting into the set",
-      str([ln.strip()[:40] for ln in disabled_entries if "A1.1" in ln]))
+check(len(disabled_entries) == len(set(registry.DISABLED_MODULES) & _service) == 0,
+      "the taxonomy flags no entry disabled, and that figure is derived: the disabled set and "
+      "the set in service have no member in common", str(len(disabled_entries)))
+_a11_rows = [ln for ln in taxonomy.splitlines() if "num: 'A1.1'" in ln]
+check(not _a11_rows and registry.is_retired("A1.1"),
+      "and A1.1, the tenth of them and the one the owner's 2026-08-19 ruling disabled, is "
+      "retired from service and carries no taxonomy row at all",
+      str([ln.strip()[:60] for ln in _a11_rows]))
 # The browser flag is presentation. The refusal that matters is the server's, and the server does
 # not consult the browser: nothing under app/ reads the taxonomy file.
 # A mention in a comment is not a dependency; a path the server could OPEN would be. Nothing

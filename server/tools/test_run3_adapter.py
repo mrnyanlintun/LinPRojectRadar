@@ -140,6 +140,14 @@ FOURTEEN = {
     "B2.8": "Belief Rule Base", "B2.9": "Quantum Probability", "B3.1": "ABM Governance",
 }
 
+# THE POPULATION IN SERVICE, DERIVED. Nine of the fourteen -- B2.1 through B2.9 -- were retired
+# from service at Run 43. Retirement is a statement about the taxonomy, so the fourteen above are
+# KEPT as the historical record of what the adapter was built for, and the population every
+# assertion below ranges over is derived from p0-baseline/module_renumbering_map.csv through
+# registry.is_retired(). Reinstating any of them in that CSV puts it back here with no edit.
+IN_SERVICE = {k: v for k, v in FOURTEEN.items() if not registry.is_retired(k)}
+RETIRED = {k: v for k, v in FOURTEEN.items() if registry.is_retired(k)}
+
 ADMIN = "r3-admin"
 PRJ = "PRJ-R3-ADAPTER"
 
@@ -218,7 +226,7 @@ try:
     comp4, abst4 = by_id(r4)
     check(bool(comp4), "the stored row carries module results", str(len(comp4)))
     # THE DEFECT ITSELF: before the adapter, all fourteen were in `abstained` on every real run.
-    reached = [m for m in FOURTEEN if m in comp4]
+    reached = [m for m in IN_SERVICE if m in comp4]
     # RUN 30 v15: NINE, NOT TWELVE, AND THE THREE THAT DROPPED OUT ARE CORRECT ABSTENTIONS.
     # This fixture's period four supplies ONE independent body of evidence -- the earned-value
     # arms, with no document risk score -- as B2.2's own finding says ("1 of 1 signals"). A
@@ -241,23 +249,29 @@ try:
           "the two governance projections produce a finding at period four; the other twelve "
           "decline for stated reasons of their own rather than being unreached",
           f"reached={sorted(reached)}")
-    _silent = [m for m in FOURTEEN
+    _silent = [m for m in IN_SERVICE
                if m not in comp4 and not str(abst4.get(m, {}).get("reason", "")).strip()]
     check(not _silent,
-          "and every one of the fourteen that did not compute states why, so none of them is "
-          "silent in the way the pre-adapter wiring failure was", str(_silent))
-    _canonical_route = [m for m in FOURTEEN if m.startswith("B2.")
+          f"and every one of the {len(IN_SERVICE)} in service that did not compute states why, "
+          f"so none of them is silent in the way the pre-adapter wiring failure was", str(_silent))
+    _retired_reached = sorted(m for m in RETIRED if m in comp4 or m in abst4)
+    check(not _retired_reached,
+          f"and NOT ONE of the {len(RETIRED)} retired from service reaches the stored row at "
+          f"all, computed or abstaining, which is what retirement from service means",
+          str(_retired_reached))
+    _canonical_route = [m for m in IN_SERVICE if m.startswith("B2.")
                         and abst4.get(m, {}).get("result_source") != "CANONICAL_V5_LAYER"]
     check(not _canonical_route,
           "and every Category-7 row records that the canonical route produced its answer, so a "
           "reader of the ledger can tell a canonical abstention from a proxy that had nothing "
           "to say", str(_canonical_route))
-    check(all(m in comp4 or m in abst4 for m in FOURTEEN),
-          "and every one of the fourteen is accounted for, computed or abstained")
+    check(all(m in comp4 or m in abst4 for m in IN_SERVICE),
+          f"and every one of the {len(IN_SERVICE)} in service is accounted for, computed or "
+          f"abstained")
 
     print()
     print("  per module, at period four:")
-    for mid, name in sorted(FOURTEEN.items()):
+    for mid, name in sorted(IN_SERVICE.items()):
         if mid in comp4:
             print(f"    computes   {name}: {comp4[mid].get('status_color')} -- "
                   f"{str(comp4[mid].get('evidence_metric'))[:70]}")
@@ -269,12 +283,26 @@ try:
     print("2. The two disabled concept-only computations stay refused, adapter or not")
     print("=" * 78)
 
+    # B2.7 (Plithogenic Sets) and B2.9 (Quantum Probability) were the two disabled concept-only
+    # computations. Both are now RETIRED FROM SERVICE as well, so there is no adapter input to
+    # refuse and no row of theirs to read: they reach neither list. That is the post-retirement
+    # form of "refused before any adapter input is consulted", and it is strictly stronger.
     for mid in ("B2.7", "B2.9"):
-        check(mid not in comp4 and "disabled" in str(abst4[mid].get("reason", "")),
-              f"{FOURTEEN[mid]} is refused before any adapter input is consulted",
-              str(abst4.get(mid)))
-        check("assembled signal package" not in str(abst4[mid].get("reason", "")),
-              f"and its reason is the disabled one, not an assembly note ({FOURTEEN[mid]})")
+        check(mid not in comp4 and mid not in abst4 and registry.is_retired(mid),
+              f"{FOURTEEN[mid]} is retired from service, so no adapter input is consulted for "
+              f"it and it reaches no row",
+              str(abst4.get(mid) or comp4.get(mid)))
+        # The companion assertion was "its reason is the disabled one, not an assembly note".
+        # With no row there is no reason to inspect, so the post-retirement form of it is that
+        # NOTHING anywhere in the stored result mentions the identity -- which also forecloses
+        # an assembly note arriving under some other key.
+        check(mid not in str(r4.get("modules")) and mid not in str(r4.get("abstained")),
+              f"and no assembly note or any other statement about it survives in the stored "
+              f"result ({FOURTEEN[mid]})")
+    _still_disabled = sorted(m for m in registry.DISABLED_CONCEPT_ONLY if m in comp4)
+    check(not _still_disabled,
+          "and no concept-only identity still in service computes a finding",
+          str(_still_disabled))
 
     print()
     print("=" * 78)
@@ -318,12 +346,12 @@ try:
     check(set(cats.keys()) <= voting_cats,
           "no category rollup exists for a category carried only by the fourteen",
           f"{sorted(set(cats.keys()) - voting_cats)}")
-    fourteen_cats = {registry.registry_index()[m]["category"] for m in FOURTEEN}
+    fourteen_cats = {registry.service_index()[m]["category"] for m in IN_SERVICE}
     check(not (set(cats.keys()) & (fourteen_cats - voting_cats)),
           "and none of their categories reaches project status fusion")
     # Layer (b) and (c): the courses of action and the decision card read the `votes` field and
     # the fused status respectively, both covered by the two checks above plus this one.
-    check(all(m not in CORE_VOTING_MODULES for m in FOURTEEN),
+    check(all(m not in CORE_VOTING_MODULES for m in IN_SERVICE),
           "none of the fourteen is in the interim voting set")
 
     print()
@@ -335,7 +363,7 @@ try:
           "every computed one of the fourteen is marked newly wired and unvalidated in the row")
     check(all(comp4[m].get("signal_qualification") == "unqualified" for m in reached),
           "and records that it consumed unqualified signals (the Category 9 deviation)")
-    other = next(m for m in comp4 if m not in FOURTEEN)
+    other = next(m for m in comp4 if m not in IN_SERVICE)
     check(comp4[other].get("newly_wired_unvalidated") is None,
           "and no other computation carries the marking", other)
 
@@ -476,7 +504,10 @@ try:
     ab_before = {a["module_id"] for a in before["abstained"]} - NESTED_INPUT_MODULES
     ab_after = {a["module_id"] for a in after["abstained"]} - NESTED_INPUT_MODULES
     check(ab_before == ab_after, "and the same modules abstain outside the fourteen")
-    check(NESTED_INPUT_MODULES <= {a["module_id"] for a in before["abstained"]},
+    # NESTED_INPUT_MODULES is the adapter's own naming table and still names all fourteen; nine
+    # of them are retired from service and reach no list at all, so the fault direction is
+    # confirmed over the population in service.
+    check(set(IN_SERVICE) <= {a["module_id"] for a in before["abstained"]},
           "FAULT DIRECTION CONFIRMED: without the adapter all fourteen abstain, which is the "
           "defect this run fixes",
           str(sorted(NESTED_INPUT_MODULES - {a['module_id'] for a in before['abstained']})))
