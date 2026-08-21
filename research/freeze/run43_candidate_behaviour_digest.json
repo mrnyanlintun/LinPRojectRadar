@@ -3,6 +3,6 @@
   "simulation_version": "sim-2026.08-v28",
   "participant_package": "og-participant-2026.08-v14",
   "behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "candidate_git_commit": "52f1a1a8bf1bf069f288c27bad8784eeeb93c2aa",
+  "candidate_git_commit": "4ad9f73b1b9d60af961e363b0d9542051928ebe1",
   "note": "Recorded AFTER the gate passed. It is the digest of what the instrument DOES on the frozen controlled corpus, so a later behaviour change is detected by blocker B15 even when every file digest still matches."
 }
