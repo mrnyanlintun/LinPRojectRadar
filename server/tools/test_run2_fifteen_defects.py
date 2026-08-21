@@ -46,6 +46,8 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import json as _j43
+import re as _re43
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
@@ -53,6 +55,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
 import app.main as main  # noqa: E402
+from app.simulation import registry as _REG43  # noqa: E402
 import app.simulation.fusion as fusion  # noqa: E402
 from app.documents import set_extractor_override  # noqa: E402
 from app.extraction_client import StubExtractor  # noqa: E402
@@ -937,8 +940,20 @@ try:
         else:
             landed[mid] = "abstaining"
             print(f"    abstaining  {name}: {str(abst.get(mid, {}).get('reason'))[:80]}")
-    check(all(mid in comp or mid in abst for mid in FIFTEEN if mid not in PORTFOLIO_THREE),
-          "every project-level one of the fifteen is accounted for, computed or abstained")
+    # RUN 43, THE RETIREMENT. Three of the project-level fifteen -- A1.1, B2.1 and A2.5 -- are
+    # retired from service and reach no ledger row at all. The population is derived from
+    # registry.is_retired(); the retired members are asserted ABSENT, which is stronger than the
+    # accounting they carried before.
+    _f15_service = [m for m in FIFTEEN
+                    if m not in PORTFOLIO_THREE and not _REG43.is_retired(m)]
+    _f15_retired = [m for m in FIFTEEN
+                    if m not in PORTFOLIO_THREE and _REG43.is_retired(m)]
+    check(all(mid in comp or mid in abst for mid in _f15_service),
+          "every project-level one of the fifteen in service is accounted for, computed or "
+          "abstained")
+    check(not [m for m in _f15_retired if m in comp or m in abst],
+          "and not one of those retired from service reaches the ledger at all",
+          str([m for m in _f15_retired if m in comp or m in abst]))
     check(not (set(FIFTEEN) & set()),
           "and none of the fifteen was moved to the disabled set by this run")
 
@@ -990,23 +1005,25 @@ try:
     for mid in ("A6.1", "A6.4", "B1.1"):
         check(mid in comp, f"{FIFTEEN[mid]} produces a finding on the real path",
               str(abst.get(mid, {}).get("reason"))[:90])
-    check("A1.1" not in comp and "A1.1" in abst,
-          f"{FIFTEEN['A1.1']} produces NO finding on the real path, because the canonical input "
-          f"contract its method is defined on is not governed",
+    # RUN 43: A1.1 is retired from service. It produces no finding, which is what this asserted,
+    # and it now publishes no ledger row either, so there is no reason code on it to read.
+    check("A1.1" not in comp and "A1.1" not in abst and _REG43.is_retired("A1.1"),
+          f"{FIFTEEN['A1.1']} produces NO finding on the real path and no ledger row either, "
+          f"because it is retired from service",
           str(abst.get("A1.1", {}).get("reason"))[:120])
-    check(abst.get("A1.1", {}).get("abstention_reason_code")
-          == "CANONICAL_DRIVER_DISTRIBUTION_MAPPING_NOT_GOVERNED",
-          "and the ledger row distinguishes an ungoverned method definition from an ordinary "
-          "missing value", str(abst.get("A1.1", {}).get("abstention_reason_code")))
-    check("B2.1" not in comp and "B2.1" in abst,
-          f"{FIFTEEN['B2.1']} abstains on the real path where no body of evidence carries a "
-          f"mass over a stated frame, rather than combining masses that are literals in the "
-          f"module under the name of the method",
+    check(not _re43.search(r"\bA1\.1\b", _j43.dumps(comp, default=str))
+          and not _re43.search(r"\bA1\.1\b", _j43.dumps(abst, default=str)),
+          "and no ungoverned-method-definition code, and no statement about it of any kind, "
+          "survives on the ledger", str(abst.get("A1.1", {}).get("abstention_reason_code")))
+    # RUN 43: B2.1 is retired from service. It combines nothing, which is what this asserted,
+    # and it reaches no row, so the canonical route produces no silence to record either.
+    check("B2.1" not in comp and "B2.1" not in abst and _REG43.is_retired("B2.1"),
+          f"{FIFTEEN['B2.1']} is retired from service, so it reaches no ledger row and combines "
+          f"no masses that are literals in the module under the name of the method",
           str(abst.get("B2.1", {}).get("reason"))[:120])
-    check(abst.get("B2.1", {}).get("result_source") == "CANONICAL_V5_LAYER"
-          and abst.get("B2.1", {}).get("canonical_disposition")
-          == "NOT_ESTIMABLE_STRUCTURE_ABSENT",
-          "and the abstaining ledger row records that the canonical route produced the silence",
+    check(not _re43.search(r"\bB2\.1\b", _j43.dumps(comp, default=str))
+          and not _re43.search(r"\bB2\.1\b", _j43.dumps(abst, default=str)),
+          "and the ledger records nothing about it at all, canonical route or otherwise",
           str(abst.get("B2.1", {}).get("canonical_disposition")))
     # RUN 29 CLOSURE REMOVED A4.4 FROM THIS LIST, and the reason is recorded rather than the
     # expectation being quietly rewritten. Run 29 reported that no Category-4 or -5 canonical
@@ -1037,14 +1054,16 @@ try:
     # corpus carries no schedule float at all, so the required-inputs gate fires first and the
     # generic reason stands. Asserted as what it is rather than claimed as the new reason.
     fc = str(abst.get("A2.5", {}).get("reason") or "")
-    check("A2.5" in abst, "Float Consumption Rate abstains on the real path, correctly", fc[:90])
+    check("A2.5" not in abst and "A2.5" not in comp and _REG43.is_retired("A2.5"),
+          "Float Consumption Rate is retired from service, so it reaches no ledger row on the "
+          "real path rather than abstaining on one", fc[:90])
     # RUN 28. The reason moved from the required-inputs gate to the structural one, and the move
     # is more specific rather than less: the corpus carries no ACTIVITY NETWORK, which is what
     # float is derived from, and saying so names the thing that is missing instead of naming two
     # scalars nobody would have known where to find.
-    check(abst.get("A2.5", {}).get("abstention_reason_code") == "canonical_structure_absent",
-          "and does so at the canonical-structure gate, because no document in this corpus "
-          "carries an activity network at all: float is derived from one, and there is none",
+    check(not _re43.search(r"\bA2\.5\b", _j43.dumps(abst, default=str)),
+          "and states nothing at any gate, because a module retired from service does not reach "
+          "the canonical-structure gate at all",
           str(abst.get("A2.5", {}).get("abstention_reason_code")))
 
     # RUN 29. A4.9 no longer renders a ratio on the real path: the corpus carries the long-lead
@@ -1096,16 +1115,27 @@ try:
     # HISTORY, and this project supplies neither. What the check now proves is that each identity
     # LANDS ADDRESSABLY with its own stated reason rather than vanishing, which is the property
     # the original check was really protecting: a defect must not be able to hide as an absence.
+    # RUN 43, THE RETIREMENT. All five Portfolio Health identities are retired from service, so
+    # the snapshot carries no per-identity results at all. "Lands addressably with its own
+    # reason" was the guarantee while the identities were in service; the property it protected
+    # -- a defect must not hide as an absence -- is now carried by the snapshot's OWN stated
+    # reason, which is asserted here in its place, together with the absence of every key.
+    _snap_env = (s4.get("portfolio_snapshot") or {})
     for key, name in (("cat8_3_trajectory_classifier", "Signal Trajectory Classifier"),
                       ("cat8_4_cross_project_pattern", "Cross-project Pattern Detector"),
                       ("cat8_5_anomaly_score", "Anomaly Score")):
-        check(key in snap and bool(snap[key].get("abstention_reason")),
-              f"{name} lands addressably in the stored portfolio snapshot, with its own reason",
-              str(sorted(snap.keys())))
-        check("status_color" not in snap.get(key, {}) and snap.get(key, {}).get("voting") is False,
+        check(key not in snap,
+              f"{name} is retired from service, so it carries no key in the stored portfolio "
+              f"snapshot", str(sorted(snap.keys())))
+        check(not snap.get(key, {}).get("status_color")
+              and not snap.get(key, {}).get("voting"),
               f"{name} carries no status colour and no vote")
-        landed[key] = "producing"
-        print(f"    landing     {name}: {str(snap.get(key, {}).get('abstention_reason'))[:70]}")
+        landed[key] = "retired"
+        print(f"    retired     {name}")
+    check(bool(str(_snap_env.get("message") or "").strip()) and not snap,
+          "and the snapshot itself states, in one place, why there is no portfolio-level "
+          "reading, so the absence is not silent",
+          str(_snap_env.get("message"))[:120])
     # The slope on the real path, recomputed from the stored periods rather than read back.
     stored_cpis = []
     for p in (1, 2, 3, 4):
