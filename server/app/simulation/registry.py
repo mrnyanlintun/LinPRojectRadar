@@ -228,8 +228,14 @@ BAND_SOURCE_LIMIT: str = (
     "exist for this platform, so how often a band is right is unknown."
 )
 
-#: The thirty proxy modules and the qualifier appended to their canonical name wherever the
-#: qualifier is shown. Per remediation_decisions_answered.md 1.4 and Part 4 of the Run 1 prompt,
+#: THE PROXY MODULES AND THE QUALIFIER appended to their canonical name wherever the
+#: qualifier is shown. RUN 43B CORRECTED THIS SENTENCE, which read "The thirty proxy modules"
+#: and had read that since Run 1 while the dictionary below fell from thirty entries to one.
+#: The prose is not restated as a number again: the count is `len(PROXY_QUALIFIERS)` and there
+#: is no second place for it to drift out of. Runs 28, 29, 30, 32 and 33 withdrew twenty-nine
+#: entries between them, each because the proxy it described was replaced by the canonical
+#: method the module's registered name claims, and each withdrawal is recorded in the notes
+#: inside the dictionary and in the code_audit reconciliation artifacts they name. Per remediation_decisions_answered.md 1.4 and Part 4 of the Run 1 prompt,
 #: that is the export, the API response (a new field alongside the unchanged module_id and
 #: evidence_metric -- see run_module()'s "proxy_qualifier" key below), and the methods
 #: documentation. It is NEVER shown on the participant ledger or decision-card surface, which

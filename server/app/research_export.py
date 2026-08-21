@@ -300,45 +300,29 @@ def _run4_band_source(new_id: str) -> str:
                 "uncalibrated and uncited.")
     return "Uncalibrated and uncited; advisory, non-voting."
 
+#: RUN 43B RECONCILIATION. THIS MIRROR HELD THIRTY ENTRIES; THE LIVE REGISTRY HOLDS ONE.
+#: `registry.PROXY_QUALIFIERS` is the authority for which modules carry a proxy qualifier, and
+#: Runs 28, 29, 30, 32 and 33 withdrew twenty-nine of the thirty entries as each proxy was
+#: replaced by the canonical method the module's registered name claims. This mirror was never
+#: updated with them, so the export went on appending a qualifier that advertised a weakness the
+#: code no longer has -- including `B4.4`, whose qualifier Run 32 withdrew explicitly, and
+#: `D1.2`, whose qualifier Run 33 withdrew and whose module Run 43 retired. That is the error
+#: `registry.PROXY_QUALIFIERS`' own note says this table exists to prevent, in the direction it
+#: warns about.
+#:
+#: It is reconciled to the live registry rather than repointed at it, because the reason this
+#: mirror exists has not changed: `research_export` deliberately imports nothing from
+#: `app.simulation`, and the Run 1 tables above are all mirrors for that reason. What changes is
+#: that the mirror is now TRUE of the registry it mirrors. The twenty-nine withdrawn sentences
+#: are preserved as history in `code_audit/run32_proxy_qualifier_reconciliation.csv` and
+#: `code_audit/run33_proxy_qualifier_withdrawal.csv`.
+#:
+#: `A1.2` is the single survivor for the reason stated in the registry: the CUSUM design is
+#: frozen and k, H, the sigma floor and the Amber band remain uncalibrated, so its sentence is
+#: still true of the module it names.
 _RUN1_PROXY_QUALIFIERS: dict[str, str] = {
     "A1.2": "hard-coded transformations of two-sided CUSUM on real SPI history; k, H, sigma "
             "floor and Amber band uncalibrated",
-    "A1.3": "Normal-normal updating with designed constant variances, not a governed Bayesian "
-            "model",
-    "A1.4": "Scalar Kalman recursion with fixed Q and R, short history, no calibrated filtering "
-            "claim",
-    "A1.9": "an expenditure-versus-progress control ratio, not a standardised statistical test",
-    "A1.10": "fixed 50 per cent shrinkage toward historical mean; coefficient not estimated",
-    "A2.4": "a custom compression ratio; no network-based crashing model or calibrated bands",
-    "A2.6": "a single planned versus actual snapshot, not a longitudinal S-curve analysis",
-    "A2.7": "a simplified shift summary on real milestone history, bands uncalibrated",
-    "A3.3": "a labour-hours ratio, not an earned-output productivity model",
-    "A3.5": "a transparent ratio; validity depends on whether the indirect plan is total or "
-            "period-to-date",
-    "A3.7": "an analogous-cost ratio; project selection, normalisation and adaptation "
-            "ungoverned",
-    "A3.9": "a material-escalation ratio with no external price index, time base or geography",
-    # Revised by the fifteen-defects run, mirroring registry.py: the fallbacks this label named
-    # no longer exist, so the label no longer names them. See the note there.
-    "A4.5": "a lost-days over available-float ratio with ungoverned bands, computed only from "
-            "verified lost days and a reported float figure",
-    "A4.6": "contract growth plus a raw count; no time or exposure denominator",
-    "A4.7": "an ad hoc 0.3 / 0.3 / 0.4 weighted sum; weights and dependence uncalibrated",
-    "A4.8": "a precomputed compliance score; provenance and construction unvalidated",
-    "A5.2": "local CPI perturbation plus deviations, not calibrated multivariate sensitivity",
-    "A5.3": "a ranking of four present-state deviations; no outcome-response ranges estimated",
-    "B2.10": "hard-coded transformations of raw CPI, SPI and document risk",
-    "B2.11": "hard-coded memberships consuming raw metrics; no calibration evidenced",
-    "B2.12": "designed perturbations, not elicited or observed hesitant assessments",
-    "B2.13": "membership intervals that are designed constants",
-    "B2.14": "entropy over designed state probabilities; measures the lookup, not the project",
-    "B2.15": "fixed mappings from raw metrics; no governed possibility distribution",
-    "B2.16": "algebraically bounded but fixed memberships on raw unqualified inputs",
-    "B2.17": "formula-shaped with designed memberships, no empirical or elicitation basis",
-    "B3.5": "a raw modification count; not a frequency without a denominator",
-    "B4.3": "an explainable four-rule checklist, not a constraint-satisfaction solver",
-    "B4.4": "four deterministic EAC variants; not an action-by-scenario matrix or optimiser",
-    "D1.2": "an empirical CPI and SPI percentile rank; small-n behaviour and bands unvalidated",
 }
 
 
