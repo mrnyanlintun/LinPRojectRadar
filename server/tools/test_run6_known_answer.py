@@ -568,7 +568,16 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # run41_production_tree.sha256; the file is named rather than the comparison
                    # being relaxed, so the check keeps full force outside it. The run's other
                    # defect is closed in an alembic migration, outside this surface.
-                   - {"server/app/main.py"})
+                   - {"server/app/main.py"}
+                   # RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. The training surface's
+                   # abstention population is derived from `registry.service_index()` instead of
+                   # from the whole registry, so a module retired from service cannot appear as
+                   # an abstention on a training project. Named rather than the comparison being
+                   # relaxed, so the check keeps full force outside it. The retirement's other
+                   # production paths -- registry.py, research_export.py, the client taxonomy
+                   # artifacts, index.html and the registry CSV -- are already inside the scope
+                   # of an earlier run above, and portfolio_health.py is inside the Run-33 pair.
+                   - {"server/app/training.py"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

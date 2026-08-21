@@ -274,11 +274,23 @@ RUN28_CLOSURE_NON_ANALYTICAL_SCOPE = {"server/app/project_data.py"}
 # the diff. The run's other defect, S2, is closed in a migration rather than under server/app/,
 # so it needs no entry here.
 RUN41_NON_ANALYTICAL_SCOPE = {"server/app/main.py"}
+# RESTATED BY RUN 43, ORIGINAL FINDINGS PRESERVED. The retirement of 38 modules from service
+# touches two files under server/app/ that are not in the simulation package, and both are NAMED
+# here rather than the rule being widened. `research_export.py` derives the populations it
+# enumerates for its own summary and coverage columns from the roster in service instead of from
+# the whole registry; it already iterated stored `module_results` for the rows themselves, so no
+# retired module could reach a row by that path either before or after. `training.py`'s
+# `_abstained_by_category()` enumerates the roster in service, so a retired module cannot appear
+# as an abstention on a training project. Neither performs any computation and neither moves a
+# value: both change WHICH modules are enumerated, and the roster they enumerate is derived from
+# p0-baseline/module_renumbering_map.csv and from nothing else.
+RUN43_NON_ANALYTICAL_SCOPE = {"server/app/research_export.py", "server/app/training.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
           or d in RUN14_NON_ANALYTICAL_SCOPE or d in RUN16_NON_ANALYTICAL_SCOPE
           or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE or d in RUN41_NON_ANALYTICAL_SCOPE
+          or d in RUN43_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning

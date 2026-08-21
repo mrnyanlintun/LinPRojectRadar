@@ -522,6 +522,16 @@ RUN41_SCOPED_FILES = {
     "server/app/main.py",
 }
 
+# RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. The training surface's abstention population
+# is derived from `registry.service_index()` rather than from the whole registry, so a module
+# retired from service cannot appear as an abstention on a training project. Named here rather
+# than the rule being widened, so the check keeps its full force over every other production
+# file. The retirement's other production paths under server/app/ and assets/ are already inside
+# an earlier run's scope above.
+RUN43_SCOPED_FILES = {
+    "server/app/training.py",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -533,7 +543,7 @@ _prod = [p for p in _diff
          and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
          and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES
          and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES
-         and p not in RUN41_SCOPED_FILES]
+         and p not in RUN41_SCOPED_FILES and p not in RUN43_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
