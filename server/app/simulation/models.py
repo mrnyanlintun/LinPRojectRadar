@@ -438,12 +438,46 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # is what build_run41_v25_v26_execution_proof.py does, and by the digest comparisons in
 # test_run41_preservation.py.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v26"
+# -------------------------------------------------------------------------------------------
+# RUN 42 SUPERSEDES v26 WITH v27: THE PER-FIELD DOCUMENT LINEAGE THE RECORD ALWAYS OWED.
+#
+# The background data-processing mechanism was traced end to end: upload, selected-period
+# persistence, extraction, stored facts, module input retrieval, C1/Category-9 qualification,
+# category calculation, project status, brief and decision, longitudinal ordering and lineage.
+# One defect in that path was proved and repaired.
+#
+# THE DEFECT. `extraction_merge` builds an observation per document that has always carried
+# `document_id`, `sha256`, `revision_of` and `as_of`, and the stored result has always listed
+# the same identity per document in `source_documents`. The PER-FIELD source record, however,
+# was written as `{"docType", "value"}` and dropped every one of them. The evidence was in
+# storage; only this one hop lost it. Consequently `qualification._provenance` -- which counts a
+# field as traced only when it carries BOTH a document identity and a document version -- counted
+# zero on every project ever computed, and `_timeliness` counted zero as-of dates, so both
+# dimensions were structurally pinned to PARTIAL and could never report anything else.
+#
+#       v26 -> v27  the per-field source record carries the identity of the artefact the field
+#                   was read from: documentId, documentVersion, asOf and revisionOf
+#
+# WHAT THIS IS NOT. No input was invented, no fact fabricated, no qualification rule relaxed and
+# no scientific method changed. The figures are the same figures; only their provenance is now
+# recorded where the qualification layer reads it. Proved by executing the whole registered
+# population on both pinned lines: `module_results`, `category_statuses` and `project_status`
+# are byte-identical across the boundary, and the divergence is confined to
+# `signal_inputs.sources` and `evidence_qualification`. See build_run42_v26_v27_execution_proof.py.
+#
+# WHAT REMAINS DELIBERATELY UNRESOLVED. `revision_resolution_status` is still NOT_ESTIMABLE, and
+# `_overall` is the weakest of the dimensions, so `overall_qualification_state` remains
+# NOT_ESTIMABLE. That is a scientific decision this run did not overturn: test_run12 asserts the
+# revision dimension is never anything but NOT_ESTIMABLE, and relaxing it to unblock categories
+# would undo a deliberate fail-closed choice rather than repair a mechanism. It is reported to
+# the owner as a decision, not silently changed.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v27"
 
-#: THE LINE RUN 41 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
+#: THE LINE RUN 42 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v25"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v26"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -455,7 +489,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
-    "sim-2026.08-v26",
+    "sim-2026.08-v26", "sim-2026.08-v27",
 )
 
 

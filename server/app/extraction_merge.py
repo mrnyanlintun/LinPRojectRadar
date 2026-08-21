@@ -853,6 +853,47 @@ def _perm_pick(group: list[dict]) -> dict:
     ))
 
 
+def _source_entry(w: dict) -> dict:
+    """
+    The per-field source record: WHICH ARTEFACT PRODUCED THIS FIELD, not merely what type it was.
+
+    RUN 42. Until now this recorded ``{"docType", "value"}`` only, and the document identity was
+    dropped even though the winning observation has always carried it -- ``emit_observations``
+    puts ``document_id``, ``sha256``, ``revision_of`` and ``as_of`` on every record, and the
+    stored result's ``source_documents`` lists the same identity per document. The loss was in
+    this one path, not in the data.
+
+    What it cost: ``qualification._provenance`` counts a field as traced only when it carries
+    BOTH ``documentId`` and ``documentVersion``, so it counted zero on every project ever
+    computed and the provenance dimension was pinned to PARTIAL; ``_timeliness`` counts
+    ``asOf`` and was pinned the same way. ``_overall`` is the weakest of the dimensions, so
+    those two alone held ``overall_qualification_state`` at NOT_ESTIMABLE for every period,
+    which is the C1/Category-9 state the downstream categories read.
+
+    ``documentVersion`` IS the sha256. Storage is content-addressed (documents.py stores
+    ``Document.sha256`` as the key), so two revisions of one artefact are two different hashes
+    and the hash is the version identity rather than a stand-in for one.
+
+    Keys are omitted rather than written as null when the observation does not carry them, so a
+    document that genuinely has no identity or no date still produces an honest record and the
+    qualification dimension still reports PARTIAL for it.
+    """
+    entry: dict = {"docType": w["doc_type"], "value": w["value"]}
+    document_id = w.get("document_id")
+    if document_id:
+        entry["documentId"] = str(document_id)
+    sha = w.get("sha256")
+    if sha:
+        entry["documentVersion"] = str(sha)
+    as_of = w.get("as_of")
+    if as_of is not None:
+        entry["asOf"] = as_of.isoformat()
+    revision_of = w.get("revision_of")
+    if revision_of:
+        entry["revisionOf"] = str(revision_of)
+    return entry
+
+
 def select_signal_inputs(observations: list[dict], cutoff: date | None = None) -> dict:
     """The flat ``signalInputs`` dict, selected from observations at a cutoff. Pure.
 
@@ -881,7 +922,7 @@ def select_signal_inputs(observations: list[dict], cutoff: date | None = None) -
         if kind == PERMANENT:
             w = _perm_pick(group)
             si[field] = w["value"]
-            sources[field] = {"docType": w["doc_type"], "value": w["value"]}
+            sources[field] = _source_entry(w)
         elif kind == EVENT:
             snaps = [o for o in group if o.get("kind") != EVENT]
             events = [o for o in group if o.get("kind") == EVENT]
@@ -893,7 +934,7 @@ def select_signal_inputs(observations: list[dict], cutoff: date | None = None) -
                 # A stated total beats counting, as the legacy setField did.
                 w = _snap_pick(snaps)
                 si[field] = w["value"]
-                sources[field] = {"docType": w["doc_type"], "value": w["value"]}
+                sources[field] = _source_entry(w)
             elif events:
                 # Latest non-superseded record per entity IS that entity's record; the
                 # aggregate is over entities, so a revision never becomes a second event.
@@ -912,7 +953,7 @@ def select_signal_inputs(observations: list[dict], cutoff: date | None = None) -
         else:  # SNAPSHOT
             w = _snap_pick(group)
             si[field] = w["value"]
-            sources[field] = {"docType": w["doc_type"], "value": w["value"]}
+            sources[field] = _source_entry(w)
 
     # docDate is DERIVED: the latest as_of among the period's eligible observations — the
     # same rule `_derive_cutoff` applies to the document set, so "as of when" has one answer.
@@ -921,7 +962,7 @@ def select_signal_inputs(observations: list[dict], cutoff: date | None = None) -
         w = max(dated, key=lambda o: (o["as_of"], int(o.get("rank") or 0),
                                       str(o.get("doc_type") or ""), str(o.get("sha256") or "")))
         si["docDate"] = w["as_of"].isoformat()
-        sources["docDate"] = {"docType": w["doc_type"], "value": si["docDate"]}
+        sources["docDate"] = {**_source_entry(w), "value": si["docDate"]}
 
     # ---- derived indices, .gs 1065-1070, unchanged: several modules read si["cpi"].
     cpi = None
