@@ -321,15 +321,29 @@ _res = run_all(_SI32, "cycle10", "2025-06", "2025-06-30")
 _by_id = {r["module_id"]: r for r in _res["computed"]}
 _ab_by_id = {r["module_id"]: r for r in _res["abstained"]}
 _reached = set(_by_id) | set(_ab_by_id)
-check("every labelled module is reached by the production run, as a result or as an abstention",
-      set(ML.labelled_modules()) <= _reached,
-      str(sorted(set(ML.labelled_modules()) - _reached)))
-_carried = [m for m in ML.labelled_modules()
+# RUN 43, THE RETIREMENT. Every module that still carries a truthful method label is RETIRED
+# FROM SERVICE, so none of them is reached by the production run at all. "Reached, and carrying
+# its truthful name" was the guarantee while they were in service; "reaches no ledger row, so no
+# participant can read either name" is the post-retirement form and is stronger. Both the
+# population and the expectation are derived from registry.is_retired(), so reinstating any of
+# them in p0-baseline/module_renumbering_map.csv restores the in-service assertion with no edit.
+_LABELLED_IN_SERVICE = [m for m in ML.labelled_modules() if not registry.is_retired(m)]
+_LABELLED_RETIRED = [m for m in ML.labelled_modules() if registry.is_retired(m)]
+check("every labelled module IN SERVICE is reached by the production run, as a result or as an "
+      "abstention",
+      set(_LABELLED_IN_SERVICE) <= _reached,
+      str(sorted(set(_LABELLED_IN_SERVICE) - _reached)))
+check("and NOT ONE labelled module retired from service is reached by it, so neither its "
+      "registered name nor its truthful name can reach a participant through a ledger row",
+      not (set(_LABELLED_RETIRED) & _reached),
+      str(sorted(set(_LABELLED_RETIRED) & _reached)))
+_carried = [m for m in _LABELLED_IN_SERVICE
             if (_by_id.get(m) or _ab_by_id.get(m) or {}).get("truthful_method_name")
             == ML.method_label(m).truthful]
-check("and every one of them carries its truthful name on the record the interface publishes",
-      len(_carried) == len(ML.labelled_modules()),
-      str(sorted(set(ML.labelled_modules()) - set(_carried))))
+check("and every labelled module in service carries its truthful name on the record the "
+      "interface publishes",
+      len(_carried) == len(_LABELLED_IN_SERVICE),
+      str(sorted(set(_LABELLED_IN_SERVICE) - set(_carried))))
 check("no module that has no label acquired one during the run",
       not [m for m in _reached
            if (_by_id.get(m) or _ab_by_id.get(m) or {}).get("truthful_method_name")
@@ -431,17 +445,27 @@ check("and goes green again once it is restored",
 # module still WRITES a ledger row, and a truthful name leaking into that row would reach a
 # participant exactly as readily. Taking the probe from computed rows first and abstaining rows
 # second keeps the guard exercising a real record rather than a constructed one.
+# RUN 43, THE RETIREMENT. Every labelled module is retired from service, so none of them writes
+# a ledger row and the probe can no longer be taken on one of their own rows. The leak the guard
+# exists to catch is a TRUTHFUL NAME appearing in a ledger key on ANY row, so the probe is now
+# taken on a real ledger row of a module IN SERVICE and the truthful name written into it is a
+# real one from the label table. The guard's subject is unchanged: the name, not the module.
 _LEAK_ROWS = {**_ab_by_id, **_by_id}
-_LEAK_PROBE = next(m for m in MISMATCH_23_STILL_LABELLED if m in _LEAK_ROWS)
-_probe = dict(_LEAK_ROWS[_LEAK_PROBE])
-_probe["evidence_metric"] = ML.method_label(_LEAK_PROBE).truthful + " reading"
-_fired = any(ML.method_label(_LEAK_PROBE).truthful in _probe[k]
+_LEAK_NAME = ML.method_label(LABELLED_PROBE).truthful
+_LEAK_ROW_ID = sorted(_LEAK_ROWS)[0]
+_probe = dict(_LEAK_ROWS[_LEAK_ROW_ID])
+_probe["evidence_metric"] = _LEAK_NAME + " reading"
+_fired = any(_LEAK_NAME in _probe[k]
              for k in _ledger_keys if isinstance(_probe.get(k), str))
 check("the participant-leak guard FIRES when a truthful name is deliberately written into a "
       "ledger key", _fired)
-check("and the real record does not trip it",
-      not any(ML.method_label(_LEAK_PROBE).truthful in _LEAK_ROWS[_LEAK_PROBE][k]
-              for k in _ledger_keys if isinstance(_LEAK_ROWS[_LEAK_PROBE].get(k), str)))
+check("and no real ledger row trips it, on any row the production run produced",
+      not [m for m in _LEAK_ROWS
+           for k in _ledger_keys
+           if isinstance(_LEAK_ROWS[m].get(k), str)
+           and any(ML.method_label(x).truthful in _LEAK_ROWS[m][k]
+                   for x in ML.labelled_modules())],
+      str(sorted(_LEAK_ROWS)[:4]))
 
 # 7f. The attachment itself must be capable of NOT firing, or section 3's last check is vacuous.
 _v: dict = {}

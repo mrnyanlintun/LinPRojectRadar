@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import pathlib
 import sys
@@ -45,8 +46,25 @@ print()
 print("=" * 78)
 print("GUARANTEE 2: every available module is a validated module")
 print("=" * 78)
-check(set(available_modules()) == set(VALIDATED),
-      f"available == validated ({len(VALIDATED)} modules)", str(available_modules()))
+# RUN 43, THE RETIREMENT. available_modules() is now the INTERSECTION of the implemented set with
+# the modules in service, so it is no longer the whole of VALIDATED. The oracle here is NOT
+# service_index() -- that would be asserting the function under test against its own expression.
+# The retired set is re-derived HERE, by reading the retirement notes out of the registry CSV
+# directly, so this check fails if available_modules() and the CSV ever disagree.
+_CSV = pathlib.Path(__file__).resolve().parents[2] / "p0-baseline" / "module_renumbering_map.csv"
+with _CSV.open(encoding="utf-8-sig", newline="") as _fh:
+    _RETIRED_FROM_CSV = {r["new_id"] for r in csv.DictReader(_fh)
+                         if str(r.get("notes") or "").strip().upper().startswith("RETIRED")}
+check(len(_RETIRED_FROM_CSV) > 0,
+      f"the registry CSV records retirements, read here rather than imported "
+      f"({len(_RETIRED_FROM_CSV)})", str(len(_RETIRED_FROM_CSV)))
+check(set(available_modules()) == set(VALIDATED) - _RETIRED_FROM_CSV,
+      f"available == validated minus the retired, derived from the CSV "
+      f"({len(set(VALIDATED) - _RETIRED_FROM_CSV)} modules)",
+      str(sorted(set(available_modules()) ^ (set(VALIDATED) - _RETIRED_FROM_CSV))))
+check(not (set(available_modules()) & _RETIRED_FROM_CSV),
+      "and not one retired module is available to compute",
+      str(sorted(set(available_modules()) & _RETIRED_FROM_CSV)))
 # THE CHECK THAT USED TO BE HERE COULD NOT FAIL.
 #
 # It asserted `len(unported_modules()) == 101 - len(VALIDATED)`. unported_modules() was
