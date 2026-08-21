@@ -63,24 +63,32 @@ a real project document. Do not strengthen this wording.
 
 ## 4. The analytical taxonomy
 
-**100 distinct computations**, verified against the code and recorded in `GROUP_ASSIGNMENT.md`:
+**101 registered modules**, verified against the code and recorded in `GROUP_ASSIGNMENT.md`:
 
 | Group | Purpose | Count |
 |---|---|---|
-| A | Project Health, what condition the project is in | 52 |
+| A | Project Health, what condition the project is in | 53 |
 | B | Recommendation and Governance, what should be done and by whom | 36 |
 | C | Data and Evidence Health, how trustworthy the evidence is | 7 |
 | D | Portfolio Level, requires more than one project | 5 |
 
-Where the count appears in user-facing text, it is 100 registry-computed modules (Group A 52 of
-them). Document Risk Score is not one of the 100 and not one of Group A's 52: it is a value the
-extraction model supplies rather than one the analytical server computes, so it has no formula to
-count. Group A's full roster is 53 named entries: 52 registry-computed plus Document Risk Score,
-supplied.
+These are the REGISTERED counts, and they are what `server/app/simulation/registry.py` and
+`assets/js/taxonomy.js` both derive. This table previously read 100 and 52. That was wrong: it
+described the registered taxonomy but carried the count of a different population, the set the
+analytical server computes. Both populations are real and the difference between them is one
+module, so the two numbers must not be used interchangeably.
 
-That figure is current rather than permanent. Document Risk Score is absent from `VALIDATED` and
-the registry reports it as not ported. If it is later implemented server-side the count becomes
-101, and Group A's registry-computed count becomes 53.
+Where the count appears in user-facing text, state which population it counts. The registry holds
+101 (Group A 53 of them). The analytical server computes 100 of those 101 (Group A 52 of them).
+The single difference is Document Risk Score, `A4.1`: it holds a registry entry, so it counts in
+the 101, but it is a value the extraction model supplies rather than one the analytical server
+computes, so it has no formula and is absent from `VALIDATED`. Group A's roster is 53 named
+entries: 52 computed plus Document Risk Score, supplied.
+
+That split is current rather than permanent. Document Risk Score is absent from `VALIDATED` and
+the registry reports it as not ported. If it is later implemented server-side, the computed count
+becomes 101 and Group A's computed count becomes 53, at which point the two populations coincide
+and the distinction above stops being needed.
 
 **Group C does not contribute to project status.** Evidence quality describes what is known about
 a project, not the project's condition.

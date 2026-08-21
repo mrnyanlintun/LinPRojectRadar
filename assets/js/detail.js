@@ -16,8 +16,9 @@
 
   /* THE CATEGORIES A SINGLE PROJECT HAS, AND WHY EVERY COUNT ON THIS PAGE USES THEM.
 
-     `LIN_CATEGORIES` is the whole taxonomy: Group A 52 modules, Group B 36, Group C 7 and
-     Group D 5, across twelve categories. Group D is PORTFOLIO LEVEL. Its one category,
+     `LIN_CATEGORIES` is the whole taxonomy: Group A 53 modules, Group B 36, Group C 7 and
+     Group D 5, across twelve categories. (This comment read 52 for Group A until Run 43. The
+     data in taxonomy.js has always held 53 and 101; only this comment was wrong.) Group D is PORTFOLIO LEVEL. Its one category,
      Portfolio Health, detects patterns ACROSS projects and requires more than one by
      definition; its five modules all declare `required: ['portfolioVectors']`. They cannot
      compute for a single project and they do not belong on a single project's page.
