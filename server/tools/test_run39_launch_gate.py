@@ -118,7 +118,9 @@ identity("run38 blocker count", "0", str(readiness["blocker_count"]),
 # launch gate must track the instrument that will actually be launched, so it now requires the
 # successor stamp - and separately requires that the v25 freeze record still says v25, so the
 # advance is a supersession and not a rewrite of the predecessor.
-identity("simulation", "sim-2026.08-v26", SIMULATION_VERSION,
+# RESTATED BY RUN 42, same reasoning as Run 41's restatement directly above: the launch gate
+# must track the instrument that will actually be launched, which is now the Run-42 successor.
+identity("simulation", "sim-2026.08-v27", SIMULATION_VERSION,
          "app.simulation.models.SIMULATION_VERSION (live code)")
 identity("v25 freeze record preserved", "sim-2026.08-v25", freeze["simulation_version"],
          "INSTRUMENT_FINAL_FREEZE_RECORD.json (the predecessor, not rewritten)")

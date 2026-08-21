@@ -109,8 +109,15 @@ check(git("cat-file", "-t", RELEASE).strip() == "commit",
 # stamp to sim-2026.08-v26 under the owner's ruling; that the v25 RECORD still says v25 is
 # asserted separately above.
 RUN41_AUTHORISED_MANIFEST_CHANGES = {"server/app/simulation/models.py"}
+# RESTATED BY RUN 42, subtracted by NAME for the same reason. qualification.py is named by the
+# governed manifest, and Run 42's repair reaches it: the provenance and timeliness reason
+# sentences must describe the state actually reached now that the dimensions can leave PARTIAL.
+# Any OTHER manifest file that moved still fails this check.
+RUN42_AUTHORISED_MANIFEST_CHANGES = {"server/app/simulation/qualification.py"}
+AUTHORISED_MANIFEST_CHANGES = (RUN41_AUTHORISED_MANIFEST_CHANGES
+                               | RUN42_AUTHORISED_MANIFEST_CHANGES)
 manifest_targets = sorted(set(manifest_paths) - BOOKKEEPING
-                          - RUN41_AUTHORISED_MANIFEST_CHANGES)
+                          - AUTHORISED_MANIFEST_CHANGES)
 vs_candidate = [p for p in manifest_targets if diff_committed(CANDIDATE, p)]
 vs_release = [p for p in manifest_targets if diff_committed(RELEASE, p)]
 check(not vs_release,
@@ -151,17 +158,33 @@ for surface in SURFACES:
 # appear in this list.
 RUN41_AUTHORISED_SUCCESSOR_CHANGES = {
     "server/app/main.py",                    # finding S1: the document-serving boundary
-    "server/app/simulation/models.py",       # the stamp advances to sim-2026.08-v26
+    "server/app/simulation/models.py",       # the stamp advances to sim-2026.08-v26, then v27
 }
+
+# RESTATED BY RUN 42, AND THE SAME DISCIPLINE AGAIN. Run 42 traced the background
+# data-processing mechanism end to end and proved two identity losses in it: the per-field
+# source record dropped the document identity every observation already carried, and the
+# qualification record named a null project. Repairing the path moves executable behaviour, so
+# it is a freeze SUCCESSOR (sim-2026.08-v27) rather than a violation of this guard. The files it
+# was authorised to change are NAMED here for the same reason Run 41's are, so the set cannot
+# quietly grow: anything else appearing in a frozen surface still fails.
+RUN42_AUTHORISED_SUCCESSOR_CHANGES = {
+    "server/app/extraction_merge.py",           # the per-field provenance record itself
+    "server/app/simulation/qualification.py",   # the dimension reasons that read it
+    "server/app/simulation/compute.py",         # the project identity passed to the record
+    "server/app/documents.py",                  # the same identity on the read path
+}
+AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN42_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
-_unauthorised = [p for p in _surface_paths if p not in RUN41_AUTHORISED_SUCCESSOR_CHANGES]
+_unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
       "the served client, the production server application, the controlled stimulus corpus "
       "and the served page differ from the freeze candidate ONLY by Run 41's owner-authorised "
       "successor changes",
       "; ".join(_unauthorised[:12]))
 print(f"    frozen-surface differences vs the v25 candidate: {_surface_paths} "
-      f"(all owner-authorised Run-41 successor changes)")
+      f"(all owner-authorised Run-41/42 successor changes)")
 
 # ---- surface 3: the version identities themselves.
 sys.path.insert(0, str(ROOT / "server"))
@@ -182,8 +205,8 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v26",
-      "and the live simulation version is the Run-41 successor sim-2026.08-v26",
+check(SIMULATION_VERSION == "sim-2026.08-v27",
+      "and the live simulation version is the Run-42 successor sim-2026.08-v27",
       SIMULATION_VERSION)
 check(PP.CURRENT.identifier == "og-participant-2026.08-v13",
       "the participant package is unchanged at og-participant-2026.08-v13",
@@ -201,7 +224,7 @@ in_frozen = [p for st, p in run38
 # is still required to land outside every frozen surface, and Run 41's owner-authorised successor
 # changes are named rather than allowed to widen the rule.
 _in_frozen_unauthorised = [p for p in in_frozen
-                           if p not in RUN41_AUTHORISED_SUCCESSOR_CHANGES]
+                           if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _in_frozen_unauthorised,
       "nothing Run 38 added or changed lands inside a frozen surface, and the only frozen-surface "
       "paths that moved since are Run 41's owner-authorised successor changes",
@@ -222,7 +245,7 @@ PERMITTED_MODIFICATIONS = {
     # it. Named here explicitly so the addition is auditable rather than absorbed by a looser
     # check. Nothing executable, frozen, or named by the freeze checksum manifest is involved.
     "REPORT_2026-08-19_run38-study-execution-readiness.md",
-} | RUN41_AUTHORISED_SUCCESSOR_CHANGES | {
+} | AUTHORISED_SUCCESSOR_CHANGES | {
     # RUN 41. The owner-authorised successor also necessarily moves the pinned production-tree
     # manifest pointer and the suites that assert the superseded version stamp or that used to
     # reach a now-protected column. Each is named, none is executable production or client code
@@ -258,7 +281,7 @@ unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]
 check(not unexpected,
       "Run 38 modified no pre-existing file outside the named permitted set",
       "; ".join(unexpected[:12]))
-_manifest_modified = (set(modified) & set(manifest_paths)) - RUN41_AUTHORISED_MANIFEST_CHANGES
+_manifest_modified = (set(modified) & set(manifest_paths)) - AUTHORISED_MANIFEST_CHANGES
 check(not _manifest_modified,
       "and no modified file is named by the governed freeze checksum manifest, apart from "
       "Run 41's owner-authorised successor changes",

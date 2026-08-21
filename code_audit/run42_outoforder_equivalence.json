@@ -1,0 +1,75 @@
+{
+ "method": "the SAME project id uploaded to two separate freshly migrated databases, differing in nothing but the order the four reporting periods were uploaded through the real POST /exec route",
+ "chronological_order": [
+  1,
+  2,
+  3,
+  4
+ ],
+ "out_of_order": [
+  4,
+  1,
+  3,
+  2
+ ],
+ "normalised": "row ULIDs and wall-clock stamps only",
+ "byte_identical_derived_state": true,
+ "periods": [
+  "1",
+  "2",
+  "3",
+  "4"
+ ],
+ "upload_log_chronological": [
+  {
+   "assigned_period": 1,
+   "err": null,
+   "ok": true,
+   "requested_period": 1
+  },
+  {
+   "assigned_period": 2,
+   "err": null,
+   "ok": true,
+   "requested_period": 2
+  },
+  {
+   "assigned_period": 3,
+   "err": null,
+   "ok": true,
+   "requested_period": 3
+  },
+  {
+   "assigned_period": 4,
+   "err": null,
+   "ok": true,
+   "requested_period": 4
+  }
+ ],
+ "upload_log_out_of_order": [
+  {
+   "assigned_period": 4,
+   "err": null,
+   "ok": true,
+   "requested_period": 4
+  },
+  {
+   "assigned_period": 1,
+   "err": null,
+   "ok": true,
+   "requested_period": 1
+  },
+  {
+   "assigned_period": 3,
+   "err": null,
+   "ok": true,
+   "requested_period": 3
+  },
+  {
+   "assigned_period": 2,
+   "err": null,
+   "ok": true,
+   "requested_period": 2
+  }
+ ]
+}

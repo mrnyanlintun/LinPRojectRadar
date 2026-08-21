@@ -189,6 +189,13 @@ from run36_production_changes import (  # noqa: E402
 # touched is still red.
 from run41_production_changes import (  # noqa: E402
     RUN41_NEW_PRODUCTION_FILES, RUN41_PRODUCTION_CHANGES)
+# RUN 42 declares the ONE production file it changed that no earlier manifest already names --
+# simulation/qualification.py, whose dimension reason sentences must describe the state actually
+# reached now that the provenance and timeliness dimensions can leave PARTIAL. extraction_merge.py,
+# compute.py, documents.py and models.py are NOT in it, because earlier runs already declare them
+# and no path may appear in two manifests. Same construction, same property.
+from run42_production_changes import (  # noqa: E402
+    RUN42_NEW_PRODUCTION_FILES, RUN42_PRODUCTION_CHANGES)
 run30_declared = {entry[1] for entry in RUN30_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN30_NEW_PRODUCTION_FILES}
 run31_declared = {entry[1] for entry in RUN31_PRODUCTION_CHANGES.values()
@@ -199,9 +206,12 @@ run36_declared = {entry[1] for entry in RUN36_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN36_NEW_PRODUCTION_FILES}
 run41_declared = {entry[1] for entry in RUN41_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN41_NEW_PRODUCTION_FILES}
+run42_declared = {entry[1] for entry in RUN42_PRODUCTION_CHANGES.values()
+                  if entry[1] not in RUN42_NEW_PRODUCTION_FILES}
 declared = (run20_declared | run21_declared | run23_declared | run25_declared
             | run26_declared | run28_declared | run29_declared | run30_declared
-            | run31_declared | run32_declared | run36_declared | run41_declared)
+            | run31_declared | run32_declared | run36_declared | run41_declared
+            | run42_declared)
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",

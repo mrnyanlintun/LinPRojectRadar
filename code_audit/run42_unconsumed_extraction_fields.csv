@@ -1,0 +1,11 @@
+extraction_field,declared_for_doc_types,consumed_by,finding
+actual_equipment_days,resource_report,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+analogous_project_type,historical_data,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+constraint_rate,lookahead_schedule,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+environmental_observations,field_report,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+items_passed,inspection_report,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+on_schedule,procurement_log,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+planned_equipment_days,resource_report,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+rfi_answered,rfi_log,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+safety_observations,field_report,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"
+subcontractor_observations,field_report,NONE,"the extractor is asked for this field and its value is stored on Document.extraction, but no observation, signal input or module reads it"

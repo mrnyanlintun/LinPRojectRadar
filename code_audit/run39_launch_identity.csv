@@ -3,7 +3,8 @@ freeze candidate commit,6142d877856ea651ef8d7e905f6d27604b3244f1,6142d877856ea65
 freeze disposition,FINAL_FREEZE_ACCEPTED,FINAL_FREEZE_ACCEPTED,INSTRUMENT_FINAL_FREEZE_RECORD.json,no,PASS
 study execution disposition,STUDY_EXECUTION_READY,STUDY_EXECUTION_READY,STUDY_EXECUTION_READINESS_MANIFEST.json,no,PASS
 run38 blocker count,0,0,STUDY_EXECUTION_READINESS_MANIFEST.json,no,PASS
-simulation,sim-2026.08-v25,sim-2026.08-v25,app.simulation.models.SIMULATION_VERSION (live code),no,PASS
+simulation,sim-2026.08-v27,sim-2026.08-v27,app.simulation.models.SIMULATION_VERSION (live code),no,PASS
+v25 freeze record preserved,sim-2026.08-v25,sim-2026.08-v25,"INSTRUMENT_FINAL_FREEZE_RECORD.json (the predecessor, not rewritten)",no,PASS
 participant package,og-participant-2026.08-v13,og-participant-2026.08-v13,tools/participant_packages.CURRENT (live code),no,PASS
 synthetic package,OG-SYNTH-0.6,OG-SYNTH-0.6,INSTRUMENT_FINAL_FREEZE_RECORD.json,no,PASS
 analysis export schema,og-analysis-2026.08-v1,og-analysis-2026.08-v1,run38_analysis_export.ANALYSIS_SCHEMA_VERSION (live code),no,PASS

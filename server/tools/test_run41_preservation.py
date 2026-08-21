@@ -196,13 +196,24 @@ print("-" * 78)
 print("SECTION 13 - the version boundary")
 print("-" * 78)
 
-check(SIMULATION_VERSION == "sim-2026.08-v26", "the live stamp is sim-2026.08-v26",
-      SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v25",
-      "and it records v25 as the stamp it supersedes", SIMULATION_VERSION_SUPERSEDED)
-check(SIMULATION_VERSION_HISTORY[-2:] == ("sim-2026.08-v25", "sim-2026.08-v26"),
-      "the history is append-only: v26 directly follows v25",
-      str(SIMULATION_VERSION_HISTORY[-3:]))
+# RESTATED BY RUN 42. This section's subject is that RUN 41's boundary is PRESERVED, not that
+# v26 is live forever. Run 42 supersedes v26 with v27, so what must still hold is that v26 is
+# in the history exactly where Run 41 put it -- directly after v25 -- and that the live stamp is
+# Run 42's own successor. Asserting the live stamp is still v26 would make this file fail every
+# time a later run legitimately supersedes, which would be a guard measuring the wrong thing.
+check(SIMULATION_VERSION == "sim-2026.08-v27", "the live stamp is Run 42's successor "
+      "sim-2026.08-v27", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v26",
+      "and it records v26, Run 41's stamp, as the stamp it supersedes",
+      SIMULATION_VERSION_SUPERSEDED)
+_i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
+check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
+      "the history is append-only and Run 41's boundary is preserved: v26 still directly "
+      "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v27"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v26",
+      "and v27 was appended after v26 rather than replacing it",
+      str(SIMULATION_VERSION_HISTORY[-2:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
 
@@ -214,6 +225,17 @@ check(_v25.returncode == 0
       and 'SIMULATION_VERSION = "sim-2026.08-v26"' not in _v25.stdout,
       "the v25 predecessor reconstructs from its pinned git object and still says v25",
       f"rc={_v25.returncode}")
+
+# AND SO MUST v26, for exactly the same reason: Run 42 supersedes it, so it must not have
+# rewritten it. Without this, a successor could quietly edit the line it claims to supersede.
+_v26 = subprocess.run(["git", "show",
+                       "1b624d3e3cd5ead39b90e80ac351cfc1e2f9a281:server/app/simulation/models.py"],
+                      cwd=ROOT, capture_output=True, text=True)
+check(_v26.returncode == 0
+      and 'SIMULATION_VERSION = "sim-2026.08-v26"' in _v26.stdout
+      and 'SIMULATION_VERSION = "sim-2026.08-v27"' not in _v26.stdout,
+      "the v26 predecessor reconstructs from its pinned git object and still says v26",
+      f"rc={_v26.returncode}")
 
 # ------------------------------------------------------------------ sections 14-15
 print()
