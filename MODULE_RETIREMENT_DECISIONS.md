@@ -521,3 +521,45 @@ of 38 modules necessarily falsifies every check whose subject is one of them and
 pinning a file the retirement edited, and those checks have no enumeration source to repoint. The
 three coherent options are stated in section 12 of the Run 43B report. All three change what the
 instrument's qualification evidence consists of, which is why none may be chosen inside a run.
+
+---
+
+## Addendum — Run 43D, 2026-08-21: retirement becomes removal FROM SERVICE
+
+The owner's Run 43D section 5.1 replaced removal-from-existence with **removal from service**, and
+this addendum records what that changed, what it fixed, and where it stopped. Full account:
+`REPORT_2026-08-21_run43D_retirement_from_service.md`. Branch
+`claude/run43B-retirement-completion`, head `776f130`. **UNMERGED.**
+
+**The reason each of the 38 carries is unchanged and was not rewritten.** It stays exactly where
+Run 43 wrote it, in the `notes` column of `p0-baseline/module_renumbering_map.csv`, which is now
+the sole authority for both populations and the only place the retirement is recorded.
+
+**What changed.** Run 43's `b37f133` wrote the literal `RETIRED` into the `new_id` column, which
+destroyed the identifier. That is superseded. Every one of the 38 `new_id` values is restored —
+verified column-for-column against `f461630`, identical outside `notes`, row order included — and
+the RETIRED marking now lives only in the notes. `registry.py` gains `retired_modules()`,
+`modules_in_service()` and `service_index()`, all derived from the CSV with no list written
+anywhere. `run_module()` resolves a retired identifier and **refuses** it with its stated reason
+instead of raising `MissingModuleError`.
+
+**What that fixed, measured.** The registry resolves all 101 while serving 63. The `RETIRED`
+literal no longer leaks into any derived population — the leak's cure was the restoration itself.
+**2,924 checks that could not run under `b37f133` now run** (9,615 to 12,539 executed). Zero
+modules in service changed their computed result, byte-compared across three fixed cases against a
+`git worktree` at `f461630`: 186 common results, 0 differences.
+
+**Where it stopped.** Stop conditions **7.1** and **7.4**. Section 5.1 asserts that no check body
+need change because the existing checks "now assert the refusal". They do now run, but they assert
+**which** refusal, by name, in the body — `DISABLED_UNSAFE` for the ten retired under reason 2,
+`canonical_structure_absent` and the named structure awaited for the sixteen under reason 3, and
+hand-computed figures for the seven under reason 4. A retirement refusal cannot satisfy an
+assertion written about a different refusal. Measured: **62 red suites, 181 failing checks naming a
+retired module across 26 suites, and 14 suites that abort on a body-level index into a results dict
+that no longer carries the key.** None of the four suites the Portfolio Health offload turned red
+returns green, which is 7.4 in terms.
+
+**The owner's choice is unchanged in shape and narrowed in content**, and it is stated with its
+measured cost in section 12 of the Run 43D report. The mechanism built by 43D should not be
+reverted whatever is chosen: it is correct, and every option is cheaper on top of it than under
+`b37f133`.

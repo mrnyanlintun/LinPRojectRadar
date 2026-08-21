@@ -12581,3 +12581,53 @@ routes, pinning the deliberate abstentions as well as the computations. Fault ca
 - Everything carried forward from Run 36 remains open; no target is empirically field-validated.
 - Professionalization observations are listed in section 9 of the Run 42 report — including a stale
   docstring in `_period_history` claiming the P1 portfolio defect is still queued when it was fixed.
+
+---
+
+# Run 43D — retirement from service. UNMERGED, STOP CONDITIONS 7.1 AND 7.4.
+
+**Report:** `REPORT_2026-08-21_run43D_retirement_from_service.md`. **Branch:**
+`claude/run43B-retirement-completion` at `776f130`, four commits above `83c832d`. **`main` and
+`origin/main` remain at `f461630`. The live stamp remains `sim-2026.08-v27`** at
+`server/app/simulation/models.py:475` — note that path; prompts in this programme have cited
+`server/app/models.py:475`, which does not hold it.
+
+**What the run built, and it is right and should not be reverted.** The owner's ruling replacing
+removal-from-existence with **removal from service**. Retired identifiers are restored to
+`p0-baseline/module_renumbering_map.csv` and marked retired in the `notes` column only;
+`registry.py` derives `retired_modules()`, `modules_in_service()` and `service_index()` from that
+one file with no list written anywhere; `run_module()` resolves a retired id and refuses it with
+its stated reason instead of raising.
+
+**Measured, not asserted.** Registry 101, in service 63, available 62. **2,924 checks that could
+not run under Run 43's mechanism now run** — the suite denominator moved 9,615 to 12,539 and red
+suites 76 to 62. The `RETIRED` literal leak is fixed by the restoration itself. Zero modules in
+service changed their computed result, byte-compared against a worktree at `f461630`.
+
+**Both sanctioned check-body changes were made and both were proved failable.**
+`models_sim.assert_retained_adaptation_not_reachable` still proves its own subject — the retained
+Monte Carlo adaptation was made genuinely reachable (`p50_eac = 1106667.41`) and the untouched
+subject-level check caught it. `test_map_and_module_count.py` 68/72 to 75/75, its new assertions
+caught by clearing one row's RETIRED marking.
+
+**Why it stopped.** Section 5.1 says no check body need change because the existing checks "now
+assert the refusal". They run, but they assert **which** refusal, by name, in the body. 181 failing
+checks name a retired module across 26 suites; 14 more suites abort on a body-level index into a
+results dict that no longer carries a retired module's key. That is a third class, not a third
+case — **7.1**. And none of the four suites the Portfolio Health offload turned red returns green —
+**7.4**.
+
+**Phase E was not begun.** The section 2 gate fails on all four conditions. No Phase E file exists.
+
+**The next session cannot start work.** The owner must choose (A) sanction check-body changes as a
+class where the subject is retired, (B) sanction removing the suites whose subject is wholly
+retired, or (C) narrow the retirement. Each changes what the instrument's qualification evidence
+consists of. Section 12 of the Run 43D report states all three with their measured cost.
+
+**Three operational notes for whoever runs next.**
+- The full suite now rewrites **18** committed audit artifacts, not 15. One of them,
+  `server/tools/run17/coverage.csv`, is **outside `code_audit/`** — `git checkout -- code_audit/`
+  alone leaves it modified.
+- `registry_index()` now resolves retired ids and is therefore the wrong function for any caller
+  building a population. Use `service_index()`. Two callers were found and moved.
+- `git add -A` and `git add .` remain forbidden on this repository. Neither was used in Run 43D.
