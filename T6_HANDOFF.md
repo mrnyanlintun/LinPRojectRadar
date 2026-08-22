@@ -9,6 +9,65 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-22 - Run 45: RETRIEVAL BY FIELD KIND. THE PERIOD-SCOPING FALL-THROUGH IS CLOSED. MERGED.
+
+**Report:** `REPORT_2026-08-22_run45_period_scoping_fix.md`.
+**Decision record:** `FIELD_CLASSIFICATION_DECISIONS.md`. **Proposal:**
+`code_audit/run45_field_classification_proposal.md`.
+**Branch:** `run45-classification`, rooted at `2c4171d`, **merged to `main`**.
+**Stamp:** `sim-2026.08-v30`. **190 suites, 14,357/14,357, 0 red.** Freeze gate **32/32**.
+
+## WHAT MOVED, AND IT IS RETRIEVAL, NOT ANY FORMULA
+
+Run 44 measured that `_period_documents` scopes EVERY field to the period its document was
+uploaded into. Fields are now retrieved by canonical kind, decided once and **signed off by the
+owner before any code changed**:
+
+* **IDENTITY (13)** - the latest value AT OR BEFORE the period being computed, declared
+  document-type precedence holding ACROSS the carry-forward.
+* **PERIOD (62)** - the period's own documents and nothing else. Byte-identical to v29.
+* **UNDETERMINED (2)** - `totalFloat`, `consumedFloat`. Retrieved as period fields.
+
+**13 + 62 + 2 = 77, asserted at import.** The owner's ruling said period 61; it is **62**, and
+the derivation is in the decision record section 2 - the ruled set gave period TWO fields
+(`remainingContingency`, `changeOrderCount`), not one.
+
+## THE CENSUS MOVED EXACTLY THREE MODULES, BOTH LINES AS PREDICTED
+
+`A1.7` and `A1.8` because `bac` is newly visible (TCPI 0.949 -> 0.972; VAC $171,665 ->
+$234,615 at period 3), and **`A3.2` DID move** because `originalContingency` is - from
+abstaining to computing, consumed fraction 0.50 at period 3. **No third mover.** The two control
+corpora are byte-identical before and after, which is the proof that period-field retrieval did
+not change. Artifacts: `code_audit/run45_census_before.csv` / `_after.csv`.
+
+Run 44's `baselineContractSum` inversion is **dead**: a contract at period 1 now beats a change
+order at period 2, 5,874,620 rather than 6,100,000.
+
+## WHAT A LATER SESSION MUST NOT REDISCOVER
+
+1. **`changeOrderCount` is strictly neither kind.** An EVENT field ACCUMULATES; the correct
+   retrieval is a third rule (union at-or-before, latest-per-entity). The owner ruled at 1.3
+   that the rule is NOT to be defined. It stays PERIOD.
+2. **The float pair's contradiction:** `field_registry.py:56` calls both a progress snapshot,
+   `:202` says `schedule_update` REVISES WHAT `time_phased_schedule` ESTABLISHED - the grammar
+   `baselineEnd` was classified identity on. UNDETERMINED by ruling 1.4.
+3. **The identity filter is enforced TWICE** (`documents.py` and `extraction_merge.py`). A
+   single-site injection proves nothing; it cost this run one attempt.
+
+## OPERATIONAL NOTES
+
+- The suite rewrote **18** committed audit artifacts, 17 under `code_audit/` plus
+  `server/tools/run17/coverage.csv` OUTSIDE it. All 18 restored after every run, none committed.
+- `git add -A` and `git add .` were not used; every `git add` named its paths.
+- Manifests re-taken to TRUE bytes: `code_audit/run45_production_tree.sha256` (four changed
+  files, nothing added or removed, observed before writing), the two frozen-immutability
+  authorised sets (ONE path: `field_registry.py`), the accepted-pin chain, and the gate's parent
+  check re-anchored onto Run 44's candidate. Nothing was disabled, weakened or widened.
+- **No sequence-bearing file moved** and **no user-facing control** was added, moved or removed.
+  The participant package is RETAINED at `og-participant-2026.08-v15`.
+- **Unacted, carried forward:** `BRIEF_CAT_LABEL` still carries the retired "Cat N" scheme
+  against `NAMING_AUTHORITY.md:96`.
+
 # 2026-08-21 - Run 43F: STOPPED AT 7.1 AND 7.6. UNMERGED. THE REFUSAL CLASS IS GONE; THE POPULATION CLASS IS THE WALL.
 
 **Report:** `REPORT_2026-08-21_run43F_retirement_delink.md`.

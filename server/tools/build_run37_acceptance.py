@@ -80,13 +80,21 @@ FREEZE = ROOT / "research" / "freeze"
 # run43_successor_freeze_gate.csv, run43_candidate_behaviour_digest.json and the v28 release
 # records all stay exactly as that release wrote them, and remain the historical evidence for
 # everything collected under v28.
-PREDECESSOR_CANDIDATE = "4ad9f73b1b9d60af961e363b0d9542051928ebe1"
-PREDECESSOR_VERSION = "sim-2026.08-v28"
-CANDIDATE = "e6889ad5e84446db7b664e794f4c6013146f3913"
-EXPECTED_VERSION = "sim-2026.08-v29"
-IDENTITY_FILE = "run44_freeze_candidate_identity.json"
-GATE_FILE = "run44_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run44_candidate_behaviour_digest.json"
+# RESTATED BY RUN 45, and the reasoning is Run 42's, Run 43's and Run 44's unchanged. Run 45
+# closes the period-scoping fall-through Run 44 measured, on the owner's ruling of 2026-08-22.
+# WHAT A MODULE IS GIVEN is executable behaviour -- an identity field that was invisible outside
+# the period its document was uploaded into is now retrieved at or before the period being
+# computed -- so the freeze is SUPERSEDED rather than amended. The Run-44 artefacts are NOT
+# rewritten: run44_freeze_candidate_identity.json, run44_successor_freeze_gate.csv,
+# run44_candidate_behaviour_digest.json and the v29 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v29.
+PREDECESSOR_CANDIDATE = "e6889ad5e84446db7b664e794f4c6013146f3913"
+PREDECESSOR_VERSION = "sim-2026.08-v29"
+CANDIDATE = "183dae97a69d3545022aec949dc0c5bda327cc1c"
+EXPECTED_VERSION = "sim-2026.08-v30"
+IDENTITY_FILE = "run45_freeze_candidate_identity.json"
+GATE_FILE = "run45_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run45_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
