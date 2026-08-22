@@ -1,5 +1,5 @@
 {
-  "candidate_git_commit": "5b7b2844767ea06146a08a85639639b39c8c3356",
+  "candidate_git_commit": "82bd1f855313c09210b1de9829fa6773355534c9",
   "candidate_commit_verified_is_head": true,
   "supersedes_candidate": "e3d1b698b4797bb0fad4bde413317e56ecfd2398",
   "supersedes_simulation_version": "sim-2026.08-v32",
@@ -114,7 +114,7 @@
   "test_suite_identity": {
     "label": "every test_*.py the acceptance runner globs",
     "files": 193,
-    "digest": "6cdfae724a77666ccf4b646f4ef43ba5985de0e8a5e01ebc6212adb95aba4a31",
+    "digest": "968d4cef907a0b54d098b8e6db0bfa2cdc62242806d78496e6d8b8ed42121a37",
     "members": [
       "server/tools/test_admin_ops_t7t8.py",
       "server/tools/test_assignment_blinding.py",
@@ -356,5 +356,5 @@
     "git_object": "2820f21e93330f9514c7ee37b37744b4d8165098"
   },
   "method": "Every digest is CONTENT-ADDRESSED: sha256 over the ordered 'sha256  path' lines of its member files, so it is reproducible from the tree alone and independent of any commit. NOTHING WAS REGENERATED to make a hash convenient; every file was read as it stands at the candidate commit.",
-  "candidate_identity_digest": "ceb8f3ee3f9c99490e21ee844116dfc0bc6e23596c8aa77728ff0be6ac16590f"
+  "candidate_identity_digest": "15fa2845569178a821eb3970fa1d1e0400f5edb55c70774d7361cb850b7eb11d"
 }

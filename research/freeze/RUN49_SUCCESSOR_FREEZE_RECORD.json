@@ -18,10 +18,10 @@
     "Run 49 finished that naming correction across every surviving rendered instance the sweep enumerated, extended the deep-dive panel label map to every key the call sites pass, and recorded the server's period override at the three inert literals in decision-ui.js; sim-2026.08-v33.",
     "The v25, v26, v27, v28, v29, v30, v31 and v32 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "5b7b2844767ea06146a08a85639639b39c8c3356",
-  "candidate_identity_digest": "ceb8f3ee3f9c99490e21ee844116dfc0bc6e23596c8aa77728ff0be6ac16590f",
+  "freeze_candidate_commit": "82bd1f855313c09210b1de9829fa6773355534c9",
+  "candidate_identity_digest": "15fa2845569178a821eb3970fa1d1e0400f5edb55c70774d7361cb850b7eb11d",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "60881e394120214041409d6341d334c2b4ba4cbaeabaad7d4af11edf957aa092",
+  "release_content_digest": "e76bfefb65c8db0ddd0efce47e00530aef1d6ebd28467251b1eb57561dca8e30",
   "release_content_digest_method": "sha256 over RUN49_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v33",
