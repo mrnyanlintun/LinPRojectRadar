@@ -610,5 +610,21 @@ behind a sequence-bearing file that needs the owner's authority to touch.**
 
 ## 12. Merge
 
-Branch `run47-evm-consistency-check`, four commits above `fe2e2df`, merged to `main` with
-`--no-ff`. `main` pushed to `origin/main`. Nothing was squashed and nothing was force-pushed.
+Branch `run47-evm-consistency-check`, **five commits** above `fe2e2df`:
+
+| commit | what |
+|---|---|
+| `eba1ab8` | the EVM consistency check, `sim-2026.08-v31`, `og-participant-2026.08-v16` |
+| `9a94495` | the v31 successor freeze apparatus |
+| `0f46551` | the pinned manifests and stamp declarations reconciled to true bytes |
+| `b00ee9f` | the v31 freeze re-minted at `0f46551`, the commit that carries the reconciled guards |
+| `f1efba9` | this report and the handoff entry |
+
+The freeze was minted twice, and that is recorded rather than hidden: the first mint took the
+candidate identity at `eba1ab8`, and the manifest reconciliations that followed were edits to
+`test_*.py` files, which move `test_suite_identity` and turn B01 red. The identity was re-taken at
+`0f46551` and the gate is clean at 32/32 on that candidate. This is the "chasing its own tail"
+Run 44's handoff warns about; it cost one re-mint here too.
+
+Merged to `main` with `--no-ff` as `4685204`, and `main` pushed to `origin/main`
+(`fe2e2df..4685204`). Nothing was squashed and nothing was force-pushed.
