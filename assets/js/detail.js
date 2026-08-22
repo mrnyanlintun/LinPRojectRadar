@@ -1083,7 +1083,7 @@
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="Governance decision (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " registered")}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
-        ${cs("d-docsignals", "Documents & Extracted Signals",
+        ${cs("d-docsignals", "Documents and Extracted Signals",
              uploadedDocsPanelHtml(p) +
              `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`,
              false, `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}
@@ -1738,7 +1738,7 @@
       "\nEvidence agreement: " + confText +
       "\n\nWrite the briefing with EXACTLY these four sections, each introduced by its '### ' header line verbatim. " +
       "LEAD WITH THE RECOMMENDATION. The first thing the reader sees is what to do, not a data summary. " +
-      "Do NOT mention category numbers except when grouping them in Signal Pattern; a program director does not think in Cat 1-12.\n\n" +
+      "Do NOT print any module identifier or category number anywhere in the briefing: name what a category DOES, in words. A program director thinks in purposes, not in identifiers.\n\n" +
       "### Recommendation\n" +
       "Begin with the overall status in CAPS followed by ' · ' and a single short action clause (e.g. 'RED-REVIEW · bring the controls lead into a focused review this cycle'). " +
       "Then ONE sentence beginning 'The evidence suggests…' that frames the overall picture. Diplomatic and advisory, never a command.\n\n" +

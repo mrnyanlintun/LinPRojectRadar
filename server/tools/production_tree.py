@@ -428,8 +428,20 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: reporting exactly those five files, and nothing else, before this manifest was written. The
 #: run47 manifest is NOT rewritten: it stays exactly as that release wrote it and this successor
 #: names it as its parent.
-PINNED = ROOT / "code_audit" / "run48_production_tree.sha256"
-#: The Run-47 manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 49 SUPERSEDES IT. The completion of the naming correction moved FOUR production files:
+#: `assets/js/deepdive.js` (every surviving rendered instance of the retired "Cat N" scheme, and
+#: the panel label map extended to all seventy-seven keys the call sites pass),
+#: `assets/js/detail.js` (one section title's ampersand and the executive brief's prompt),
+#: `assets/js/decision-ui.js` (COMMENTS ONLY at the three inert period literals) and
+#: `server/app/simulation/models.py` (the stamp advances to sim-2026.08-v33 with the boundary
+#: recorded). The guard was observed reporting exactly those four files, and nothing added,
+#: removed or renamed, before this manifest was written. The run48 manifest is NOT rewritten: it
+#: stays exactly as that release wrote it and this successor names it as its parent.
+PINNED = ROOT / "code_audit" / "run49_production_tree.sha256"
+#: The Run-48 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN48 = ROOT / "code_audit" / "run48_production_tree.sha256"
+#: The Run-47 manifest, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN47 = ROOT / "code_audit" / "run47_production_tree.sha256"
 #: The Run-45 manifest, the immediate parent, kept addressable so a guard can prove the

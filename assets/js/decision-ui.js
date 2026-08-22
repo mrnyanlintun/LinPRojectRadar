@@ -342,6 +342,12 @@
       return;
     }
 
+    // RUN 49, ruling 4. The server DERIVES the period and IGNORES this value. This surface
+    // only ever addresses a research project's evidence package, and documents._resolve_period
+    // takes the period from research_decision.current_period whenever a research assignment
+    // exists. Executed in Run 48: a request stating 1 returned 3, and a request stating 4 also
+    // returned 3. The literal is inert; it does not govern. Recorded here because a reader who
+    // assumes it governs is exactly how the detail page defect survived unnoticed.
     var res = await call("projectresults", { id: pid, period: 1 });
     var docs = await call("projectuploadstatus", { id: pid, period: 1 });
 
@@ -542,6 +548,12 @@
     var pid = STATE.server && STATE.server.evidence_project_id;
     if (!pid) { host.innerHTML = ""; return; }
     if (!window.LinRecOptions) { host.innerHTML = ""; return; }
+    // RUN 49, ruling 4. The server DERIVES the period and IGNORES this value. This surface
+    // only ever addresses a research project's evidence package, and documents._resolve_period
+    // takes the period from research_decision.current_period whenever a research assignment
+    // exists. Executed in Run 48: a request stating 1 returned 3, and a request stating 4 also
+    // returned 3. The literal is inert; it does not govern. Recorded here because a reader who
+    // assumes it governs is exactly how the detail page defect survived unnoticed.
     var res = await call("projectresults", { id: pid, period: 1 });
     if (!res || res.ok !== true || !res.result) {
       host.innerHTML = '<p class="dc-empty" id="dc-options-empty">No stored analysis is '

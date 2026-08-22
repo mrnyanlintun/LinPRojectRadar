@@ -600,12 +600,36 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # project, served to the same reader, answers with period 2's row under v32 where it answered
 # with period 1's under v31.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v32"
+# -------------------------------------------------------------------------------------------
+# RUN 49, THE COMPLETION OF THE NAMING CORRECTION, sim-2026.08-v32 -> sim-2026.08-v33.
+#
+# The owner's five rulings of 2026-08-22. Every surviving RENDERED instance of the retired
+# "Cat N" scheme is corrected in assets/js/deepdive.js: the ten collapsible group headers, the
+# Signal Stack banner, the Dempster-Shafer metric-box label, the synthesis comparison heading,
+# its note, its three confidence sentences, the comparison table's row prefix and its column
+# header, and the Portfolio Health flyout's module headings. The deep-dive panel label map is
+# EXTENDED from nineteen keys to all seventy-seven the call sites pass, so each panel names its
+# own category's purpose instead of one neutral phrase. assets/js/detail.js loses an ampersand
+# from a section title and stops naming the retired scheme in the executive brief's prompt while
+# still forbidding the model to print any identifier. assets/js/decision-ui.js gains COMMENTS
+# ONLY at its three inert period literals.
+#
+# NOTHING IS COMPUTED DIFFERENTLY AND NOTHING IS READ DIFFERENTLY. No formula, band, threshold,
+# calibration, abstention rule or population moved: voting is still exactly A1.7 and A1.8, 63
+# modules in service of 101 registered. No stored figure changed. No module buckets to a
+# different collapsible group: CAT_NUM_FROM_MODULE, the grouping map Run 48 separated from the
+# displayed text for exactly this reason, is byte-identical to v32. No user-facing control was
+# added, moved or removed, and no panel states a reporting period.
+#
+# The stamp advances because the SERVED CLIENT is part of the frozen candidate, and the text a
+# participant reads on the deep-dive surface is different under v33 from what it was under v32.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v33"
 
-#: THE LINE RUN 42 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
+#: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v31"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v32"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -618,7 +642,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
-    "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32",
+    "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32", "sim-2026.08-v33",
 )
 
 
