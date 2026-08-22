@@ -2539,7 +2539,7 @@
     var cx=W/2;
     var nodes=[
       {label:'Signal Input',x:cx,y:22,col:'#64748b',w:100},
-      {label:'Synthesis\n(Cat 6)',x:cx,y:60,col:'#e9a23b',w:90},
+      {label:'Signal\nSynthesis',x:cx,y:60,col:'#e9a23b',w:90},   // RUN 48: the retired scheme is gone from this node label. NAMING_AUTHORITY.md:96, groups and purposes only.
       {label:'GREEN',x:cx-140,y:110,col:'#3fcaa6',w:70},
       {label:'AMBER',x:cx,y:110,col:'#e2b13c',w:70},
       {label:'RED-REVIEW',x:cx+140,y:110,col:'#e0556b',w:100},

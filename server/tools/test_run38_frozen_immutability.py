@@ -270,12 +270,29 @@ RUN47_AUTHORISED_SUCCESSOR_CHANGES = {
     "assets/js/recommendation_options.js",  # the disagreement text beside the recommendation
     "server/app/evm_consistency.py",        # NEW: the comparison itself, a pure read-path function
 }
+# RESTATED BY RUN 48, AND THE SAME DISCIPLINE AGAIN. Run 48 makes the project detail page read
+# back the stored row for the LATEST PERIOD THAT HAS BEEN COMPUTED instead of for the literal
+# period 1, and corrects the live instances of the retired "Cat N" naming scheme, on the owner's
+# three rulings of 2026-08-22. WHICH STORED ROW A PAGE READS is executable behaviour, so it is a
+# freeze SUCCESSOR (sim-2026.08-v32) rather than a violation of this guard. TWO files need naming
+# here: `assets/js/deepdive.js`, whose panel labels become groups and purposes, and
+# `assets/js/charts3d.js`, whose synthesis node label does the same. `detail.js`, `documents.py`
+# and `models.py` are already named by an earlier set above, and no path is named twice. NO
+# STORED FIGURE MOVED and nothing is derived into storage: every addition is on the READ path.
+# NO USER-FACING CONTROL MOVED, and the detail page still holds no period selector. ONE
+# SEQUENCE-BEARING FILE MOVED, deepdive.js, on the owner's ruling 2, and it carries its own named
+# exception record in participant_packages.py, which the package suite asserts separately.
+RUN48_AUTHORISED_SUCCESSOR_CHANGES = {
+    "assets/js/deepdive.js",   # the deep-dive panel labels: groups and purposes, no identifier
+    "assets/js/charts3d.js",   # one chart node label, same rule
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN43_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN44_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN45_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN47_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN47_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN48_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -305,15 +322,15 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v31",
-      "and the live simulation version is the Run-47 successor sim-2026.08-v31",
+check(SIMULATION_VERSION == "sim-2026.08-v32",
+      "and the live simulation version is the Run-48 successor sim-2026.08-v32",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v16",
-      "the participant package is superseded at og-participant-2026.08-v16",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v17",
+      "the participant package is superseded at og-participant-2026.08-v17",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "

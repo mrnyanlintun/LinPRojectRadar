@@ -337,7 +337,10 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v16",
         "code_audit/run47_participant_package_v16_checksums.sha256",
-        None,
+        # RUN 48 PINNED THIS. Three of its seventy files moved at Run 48, so the live tree is no
+        # longer evidence for v16; it is pinned to the commit whose blobs it describes, exactly
+        # as v15 was pinned when v16 superseded it.
+        "2d82b21",
         "RUN 47, THE EVM CONSISTENCY CHECK. TWO participant-visible files moved and NEITHER IS "
         "SEQUENCE-BEARING, so this record can say again what v15 could not: decision.js, "
         "decision-ui.js, workspace.js, deepdive.js and both questionnaires are byte for byte "
@@ -353,7 +356,54 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "census with and without a disagreement present is identical. The v15 record is NOT "
         "regenerated: it is pinned to the commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v17",
+        "code_audit/run48_participant_package_v17_checksums.sha256",
+        None,
+        "RUN 48, THE PERIOD THE PROJECT DETAIL PAGE OPENS ON AND THE LIVE NAMING INSTANCES. "
+        "THREE participant-visible files moved and ONE OF THE THREE IS SEQUENCE-BEARING. This "
+        "record cannot say what v16 could, and says so rather than claiming otherwise. "
+        "assets/js/deepdive.js moved on the owner's ruling 2 of 2026-08-22, which authorises a "
+        "sequence-bearing file to be edited whenever an ordered fix requires it and carries its "
+        "own named exception record. WHAT MOVED INSIDE THAT FILE, EXACTLY: the map from a legacy "
+        "module number to the panel's displayed label now holds groups and purposes instead of "
+        "the retired 'Cat N.M' notation, against NAMING_AUTHORITY.md:96; its fallback names a "
+        "purpose instead of concatenating the retired prefix; and the panel's GROUPING number, "
+        "which is written to a data attribute and is never displayed, is declared in its own map "
+        "instead of being parsed back out of the displayed label. The grouping numbers are "
+        "exactly the numbers the retired labels parsed to, measured panel by panel in the "
+        "rendered DOM, so no panel moved to a different collapsible group. No step of the "
+        "decision sequence, no reveal gate, no lock, no randomization, no server contract, no "
+        "append-only record and NO USER-FACING CONTROL moved. THE OTHER TWO ARE READ-PATH AND "
+        "NAMING REPAIRS: assets/js/detail.js reads back the stored row for the LATEST PERIOD "
+        "THAT HAS BEEN COMPUTED instead of for the literal period 1, so every panel on the page "
+        "stops showing period 1 on a project whose current period is not 1; the same file stops "
+        "sending a category identifier into the executive brief's model prompt and drops the "
+        "dead category label map four runs rediscovered. assets/js/charts3d.js loses the retired "
+        "scheme from one chart node label. NO SERVER COMPUTATION MOVED: 101 registered, 63 in "
+        "service, voting exactly A1.7 and A1.8, and no stored figure changed. decision.js, "
+        "decision-ui.js, workspace.js and both questionnaires are byte for byte identical to "
+        "v16. The v16 record is NOT regenerated: it is pinned to the commit whose blobs it "
+        "describes.",
+    ),
 )
+
+#: RUN 48. The files whose bytes moved between v16 and v17. THREE, and one of them --
+#: deepdive.js -- IS SEQUENCE-BEARING. The exception is declared here rather than left for a
+#: checksum to discover, on exactly the Run 44 construction. Its authority is the owner's ruling
+#: 2 in the Run 48 order; its content is the deep-dive panel label map, its fallback, and the
+#: grouping number that used to be parsed out of the label, and nothing else.
+V16_TO_V17_CHANGED = (
+    "assets/js/charts3d.js",
+    "assets/js/deepdive.js",
+    "assets/js/detail.js",
+)
+
+#: The ONE sequence-bearing file Run 48 was authorised to move, and the only one it moved. Every
+#: other member of SEQUENCE_BEARING_FILES must still be byte-identical across this successor.
+#: Naming the exception rather than widening the comparison is what keeps the invariant a real
+#: one: a second file moving here still fails.
+V16_TO_V17_SEQUENCE_EXCEPTION = ("assets/js/deepdive.js",)
 
 #: RUN 47. The files whose bytes moved between v15 and v16. TWO, and NEITHER is sequence-bearing,
 #: so the invariant v15 had to break is intact again: all six sequence-bearing files are byte for

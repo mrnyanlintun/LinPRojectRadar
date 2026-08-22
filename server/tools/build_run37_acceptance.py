@@ -94,13 +94,21 @@ FREEZE = ROOT / "research" / "freeze"
 # run45_freeze_candidate_identity.json, run45_successor_freeze_gate.csv,
 # run45_candidate_behaviour_digest.json and the v30 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v30.
-PREDECESSOR_CANDIDATE = "183dae97a69d3545022aec949dc0c5bda327cc1c"
-PREDECESSOR_VERSION = "sim-2026.08-v30"
-CANDIDATE = "0f46551d5c2d99e15a6a4d2f036938e823691b48"
-EXPECTED_VERSION = "sim-2026.08-v31"
-IDENTITY_FILE = "run47_freeze_candidate_identity.json"
-GATE_FILE = "run47_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run47_candidate_behaviour_digest.json"
+# RESTATED BY RUN 48, and the reasoning is Run 42's, Run 43's, Run 44's, Run 45's and Run 47's
+# unchanged. Run 48 makes the project detail page read the LATEST COMPUTED PERIOD instead of the
+# literal period 1, and corrects the live instances of the retired naming scheme, on the owner's
+# three rulings of 2026-08-22. WHICH STORED ROW A PAGE READS is executable behaviour, so the
+# freeze is SUPERSEDED rather than amended. The Run-47 artefacts are NOT rewritten:
+# run47_freeze_candidate_identity.json, run47_successor_freeze_gate.csv,
+# run47_candidate_behaviour_digest.json and the v31 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v31.
+PREDECESSOR_CANDIDATE = "0f46551d5c2d99e15a6a4d2f036938e823691b48"
+PREDECESSOR_VERSION = "sim-2026.08-v31"
+CANDIDATE = "e3d1b698b4797bb0fad4bde413317e56ecfd2398"
+EXPECTED_VERSION = "sim-2026.08-v32"
+IDENTITY_FILE = "run48_freeze_candidate_identity.json"
+GATE_FILE = "run48_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run48_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 

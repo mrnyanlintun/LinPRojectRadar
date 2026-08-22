@@ -1002,6 +1002,42 @@ def _milestone_forecast_history(snapshots: list[dict]) -> dict | None:
             "milestones": rows}
 
 
+def _computed_periods(session: Session, project: Project) -> list[int]:
+    """
+    Every period of this project that HOLDS A LIVE COMPUTED RESULT, ascending.
+
+    RUN 48, RULING 1. Read from the result table itself, never inferred from the document
+    table and never generated as a range. A period with documents and no computed result does
+    not appear here, because it has not been computed; a superseded result does not appear
+    here, because `superseded_by` is not null and the row is no longer the live one. The list
+    is therefore whatever the database holds -- it may have gaps, it may start above 1, and it
+    is not bounded by any assumed maximum. A project may run to sixty periods.
+    """
+    rows = session.scalars(
+        select(ComputedResult.period).where(
+            ComputedResult.project_id == project.id,
+            ComputedResult.superseded_by.is_(None),
+        ).order_by(ComputedResult.period)
+    ).all()
+    return sorted({int(p) for p in rows if p is not None})
+
+
+def _latest_computed_period(session: Session, project: Project) -> int | None:
+    """
+    The latest period for which a computed result exists, or None when none does.
+
+    DERIVED, NOT ASSUMED. It is the maximum of `_computed_periods`, which is read out of the
+    stored rows. It is NOT `_highest_period` (that is the highest period holding a DOCUMENT,
+    which may never have been computed), it is not a count, and it makes no contiguity
+    assumption: a project computed at 1 and 4 with 2 and 3 absent returns 4.
+
+    None is the honest answer for a project that has never been computed. The caller renders
+    its existing empty state; it does not substitute 1.
+    """
+    periods = _computed_periods(session, project)
+    return periods[-1] if periods else None
+
+
 def _live_result(session: Session, project: Project, period: int) -> ComputedResult | None:
     return session.scalars(
         select(ComputedResult).where(
@@ -2963,6 +2999,11 @@ def a_projectperiods(session: Session, payload: dict, secret: str, ttl: int) -> 
 
     ends = dict(_stated_period_ends(session, project))
     highest = _highest_period(session, project)
+    # RUN 48, RULING 1. Which periods hold a LIVE COMPUTED RESULT, read from the result table.
+    # Reported as its own list rather than as a key on each period row: the row shape here is
+    # the picker's contract and `test_period_number_picker.py` asserts it exactly, so adding a
+    # key to it would have changed a contract this run has no order to change.
+    computed = set(_computed_periods(session, project))
     periods = [{"period": p, "period_end": ends.get(p).isoformat() if ends.get(p) else None}
                for p in range(1, highest + 1)]
 
@@ -2977,6 +3018,11 @@ def a_projectperiods(session: Session, payload: dict, secret: str, ttl: int) -> 
         "project_id": project.legacy_id,
         "periods": periods,
         "next_period": highest + 1,
+        # RUN 48, RULING 1. The latest period for which computed results exist, or null when
+        # this project has never been computed. READ ONLY, derived, and never a substitute for
+        # a period the caller stated.
+        "computed_periods": sorted(computed),
+        "latest_computed_period": _latest_computed_period(session, project),
         "server_derived": server_derived,
         "server_time": now_iso(),
     }

@@ -377,9 +377,19 @@ head("3. SECTION 4.1 -- THE DRIVER IS NEVER BETTER THAN WHAT IT DRIVES (section 
 check("(worst:" not in JS["briefAmberOverGreens"],
       "an Amber category over modules that all read Green offers NO module as its driver in "
       "the brief prompt", JS["briefAmberOverGreens"][:160])
-check("A1 Cost and EVM Performance: Amber" in JS["briefAmberOverGreens"],
+# RUN 48 CHANGED THE EXPECTED STRING, AND ONLY THE STRING. The owner's ruling 2 of 2026-08-22
+# orders the category IDENTIFIER out of the text this prompt carries: NAMING_AUTHORITY.md:96,
+# "Never use a module id or number in user-facing text." The line the brief builds is now
+# `c.name + ": " + c.status`, so the identifier "A1 " is gone and the category and its status
+# are still there. The check keeps its full force -- it still fails if the category or its
+# status stops being reported -- and it now also fails if the identifier comes back. This is a
+# check-body change made necessary by an ordered correction, and it is recorded as such in the
+# Run 48 report.
+check("Cost and EVM Performance: Amber" in JS["briefAmberOverGreens"]
+      and "A1 Cost and EVM Performance" not in JS["briefAmberOverGreens"],
       "the category and its status are still reported -- the attribution was dropped, not the "
-      "category", JS["briefAmberOverGreens"][:160])
+      "category -- and the category identifier is no longer in the text",
+      JS["briefAmberOverGreens"][:160])
 check("(worst: VAC" in JS["briefAmberOverAmber"],
       "an Amber category WITH an Amber module still names it, so the guard suppresses a false "
       "attribution and not a true one", JS["briefAmberOverAmber"][:160])

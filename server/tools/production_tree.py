@@ -416,7 +416,22 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: The run44 manifest is NOT rewritten: it stays exactly as that release wrote it and this
 #: successor names it as its parent. The guard was observed reporting exactly those four files,
 #: and nothing else, before this manifest was written.
-PINNED = ROOT / "code_audit" / "run47_production_tree.sha256"
+#: RUN 48 supersedes the Run-47 manifest. FIVE production files move and NOTHING is added or
+#: removed: `server/app/documents.py` (`_computed_periods` and `_latest_computed_period`, read
+#: from the result table, and the two derived read-only fields `projectperiods` now returns),
+#: `assets/js/detail.js` (the detail page reads back the stored row for the latest COMPUTED
+#: period instead of for the literal 1, sends no category identifier into the brief's model
+#: prompt, and loses the dead category label map), `assets/js/deepdive.js` (the panel labels
+#: become groups and purposes and the grouping number is declared separately from them),
+#: `assets/js/charts3d.js` (one chart node label) and `server/app/simulation/models.py` (the
+#: stamp advances to sim-2026.08-v32 with the boundary recorded). The guard was observed
+#: reporting exactly those five files, and nothing else, before this manifest was written. The
+#: run47 manifest is NOT rewritten: it stays exactly as that release wrote it and this successor
+#: names it as its parent.
+PINNED = ROOT / "code_audit" / "run48_production_tree.sha256"
+#: The Run-47 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN47 = ROOT / "code_audit" / "run47_production_tree.sha256"
 #: The Run-45 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite. (Run 46 was report-only and wrote no
 #: manifest, so Run 45 is the parent.)

@@ -9,6 +9,67 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-22 - Run 48: THE DETAIL PAGE READS THE CURRENT PERIOD, AND THE LIVE NAMING INSTANCES. MERGED.
+
+**Report:** `REPORT_2026-08-22_run48_current_period_and_naming.md`.
+**Branch:** `run48-current-period-and-naming`, rooted at `2d82b21`, **merged to `main`**.
+**Stamp:** `sim-2026.08-v32`. **Package:** `og-participant-2026.08-v17`.
+**192 suites, 14,513/14,513, 0 red.** Freeze gate **15 blocker classes, 0 blocked; suite 34/34**.
+
+## WHAT MOVED, AND IT IS THE READ PATH
+
+`primeAndRefresh` read the stored row back with a hard-coded `period: 1`. Every panel on the
+project detail page holds whatever that one call returns, so on a project whose current period
+was not 1 the key drivers, the abstention reasons, `recommendation_basis` and the Run 47
+disagreement findings **all described period 1**. The period is now DERIVED BY THE SERVER:
+`documents._computed_periods` and `_latest_computed_period` read the LIVE computed results
+(`superseded_by IS NULL`), `projectperiods` serves them as `computed_periods` and
+`latest_computed_period`, and the page reads back that period's row.
+
+**Nothing is assumed, and each forbidden assumption has its own fixture:** documents at 1-3 with
+results at 1-2 opens on **2**; results at 1 and 4 with a hole opens on **4**; a result at period
+**48** opens on 48; no result in any period returns **null** and the existing empty state stands.
+
+The three live naming instances are corrected: `deepdive.js`'s panel label map AND its fallback,
+`charts3d.js`'s synthesis node label, and the category identifier `detail.js` sent into the
+brief's model prompt. The dead category label map in `detail.js` is DELETED (ruling 3).
+
+## WHAT A LATER SESSION MUST NOT REDISCOVER
+
+1. **The deep-dive panel GROUPING number used to be parsed out of the displayed label.**
+   Correcting the label would have moved every panel into a different collapsible group. It is now
+   `CAT_NUM_FROM_MODULE`, declared separately, and the DOM was read back panel by panel to prove
+   no panel moved.
+2. **The `decision-ui.js` `period: 1` literals are INERT, established by execution.** That surface
+   only ever addresses a research project, and `_resolve_period` derives the period from the
+   assignment and ignores the payload. A fixture with a decision at P3 answers 3 for a stated 1
+   AND for a stated 4. They were left because `decision-ui.js` is sequence-bearing.
+3. **The retired scheme still renders on `research/deepdive.html`** in the ten group headers, the
+   banner and five prose sentences. Enumerated with line numbers in the report; a decision for the
+   owner, not an oversight.
+4. **`research/deepdive.html` needs the LEGACY client-side `signals` blob** and the document
+   pipeline does not write it. The browser driver supplies it through the real `save` route from
+   the `p0-baseline` capture.
+5. **`try/finally` with `sys.exit` in the `finally` swallows a suite's traceback** and prints a
+   clean RESULT line one check short.
+
+## OPERATIONAL NOTES
+
+- The suites rewrote **18** committed audit artifacts, 17 under `code_audit/` plus
+  `server/tools/run17/coverage.csv` OUTSIDE it. All 18 restored after every run, none committed.
+- `git add -A` and `git add .` were not used; every `git add` named its paths.
+- **ONE SEQUENCE-BEARING FILE MOVED**, `assets/js/deepdive.js`, on ruling 2, with its own named
+  exception `V16_TO_V17_SEQUENCE_EXCEPTION`. B04 was proved to still bite: one byte appended to
+  `workspace.js` took the gate to 27/34 and the package suite to five failures.
+- **NO user-facing control** was added, moved or removed. The detail page still has no period
+  selector, measured in the real DOM.
+- Run 47's re-mint lesson recurred and was met: four version-boundary guards had to declare v32
+  and v17 after the first minting, so the identity, gate, behaviour digest and release records
+  were re-taken. The **behaviour digest is identical across the re-mint**.
+- **Unacted, carried forward:** the `historical_data` triple; `signal_inputs.sources` has no
+  source field name; four case-sensitive status comparisons; two Run 45 census artifacts that do
+  not match the v30 manifest.
+
 # 2026-08-22 - Run 45: RETRIEVAL BY FIELD KIND. THE PERIOD-SCOPING FALL-THROUGH IS CLOSED. MERGED.
 
 **Report:** `REPORT_2026-08-22_run45_period_scoping_fix.md`.

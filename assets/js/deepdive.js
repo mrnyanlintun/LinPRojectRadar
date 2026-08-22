@@ -87,28 +87,62 @@
     return `<p class="dd-chart-note">${esc(text)}</p>`;
   }
 
-  // Legacy module number -> Cat X.Y notation. Call sites still pass "01".."19"
-  // for backwards compatibility; the panel header renders the Cat notation.
+  /* RUN 48, RULING 2. THE PANEL LABEL IS A GROUP AND A PURPOSE, NEVER AN IDENTIFIER.
+
+     This map printed the retired notation straight into the panel heading and the panel's
+     accessible name, on every render. NAMING_AUTHORITY.md:96: "Never use a module id
+     or number in user-facing text. No 'Cat 4', no '1.7', no 'PH.2', no 'A4.2'. Groups and
+     purposes only. The old 'Cat N' scheme is retired along with the names." The KEYS are the
+     legacy module numbers the call sites pass and are matched against, never displayed, so
+     they are not user-facing text and are not renamed. Only the VALUES are printed, and no
+     value now carries an identifier, a number, an ampersand or an em dash, and none of them
+     names a population that retirement has changed. */
   const CAT_FROM_MODULE = {
-    "01": "Cat 1.1", "02": "Cat 1.2", "03": "Cat 1.3",
-    "04": "Cat 2.1", "05": "Cat 2.2", "06": "Cat 2.3",
-    "07": "Cat 3.1", "08": "Cat 3.2",
-    "09": "Cat 6.1",
-    "10": "Cat 7.1", "11": "Cat 7.2", "12": "Cat 7.3", "13": "Cat 7.4",
-    "14": "Cat 7.5", "15": "Cat 7.6", "16": "Cat 7.7", "17": "Cat 7.8", "18": "Cat 7.9",
-    "19": "Cat 8.1"
+    "01": "Cost Performance", "02": "Cost Performance", "03": "Cost Performance",
+    "04": "Schedule Simulation", "05": "Schedule Simulation", "06": "Schedule Simulation",
+    "07": "Cost Simulation", "08": "Cost Simulation",
+    "09": "Signal Synthesis",
+    "10": "Evidence Combination", "11": "Evidence Combination", "12": "Evidence Combination",
+    "13": "Evidence Combination", "14": "Evidence Combination", "15": "Evidence Combination",
+    "16": "Evidence Combination", "17": "Evidence Combination", "18": "Evidence Combination",
+    "19": "Governance and Compliance"
+  };
+  /* The GROUPING number, which is NOT user-facing text: it is written to a data attribute and
+     read back by groupByCategory to bucket panels under their collapsible headers. It used to
+     be parsed out of the displayed label, which is why the label could not be corrected
+     without moving the grouping with it. Declared separately here so the two are independent:
+     the displayed text is a purpose, the bucket key is a number, and correcting one cannot
+     silently move the other. The values are exactly the numbers the old labels parsed to. */
+  const CAT_NUM_FROM_MODULE = {
+    "01": "1", "02": "1", "03": "1",
+    "04": "2", "05": "2", "06": "2",
+    "07": "3", "08": "3",
+    "09": "6",
+    "10": "7", "11": "7", "12": "7", "13": "7",
+    "14": "7", "15": "7", "16": "7", "17": "7", "18": "7",
+    "19": "8"
   };
   function catLabel(num) {
     const key = String(num).trim();
-    return CAT_FROM_MODULE[key] || (/^Cat /i.test(key) ? key : "Cat " + key);
+    // The fallback carried the identifier too, by concatenating it onto the retired prefix.
+    // An unmapped module is described by its purpose and nothing else.
+    return CAT_FROM_MODULE[key] || "Signal Analysis";
+  }
+  function catBucket(num) {
+    const key = String(num).trim();
+    if (CAT_NUM_FROM_MODULE[key]) return CAT_NUM_FROM_MODULE[key];
+    // Same numbers the retired label scheme produced for an unmapped key: a key that already
+    // carried the old notation kept its own number, and a bare number became that number.
+    const m = key.match(/^Cat\s+(\d+)/) || key.match(/^(\d+)/);
+    return m ? m[1] : "";
   }
 
   function panel(num, title, status, inner) {
     const c = cls(status);
     const catRef = catLabel(num);
-    // Category number (1..11) parsed from the "Cat N.M" reference, so the Signal
-    // Stack can group panels under collapsible category headers (Release 2 item 11).
-    const catNum = (String(catRef).match(/Cat\s+(\d+)/) || [])[1] || "";
+    // Category number (1..11), derived from the module number the call site passes, so the
+    // Signal Stack can group panels under collapsible category headers (Release 2 item 11).
+    const catNum = catBucket(num);
     return `<section class="panel dd-panel status-${c}" data-cat="${esc(catNum)}" data-num="${esc(String(num))}" aria-label="${esc(catRef)} deep dive">
       <div class="dd-head"><b>Why ${esc(catRef.toUpperCase())} (${esc(title)}) is ${esc(String(status).toUpperCase())}</b>${verdict(title, status)}</div>
       ${inner}
