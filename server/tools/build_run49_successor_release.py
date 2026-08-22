@@ -41,8 +41,8 @@ from app.simulation.models import (  # noqa: E402
     SIMULATION_VERSION, SIMULATION_VERSION_HISTORY)
 import participant_packages as PP  # noqa: E402
 
-PREDECESSOR_RECORD = FREEZE / "RUN49_SUCCESSOR_FREEZE_RECORD.json"
-PREDECESSOR_CHECKSUMS = FREEZE / "RUN49_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+PREDECESSOR_RECORD = FREEZE / "RUN48_SUCCESSOR_FREEZE_RECORD.json"
+PREDECESSOR_CHECKSUMS = FREEZE / "RUN48_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 IDENTITY = FREEZE / "run49_freeze_candidate_identity.json"
 GATE = FREEZE / "run49_successor_freeze_gate.csv"
 BEHAVIOUR = FREEZE / "run49_candidate_behaviour_digest.json"
