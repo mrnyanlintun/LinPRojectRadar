@@ -136,8 +136,10 @@ check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-
                                                        "sim-2026.08-v28",
                                                        "sim-2026.08-v29",
                                                        "sim-2026.08-v30",
-                                                       "sim-2026.08-v31"),
-      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42, 43, 44, 45 and 47 were "
+                                                       "sim-2026.08-v31",
+                                                       "sim-2026.08-v32"),
+      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42, 43, 44, 45, 47 and 48 "
+      "were "
       "each authorised "
       "to add",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))
