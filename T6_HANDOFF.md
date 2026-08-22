@@ -12898,3 +12898,68 @@ voting exactly **A1.7 and A1.8**, Group D in service **0**. Unchanged by this ru
    figures; the only ratio that reproduces `pv = 824,370` gives CPI 1.00 and SPI 1.294.
 7. **`signal_inputs.sources` records no source FIELD name**, only the document type and identity
    (`extraction_merge.py:882-895`), so a stored row alone cannot say which cell a figure came from.
+
+---
+
+## Run 47 — the EVM consistency check, gated and merged (2026-08-22)
+
+**Merged to `main`. `sim-2026.08-v31`. `og-participant-2026.08-v16`. 191 suites,
+14,437 / 14,437, 0 red, 0 aborting. Successor freeze gate 32/32, 0 of 15 blocker classes blocked.
+Browser verification 19/19. Fault campaign 7/7 proven failable. No stop condition fired.**
+
+Full account: `REPORT_2026-08-22_run47_evm_consistency_check.md`.
+
+**What was built.** Where ONE document states both a value and the percentage that determines it
+against a known budget at completion, the implied value is computed and the two are compared; a
+relative difference above 2 per cent **of the implied value** is reported as a finding, as TEXT,
+on the Executive Brief and beside the recommendation. Two relations: `pv` against BAC x
+`plannedPctComplete`, and `ev` against BAC x `actualPctComplete`.
+
+**What was NOT done, deliberately.** Nothing is derived into storage. `pv` and `ev` are stored
+exactly as stated, `pv` is absent from `BOUNDED_MAX_SI_FIELDS` and stays absent — the owner's
+remedy is a comparison, not a clamp — and the check is a pure function called on the READ path
+from the stored row (`documents.py:1790`, beside `recommendation_basis`), so it cannot write. No
+column, no migration.
+
+**Six operational notes for whoever runs next.**
+
+- **THE ORDER'S ARITHMETIC HAD A SLIP AND IT IS WORTH KNOWING ABOUT.** The implied `ev` is
+  **1,066,830.992**, not the 1,066,671 the Run 47 order states twice; 5,874,620 x 0.1816. The
+  relative difference is 1.8837 per cent, not 1.9. The verdict is unchanged — both are below
+  tolerance, so the earned-value pair produces no finding — but hand-compute from the stated
+  formula and never echo a figure you did not derive.
+- **The denominator matters and it is the IMPLIED value.** 24.02 per cent relative to implied;
+  31.62 per cent relative to stated. Both are defensible readings of the same pair and they
+  differ. The boundary tests exercise the implied-value reading and no other, so a check written
+  against the wrong denominator fails rather than passing quietly.
+- **`primeAndRefresh` hard-codes `period: 1`** (`assets/js/detail.js:1304`). Every panel on the
+  detail page holds THAT row — key drivers, abstention reasons, `recommendation_basis`, and now
+  the disagreement findings. On a project whose current period is not 1 the page is showing
+  period 1. Pre-existing, four grafted fields wide, reported and unacted. It is why the Run 47
+  browser fixture is single-period.
+- **`BRIEF_CAT_LABEL` is DEAD CODE.** Corrected as ordered, and read nowhere in the repository, so
+  there is no DOM to verify it from and none was claimed. Four runs have now carried it. Delete
+  it or it will be rediscovered a fifth time.
+- **A single-site injection into the brief's disagreement block proves nothing.** Two independent
+  paths put the same text on the same surface — the panel template's `${consistency}` slot and
+  `refreshBriefConsistency` after the row arrives — and removing either alone leaves the block
+  rendered. Neuter the shared builder both call.
+- **The full suite still rewrites 18 committed audit artifacts**, one of them
+  `server/tools/run17/coverage.csv`, **outside `code_audit/`**. Restore all 18; commit none. And
+  `test_run22_production_tree_completeness.py` fails inside the runner and passes standing alone
+  when an earlier suite has rewritten what it reads: an ordering artifact, not a regression.
+
+**Three things Run 47 did NOT do, and the reason for each.**
+1. **The `historical_data` triple was found by the sweep and not implemented.**
+   `analogous_overrun_pct` with `similar_project_bac` and `similar_project_final_cost` have the
+   same shape, but determine each other against the REFERENCE project's budget at completion and
+   not this project's, and the record carries no date at all. It needs one ruling on what "a
+   known BAC" means in section 5. Nothing about it would require deriving or overriding a stored
+   value.
+2. **The retired "Cat N" scheme survives in two LIVE surfaces and was not touched.**
+   `deepdive.js:93-103` (`CAT_FROM_MODULE`, nineteen entries) — and `deepdive.js` is
+   SEQUENCE-BEARING, so moving it needs its own owner's order and its own named exception, as
+   Run 44 section 4.4 was. `charts3d.js:2542` carries a chart node labelled "(Cat 6)".
+3. **The render was not explained.** Run 47 built the check that would have caught it, as ordered.
+   Run 46's finding stands: `pv = 824,370` and SPI 1.27 still do not reproduce from a
+   period-consistent document set.
