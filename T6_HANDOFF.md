@@ -12873,3 +12873,28 @@ voting exactly **A1.7 and A1.8**, Group D in service **0**. Unchanged by this ru
 3. **Four status comparisons remain case-sensitive.** Each is correct for its population today,
    and two of them are in `decision.js`, a sequence-bearing file this run was not authorised to
    move.
+
+---
+
+## Run 46 — the CPI trace (2026-08-22, report-only)
+
+**No fix, no behaviour change.** Report: `REPORT_2026-08-22_run46_cpi_trace.md`. Artifact:
+`code_audit/run46_cpi_trace.csv` (396 rows, nine corpora, all built through the real routes).
+
+1. **CPI 1.22 still reproduces exactly and is untouched by Run 45.** `cpi = ev / ac`
+   (`extraction_merge.py:994`) reads neither `pv` nor `bac`, so no retrieval change can move it.
+2. **`pv = 824,370` and SPI 1.27 still do not reproduce** from a period-consistent document set;
+   the base fixture stores `pv = 1,085,600` and `spi = 0.964`, as Run 43J found.
+3. **Run 45's only effect on this shape is `bac`**: it is now `5,874,620` from `contract_value` at
+   all four periods, where Run 43J measured the pay application's figure at periods 2-4.
+4. **`pv` is a PERIOD field and cannot carry forward.** Executed: a lone period-1 baseline gives
+   `pv = null` at periods 2-4. Injection I-PV (`pv` added to `IDENTITY_FIELDS`) proved the probe
+   failable — it then carried, and period 4 read `pv 824,370`, `spi 1.27`. Restored.
+5. **Three document types can write `pv`** — `schedule_update` 0, `time_phased_schedule` 1,
+   `monthly_report` 2 (`field_registry.py:191`) — and each of the two that can be a period's sole
+   writer reproduces the render exactly. The code cannot narrow which one it was.
+6. **The fee-basis hypothesis fails as an account of the render.** A single ratio `r = 1.29141`
+   on `ev` does produce CPI 1.22 and SPI 1.27 together, but stores none of the render's four
+   figures; the only ratio that reproduces `pv = 824,370` gives CPI 1.00 and SPI 1.294.
+7. **`signal_inputs.sources` records no source FIELD name**, only the document type and identity
+   (`extraction_merge.py:882-895`), so a stored row alone cannot say which cell a figure came from.
