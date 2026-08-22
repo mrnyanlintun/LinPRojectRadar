@@ -203,21 +203,24 @@ print("-" * 78)
 # time a later run legitimately supersedes, which would be a guard measuring the wrong thing.
 # RESTATED BY RUN 43, for the same reason Run 42 restated it: this section's subject is that
 # RUN 41's boundary is PRESERVED, not that any later stamp is live forever. Run 43 supersedes
-# v27 with v28 for the retirement of 38 modules from service.
-check(SIMULATION_VERSION == "sim-2026.08-v28", "the live stamp is Run 43's successor "
-      "sim-2026.08-v28", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v27",
-      "and it records v27, Run 42's stamp, as the stamp it supersedes",
+# v27 with v28 for the retirement of 38 modules from service. RESTATED AGAIN BY RUN 44, for the
+# third time and the same reason: Run 44 supersedes v28 with v29 for the participant-facing
+# render defects. What this section asserts is Run 41's boundary, which is untouched below.
+check(SIMULATION_VERSION == "sim-2026.08-v29", "the live stamp is Run 44's successor "
+      "sim-2026.08-v29", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v28",
+      "and it records v28, Run 43's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
       "the history is append-only and Run 41's boundary is preserved: v26 still directly "
       "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v28"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v27"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v26",
-      "and v27 and v28 were appended after v26 rather than replacing it",
-      str(SIMULATION_VERSION_HISTORY[-2:]))
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v29"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v28"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v27"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v26",
+      "and v27, v28 and v29 were appended after v26 rather than replacing it",
+      str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
 
@@ -258,20 +261,30 @@ check(len(rec) > 60, "the v13 participant-package record names its governed file
 # retirement moves five participant-visible bytes, and it declares exactly which five. What this
 # section is for is unchanged and is asserted more strictly: the files that moved are exactly the
 # ones the successor declares, and NOT ONE of them carries a step of the participant sequence.
+# RESTATED BY RUN 44. The subject is unchanged and is measured against the CURRENT record
+# rather than a superseded one: measuring the live tree against v13 would report every later
+# supersession as drift, which is the defect Run 43 had to correct in the freeze gate's B11.
+# What is asserted is the union of the declared deltas, so nothing rides along at any link.
+_declared_since_v13 = sorted(set(PP.V13_TO_V14_CHANGED) | set(PP.V14_TO_V15_CHANGED))
 moved_pkg = sorted(p for p, h in rec.items()
                    if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
-check(moved_pkg == sorted(PP.V13_TO_V14_CHANGED),
+check(moved_pkg == _declared_since_v13,
       f"of the {len(rec)} governed participant-package bytes, exactly the {len(moved_pkg)} the "
-      f"v14 successor declares moved, and no others",
+      f"v14 and v15 successors declare between them moved, and no others",
       str(moved_pkg[:8]))
+# THE SEQUENCE. Run 44 moves ONE sequence-bearing file on the owner's order at its section 4.4,
+# and it is named rather than tolerated. Every other one is still held to byte-identity against
+# v13, so the invariant is intact for the five that carry a step of the decision sequence.
 seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
                    if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != rec.get(f))
-check(not seq_moved,
-      f"the {len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files are byte-identical, so the "
-      "participant sequence is unchanged", str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v14",
-      "the participant package is superseded at og-participant-2026.08-v14, and the v13 record "
-      "is pinned rather than rewritten",
+check(seq_moved == sorted(PP.V14_TO_V15_SEQUENCE_EXCEPTION),
+      f"of the {len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files, exactly the one Run 44 "
+      f"was authorised to move has moved since v13 -- the Portfolio Health flyout's reason "
+      f"sentence -- and the other five are byte-identical, so no step of the decision sequence, "
+      f"no reveal gate, no lock and no questionnaire moved", str(seq_moved))
+check(PP.CURRENT.identifier == "og-participant-2026.08-v15",
+      "the participant package is superseded at og-participant-2026.08-v15, and the v13 and v14 "
+      "records are pinned rather than rewritten",
       PP.CURRENT.identifier)
 
 # The synthetic corpus and the analysis schema: measured against the pinned predecessor tree.

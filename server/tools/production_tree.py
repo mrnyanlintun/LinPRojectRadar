@@ -375,9 +375,28 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: rewritten: it stays exactly as that release wrote it and this successor names it as its
 #: parent. The guard was observed reporting exactly those eleven files, and nothing else, before
 #: this manifest was written.
-PINNED = ROOT / "code_audit" / "run43_production_tree.sha256"
-#: The Run-42 manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 44. This moved again, from run43_production_tree.sha256 to the run44 file, on the same
+#: Run-34/35/41/42/43 precedent. Run 44 repairs the four participant-facing render defects Run 43J
+#: diagnosed, and SIX production files move: `assets/js/detail.js` (one shared case-insensitive
+#: severity rank in place of two capitalised-only order maps, a guard so no site names a module as
+#: the driver of a severity better than its own, and an absent document-risk score rendering as
+#: absent while a genuine stored zero still renders), `assets/js/signals.js` (CPI and SPI labelled
+#: computed rather than extracted), `assets/js/deepdive.js` (the Portfolio Health flyout's reason
+#: sentence, the ONE sequence-bearing file the owner authorised this run to move, at section 4.4),
+#: `assets/css/radar.css` (one added rule for the computed mark),
+#: `server/app/simulation/registry.py` (a DOCSTRING only -- `available_modules()` described the
+#: retirement-reason refusal Phase F withdrew; its body is untouched and every one of the 101
+#: emitted rows is byte-identical to v28) and `server/app/simulation/models.py` (the stamp
+#: advances to sim-2026.08-v29 with the boundary recorded). Nothing is added and nothing is
+#: removed. The run43 manifest is NOT rewritten: it stays exactly as that release wrote it and
+#: this successor names it as its parent. The guard was observed reporting exactly those six
+#: files, and nothing else, before this manifest was written.
+PINNED = ROOT / "code_audit" / "run44_production_tree.sha256"
+#: The Run-43 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
+PINNED_RUN43 = ROOT / "code_audit" / "run43_production_tree.sha256"
+#: The Run-42 manifest, kept addressable so a guard can prove the supersession is a real
+#: change and not a silent rewrite.
 PINNED_RUN42 = ROOT / "code_audit" / "run42_production_tree.sha256"
 #: The Run-41 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.

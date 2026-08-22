@@ -99,8 +99,8 @@
     { key: "actualPctComplete",  label: "Actual % complete",       editable: true },
     { key: "plannedPctComplete", label: "Planned % complete",      editable: true },
     { key: "docRiskScore",       label: "Document-risk score",     editable: true },
-    { key: "cpi",                label: "CPI (computed)",           editable: false },
-    { key: "spi",                label: "SPI (computed)",           editable: false }
+    { key: "cpi",                label: "CPI (computed)",           editable: false, computed: true },
+    { key: "spi",                label: "SPI (computed)",           editable: false, computed: true }
   ];
 
   const ACCEPT = ".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg," +
@@ -1567,8 +1567,10 @@
           const bits = [appliedCount + " field" + (appliedCount === 1 ? "" : "s")];
           if (si) {
             const cpi = fmtNum(si.cpi), spi = fmtNum(si.spi);
-            if (cpi != null) bits.push("CPI " + cpi);
-            if (spi != null) bits.push("SPI " + spi);
+            // RUN 44, SECTION 4.3. Both are computed from the extracted figures, not read
+            // from the document, and this line begins with "extracted".
+            if (cpi != null) bits.push("CPI " + cpi + " (computed)");
+            if (spi != null) bits.push("SPI " + spi + " (computed)");
           }
           resultText = "✓ extracted " + bits.join(" · ");
         } else {
@@ -1743,7 +1745,16 @@
       const srcTag = src
         ? `<span class="ds-src">via ${esc(DOC_TYPE_LABEL[src] || src)}${srcDate ? " · " + esc(srcDate) : ""}</span>`
         : "";
-      const mark = has ? `<span class="ds-extracted" title="extracted">✓ extracted</span>` : "";
+      // RUN 44, SECTION 4.3. This mark used to be stamped on every row that carried a value,
+      // with no test of whether the field was read from a document or derived from two that
+      // were. CPI and SPI are computed by select_signal_inputs and carry no entry in
+      // signal_inputs.sources, so they were shown as extracted with no source to show. A
+      // computed field is labelled computed.
+      const mark = has
+        ? (f.computed
+            ? `<span class="ds-computed" title="computed">✓ computed</span>`
+            : `<span class="ds-extracted" title="extracted">✓ extracted</span>`)
+        : "";
       const pencil = (f.editable && has)
         ? `<button class="ds-overwrite" data-field="${f.key}" aria-label="Overwrite ${esc(f.label)}" title="Overwrite">✎</button>`
         : "";
@@ -1882,7 +1893,7 @@
     }
     return `
       <div class="ds-block">
-        <p class="eyebrow">Extracted signal inputs</p>
+        <p class="eyebrow">Signal inputs</p>
         ${si ? extractedTableHtml(si) : `<p class="kn-sub">No extracted values cached this session. Re-upload a document to view them.</p>`}
       </div>
       ${si ? derivedEstimatesHtml(si) : ""}

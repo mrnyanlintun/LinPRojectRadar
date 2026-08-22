@@ -2581,6 +2581,14 @@ body.t-light .sw-ring-outer { stroke: rgba(15,23,42,0.14); }
   background: color-mix(in srgb, var(--clear-green) 14%, transparent);
   border-radius: 999px; padding: 1px 7px; white-space: nowrap;
 }
+/* RUN 44, SECTION 4.3. CPI and SPI are computed from the extracted figures, not read from a
+   document. Same pill geometry as .ds-extracted, muted rather than green, so the two are
+   distinguishable at a glance without either reading as a status. */
+.ds-computed {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
 .ds-overwrite {
   background: none; border: 1px solid var(--line); border-radius: 6px;
   color: var(--muted); cursor: pointer; font-size: 13px; line-height: 1;

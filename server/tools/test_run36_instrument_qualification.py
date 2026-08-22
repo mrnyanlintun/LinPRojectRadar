@@ -293,8 +293,10 @@ check(SIMULATION_VERSION_HISTORY[SIMULATION_VERSION_HISTORY.index("sim-2026.08-v
 # and index.html -- so v13 is SUPERSEDED by v14 and pinned to its own commit rather than being
 # rewritten. Asserting v13 is still current would make this file fail every time a later run
 # legitimately mints a successor, which would be a guard measuring the wrong thing.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v14",
-      "the current participant package is v14", PP.CURRENT.identifier)
+# RUN 44 minted v15: four of the seventy governed bytes moved for the render repairs, one of them
+# the sequence-bearing deepdive.js on the owner's order at section 4.4.
+check(PP.CURRENT.identifier == "og-participant-2026.08-v15",
+      "the current participant package is v15", PP.CURRENT.identifier)
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
       "and every predecessor names the commit its bytes live in, so only one record claims the "

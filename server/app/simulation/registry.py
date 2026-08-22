@@ -457,8 +457,11 @@ def available_modules() -> list[str]:
     The formulas are deliberately KEPT. Retiring a module is a statement about the taxonomy and
     the explanation burden, not a claim that its arithmetic is wrong, and the audit lineage for
     every retired module has to remain readable. A retired id is unreachable through this list
-    because it is not in service; asking `run_module()` for one by name resolves, and is refused
-    with its stated retirement reason rather than computed.
+    because it is not in service. It is NOT refused anywhere: Phase D's retirement-reason refusal
+    was withdrawn at Run 43F section 5.1 (see the note in `run_module()` below), so asking
+    `run_module()` for a retired id by name returns exactly what it returned at `f461630` -- the
+    same result, or the same pre-existing refusal, with the same reason in the same words.
+    Retirement is expressed by roster membership and category linkage, and nowhere else.
 
     Deriving the live set rather than restating it is also why this run does not repeat the
     failure the programme has now made nine times: a stated set that drifted from the computed

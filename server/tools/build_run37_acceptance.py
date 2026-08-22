@@ -70,13 +70,23 @@ FREEZE = ROOT / "research" / "freeze"
 # run42_freeze_candidate_identity.json, run42_successor_freeze_gate.csv,
 # run42_candidate_behaviour_digest.json and the v27 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v27.
-PREDECESSOR_CANDIDATE = "07dccf774d34a0dc7536626b739d7a2fb94dfa4e"
-PREDECESSOR_VERSION = "sim-2026.08-v27"
-CANDIDATE = "4ad9f73b1b9d60af961e363b0d9542051928ebe1"
-EXPECTED_VERSION = "sim-2026.08-v28"
-IDENTITY_FILE = "run43_freeze_candidate_identity.json"
-GATE_FILE = "run43_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run43_candidate_behaviour_digest.json"
+#
+# RESTATED BY RUN 44, and the reasoning is Run 42's and Run 43's unchanged. Run 44 repairs the
+# four participant-facing render defects Run 43J diagnosed, on the owner's order of 2026-08-22.
+# What a participant is SHOWN is executable behaviour -- a severity that ranked on capitalisation,
+# a document-risk score invented at the render, two computed figures labelled extracted, and a
+# panel asking for projects that would not make it compute -- so the freeze is SUPERSEDED rather
+# than amended. The Run-43 artefacts are NOT rewritten: run43_freeze_candidate_identity.json,
+# run43_successor_freeze_gate.csv, run43_candidate_behaviour_digest.json and the v28 release
+# records all stay exactly as that release wrote them, and remain the historical evidence for
+# everything collected under v28.
+PREDECESSOR_CANDIDATE = "4ad9f73b1b9d60af961e363b0d9542051928ebe1"
+PREDECESSOR_VERSION = "sim-2026.08-v28"
+CANDIDATE = "e6889ad5e84446db7b664e794f4c6013146f3913"
+EXPECTED_VERSION = "sim-2026.08-v29"
+IDENTITY_FILE = "run44_freeze_candidate_identity.json"
+GATE_FILE = "run44_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run44_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 

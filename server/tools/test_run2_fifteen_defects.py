@@ -1508,10 +1508,81 @@ try:
                 return {ln.strip() for ln in lines[a:b + 1] if ln.strip()}
             _run43_removed_span = _run43_comment_span(base)
             _run43_added_span = _run43_comment_span(live)
+            # RUN 44, THE PARTICIPANT-FACING RENDER DEFECTS. Three repairs land in this file and
+            # every line each one moves is NAMED here rather than admitted by widening the rule,
+            # on exactly the Run-16 / Run-25 / Run-43 construction above. (1) The two severity
+            # `order` maps were keyed on the capitalised spellings only, and the platform emits
+            # two: a module storing lowercase 'green' ranked as more adverse than 'Green'. Both
+            # are replaced by ONE shared, case-insensitive rank. (2) No site may offer a module
+            # as the driver of a severity better than its own, so the brief line and the
+            # provenance line each gained a guard. (3) An absent document-risk score is stored
+            # present-and-null and Number(null) is 0, so it rendered as "0.00" Green; the guard
+            # now tests the raw value, which is why a genuine stored zero still renders.
+            # Its explanatory comment block is excused by span, the same way Run 43's is.
+            def _run44_comment_span(text):
+                lines = text.splitlines()
+                try:
+                    a = next(i for i, ln in enumerate(lines)
+                             if "Severity rank. THE ONE PLACE THIS PAGE ORDERS STATUSES" in ln)
+                except StopIteration:
+                    return set()
+                b = next(i for i in range(a, len(lines)) if lines[i].rstrip().endswith("*/"))
+                return {ln.strip() for ln in lines[a:b + 1] if ln.strip()}
+            _run44_added_span = _run44_comment_span(live)
+            RUN44_REMOVED = {
+                'const order = { Red: 0, "Red-review": 1, Amber: 2, Yellow: 3, Green: 4, '
+                'Complete: 5 };',
+                '.sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - '
+                '(order[b.status] != null ? order[b.status] : 3))[0] || null;',
+                '.sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - '
+                '(order[b.status] != null ? order[b.status] : 3))[0];',
+                'const worstDesc = worst ? " (worst: " + worst.name + (worst.evidence_metric '
+                '? ", " + worst.evidence_metric : "") + ")" : "";',
+                'worstMod, worstModStatus, modTieCount,',
+                'esc(t.projStatus) + ", driven by " + esc(t.worstCat.name) + tieNote,',
+                'esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" : "")',
+                'const score = Number(s.doc.score);',
+                'const docScore = Number(s.doc && s.doc.score != null ? s.doc.score : '
+                'si.docRiskScore);',
+            }
+            RUN44_ADDED = {
+                'const STATUS_RANK = { red: 0, "red-review": 1, amber: 2, yellow: 3, green: 4, '
+                'complete: 5 };',
+                'const STATUS_RANK_UNKNOWN = 3;',
+                'function statusRank(status) {',
+                'const raw = String(status == null ? "" : status).trim().toLowerCase();',
+                'if (STATUS_RANK[raw] != null) return STATUS_RANK[raw];',
+                'const norm = normalizeStatus(status);',
+                'if (norm && STATUS_RANK[norm.toLowerCase()] != null) return '
+                'STATUS_RANK[norm.toLowerCase()];',
+                'return STATUS_RANK_UNKNOWN;',
+                '.sort((a, b) => statusRank(a.status) - statusRank(b.status))[0] || null;',
+                '.sort((a, b) => statusRank(a.status) - statusRank(b.status))[0];',
+                'const worstDesc = (worst && statusRank(worst.status) <= statusRank(c.status))',
+                '? " (worst: " + worst.name + (worst.evidence_metric ? ", " + '
+                'worst.evidence_metric : "") + ")"',
+                ': "";',
+                'const modDrives = provRank(worstModStatus) <= provRank(worstCatStatus);',
+                'worstMod, worstModStatus, modTieCount, modDrives,',
+                'esc(t.projStatus) + ", driven by " + esc(t.worstCat.name) + tieNote',
+                'if (t.modDrives) {',
+                'parts.push(esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" '
+                ': ""));',
+                'if (!t.modDrives) {',
+                'rows.push(`<div class="det-prov-hop"><b>Modules</b>: no module in this '
+                'category reads as adverse as the category status, so none is named as driving '
+                'it. The most adverse of them is ${esc(t.worstMod.name)} at '
+                '${esc(normalizeStatus(t.worstModStatus) || t.worstModStatus)}.</div>`);',
+                '} else',
+                'const docRaw = (s.doc && s.doc.score != null) ? s.doc.score : si.docRiskScore;',
+                'const docScore = (docRaw == null || docRaw === "") ? NaN : Number(docRaw);',
+                'const score = (s.doc.score == null || s.doc.score === "") ? NaN : '
+                'Number(s.doc.score);',
+            }
 
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
-                  or ln in _run43_removed_span
+                  or ln in _run43_removed_span or ln in RUN44_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1556,6 +1627,7 @@ try:
                       or "abstained" in ln or ln == "}"
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
                       or ln in POSTRUN22_LINES or ln in _run43_added_span
+                      or ln in RUN44_ADDED or ln in _run44_added_span
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

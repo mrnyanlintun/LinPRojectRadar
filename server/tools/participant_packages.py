@@ -285,7 +285,9 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v14",
         "code_audit/run43_participant_package_v14_checksums.sha256",
-        None,
+        # RUN 44. v14 became a PREDECESSOR when v15 was minted, so it is pinned to the commit
+        # whose blobs it describes rather than left reading the working tree.
+        "604291a",
         "RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. Five participant-visible files moved. "
         "THREE ARE GENERATED from the registry: both client taxonomy mirrors, which "
         "build_client_taxonomy.py now emits from registry.service_index() rather than from the "
@@ -302,7 +304,52 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "no append-only record moved. The v13 record is NOT regenerated: it is pinned to the "
         "commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v15",
+        "code_audit/run44_participant_package_v15_checksums.sha256",
+        None,
+        "RUN 44, THE PARTICIPANT-FACING RENDER DEFECTS. Four participant-visible files moved and "
+        "ONE OF THE FOUR IS SEQUENCE-BEARING. THE EXPERIMENTAL SEQUENCE IS NOT UNCHANGED, and "
+        "this record is the first since v10 that cannot say it is. assets/js/deepdive.js carries "
+        "the Portfolio Health flyout, which told a participant Portfolio Health needed at least "
+        "three projects with computed signals; after Run 43 retired every Portfolio Level module "
+        "from service no number of projects makes it compute, so that sentence was false on "
+        "every render of it. The correction was written and verified at Run 43H and REVERTED "
+        "there rather than move a sequence-bearing byte without authority; Run 44 section 4.4 is "
+        "that authority and orders it in those terms. WHAT MOVED INSIDE THAT FILE, EXACTLY: one "
+        "added predicate derived from the taxonomy the page loaded, one added arm on the reason "
+        "string, and the comment recording why. No step of the decision sequence, no reveal "
+        "gate, no lock, no randomization, no server contract, no append-only record and NO "
+        "user-facing control moved. THE OTHER THREE ARE RENDER REPAIRS: detail.js orders "
+        "statuses case-insensitively through one shared rank and no longer names a module as the "
+        "driver of a severity better than its own, and an absent document-risk score renders as "
+        "absent while a genuine stored zero still renders as zero; signals.js labels CPI and SPI "
+        "computed rather than extracted; radar.css gains the one rule that mark needs. NO SERVER "
+        "COMPUTATION MOVED: run_module() on all 101 identifiers is byte-identical to "
+        "sim-2026.08-v28 on both a full and a starved package, proved by executing both lines. "
+        "decision.js, decision-ui.js, workspace.js and both questionnaires are byte for byte "
+        "identical to v14. The v14 record is NOT regenerated: it is pinned to the commit whose "
+        "blobs it describes.",
+    ),
 )
+
+#: RUN 44. The files whose bytes moved between v14 and v15. FOUR, and one of them -- deepdive.js
+#: -- IS SEQUENCE-BEARING. It is the first successor since v10 of which that is true, and the
+#: exception is declared here rather than left for a checksum to discover. Its authority is the
+#: owner's order at Run 44 section 4.4; its content is the Portfolio Health flyout's reason
+#: sentence and nothing else.
+V14_TO_V15_CHANGED = (
+    "assets/css/radar.css",
+    "assets/js/deepdive.js",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+)
+
+#: The ONE sequence-bearing file Run 44 was authorised to move, and the only one it moved. Every
+#: other member of SEQUENCE_BEARING_FILES must still be byte-identical across this successor.
+#: Naming the exception rather than widening the comparison is what keeps the invariant a real
+#: one: a second file moving here still fails.
+V14_TO_V15_SEQUENCE_EXCEPTION = ("assets/js/deepdive.js",)
 
 #: RUN 43. The files whose bytes moved between v13 and v14. FIVE: three generated from the
 #: registry and two carrying a count a participant reads. Not one carries a step of the

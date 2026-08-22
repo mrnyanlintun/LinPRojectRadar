@@ -2353,6 +2353,23 @@
     return cat8HealthDataFromLive();
   }
 
+  /* ------------------------------------------------------------
+     RUN 44, SECTION 4.4. Is Portfolio Health still in service?
+     ------------------------------------------------------------
+     DERIVED FROM THE TAXONOMY THE PAGE ACTUALLY LOADED, never hardcoded. Run 43 retired every
+     Portfolio Level identity from service, so the category object survives with an empty module
+     list and no stored result can ever carry one of its readings. Deriving it here means that
+     reinstating a Portfolio Level module makes this false again with no edit to this file, and
+     that a page which has not loaded a taxonomy claims nothing either way.
+     ------------------------------------------------------------ */
+  function cat8Retired() {
+    const cats = (typeof window !== "undefined" && window.LIN_CATEGORIES) || null;
+    if (!Array.isArray(cats) || !cats.length) return false;   // no taxonomy loaded: assert nothing
+    const ph = cats.filter((c) => c && c.level === "portfolio");
+    if (!ph.length) return false;
+    return ph.every((c) => !(c.modules && c.modules.length));
+  }
+
   function statusPillClass(status) {
     const s = String(status || "").toLowerCase();
     if (s.indexOf("red") >= 0) return "red";
@@ -2371,7 +2388,13 @@
     const data = await cat8HealthData();
     if (!root.isConnected) return; // dialog closed while the fetch was in flight
     if (!data.anyData) {
-      const reason = data.projectCount < 3
+      // RUN 44, SECTION 4.4. The two sentences below both tell a participant that Portfolio
+      // Health would compute given the right portfolio. After the offload neither is true: no
+      // number of projects makes it compute, because nothing computes it any more. The retired
+      // case is tested first and is derived, not assumed.
+      const reason = cat8Retired()
+        ? "Portfolio Health is no longer in service. The analysis that compared a project against the rest of the portfolio was withdrawn, so this panel does not compute for any portfolio, whatever number of projects it holds."
+        : data.projectCount < 3
         ? "Portfolio Health needs at least 3 projects with computed signals to compare against the population: " + data.projectCount + " loaded."
         : "Portfolio Health hasn't run yet for the current portfolio.";
       root.innerHTML =

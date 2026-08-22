@@ -496,12 +496,44 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # and A1.8, and Group C still does not contribute to project status. Portfolio Health never
 # contributed to Project Status, so its offload does not move a status either.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v28"
+# -------------------------------------------------------------------------------------------
+# RUN 44, sim-2026.08-v29: THE PARTICIPANT-FACING RENDER DEFECTS PHASE J DIAGNOSED.
+#
+# WHAT MOVED, AND IT IS ALL AT THE RENDER. Four defects Run 43J classified F, plus one stale
+# docstring. (1) The two severity orderings on the project detail page were keyed on the
+# capitalised spellings only, and the platform emits two: A1.2 stores lowercase 'green'. A key
+# miss fell through to the unknown rank, which is more adverse than Green, so a module whose
+# only irregularity was its capitalisation was selected as its category's worst ahead of two
+# properly-cased Green ones. Matching is now case-insensitive at every site on that page that
+# orders a status, through one shared rank, and no site may name a module as the driver of a
+# severity better than its own. (2) An absent document-risk score is stored PRESENT AND NULL by
+# design, and Number(null) is 0 and finite, so it rendered "0.00" Green and was shipped into the
+# Executive Brief as a key driver. An absent score now renders as absent; a genuine stored zero
+# still renders as zero, which is what extraction_merge.py:1128 exists to protect. (3) CPI and
+# SPI are computed by select_signal_inputs and were stamped "extracted" on the signals panel and
+# in the upload result line; both now say computed. (4) The Portfolio Health flyout told a
+# participant it needed three projects; after Run 43's offload no number of projects makes it
+# compute, and it now says so, from a predicate DERIVED from the loaded taxonomy so reinstating
+# a Portfolio Level module restores the old sentence with no edit.
+#
+# WHAT DID NOT MOVE. No server computation. `run_module()` on every one of the 101 identifiers
+# returns output byte-identical to sim-2026.08-v28, proved by executing both lines. The module
+# populations are unchanged: 101 registered, 63 in service, 62 computed, voting exactly A1.7 and
+# A1.8. The registry docstring correction at `available_modules()` changes no code path; the
+# function's body is untouched.
+#
+# THE SEQUENCE-BEARING FILE. `assets/js/deepdive.js` is one of the six participant files every
+# package record since v10 asserts byte-identical across a successor. This stamp breaks that
+# invariant DELIBERATELY and once, for the Portfolio Health sentence, under the owner's explicit
+# order at Run 44 section 4.4. The blocker was reconciled to the true bytes; it was not
+# disabled, weakened or widened.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v29"
 
 #: THE LINE RUN 42 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v27"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v28"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -513,7 +545,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v15", "sim-2026.08-v16", "sim-2026.08-v17",
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
-    "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28",
+    "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
 )
 
 

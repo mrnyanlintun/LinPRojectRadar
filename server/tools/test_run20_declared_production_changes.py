@@ -203,6 +203,12 @@ from run42_production_changes import (  # noqa: E402
 # path may appear in two.
 from run43_production_changes import (  # noqa: E402
     RUN43_NEW_PRODUCTION_FILES, RUN43_PRODUCTION_CHANGES)
+# RUN 44, THE PARTICIPANT-FACING RENDER DEFECTS. Its own manifest, same construction, same
+# property. It declares ONE path -- assets/js/signals.js -- because detail.js, deepdive.js,
+# radar.css, registry.py and models.py are each already declared by an earlier manifest and no
+# path may appear in two.
+from run44_production_changes import (  # noqa: E402
+    RUN44_NEW_PRODUCTION_FILES, RUN44_PRODUCTION_CHANGES)
 run30_declared = {entry[1] for entry in RUN30_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN30_NEW_PRODUCTION_FILES}
 run31_declared = {entry[1] for entry in RUN31_PRODUCTION_CHANGES.values()
@@ -217,10 +223,12 @@ run42_declared = {entry[1] for entry in RUN42_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN42_NEW_PRODUCTION_FILES}
 run43_declared = {entry[1] for entry in RUN43_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN43_NEW_PRODUCTION_FILES}
+run44_declared = {entry[1] for entry in RUN44_PRODUCTION_CHANGES.values()
+                  if entry[1] not in RUN44_NEW_PRODUCTION_FILES}
 declared = (run20_declared | run21_declared | run23_declared | run25_declared
             | run26_declared | run28_declared | run29_declared | run30_declared
             | run31_declared | run32_declared | run36_declared | run41_declared
-            | run42_declared | run43_declared)
+            | run42_declared | run43_declared | run44_declared)
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",

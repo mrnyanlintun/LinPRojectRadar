@@ -374,9 +374,18 @@ for _ln in (AUDIT / "run33_participant_package_v11_checksums.sha256").read_text(
 import hashlib                                                    # noqa: E402
 _moved_seq = sorted(f for f in _seq_files
                     if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != _v11.get(f))
-check("run36.fault35.participant_sequence_unaltered", not _moved_seq,
+# RUN 44. ONE of the six has legitimately moved since v11, and it is NAMED rather than excused
+# by loosening the comparison. The Portfolio Health flyout in deepdive.js told a participant the
+# panel needed at least three projects; after Run 43 retired every Portfolio Level module from
+# service no number of projects makes it compute, so the sentence was false on every render, and
+# the owner ordered it corrected at Run 44 section 4.4. The other five are still held to the
+# frozen v11 bytes, so a second file moving here -- or a different one -- is still a failure.
+_SEQ_AUTHORISED = set(PP.V14_TO_V15_SEQUENCE_EXCEPTION)
+check("run36.fault35.participant_sequence_unaltered",
+      sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 1,
       "every file carrying the participant experimental sequence is byte-identical to the frozen "
-      "v11 package; the sequence has been altered", str(_moved_seq))
+      "v11 package, except the ONE the owner authorised Run 44 to move; the sequence has been "
+      "altered somewhere else", str(_moved_seq))
 check("run36.fault36.evidence_and_rationale_captured",
       "decision.rationale = payload.get(\"rationale\")" in _dec
       and "decision.evidence_items = evidence_items" in _dec
