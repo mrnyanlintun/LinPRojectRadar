@@ -211,8 +211,8 @@ print("-" * 78)
 # untouched and is still asserted below.
 check(SIMULATION_VERSION == "sim-2026.08-v33", "the live stamp is Run 49's successor "
       "sim-2026.08-v33", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v31",
-      "and it records v31, Run 47's stamp, as the stamp it supersedes",
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v32",
+      "and it records v32, Run 48's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),

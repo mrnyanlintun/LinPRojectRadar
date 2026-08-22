@@ -258,10 +258,17 @@ RUN44_AUTHORISED_MANIFEST_CHANGES = {
     "assets/js/deepdive.js",
     "assets/css/radar.css",
 }
+# RUN 49. The manifest files this run was authorised to move, named for the same reason.
+# decision-ui.js moves for COMMENTS ONLY, on the owner's ruling 4; deepdive.js and detail.js
+# carry the naming completion itself and are already named by the Run-44 set above.
+RUN49_AUTHORISED_MANIFEST_CHANGES = {
+    "assets/js/decision-ui.js",
+}
 AUTHORISED_MANIFEST_CHANGES = (RUN41_AUTHORISED_MANIFEST_CHANGES
                                | RUN42_AUTHORISED_MANIFEST_CHANGES
                                | RUN43_AUTHORISED_MANIFEST_CHANGES
-                               | RUN44_AUTHORISED_MANIFEST_CHANGES)
+                               | RUN44_AUTHORISED_MANIFEST_CHANGES
+                               | RUN49_AUTHORISED_MANIFEST_CHANGES)
 targets = sorted(set(manifest_paths) - BOOKKEEPING - AUTHORISED_MANIFEST_CHANGES)
 vs_ready = [p for p in targets if diff_committed(RUN38_READY, p)]
 check(not vs_ready,
