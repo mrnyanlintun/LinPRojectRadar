@@ -65,10 +65,15 @@ def check(name, ok, why, got=""):
 # edited to say PASS -- it is the same fifteen blocker classes, regenerated from the live tree and
 # evaluated against the successor's own identity, gate and release records. The v25, v26, v27,
 # v28, v29 and v30 artefacts are untouched and remain the historical evidence for those releases.
-SUCCESSOR_GATE = "run47_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN47_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN47_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN47_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 48. The successor is re-evaluated once more, for the period the project detail page opens
+# on and the live naming instances. The gate is not edited to say PASS -- it is the same fifteen
+# blocker classes, regenerated from the live tree and evaluated against the successor's own
+# identity, gate and release records. The v25, v26, v27, v28, v29, v30 and v31 artefacts are
+# untouched and remain the historical evidence for those releases.
+SUCCESSOR_GATE = "run48_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN48_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN48_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN48_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
@@ -141,7 +146,12 @@ check("run37.gate.predecessor_release_preserved",
 # every predecessor in the chain is checked and each must still record its OWN stamp.
 for _pred_file, _pred_stamp in (("RUN41_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v26"),
                                 ("RUN42_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v27"),
-                                ("RUN43_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v28")):
+                                ("RUN43_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v28"),
+                                # RUN 48 adds the two most recent predecessors to the chain,
+                                # which strengthens this check rather than loosening it: v30's
+                                # and v31's records must also still say what they said.
+                                ("RUN45_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v30"),
+                                ("RUN47_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v31")):
     _pr = ROOT / "research" / "freeze" / _pred_file
     check("run37.gate.immediate_predecessor_release_preserved",
           _pr.is_file()
@@ -181,17 +191,16 @@ if _record.is_file():
     check("run37.gate.no_self_reference",
           "PENDING_FINAL_COMMIT" not in _record.read_text(encoding="utf-8")
           and _rec.get("freeze_candidate_commit")
-          # RE-ANCHORED BY RUN 47, on Run 45's own construction, which was Run 44's and Run
-          # 43's. Each successor must name its IMMEDIATE predecessor's candidate as its parent:
-          # Run 45 named Run 44's, and Run 47 supersedes v30, so the record must now name RUN
-          # 45's candidate. (Run 46 was report-only and minted nothing, so v30 is the immediate
-          # predecessor.) Named explicitly rather than loosened to "any commit", because the
-          # point of the check is that the record cannot point at itself and cannot silently
-          # reparent.
+          # RE-ANCHORED BY RUN 48, on Run 47's own construction, which was Run 45's, Run 44's
+          # and Run 43's. Each successor must name its IMMEDIATE predecessor's candidate as its
+          # parent: Run 47 named Run 45's, and Run 48 supersedes v31, so the record must now
+          # name RUN 47's candidate. Named explicitly rather than loosened to "any commit",
+          # because the point of the check is that the record cannot point at itself and cannot
+          # silently reparent.
           and _rec.get("freeze_candidate_commit")
-          != "183dae97a69d3545022aec949dc0c5bda327cc1c"
+          != "0f46551d5c2d99e15a6a4d2f036938e823691b48"
           and _rec.get("supersedes_candidate")
-          == "183dae97a69d3545022aec949dc0c5bda327cc1c"
+          == "0f46551d5c2d99e15a6a4d2f036938e823691b48"
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),
           "the record distinguishes freeze_candidate_commit, release_content_digest and "

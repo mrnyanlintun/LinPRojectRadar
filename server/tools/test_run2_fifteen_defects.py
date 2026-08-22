@@ -1680,10 +1680,60 @@ try:
                 "var items = findings.map(function (f) {",
                 "var row = null;",
             }
+            # RUN 48, THE PERIOD THE PAGE OPENS ON AND THE LIVE NAMING INSTANCES. Two changes
+            # land in this file and every line each one moves is NAMED here rather than admitted
+            # by widening the rule, on exactly the Run-16 / Run-25 / Run-43 / Run-44 / Run-47
+            # construction above. (1) `primeAndRefresh` asks the server which periods have been
+            # COMPUTED and reads the stored row back for the latest of them, instead of for the
+            # literal period 1; a project with no computed period returns before any results
+            # call, so the page keeps the empty state it already renders. (2) The category
+            # identifier is removed from the text sent to the executive brief's model, and the
+            # dead category label map is deleted outright on the owner's ruling 3. No control,
+            # no band, no colour and no stored figure moves with either.
+            RUN48_REMOVED = {
+                '// Friendly category labels used by the structured brief (Section 2).',
+                'const BRIEF_CAT_LABEL = {',
+                'return c.num + " " + c.name + ": " + c.status + worstDesc;',
+                '{ action: "projectresults", id: id, period: 1, session_token: tok }, 30000',
+            }
+            RUN48_ADDED = {
+                'async function currentPeriod(id, tok) {',
+                'const latest = resp.latest_computed_period;',
+                'const period = await currentPeriod(id, tok);',
+                'if (!resp || resp.ok !== true) return null;',
+                'if (currentRenderId !== id) return;',
+                'if (period === null) return;',
+                'return (latest === null || latest === undefined) ? null : Number(latest);',
+                'return c.name + ": " + c.status + worstDesc;',
+                'console.warn("[detail] period determination failed for", id, e && e.message);',
+                '{ action: "projectperiods", id: id, session_token: tok }, 30000',
+                '{ action: "projectresults", id: id, period: period, session_token: tok }, 30000',
+                # The prose lines of the two comments recording why, which the Run-4 property
+                # already admits as comments except where a continuation line carries no marker.
+                'It used to be the literal 1. Every panel on this page holds whatever row this one call',
+                'NO CONTROL IS ADDED. This page has no period selector and this run does not give it one;',
+                "THE DETERMINATION IS DERIVED AND IT IS THE SERVER'S. `projectperiods` reads the result",
+                'any period returns null: this function then returns without a results call and the page',
+                'anywhere. Four runs rediscovered it. It is removed rather than kept corrected, so a fifth',
+                'disagreement findings -- so on a project whose current period is not 1 the whole page',
+                'documents and never have been computed, and that period is not selected), nothing assumes',
+                'error is raised.',
+                'keeps the empty state render() already produced. No new empty state is invented and no',
+                'maximum count (a project may run to sixty periods). A project with no computed result in',
+                'periods are contiguous (1 and 4 with 2 and 3 absent selects 4), and nothing assumes a',
+                'report, that a repository-wide grep for its name found the definition and no reader',
+                'result. Nothing here assumes the highest period number has results (a period may hold',
+                'returns -- the key drivers, the abstention reasons, `recommendation_basis` and the',
+                'run does not find it again. The name it was declared under is in the Run 48 report. */',
+                'showed period 1 and said nothing about it.',
+                'table and returns `latest_computed_period`: the maximum period holding a LIVE computed',
+                'that no code ever read: Run 47 corrected its retired labels and recorded, in the same',
+                'what changes is only which row the page opens on. */',
+            }
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
-                  or ln in RUN47_REMOVED
+                  or ln in RUN47_REMOVED or ln in RUN48_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1729,7 +1779,7 @@ try:
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
                       or ln in POSTRUN22_LINES or ln in _run43_added_span
                       or ln in RUN44_ADDED or ln in _run44_added_span
-                      or ln in RUN47_ADDED
+                      or ln in RUN47_ADDED or ln in RUN48_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

@@ -579,12 +579,33 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # The stamp advances because what a served result CARRIES is executable behaviour, and a result
 # read under v31 answers with a field a result read under v30 did not have.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v31"
+# -------------------------------------------------------------------------------------------
+# RUN 48, THE PERIOD THE PROJECT DETAIL PAGE OPENS ON, AND THE LIVE NAMING INSTANCES.
+#
+# The owner's three rulings of 2026-08-22. 1. THE DETAIL PAGE SHOWS THE LATEST PERIOD THAT HAS
+# DOCUMENTS AND HAS BEEN COMPUTED FROM THEM, not period 1 and not the latest period with
+# documents alone. `projectperiods` gains two derived read-only fields, `computed_periods` and
+# `latest_computed_period`, read from the result table; `primeAndRefresh` reads the row back for
+# that period instead of for the literal 1. 2. THE LIVE NAMING INSTANCES ARE CORRECTED: the
+# deep-dive panel labels, a chart node label and the text sent to the brief's model carry no
+# module identifier and no number. 3. THE BRIEF'S DEAD CATEGORY LABEL MAP IS DELETED.
+#
+# NOTHING IS COMPUTED DIFFERENTLY. No formula, band, threshold, calibration, abstention rule or
+# population moved: voting is still exactly A1.7 and A1.8, 63 modules in service of 101
+# registered. No stored figure changed and nothing is derived into storage: every addition is on
+# the READ path. No user-facing control was added, moved or removed, and the detail page still
+# has no period selector.
+#
+# The stamp advances because WHICH STORED ROW A PAGE READS is executable behaviour: the same
+# project, served to the same reader, answers with period 2's row under v32 where it answered
+# with period 1's under v31.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v32"
 
 #: THE LINE RUN 42 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v30"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v31"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -597,7 +618,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
-    "sim-2026.08-v30", "sim-2026.08-v31",
+    "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32",
 )
 
 

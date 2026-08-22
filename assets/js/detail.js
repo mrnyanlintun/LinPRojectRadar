@@ -1295,13 +1295,52 @@
      any background a_get refresh that re-sets it. Grafting the two missing fields
      is idempotent and safe.
   */
-  async function primeAndRefresh(id, p) {
-    if (!window.LinStore || typeof LinStore.postWithTimeout !== "function") return;
-    const tok = window.LinAuth ? LinAuth.getToken() : null;
+  /* RUN 48, RULING 1. THE PERIOD THIS PAGE OPENS ON IS THE LATEST ONE THAT HAS BEEN COMPUTED.
+
+     It used to be the literal 1. Every panel on this page holds whatever row this one call
+     returns -- the key drivers, the abstention reasons, `recommendation_basis` and the
+     disagreement findings -- so on a project whose current period is not 1 the whole page
+     showed period 1 and said nothing about it.
+
+     THE DETERMINATION IS DERIVED AND IT IS THE SERVER'S. `projectperiods` reads the result
+     table and returns `latest_computed_period`: the maximum period holding a LIVE computed
+     result. Nothing here assumes the highest period number has results (a period may hold
+     documents and never have been computed, and that period is not selected), nothing assumes
+     periods are contiguous (1 and 4 with 2 and 3 absent selects 4), and nothing assumes a
+     maximum count (a project may run to sixty periods). A project with no computed result in
+     any period returns null: this function then returns without a results call and the page
+     keeps the empty state render() already produced. No new empty state is invented and no
+     error is raised.
+
+     NO CONTROL IS ADDED. This page has no period selector and this run does not give it one;
+     what changes is only which row the page opens on. */
+  async function currentPeriod(id, tok) {
     let resp;
     try {
       resp = await LinStore.postWithTimeout(
-        { action: "projectresults", id: id, period: 1, session_token: tok }, 30000
+        { action: "projectperiods", id: id, session_token: tok }, 30000
+      );
+    } catch (e) {
+      console.warn("[detail] period determination failed for", id, e && e.message);
+      return null;
+    }
+    if (!resp || resp.ok !== true) return null;
+    const latest = resp.latest_computed_period;
+    return (latest === null || latest === undefined) ? null : Number(latest);
+  }
+
+  async function primeAndRefresh(id, p) {
+    if (!window.LinStore || typeof LinStore.postWithTimeout !== "function") return;
+    const tok = window.LinAuth ? LinAuth.getToken() : null;
+    const period = await currentPeriod(id, tok);
+    // No computed result in any period. The page keeps its existing empty state.
+    if (period === null) return;
+    // The page may have moved to another project while the period call was in flight.
+    if (currentRenderId !== id) return;
+    let resp;
+    try {
+      resp = await LinStore.postWithTimeout(
+        { action: "projectresults", id: id, period: period, session_token: tok }, 30000
       );
     } catch (e) {
       console.warn("[detail] primeAndRefresh fetch failed for", id, e && e.message);
@@ -1631,7 +1670,10 @@
         const worstDesc = (worst && statusRank(worst.status) <= statusRank(c.status))
           ? " (worst: " + worst.name + (worst.evidence_metric ? ", " + worst.evidence_metric : "") + ")"
           : "";
-        return c.num + " " + c.name + ": " + c.status + worstDesc;
+        // RUN 48, RULING 2. The category identifier is gone from the text sent to the brief's
+        // model. NAMING_AUTHORITY.md:96: no module id and no number in user-facing text, and
+        // the brief the model writes from this is read by a program director.
+        return c.name + ": " + c.status + worstDesc;
       }).join("\n");
 
     const conf = snapshot.summary && snapshot.summary.evidence_agreement;
@@ -1715,20 +1757,11 @@
       "Output ONLY the four sections with the exact '### ' headers above. No preamble and no closing remarks.";
   }
 
-  // Friendly category labels used by the structured brief (Section 2).
-  /* RUN 47. The retired "Cat N" scheme is gone from these labels. NAMING_AUTHORITY.md:96:
-     "Never use a module id or number in user-facing text. No 'Cat 4', no '1.7', no 'PH.2', no
-     'A4.2'. Groups and purposes only. The old 'Cat N' scheme is retired along with the names."
-     The KEYS are the stored snapshot's own identifiers and are not user-facing text; only the
-     VALUES are printed, and no value now carries an identifier or a number. */
-  const BRIEF_CAT_LABEL = {
-    "Cat 1": "Cost Performance", "Cat 2": "Schedule Simulation",
-    "Cat 3": "Cost Simulation", "Cat 4": "Document and Risk",
-    "Cat 5": "System Dynamics", "Cat 6": "Signal Synthesis",
-    "Cat 7": "Evidence Combination", "Cat 8": "Governance and Compliance",
-    "Cat 9": "Data Integrity", "Cat 10": "Decision Optimization",
-    "PH": "Portfolio Health: machine learning and artificial intelligence, at portfolio scale"
-  };
+  /* RUN 48, RULING 3. THE BRIEF'S FRIENDLY CATEGORY LABEL MAP IS DELETED. It was a constant
+     that no code ever read: Run 47 corrected its retired labels and recorded, in the same
+     report, that a repository-wide grep for its name found the definition and no reader
+     anywhere. Four runs rediscovered it. It is removed rather than kept corrected, so a fifth
+     run does not find it again. The name it was declared under is in the Run 48 report. */
 
   /* Parse the structured 4-section brief into its parts. Returns null when the
      text has no recognisable '### ' / bold / bare section headers, so the caller
