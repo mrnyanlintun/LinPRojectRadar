@@ -88,13 +88,19 @@ FREEZE = ROOT / "research" / "freeze"
 # rewritten: run44_freeze_candidate_identity.json, run44_successor_freeze_gate.csv,
 # run44_candidate_behaviour_digest.json and the v29 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v29.
-PREDECESSOR_CANDIDATE = "e6889ad5e84446db7b664e794f4c6013146f3913"
-PREDECESSOR_VERSION = "sim-2026.08-v29"
-CANDIDATE = "183dae97a69d3545022aec949dc0c5bda327cc1c"
-EXPECTED_VERSION = "sim-2026.08-v30"
-IDENTITY_FILE = "run45_freeze_candidate_identity.json"
-GATE_FILE = "run45_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run45_candidate_behaviour_digest.json"
+# RESTATED BY RUN 47. Run 47 adds the EVM consistency check on the owner's four rulings of
+# 2026-08-22. WHAT A SERVED RESULT CARRIES is executable behaviour, so the freeze is SUPERSEDED
+# rather than amended. The Run-45 artefacts are NOT rewritten:
+# run45_freeze_candidate_identity.json, run45_successor_freeze_gate.csv,
+# run45_candidate_behaviour_digest.json and the v30 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v30.
+PREDECESSOR_CANDIDATE = "183dae97a69d3545022aec949dc0c5bda327cc1c"
+PREDECESSOR_VERSION = "sim-2026.08-v30"
+CANDIDATE = "eba1ab88e3e186ea190e884f8eab5a5d7271a0b2"
+EXPECTED_VERSION = "sim-2026.08-v31"
+IDENTITY_FILE = "run47_freeze_candidate_identity.json"
+GATE_FILE = "run47_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run47_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
