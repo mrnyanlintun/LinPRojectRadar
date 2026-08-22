@@ -56,10 +56,15 @@ def check(name, ok, why, got=""):
 # blocker classes, regenerated from the live tree and evaluated against the successor's own
 # identity, gate and release records. The v25, v26, v27 and v28 artefacts are untouched and remain
 # the historical evidence for those releases.
-SUCCESSOR_GATE = "run44_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN44_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN44_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN44_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 45. The successor is re-evaluated once more, for the closure of the period-scoping
+# fall-through Run 44 measured. The gate is not edited to say PASS -- it is the same fifteen
+# blocker classes, regenerated from the live tree and evaluated against the successor's own
+# identity, gate and release records. The v25, v26, v27, v28 and v29 artefacts are untouched and
+# remain the historical evidence for those releases.
+SUCCESSOR_GATE = "run45_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN45_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN45_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN45_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
