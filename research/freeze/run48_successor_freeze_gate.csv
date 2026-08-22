@@ -1,0 +1,16 @@
+blocker_id,blocker,count,requirement,evidence,result
+B01,dirty candidate identity,0,required = 0,11 content-addressed digests recomputed from the tree and compared; git porcelain lines at evaluation: 2,PASS
+B02,population mismatch,0,required = 0,registered total=101 expected 101; project scientific targets=95 expected 95; Portfolio Health targets=5 expected 5; scientific targets=100 expected 100,PASS
+B03,controlled-stimulus mismatch,0,required = 0,projects=6 periods/project=[6] unique=36 rows=36 duplicates=0 missing=0,PASS
+B04,participant-sequence drift,0,required = 0,6 sequence-bearing files compared against the og-participant-2026.08-v17 record; moved: none,PASS
+B05,false defensibility statement,0,required = 0,100 served statements measured against EXECUTED behaviour; failing: none,PASS
+B06,unexpected execution exception,0,required = 0,"census {'ABSTAINS': 89, 'COMPUTES': 5, 'SUPPLIED_NOT_COMPUTED': 1, 'PORTFOLIO_ROUTE': 5}; populated analytical results 3: ['A1.7', 'A1.8', 'A6.2']",PASS
+B07,Category-9 bypass,0,required = 0,unqualified-package probes reaching a banded result: none; C-group voters: none; group C contributes to project status: False,PASS
+B08,Category-10 authority violation,0,required = 0,"human_authorization_required True, creates_project_evidence False, and no Category-10 identity in the voting set",PASS
+B09,voting count is not exactly 2,0,required = 0,"CORE_VOTING_MODULES = ['A1.7', 'A1.8']",PASS
+B10,current taxonomy dual authority,0,required = 0,one authority present=True; both mirrors trace to the generator=True; runtime lookups failing across all 101 registered modules: none,PASS
+B11,package or predecessor mutation,0,required = 0,rewritten predecessor package records: none; og-participant-2026.08-v17 files not matching their record: none; live stamp sim-2026.08-v32 (expected sim-2026.08-v32); predecessor 0f46551d5c2d still stamped sim-2026.08-v31: True,PASS
+B12,browser qualification failure,0,required = 0,29 rows; failing: none,PASS
+B13,unresolved blocking Run-36 defect,0,required = 0,open instrument-level defects: none; target rows carrying one: none,PASS
+B14,unsupported final empirical-validation claim,0,required = 0,every one of the 100 rows records NOT_EMPIRICALLY_FIELD_VALIDATED; exceptions: none,PASS
+B15,candidate behaviour changed during the run,0,required = 0,first evaluation: behaviour digest recorded,PASS
