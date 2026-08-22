@@ -560,12 +560,31 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # `originalContingency` is. The single-period and the four-monthly-report corpora are byte-
 # identical before and after, which is the control on the period-field claim.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v30"
+# -------------------------------------------------------------------------------------------
+# RUN 47 BOUNDARY, sim-2026.08-v30 -> sim-2026.08-v31. THE EVM CONSISTENCY CHECK.
+#
+# WHAT MOVED. A served result now carries `consistency_findings`: every relation where ONE
+# document stated both a value and the percentage that determines it against a known budget at
+# completion, and the two differ by more than 2 per cent of the implied value. Two relations are
+# checked: planned value against budget at completion times planned percent complete, and earned
+# value against budget at completion times actual percent complete.
+#
+# WHAT DID NOT MOVE, AND IT IS EVERYTHING IN THIS FILE. No formula, band, threshold, calibration,
+# abstention rule or population changed. Nothing is derived into storage: the document takes
+# precedence and its figure stands, `pv` is absent from BOUNDED_MAX_SI_FIELDS and stays absent,
+# and the check is a pure function called on the READ path from the stored row, so it cannot
+# write. A finding carries no band, no colour and no severity, casts no vote and is read by no
+# module. The full served census with and without a disagreement present is IDENTICAL.
+#
+# The stamp advances because what a served result CARRIES is executable behaviour, and a result
+# read under v31 answers with a field a result read under v30 did not have.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v31"
 
 #: THE LINE RUN 42 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v29"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v30"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -578,7 +597,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
-    "sim-2026.08-v30",
+    "sim-2026.08-v30", "sim-2026.08-v31",
 )
 
 

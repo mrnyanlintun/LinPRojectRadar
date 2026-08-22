@@ -228,7 +228,12 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # field kind; that CHANGED four production files and ADDED none, so the
                         # pin moves to the Run-45 manifest and the Run-44 manifest is kept
                         # addressable as its parent.
-                        "run45_production_tree.sha256"),
+                        "run45_production_tree.sha256",
+                        # RUN 47 extends the chain once more, by the same rule. The EVM
+                        # consistency check CHANGED three production files and ADDED one, so
+                        # the pin moves to the Run-47 manifest and the Run-45 manifest is
+                        # kept addressable as its parent.
+                        "run47_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

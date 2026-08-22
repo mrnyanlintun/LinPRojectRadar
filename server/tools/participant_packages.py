@@ -307,7 +307,10 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v15",
         "code_audit/run44_participant_package_v15_checksums.sha256",
-        None,
+        # RUN 47 PINNED THIS. Two of its seventy files moved at Run 47, so the live tree is no
+        # longer evidence for v15; it is pinned to the commit whose blobs it describes, exactly
+        # as v14 was pinned when v15 superseded it.
+        "fe2e2df",
         "RUN 44, THE PARTICIPANT-FACING RENDER DEFECTS. Four participant-visible files moved and "
         "ONE OF THE FOUR IS SEQUENCE-BEARING. THE EXPERIMENTAL SEQUENCE IS NOT UNCHANGED, and "
         "this record is the first since v10 that cannot say it is. assets/js/deepdive.js carries "
@@ -331,6 +334,33 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "identical to v14. The v14 record is NOT regenerated: it is pinned to the commit whose "
         "blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v16",
+        "code_audit/run47_participant_package_v16_checksums.sha256",
+        None,
+        "RUN 47, THE EVM CONSISTENCY CHECK. TWO participant-visible files moved and NEITHER IS "
+        "SEQUENCE-BEARING, so this record can say again what v15 could not: decision.js, "
+        "decision-ui.js, workspace.js, deepdive.js and both questionnaires are byte for byte "
+        "identical to v15. assets/js/detail.js renders, as TEXT in the executive brief panel, "
+        "every relation where one document stated both a value and the percentage that "
+        "determines it against a known budget at completion and the two do not agree; the same "
+        "file's BRIEF_CAT_LABEL loses the retired 'Cat N' scheme for groups and purposes. "
+        "assets/js/recommendation_options.js renders the same text beside the recommendation. "
+        "NO USER-FACING CONTROL WAS ADDED, MOVED OR REMOVED: both blocks were measured in the "
+        "real browser DOM and contain zero controls of any kind. NO STORED FIGURE MOVED and "
+        "nothing is derived into storage: the comparison is a pure function on the READ path "
+        "and the document's own figure stands. NO SERVER COMPUTATION MOVED: the full served "
+        "census with and without a disagreement present is identical. The v15 record is NOT "
+        "regenerated: it is pinned to the commit whose blobs it describes.",
+    ),
+)
+
+#: RUN 47. The files whose bytes moved between v15 and v16. TWO, and NEITHER is sequence-bearing,
+#: so the invariant v15 had to break is intact again: all six sequence-bearing files are byte for
+#: byte identical across this successor.
+V15_TO_V16_CHANGED = (
+    "assets/js/detail.js",
+    "assets/js/recommendation_options.js",
 )
 
 #: RUN 44. The files whose bytes moved between v14 and v15. FOUR, and one of them -- deepdive.js

@@ -532,6 +532,16 @@ RUN43_SCOPED_FILES = {
     "server/app/training.py",
 }
 
+# RUN 47, THE EVM CONSISTENCY CHECK. ONE new production file under `server/app/`: the pure
+# function that computes the implied value from a document's own percentage and compares it with
+# the value the same document stated. It is named here rather than the rule being widened, so the
+# check keeps its full force over every other production file. `server/app/documents.py`,
+# `assets/js/detail.js` and `assets/js/recommendation_options.js` are already inside an earlier
+# run's scope above and are deliberately NOT named a second time.
+RUN47_SCOPED_FILES = {
+    "server/app/evm_consistency.py",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -543,7 +553,8 @@ _prod = [p for p in _diff
          and p not in RUN28_CLOSURE_SCOPED_FILES and p not in RUN29_SCOPED_FILES
          and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES
          and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES
-         and p not in RUN41_SCOPED_FILES and p not in RUN43_SCOPED_FILES]
+         and p not in RUN41_SCOPED_FILES and p not in RUN43_SCOPED_FILES
+         and p not in RUN47_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))

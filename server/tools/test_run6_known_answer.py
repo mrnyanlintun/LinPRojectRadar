@@ -577,7 +577,15 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # production paths -- registry.py, research_export.py, the client taxonomy
                    # artifacts, index.html and the registry CSV -- are already inside the scope
                    # of an earlier run above, and portfolio_health.py is inside the Run-33 pair.
-                   - {"server/app/training.py"})
+                   - {"server/app/training.py"}
+                   # RUN 47, THE EVM CONSISTENCY CHECK. ONE new file: the pure function that
+                   # computes the value a document's own percentage implies against a known
+                   # budget at completion and compares it with the value the same document
+                   # stated. It writes nothing and is called on the READ path. Named rather
+                   # than the comparison being relaxed, so the check keeps full force
+                   # outside it. documents.py, detail.js and recommendation_options.js are
+                   # already inside the scope of an earlier run above.
+                   - {"server/app/evm_consistency.py"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

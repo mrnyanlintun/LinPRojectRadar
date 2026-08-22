@@ -89,6 +89,7 @@ from .research_models import (
     UploadAttempt, new_ulid,
 )
 from .document_evidence import document_evidence
+from .evm_consistency import consistency_findings
 from .recommendation_basis import recommendation_basis
 from .risk_exposure import register_exposure
 from .risk_register import risk_rows_from_document
@@ -1775,6 +1776,18 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
                     and m.get("method_class") in B4_7_ANY_METHOD_CLASS),
                    None)
     view["recommendation_basis"] = recommendation_basis(row.signal_inputs, _regret)
+    # RUN 47. THE EVM CONSISTENCY CHECK. Where one document states both a value and the
+    # percentage that determines it against a known budget at completion, the implied value is
+    # computed and the two are compared; a relative difference above the tolerance is reported.
+    # DERIVED AT READ TIME from the row this response already carries, by a pure function, for
+    # the same reason `recommendation_basis` is: no column is added, no migration is needed, a
+    # row stored before this run answers exactly as one stored after it, AND NO STORED FIGURE
+    # CAN CHANGE, because nothing on this path writes. It carries no band, no colour and no
+    # severity, it casts no vote, and `project_status` and `category_statuses` above are read
+    # from the stored row and are not revised here. It is NOT gated by the reveal: a
+    # disagreement between two figures a document itself stated is evidence, in the same class
+    # as `signal_inputs`, and carries no action.
+    view["consistency_findings"] = consistency_findings(row.signal_inputs, row.period)
     if include_recommendation and package is not None:
         view["recommendation"] = {
             "package_id": package.package_id,

@@ -61,10 +61,14 @@ def check(name, ok, why, got=""):
 # blocker classes, regenerated from the live tree and evaluated against the successor's own
 # identity, gate and release records. The v25, v26, v27, v28 and v29 artefacts are untouched and
 # remain the historical evidence for those releases.
-SUCCESSOR_GATE = "run45_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN45_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN45_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN45_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 47. The successor is re-evaluated once more, for the EVM consistency check. The gate is not
+# edited to say PASS -- it is the same fifteen blocker classes, regenerated from the live tree and
+# evaluated against the successor's own identity, gate and release records. The v25, v26, v27,
+# v28, v29 and v30 artefacts are untouched and remain the historical evidence for those releases.
+SUCCESSOR_GATE = "run47_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN47_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN47_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN47_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
@@ -177,15 +181,17 @@ if _record.is_file():
     check("run37.gate.no_self_reference",
           "PENDING_FINAL_COMMIT" not in _record.read_text(encoding="utf-8")
           and _rec.get("freeze_candidate_commit")
-          # RE-ANCHORED BY RUN 45, on Run 44's own construction, which was Run 43's. Each
-          # successor must name its IMMEDIATE predecessor's candidate as its parent: Run 44
-          # named Run 43's, and Run 45 supersedes v29, so the record must now name RUN 44's
-          # candidate. Named explicitly rather than loosened to "any commit", because the point
-          # of the check is that the record cannot point at itself and cannot silently reparent.
+          # RE-ANCHORED BY RUN 47, on Run 45's own construction, which was Run 44's and Run
+          # 43's. Each successor must name its IMMEDIATE predecessor's candidate as its parent:
+          # Run 45 named Run 44's, and Run 47 supersedes v30, so the record must now name RUN
+          # 45's candidate. (Run 46 was report-only and minted nothing, so v30 is the immediate
+          # predecessor.) Named explicitly rather than loosened to "any commit", because the
+          # point of the check is that the record cannot point at itself and cannot silently
+          # reparent.
           and _rec.get("freeze_candidate_commit")
-          != "e6889ad5e84446db7b664e794f4c6013146f3913"
+          != "183dae97a69d3545022aec949dc0c5bda327cc1c"
           and _rec.get("supersedes_candidate")
-          == "e6889ad5e84446db7b664e794f4c6013146f3913"
+          == "183dae97a69d3545022aec949dc0c5bda327cc1c"
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),
           "the record distinguishes freeze_candidate_commit, release_content_digest and "

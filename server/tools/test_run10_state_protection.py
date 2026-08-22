@@ -285,12 +285,20 @@ RUN41_NON_ANALYTICAL_SCOPE = {"server/app/main.py"}
 # value: both change WHICH modules are enumerated, and the roster they enumerate is derived from
 # p0-baseline/module_renumbering_map.csv and from nothing else.
 RUN43_NON_ANALYTICAL_SCOPE = {"server/app/research_export.py", "server/app/training.py"}
+# RESTATED BY RUN 47, ORIGINAL FINDINGS PRESERVED. The EVM consistency check adds ONE file under
+# server/app/ that is not in the simulation package, and it is NAMED here rather than the rule
+# being widened. `evm_consistency.py` performs no computation any module reads and moves no
+# value: it compares a value a document stated with the value that same document's percentage
+# implies against a known budget at completion, on the READ path, and returns a list of
+# statements. It carries no band, no colour and no severity, and nothing in the analytical layer
+# imports it. `documents.py` is already inside Run 11 Gate 6's named read path.
+RUN47_NON_ANALYTICAL_SCOPE = {"server/app/evm_consistency.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
           or d in RUN14_NON_ANALYTICAL_SCOPE or d in RUN16_NON_ANALYTICAL_SCOPE
           or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE or d in RUN41_NON_ANALYTICAL_SCOPE
-          or d in RUN43_NON_ANALYTICAL_SCOPE
+          or d in RUN43_NON_ANALYTICAL_SCOPE or d in RUN47_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning
