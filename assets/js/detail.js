@@ -1346,6 +1346,13 @@
       if (resp.result.abstained && !p.storedResult.abstained) {
         p.storedResult.abstained = resp.result.abstained;
       }
+      // THE FIFTH FIELD, grafted for exactly the reason the four above are: the executive
+      // brief and the courses-of-action card both read the served consistency findings off
+      // whatever `rowFor` returns, and `rowFor` prefers `storedResult`. Without this graft a
+      // disagreement the server had already established would never reach either surface.
+      if (resp.result.consistency_findings && !p.storedResult.consistency_findings) {
+        p.storedResult.consistency_findings = resp.result.consistency_findings;
+      }
     } else {
       // a_get delivered no storedResult (a race, or the list projection had not attached it
       // yet) but the row exists. Attach it so every rowFor(p) on this page reads the complete
@@ -1358,6 +1365,13 @@
     // never writes) so they read "0 active · 0 est." and "N docs · 0 fields". Recompute them
     // from the now-complete row so the summary agrees with the panel it summarises.
     refreshSectionBadges(p);
+
+    // RUN 47. The executive brief panel is assembled during render(), BEFORE this fetch
+    // returns, so the disagreement block it carries was built from a row that did not yet hold
+    // the served findings. Rebuild that block, and only that block, from the now-complete row.
+    // Same reason the badges above are recomputed, and the same scope: it replaces text inside
+    // a panel that already exists and touches no control.
+    refreshBriefConsistency(p);
 
     // A scripted Executive Brief generated before the row arrived would have cached its
     // "No computed key signals are available yet" fallback. Drop that stale scripted brief so the
@@ -1386,6 +1400,21 @@
      primeAndRefresh has grafted it they can agree with the panels they head. Modules with no
      stored status are abstaining and are counted in neither the active nor the estimated
      tally, matching the abstention rule the panels themselves follow. */
+  function refreshBriefConsistency(project) {
+    const panel = document.querySelector(".eb-panel");
+    if (!panel) return;
+    const old = panel.querySelector(".eb-consistency");
+    let html = "";
+    try { html = briefConsistencyHtml(project); } catch (e) { html = ""; }
+    if (old) old.remove();
+    if (!html) return;
+    // Immediately after the flags block when there is one, otherwise directly under the head,
+    // which is where the panel's own template puts it. No control is inserted or moved.
+    const anchor = panel.querySelector(".eb-flags") || panel.querySelector(".eb-head");
+    if (anchor) anchor.insertAdjacentHTML("afterend", html);
+    else panel.insertAdjacentHTML("afterbegin", html);
+  }
+
   function refreshSectionBadges(project) {
     const setBadge = (secId, html) => {
       const sec = document.getElementById("section-" + secId);
@@ -1687,13 +1716,18 @@
   }
 
   // Friendly category labels used by the structured brief (Section 2).
+  /* RUN 47. The retired "Cat N" scheme is gone from these labels. NAMING_AUTHORITY.md:96:
+     "Never use a module id or number in user-facing text. No 'Cat 4', no '1.7', no 'PH.2', no
+     'A4.2'. Groups and purposes only. The old 'Cat N' scheme is retired along with the names."
+     The KEYS are the stored snapshot's own identifiers and are not user-facing text; only the
+     VALUES are printed, and no value now carries an identifier or a number. */
   const BRIEF_CAT_LABEL = {
-    "Cat 1": "Cost Performance (Cat 1)", "Cat 2": "Schedule Simulation (Cat 2)",
-    "Cat 3": "Cost Simulation (Cat 3)", "Cat 4": "Document & Risk (Cat 4)",
-    "Cat 5": "System Dynamics (Cat 5)", "Cat 6": "Signal Synthesis (Cat 6)",
-    "Cat 7": "Evidence Combination (Cat 7)", "Cat 8": "Governance & Compliance (Cat 8)",
-    "Cat 9": "Data Integrity (Cat 9)", "Cat 10": "Decision Optimization (Cat 10)",
-    "PH": "Portfolio Health: ML & AI (portfolio-scale, not a numbered category)"
+    "Cat 1": "Cost Performance", "Cat 2": "Schedule Simulation",
+    "Cat 3": "Cost Simulation", "Cat 4": "Document and Risk",
+    "Cat 5": "System Dynamics", "Cat 6": "Signal Synthesis",
+    "Cat 7": "Evidence Combination", "Cat 8": "Governance and Compliance",
+    "Cat 9": "Data Integrity", "Cat 10": "Decision Optimization",
+    "PH": "Portfolio Health: machine learning and artificial intelligence, at portfolio scale"
   };
 
   /* Parse the structured 4-section brief into its parts. Returns null when the
@@ -1992,6 +2026,28 @@
     return '<div class="eb-flags" aria-label="Brief flags">' + parts.join("") + '</div>';
   }
 
+  /* WHERE A DOCUMENT DISAGREES WITH ITSELF. Deterministic, like the flags block above and for
+     the same reason: it is read from the stored row the server already served, not from the
+     generated brief, so it cannot be lost to a cached brief, a model refusal or a regenerate.
+
+     It states what disagrees and by how much, names the document that stated both figures, and
+     stops. It does not say which figure is wrong, because the platform does not know, and it
+     does not tell the reader what to do about it. It carries no band, no colour and no
+     severity: the class below is the same neutral informational class the liability-period
+     line uses, and no status anywhere on this page reads it. */
+  function briefConsistencyHtml(project) {
+    var row = null;
+    try { row = (window.LinResults && LinResults.rowFor(project)) || null; } catch (e) { row = null; }
+    var findings = (row && row.consistency_findings) || [];
+    if (!findings.length) return "";
+    var items = findings.map(function (f) {
+      return '<p class="eb-flag eb-flag-info eb-consistency-item">' + esc(f && f.sentence ? f.sentence : "") + "</p>";
+    }).join("");
+    return '<div class="eb-consistency" aria-label="Figures that disagree">'
+      + '<p class="eb-flag eb-flag-info eb-consistency-head">Figures stated in one document that do not agree with each other:</p>'
+      + items + "</div>";
+  }
+
   function executiveBriefHtml(project) {
     // Every helper is wrapped — the card must ALWAYS render so the user
     // sees the loading shimmer (or the cached brief) regardless of whether
@@ -2004,6 +2060,8 @@
     try { projectId = (project && project.id) || ""; } catch (e) {}
     let flags = "";
     try { flags = briefFlagsHtml(project); } catch (e) {}
+    let consistency = "";
+    try { consistency = briefConsistencyHtml(project); } catch (e) {}
     const state = cached ? "ready" : "loading";
     return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief" data-eb-id="${esc(projectId)}">
       <div class="eb-head">
@@ -2014,6 +2072,7 @@
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>
       ${flags}
+      ${consistency}
       ${briefBodyHtml(state, cached)}
       ${cached ? briefFooter(cached) : ""}
     </section>`;

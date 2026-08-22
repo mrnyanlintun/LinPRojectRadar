@@ -392,6 +392,17 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: this successor names it as its parent. The guard was observed reporting exactly those six
 #: files, and nothing else, before this manifest was written.
 #: RUN 45. This moved again, from run44_production_tree.sha256 to the run45 file, on the same
+#: RUN 47 supersedes the Run-45 manifest. THREE production files move and ONE is added:
+#: `server/app/evm_consistency.py` (new: the pure comparison of a document's stated value with
+#: the value its own percentage implies against a known budget at completion),
+#: `server/app/documents.py` (the served result carries `consistency_findings`, derived at read
+#: time from the stored row by that pure function, exactly as `recommendation_basis` is),
+#: `assets/js/detail.js` (the executive brief renders the disagreement as text, and
+#: `BRIEF_CAT_LABEL`'s ten retired "Cat N" labels become groups and purposes) and
+#: `assets/js/recommendation_options.js` (the same text beside the recommendation).
+#: `server/app/simulation/models.py` carries the stamp to sim-2026.08-v31 with the boundary
+#: recorded. NOTHING IS REMOVED, no stored figure moves, and no user-facing control was added,
+#: moved or removed. The run45 manifest is NOT rewritten.
 #: Run-34/35/41/42/43/44 precedent. Run 45 closes the period-scoping fall-through Run 44
 #: measured, and FOUR production files move: `server/app/field_registry.py` (the canonical
 #: IDENTITY/PERIOD/UNDETERMINED classification the owner signed off, and `retrieval_kind()`),
@@ -405,7 +416,11 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: The run44 manifest is NOT rewritten: it stays exactly as that release wrote it and this
 #: successor names it as its parent. The guard was observed reporting exactly those four files,
 #: and nothing else, before this manifest was written.
-PINNED = ROOT / "code_audit" / "run45_production_tree.sha256"
+PINNED = ROOT / "code_audit" / "run47_production_tree.sha256"
+#: The Run-45 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite. (Run 46 was report-only and wrote no
+#: manifest, so Run 45 is the parent.)
+PINNED_RUN45 = ROOT / "code_audit" / "run45_production_tree.sha256"
 #: The Run-44 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN44 = ROOT / "code_audit" / "run44_production_tree.sha256"

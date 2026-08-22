@@ -1445,8 +1445,47 @@ try:
                       or ln.startswith('+ "') for ln in removed),
                   f"{rel}: every line the freeze removed carried the validation claim",
                   str(removed)[:200])
+            # RUN 47, THE EVM CONSISTENCY CHECK. A FOURTH PERMITTED DIFFERENCE IN THIS FILE,
+            # NAMED RATHER THAN ADMITTED BY LOOSENING THE CHECK. The served disagreements are
+            # read off the row and rendered beside the recommendation as TEXT, on both the
+            # available and the unavailable branch. Nothing about the recommendation itself
+            # moves: its key, title, reason and evidence are assembled without reference to it.
+            RUN47_RECOPT_ADDED = {
+                "+ '<h4 class=\"ro-option-title\">Figures that do not agree</h4>'",
+                "+ '<p class=\"ro-what\">These figures were stated together in one document and do not agree '",
+                "+ '<ul class=\"ro-consistency-list\">' + items.map(function (c) {",
+                "+ 'the recommendation above.</p>'",
+                "+ body + docs + rec + consistencyHtml(spec) + \"</div>\";",
+                ".map(function (x) { return { sentence: String(x.sentence) }; });",
+                "/* RUN 47. WHERE A DOCUMENT DISAGREES WITH ITSELF, alongside the recommendation and never",
+                "/* The disagreement block. Text only: it names what disagrees, by how much, and the document",
+                "/* The served disagreements, defensively read. A row that predates the check, or one served",
+                "and nothing on this card reads it: the recommendation, its title, its reason and its",
+                "by an older build, carries nothing and yields an empty list rather than an error. */",
+                "consistency: consistency,",
+                "consistency: consistencyOf(result),",
+                "does not tell the reader what to conclude. It carries no band, no colour and no severity,",
+                "evidence are assembled above without reference to it. */",
+                "function consistencyHtml(spec) {",
+                "function consistencyOf(result) {",
+                "if (!f.length) return [];",
+                "if (!items.length) return \"\";",
+                "it is not derived here and it changes nothing: the recommendation above is the one the",
+                "part of it. Served on the row (`consistency_findings`), derived server-side from the same",
+                "return '<div class=\"ro-consistency\" id=\"ro-consistency\">'",
+                "return '<li class=\"ro-consistency-item\">' + esc(c.sentence) + \"</li>\";",
+                "return f.filter(function (x) { return x && x.sentence; })",
+                "stored figures by a pure function on the read path. It is read back and formatted here;",
+                "stored result holds, and no field of it is touched by anything below. */",
+                "that stated both figures, and it stops there. It does not say which figure is wrong and it",
+                "var consistency = consistencyOf(result);",
+                "var f = (result && result.consistency_findings) || [];",
+                "var items = (spec && spec.consistency) || [];",
+                "}).join(\"\") + \"</ul></div>\";",
+            }
             check(all(ln.startswith("//") or ln.startswith('+ "') or ln.startswith('reason:')
-                      or ln.startswith("reason:") for ln in added),
+                      or ln.startswith("reason:") or ln in RUN47_RECOPT_ADDED
+                      for ln in added),
                   f"{rel}: and every line it added is either a comment or a continuation of "
                   f"the same explanation sentence", str(added)[:200])
             check("still appears on the" in live and "signal ledger" in live,
@@ -1580,9 +1619,71 @@ try:
                 'Number(s.doc.score);',
             }
 
+            # RUN 47, THE EVM CONSISTENCY CHECK AND THE RETIRED LABEL SCHEME. Two changes land
+            # in this file and every line each one moves is NAMED here rather than admitted by
+            # widening the rule, on exactly the Run-16 / Run-25 / Run-43 / Run-44 construction
+            # above. (1) The served disagreement findings are grafted onto the stored row and
+            # rendered as TEXT in the executive brief panel, in a block that carries no control,
+            # no band and no colour. (2) BRIEF_CAT_LABEL carried ten entries in the retired
+            # "Cat N" scheme against NAMING_AUTHORITY.md:96; the ten label VALUES are replaced
+            # by groups and purposes. The object's KEYS are the stored snapshot's identifiers
+            # and are not user-facing text, so they stay.
+            RUN47_REMOVED = {
+                "\"Cat 1\": \"Cost Performance (Cat 1)\", \"Cat 2\": \"Schedule Simulation (Cat 2)\",",
+                "\"Cat 3\": \"Cost Simulation (Cat 3)\", \"Cat 4\": \"Document & Risk (Cat 4)\",",
+                "\"Cat 5\": \"System Dynamics (Cat 5)\", \"Cat 6\": \"Signal Synthesis (Cat 6)\",",
+                "\"Cat 7\": \"Evidence Combination (Cat 7)\", \"Cat 8\": \"Governance & Compliance (Cat 8)\",",
+                "\"Cat 9\": \"Data Integrity (Cat 9)\", \"Cat 10\": \"Decision Optimization (Cat 10)\",",
+                "\"PH\": \"Portfolio Health: ML & AI (portfolio-scale, not a numbered category)\"",
+            }
+            RUN47_ADDED = {
+                "\"Cat 1\": \"Cost Performance\", \"Cat 2\": \"Schedule Simulation\",",
+                "\"Cat 3\": \"Cost Simulation\", \"Cat 4\": \"Document and Risk\",",
+                "\"Cat 5\": \"System Dynamics\", \"Cat 6\": \"Signal Synthesis\",",
+                "\"Cat 7\": \"Evidence Combination\", \"Cat 8\": \"Governance and Compliance\",",
+                "\"Cat 9\": \"Data Integrity\", \"Cat 10\": \"Decision Optimization\",",
+                "\"Never use a module id or number in user-facing text. No 'Cat 4', no '1.7', no 'PH.2', no",
+                "\"PH\": \"Portfolio Health: machine learning and artificial intelligence, at portfolio scale\"",
+                "${consistency}",
+                "'A4.2'. Groups and purposes only. The old 'Cat N' scheme is retired along with the names.\"",
+                "+ '<p class=\"eb-flag eb-flag-info eb-consistency-head\">Figures stated in one document that do not agree with each other:</p>'",
+                "+ items + \"</div>\";",
+                "It states what disagrees and by how much, names the document that stated both figures, and",
+                "The KEYS are the stored snapshot's own identifiers and are not user-facing text; only the",
+                "VALUES are printed, and no value now carries an identifier or a number. */",
+                "const anchor = panel.querySelector(\".eb-flags\") || panel.querySelector(\".eb-head\");",
+                "const old = panel.querySelector(\".eb-consistency\");",
+                "const panel = document.querySelector(\".eb-panel\");",
+                "does not tell the reader what to do about it. It carries no band, no colour and no",
+                "else panel.insertAdjacentHTML(\"afterbegin\", html);",
+                "function briefConsistencyHtml(project) {",
+                "function refreshBriefConsistency(project) {",
+                "generated brief, so it cannot be lost to a cached brief, a model refusal or a regenerate.",
+                "if (!findings.length) return \"\";",
+                "if (!html) return;",
+                "if (anchor) anchor.insertAdjacentHTML(\"afterend\", html);",
+                "if (resp.result.consistency_findings && !p.storedResult.consistency_findings) {",
+                "let consistency = \"\";",
+                "let html = \"\";",
+                "line uses, and no status anywhere on this page reads it. */",
+                "p.storedResult.consistency_findings = resp.result.consistency_findings;",
+                "refreshBriefConsistency(p);",
+                "return '<div class=\"eb-consistency\" aria-label=\"Figures that disagree\">'",
+                "return '<p class=\"eb-flag eb-flag-info eb-consistency-item\">' + esc(f && f.sentence ? f.sentence : \"\") + \"</p>\";",
+                "severity: the class below is the same neutral informational class the liability-period",
+                "stops. It does not say which figure is wrong, because the platform does not know, and it",
+                "the same reason: it is read from the stored row the server already served, not from the",
+                "try { consistency = briefConsistencyHtml(project); } catch (e) {}",
+                "try { html = briefConsistencyHtml(project); } catch (e) { html = \"\"; }",
+                "try { row = (window.LinResults && LinResults.rowFor(project)) || null; } catch (e) { row = null; }",
+                "var findings = (row && row.consistency_findings) || [];",
+                "var items = findings.map(function (f) {",
+                "var row = null;",
+            }
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
+                  or ln in RUN47_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1628,6 +1729,7 @@ try:
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
                       or ln in POSTRUN22_LINES or ln in _run43_added_span
                       or ln in RUN44_ADDED or ln in _run44_added_span
+                      or ln in RUN47_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

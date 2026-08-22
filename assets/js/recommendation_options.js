@@ -126,6 +126,15 @@
    * `available:false` means the platform does not hold a set of courses of action for this
    * project, and the caller must say so rather than draw an empty frame.
    */
+  /* The served disagreements, defensively read. A row that predates the check, or one served
+     by an older build, carries nothing and yields an empty list rather than an error. */
+  function consistencyOf(result) {
+    var f = (result && result.consistency_findings) || [];
+    if (!f.length) return [];
+    return f.filter(function (x) { return x && x.sentence; })
+            .map(function (x) { return { sentence: String(x.sentence) }; });
+  }
+
   function build(result) {
     var mods = modulesOf(result);
     var si = (result && result.signal_inputs) || {};
@@ -158,6 +167,12 @@
         nonVoting: true,
         options: [],
         recommendation: null,
+        // RUN 47. THE DISAGREEMENTS TRAVEL DOWN THIS BRANCH TOO, and it is the branch every
+        // current project takes: the analysis that scores the courses is not one of the two
+        // that vote, so `available` is false on every row this platform stores today. A
+        // disagreement between two figures one document stated is not about the courses of
+        // action and must not be lost with them.
+        consistency: consistencyOf(result),
         unknowns: []
       };
     }
@@ -198,6 +213,9 @@
       return {
         available: false,
         reason: reason,
+        // RUN 47. As on the branch above: a disagreement between two figures one document
+        // stated is not about the courses of action and must not be lost with them.
+        consistency: consistencyOf(result),
         pending: !hasModuleResults,
         withheld: !!withheld,
         options: [],
@@ -370,11 +388,19 @@
       };
     }
 
+    /* RUN 47. WHERE A DOCUMENT DISAGREES WITH ITSELF, alongside the recommendation and never
+       part of it. Served on the row (`consistency_findings`), derived server-side from the same
+       stored figures by a pure function on the read path. It is read back and formatted here;
+       it is not derived here and it changes nothing: the recommendation above is the one the
+       stored result holds, and no field of it is touched by anything below. */
+    var consistency = consistencyOf(result);
+
     return {
       available: true,
       reason: null,
       options: options,
       recommendation: recommendation,
+      consistency: consistency,
       documents: documents,
       exposureKnown: exp.known,
       authority: authority,
@@ -390,12 +416,30 @@
 
   /* ---------------------------------------------------------- render */
 
+  /* The disagreement block. Text only: it names what disagrees, by how much, and the document
+     that stated both figures, and it stops there. It does not say which figure is wrong and it
+     does not tell the reader what to conclude. It carries no band, no colour and no severity,
+     and nothing on this card reads it: the recommendation, its title, its reason and its
+     evidence are assembled above without reference to it. */
+  function consistencyHtml(spec) {
+    var items = (spec && spec.consistency) || [];
+    if (!items.length) return "";
+    return '<div class="ro-consistency" id="ro-consistency">'
+      + '<h4 class="ro-option-title">Figures that do not agree</h4>'
+      + '<p class="ro-what">These figures were stated together in one document and do not agree '
+      + "with each other. They are reported as the document stated them. Nothing here changes "
+      + 'the recommendation above.</p>'
+      + '<ul class="ro-consistency-list">' + items.map(function (c) {
+          return '<li class="ro-consistency-item">' + esc(c.sentence) + "</li>";
+        }).join("") + "</ul></div>";
+  }
+
   function html(spec) {
     if (!spec || spec.available !== true) {
       return '<div class="ro-block" id="ro-block"><h3 class="ro-title">Courses of action</h3>'
         + '<p class="ro-unavailable" id="ro-unavailable">'
         + esc((spec && spec.reason) || "No courses of action are available for this project.")
-        + "</p></div>";
+        + "</p>" + consistencyHtml(spec) + "</div>";
     }
     var body = spec.options.map(function (o) {
       return '<div class="ro-option" data-option="' + esc(o.key) + '">'
@@ -490,7 +534,7 @@
             + "they say nothing about this one. What decides the recommendation is stated with "
             + "it, and what this period's documents say is set out below.</p>"
           : "")
-      + body + docs + rec + "</div>";
+      + body + docs + rec + consistencyHtml(spec) + "</div>";
   }
 
   function htmlForProject(project) {

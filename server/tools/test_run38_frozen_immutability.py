@@ -255,11 +255,27 @@ RUN44_AUTHORISED_SUCCESSOR_CHANGES = {
 RUN45_AUTHORISED_SUCCESSOR_CHANGES = {
     "server/app/field_registry.py",   # the canonical IDENTITY/PERIOD classification itself
 }
+# RESTATED BY RUN 47, AND THE SAME DISCIPLINE AGAIN. Run 47 adds the EVM consistency check on
+# the owner's four rulings: where ONE document states both a value and the percentage that
+# determines it against a known budget at completion, the implied value is computed and the two
+# are compared, and a difference above 2 per cent of the implied value is reported AS TEXT on
+# surfaces that already exist. WHAT A SERVED RESULT CARRIES is executable behaviour, so it is a
+# freeze SUCCESSOR (sim-2026.08-v31) rather than a violation of this guard. TWO files need naming
+# here: `assets/js/recommendation_options.js`, which renders the text beside the recommendation,
+# and `server/app/evm_consistency.py`, which is new. `detail.js`, `documents.py` and `models.py`
+# are already named by an earlier set above, and no path is named twice. NOTHING IS DERIVED INTO
+# STORAGE, NO STORED FIGURE MOVED, NO PARTICIPANT-FACING CONTROL MOVED and NO SEQUENCE-BEARING
+# FILE MOVED: all six are byte-identical, which the participant-package suite asserts separately.
+RUN47_AUTHORISED_SUCCESSOR_CHANGES = {
+    "assets/js/recommendation_options.js",  # the disagreement text beside the recommendation
+    "server/app/evm_consistency.py",        # NEW: the comparison itself, a pure read-path function
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN43_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN44_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN45_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN45_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN47_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -289,15 +305,15 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v30",
-      "and the live simulation version is the Run-45 successor sim-2026.08-v30",
+check(SIMULATION_VERSION == "sim-2026.08-v31",
+      "and the live simulation version is the Run-47 successor sim-2026.08-v31",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v15",
-      "the participant package is superseded at og-participant-2026.08-v15",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v16",
+      "the participant package is superseded at og-participant-2026.08-v16",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "

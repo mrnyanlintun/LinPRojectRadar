@@ -61,10 +61,14 @@ def check(name, ok, why, got=""):
 # blocker classes, regenerated from the live tree and evaluated against the successor's own
 # identity, gate and release records. The v25, v26, v27, v28 and v29 artefacts are untouched and
 # remain the historical evidence for those releases.
-SUCCESSOR_GATE = "run45_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN45_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN45_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN45_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 47. The successor is re-evaluated once more, for the EVM consistency check. The gate is not
+# edited to say PASS -- it is the same fifteen blocker classes, regenerated from the live tree and
+# evaluated against the successor's own identity, gate and release records. The v25, v26, v27,
+# v28, v29 and v30 artefacts are untouched and remain the historical evidence for those releases.
+SUCCESSOR_GATE = "run47_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN47_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN47_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN47_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
