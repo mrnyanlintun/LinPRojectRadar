@@ -1730,10 +1730,30 @@ try:
                 'that no code ever read: Run 47 corrected its retired labels and recorded, in the same',
                 'what changes is only which row the page opens on. */',
             }
+            # RUN 49, THE COMPLETION OF THE NAMING CORRECTION. Two lines move in this file and
+            # both are NAMED here rather than admitted by widening the rule, on exactly the
+            # Run-16 / Run-25 / Run-43 / Run-44 / Run-47 / Run-48 construction above. (1) The
+            # document section title uses the word "and" instead of the ampersand the naming
+            # authority bars in user-facing text. (2) The executive brief's prompt stops naming
+            # the retired "Cat N" scheme TO THE MODEL while STILL FORBIDDING the model to print
+            # any identifier: the guardrail is rewritten, not deleted, because deleting it would
+            # remove a guard. No control, no band, no colour and no stored figure moves.
+            RUN49_REMOVED = {
+                '"Do NOT mention category numbers except when grouping them in Signal Pattern; '
+                'a program director does not think in Cat 1-12.\\n\\n" +',
+                '${cs("d-docsignals", "Documents & Extracted Signals",',
+            }
+            RUN49_ADDED = {
+                '"Do NOT print any module identifier or category number anywhere in the '
+                'briefing: name what a category DOES, in words. A program director thinks in '
+                'purposes, not in identifiers.\\n\\n" +',
+                '${cs("d-docsignals", "Documents and Extracted Signals",',
+            }
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
                   or ln in RUN47_REMOVED or ln in RUN48_REMOVED
+                  or ln in RUN49_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1779,7 +1799,7 @@ try:
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
                       or ln in POSTRUN22_LINES or ln in _run43_added_span
                       or ln in RUN44_ADDED or ln in _run44_added_span
-                      or ln in RUN47_ADDED or ln in RUN48_ADDED
+                      or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

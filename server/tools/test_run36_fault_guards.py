@@ -380,12 +380,16 @@ _moved_seq = sorted(f for f in _seq_files
 # service no number of projects makes it compute, so the sentence was false on every render, and
 # the owner ordered it corrected at Run 44 section 4.4. The other five are still held to the
 # frozen v11 bytes, so a second file moving here -- or a different one -- is still a failure.
-_SEQ_AUTHORISED = set(PP.V14_TO_V15_SEQUENCE_EXCEPTION)
+# RUN 49. A SECOND of the six has now legitimately moved, and it too is NAMED rather than
+# excused by loosening the comparison: `assets/js/decision-ui.js` gains comments only, at its
+# three inert `period: 1` literals, on the owner's ruling 4 of 2026-08-22. The other four are
+# still held to the frozen v11 bytes, so a third file moving here is still a failure.
+_SEQ_AUTHORISED = set(PP.V14_TO_V15_SEQUENCE_EXCEPTION) | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
 check("run36.fault35.participant_sequence_unaltered",
-      sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 1,
+      sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 2,
       "every file carrying the participant experimental sequence is byte-identical to the frozen "
-      "v11 package, except the ONE the owner authorised Run 44 to move; the sequence has been "
-      "altered somewhere else", str(_moved_seq))
+      "v11 package, except the TWO the owner authorised Runs 44 and 49 to move; the sequence has "
+      "been altered somewhere else", str(_moved_seq))
 check("run36.fault36.evidence_and_rationale_captured",
       "decision.rationale = payload.get(\"rationale\")" in _dec
       and "decision.evidence_items = evidence_items" in _dec

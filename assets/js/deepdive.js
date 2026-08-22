@@ -105,7 +105,38 @@
     "10": "Evidence Combination", "11": "Evidence Combination", "12": "Evidence Combination",
     "13": "Evidence Combination", "14": "Evidence Combination", "15": "Evidence Combination",
     "16": "Evidence Combination", "17": "Evidence Combination", "18": "Evidence Combination",
-    "19": "Governance and Compliance"
+    "19": "Governance and Compliance",
+    /* RUN 49, ruling 3. The remaining keys the call sites actually pass. Run 48 corrected the
+       fallback to one neutral phrase, which is correct under the authority but collapsed some
+       sixty panels onto a single heading. Each key below resolves to the purpose of the MODULE
+       ITSELF, read from the module's own title at its call site, and NOT from the collapsible
+       group the panel happens to be filed under: those two disagree from bucket 6 upward, and
+       that mismatch is reported, not corrected, in this run. */
+    "1.4": "Cost Performance", "1.5": "Cost Performance", "1.6": "Cost Performance",
+    "1.7": "Cost Performance", "1.8": "Cost Performance", "1.9": "Cost Performance",
+    "1.10": "Cost Performance", "1.11": "Cost Performance", "1.12": "Cost Performance",
+    "2.4": "Schedule Performance", "2.5": "Schedule Performance", "2.6": "Schedule Performance",
+    "2.7": "Schedule Performance", "2.8": "Schedule Performance", "2.9": "Schedule Performance",
+    "2.10": "Schedule Performance", "2.11": "Schedule Performance",
+    "3.1": "Cost Risk", "3.2": "Cost Risk", "3.3": "Cost Risk", "3.4": "Cost Risk",
+    "3.5": "Cost Risk", "3.6": "Cost Risk", "3.7": "Cost Risk", "3.8": "Cost Risk",
+    "3.9": "Cost Risk", "3.10": "Cost Risk",
+    "4.1": "Document-Derived Condition Signals", "4.2": "Document-Derived Condition Signals",
+    "4.3": "Document-Derived Condition Signals", "4.4": "Document-Derived Condition Signals",
+    "4.5": "Document-Derived Condition Signals", "4.6": "Document-Derived Condition Signals",
+    "4.7": "Document-Derived Condition Signals", "4.8": "Document-Derived Condition Signals",
+    "4.9": "Document-Derived Condition Signals", "4.10": "Document-Derived Condition Signals",
+    "5.1": "System Dynamics and Complexity", "5.2": "System Dynamics and Complexity",
+    "5.3": "System Dynamics and Complexity", "5.4": "System Dynamics and Complexity",
+    "5.5": "System Dynamics and Complexity", "5.6": "System Dynamics and Complexity",
+    "5.7": "System Dynamics and Complexity", "5.8": "System Dynamics and Complexity",
+    "6.1": "Signal Synthesis", "6.2": "Signal Synthesis", "6.3": "Signal Synthesis",
+    "6.4": "Signal Synthesis",
+    "7.1": "Evidence Combination", "7.2\u20137.8": "Evidence Combination",
+    "7.9\u20137.20": "Evidence Combination",
+    "8.1": "Governance and Compliance", "8.2\u20138.9": "Governance and Compliance",
+    "9.1": "Evidence Quality", "9.2\u20139.7": "Evidence Quality",
+    "10.1": "Decision Optimization", "10.2\u201310.7": "Decision Optimization"
   };
   /* The GROUPING number, which is NOT user-facing text: it is written to a data attribute and
      read back by groupByCategory to bucket panels under their collapsible headers. It used to
@@ -1056,7 +1087,7 @@
     ] : [
       `Conflict type "${conflict}": ${redN} red and ${ambN} amber signal class(es) against ${4 - redN - ambN} green.`,
       `The platform surfaces this disagreement instead of averaging it away: the gap between signal classes is the finding.`,
-      `The classification feeds Cat 8.1, which maps it to an action and an authority.`
+      `The classification feeds the governance decision layer, which maps it to an action and an authority.`
     ];
     return panel("09", "Conservative Dominance: Signal Synthesis", st,
       note("Agreement map across all signal classes. When signals diverge, the gap between classes is the finding. The platform surfaces disagreement instead of averaging it away. Conservative dominance: the worst single-signal status drives the overall classification.") +
@@ -1401,7 +1432,7 @@
         metricBox("Belief Red", Math.round((s.belief_red || 0) * 100) + "%", s.belief_red > 0.3 ? "red" : "amber") +
         metricBox("Conflict Mass", Math.round((s.conflict_mass || 0) * 100) + "%", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
         metricBox("Conflict Level", s.conflict_level || "Low", s.conflict_level === "High" ? "red" : s.conflict_level === "Moderate" ? "amber" : "green") +
-        metricBox("Agrees with Cat 6.1", agrees ? "Yes" : (conservativeState ? "No" : "N/A"), agrees ? "green" : (conservativeState ? "amber" : "green"))
+        metricBox("Agrees with Conservative Dominance", agrees ? "Yes" : (conservativeState ? "No" : "N/A"), agrees ? "green" : (conservativeState ? "amber" : "green"))
       }</div>` +
       `<p class="dd-chart-note">${esc(comparisonNote)}</p>` +
       reasons([
@@ -1812,13 +1843,13 @@
     const greenCount = vals.length - redCount - amberCount;
     const overallSt  = redCount >= 2 ? "red" : amberCount >= 2 ? "amber" : "green";
 
-    const header = `<tr class="dd-cmp-head"><th>Module · Method</th><th>Year</th><th>Classification</th><th>Agrees with M09</th></tr>`;
+    const header = `<tr class="dd-cmp-head"><th>Method</th><th>Year</th><th>Classification</th><th>Agrees with the baseline</th></tr>`;
     const rows = entries.map(function (e) {
       const c = cls(e.val);
       const isBaseline = e.num === "09";
       const agreesM09 = isBaseline ? "Baseline" : (String(e.val).toLowerCase() === baseline ? "Yes" : "No");
       const agreeCls = isBaseline ? "" : (agreesM09 === "Yes" ? "dd-cmp-yes" : "dd-cmp-no");
-      return `<tr><td class="dd-cmp-mod">Module ${e.num}: ${esc(e.label)}</td>` +
+      return `<tr><td class="dd-cmp-mod">${esc(e.label)}</td>` +
         `<td class="dd-cmp-year">${esc(e.year || "—")}</td>` +
         `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td>` +
         `<td class="${agreeCls}">${agreesM09}</td></tr>`;
@@ -1828,18 +1859,18 @@
     let confidence, summaryText;
     if (agreeCount >= 8) {
       confidence = "HIGH";
-      summaryText = `All synthesis methods confirm the classification: high confidence. ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Act on the Cat 8.1 recommendation.`;
+      summaryText = `All synthesis methods confirm the classification: high confidence. ${agreeCount} of 9 evidence methods agree with the conservative dominance baseline (${String(s09).toUpperCase()}). Act on the governance recommendation.`;
     } else if (agreeCount >= 5) {
       confidence = "MODERATE";
-      summaryText = `${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}): moderate confidence. Act on the Cat 8.1 recommendation but document the uncertainty.`;
+      summaryText = `${agreeCount} of 9 evidence methods agree with the conservative dominance baseline (${String(s09).toUpperCase()}): moderate confidence. Act on the governance recommendation but document the uncertainty.`;
     } else {
       confidence = "LOW";
-      summaryText = `Significant divergence: investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the Cat 6.1 baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
+      summaryText = `Significant divergence: investigate before recording a formal governance action. Only ${agreeCount} of 9 evidence methods agree with the conservative dominance baseline (${String(s09).toUpperCase()}). Spread across all methods: ${redCount} Red, ${amberCount} Amber, ${greenCount} Green.`;
     }
 
     return `<section class="panel dd-panel status-${overallSt}" aria-label="Synthesis comparison">
-      <div class="dd-head"><b>Synthesis Methods Comparison: Cat 6.1 & Cat 7.1–7.9</b><span class="dd-cmp-conf dd-cmp-conf-${confidence.toLowerCase()}">${confidence} CONFIDENCE</span></div>
-      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance (Cat 6.1) is the governance baseline; Cat 7.1–7.9 provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
+      <div class="dd-head"><b>Synthesis Methods Comparison: Conservative Dominance and the Evidence Combination Methods</b><span class="dd-cmp-conf dd-cmp-conf-${confidence.toLowerCase()}">${confidence} CONFIDENCE</span></div>
+      <p class="dd-chart-note">Agreement check across all synthesis and evidence methods. Conservative dominance is the governance baseline; the evidence combination methods provide independent cross-checks using different evidence frameworks across five decades of uncertainty-reasoning research.</p>
       <table class="dd-cmp-table">${header}${rows}</table>
       <p class="dd-chart-note">${esc(summaryText)}</p>
     </section>`;
@@ -2186,7 +2217,7 @@
     //   sims.synth — Module 09 vs 10-18 agreement table + PM confidence band
     //   19     ABM Governance decision card (internally m09) — LAST
     root.innerHTML =
-      `<p class="mod-banner">Cat 1–Cat 3 modules are quantitative signal generators. Cat 6.1 (Conservative Dominance) is the baseline synthesis. Cat 7.1–7.9 are independent evidence-combination methods cross-checking Cat 6.1 across five decades of uncertainty-reasoning research. Cat 8.1 (ABM Governance) is the decision output: the named-authority action that survives this reporting cycle.</p>` +
+      `<p class="mod-banner">The cost performance, schedule performance and cost risk modules are quantitative signal generators. Conservative Dominance is the baseline synthesis. The evidence combination methods are independent cross-checks on that baseline across five decades of uncertainty-reasoning research. ABM Governance is the decision output: the named-authority action that survives this reporting cycle.</p>` +
       m01(project) + m02(project) + m03(project) +
       m1_4(project) + m1_5(project) + m1_6(project) + m1_7(project) + m1_8(project) +
       m1_9(project) + m1_10(project) + m1_11(project) + m1_12(project) +
@@ -2265,7 +2296,7 @@
       group.innerHTML =
         `<button type="button" class="dd-cat-header" aria-expanded="${open}">` +
           `<span class="dd-cat-dot status-dot-${worst}"></span>` +
-          `<span class="dd-cat-name"><span class="mod-mono">Cat ${n}</span> ${escg(catName)}</span>` +
+          `<span class="dd-cat-name">${escg(catName)}</span>` +
           `<span class="dd-cat-count">${count} module${count === 1 ? "" : "s"}</span>` +
           `<span class="dd-cat-chev" aria-hidden="true">${open ? "▾" : "▸"}</span>` +
         `</button>` +
@@ -2469,7 +2500,7 @@
             ).join("")
           : `<p class="kn-sub cat8-none">No anomalies flagged (${m.computedCount} project${m.computedCount === 1 ? "" : "s"} compared).</p>`;
         return `<section class="panel dd-panel status-${m.flagged.length ? statusPillClass(m.flagged[0].status) : "green"} cat8-module">` +
-          `<div class="dd-head"><b>${esc(m.num)} ${esc(m.name)}</b></div>` +
+          `<div class="dd-head"><b>${esc(m.name)}</b></div>` +
           `<div class="cat8-flagged-list">${rows}</div>` +
         `</section>`;
       }).join("");

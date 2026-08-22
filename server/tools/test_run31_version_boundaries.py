@@ -410,11 +410,11 @@ check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19"
                          "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
                          "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28",
                          "sim-2026.08-v29", "sim-2026.08-v30", "sim-2026.08-v31",
-                         "sim-2026.08-v32"),
+                         "sim-2026.08-v32", "sim-2026.08-v33"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
       "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds, the "
       "one Run 41 adds, the one Run 42 adds, the one Run 43 adds, the one Run 44 adds, the one "
-      "Run 45 adds, the one Run 47 adds and the one Run 48 adds",
+      "Run 45 adds, the one Run 47 adds, the one Run 48 adds and the one Run 49 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.

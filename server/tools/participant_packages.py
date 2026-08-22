@@ -359,7 +359,10 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v17",
         "code_audit/run48_participant_package_v17_checksums.sha256",
-        None,
+        # RUN 49 PINNED THIS. Two of its seventy files moved at Run 49, so the live tree is no
+        # longer evidence for v17; it is pinned to the commit whose blobs it describes, exactly
+        # as v16 was pinned when v17 superseded it.
+        "5838a23",
         "RUN 48, THE PERIOD THE PROJECT DETAIL PAGE OPENS ON AND THE LIVE NAMING INSTANCES. "
         "THREE participant-visible files moved and ONE OF THE THREE IS SEQUENCE-BEARING. This "
         "record cannot say what v16 could, and says so rather than claiming otherwise. "
@@ -386,7 +389,60 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "v16. The v16 record is NOT regenerated: it is pinned to the commit whose blobs it "
         "describes.",
     ),
+    Package(
+        "og-participant-2026.08-v18",
+        "code_audit/run49_participant_package_v18_checksums.sha256",
+        None,
+        "RUN 49, THE COMPLETION OF THE NAMING CORRECTION. THREE participant-visible files moved "
+        "and TWO OF THE THREE ARE SEQUENCE-BEARING. This record says so rather than claiming "
+        "otherwise, and "
+        "each carries its own named exception record, on the owner's rulings 1 and 4 of "
+        "2026-08-22. WHAT MOVED INSIDE assets/js/deepdive.js, EXACTLY: the ten collapsible group "
+        "headers drop the `Cat N` identifier span and render the group name alone; the Signal "
+        "Stack banner, the Dempster-Shafer metric-box label, the synthesis comparison heading, "
+        "its note and its three confidence sentences name what a module DOES instead of naming "
+        "it by number; the synthesis comparison table drops the `Module NN` prefix from every "
+        "row and the `Agrees with M09` column header; the Portfolio Health flyout drops the "
+        "`D1.N` identifier from each module heading; and the panel label map is EXTENDED from "
+        "nineteen keys to all seventy-seven keys the call sites actually pass, so each panel "
+        "names its own category's purpose instead of collapsing onto one neutral phrase. The "
+        "GROUPING number map, CAT_NUM_FROM_MODULE, WAS NOT TOUCHED, so no panel moved to a "
+        "different collapsible group. WHAT MOVED INSIDE assets/js/decision-ui.js, EXACTLY: "
+        "COMMENTS ONLY, at the three inert `period: 1` literals, recording that "
+        "documents._resolve_period derives the period from the research assignment and ignores "
+        "the value. Not one byte of executable text in that file changed. THE THIRD FILE IS NOT "
+        "SEQUENCE-BEARING: assets/js/detail.js titles a section 'Documents and Extracted "
+        "Signals' instead of using the ampersand the authority bars in user-facing text, and "
+        "its executive brief prompt stops naming the retired scheme to the model while still "
+        "forbidding the model to print any module identifier or category number. No step of the "
+        "decision sequence, no reveal gate, no lock, no randomization, no server contract, no "
+        "append-only record and NO USER-FACING CONTROL moved in either file. NO SERVER "
+        "COMPUTATION MOVED: 101 registered, 63 in service, voting exactly A1.7 and A1.8, and no "
+        "stored figure changed. decision.js, workspace.js and both questionnaires are byte for "
+        "byte identical to v17. The v17 record is NOT regenerated: it is pinned to the commit "
+        "whose blobs it describes.",
+    ),
 )
+
+#: RUN 49. The files whose bytes moved between v17 and v18. TWO, and BOTH are sequence-bearing.
+#: Both exceptions are declared here rather than left for a checksum to discover. Their authority
+#: is the owner's rulings 1 and 4 in the Run 49 order. deepdive.js: every surviving rendered
+#: instance of the retired "Cat N" scheme, plus the extension of the panel label map to every key
+#: the call sites pass. decision-ui.js: comments only, and nothing else at all. detail.js is
+#: the THIRD file and is NOT sequence-bearing: one section title loses its ampersand, and the
+#: executive brief prompt stops naming the retired scheme to the model while still forbidding
+#: the model to print any identifier.
+V17_TO_V18_CHANGED = (
+    "assets/js/decision-ui.js",
+    "assets/js/deepdive.js",
+    "assets/js/detail.js",
+)
+
+#: The TWO sequence-bearing files Run 49 was authorised to move, and the only two it moved. Every
+#: other member of SEQUENCE_BEARING_FILES must still be byte-identical across this successor.
+#: Naming the exceptions rather than widening the comparison is what keeps the invariant a real
+#: one: a THIRD file moving here still fails.
+V17_TO_V18_SEQUENCE_EXCEPTION = ("assets/js/decision-ui.js", "assets/js/deepdive.js")
 
 #: RUN 48. The files whose bytes moved between v16 and v17. THREE, and one of them --
 #: deepdive.js -- IS SEQUENCE-BEARING. The exception is declared here rather than left for a

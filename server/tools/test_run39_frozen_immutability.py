@@ -179,13 +179,30 @@ RUN48_AUTHORISED_SUCCESSOR_CHANGES = {
     "assets/js/deepdive.js",   # the deep-dive panel labels: groups and purposes, no identifier
     "assets/js/charts3d.js",   # one chart node label, same rule
 }
+
+# RUN 49. The owner's five rulings of 2026-08-22 finish the naming correction the Run 48 sweep
+# left unfinished. TWO files move, both named here, and both sequence-bearing, each with its own
+# named exception record in participant_packages.py: `assets/js/deepdive.js`, whose ten group
+# headers, banner, metric-box label, comparison table and five prose sentences drop the retired
+# "Cat N" scheme and whose panel label map is extended to every key the call sites pass; and
+# `assets/js/decision-ui.js`, which gains COMMENTS ONLY at its three inert `period: 1` literals
+# recording that the server derives the period from the research assignment and ignores the
+# value. `assets/js/detail.js` is already named by an earlier set above and is not named twice.
+# NO STORED FIGURE MOVED. NO BAND, STATUS, COLOUR OR POSTURE MOVED. NO USER-FACING CONTROL WAS
+# ADDED, MOVED OR REMOVED. NO MODULE BUCKETS DIFFERENTLY: the grouping number is declared in
+# CAT_NUM_FROM_MODULE and this run did not touch it.
+RUN49_AUTHORISED_SUCCESSOR_CHANGES = {
+    "assets/js/deepdive.js",     # the retired scheme, everywhere it still rendered, plus the map
+    "assets/js/decision-ui.js",  # comments only at the three inert period literals
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN43_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN44_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN45_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN47_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN48_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN48_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN49_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -241,10 +258,17 @@ RUN44_AUTHORISED_MANIFEST_CHANGES = {
     "assets/js/deepdive.js",
     "assets/css/radar.css",
 }
+# RUN 49. The manifest files this run was authorised to move, named for the same reason.
+# decision-ui.js moves for COMMENTS ONLY, on the owner's ruling 4; deepdive.js and detail.js
+# carry the naming completion itself and are already named by the Run-44 set above.
+RUN49_AUTHORISED_MANIFEST_CHANGES = {
+    "assets/js/decision-ui.js",
+}
 AUTHORISED_MANIFEST_CHANGES = (RUN41_AUTHORISED_MANIFEST_CHANGES
                                | RUN42_AUTHORISED_MANIFEST_CHANGES
                                | RUN43_AUTHORISED_MANIFEST_CHANGES
-                               | RUN44_AUTHORISED_MANIFEST_CHANGES)
+                               | RUN44_AUTHORISED_MANIFEST_CHANGES
+                               | RUN49_AUTHORISED_MANIFEST_CHANGES)
 targets = sorted(set(manifest_paths) - BOOKKEEPING - AUTHORISED_MANIFEST_CHANGES)
 vs_ready = [p for p in targets if diff_committed(RUN38_READY, p)]
 check(not vs_ready,
@@ -274,11 +298,11 @@ check(readiness["final_disposition"] == "STUDY_EXECUTION_READY",
 check(freeze["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       freeze["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v32",
-      "and the live simulation is the Run-48 successor sim-2026.08-v32", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v33",
+      "and the live simulation is the Run-49 successor sim-2026.08-v33", SIMULATION_VERSION)
 # RESTATED BY RUN 43: v13 is superseded by v14 and pinned to its own commit rather than rewritten.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v17",
-      "the participant package is superseded at og-participant-2026.08-v17",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v18",
+      "the participant package is superseded at og-participant-2026.08-v18",
       PP.CURRENT.identifier)
 check(freeze["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6")

@@ -9,6 +9,46 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-22 - Run 49: THE COMPLETION OF THE NAMING CORRECTION. MERGED.
+
+**Report:** `REPORT_2026-08-22_run49_naming_completion.md`.
+**Branch:** `run49-naming-completion`, rooted at `5838a23`, **merged to `main`**.
+**Stamp:** `sim-2026.08-v33`. **Package:** `og-participant-2026.08-v18`.
+**193 suites, 14,591/14,591, 0 red.** Freeze gate **15 blocker classes, 0 blocked; suite 34/34**.
+
+## WHAT MOVED, AND IT IS DISPLAYED TEXT
+
+`assets/js/deepdive.js` (SEQUENCE-BEARING, ruling 1): the ten collapsible group headers drop the
+`Cat N` identifier span; the Signal Stack banner, the Dempster-Shafer metric-box label, the
+synthesis comparison heading, its note and its three confidence sentences name what a module DOES;
+the comparison table drops the `Module NN:` row prefix and the `Agrees with M09` column header;
+the Portfolio Health flyout drops the `D1.N` identifier. `CAT_FROM_MODULE` is extended from 19
+keys to **all 77 the call sites pass**, so no panel takes the neutral fallback. `CAT_NUM_FROM_MODULE`,
+the grouping map, is **byte-identical to v32**: no panel moved group.
+
+`assets/js/decision-ui.js` (SEQUENCE-BEARING, ruling 4): **COMMENTS ONLY.** With every whole-line
+comment stripped the file is identical to v32. The three `period: 1` literals stay.
+
+`assets/js/detail.js` (not sequence-bearing): the section title uses "and"; the brief prompt stops
+naming the retired scheme to the model while still forbidding the model to print any identifier.
+
+## WHAT THE NEXT SESSION MUST KNOW
+
+1. **Guarantee 1 is NOT MET, for the second run running, and it cannot be met inside stop
+   condition 9.5.** `app.js:1346` and `app.js:1360` still render `A1.2` and `A1` on the Categories
+   page, read from the GENERATED `categories.js`; correcting them means changing
+   `server/tools/taxonomy_authority.json` and regenerating. En and em dashes remain in user-facing
+   text across roughly forty files in `assets/`, including FOUR sequence-bearing files
+   (`decision.js` 26, `workspace.js` 32, `intake.json` 7, `debrief.json` 1). Meeting the guarantee
+   as written needs its own order.
+2. **The deep-dive grouping mismatch is worse than one instance and is still unacted.** Buckets 6,
+   7, 8 and 9 all file panels under a header that names something else. Measured in the DOM this
+   run.
+3. Two sequence-bearing files have now moved. A third still turns B01, B04 and B11 red; proved by
+   appending one byte to `workspace.js`.
+
+---
+
 # 2026-08-22 - Run 48: THE DETAIL PAGE READS THE CURRENT PERIOD, AND THE LIVE NAMING INSTANCES. MERGED.
 
 **Report:** `REPORT_2026-08-22_run48_current_period_and_naming.md`.
