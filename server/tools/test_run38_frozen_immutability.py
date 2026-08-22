@@ -130,9 +130,20 @@ RUN43_AUTHORISED_MANIFEST_CHANGES = {
     # are named above.
     "server/tools/build_client_taxonomy.py",
 }
+# RUN 44. The manifest files this run was authorised to move, named for the same reason.
+# registry.py moves for a DOCSTRING only; the JavaScript and the stylesheet are the render
+# repairs themselves.
+RUN44_AUTHORISED_MANIFEST_CHANGES = {
+    "server/app/simulation/registry.py",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+    "assets/js/deepdive.js",
+    "assets/css/radar.css",
+}
 AUTHORISED_MANIFEST_CHANGES = (RUN41_AUTHORISED_MANIFEST_CHANGES
                                | RUN42_AUTHORISED_MANIFEST_CHANGES
-                               | RUN43_AUTHORISED_MANIFEST_CHANGES)
+                               | RUN43_AUTHORISED_MANIFEST_CHANGES
+                               | RUN44_AUTHORISED_MANIFEST_CHANGES)
 manifest_targets = sorted(set(manifest_paths) - BOOKKEEPING
                           - AUTHORISED_MANIFEST_CHANGES)
 vs_candidate = [p for p in manifest_targets if diff_committed(CANDIDATE, p)]
@@ -210,9 +221,31 @@ RUN43_AUTHORISED_SUCCESSOR_CHANGES = {
     "index.html",                                  # the same three populations
     "p0-baseline/module_renumbering_map.csv",      # the single authority for service
 }
+# RESTATED BY RUN 44, AND THE SAME DISCIPLINE AGAIN. The repair of the four participant-facing
+# render defects Run 43J diagnosed changes what a participant is SHOWN, which is executable
+# behaviour, so it is a freeze SUCCESSOR (sim-2026.08-v29) rather than a violation of this guard.
+# The files it was authorised to change are NAMED here, so the set cannot quietly grow: anything
+# else appearing in a frozen surface still fails. Nothing on the analytical side moved --
+# run_module() over all 101 registered identifiers is byte-identical to v28 on a full and a
+# starved evidence package, proved by executing both lines.
+#
+# assets/js/deepdive.js IS NAMED HERE DELIBERATELY AND IS THE EXCEPTION OF RECORD. It is one of
+# the six SEQUENCE_BEARING_FILES, and its authority is the owner's order at Run 44 section 4.4:
+# the Portfolio Health flyout told a participant the panel needed at least three projects when
+# after the Run-43 offload no number of projects makes it compute. The other five sequence-bearing
+# files are still byte-identical, which the participant-package suite asserts separately.
+RUN44_AUTHORISED_SUCCESSOR_CHANGES = {
+    "assets/js/detail.js",       # one shared case-insensitive severity rank; the driver guard;
+                                 # an absent document-risk score rendering as absent
+    "assets/js/signals.js",      # CPI and SPI labelled computed rather than extracted
+    "assets/js/deepdive.js",     # the Portfolio Health flyout's reason sentence (section 4.4)
+    "assets/css/radar.css",      # one added rule for the computed mark
+    "server/app/simulation/registry.py",   # a DOCSTRING only; the function body is untouched
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN43_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN43_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN44_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -242,15 +275,15 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v28",
-      "and the live simulation version is the Run-43 successor sim-2026.08-v28",
+check(SIMULATION_VERSION == "sim-2026.08-v29",
+      "and the live simulation version is the Run-44 successor sim-2026.08-v29",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v14",
-      "the participant package is superseded at og-participant-2026.08-v14",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v15",
+      "the participant package is superseded at og-participant-2026.08-v15",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "
@@ -358,6 +391,15 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_simulation.py",
     "server/tools/test_six_fixes.py",
     "server/tools/test_workspace_t3t5.py",
+} | {
+    # RUN 44, THE PARTICIPANT-FACING RENDER DEFECTS. One further suite whose pinned expectation
+    # the successor legitimately moves: test_run36_fault_guards asserted that all six
+    # sequence-bearing files are byte-identical to the frozen v11 package, and Run 44 was
+    # authorised by the owner at its section 4.4 to move exactly one of them. Its check now names
+    # that one exception rather than being widened, so it keeps its full force over the other
+    # five. Not executable production or client code, and not named by the freeze checksum
+    # manifest.
+    "server/tools/test_run36_fault_guards.py",
 }
 modified = [p for st, p in run38 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]

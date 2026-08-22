@@ -103,6 +103,32 @@
     if (s === "complete" || s === "blue") return "Complete";
     return null;
   }
+  /* ------------------------------------------------------------
+     Severity rank. THE ONE PLACE THIS PAGE ORDERS STATUSES.
+     ------------------------------------------------------------
+     RUN 44, SECTION 4.1. Two `order` maps on this page were keyed on the
+     capitalised spellings only, and the platform does not emit one casing:
+     A1.2 CUSUM Anomaly Monitor stores 'green' where every other module stores
+     'Green'. A key miss fell through to the unknown default, which is more
+     adverse than Green, so a module whose only irregularity was its
+     capitalisation was selected as its category's "worst" ahead of two
+     properly-cased Green ones. CASE IS NOT SEVERITY. Matching is therefore
+     case-insensitive here, the same rule fusion.normalise_status already
+     applies on the server, and an unrecognised value keeps the historical
+     unknown rank rather than being silently read as good.
+     Lower number = more adverse. ------------------------------------------ */
+  const STATUS_RANK = { red: 0, "red-review": 1, amber: 2, yellow: 3, green: 4, complete: 5 };
+  const STATUS_RANK_UNKNOWN = 3;
+  function statusRank(status) {
+    const raw = String(status == null ? "" : status).trim().toLowerCase();
+    if (STATUS_RANK[raw] != null) return STATUS_RANK[raw];
+    // Vocabulary aliases (orange, light-amber, critical, blue) resolve through the
+    // page's existing normaliser rather than being restated here.
+    const norm = normalizeStatus(status);
+    if (norm && STATUS_RANK[norm.toLowerCase()] != null) return STATUS_RANK[norm.toLowerCase()];
+    return STATUS_RANK_UNKNOWN;
+  }
+
   function statusToRadius(status) {
     const s = normalizeStatus(status);
     if (s === "Red") return 1.00;
@@ -263,9 +289,8 @@
   }
 
   function pickWorstModule(cat) {
-    const order = { Red: 0, "Red-review": 1, Amber: 2, Yellow: 3, Green: 4, Complete: 5 };
     return (cat.modules || []).filter((m) => m.status).slice()
-      .sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - (order[b.status] != null ? order[b.status] : 3))[0] || null;
+      .sort((a, b) => statusRank(a.status) - statusRank(b.status))[0] || null;
   }
 
   /* ============================================================
@@ -873,9 +898,16 @@
     });
     otherFlags.sort((a, b) => provRank(a.status) - provRank(b.status));
 
+    // RUN 44, SECTION 4.1 REQUIREMENT 3. The category status is the server's fusion of the
+    // category's VOTING modules; worstMod is drawn from every module in the category. Nothing
+    // required the two to agree, so this line could offer a Green module as the driver of an
+    // Amber category. A module better than the severity it would be offered as the driver of
+    // does not drive it and is not named as doing so.
+    const modDrives = provRank(worstModStatus) <= provRank(worstCatStatus);
+
     return {
       projStatus, worstCat, worstCatStatus, catTieCount,
-      worstMod, worstModStatus, modTieCount,
+      worstMod, worstModStatus, modTieCount, modDrives,
       evidenceMetric, source, otherFlags
     };
   }
@@ -890,9 +922,11 @@
     const docDate = t.source && t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : null;
     const tieNote = t.catTieCount > 1 ? " and " + (t.catTieCount - 1) + " other" + (t.catTieCount - 1 === 1 ? "" : "s") : "";
     const parts = [
-      esc(t.projStatus) + ", driven by " + esc(t.worstCat.name) + tieNote,
-      esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" : "")
+      esc(t.projStatus) + ", driven by " + esc(t.worstCat.name) + tieNote
     ];
+    if (t.modDrives) {
+      parts.push(esc(t.worstMod.name) + (metricNum ? " (" + esc(metricNum) + ")" : ""));
+    }
     if (docLabel) {
       parts.push(esc(docLabel) + (docDate ? " " + esc(docDate) : "") + (t.source.derived ? " [est.]" : ""));
     }
@@ -909,6 +943,9 @@
     const rows = [];
     rows.push(`<div class="det-prov-hop"><b>Project</b>: ${esc(t.projStatus)}</div>`);
     rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.name)}</b>: ${esc(normalizeStatus(t.worstCatStatus) || t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other ${t.catTieCount - 1 === 1 ? "category" : "categories"} at this severity, shown first)` : ""}</div>`);
+    if (!t.modDrives) {
+      rows.push(`<div class="det-prov-hop"><b>Modules</b>: no module in this category reads as adverse as the category status, so none is named as driving it. The most adverse of them is ${esc(t.worstMod.name)} at ${esc(normalizeStatus(t.worstModStatus) || t.worstModStatus)}.</div>`);
+    } else
     rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.name)}</b>: ${esc(normalizeStatus(t.worstModStatus) || t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity, shown first)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
     if (t.source) {
       const docLabel = (window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[t.source.docType]) || t.source.docType;
@@ -1444,7 +1481,9 @@
     }
     if (s.cusum) bits.push(s.cusum.breached ? "sustained schedule drift" : "no drift");
     if (s.doc) {
-      const score = Number(s.doc.score);
+      // RUN 44, SECTION 4.2. Number(null) is 0 and finite, so a doc block carrying a null score
+      // read as "documents clean". An absent score says nothing about the documents.
+      const score = (s.doc.score == null || s.doc.score === "") ? NaN : Number(s.doc.score);
       if (Number.isFinite(score)) bits.push("documents " + (score < 0.20 ? "clean" : score < 0.40 ? "minor risk" : score < 0.70 ? "elevated risk" : "high risk"));
     }
     const state = resolveBriefState(project);
@@ -1525,7 +1564,15 @@
       const bp = Math.round(cburn / ctot * 100);
       out.push({ label: "Contingency burned", value: bp + "%" + (Number.isFinite(comp) ? " at " + Math.round(comp) + "% complete" : ""), status: bp > 75 ? "Red" : bp > 50 ? "Amber" : "Green" });
     }
-    const docScore = Number(s.doc && s.doc.score != null ? s.doc.score : si.docRiskScore);
+    // RUN 44, SECTION 4.2. select_signal_inputs initialises every key to None, so a project with
+    // no document-risk observation carries docRiskScore PRESENT AND NULL. Number(null) is 0 and
+    // finite, so the absent score rendered as "0.00" with a Green status and was shipped into
+    // the Executive Brief as a key driver, while an undefined one (NaN) was correctly omitted.
+    // A genuine stored zero must still render as zero -- extraction_merge.py:1128 requires the
+    // zero to be stored and to stay distinguishable from an absence -- so the guard is on the
+    // RAW value being null/undefined/blank, never on the number being falsy.
+    const docRaw = (s.doc && s.doc.score != null) ? s.doc.score : si.docRiskScore;
+    const docScore = (docRaw == null || docRaw === "") ? NaN : Number(docRaw);
     if (Number.isFinite(docScore)) {
       out.push({ label: "Document risk", value: docScore.toFixed(2), status: docScore >= 0.70 ? "Red" : docScore >= 0.40 ? "Amber" : "Green" });
     }
@@ -1543,12 +1590,18 @@
     const catSummary = cats
       .filter((c) => !c.parked && c.status)
       .map((c) => {
-        const order = { Red: 0, "Red-review": 1, Amber: 2, Yellow: 3, Green: 4, Complete: 5 };
         const worst = (c.modules || [])
           .filter((m) => m.status)
           .slice()
-          .sort((a, b) => (order[a.status] != null ? order[a.status] : 3) - (order[b.status] != null ? order[b.status] : 3))[0];
-        const worstDesc = worst ? " (worst: " + worst.name + (worst.evidence_metric ? ", " + worst.evidence_metric : "") + ")" : "";
+          .sort((a, b) => statusRank(a.status) - statusRank(b.status))[0];
+        // RUN 44, SECTION 4.1 REQUIREMENT 3. The category status is the server's fusion of the
+        // two voting modules; this list is every module in service in the category. Nothing
+        // required the two to agree, so an Amber category could be offered a Green module as
+        // the driver of its Amber. A module that is BETTER than the severity it would be
+        // offered as the driver of is not a driver, and is not named.
+        const worstDesc = (worst && statusRank(worst.status) <= statusRank(c.status))
+          ? " (worst: " + worst.name + (worst.evidence_metric ? ", " + worst.evidence_metric : "") + ")"
+          : "";
         return c.num + " " + c.name + ": " + c.status + worstDesc;
       }).join("\n");
 

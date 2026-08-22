@@ -51,10 +51,15 @@ def check(name, ok, why, got=""):
 # regenerated from the live tree and evaluated against the successor's own identity, gate and
 # release records. The v25, v26 and v27 artefacts are untouched and remain the historical
 # evidence for those releases.
-SUCCESSOR_GATE = "run43_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN43_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN43_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN43_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 44. The successor is re-evaluated once more, for the repair of the four participant-facing
+# render defects Run 43J diagnosed. The gate is not edited to say PASS -- it is the same fifteen
+# blocker classes, regenerated from the live tree and evaluated against the successor's own
+# identity, gate and release records. The v25, v26, v27 and v28 artefacts are untouched and remain
+# the historical evidence for those releases.
+SUCCESSOR_GATE = "run44_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN44_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN44_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN44_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
@@ -126,7 +131,8 @@ check("run37.gate.predecessor_release_preserved",
 # recent one be quietly rewritten, which is the mutation this class of check exists to catch, so
 # every predecessor in the chain is checked and each must still record its OWN stamp.
 for _pred_file, _pred_stamp in (("RUN41_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v26"),
-                                ("RUN42_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v27")):
+                                ("RUN42_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v27"),
+                                ("RUN43_SUCCESSOR_FREEZE_RECORD.json", "sim-2026.08-v28")):
     _pr = ROOT / "research" / "freeze" / _pred_file
     check("run37.gate.immediate_predecessor_release_preserved",
           _pr.is_file()
@@ -166,15 +172,15 @@ if _record.is_file():
     check("run37.gate.no_self_reference",
           "PENDING_FINAL_COMMIT" not in _record.read_text(encoding="utf-8")
           and _rec.get("freeze_candidate_commit")
-          # RE-ANCHORED BY RUN 43. This named Run 41's candidate as the superseded one, which was
-          # right while v27 was the successor. Run 43 supersedes v27, so the record must now name
-          # RUN 42's candidate as its parent. Named explicitly rather than loosened to "any
-          # commit", because the point of the check is that the record cannot point at itself and
-          # cannot silently reparent.
+          # RE-ANCHORED BY RUN 44, on Run 43's own construction. Run 43 named RUN 42's candidate
+          # as the parent, which was right while v28 was the successor. Run 44 supersedes v28, so
+          # the record must now name RUN 43's candidate as its parent. Named explicitly rather
+          # than loosened to "any commit", because the point of the check is that the record
+          # cannot point at itself and cannot silently reparent.
           and _rec.get("freeze_candidate_commit")
-          != "07dccf774d34a0dc7536626b739d7a2fb94dfa4e"
+          != "4ad9f73b1b9d60af961e363b0d9542051928ebe1"
           and _rec.get("supersedes_candidate")
-          == "07dccf774d34a0dc7536626b739d7a2fb94dfa4e"
+          == "4ad9f73b1b9d60af961e363b0d9542051928ebe1"
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),
           "the record distinguishes freeze_candidate_commit, release_content_digest and "

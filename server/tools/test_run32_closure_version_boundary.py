@@ -126,13 +126,16 @@ check(bool(_old_stamps) and SIMULATION_VERSION_HISTORY[:len(_old_stamps)] == _ol
 # successor.
 # RESTATED BY RUN 43: v28 is Run 43's own single authorised append for the retirement of 38
 # modules from service.
+# RESTATED BY RUN 44: v29 is Run 44's own single authorised append for the repair of the four
+# participant-facing render defects Run 43J diagnosed.
 check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-2026.08-v21",
                                                        "sim-2026.08-v22", "sim-2026.08-v23",
                                                        "sim-2026.08-v24", "sim-2026.08-v25",
                                                        "sim-2026.08-v26",
                                                        "sim-2026.08-v27",
-                                                       "sim-2026.08-v28"),
-      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42 and 43 were each "
+                                                       "sim-2026.08-v28",
+                                                       "sim-2026.08-v29"),
+      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42, 43 and 44 were each "
       "authorised "
       "to add",
       str(SIMULATION_VERSION_HISTORY[len(_old_stamps):]))

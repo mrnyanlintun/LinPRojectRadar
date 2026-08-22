@@ -398,13 +398,17 @@ check(H[:len(_prev)] == _prev,
 # RESTATED BY RUN 42, same reasoning once more: v27 is Run 42's own single authorised append -
 # the successor that carries the per-field evidence provenance repair, which moves the stored
 # signal inputs and the qualification object and therefore cannot be made under the v26 stamp.
+# RESTATED BY RUN 44, same reasoning once more: v29 is Run 44's own single authorised append -
+# the repair of the four participant-facing render defects, which changes what a participant is
+# SHOWN and therefore cannot be made under the v28 stamp. Nothing is removed from this tuple.
 check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19",
                          "sim-2026.08-v20", "sim-2026.08-v21", "sim-2026.08-v22",
                          "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
-                         "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28"),
+                         "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28",
+                         "sim-2026.08-v29"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
       "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds, the "
-      "one Run 41 adds, the one Run 42 adds and the one Run 43 adds",
+      "one Run 41 adds, the one Run 42 adds, the one Run 43 adds and the one Run 44 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.
