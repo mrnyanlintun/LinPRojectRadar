@@ -13,4 +13,4 @@ B11,package or predecessor mutation,0,required = 0,rewritten predecessor package
 B12,browser qualification failure,0,required = 0,29 rows; failing: none,PASS
 B13,unresolved blocking Run-36 defect,0,required = 0,open instrument-level defects: none; target rows carrying one: none,PASS
 B14,unsupported final empirical-validation claim,0,required = 0,every one of the 100 rows records NOT_EMPIRICALLY_FIELD_VALIDATED; exceptions: none,PASS
-B15,candidate behaviour changed during the run,0,required = 0,first evaluation: behaviour digest recorded,PASS
+B15,candidate behaviour changed during the run,0,required = 0,behaviour digest reproduced identically: 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1,PASS

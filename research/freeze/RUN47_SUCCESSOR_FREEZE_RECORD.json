@@ -16,10 +16,10 @@
     "Run 47 built the check that would have caught it: where one document states both a value and the percentage that determines it against a known budget at completion, the two are compared and a difference above 2 per cent is reported as text on surfaces that already exist; sim-2026.08-v31.",
     "The v25, v26, v27, v28, v29 and v30 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "eba1ab88e3e186ea190e884f8eab5a5d7271a0b2",
-  "candidate_identity_digest": "201aa3663f4f336b31209b475079858eb67950444f0642dbf09e472da8cc7c51",
+  "freeze_candidate_commit": "0f46551d5c2d99e15a6a4d2f036938e823691b48",
+  "candidate_identity_digest": "486b474612f9748fa05de54f05f5ba18621c162487a4fd41164cd2dbdd882f22",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "3465a1f33a5dfb37960e097afef81a10a772fd4fa8e97ce7a8af45795538f61b",
+  "release_content_digest": "374c14435888888f3a82d76a8e2d5cb0fb20fbd22059c19a8b2098a206d2dc55",
   "release_content_digest_method": "sha256 over RUN47_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v31",
