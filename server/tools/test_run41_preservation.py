@@ -206,20 +206,20 @@ print("-" * 78)
 # v27 with v28 for the retirement of 38 modules from service. RESTATED AGAIN BY RUN 44, for the
 # third time and the same reason: Run 44 supersedes v28 with v29 for the participant-facing
 # render defects. What this section asserts is Run 41's boundary, which is untouched below.
-check(SIMULATION_VERSION == "sim-2026.08-v29", "the live stamp is Run 44's successor "
-      "sim-2026.08-v29", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v28",
-      "and it records v28, Run 43's stamp, as the stamp it supersedes",
+check(SIMULATION_VERSION == "sim-2026.08-v30", "the live stamp is Run 45's successor "
+      "sim-2026.08-v30", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v29",
+      "and it records v29, Run 44's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
       "the history is append-only and Run 41's boundary is preserved: v26 still directly "
       "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v29"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v28"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v27"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v26",
-      "and v27, v28 and v29 were appended after v26 rather than replacing it",
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v30"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v29"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v28"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v27",
+      "and v27, v28, v29 and v30 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")

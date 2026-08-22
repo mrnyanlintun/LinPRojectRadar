@@ -123,7 +123,7 @@ identity("run38 blocker count", "0", str(readiness["blocker_count"]),
 # RESTATED BY RUN 43, same reasoning again: the launch gate must track the instrument that will
 # actually be launched, which is now the Run-43 successor carrying the retirement of 38 modules
 # from service.
-identity("simulation", "sim-2026.08-v29", SIMULATION_VERSION,
+identity("simulation", "sim-2026.08-v30", SIMULATION_VERSION,
          "app.simulation.models.SIMULATION_VERSION (live code)")
 identity("v25 freeze record preserved", "sim-2026.08-v25", freeze["simulation_version"],
          "INSTRUMENT_FINAL_FREEZE_RECORD.json (the predecessor, not rewritten)")

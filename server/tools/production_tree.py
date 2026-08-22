@@ -391,9 +391,25 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: removed. The run43 manifest is NOT rewritten: it stays exactly as that release wrote it and
 #: this successor names it as its parent. The guard was observed reporting exactly those six
 #: files, and nothing else, before this manifest was written.
-PINNED = ROOT / "code_audit" / "run44_production_tree.sha256"
-#: The Run-43 manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 45. This moved again, from run44_production_tree.sha256 to the run45 file, on the same
+#: Run-34/35/41/42/43/44 precedent. Run 45 closes the period-scoping fall-through Run 44
+#: measured, and FOUR production files move: `server/app/field_registry.py` (the canonical
+#: IDENTITY/PERIOD/UNDETERMINED classification the owner signed off, and `retrieval_kind()`),
+#: `server/app/extraction_merge.py` (`select_signal_inputs` takes the earlier periods'
+#: identity observations and resolves them by the SAME per-field rule, which is what makes
+#: declared document-type precedence hold across periods; `docDate` still derives from the
+#: period's own observations alone), `server/app/documents.py`
+#: (`_identity_observations_before`, and the two selection sites that pass it) and
+#: `server/app/simulation/models.py` (the stamp advances to sim-2026.08-v30 with the boundary
+#: recorded). Nothing is added and nothing is removed, and no participant-facing control moved.
+#: The run44 manifest is NOT rewritten: it stays exactly as that release wrote it and this
+#: successor names it as its parent. The guard was observed reporting exactly those four files,
+#: and nothing else, before this manifest was written.
+PINNED = ROOT / "code_audit" / "run45_production_tree.sha256"
+#: The Run-44 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
+PINNED_RUN44 = ROOT / "code_audit" / "run44_production_tree.sha256"
+#: The Run-43 manifest, kept addressable for the same reason.
 PINNED_RUN43 = ROOT / "code_audit" / "run43_production_tree.sha256"
 #: The Run-42 manifest, kept addressable so a guard can prove the supersession is a real
 #: change and not a silent rewrite.

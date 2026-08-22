@@ -212,6 +212,93 @@ def writer_tier(field: str, doc_type: str) -> int:
     return WRITER_TIERS.get(field, {}).get(doc_type, DEFAULT_TIER)
 
 
+# --------------------------------------------------------------------------- retrieval kind
+#
+# RUN 45. THE CANONICAL CLASSIFICATION, DECIDED ONCE AND SIGNED OFF BY THE OWNER on the Run 45
+# §5.1 proposal (`code_audit/run45_field_classification_proposal.md`). The declaration each kind
+# was read off is quoted there, field by field, and is not restated here.
+#
+# THIS GOVERNS RETRIEVAL, NOT SELECTION, and the two must not be confused. `FIELD_KINDS` above
+# says how observations OF ONE FIELD resolve against EACH OTHER — register replace, event
+# ledger, permanence. This says which PERIODS' observations are eligible to be resolved at all:
+#
+#   * IDENTITY    — a fact about the project that holds until superseded. Retrieval returns the
+#                   latest value AT OR BEFORE the period being computed, so a contract uploaded
+#                   at period 1 is visible at periods 2 to 4. Declared document-type precedence
+#                   (WRITER_TIERS) holds ACROSS the carry-forward, which is what makes a contract
+#                   at period 1 beat a change order at period 2 for `baselineContractSum` — the
+#                   inversion Run 44 measured.
+#   * PERIOD      — a fact about one reporting period. Retrieval is the period's OWN documents
+#                   and nothing else, exactly as before Run 45. Absent in its period means
+#                   absent. Run 42's binding proof stands untouched for these.
+#   * UNDETERMINED — the declarations contradict each other and the owner has ruled that the
+#                   contradiction stands unresolved. Retrieved as PERIOD, which is today's
+#                   behaviour unchanged, and named here so the open question is visible rather
+#                   than buried in a default.
+#
+# SUPERSESSION INSIDE THE IDENTITY CLASS IS DOCUMENT DATE AND DECLARED PRECEDENCE, never upload
+# timestamp, filename or insertion order: carried observations go through the SAME `_snap_pick`
+# and `_perm_pick` Run 42 proved order independent, with no period term in either key.
+IDENTITY = "IDENTITY"
+PERIOD = "PERIOD"
+UNDETERMINED = "UNDETERMINED"
+
+#: THIRTEEN. Twelve from the §5.1 proposal as signed off, plus `originalContingency` by the
+#: owner's ruling 1.2, which splits the contingency pair: the ORIGINAL contingency is
+#: established at baseline and cannot meaningfully differ per period, while what REMAINS is
+#: exactly a per-period fact and stays PERIOD below. On the conflicting evidence the owner ruled
+#: `field_registry.py:56` the weaker, because it groups by document section and not by meaning.
+IDENTITY_FIELDS: frozenset[str] = frozenset({
+    # -- the contract's standing state ----------------------------------------------------
+    "bac", "baselineContractSum", "baselineEnd", "baselineStart", "revisedContractSum",
+    # -- the original contingency (ruling 1.2) ---------------------------------------------
+    "originalContingency",
+    # -- facts about OTHER, completed projects: a reference project's figures are not a fact
+    #    about this project's reporting period, and `historical_data` /
+    #    `past_performance_report` carry no as-of date at all (extraction_merge.py:544-546) --
+    "analogousBac", "analogousFinalCost", "analogousOverrunPct",
+    "overallRating", "scheduleRating", "costRating", "qualityRating",
+})
+
+#: TWO. Ruling 1.4: `field_registry.py:56` calls both a progress snapshot, while `:202` says
+#: `schedule_update` revises what `time_phased_schedule` ESTABLISHED — which is the same grammar
+#: `baselineEnd` was classified identity on. The contradiction is recorded rather than resolved.
+#: No module in service consumes either value, so the ambiguity costs nothing today. Retrieved
+#: as PERIOD, unchanged.
+UNDETERMINED_FIELDS: frozenset[str] = frozenset({"totalFloat", "consumedFloat"})
+
+#: SIXTY-TWO, and DERIVED rather than listed, so a new field added to FIELD_KINDS is a PERIOD
+#: field until someone classifies it deliberately — the safe default, because it is today's
+#: behaviour and changes nothing.
+#:
+#: RULING 1.3 lands here: `changeOrderCount` stays PERIOD, as today. KNOWN LIMITATION, recorded
+#: so a later session does not rediscover it — an EVENT-declared field ACCUMULATES and is
+#: strictly neither kind: nothing supersedes the population, and earlier periods' executed
+#: change orders have not stopped existing. The correct retrieval would be a third rule, a union
+#: at-or-before with latest-per-entity. That rule is NOT defined and is not needed today,
+#: because A4.6 abstains for want of exposure rather than for want of a count.
+PERIOD_FIELDS: frozenset[str] = (
+    frozenset(FIELD_KINDS) - IDENTITY_FIELDS - UNDETERMINED_FIELDS)
+
+# The three kinds partition the emittable vocabulary exactly. Asserted at import rather than
+# left to a suite, because a field that belongs to no kind would be retrieved by neither rule.
+assert IDENTITY_FIELDS <= frozenset(FIELD_KINDS)
+assert UNDETERMINED_FIELDS <= frozenset(FIELD_KINDS)
+assert not (IDENTITY_FIELDS & UNDETERMINED_FIELDS)
+assert (len(IDENTITY_FIELDS) + len(PERIOD_FIELDS) + len(UNDETERMINED_FIELDS)
+        == len(FIELD_KINDS))
+
+
+def retrieval_kind(field: str) -> str:
+    """IDENTITY, PERIOD or UNDETERMINED for one field. A name outside FIELD_KINDS is PERIOD:
+    it cannot be emitted, so it can never be carried forward either."""
+    if field in IDENTITY_FIELDS:
+        return IDENTITY
+    if field in UNDETERMINED_FIELDS:
+        return UNDETERMINED
+    return PERIOD
+
+
 # --------------------------------------------------------------------------- needs
 #
 # Layer 3: what the analytical layer needs, in shapes. The assembler serves these; a

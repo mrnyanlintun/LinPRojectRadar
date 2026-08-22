@@ -528,12 +528,44 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # order at Run 44 section 4.4. The blocker was reconciled to the true bytes; it was not
 # disabled, weakened or widened.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v29"
+# -------------------------------------------------------------------------------------------
+# RUN 45, sim-2026.08-v30: RETRIEVAL BY FIELD KIND. THE PERIOD-SCOPING FALL-THROUGH IS CLOSED.
+#
+# WHAT MOVED, AND IT IS IN RETRIEVAL, NOT IN ANY FORMULA. Every observation was scoped to the
+# period its document was uploaded into (`documents._period_documents`), which is right for a
+# fact about one reporting period and wrong for a fact about the project. A contract uploaded at
+# period 1 was invisible from period 2 on, so `bac` fell through to a pay application's weaker
+# restatement -- Run 44 measured 4,463,290 where the contract said 5,874,620 -- and
+# `baselineContractSum` INVERTED its own declared precedence, a change order's account of the
+# original beating the contract that established it.
+#
+# Fields are now divided into two canonical kinds, decided once and signed off by the owner
+# (`code_audit/run45_field_classification_proposal.md`; the ruling is recorded in the Run 45
+# report). IDENTITY fields retrieve the latest value AT OR BEFORE the period being computed,
+# with declared document-type precedence holding ACROSS the carry-forward. PERIOD fields
+# retrieve exactly as before: the period's own documents and nothing else. Thirteen fields are
+# identity, sixty-two period, and two -- `totalFloat` and `consumedFloat` -- are recorded
+# UNDETERMINED because their declarations contradict each other and the owner ruled the
+# contradiction stands; they are retrieved as period fields, which is the unchanged behaviour.
+#
+# WHAT DID NOT MOVE. No formula, no band, no threshold, no voting set: voting is still exactly
+# A1.7 and A1.8, 63 modules in service of 101 registered, Group C still does not contribute to
+# project status. PERIOD-FIELD RETRIEVAL IS BYTE-IDENTICAL -- a period field absent in its
+# period is still absent, and Run 42's upload-order proof is re-run under the new retrieval and
+# holds for both kinds. `docDate` is still derived from the period's OWN observations, so a
+# carried figure cannot date a period.
+#
+# THE CENSUS. On the repository fixtures, exactly three modules move, all on the corpus that has
+# something to carry: A1.7 and A1.8 because `bac` is newly visible, and A3.2 because
+# `originalContingency` is. The single-period and the four-monthly-report corpora are byte-
+# identical before and after, which is the control on the period-field claim.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v30"
 
 #: THE LINE RUN 42 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v28"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v29"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -546,6 +578,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v18", "sim-2026.08-v19", "sim-2026.08-v20", "sim-2026.08-v21",
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
+    "sim-2026.08-v30",
 )
 
 

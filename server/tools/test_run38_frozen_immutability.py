@@ -242,10 +242,24 @@ RUN44_AUTHORISED_SUCCESSOR_CHANGES = {
     "assets/css/radar.css",      # one added rule for the computed mark
     "server/app/simulation/registry.py",   # a DOCSTRING only; the function body is untouched
 }
+# RESTATED BY RUN 45, AND THE SAME DISCIPLINE AGAIN. Run 45 closes the period-scoping
+# fall-through Run 44 measured: identity fields now retrieve the latest value at or before the
+# period being computed, with declared document-type precedence holding across the carry-forward,
+# so a contract uploaded at period 1 is no longer invisible at period 2. WHAT A MODULE IS GIVEN
+# is executable behaviour, so it is a freeze SUCCESSOR (sim-2026.08-v30) rather than a violation
+# of this guard. ONE file needs naming here: `server/app/field_registry.py`, which carries the
+# classification. `extraction_merge.py`, `documents.py` and `models.py` are already named by
+# Run 41's or Run 42's set above, and no path is named twice. NO PARTICIPANT-FACING CONTROL
+# MOVED and no sequence-bearing file moved. Period-field retrieval is unchanged, which the
+# Run-45 census proves on two control corpora that are byte-identical before and after.
+RUN45_AUTHORISED_SUCCESSOR_CHANGES = {
+    "server/app/field_registry.py",   # the canonical IDENTITY/PERIOD classification itself
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN43_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN44_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN44_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN45_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -275,8 +289,8 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v29",
-      "and the live simulation version is the Run-44 successor sim-2026.08-v29",
+check(SIMULATION_VERSION == "sim-2026.08-v30",
+      "and the live simulation version is the Run-45 successor sim-2026.08-v30",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that

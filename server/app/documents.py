@@ -63,6 +63,7 @@ from .extraction_fields import UNMAPPED, is_mapped
 from .extraction_merge import (
     assembly_report, document_as_of, emit_observations, select_signal_inputs,
 )
+from .field_registry import IDENTITY_FIELDS
 from .jdrive_tree import (
     CLASS_ANALYSED, CLASS_FILED, CLASS_REFERENCE, FILING_CLASS_LABELS, needs_review,
     reference_kind, resolve_destination,
@@ -389,6 +390,42 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
                     # observation this document emits (`revision_of`).
                     "supersedes": supersedes})
     return out
+
+
+def _identity_observations_before(session: Session, project: Project,
+                                  period: int) -> list[dict]:
+    """
+    The IDENTITY-field observations this project's EARLIER periods carry.
+
+    RUN 45. `_period_documents` scopes retrieval to the upload period, which is right for a fact
+    about one reporting period and wrong for a fact about the project: a contract uploaded at
+    period 1 was invisible from period 2 on, and the contract sum fell through to whatever
+    weaker writer the later period happened to hold. This supplies what the later period is
+    entitled to see, and `select_signal_inputs` decides what to do with it.
+
+    WHY IT REUSES `_period_documents` PER EARLIER PERIOD rather than widening its query: that
+    helper already excludes documents a later upload superseded, deduplicates by content hash,
+    and is the shape every determinism guarantee since B7b was written against. Supersession is
+    a per-(project, period) fact, so asking it per period is what keeps a revision in period 2
+    from resurrecting the document it replaced.
+
+    ONLY EARLIER PERIODS. The period being computed is never re-read here — its own documents
+    reach selection by the ordinary route, and reading them twice would put two copies of every
+    observation into one group. Filtering to IDENTITY_FIELDS happens in `select_signal_inputs`,
+    which is the one place the classification is applied, but it is applied here too so a period
+    field is never even carried into the pure layer.
+    """
+    earlier = session.scalars(
+        select(DocumentUpload.period)
+        .where(DocumentUpload.project_id == project.id, DocumentUpload.period < period)
+        .distinct()
+    ).all()
+    carried: list[dict] = []
+    for p in sorted({int(x) for x in earlier if x is not None}):
+        for d in _period_documents(session, project, p):
+            carried.extend(o for o in emit_observations(d)
+                           if str(o.get("field")) in IDENTITY_FIELDS)
+    return carried
 
 
 _IDENTIFIER_RE = re.compile(
@@ -1228,7 +1265,11 @@ def _compute_and_store(session: Session, project: Project, period: int,
     observations: list[dict] = []
     for d in documents:
         observations.extend(emit_observations(d))
-    si = select_signal_inputs(observations, cutoff)
+    # RUN 45. Identity fields resolve at or before the period being computed; period fields
+    # resolve exactly as before. `documents` — and therefore `source_documents`, the staleness
+    # fingerprint and the evidence table — remains the PERIOD's own set, unchanged.
+    si = select_signal_inputs(observations, cutoff,
+                              carried=_identity_observations_before(session, project, period))
 
     # D1. One input the analytical layer reads that the pure merge cannot produce, because it is
     # not a property of this period's documents: the project's event log. It is added here rather
@@ -2241,7 +2282,11 @@ def a_extractsignals(session: Session, payload: dict, secret: str, ttl: int) -> 
         observations: list[dict] = []
         for d in period_docs:
             observations.extend(emit_observations(d))
-        signal_inputs = select_signal_inputs(observations, _derive_cutoff(period_docs, None))
+        signal_inputs = select_signal_inputs(
+            observations, _derive_cutoff(period_docs, None),
+            # RUN 45. The same retrieval the compute path runs, so this display cannot show a
+            # figure the computation would not have used.
+            carried=_identity_observations_before(session, project, resp["period"]))
     except Exception as exc:  # noqa: BLE001 — display only; the document is already stored
         log.warning("extractsignals could not assemble signalInputs for display: %s", exc)
 

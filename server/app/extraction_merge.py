@@ -71,7 +71,8 @@ from typing import Any
 
 from .extraction_fields import UNMAPPED, canonical_doc_type, is_mapped
 from .field_registry import (
-    DELTA, EVENT, FIELD_KINDS, NEEDS, PERMANENT, SNAPSHOT, UNEMITTABLE_FIELDS, writer_tier,
+    DELTA, EVENT, FIELD_KINDS, IDENTITY_FIELDS, NEEDS, PERMANENT, SNAPSHOT, UNEMITTABLE_FIELDS,
+    writer_tier,
 )
 
 __all__ = [
@@ -894,21 +895,43 @@ def _source_entry(w: dict) -> dict:
     return entry
 
 
-def select_signal_inputs(observations: list[dict], cutoff: date | None = None) -> dict:
+def select_signal_inputs(observations: list[dict], cutoff: date | None = None, *,
+                         carried: list[dict] | None = None) -> dict:
     """The flat ``signalInputs`` dict, selected from observations at a cutoff. Pure.
 
     Every selection is ``as_of <= cutoff`` (undated observations pass — refusing them would
     silently blank most fields; D3 remains the open item it was). Recomputing an earlier
     period with its stored cutoff therefore reproduces it even after later-dated evidence
     arrives.
+
+    RUN 45. ``carried`` is the observation set the project's EARLIER periods hold, supplied by
+    the caller because only the caller knows what a project or a period is — this function
+    stays pure and knows neither. Only IDENTITY-classified fields are taken from it
+    (``field_registry.IDENTITY_FIELDS``), so a period field cannot carry forward however a
+    caller fills the argument, and the default of None reproduces the pre-Run-45 selection
+    exactly. Carried observations are resolved by the SAME per-field rule as the period's own,
+    which is what makes declared document-type precedence hold ACROSS periods: a contract's
+    tier-0 ``baselineContractSum`` from period 1 beats a change order's tier-1 account of it in
+    period 2, and no period term enters ``_snap_pick``'s key, so the result stays order
+    independent in the sense Run 42 proved.
+
+    ``docDate`` is DELIBERATELY derived from the period's own observations only. It answers "as
+    of when does this period speak", and a carried contract from an earlier period must not be
+    able to date it — least of all in a period whose own documents are undated, where it would
+    otherwise move a date that is currently absent.
     """
     eligible = [
         o for o in observations
         if cutoff is None or o.get("as_of") is None or o["as_of"] <= cutoff
     ]
+    carried_eligible = [
+        o for o in (carried or [])
+        if str(o.get("field")) in IDENTITY_FIELDS
+        and (cutoff is None or o.get("as_of") is None or o["as_of"] <= cutoff)
+    ]
 
     by_field: dict[str, list[dict]] = {}
-    for o in eligible:
+    for o in eligible + carried_eligible:
         by_field.setdefault(str(o["field"]), []).append(o)
 
     si: dict[str, Any] = {k: None for k in _KEY_ORDER}
