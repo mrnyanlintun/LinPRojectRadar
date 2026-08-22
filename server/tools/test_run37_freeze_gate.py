@@ -177,15 +177,15 @@ if _record.is_file():
     check("run37.gate.no_self_reference",
           "PENDING_FINAL_COMMIT" not in _record.read_text(encoding="utf-8")
           and _rec.get("freeze_candidate_commit")
-          # RE-ANCHORED BY RUN 44, on Run 43's own construction. Run 43 named RUN 42's candidate
-          # as the parent, which was right while v28 was the successor. Run 44 supersedes v28, so
-          # the record must now name RUN 43's candidate as its parent. Named explicitly rather
-          # than loosened to "any commit", because the point of the check is that the record
-          # cannot point at itself and cannot silently reparent.
+          # RE-ANCHORED BY RUN 45, on Run 44's own construction, which was Run 43's. Each
+          # successor must name its IMMEDIATE predecessor's candidate as its parent: Run 44
+          # named Run 43's, and Run 45 supersedes v29, so the record must now name RUN 44's
+          # candidate. Named explicitly rather than loosened to "any commit", because the point
+          # of the check is that the record cannot point at itself and cannot silently reparent.
           and _rec.get("freeze_candidate_commit")
-          != "4ad9f73b1b9d60af961e363b0d9542051928ebe1"
+          != "e6889ad5e84446db7b664e794f4c6013146f3913"
           and _rec.get("supersedes_candidate")
-          == "4ad9f73b1b9d60af961e363b0d9542051928ebe1"
+          == "e6889ad5e84446db7b664e794f4c6013146f3913"
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),
           "the record distinguishes freeze_candidate_commit, release_content_digest and "
