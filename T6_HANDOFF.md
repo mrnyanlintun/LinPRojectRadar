@@ -12744,3 +12744,73 @@ that range over all 63 in service.
 
 **Phase J was NOT begun.** The section 2 gate is satisfied on all four conditions, but the session's
 working budget was exhausted by Phase H. No Phase J file exists and no Phase J finding is claimed.
+
+---
+
+## Run 44 — the participant-facing render defects, gated and merged (2026-08-22)
+
+**Merged to `main`. `sim-2026.08-v29`. `og-participant-2026.08-v15`. 189 suites,
+14,280 / 14,280, 0 red, 0 aborting. Successor freeze gate 32/32, 0 of 15 blocker classes blocked.
+Browser verification 19/19. No stop condition fired.**
+
+Full account: `REPORT_2026-08-22_run44_participant_defect_fixes.md`.
+
+**What was repaired, and where the defects were.** Four of the seven defects Run 43J classified F,
+plus one stale docstring. **Every one is at the render. Storage was correct in all of them and was
+not touched.**
+
+- Two capitalised-only severity `order` maps on the project detail page became ONE shared
+  case-insensitive rank. The platform emits both casings — `A1.2` stores lowercase `'green'` — and
+  a key miss fell through to the unknown rank, which is MORE ADVERSE than Green, so a module whose
+  only irregularity was its capitalisation was selected as its category's worst ahead of two
+  properly-cased Green ones.
+- No surface now names a module as the driver of a severity better than its own. Where no module in
+  a category is as adverse as the category, the expandable detail says so in words.
+- An absent document-risk score is stored PRESENT AND NULL by design and `Number(null)` is 0 and
+  finite, so it rendered `0.00` Green into the Executive Brief's key drivers. Absent now renders as
+  absent; a genuine stored zero still renders as zero, and the two are each other's control.
+- CPI and SPI are computed and carried no source record, yet were stamped "extracted". Both now say
+  computed, on the panel and in the upload result line.
+- `available_modules()`'s docstring described the refusal Phase F withdrew.
+
+**Counts, all derived, none written down:** registry **101**, in service **63**, computed **62**,
+voting exactly **A1.7 and A1.8**, Group D in service **0**. Unchanged by this run and asserted so.
+
+**Five operational notes for whoever runs next.**
+
+- **The six `SEQUENCE_BEARING_FILES` are no longer all byte-identical across successors.**
+  `assets/js/deepdive.js` moved once, under the owner's order at Run 44 section 4.4. Four guards
+  had to learn that, and every one of them NAMES the single exception
+  (`participant_packages.V14_TO_V15_SEQUENCE_EXCEPTION`) rather than being widened: a second file
+  moving, or a different one, is still red. Do not treat this as a class allowance without a fresh
+  order.
+- **The client files are IIFEs with no export surface, and there is now a way to test their real
+  bytes.** `test_run44_participant_defect_fixes.py` reads each shipped file and inserts ONE line
+  naming the internals to expose immediately before the file's own `})();`, then evaluates it in a
+  node VM with a stubbed window. The bodies executed are the bodies the browser executes. Nothing
+  is transcribed, so a check cannot drift from its subject.
+- **A fusion check that hands `fuse_signals` a dict of the wrong shape measures NOTHING.** Signals
+  reach it as `sig.get("lineage")`, not `"lineage_record"`; the wrong key sends every signal down
+  the unresolved arm, which reports the worst input band BY CONSTRUCTION and passes a monotonicity
+  check without testing anything. Go through `qualify(...) -> fuse_qualified -> fuse_signals`, the
+  route `compute.py:118` takes, and assert that the combination was actually entered.
+- **The full suite still rewrites 18 committed audit artifacts**, one of them
+  `server/tools/run17/coverage.csv`, **outside `code_audit/`**. Restore all 18; commit none.
+- **The stamp cycle is unchanged and the order still matters.** Commit every production and suite
+  edit first; then set `CANDIDATE` in `build_run37_acceptance.py` to that commit; then run
+  `build_run44_candidate_identity.py`, `build_run37_acceptance.py`,
+  `build_run44_successor_release.py` in that order; then commit only `research/freeze/`, which no
+  identity group measures. A late edit to any `test_*.py` moves `test_suite_identity` and sends B01
+  chasing its own tail — that happened once in this run and cost a re-mint.
+
+**Three things Run 44 did NOT do, and the reason for each.**
+1. **The CPI defect was not guessed at.** It is one of six questions Run 43J classified G, and all
+   six need read access to PRJ-001's stored rows, which is out of scope.
+2. **The `bac` period-scoping fall-through was established and reported, not fixed** — section 4.6
+   is report-only. It is reachable, five document types can supply a contract sum, and **sixteen**
+   multi-writer fields carry the same exposure, not one. `baselineContractSum` is the sharpest: at
+   every period after the contract's own, a change order's account of the original baseline wins,
+   against the field registry's own declared precedence.
+3. **Four status comparisons remain case-sensitive.** Each is correct for its population today,
+   and two of them are in `decision.js`, a sequence-bearing file this run was not authorised to
+   move.

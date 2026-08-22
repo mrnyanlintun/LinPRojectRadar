@@ -625,3 +625,34 @@ verified, then reverted: `deepdive.js` is one of the six `SEQUENCE_BEARING_FILES
 participant-package record since v10 and the freeze gate's B04 blocker assert those six are
 byte-identical across a successor. Correcting a sentence is not a reason to move the participant
 sequence without the owner saying so.
+
+---
+
+## Addendum — Run 44, 2026-08-22. Two consequences of the retirement, corrected on the surfaces.
+
+**Nothing in this addendum revises a retirement decision. All 38 stand, all 38 keep their registry
+entry, their formula function and their audit lineage, and `run_module()` on every one of the 101
+registered identifiers returns output byte-identical to `sim-2026.08-v28`** — measured by executing
+the v28 line and the v29 line side by side on a full and a starved evidence package, and proved
+failable by perturbing one module's own input and observing that module, and only that module,
+diverge.
+
+**The two decisions Run 43H left open for the owner are both closed, by the owner's order of
+2026-08-22.**
+
+1. **The Portfolio Health flyout's reason sentence.** After the Group D offload no number of
+   projects makes the panel compute, yet it told a participant it needed at least three. The owner
+   ordered it corrected, accepting a participant-package successor that moves ONE sequence-bearing
+   file. `og-participant-2026.08-v15` is that successor, and it is the first record since v10 that
+   cannot say the six sequence-bearing files are byte-identical. It says so instead, and the
+   exception is declared by name in `participant_packages.V14_TO_V15_SEQUENCE_EXCEPTION` so a
+   second file moving is still a failure. The correction is the `cat8Retired()` predicate Run 43H
+   wrote and reverted, DERIVED from the taxonomy the page loaded: reinstating a Portfolio Level
+   module restores the old sentence with no edit to that file.
+2. **`available_modules()`'s stale docstring.** It described the retirement-reason refusal Phase F
+   withdrew. Corrected under this stamp. The function body is untouched.
+
+**One further retirement consequence was found and reported rather than acted on.** Group D is
+retired from service, so `signals.js:535` `portfolioVector` — which defaults an absent document
+risk to zero, the same class of defect Run 44 repaired elsewhere — now feeds nothing at all. It is
+left in place and recorded in the Run 44 report's incidental findings.
