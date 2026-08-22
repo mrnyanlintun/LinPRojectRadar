@@ -102,13 +102,21 @@ FREEZE = ROOT / "research" / "freeze"
 # run47_freeze_candidate_identity.json, run47_successor_freeze_gate.csv,
 # run47_candidate_behaviour_digest.json and the v31 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v31.
-PREDECESSOR_CANDIDATE = "0f46551d5c2d99e15a6a4d2f036938e823691b48"
-PREDECESSOR_VERSION = "sim-2026.08-v31"
-CANDIDATE = "e3d1b698b4797bb0fad4bde413317e56ecfd2398"
-EXPECTED_VERSION = "sim-2026.08-v32"
-IDENTITY_FILE = "run48_freeze_candidate_identity.json"
-GATE_FILE = "run48_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run48_candidate_behaviour_digest.json"
+# RESTATED BY RUN 49, and the reasoning is unchanged again. Run 49 finishes the naming
+# correction across every surviving rendered instance the Run-48 sweep enumerated and extends the
+# deep-dive panel label map to every key the call sites pass, on the owner's five rulings of
+# 2026-08-22. WHAT A PARTICIPANT READS is part of the frozen candidate, so the freeze is
+# SUPERSEDED rather than amended. The Run-48 artefacts are NOT rewritten:
+# run48_freeze_candidate_identity.json, run48_successor_freeze_gate.csv,
+# run48_candidate_behaviour_digest.json and the v32 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v32.
+PREDECESSOR_CANDIDATE = "e3d1b698b4797bb0fad4bde413317e56ecfd2398"
+PREDECESSOR_VERSION = "sim-2026.08-v32"
+CANDIDATE = "751d48109004cfa4f5648bc726f74e931192da2b"
+EXPECTED_VERSION = "sim-2026.08-v33"
+IDENTITY_FILE = "run49_freeze_candidate_identity.json"
+GATE_FILE = "run49_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run49_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 

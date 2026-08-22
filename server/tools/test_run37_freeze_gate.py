@@ -70,10 +70,14 @@ def check(name, ok, why, got=""):
 # blocker classes, regenerated from the live tree and evaluated against the successor's own
 # identity, gate and release records. The v25, v26, v27, v28, v29, v30 and v31 artefacts are
 # untouched and remain the historical evidence for those releases.
-SUCCESSOR_GATE = "run48_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN48_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN48_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN48_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 49. The successor is re-evaluated once more, for the completion of the naming correction.
+# The gate is not edited to say PASS -- it is the same fifteen blocker classes, regenerated from
+# the live tree and evaluated against the successor's own identity, gate and release records. The
+# v25 to v32 artefacts are untouched and remain the historical evidence for those releases.
+SUCCESSOR_GATE = "run49_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN49_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN49_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN49_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
