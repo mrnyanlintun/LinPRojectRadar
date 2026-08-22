@@ -17,10 +17,10 @@
     "Run 48 made the project detail page read the CURRENT period rather than the hard-coded period 1, and corrected the live instances of the retired naming scheme; sim-2026.08-v32.",
     "The v25, v26, v27, v28, v29, v30 and v31 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "57c66f5cce3bc44fa45ea7afcdbcf1155d13b231",
-  "candidate_identity_digest": "8328cd0103566e645b094372a0f0b86a169c7c83414626531e6286f4b3168a94",
+  "freeze_candidate_commit": "e3d1b698b4797bb0fad4bde413317e56ecfd2398",
+  "candidate_identity_digest": "3d1bdd938eb2ba1b3e2c9b08c895e4328295c630cf84a36b270b18e0bead2637",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "ff37879c68bd703192bf6adae3cc8273afab800ac7f5d094c498ebdadef988ed",
+  "release_content_digest": "2e168123aad53f11bd77bac9f699adfe073fcabd249f348b0ee671374f1bb2ac",
   "release_content_digest_method": "sha256 over RUN48_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v32",
