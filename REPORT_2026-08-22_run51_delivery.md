@@ -741,14 +741,18 @@ Three further `code_audit/run37_*.csv` files are rewritten by `build_run37_accep
 is run without `--out-audit`; they were restored the same way and **none was committed** either.
 `git status --porcelain` at the end of the run reports the report file and nothing else.
 
-**Three mints were paid, exactly as §8.1 warned.** Run 49 paid three for the same reason and this
-run paid three: (1) the identity was minted at the branch's first commit and B01 read a dirty
-tree, so the change set had to be committed first; (2) the identity was re-minted at that commit,
-the gate and release rebuilt, and committed; (3) `test_run2_fifteen_defects.py`'s byte guard —
-runnable only against the new manifests — caught the `detail.js:1840` parser regression, which
-moved `detail.js` and `signals.js` again and forced a third mint. **Two of the three
-reconciliations were discoverable only by running the full suite against the new manifests, which
-is precisely what §8.1 predicted.**
+**FOUR mints were paid, one more than §8.1 warned of, and the reason is stated rather than
+rounded down.** Run 49 paid three; this run paid four. **(1)** The identity was minted at the
+branch's first commit and B01 read a dirty tree, so the whole change set had to be committed
+first. **(2)** The identity was re-minted at that commit, the gate and release rebuilt, and
+committed. **(3)** `test_run2_fifteen_defects.py`'s byte guard — runnable only against the new
+manifests — caught the `detail.js:1840` parser regression, which moved `detail.js` and
+`signals.js` again. **(4)** The final full-suite run turned `test_run38_frozen_immutability.py`
+and `test_run39_frozen_immutability.py` red on their PERMITTED-MODIFICATION sets, which no
+earlier standalone run had exercised in that combination; reconciling them moved two suite files,
+and the suite identity digest covers every `test_*.py`, so the candidate had to be re-minted a
+fourth time. **Three of the four reconciliations were discoverable only by running the full suite
+against the new manifests, which is precisely what §8.1 predicted.**
 
 **The pinned guards reconciled, and every one to TRUE bytes, none widened:**
 `code_audit/run51_participant_package_v19_checksums.sha256` (new, 70 files),

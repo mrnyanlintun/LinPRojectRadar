@@ -14,7 +14,7 @@
 **Report:** `REPORT_2026-08-22_run51_delivery.md`.
 **Branch:** `run51-delivery`, rooted at `ad4f614`, **merged to `main` with `--no-ff`**.
 **Stamp:** `sim-2026.08-v34`. **Package:** `og-participant-2026.08-v19`.
-**193 suites, all green.** Freeze gate **15 blocker classes, 0 blocked; suite 34/34**.
+**193 suites, 14,649/14,649, 0 red.** Freeze gate **15 blocker classes, 0 blocked; suite 34/34**.
 **Behaviour digest UNCHANGED at `8fb4d366...`.**
 
 ## WHAT MOVED, AND IT IS TWENTY-THREE PARTICIPANT-VISIBLE FILES INCLUDING ALL SIX SEQUENCE-BEARING
@@ -53,10 +53,10 @@ Every count of modules or categories on a served page now derives from `registry
 5. **A reachable control on `research/deepdive.html` has a dead handler:** `see Health ->` calls
    `LinIngest.openHealthModal()`, which does not exist. NOT removed -- removing a reachable
    control is a run-level halt. It needs the owner's ruling.
-6. **Three mints again**, as Run 49 predicted: two reconciliations were discoverable only by
-   running the full suite against the new manifests. The third caught a real regression -- the
+6. **FOUR mints**, one more than Run 49's three: THREE reconciliations were discoverable only by
+   running the FULL SUITE against the new manifests. One of them caught a real regression -- the
    blanket dash sweep clobbered `detail.js:1840`, a PARSER over model-produced text. Reverted and
-   recorded as stop condition 9.3.
+   recorded as stop condition 9.3. Budget for four next time.
 
 ---
 
