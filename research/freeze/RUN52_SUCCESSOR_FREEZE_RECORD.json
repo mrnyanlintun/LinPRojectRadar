@@ -21,10 +21,10 @@
     "Run 52 removed the dead see-Health button and moved the module identifier to one name on both sides of the wire, module_id, and STOPPED ruling 1 under section 8.1 after establishing by execution that Manage does not reach the project detail page; sim-2026.08-v35.",
     "The v25 to v34 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "1e561f9b6af086e8669d33583aeca4d486bb28c5",
-  "candidate_identity_digest": "f356874e279f70cf6a1de86e05b3824d2f7b496a6cb2f33f22d8c30dab63c63d",
+  "freeze_candidate_commit": "d236a2706a801cad8547ba34d68b0dc83521ff52",
+  "candidate_identity_digest": "f9dbaa8c26314a876ecd6e9c597d5008ec13f94a1e7e2317784266d276bff7fe",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "1a259de6ecaf065d31dfc40175ed187385f0d9eb2d407c3b613a6967ef9b4f13",
+  "release_content_digest": "89e4421a164ed4c7135b30edeeb3611a6d76607040cff27f8fc8095f70820265",
   "release_content_digest_method": "sha256 over RUN52_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v35",
