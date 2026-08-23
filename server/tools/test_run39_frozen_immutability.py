@@ -521,6 +521,56 @@ PERMITTED_MODIFICATIONS = {
     # five. Not executable production or client code, and not named by the freeze checksum
     # manifest.
     "server/tools/test_run36_fault_guards.py",
+} | {
+    # RUN 54, PHASE A: THE CAMPAIGN-SAFETY GUARD. Every fault campaign in the repository -- 39 of
+    # them, 35 in server/tools and 4 in server/tests -- is armed with the start-AND-end dirty-tree
+    # guard, and the suite runner now fails when a suite leaves production or client source dirty.
+    # The authority is the owner's section 7 of the Run 54 order. Each file is NAMED here rather
+    # than admitted by widening the rule, on exactly the Run-41 / Run-43 / Run-44 construction
+    # above, so the check keeps its full force over everything else. NOT ONE is executable
+    # production or client code, not one is named by the freeze checksum manifest, and not one is
+    # inside a frozen surface -- all three asserted separately above and below. server/tools/
+    # campaign_safety.py itself is an ADDITION, not a modification, and needs no entry.
+    "server/run_all_suites.sh",
+    "server/tests/test_run33_ph1_fault_campaign.py",
+    "server/tests/test_run34_count_fault_campaign.py",
+    "server/tests/test_run34_fault_campaign.py",
+    "server/tests/test_run34_provenance_fault_campaign.py",
+    "server/tools/drive_run26_faults.py",
+    "server/tools/run20_cycle12_cycle3_fault_battery.py",
+    "server/tools/run22_guard_mutation_campaign.py",
+    "server/tools/run26_fault_campaign.py",
+    "server/tools/run27_fault_campaign.py",
+    "server/tools/run28_closure_fault_campaign.py",
+    "server/tools/run28_fault_campaign.py",
+    "server/tools/run31_full_fault_campaign.py",
+    "server/tools/run31_pass2_targeted_faults.py",
+    "server/tools/run31_synthetic_scope_faults.py",
+    "server/tools/run32_b3_fault_campaign.py",
+    "server/tools/run32_closure_fault_campaign.py",
+    "server/tools/run32_fault_campaign.py",
+    "server/tools/run32_qualifier_count_fault_campaign.py",
+    "server/tools/run32_qualifier_fault_campaign.py",
+    "server/tools/run35_closure_fault_campaign.py",
+    "server/tools/run35_fault_campaign.py",
+    "server/tools/run36_closure_fault_campaign.py",
+    "server/tools/run36_fault_campaign.py",
+    "server/tools/run37_documentation_scope_campaign.py",
+    "server/tools/run37_freeze_gate_campaign.py",
+    "server/tools/run38_fault_campaign.py",
+    "server/tools/run39_fault_campaign.py",
+    "server/tools/run41_fault_campaign.py",
+    "server/tools/run51_injection_campaign.py",
+    "server/tools/run52_injection_campaign.py",
+    "server/tools/test_run20_cycle12_fault_evidence.py",
+    "server/tools/test_run29_fault_campaign.py",
+    "server/tools/test_run33_ph1_fault_campaign.py",
+    "server/tools/test_run33_portfolio_fault_injection.py",
+    "server/tools/test_run34_count_fault_campaign.py",
+    "server/tools/test_run34_fault_campaign.py",
+    "server/tools/test_run34_provenance_fault_campaign.py",
+    "server/tools/test_run36_fault_guards.py",
+    "server/tools/test_run41_fault_campaign.py",
 }
 run39 = [ln.split("\t", 1) for ln in diff_committed(RUN38_READY).splitlines() if ln]
 in_frozen = [p for st, p in run39

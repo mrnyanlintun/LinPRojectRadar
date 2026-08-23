@@ -86,7 +86,16 @@ class CampaignTreeDirty(RuntimeError):
 
 
 def _rel(root: pathlib.Path, p) -> str:
+    """Repo-relative POSIX path.
+
+    A RELATIVE input is already repo-relative and is returned as-is. It must NOT be resolved:
+    `Path("server/app/documents.py").resolve()` resolves against the CWD, and campaigns run from
+    `server/tools`, so resolving turned every relative target into
+    `server/tools/server/app/documents.py`. Caught by execution, not by reading.
+    """
     p = pathlib.Path(p)
+    if not p.is_absolute():
+        return p.as_posix()
     try:
         return p.resolve().relative_to(pathlib.Path(root).resolve()).as_posix()
     except ValueError:
@@ -262,14 +271,26 @@ def snapshot_text(root, relpath, encoding="utf-8") -> str:
     with a legitimate reason to run against a modified file must say so explicitly by calling
     `pathlib.Path.read_text` itself and recording why, per section 14.2.
     """
-    p = pathlib.Path(root) / _rel(root, relpath)
+    rel = _rel(root, relpath)
+    p = pathlib.Path(root) / rel
     disk = p.read_text(encoding=encoding)
     at_head = head_text(root, relpath, encoding=encoding)
-    if disk != at_head:
+    if disk == at_head:
+        return at_head
+    if rel.startswith(PRODUCTION_PREFIXES) or rel.startswith("server/"):
+        # THE LEAK CLASS. Every guard Run 52 found neutered was here. Refuse, always.
         raise CampaignTreeDirty(
-            f"{_rel(root, relpath)} differs from HEAD. Refusing to snapshot the working tree: "
-            "that is how a leaked fault gets cemented and certified. Restore the file first.")
-    return at_head
+            f"{rel} differs from HEAD. Refusing to snapshot the working tree: that is how a "
+            "leaked fault gets cemented and certified. Restore the file first.")
+    # A REGENERABLE AUDIT ARTIFACT, not source. `server/run_all_suites.sh` legitimately leaves
+    # roughly two dozen of these rewritten by the time a late campaign runs -- Run 52 counted 26
+    # -- and refusing on them would make the campaigns unrunnable inside their own runner while
+    # protecting nothing: a fault injection lands in server/app, assets or research, never in a
+    # generated CSV, and each of these is rebuilt by its own generator. Fall back to the working
+    # tree, and SAY SO, at every occurrence, so the fallback can never be silent.
+    print(f"  SNAPSHOT FROM DISK (not HEAD): {rel} -- a regenerable artifact already rewritten "
+          f"in this pass. Not the leak class; see server/tools/campaign_safety.py.")
+    return disk
 
 
 @contextlib.contextmanager
