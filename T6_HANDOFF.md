@@ -81,13 +81,20 @@ fixture upload timestamps, because the two captures built their fixtures two min
    joined to `s09`..`s18`. Registry module identifiers are `A1.7`, `B4.2`. Calling it `module_id`
    would assert an identity it does not have. A comment at the site records the stop.
 
-## `NAMING_AUTHORITY.md` NOW CONTRADICTS RULING 4, AND THE FILE WAS LEFT ALONE
+## `NAMING_AUTHORITY.md` NO LONGER CONTRADICTS RULING 4. RESOLVED BY RUN 54, PHASE D.
 
-Lines 96-97 read: *"**Never use a module id or number in user-facing text.** No "Cat 4", no "1.7",
-no "PH.2", no "A4.2"."* Ruling 4 of 2026-08-23 rules those ACCEPTABLE. The order said to report the
-conflict and leave the file; that is what was done. **The banner at the top of this handoff tells
-every session to read `NAMING_AUTHORITY.md` first, so until the owner says which is authoritative,
-a future run will act against ruling 4.** Ask before sweeping anything.
+Run 52 recorded that lines 96-97 read *"Never use a module id or number in user-facing text"*
+while ruling 4 of 2026-08-23 ruled those identifiers ACCEPTABLE, and left the file alone as its
+order required. **The owner has now ruled, and the authority has been revised.** Displayed
+identifiers such as "Cat 4", "A4.2" and "1.7" are acceptable. The two documents agree, and the
+banner at the top of this handoff can be followed without acting against ruling 4.
+
+**WHAT DID NOT CHANGE: one single word of rendered text.** No identifier an earlier run removed
+was restored, and no identifier that remains was stripped. Phase D changed AUTHORITY TEXT ONLY.
+
+**WHAT STANDS, UNCHANGED:** the em-dash and en-dash ban in user-facing text, and the rule that
+user-facing text uses "and" rather than the ampersand the code constants use.
+`server/tools/run51_dash_sweep.py` is byte for byte untouched, asserted by `git diff`.
 
 ## A FAULT INJECTION LEAKED INTO A PRODUCTION ANALYTICAL FILE DURING THIS RUN
 
