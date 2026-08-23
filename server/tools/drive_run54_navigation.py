@@ -387,7 +387,7 @@ print("")
 print("=" * 94)
 print(f"RESULT: {PASSED} passed, {FAILED} failed")
 print("=" * 94)
-if FAILURES:
-    for f_ in FAILURES:
+if _fail:
+    for f_ in _fail:
         print("  -", f_)
 sys.exit(1 if FAILED else 0)
