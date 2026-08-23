@@ -172,7 +172,16 @@ V19_RECORD = "code_audit/run51_participant_package_v19_checksums.sha256"
 #: a file, which is the failure mode this chain exists to prevent.
 V19_COMMIT = "fe35504"
 V20_IDENTITY = "og-participant-2026.08-v20"
+V21_IDENTITY = "og-participant-2026.08-v21"
 V20_RECORD = "code_audit/run52_participant_package_v20_checksums.sha256"
+# RUN 55, THE MINT. v20 IS NO LONGER THE CURRENT PACKAGE, so its record no longer describes the
+# working tree and every v19-to-v20 comparison below now reads THE COMMIT WHOSE BLOBS IT
+# DESCRIBES instead of disk. EXPLICIT COMMIT HASH, never a relative reference: Run 54 wrote its
+# own proofs of absence against HEAD~1 and they decayed silently into false proofs that still
+# passed as later commits walked the reference back. Verified: `git show V20_COMMIT:V20_RECORD`
+# is byte-identical to the file on disk, and models.py at that commit reads sim-2026.08-v35.
+V20_COMMIT = "d236a270"
+V21_RECORD = "code_audit/run55_participant_package_v21_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -652,7 +661,7 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V20_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V21_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
@@ -660,11 +669,11 @@ check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
           V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY,
           V12_IDENTITY, V13_IDENTITY, V14_IDENTITY, V15_IDENTITY, V16_IDENTITY,
-          V17_IDENTITY, V18_IDENTITY, V19_IDENTITY, V20_IDENTITY],
+          V17_IDENTITY, V18_IDENTITY, V19_IDENTITY, V20_IDENTITY, V21_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 20
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 21
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all twenty are present, so no link shares a "
+      "each link has its OWN record file and all twenty-one are present, so no link shares a "
       "record with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
@@ -899,8 +908,14 @@ check("BRIEF_CAT_LABEL" in _det16,
 # participant_packages declares as the exception may have moved, and the other four are still
 # held to byte-identity. A THIRD file moving here is still red, and so is a different one moving.
 _v18 = parse((ROOT / V18_RECORD).read_text(encoding="utf-8"))
+# RUN 55: the `not (ROOT / rel).is_file()` clause is REPLACED, not dropped. A record pinned to a
+# commit is evidence about THAT COMMIT, so requiring its members to still exist on disk today
+# asserted the wrong thing -- and it broke the moment Run 54 deleted a member on the owner's
+# ruling. What replaces it is STRICTER about the thing that matters: a member missing from the
+# tree must be DECLARED in participant_packages.V20_TO_V21_DELETED. An undeclared disappearance
+# is still red.
 _v18_bad = sorted(rel for rel, digest in _v18.items()
-                  if not (ROOT / rel).is_file()
+                  if (not (ROOT / rel).is_file() and rel not in PP.V20_TO_V21_DELETED)
                   or hashlib.sha256(git_bytes(rel, V18_COMMIT)).hexdigest() != digest)
 check(not _v18_bad,
       "every one of v18's seventy checksums holds against the commit it describes, ad4f614, "
@@ -969,8 +984,14 @@ check(not (_dd_call_keys - _dd_mapped),
 # v19 checksum record's own header. A SEVENTH file moving here is still red, and so is any file
 # outside V18_TO_V19_CHANGED.
 _v19 = parse((ROOT / V19_RECORD).read_text(encoding="utf-8"))
+# RUN 55: the `not (ROOT / rel).is_file()` clause is REPLACED, not dropped. A record pinned to a
+# commit is evidence about THAT COMMIT, so requiring its members to still exist on disk today
+# asserted the wrong thing -- and it broke the moment Run 54 deleted a member on the owner's
+# ruling. What replaces it is STRICTER about the thing that matters: a member missing from the
+# tree must be DECLARED in participant_packages.V20_TO_V21_DELETED. An undeclared disappearance
+# is still red.
 _v19_bad = sorted(rel for rel, digest in _v19.items()
-                  if not (ROOT / rel).is_file()
+                  if (not (ROOT / rel).is_file() and rel not in PP.V20_TO_V21_DELETED)
                   or hashlib.sha256(git_bytes(rel, V19_COMMIT)).hexdigest() != digest)
 check(not _v19_bad,
       "every one of v19's seventy checksums holds against the commit it describes, fe35504, "
@@ -1222,22 +1243,21 @@ for _srv in ("server/app/research_decision.py", "server/app/research_transitions
 # is still red, and so is any file outside V19_TO_V20_CHANGED.
 _v20 = parse((ROOT / V20_RECORD).read_text(encoding="utf-8"))
 _v20_bad = sorted(rel for rel, digest in _v20.items()
-                  if not (ROOT / rel).is_file()
-                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V20_COMMIT)).hexdigest() != digest)
 check(not _v20_bad,
-      "every one of v20's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v20_bad))
+      "every one of v20's seventy checksums holds against the COMMIT WHOSE BLOBS IT DESCRIBES, "
+      "which is where a superseded package record correctly lives", str(_v20_bad))
 check(sorted(_v20) == sorted(_v19),
       "v20 covers exactly the same file inventory as v19, so a successor cannot quietly drop a "
       "participant-visible file out of the package",
       str(sorted(set(_v19) ^ set(_v20))))
 _moved20 = sorted(rel for rel, digest in _v19.items()
-                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V20_COMMIT)).hexdigest() != digest)
 check(_moved20 == sorted(PP.V19_TO_V20_CHANGED),
       "and the files v20 moved are exactly the seven it declares, so nothing rode along with "
       "the delivery", str(sorted(set(_moved20) ^ set(PP.V19_TO_V20_CHANGED))))
 _seq20 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
-                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v19.get(rel))
+                if hashlib.sha256(git_bytes(rel, V20_COMMIT)).hexdigest() != _v19.get(rel))
 check(_seq20 == sorted(PP.V19_TO_V20_SEQUENCE_EXCEPTION),
       "THE EXPERIMENTAL SEQUENCE MOVED ACROSS v19 TO v20 IN EXACTLY THE ONE DECLARED FILE AND "
       "NO OTHER, and it carries its own named exception record", str(_seq20))
@@ -1253,21 +1273,56 @@ for _seqfile in PP.V19_TO_V20_SEQUENCE_EXCEPTION:
 for _seqfile in PP.SEQUENCE_BEARING_FILES:
     if _seqfile in PP.V19_TO_V20_SEQUENCE_EXCEPTION:
         continue
-    check(hashlib.sha256((ROOT / _seqfile).read_bytes()).hexdigest() == _v19.get(_seqfile),
-          f"{_seqfile} is BYTE FOR BYTE identical to v19: no step of the decision sequence, no "
-          f"reveal gate, no lock, no randomization and no questionnaire moved in it")
-# RULING 1 WAS STOPPED UNDER SECTION 8.1, AND THAT IS MEASURED, NOT ASSERTED. app.js did not
-# move, so the project list's Open control -- the ONLY route from the list to the project detail
-# page -- is still exactly where v19 left it.
+    check(hashlib.sha256(git_bytes(_seqfile, V20_COMMIT)).hexdigest() == _v19.get(_seqfile),
+          f"{_seqfile} is BYTE FOR BYTE identical to v19 at v20: no step of the decision "
+          f"sequence, no reveal gate, no lock, no randomization and no questionnaire moved "
+          f"in it")
+# RUN 55, PHASE C. THIS GUARD IS REVISED, NOT DELETED, AND IT KEEPS EVERYTHING IT ASSERTED
+# THAT IS STILL TRUE.
+#
+# WHAT IT ASSERTED BEFORE: that `assets/js/app.js` was BYTE-IDENTICAL to v19, and that BOTH row
+# controls -- Manage and Open -- were still rendered by it. That was the record of Run 52's stop
+# under its own section 8.1: Open was then the only route from the project list to the project
+# detail page, so removing it would have made every detail page unreachable.
+#
+# WHAT IT ASSERTS NOW: Run 54 phase C re-bound Manage to openDetail() -- verified in a real
+# browser, per row, per surface, BEFORE anything was removed -- and only then removed Open. The
+# route the old check protected therefore still exists; it is carried by Manage instead of by
+# Open. So the guard keeps the PROPERTY (the project list reaches the detail page, and it is not
+# left with two controls for one action) and drops only the two facts the owner's ruling
+# reversed. app.js moved, which is a DECLARED change of v21 and is recorded there; it is no
+# longer a defect for it to differ from v19.
+#
+# NON-VACUITY IS PINNED TO AN EXPLICIT COMMIT HASH, NEVER TO A RELATIVE REFERENCE. Run 54 wrote
+# its own proofs against HEAD~1 and they decayed silently into false proofs that still passed as
+# later commits walked the reference back. V19_COMMIT is an explicit hash.
 _app20 = (ROOT / "assets/js/app.js").read_bytes()
-check(hashlib.sha256(_app20).hexdigest() == _v19.get("assets/js/app.js"),
-      "assets/js/app.js is BYTE FOR BYTE identical to v19: ruling 1 was stopped under section "
-      "8.1 and the project list did not move")
-check(b'class="btn small li-open"' in _app20 and b'class="btn small li-manage"' in _app20,
-      "and BOTH row controls are still rendered by it: removing Open would have removed the "
-      "only route from the project list to the project detail page")
+_app19 = git_bytes("assets/js/app.js", V19_COMMIT)
+check(hashlib.sha256(git_bytes("assets/js/app.js", V20_COMMIT)).hexdigest()
+      == _v19.get("assets/js/app.js"),
+      "AT v20 app.js WAS still byte-identical to v19 -- Run 52's stop under its section 8.1 was "
+      "real and is still on the record; what follows is the v20-to-v21 delta and not a rewrite "
+      "of history")
+check(b'class="btn small li-open"' in _app19 and b'class="btn small li-manage"' in _app19,
+      "NON-VACUITY, pinned to the explicit commit V19_COMMIT: app.js DID render BOTH row "
+      "controls at v19, so the absence check below is not vacuous")
+check(b'class="btn small li-open"' not in _app20,
+      "RUN 54 PHASE C: the project list no longer renders the Open control")
+check(b'class="btn small li-manage"' in _app20,
+      "and Manage is still rendered on every row: the project list did not lose its control")
+check(b'.li-manage").addEventListener("click", () => openDetail(' in _app20,
+      "AND MANAGE NAVIGATES TO THE PROJECT DETAIL PAGE -- the route the removed Open used to "
+      "carry is carried by Manage, so no project's detail page became unreachable")
+check(hashlib.sha256(_app20).hexdigest() != _v19.get("assets/js/app.js"),
+      "app.js is NOT byte-identical to v19, and that is the DECLARED v21 change rather than a "
+      "defect: Run 52's stop under its section 8.1 was reversed by the owner's ruling at "
+      "section 9 of the Run 54 order")
 # WHAT MOVED INSIDE THE ONE EXCEPTION, deepdive.js, measured rather than asserted.
-_dd20 = (ROOT / "assets/js/deepdive.js").read_text(encoding="utf-8")
+# RUN 55: deepdive.js no longer exists -- Run 54 phase B deleted it -- so the v19-to-v20 delta
+# inside it is read from the two commits it spans. NOTHING IS DELETED FROM THIS BLOCK: every
+# check it made about what moved between v19 and v20 still runs, against the same bytes, and it
+# is now immune to any later change to the working tree.
+_dd20 = git_bytes("assets/js/deepdive.js", V20_COMMIT).decode("utf-8")
 _dd19 = git_bytes("assets/js/deepdive.js", V19_COMMIT).decode("utf-8")
 check("data-goto-health" in _dd19 and "see Health" in _dd19,
       "the see-Health button REALLY WAS in deepdive.js at v19, so the absence checks below are "
@@ -1305,7 +1360,7 @@ check("dd-health-line" in _dd20 and "cat8SummaryLine(project)" in _dd20,
       "rendered: only the button went")
 # RULING 3, MEASURED ON THE SIX NON-SEQUENCE FILES. One name for the module identifier.
 for _rel in ("assets/js/taxonomy.js", "assets/js/categories.js"):
-    _txt = (ROOT / _rel).read_text(encoding="utf-8")
+    _txt = git_bytes(_rel, V20_COMMIT).decode("utf-8")
     _prior = git_bytes(_rel, V19_COMMIT).decode("utf-8")
     check(_prior.count("key: '") == 75 and _txt.count("key: '") == 12,
           f"{_rel}: the sixty-three MODULE rows dropped `key:` and only the twelve CATEGORY "
@@ -1318,12 +1373,133 @@ for _rel in ("assets/js/taxonomy.js", "assets/js/categories.js"):
           f"{_rel}: and no third name for the same thing survives anywhere in it")
 for _rel in ("assets/js/detail.js", "assets/js/signals.js", "assets/js/neural_flow.js",
              "assets/js/projectnet2d.js"):
-    _txt = (ROOT / _rel).read_text(encoding="utf-8")
+    _txt = git_bytes(_rel, V20_COMMIT).decode("utf-8")
     check("m.key" not in _txt and "m && m.key" not in _txt,
           f"{_rel}: no consumer still reads the module identifier off a taxonomy module as "
           f"`key`")
     check("m.module_id" in _txt,
           f"{_rel}: and it reads it as module_id instead")
+
+
+# =================================================================================================
+# RUN 55, THE MINT. og-participant-2026.08-v21 -- THE FIRST LINK IN THIS CHAIN WHOSE
+# SEQUENCE-BEARING DELTA IS A DELETION.
+#
+# v21 is the current package and is now the ONLY record that reads the working tree. ONE file
+# LEFT the package -- assets/js/deepdive.js, which is sequence-bearing -- and FIVE moved. The
+# deletion is asserted as ONE EXCEPTION WITH A NAME rather than by widening the invariant or by
+# quietly shortening the sequence-bearing set: SEQUENCE_BEARING_FILES still has six members,
+# SEQUENCE_BEARING_FILES_FROM_V21 has five, and the difference between them is asserted to be
+# EXACTLY the declared exception. A SECOND sequence-bearing file disappearing is still red.
+# =================================================================================================
+print()
+print("-" * 78)
+print("RUN 55: og-participant-2026.08-v21, the deletion of a sequence-bearing file")
+print("-" * 78)
+
+check(PP.CURRENT.identifier == "og-participant-2026.08-v21",
+      "the package chain declares v21 CURRENT", PP.CURRENT.identifier)
+check(PP.CURRENT.record == V21_RECORD,
+      "and names the v21 checksum record as the one that describes the live tree",
+      PP.CURRENT.record)
+check(PP.CURRENT.source_commit is None,
+      "and leaves its source_commit None, which is what 'describes the LIVE TREE' means")
+_pinned_but_current = [q.identifier for q in PP.PARTICIPANT_PACKAGES[:-1]
+                       if q.source_commit is None]
+check(not _pinned_but_current,
+      "and EVERY superseded package is pinned to a commit: exactly one record in the chain "
+      "reads the working tree", str(_pinned_but_current))
+
+_v21 = parse((ROOT / V21_RECORD).read_text(encoding="utf-8"))
+_v21_bad = sorted(rel for rel, digest in _v21.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v21_bad,
+      "every one of v21's sixty-nine checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v21_bad))
+
+# THE INVENTORY SHRANK BY EXACTLY THE DECLARED DELETIONS, AND BY NOTHING ELSE.
+_left = sorted(set(_v20) - set(_v21))
+_joined = sorted(set(_v21) - set(_v20))
+check(_left == sorted(f for f in PP.V20_TO_V21_DELETED if f in _v20),
+      "the files that LEFT the package are exactly the ones V20_TO_V21_DELETED declares, so a "
+      "successor cannot quietly drop a participant-visible file out of the package",
+      str(_left))
+check(not _joined, "and nothing joined the package unannounced", str(_joined))
+for _gone in _left:
+    check(not (ROOT / _gone).is_file(),
+          f"{_gone} really is absent from the tree: the declaration records a deletion, it does "
+          f"not excuse a file that is still there")
+    # NON-VACUITY, PINNED TO AN EXPLICIT COMMIT HASH. Never a relative reference.
+    check(git_bytes(_gone, V20_COMMIT) != b"",
+          f"NON-VACUITY at {V20_COMMIT}: {_gone} DID exist at v20, so the absence check above "
+          f"is not vacuous")
+
+# THE FILES THAT MOVED ARE EXACTLY THE FIVE DECLARED, AND NOTHING RODE ALONG.
+_moved21 = sorted(rel for rel, digest in _v20.items()
+                  if rel in _v21
+                  and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved21 == sorted(PP.V20_TO_V21_CHANGED),
+      "and the files v21 moved are exactly the five it declares, so nothing rode along with the "
+      "delivery", str(sorted(set(_moved21) ^ set(PP.V20_TO_V21_CHANGED))))
+
+# THE SEQUENCE-BEARING SET, AND THE ONE NAMED EXCEPTION THAT SHORTENS IT.
+check(set(PP.SEQUENCE_BEARING_FILES) - set(PP.SEQUENCE_BEARING_FILES_FROM_V21)
+      == set(PP.V20_TO_V21_SEQUENCE_EXCEPTION),
+      "THE SEQUENCE-BEARING SET IS SHORTENED BY EXACTLY THE ONE NAMED EXCEPTION AND BY NOTHING "
+      "ELSE: six members before v21, five from v21, and the difference is "
+      "V20_TO_V21_SEQUENCE_EXCEPTION",
+      str(sorted(set(PP.SEQUENCE_BEARING_FILES)
+                 ^ (set(PP.SEQUENCE_BEARING_FILES_FROM_V21)
+                    | set(PP.V20_TO_V21_SEQUENCE_EXCEPTION)))))
+check(len(PP.SEQUENCE_BEARING_FILES) == 6 and len(PP.SEQUENCE_BEARING_FILES_FROM_V21) == 5,
+      "and the historical set is NOT shortened, so every comparison from v7 to v20 is still read "
+      "against the six it was taken against",
+      f"{len(PP.SEQUENCE_BEARING_FILES)} / {len(PP.SEQUENCE_BEARING_FILES_FROM_V21)}")
+check(set(PP.V20_TO_V21_SEQUENCE_EXCEPTION) <= set(PP.V20_TO_V21_DELETED),
+      "and the sequence-bearing exception is a DELETION declared in V20_TO_V21_DELETED, not an "
+      "edit excused by widening a comparison",
+      str(PP.V20_TO_V21_SEQUENCE_EXCEPTION))
+_seq21 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES_FROM_V21
+                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v20.get(rel))
+check(not _seq21,
+      "AND NO SURVIVING SEQUENCE-BEARING FILE MOVED ACROSS v20 TO v21: no step of the decision "
+      "sequence, no reveal gate, no lock, no randomization and no questionnaire moved",
+      str(_seq21))
+
+# THE NAMED EXCEPTION RECORD IS IN THE v21 CHECKSUM RECORD'S OWN HEADER.
+_v21_header = (ROOT / V21_RECORD).read_text(encoding="utf-8")
+for _seqfile in PP.V20_TO_V21_SEQUENCE_EXCEPTION:
+    check(f"# {_seqfile} -- SEQUENCE-BEARING" in _v21_header,
+          f"{_seqfile} carries its OWN named exception record in the v21 checksum record")
+
+# WHAT MOVED IN THE FIVE, MEASURED RATHER THAN ASSERTED.
+_app21 = (ROOT / "assets/js/app.js").read_bytes()
+check(b'class="btn small li-open"' not in _app21 and b'class="btn small li-manage"' in _app21,
+      "app.js: Open is gone from the project list and Manage remains")
+check(b'.li-manage").addEventListener("click", () => openDetail(' in _app21,
+      "app.js: and Manage navigates to the project detail page, so the route Open carried is "
+      "still carried")
+_ing21 = (ROOT / "assets/js/ingest.js").read_text(encoding="utf-8")
+_det21 = (ROOT / "assets/js/detail.js").read_text(encoding="utf-8")
+check("function openInlineManage(id, hostEl)" in _ing21,
+      "ingest.js: the admin panel builder takes a host element, which is the whole of the move")
+check("detail-admin-host" in _det21 and "wireDetailAdmin" in _det21,
+      "detail.js: the project detail page hosts that panel")
+for _sel, _label in ((".pe-save", "Save info"), (".pe-populate", "Upload documents"),
+                     (".pe-recompute", "Recompute this project"), (".pe-reset", "Reset signals"),
+                     (".pe-archive", "Archive"), (".pe-cancel", "Close")):
+    check(_sel[1:] in _ing21 and _label in _ing21,
+          f"and '{_label}' ({_sel}) is still built by the SAME builder: the control moved, it "
+          f"was not rewritten")
+    check(_label in git_bytes("assets/js/ingest.js", V20_COMMIT).decode("utf-8"),
+          f"NON-VACUITY at {V20_COMMIT}: '{_label}' existed before the move")
+_css21 = (ROOT / "assets/css/radar.css").read_text(encoding="utf-8")
+check(".li-open" not in _css21,
+      "radar.css: no .li-open rule survives -- the four dead rules went with the control they "
+      "styled")
+check(".li-open" in git_bytes("assets/css/radar.css", V20_COMMIT).decode("utf-8"),
+      f"NON-VACUITY at {V20_COMMIT}: radar.css DID carry .li-open rules")
 
 print()
 print("=" * 78)

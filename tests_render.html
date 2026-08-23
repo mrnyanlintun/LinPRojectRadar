@@ -457,19 +457,38 @@
 
     assert("row actions: no Signals control remains", 0,
       host.querySelectorAll(".li-signals").length);
-    assert("row actions: exactly one Open control", 1,
+    // RUN 55, PHASE C. REVISED, NOT DELETED, AND IT KEEPS EVERYTHING STILL TRUE.
+    //
+    // WHAT IT ASSERTED BEFORE: exactly ONE Open control, labelled "Open →", and a cluster
+    // reading "Manage|Open →" in that order.
+    //
+    // WHY THAT IS NOW FALSE: Run 54 phase C re-bound Manage to openDetail() -- verified in a
+    // real browser, per row, per surface, WITH Open still in place -- and only then removed
+    // Open. Manage now carries the route Open used to carry, so the row is deliberately one
+    // control, not two.
+    //
+    // WHAT IT ASSERTS NOW: the SAME property against the current state -- no Open control
+    // renders, exactly one control does, it is Manage, and it carries the row's own project id
+    // so the row still reaches THAT project's detail page. The "no control says Signals,
+    // whatever class it carries" check is untouched.
+    assert("row actions: no Open control renders (Run 54 phase C removed it)", 0,
       host.querySelectorAll(".li-open").length);
+    assert("row actions: exactly one Manage control", 1,
+      host.querySelectorAll(".li-manage").length);
 
-    const open = host.querySelector(".li-open");
-    assert("row actions: the Open control is labelled for the action it performs",
-      "Open →", open ? open.textContent.trim() : "(none)");
+    const manage = host.querySelector(".li-manage");
+    assert("row actions: the Manage control is labelled for the action it performs",
+      "Manage", manage ? manage.textContent.trim() : "(none)");
+    assert("row actions: and it carries the row's own project id, so it navigates to that "
+      + "project's detail page",
+      true, !!(manage && manage.getAttribute("data-manage")));
 
-    // No button anywhere in the cluster still says "Signals", whatever class it carries.
+    // No button anywhere in the cluster still says "Signals" or "Open", whatever class it
+    // carries. A class-only check would pass through a relabelled survivor.
     const labels = actions
       ? Array.prototype.map.call(actions.querySelectorAll("button"), (b) => b.textContent.trim())
       : [];
-    assert("row actions: the cluster is Manage then Open, in that order",
-      "Manage|Open →", labels.join("|"));
+    assert("row actions: the cluster is Manage alone", "Manage", labels.join("|"));
   })();
 
   // 5. The portfolio legend counts the project as analysed, not awaiting analysis.

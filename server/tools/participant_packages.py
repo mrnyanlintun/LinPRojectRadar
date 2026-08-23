@@ -451,7 +451,13 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v20",
         "code_audit/run52_participant_package_v20_checksums.sha256",
-        None,
+        # RUN 55. PINNED, because v20 is no longer the current package. While a package is
+        # current its record describes the LIVE TREE and `source_commit` is None; the moment a
+        # successor is minted, the record becomes historical and must be pinned to the commit
+        # whose blobs it describes, so B11 can prove it was never rewritten. d236a270 is Run 52's
+        # own candidate commit, verified: `git show d236a270:<record>` is byte-identical to the
+        # file on disk, and models.py at that commit still reads sim-2026.08-v35.
+        "d236a2706a801cad8547ba34d68b0dc83521ff52",
         "RUN 52, TWO REDUNDANT CONTROLS AND ONE NAME ACROSS THE WIRE. SEVEN participant-visible "
         "files moved and EXACTLY ONE OF THEM IS SEQUENCE-BEARING. This record says so rather "
         "than claiming otherwise, and that one carries its OWN named exception record rather "
@@ -485,6 +491,53 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "stored figure changed and the behaviour digest is unchanged. The v19 record is NOT "
         "regenerated: it is pinned to the commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v21",
+        "code_audit/run55_participant_package_v21_checksums.sha256",
+        None,
+        "RUNS 54 AND 55, THE FIRST LINK IN THIS CHAIN WHOSE SEQUENCE-BEARING DELTA IS A "
+        "DELETION. ONE participant-visible file LEFT the package -- assets/js/deepdive.js -- "
+        "and FIVE moved. The deletion is named first because it is what a reader most needs to "
+        "know, it is sequence-bearing, and it carries its OWN named exception record here as "
+        "V20_TO_V21_SEQUENCE_EXCEPTION and in the v21 checksum record's header rather than "
+        "being excused by quietly shortening SEQUENCE_BEARING_FILES. Its authority is the "
+        "owner's ruling at section 8 of the Run 54 order. WHY THE FILE WENT: the client-side "
+        "deep-dive surface was reached by NO ROUTE the service serves -- index.html carried a "
+        "comment saying it was not loaded there, research/deepdive.html was linked from "
+        "nothing, and the sole call site of LinDeepDive.render sat inside the file being "
+        "deleted -- and all 78 of its panels gated on the legacy client-side blob at "
+        "store.js:727, which a project computed through the real pipeline does not have. "
+        "research/deepdive.html and the @app.get('/research/deepdive.html') route in "
+        "server/app/main.py went with it, because a route still serving a deleted page would "
+        "be a second front door; measured in a browser, that URL now returns HTTP 404 and "
+        "deepdive.js appears in no document.scripts. THE GUARANTEE THAT NO SERVED ROUTE LOADS "
+        "A CLIENT-SIDE MODEL IS NOW UNCONDITIONAL RATHER THAN CONFINED TO ONE ROUTE, which is "
+        "the stricter of the two. THE FIVE THAT MOVED: assets/js/app.js -- the project list's "
+        "Manage control NAVIGATES to the project detail page and the redundant Open control is "
+        "REMOVED. That REVERSES the stop Run 52 took under its section 8.1, on the owner's "
+        "ruling at section 9 of the Run 54 order, and the order of work was not negotiable: "
+        "Manage was re-bound and MEASURED IN A REAL BROWSER reaching the detail page of its "
+        "OWN row's project, per row and per surface, BEFORE Open was removed, and re-measured "
+        "after. No project's detail page was unreachable at any point. assets/js/detail.js and "
+        "assets/js/ingest.js -- the six operational controls the inline admin accordion "
+        "carried, Save info, Upload documents, Recompute this project, Reset signals, Archive "
+        "and Close, are MOVED onto the project detail page of the project being viewed. THIS "
+        "IS A MOVE AND NOT A REWRITE: the panel is built by the same function in ingest.js "
+        "from the same markup with the same six handlers, and the only change is the parent "
+        "element; the Archive and Reset signals handler bodies are BYTE-IDENTICAL to their "
+        "pre-move bytes and both carry, as they did before, NO confirmation dialog. Measured "
+        "in a real browser on three projects: each of the six renders exactly once on the "
+        "detail page and acts on that project and no other, and no admin panel remains on any "
+        "portfolio row. assets/css/radar.css -- the four dead .li-open rules go with the "
+        "control they styled. index.html -- a comment that pointed at the deleted file is "
+        "rewritten; NO RENDERED TEXT CHANGED. NO RENDERED IDENTIFIER CHANGED anywhere and no "
+        "naming sweep was run. No step of the decision sequence, no reveal gate, no lock, no "
+        "randomization, no questionnaire, no server contract and no append-only record moved. "
+        "NO SERVER COMPUTATION MOVED: 101 registered, 63 in service, voting exactly A1.7 and "
+        "A1.8, no stored figure changed, and the behaviour digest is RE-DERIVED and unchanged. "
+        "The v20 record is NOT regenerated: it describes the tree as v20 left it and remains "
+        "the evidence for anything collected under v20.",
+    ),
 )
 
 #: RUN 54. THE FIRST LINK IN THIS CHAIN WHOSE DELTA IS A DELETION. `assets/js/deepdive.js` is
@@ -503,6 +556,18 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
 V20_TO_V21_DELETED = (
     "assets/js/deepdive.js",
     "research/deepdive.html",
+)
+
+#: RUN 55. The files whose bytes moved between v20 and v21. FIVE, and NOT ONE of them is
+#: sequence-bearing -- the only sequence-bearing delta across this link is the DELETION declared
+#: in V20_TO_V21_DELETED above. `assets/js/deepdive.js` is deliberately NOT here: it did not
+#: change, it ceased to exist, and conflating the two would make the record unreadable.
+V20_TO_V21_CHANGED = (
+    "assets/css/radar.css",
+    "assets/js/app.js",
+    "assets/js/detail.js",
+    "assets/js/ingest.js",
+    "index.html",
 )
 
 #: The ONE sequence-bearing file Run 54 was authorised to remove, and the only one it removed.
