@@ -147,7 +147,7 @@ def faults():
     # 8 -- the two generated files disagree.
     A((8, "assets/js/categories.js versus taxonomy.js",
        "both artifacts are generated from the same authorities, so they cannot disagree",
-       CATEGORIES, "key: 'A1.7', name: 'TCPI'", "key: 'A1.7', name: 'TCPI DRIFTED'",
+       CATEGORIES, "module_id: 'A1.7', name: 'TCPI'", "module_id: 'A1.7', name: 'TCPI DRIFTED'",
        AUTH, "BOTH client taxonomy artifacts are exactly what the authorities generate"))
     # 9 -- the live application loads a stale, non-authoritative artifact.
     A((9, "index.html script imports",
@@ -158,13 +158,13 @@ def faults():
     # 10 -- a current registry module omitted from generated metadata.
     A((10, "server/tools/taxonomy_authority.json",
         "the runtime taxonomy carries exactly the registry's identities",
-        AUTHORITY, '"key": "A1.7",', '"key": "A1.7-GONE",',
+        AUTHORITY, '"module_id": "A1.7",', '"module_id": "A1.7-GONE",',
         AUTH, "BOTH client taxonomy artifacts are exactly what the authorities generate"))
     # 11 -- a fake module added to generated metadata.
     A((11, "server/tools/taxonomy_authority.json",
         "the runtime taxonomy invents no module the registry does not declare",
         AUTHORITY, '{\n    "id": "a1_7",',
-        '{\n    "id": "zz_9", "key": "Z9.9", "active": true, "required": []\n   },\n   {\n    "id": "a1_7",',
+        '{\n    "id": "zz_9", "module_id": "Z9.9", "active": true, "required": []\n   },\n   {\n    "id": "a1_7",',
         AUTH, "BOTH client taxonomy artifacts are exactly what the authorities generate"))
     # 12 -- a required current handbook surface becomes unreachable.
     A((12, "assets/js/knowledge.js MODREF topic registration",

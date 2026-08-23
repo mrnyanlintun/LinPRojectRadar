@@ -129,25 +129,25 @@
     return window.projectLevelCategories ? window.projectLevelCategories()
       : (window.LIN_CATEGORIES || []).filter(function (c) { return !(c && c.level === "portfolio"); });
   }
-  function catLabel(num) {
-    const cat = projectCatList().find(function (c) { return c && c.key === CAT_KEY_FROM_MODULE[String(num).trim()]; });
+  function catLabel(moduleId) {
+    const cat = projectCatList().find(function (c) { return c && c.key === CAT_KEY_FROM_MODULE[String(moduleId).trim()]; });
     // The name of the category in the loaded taxonomy. Never an identifier, never a literal.
     return (cat && cat.name) || "Signal Analysis";
   }
-  function catBucket(num) {
+  function catBucket(moduleId) {
     // The bucket index is the category's POSITION in the in-service project-level taxonomy,
     // so the number of buckets is whatever the taxonomy holds and no literal bounds it.
-    const i = projectCatList().findIndex(function (c) { return c && c.key === CAT_KEY_FROM_MODULE[String(num).trim()]; });
+    const i = projectCatList().findIndex(function (c) { return c && c.key === CAT_KEY_FROM_MODULE[String(moduleId).trim()]; });
     return i >= 0 ? String(i + 1) : "";
   }
 
-  function panel(num, title, status, inner) {
+  function panel(moduleId, title, status, inner) {
     const c = cls(status);
-    const catRef = catLabel(num);
+    const catRef = catLabel(moduleId);
     // Category number (1..11), derived from the module number the call site passes, so the
     // Signal Stack can group panels under collapsible category headers (Release 2 item 11).
-    const catNum = catBucket(num);
-    return `<section class="panel dd-panel status-${c}" data-cat="${esc(catNum)}" data-num="${esc(String(num))}" aria-label="${esc(catRef)} deep dive">
+    const catModuleId = catBucket(moduleId);
+    return `<section class="panel dd-panel status-${c}" data-cat="${esc(catModuleId)}" data-module-id="${esc(String(moduleId))}" aria-label="${esc(catRef)} deep dive">
       <div class="dd-head"><b>Why ${esc(catRef.toUpperCase())} (${esc(title)}) is ${esc(String(status).toUpperCase())}</b>${verdict(title, status)}</div>
       ${inner}
     </section>`;
@@ -1786,6 +1786,14 @@
     const s18 = get("Quantum_Probability");
 
     const entries = [
+      // RUN 52, RULING 3, SECTION 6.3 NOTE 2 -- THIS SITE IS STOPPED UNDER SECTION 8.2, NOT
+      // RENAMED. `num` here is NOT the module identifier ruling 3 governs. It is the ordinal
+      // of a METHOD in the methods-comparison table (09 = the conservative-dominance
+      // baseline, 10 = Dempster-Shafer, and so on), joined to the local s09..s18 values and
+      // compared as e.num === "09" below. Registry module identifiers are "A1.7", "B4.2";
+      // these are not, and calling this field `module_id` would assert an identity it does
+      // not have -- a third wrong name rather than one right one. Renaming it is therefore
+      // NOT safe in the sense note 2 requires, so it is left alone and reported.
       { num: "09", label: "Conservative Dominance", year: "not recorded",         val: s09 },
       { num: "10", label: "Dempster-Shafer",        year: "1967/1976", val: s10 },
       { num: "11", label: "Rough Sets",             year: "1982",      val: s11 },
@@ -2252,7 +2260,7 @@
     const panels = Array.prototype.slice.call(root.querySelectorAll(".dd-panel"));
     if (!panels.length) return;
     const banner = root.querySelector(".mod-banner");
-    // bucket panels by their category number (data-cat, set from the num each
+    // bucket panels by their category number (data-cat, set from the module_id each
     // legacy panel() call declares — now reads 1..10, gapless)
     const buckets = {};
     panels.forEach((el) => {
@@ -2308,11 +2316,12 @@
     const healthLine = document.createElement("p");
     healthLine.className = "dd-health-line kn-sub";
     const anomaly = cat8SummaryLine(project);
-    healthLine.innerHTML = `${escg(anomaly)} <button type="button" class="dd-link" data-goto-health>see Health &rarr;</button>`;
-    const healthLink = healthLine.querySelector("[data-goto-health]");
-    if (healthLink) healthLink.addEventListener("click", () => {
-      if (window.LinIngest && LinIngest.openHealthModal) LinIngest.openHealthModal();
-    });
+    // RUN 52, RULING 2. The "see Health" button that stood here was removed. Its handler called
+    // `window.LinIngest.openHealthModal()`, which exists nowhere in the repository (grep: only
+    // this call site and the app.js:1381 comment recording the same finding), so clicking it did
+    // nothing. It was also a door inside the room: a reader of the deep dive is already looking
+    // at this project. The anomaly sentence it sat beside is unchanged and still renders.
+    healthLine.innerHTML = `${escg(anomaly)}`;
     // reassemble: banner (kept) + grouped categories (gapless 1-10) + the
     // separated Portfolio Health line (NOT part of the numbered sequence)
     const orphans = panels.filter((el) => !claimed.has(el));

@@ -470,7 +470,7 @@
         const norm = active ? normalizeStatus(status) : null;
         const bucket = norm && counts[norm] != null ? norm : "none";
         counts[bucket] += 1;
-        rows.push({ index: idx, key: m.key, name: m.name, color: cat.color, bucket });
+        rows.push({ index: idx, module_id: m.module_id, name: m.name, color: cat.color, bucket });
       });
     });
     return { counts, rows };
@@ -2570,7 +2570,7 @@
           x: (catIdx-CAT_MID)*55 + xJitter,
           y: SY[statusKey] + (((idx*11)%20) - 10),
           z: zSpread,
-          key: m.key, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx
+          module_id: m.module_id, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx
         });
       });
     });

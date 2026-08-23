@@ -447,7 +447,19 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: files, and nothing added, removed or renamed, before this manifest was written. The run49
 #: manifest is NOT rewritten: it stays exactly as that release wrote it and this successor names
 #: it as its parent.
-PINNED = ROOT / "code_audit" / "run51_production_tree.sha256"
+#: RUN 52 SUPERSEDES IT. Eight production files moved: the SEVEN participant-visible files the
+#: v20 package record names one by one, plus `server/app/simulation/models.py` (the stamp
+#: advances to sim-2026.08-v35 with the boundary recorded). The guard was observed reporting
+#: exactly those eight files CHANGED, and nothing added, removed or renamed, before this
+#: manifest was written. `assets/js/app.js` is NOT among them: ruling 1 was stopped under
+#: section 8.1 of the Run 52 order after a browser established that Manage does not reach the
+#: project detail page and that Open is the only route to it. The run51 manifest is NOT
+#: rewritten: it stays exactly as that release wrote it and this successor names it as its
+#: parent.
+PINNED = ROOT / "code_audit" / "run52_production_tree.sha256"
+#: The Run-51 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN51 = ROOT / "code_audit" / "run51_production_tree.sha256"
 #: The Run-49 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN49 = ROOT / "code_audit" / "run49_production_tree.sha256"
@@ -557,6 +569,9 @@ PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: not one category changed; only the name of the field that holds them. The run39 manifest is
 #: NOT rewritten: it stays exactly as that release wrote it and this successor names it as its
 #: parent.
+#: RUN 52. The authority tree did not move: the guard reported no added, removed, changed or
+#: renamed authority file, so the Run-51 authority manifest still describes it exactly and is
+#: NOT superseded. A manifest is superseded when what it describes moves, not once per run.
 PINNED_AUTHORITY = ROOT / "code_audit" / "run51_authority_tree.sha256"
 #: The Run-39 authority manifest, the immediate parent, kept addressable so a guard can prove
 #: the supersession is a real change and not a silent rewrite.

@@ -53,7 +53,7 @@ def main() -> int:
     # The identities this closure propagated, derived from the taxonomy rather than listed.
     import re
     tax = {m.group(1): (m.group(2), m.group(3)) for m in re.finditer(
-        r"key: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'",
+        r"module_id: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'",
         (ROOT / "assets/js/categories.js").read_text(encoding="utf-8"))}
     FOCUS = ["A1.10", "A1.11", "A5.1", "B3.1", "B3.2", "B3.3", "B3.4", "B3.5"]
 

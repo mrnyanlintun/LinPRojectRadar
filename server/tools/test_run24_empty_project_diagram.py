@@ -62,7 +62,7 @@ def registry_counts() -> tuple[int, int, int, int]:
     """
     THE REGISTRY'S OWN FIGURES, parsed from taxonomy.js rather than typed in here.
 
-    Counts `{ id: '...', key: '...', ... }` module records per category block, and the
+    Counts `{ id: '...', module_id: '...', ... }` module records per category block, and the
     categories themselves, splitting portfolio-level from project-level on the `level`
     field the file carries. If this parse were wrong every count check below would be
     measuring the parser; the non-vacuity section proves it is not, by changing the
@@ -362,9 +362,9 @@ for name, old, new, expect in MUTATIONS:
 
 # The count guard, proved discriminating against a really-changed taxonomy.
 _tax_mut = TAXONOMY.replace(
-    "{ id: 'a4_1', key: 'A4.1', name: 'Document Risk Score'",
-    "{ id: 'a4_99', key: 'A4.99', name: 'Injected Module'\n      },\n"
-    "      { id: 'a4_1', key: 'A4.1', name: 'Document Risk Score'", 1)
+    "{ id: 'a4_1', module_id: 'A4.1', name: 'Document Risk Score'",
+    "{ id: 'a4_99', module_id: 'A4.99', name: 'Injected Module'\n      },\n"
+    "      { id: 'a4_1', module_id: 'A4.1', name: 'Document Risk Score'", 1)
 check(_tax_mut != TAXONOMY, "INJECTION TOOK EFFECT: an extra module added to the taxonomy copy")
 _saved = TAXONOMY
 try:

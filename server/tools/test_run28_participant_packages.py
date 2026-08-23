@@ -165,6 +165,14 @@ V18_RECORD = "code_audit/run49_participant_package_v18_checksums.sha256"
 V18_COMMIT = "ad4f614"
 
 V19_RECORD = "code_audit/run51_participant_package_v19_checksums.sha256"
+
+#: RUN 52. The commit v19 describes: the Run-51 merge. v19 is now a PREDECESSOR record and is
+#: pinned to the commit whose blobs it describes, exactly as v16, v17 and v18 are. Reading the
+#: live tree for it would make a historical record red the moment a later run legitimately edits
+#: a file, which is the failure mode this chain exists to prevent.
+V19_COMMIT = "fe35504"
+V20_IDENTITY = "og-participant-2026.08-v20"
+V20_RECORD = "code_audit/run52_participant_package_v20_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -644,7 +652,7 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V19_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V20_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
@@ -652,15 +660,15 @@ check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
           V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY,
           V12_IDENTITY, V13_IDENTITY, V14_IDENTITY, V15_IDENTITY, V16_IDENTITY,
-          V17_IDENTITY, V18_IDENTITY, V19_IDENTITY],
+          V17_IDENTITY, V18_IDENTITY, V19_IDENTITY, V20_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 19
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 20
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all nineteen are present, so no link shares a "
+      "each link has its OWN record file and all twenty are present, so no link shares a "
       "record with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all eighteen predecessors name the "
+      "and only the current link reads the working tree; all nineteen predecessors name the "
       "commit their bytes live in")
 # ---- v14, NOW A PREDECESSOR ---------------------------------------------------------------
 # RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. Five files moved: three generated from the
@@ -925,7 +933,11 @@ check(all(hashlib.sha256(git_bytes(rel, V18_COMMIT)).hexdigest() == _v17.get(rel
       "decision sequence, no reveal gate, no lock, no randomization and no questionnaire moved",
       str(_seq_still18))
 # WHAT MOVED INSIDE EXCEPTION ONE, deepdive.js, measured rather than asserted.
-_dd18 = (ROOT / "assets/js/deepdive.js").read_text(encoding="utf-8")
+# RUN 52. v19 is now a predecessor, so every v18-to-v19 measurement below reads the bytes at
+# the commit v19 describes rather than the live tree. NOT ONE CHECK IS WEAKENED OR DELETED: each
+# still asserts exactly what it asserted, against the bytes it was always about. The live tree
+# is measured by the v19-to-v20 section that follows.
+_dd18 = git_bytes("assets/js/deepdive.js", V19_COMMIT).decode("utf-8")
 check('<span class="mod-mono">Cat ${n}</span>' in _dd17
       and '<span class="mod-mono">Cat ${n}</span>' not in _dd18,
       "the ten collapsible group headers no longer build the retired identifier span, and it "
@@ -959,21 +971,21 @@ check(not (_dd_call_keys - _dd_mapped),
 _v19 = parse((ROOT / V19_RECORD).read_text(encoding="utf-8"))
 _v19_bad = sorted(rel for rel, digest in _v19.items()
                   if not (ROOT / rel).is_file()
-                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  or hashlib.sha256(git_bytes(rel, V19_COMMIT)).hexdigest() != digest)
 check(not _v19_bad,
-      "every one of v19's seventy checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v19_bad))
+      "every one of v19's seventy checksums holds against the commit it describes, fe35504, "
+      "where the v19 package correctly lives now that v20 is current", str(_v19_bad))
 check(sorted(_v19) == sorted(_v18),
       "v19 covers exactly the same file inventory as v18, so a successor cannot quietly drop a "
       "participant-visible file out of the package",
       str(sorted(set(_v18) ^ set(_v19))))
 _moved19 = sorted(rel for rel, digest in _v18.items()
-                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V19_COMMIT)).hexdigest() != digest)
 check(_moved19 == sorted(PP.V18_TO_V19_CHANGED),
       "and the files v19 moved are exactly the twenty-three it declares, so nothing rode along "
       "with the delivery", str(sorted(set(_moved19) ^ set(PP.V18_TO_V19_CHANGED))))
 _seq19 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
-                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v18.get(rel))
+                if hashlib.sha256(git_bytes(rel, V19_COMMIT)).hexdigest() != _v18.get(rel))
 check(_seq19 == sorted(PP.V18_TO_V19_SEQUENCE_EXCEPTION),
       "THE EXPERIMENTAL SEQUENCE MOVED ACROSS v18 TO v19, IN EXACTLY THE SIX DECLARED FILES AND "
       "NO OTHER, each with its own named exception record", str(_seq19))
@@ -998,7 +1010,7 @@ for _step in ("stage", "reveal", "lock", "randomi"):
           f"the delta did not touch a sequence step",
           f"{len(_p.findall(_dd18))} vs {len(_p.findall(_dd_prior19))}")
 for _rel in ("assets/questionnaires/intake.json", "assets/questionnaires/debrief.json"):
-    _now = json.loads((ROOT / _rel).read_text(encoding="utf-8"))
+    _now = json.loads(git_bytes(_rel, V19_COMMIT).decode("utf-8"))
     _was = json.loads(git_bytes(_rel, V18_COMMIT).decode("utf-8"))
 
     def _shape(o):
@@ -1066,7 +1078,7 @@ for _control in ("<button", "<input", "<select", "<textarea"):
           f"and decision-ui.js's '{_control}' occurrences are unchanged in number",
           f"{_du18.count(_control)} vs {_du17.count(_control)}")
 # THE THIRD FILE, detail.js, IS NOT SEQUENCE-BEARING.
-_det18 = (ROOT / "assets/js/detail.js").read_text(encoding="utf-8")
+_det18 = git_bytes("assets/js/detail.js", V19_COMMIT).decode("utf-8")
 check('cs("d-docsignals", "Documents & Extracted Signals"' in _det
       and 'cs("d-docsignals", "Documents and Extracted Signals"' in _det18
       and 'cs("d-docsignals", "Documents & Extracted Signals"' not in _det18,
@@ -1199,6 +1211,119 @@ for _srv in ("server/app/research_decision.py", "server/app/research_transitions
     check(git_bytes(_srv, V2_COMMIT) == (ROOT / _srv).read_bytes(),
           f"{_srv} is byte-identical to its v2 bytes, so lock enforcement, reveal timing, "
           f"randomization, server authority and the append-only record are untouched")
+
+# ===============================================================================================
+# RUN 52, v19 -> v20. THE LIVE TREE, AND THE ONE SEQUENCE-BEARING FILE THAT MOVED.
+# ===============================================================================================
+# v20 is the current package and is the ONLY record that reads the working tree. What moved is
+# asserted as ONE EXCEPTION WITH A NAME, not by widening the invariant: exactly the one
+# sequence-bearing file participant_packages declares may have moved, with what moved inside it
+# recorded in the v20 checksum record's own header. A SECOND sequence-bearing file moving here
+# is still red, and so is any file outside V19_TO_V20_CHANGED.
+_v20 = parse((ROOT / V20_RECORD).read_text(encoding="utf-8"))
+_v20_bad = sorted(rel for rel, digest in _v20.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v20_bad,
+      "every one of v20's seventy checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v20_bad))
+check(sorted(_v20) == sorted(_v19),
+      "v20 covers exactly the same file inventory as v19, so a successor cannot quietly drop a "
+      "participant-visible file out of the package",
+      str(sorted(set(_v19) ^ set(_v20))))
+_moved20 = sorted(rel for rel, digest in _v19.items()
+                  if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved20 == sorted(PP.V19_TO_V20_CHANGED),
+      "and the files v20 moved are exactly the seven it declares, so nothing rode along with "
+      "the delivery", str(sorted(set(_moved20) ^ set(PP.V19_TO_V20_CHANGED))))
+_seq20 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES
+                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v19.get(rel))
+check(_seq20 == sorted(PP.V19_TO_V20_SEQUENCE_EXCEPTION),
+      "THE EXPERIMENTAL SEQUENCE MOVED ACROSS v19 TO v20 IN EXACTLY THE ONE DECLARED FILE AND "
+      "NO OTHER, and it carries its own named exception record", str(_seq20))
+check(len(PP.V19_TO_V20_SEQUENCE_EXCEPTION) == 1
+      and set(PP.V19_TO_V20_SEQUENCE_EXCEPTION) < set(PP.SEQUENCE_BEARING_FILES),
+      "and the exception names one member of the sequence-bearing set rather than widening the "
+      "comparison to exclude the set", str(PP.V19_TO_V20_SEQUENCE_EXCEPTION))
+_v20_header = (ROOT / V20_RECORD).read_text(encoding="utf-8")
+for _seqfile in PP.V19_TO_V20_SEQUENCE_EXCEPTION:
+    check(f"# {_seqfile} -- SEQUENCE-BEARING" in _v20_header,
+          f"{_seqfile} carries its OWN named exception record in the v20 checksum record")
+# AND EVERY OTHER SEQUENCE-BEARING FILE IS STILL BYTE-IDENTICAL, named one by one.
+for _seqfile in PP.SEQUENCE_BEARING_FILES:
+    if _seqfile in PP.V19_TO_V20_SEQUENCE_EXCEPTION:
+        continue
+    check(hashlib.sha256((ROOT / _seqfile).read_bytes()).hexdigest() == _v19.get(_seqfile),
+          f"{_seqfile} is BYTE FOR BYTE identical to v19: no step of the decision sequence, no "
+          f"reveal gate, no lock, no randomization and no questionnaire moved in it")
+# RULING 1 WAS STOPPED UNDER SECTION 8.1, AND THAT IS MEASURED, NOT ASSERTED. app.js did not
+# move, so the project list's Open control -- the ONLY route from the list to the project detail
+# page -- is still exactly where v19 left it.
+_app20 = (ROOT / "assets/js/app.js").read_bytes()
+check(hashlib.sha256(_app20).hexdigest() == _v19.get("assets/js/app.js"),
+      "assets/js/app.js is BYTE FOR BYTE identical to v19: ruling 1 was stopped under section "
+      "8.1 and the project list did not move")
+check(b'class="btn small li-open"' in _app20 and b'class="btn small li-manage"' in _app20,
+      "and BOTH row controls are still rendered by it: removing Open would have removed the "
+      "only route from the project list to the project detail page")
+# WHAT MOVED INSIDE THE ONE EXCEPTION, deepdive.js, measured rather than asserted.
+_dd20 = (ROOT / "assets/js/deepdive.js").read_text(encoding="utf-8")
+_dd19 = git_bytes("assets/js/deepdive.js", V19_COMMIT).decode("utf-8")
+check("data-goto-health" in _dd19 and "see Health" in _dd19,
+      "the see-Health button REALLY WAS in deepdive.js at v19, so the absence checks below are "
+      "not vacuous")
+# Measured on the EXECUTABLE text: the comment Run 52 left at the removal site names the button
+# and the symbol, and that comment is the record of why they went. Deleting the record to make a
+# string search pass would be the wrong repair, so the search is scoped to what actually runs.
+_dd20_code = _strip_line_comments(_dd20)
+check("data-goto-health" not in _dd20_code and "see Health" not in _dd20_code,
+      "and neither the button nor its handler survives in v20's EXECUTABLE text",
+      _dd20_code[max(0, _dd20_code.find("data-goto-health") - 40):][:120])
+check("openHealthModal" not in _dd20_code,
+      "and the call to the symbol that never existed is gone with it")
+check("see Health" in _dd20 and "openHealthModal" in _dd20,
+      "AND THE RECORD SURVIVES: the comment at the removal site still names the button and the "
+      "symbol, so a later reader is told what was there and why it went")
+check(_dd19.count("<button") - _dd20.count("<button") == 1,
+      "EXACTLY ONE <button> occurrence left deepdive.js across v19 to v20, and it is the dead "
+      "see-Health button ruling 2 names",
+      f"{_dd19.count('<button')} vs {_dd20.count('<button')}")
+for _control in ("<input", "<select", "<textarea"):
+    check(_dd20.count(_control) == _dd19.count(_control),
+          f"and deepdive.js's '{_control}' occurrences are unchanged in number across v19 to v20",
+          f"{_dd20.count(_control)} vs {_dd19.count(_control)}")
+for _step in ("submitPreliminary", "reveal", "lock", "randomi", "stage"):
+    _pat20 = re.compile(_step, re.I)
+    check(len(_pat20.findall(_dd20)) == len(_pat20.findall(_dd19)),
+          f"and deepdive.js's references to '{_step}' are unchanged in number across v19 to "
+          f"v20, so the delta did not touch a sequence step",
+          f"{len(_pat20.findall(_dd20))} vs {len(_pat20.findall(_dd19))}")
+# THE ANOMALY SENTENCE THE BUTTON SAT BESIDE IS STILL THERE. Removing the paragraph as well
+# would have removed rendered text, which no ruling authorises.
+check("dd-health-line" in _dd20 and "cat8SummaryLine(project)" in _dd20,
+      "and the Portfolio Health anomaly line the button sat beside is UNCHANGED and still "
+      "rendered: only the button went")
+# RULING 3, MEASURED ON THE SIX NON-SEQUENCE FILES. One name for the module identifier.
+for _rel in ("assets/js/taxonomy.js", "assets/js/categories.js"):
+    _txt = (ROOT / _rel).read_text(encoding="utf-8")
+    _prior = git_bytes(_rel, V19_COMMIT).decode("utf-8")
+    check(_prior.count("key: '") == 75 and _txt.count("key: '") == 12,
+          f"{_rel}: the sixty-three MODULE rows dropped `key:` and only the twelve CATEGORY "
+          f"rows keep it, and there really were seventy-five before, so this is not vacuous",
+          f"{_prior.count(chr(107)+chr(101)+chr(121)+': ' + chr(39))} -> {_txt.count(chr(107)+chr(101)+chr(121)+': ' + chr(39))}")
+    check(_txt.count("module_id: '") == 63,
+          f"{_rel}: and all sixty-three carry module_id instead",
+          str(_txt.count("module_id: '")))
+    check(" num: " not in _txt and "num: '" not in _txt,
+          f"{_rel}: and no third name for the same thing survives anywhere in it")
+for _rel in ("assets/js/detail.js", "assets/js/signals.js", "assets/js/neural_flow.js",
+             "assets/js/projectnet2d.js"):
+    _txt = (ROOT / _rel).read_text(encoding="utf-8")
+    check("m.key" not in _txt and "m && m.key" not in _txt,
+          f"{_rel}: no consumer still reads the module identifier off a taxonomy module as "
+          f"`key`")
+    check("m.module_id" in _txt,
+          f"{_rel}: and it reads it as module_id instead")
 
 print()
 print("=" * 78)

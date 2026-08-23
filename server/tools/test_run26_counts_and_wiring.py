@@ -182,7 +182,7 @@ check("assessed does not mean passed: the artifact records far fewer scientific 
 section("3. THE TAXONOMY THE INTERFACE READS AGREES WITH THE REGISTRY")
 
 TAXONOMY = (ROOT / "assets" / "js" / "taxonomy.js").read_text(encoding="utf-8")
-tax_ids = re.findall(r"key: '([A-D][0-9]+\.[0-9]+)'", TAXONOMY)
+tax_ids = re.findall(r"module_id: '([A-D][0-9]+\.[0-9]+)'", TAXONOMY)
 # The taxonomy the browser reads carries the population IN SERVICE, not the whole registry.
 # registry_index() resolves retired identifiers by design (registry.py:426); service_index()
 # (registry.py:440) is the in-service population. Comparing the client taxonomy against the

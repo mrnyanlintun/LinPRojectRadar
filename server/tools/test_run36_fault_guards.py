@@ -390,21 +390,39 @@ _moved_seq = sorted(f for f in _seq_files
 # moving without a declared record is still a failure. What keeps this a real invariant now that
 # the exception spans the whole set is the SECOND check: each of the six must carry its own named
 # exception record in the current package's checksum-record header, saying what moved inside it.
+# RUN 52. A SEVENTH move does not exist -- the set is six -- but deepdive.js moved AGAIN, on the
+# owner's rulings 2 and 3 of 2026-08-23, and it is NAMED again rather than excused: the exception
+# set below now also folds in V19_TO_V20_SEQUENCE_EXCEPTION. The invariant is not widened: the
+# set is still exactly the six sequence-bearing files, and the SECOND check below still requires
+# each file that moved in a given successor to carry its own named record IN THAT SUCCESSOR'S
+# record, which is where the account of what moved inside it actually lives.
 _SEQ_AUTHORISED = (set(PP.V14_TO_V15_SEQUENCE_EXCEPTION) | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
-                   | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION))
+                   | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION)
+                   | set(PP.V19_TO_V20_SEQUENCE_EXCEPTION))
 check("run36.fault35.participant_sequence_unaltered",
       sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 6,
       "every file carrying the participant experimental sequence is byte-identical to the frozen "
       "v11 package, except the SIX the owner authorised Runs 44, 49 and 51 to move; the sequence "
       "has been altered somewhere else", str(_moved_seq))
-_v19_record = (ROOT / PP.CURRENT.record).read_text(encoding="utf-8")
-_undeclared = [f for f in PP.V18_TO_V19_SEQUENCE_EXCEPTION
-               if f"# {f} -- SEQUENCE-BEARING" not in _v19_record]
+# THE RECORD THAT MUST NAME A FILE IS THE RECORD OF THE SUCCESSOR THAT MOVED IT. A file moved by
+# v19 is accounted for in v19's record; a file moved by v20 in v20's. Requiring v20's record to
+# re-declare files v19 moved would either force every successor to copy its predecessor's prose
+# forward or force the check to be loosened, and both destroy the invariant.
+_BY_SUCCESSOR = (
+    ("code_audit/run51_participant_package_v19_checksums.sha256",
+     PP.V18_TO_V19_SEQUENCE_EXCEPTION),
+    ("code_audit/run52_participant_package_v20_checksums.sha256",
+     PP.V19_TO_V20_SEQUENCE_EXCEPTION),
+)
+_undeclared = [f"{f} (in {_rec})" for _rec, _files in _BY_SUCCESSOR for f in _files
+               if f"# {f} -- SEQUENCE-BEARING"
+               not in (ROOT / _rec).read_text(encoding="utf-8")]
 check("run36.fault35.every_sequence_exception_has_its_own_record",
-      not _undeclared,
+      not _undeclared and PP.CURRENT.record == _BY_SUCCESSOR[-1][0],
       "and every sequence-bearing file that moved carries its OWN named exception record in the "
-      "current package's checksum record, saying what moved inside it; a file moving without one "
-      "is a failure even though the exception now spans the whole set", str(_undeclared))
+      "checksum record of the successor that moved it, saying what moved inside it; a file "
+      "moving without one is a failure even though the exception now spans the whole set",
+      str(_undeclared))
 check("run36.fault36.evidence_and_rationale_captured",
       "decision.rationale = payload.get(\"rationale\")" in _dec
       and "decision.evidence_items = evidence_items" in _dec

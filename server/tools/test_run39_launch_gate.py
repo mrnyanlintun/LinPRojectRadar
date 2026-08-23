@@ -126,11 +126,12 @@ identity("run38 blocker count", "0", str(readiness["blocker_count"]),
 # RESTATED BY RUN 48, same reasoning again: the launch gate must track the instrument
 # that will actually be launched, which is now the Run-48 successor.
 # RESTATED BY RUN 49, same reasoning again, now the Run-49 successor.
-identity("simulation", "sim-2026.08-v34", SIMULATION_VERSION,
+# RESTATED BY RUN 52, same reasoning again, now the Run-52 successor.
+identity("simulation", "sim-2026.08-v35", SIMULATION_VERSION,
          "app.simulation.models.SIMULATION_VERSION (live code)")
 identity("v25 freeze record preserved", "sim-2026.08-v25", freeze["simulation_version"],
          "INSTRUMENT_FINAL_FREEZE_RECORD.json (the predecessor, not rewritten)")
-identity("participant package", "og-participant-2026.08-v19", PP.CURRENT.identifier,
+identity("participant package", "og-participant-2026.08-v20", PP.CURRENT.identifier,
          "tools/participant_packages.CURRENT (live code)")
 identity("synthetic package", "OG-SYNTH-0.6", freeze["synthetic_package"],
          "INSTRUMENT_FINAL_FREEZE_RECORD.json")

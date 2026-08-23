@@ -175,7 +175,7 @@
           x: pos.x + radius * Math.cos(a),
           y: pos.y + radius * Math.sin(a),
           fill: moduleFill(raw),
-          key: m && m.key, name: m && m.name, status: raw   // identity for the click callout
+          module_id: m && m.module_id, name: m && m.name, status: raw   // identity for the click callout
         });
       }
     };

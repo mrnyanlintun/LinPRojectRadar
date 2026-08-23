@@ -420,7 +420,7 @@
         const status = window.getModuleStatus(m.method_class, project);
         const simResult = sim.find((r) => r.method_class === m.method_class) || null;
         return {
-          id: m.id, key: m.key, name: m.name, method_class: m.method_class,
+          id: m.id, module_id: m.module_id, name: m.name, method_class: m.method_class,
           status: status || null,
           evidence_metric: simResult ? (simResult.evidence_metric || null) : null,
           raw: simResult

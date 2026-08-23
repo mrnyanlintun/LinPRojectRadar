@@ -149,7 +149,7 @@ check(len(repo_ids) == len(synthetic_ids) == len(set(zip(repo_ids, synthetic_ids
 # The repository module ids come from the registry, not from this file's opinion.
 registry_source = (REPO / "assets" / "js" / "categories.js").read_text(encoding="utf-8")
 registry_names = dict(
-    re.findall(r"key: '([^']+)', name: '([^']+)'", registry_source)
+    re.findall(r"module_id: '([^']+)', name: '([^']+)'", registry_source)
 )
 # RUN 43, THE RETIREMENT. categories.js carries the population IN SERVICE, so a retired
 # identifier has no row there to read a name from. The registry still resolves it -- retirement
