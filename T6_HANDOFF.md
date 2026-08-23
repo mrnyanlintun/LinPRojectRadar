@@ -9,6 +9,89 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-23 - Run 54: FOUR PHASES, IN ORDER. COMMITTED, NOT MERGED.
+
+**Report:** `REPORT_2026-08-22_run54_phases.md`.
+**Branch:** `run54-phases`, rooted at `bf36ef6`, tip `b9dbd0e`. **NOT MERGED, DELIBERATELY.**
+**Stamp:** still `sim-2026.08-v35`. **Package:** still `og-participant-2026.08-v20`.
+**Freeze gate 32/34.** **Repository: the Linux clone. Interpreter: `python3` 3.11.15 (no `.venv`).**
+
+## READ THIS FIRST: WHY NOTHING WAS MERGED, AND WHAT THE NEXT RUN MUST DO
+
+All four ordered phases were completed and each was committed before the next began. The run then
+reached the point where the mint is paid and **stopped there**. The gate is **32/34**: rows
+`run37.gate.generator_runs` and `run37.gate.reproduces` fail because `build_run37_acceptance.py`
+hashes the members of the pinned candidate identity from the live tree and raises
+`FileNotFoundError: assets/js/deepdive.js`, which phase B deleted. **The gate cannot be reproduced
+from the tree, so the merge rule forbids merging.** `main` is untouched at `bf36ef6`.
+
+**THE WHOLE OF WHAT REMAINS IS ONE MINT:** `sim-2026.08-v36`, `og-participant-2026.08-v21`, the
+v21 checksum record, the production-tree and authority-tree manifest re-takes,
+`run54_freeze_candidate_identity.json`, and the v21 `Package(...)` entry. Five suites go green
+with it and are red without it: `test_run22_production_tree_completeness` (39/44),
+`test_run28_participant_packages` (crash), `test_run20_declared_production_changes` (124/128),
+`test_run28_closure` (77/78) and `test_run37_freeze_gate` (32/34).
+
+## PHASE A: THE FIX IS THE START-AND-END DIRTY-TREE GUARD, NOT A `finally`
+
+`server/tools/campaign_safety.py` is new and carries the mechanism in its docstring so no run
+re-derives it. **All 39 campaigns are armed** — 35 in `server/tools`, 4 in `server/tests`. A
+campaign REFUSES TO BEGIN when production or client source is dirty; `server/run_all_suites.sh`
+checks the tree after EVERY suite. Both proved by injecting the Run 52 leak verbatim and watching
+two campaigns refuse, then restoring and watching them run.
+
+**IT CAUGHT A REAL LEAK ON ITS FIRST FULL RUN**, in `server/app/simulation/isolation_forest.py`.
+It did not reproduce standalone; whether it was a transient write or `.git/index` contention is
+NOT DETERMINABLE and is reported as such.
+
+**25 of the 39 campaigns can write into production or client source, not 4.** Run 53's
+path-string heuristic misses every campaign that joins its target from a variable
+(`SIM / "lineage.py"`, `S / "canonical_v8.py"`, `JS / "categories.js"`).
+
+**`finally` hygiene is 8 of 23.** The other fifteen are UNSTARTED FOR BUDGET, not stopped, and all
+fifteen are armed.
+
+## PHASE B: THE DEEP-DIVE SURFACE IS DELETED, AND SO IS ITS ROUTE
+
+`research/deepdive.html` and `assets/js/deepdive.js` are gone, with
+`server/app/main.py`'s `/research/deepdive.html` route. Measured in a browser: HTTP 404, and
+`deepdive.js` in `document.scripts` is `[]`. **`categories.js` is NOT dead and was NOT deleted** —
+`tests.html` and `tools/export_lib.html` still load it. Sixteen guards, suites, drivers and
+manifests were reconciled and are green; **none was disabled or weakened**, and each check's
+subject moved from "confined to one route" to "reached by no route", which is stricter.
+`participant_packages.py` carries `V20_TO_V21_SEQUENCE_EXCEPTION` — **the first link in the chain
+whose delta is a DELETION.**
+
+## PHASE C: MANAGE NAVIGATES, AND OPEN IS GONE
+
+Verified in a real browser, per row and per surface, **with Open still in place**, on three rows;
+only then was Open removed; then re-verified. Controls per row: **2 → 1**. 24 passed, 0 failed.
+
+**THE INLINE ADMIN ACCORDION IS NOW UNREACHABLE AND A DECISION IS OWED.** It is NOT deleted —
+`ingest.js:207-266` still builds it — but `LinIngest.openInlineManage` had exactly one call site
+and that was the Manage handler. Six operational controls (Save info, Upload documents, Recompute
+this project, Reset signals, Archive, Close) are no longer reachable from the project list.
+
+## PHASE D: THE AUTHORITY IS REVISED AND THE CONTRADICTION IS RESOLVED
+
+Displayed identifiers are acceptable. **The dash and ampersand rules STAND**, and
+`run51_dash_sweep.py` is byte for byte untouched. **NO RENDERED IDENTIFIER CHANGED** — the diff on
+`assets/` and `index.html` for phase D is empty. **The identifier rule lived as a live statement in
+exactly TWO places**, this handoff and the authority; the ~ten further guard files all carry the
+DASH or AMPERSAND rules and NOT ONE needed reconciling.
+
+**A RUN 53 READING IS CORRECTED:** `test_run2_fifteen_defects.py:1645` is NOT a live guard
+asserting the superseded rule. It is a pinned historical diff of `assets/js/detail.js`, and
+rewriting it would falsify the pin.
+
+## A DEFECT IN THIS RUN'S OWN WORK, FOUND BY RUNNING THE SUITES
+
+The phase-B non-vacuity proofs were written against `HEAD~1`. That was true only while the deletion
+was the last commit; every later commit walked the reference back one, until it pointed at a tree
+where the file was already gone — **a false non-vacuity proof that still passed.** All five sites
+now pin `RUN54_PREDELETION_COMMIT = "bf36ef6"`. A moving reference in a non-vacuity proof is the
+same class of defect as a snapshot taken from disk.
+
 # 2026-08-23 - Run 52: TWO REDUNDANT CONTROLS, AND ONE NAME ACROSS THE WIRE. MERGED.
 
 **Report:** `REPORT_2026-08-22_run52_controls_and_naming.md`.
