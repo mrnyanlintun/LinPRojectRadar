@@ -874,7 +874,7 @@
       saved = await LinStore.saveProject(project);
       if (!saved || saved.ok === false) throw new Error("save returned no project");
     } catch (e) {
-      console.warn("[signals] post-compute saveProject FAILED for", project.id, "not recorded", e && e.message);
+      console.warn("[signals] post-compute saveProject FAILED for", project.id, "reason:", e && e.message);
       notifySaveFailed(project, si, simPayload, e);
       throw e;   // propagate: callers must not treat a failed save as success
     }
@@ -925,7 +925,7 @@
         if (window.LinUI && LinUI.toast) LinUI.toast("Signal results saved.", true);
         if (window.LinApp && LinApp.refresh) LinApp.refresh();
       } catch (e) {
-        console.warn("[signals] save retry FAILED for", project.id, "not recorded", e && e.message);
+        console.warn("[signals] save retry FAILED for", project.id, "reason:", e && e.message);
         notifySaveFailed(project, si, simPayload, e);
       }
     };
@@ -1653,7 +1653,7 @@
       } catch (e) {
         // runModels already showed the retry toast + logged the breadcrumb; log the
         // batch-level context too so the failure is traceable, and don't pretend success.
-        console.warn("[upload] batch signal run/save failed for", id, "not recorded", e && e.message);
+        console.warn("[upload] batch signal run/save failed for", id, "reason:", e && e.message);
       }
       // this project's signals were just (re)computed — clear any sector-changed flag
       try { if (window.LinApp && LinApp.clearSectorDirty) LinApp.clearSectorDirty(id); } catch (e) {}

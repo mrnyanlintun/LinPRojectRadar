@@ -1837,7 +1837,12 @@
     // Signal Pattern — group rows (● STATUS (n) — synthesis) with coloured dots.
     const patItems = parsed.pattern.map((raw) => {
       const line = raw.replace(/^[●○•*-]\s*/, "").trim();
-      const dash = line.indexOf("not recorded") >= 0 ? line.indexOf("not recorded") : line.indexOf(" - ");
+      // RUN 51, RULING 4, STOP CONDITION 9.3. This em dash is NOT prose and is NOT ours: it is a
+    // PARSER over text the model produced, splitting a Signal Pattern line at whatever
+    // separator the model wrote. Replacing it with words would stop the parse. The dash is
+    // syntactically significant here, so this instance is STOPPED and reported rather than
+    // swept, and the sweep's blanket pass over this file is reverted at this line.
+    const dash = line.indexOf("\u2014") >= 0 ? line.indexOf("\u2014") : line.indexOf(" - ");
       const head = dash > 0 ? line.slice(0, dash).trim() : line;
       const body = dash > 0 ? line.slice(dash + 1).replace(/^[—-]\s*/, "").trim() : "";
       const k = statusKeyFromText(head);

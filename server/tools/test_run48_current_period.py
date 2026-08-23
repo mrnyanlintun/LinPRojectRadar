@@ -352,18 +352,25 @@ try:
     print("6. THE LIVE NAMING INSTANCES ARE CORRECTED (S6.11, S6.12)")
     print("=" * 78)
 
-    _map = DEEPDIVE[DEEPDIVE.index("const CAT_FROM_MODULE"):
-                    DEEPDIVE.index("const CAT_NUM_FROM_MODULE")]
+    # RUN 51, RULINGS 5 AND 6. Run 48 separated the panel LABEL map from the panel BUCKET map so
+    # that the text could be corrected without moving a panel. Run 51 replaced BOTH with ONE
+    # table of category KEYS, from which the label and the bucket are derived through the loaded
+    # taxonomy: the label a participant reads is now the category's own NAME and is not in this
+    # file at all, which is a stronger form of the property Run 48 asserted. Every check below is
+    # restated against that table. None is deleted.
+    _map = DEEPDIVE[DEEPDIVE.index("const CAT_KEY_FROM_MODULE"):
+                    DEEPDIVE.index("function projectCatList")]
     check(not re.search(r'"Cat\s', _map),
-          "deepdive.js CAT_FROM_MODULE no longer maps a module number to a retired label",
+          "deepdive.js's panel table no longer maps a module number to a retired label",
           _map[:200])
-    check('"01": "Cost Performance"' in DEEPDIVE and '"19": "Governance and Compliance"' in DEEPDIVE,
-          "its values are groups and purposes, keyed on the legacy module numbers the call "
-          "sites pass, which are matched against and never displayed")
+    check('"01": "A1"' in _map and '"19": "B3"' in _map,
+          "its values are CATEGORY KEYS in the current taxonomy, keyed on the legacy module "
+          "numbers the call sites pass, which are matched against and never displayed")
     check('"Cat " + key' not in DEEPDIVE,
           "and the fallback no longer builds a label out of the retired scheme",
           str([ln for ln in DEEPDIVE.splitlines() if '"Cat " + key' in ln])[:200])
-    check('return CAT_FROM_MODULE[key] || "Signal Analysis";' in DEEPDIVE,
+    check('return (cat && cat.name) || "Signal Analysis";' in DEEPDIVE,
+          "a panel is labelled with its category's own name, read from the loaded taxonomy, and "
           "an unmapped module is described by its purpose and nothing else")
     check("Synthesis\\n(Cat 6)" not in CHARTS3D and "Signal\\nSynthesis" in CHARTS3D,
           "charts3d.js labels the synthesis node by its purpose")
@@ -381,12 +388,18 @@ try:
     check(not _carriers,
           "and no served JavaScript file in the tree carries the constant", str(_carriers))
 
-    # THE GROUPING DID NOT MOVE WITH THE LABEL. The bucket key used to be parsed out of the
-    # displayed label; the numbers below are the ones that parse produced, written as literals.
-    check('"01": "1", "02": "1", "03": "1"' in DEEPDIVE
-          and '"09": "6"' in DEEPDIVE and '"19": "8"' in DEEPDIVE,
-          "the panel grouping numbers are declared separately and are exactly the numbers the "
-          "retired labels parsed to, so correcting the text moved no panel")
+    # RUN 51, RULING 5. Run 48 asserted that correcting the LABEL moved no panel, by pinning the
+    # bucket numbers as literals. Ruling 5 ORDERS panels to move -- to the category their module
+    # belongs to in the CURRENT taxonomy -- and ruling 6 orders the bucket to be derived rather
+    # than written as a literal at all. The property Run 48 was protecting survives in a stronger
+    # form: the label and the bucket now come from ONE table through the loaded taxonomy, so
+    # correcting the text cannot move a panel because the text is not the source of either.
+    check("CAT_NUM_FROM_MODULE" not in DEEPDIVE
+          and '"01": "A1", "02": "A1"' in DEEPDIVE and '"09": "B1"' in DEEPDIVE
+          and '"19": "B3"' in DEEPDIVE,
+          "the panel bucket is derived from the same category key the label is, so they cannot "
+          "disagree and correcting the text cannot move a panel; and the retired numbers the "
+          "old literal map held are gone from the file")
 
     print()
     print("=" * 78)

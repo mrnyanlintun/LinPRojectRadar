@@ -552,9 +552,13 @@ check("Portfolio Health is no longer in service." in _PRIOR
       and "needs at least 3 projects" in _PRIOR,
       "and both sentences WERE in the bytes at ad4f614, so the two absence claims above are "
       "not vacuous")
+# Scoped to THE SERVED APPLICATION -- assets/, index.html and research/ -- because that is
+# where a caller would have to live for the flyout to be reachable. The freeze records and this
+# run's own report NAME the symbol in prose, which is not a caller.
 _callers = [ln for ln in
             subprocess.run(["git", "grep", "-n", "renderCat8Health", "--",
-                            "assets", "index.html", "research"], cwd=str(ROOT),
+                            "assets/*.js", "assets/js/*.js", "index.html",
+                            "research/*.html"], cwd=str(ROOT),
                            capture_output=True, text=True, encoding="utf-8").stdout.splitlines()
             if ln.strip()]
 check(not _callers,
