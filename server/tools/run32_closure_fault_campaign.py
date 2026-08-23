@@ -295,18 +295,26 @@ def main() -> int:
             continue
         tally["applied"] += 1
 
-        frc, fout, fres = run_guard(guard)
-        crash = fres is None
-        red = (fres is not None) and (not is_green(fres))
-        fails = failing_lines(fout)
-        hit = [f for f in fails if reason.strip().lower() in f.strip().lower()]
-        intended = red and bool(hit)
-        actual = ("no RESULT line (crash)" if crash else
-                  ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
-                  else "GREEN - guard did not notice")
+        # RUN 55, PHASE B. THE GUARD RUN IS INSIDE A `try` AND THE RESTORE IS ITS
+        # `finally`. The restore was a bare statement after run_guard(), so a raise in
+        # run_guard -- a timeout, a decode error, a kill -- left the mutated bytes on
+        # disk. Run 53 established that the next campaign then snapshots the corruption
+        # and cements it with its own correct restore. The arm() guard is the fix; this
+        # is the hygiene, and a known-incomplete repair is not left half-done.
+        try:
+            frc, fout, fres = run_guard(guard)
+            crash = fres is None
+            red = (fres is not None) and (not is_green(fres))
+            fails = failing_lines(fout)
+            hit = [f for f in fails if reason.strip().lower() in f.strip().lower()]
+            intended = red and bool(hit)
+            actual = ("no RESULT line (crash)" if crash else
+                      ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
+                      else "GREEN - guard did not notice")
+        finally:
+            clear_pycache()
+            target.write_bytes(original)
 
-        clear_pycache()
-        target.write_bytes(original)
         restored = target.read_bytes() == original
         clear_pycache()
         rrc, rout, rres = run_guard(guard)

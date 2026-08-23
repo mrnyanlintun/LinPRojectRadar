@@ -48,7 +48,12 @@ _cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
 from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
                              snapshot_text, CampaignTreeDirty)
 _cs_arm(_cs_pl.Path(ROOT), "run39_fault_campaign.py",
-        allow=["code_audit/run39_pilot_browser_execution.csv"])
+        # RUN 55, PHASE B, section 8 item 1: TIGHTENED TO THE DECLARED OUTPUT. The entry
+        # here was `run39_pilot_browser_execution.csv`, which this campaign READS as an
+        # oracle and MUTATES as fault 17's target -- it is not an output. The file this
+        # campaign is designed to write is run39_fault_campaign_results.csv (line ~384),
+        # and it was not declared at all. Both halves of that are corrected here.
+        allow=["code_audit/run39_fault_campaign_results.csv"])
 # -------------------------------------------------------------------------------------------
 AUDIT = ROOT / "code_audit"
 
@@ -349,22 +354,27 @@ def main() -> int:
             continue
         counts["applied"] += 1
 
-        verdict, evidence, failed = ORACLES[oracle_name]()
-        if verdict == "CRASH":
-            counts["crashed"] += 1
-            outcome = "CRASH_NOT_COUNTED_AS_RED"
-        elif verdict == "RED" and fragment and fragment in failed:
-            counts["red"] += 1
-            outcome = "RED_FOR_INTENDED_REASON"
-        elif verdict == "RED":
-            counts["unrelated"] += 1
-            outcome = "RED_BUT_UNRELATED_NOT_COUNTED"
-        else:
-            counts["undetected"] += 1
-            outcome = "STILL_GREEN_FAULT_UNDETECTED"
-
-        for q in paths:
-            q.write_bytes(before_all[q])
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare loop after the
+        # oracle ran, so a raise there left every mutated file on disk. Run 53 established
+        # that the next campaign then snapshots the corruption and cements it with its own
+        # correct restore. The arm() guard is the fix; this is the hygiene.
+        try:
+            verdict, evidence, failed = ORACLES[oracle_name]()
+            if verdict == "CRASH":
+                counts["crashed"] += 1
+                outcome = "CRASH_NOT_COUNTED_AS_RED"
+            elif verdict == "RED" and fragment and fragment in failed:
+                counts["red"] += 1
+                outcome = "RED_FOR_INTENDED_REASON"
+            elif verdict == "RED":
+                counts["unrelated"] += 1
+                outcome = "RED_BUT_UNRELATED_NOT_COUNTED"
+            else:
+                counts["undetected"] += 1
+                outcome = "STILL_GREEN_FAULT_UNDETECTED"
+        finally:
+            for q in paths:
+                q.write_bytes(before_all[q])
         drop_pycache()
         for q in paths:
             assert q.read_bytes() == before_all[q], f"restore failed for {q}"

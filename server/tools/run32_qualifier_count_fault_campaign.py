@@ -114,13 +114,20 @@ def main():
 
     rows = []
     for num, label, mutate, expect in FAULTS:
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement after
+        # run_guard(), so a raise there left the mutated bytes on disk -- and one of these four
+        # faults mutates server/tools' own reconciliation builder. Run 53 established that the
+        # next campaign then snapshots the corruption and cements it with its own correct
+        # restore. The arm() guard is the fix; this is the hygiene.
         path, original = mutate()
-        applied = open(path, "rb").read() != original          # re-read from disk
-        clear_pycache()
-        state, out, failing = run_guard()
-        joined = " | ".join(failing).lower()
-        reason_ok = any(e.lower() in joined for e in expect)
-        open(path, "wb").write(original)
+        try:
+            applied = open(path, "rb").read() != original      # re-read from disk
+            clear_pycache()
+            state, out, failing = run_guard()
+            joined = " | ".join(failing).lower()
+            reason_ok = any(e.lower() in joined for e in expect)
+        finally:
+            open(path, "wb").write(original)
         clear_pycache()
         back, _, _ = run_guard()
         rows.append({

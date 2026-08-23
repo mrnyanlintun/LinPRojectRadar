@@ -568,24 +568,33 @@ def main() -> int:
             continue
         tally["applied"] += 1
 
-        # ---- RUN THE GUARD.
-        frc, fout, fres = run_guard(guard)
-        crash = fres is None
-        red = (fres is not None) and (not is_green(fres))
-        # THE INTENDED REASON MUST BE ONE OF THE GUARD'S OWN FAILING CHECKS. Matching against the
-        # whole output would accept a PASSING line carrying the same words, and matching loosely
-        # would accept an unrelated failure -- both are ways a check has lied here before.
-        fails = failing_lines(fout)
-        key = reason.strip().lower()
-        hit = [f for f in fails if key in f.strip().lower()]
-        intended = red and bool(hit)
-        actual = ("no RESULT line (crash)" if crash else
-                  ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
-                  else "GREEN - guard did not notice")
+        # RUN 55, PHASE B. THE GUARD RUN IS INSIDE A `try` AND THE RESTORE IS ITS
+        # `finally`. The restore was a bare statement after run_guard(), so a raise in
+        # run_guard -- a timeout, a decode error, a kill -- left the mutated bytes on
+        # disk. Run 53 established that the next campaign then snapshots the corruption
+        # and cements it with its own correct restore. The arm() guard is the fix; this
+        # is the hygiene, and a known-incomplete repair is not left half-done.
+        try:
+            # ---- RUN THE GUARD.
+            frc, fout, fres = run_guard(guard)
+            crash = fres is None
+            red = (fres is not None) and (not is_green(fres))
+            # THE INTENDED REASON MUST BE ONE OF THE GUARD'S OWN FAILING CHECKS. Matching against the
+            # whole output would accept a PASSING line carrying the same words, and matching loosely
+            # would accept an unrelated failure -- both are ways a check has lied here before.
+            fails = failing_lines(fout)
+            key = reason.strip().lower()
+            hit = [f for f in fails if key in f.strip().lower()]
+            intended = red and bool(hit)
+            actual = ("no RESULT line (crash)" if crash else
+                      ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
+                      else "GREEN - guard did not notice")
+        finally:
+            clear_pycache()
+            target.write_bytes(original)
 
-        # ---- RESTORE BYTE FOR BYTE, CLEARING CACHE ON BOTH SIDES.
-        clear_pycache()
-        target.write_bytes(original)
+        # ---- RESTORE BYTE FOR BYTE, CLEARING CACHE ON BOTH SIDES: done in the `finally`
+        # above as of Run 55 phase B; this only re-reads to confirm it took.
         restored = target.read_bytes() == original
         clear_pycache()
         rrc, rout, rres = run_guard(guard)

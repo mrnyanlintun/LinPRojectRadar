@@ -202,30 +202,39 @@ def main() -> int:
                         expected_check=""))
 
     ok = True
+    # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement at the end of the
+    # loop body, so a raise between the mutation and it left the mutated bytes on disk, where
+    # Run 53 established the next campaign snapshots them and cements them with its own correct
+    # restore. The guard from campaign_safety.arm() is the fix; this is the hygiene, and a
+    # known-incomplete repair is not left half-done.
     for label, mutate, confirm, expected in FAULTS:
-        cols, rows = read_rows()
-        write_rows(cols, mutate(rows))
-        _, reread = read_rows()
-        applied = confirm(reread)
-        if not applied:
-            print(f"{label}: INJECTION DID NOT APPLY -- campaign halted for this fault")
-            records.append(dict(fault=label, injection_confirmed="NO",
-                                guard_exit="", verdict="INJECTION_FAILED",
-                                detail="the mutation was not present when the file was re-read",
-                                expected_check=expected))
-            ok = False
+        applied = False
+        try:
+            cols, rows = read_rows()
+            write_rows(cols, mutate(rows))
+            _, reread = read_rows()
+            applied = confirm(reread)
+            if not applied:
+                print(f"{label}: INJECTION DID NOT APPLY -- campaign halted for this fault")
+                records.append(dict(fault=label, injection_confirmed="NO",
+                                    guard_exit="", verdict="INJECTION_FAILED",
+                                    detail="the mutation was not present when the file "
+                                           "was re-read",
+                                    expected_check=expected))
+                ok = False
+            else:
+                rc, out = run_guard()
+                status, detail = verdict(rc, out, expected)
+                print(f"{label}\n    injection confirmed on re-read: YES\n    "
+                      f"{status}  {detail}")
+                records.append(dict(fault=label, injection_confirmed="YES", guard_exit=str(rc),
+                                    verdict=status, detail=detail, expected_check=expected))
+                if status != "RED_FOR_THE_INTENDED_REASON":
+                    ok = False
+        finally:
             shutil.copy2(backup, MATRIX)
+        if not applied:
             continue
-
-        rc, out = run_guard()
-        status, detail = verdict(rc, out, expected)
-        print(f"{label}\n    injection confirmed on re-read: YES\n    {status}  {detail}")
-        records.append(dict(fault=label, injection_confirmed="YES", guard_exit=str(rc),
-                            verdict=status, detail=detail, expected_check=expected))
-        if status != "RED_FOR_THE_INTENDED_REASON":
-            ok = False
-
-        shutil.copy2(backup, MATRIX)
         rc, out = run_guard()
         rstatus, rdetail = verdict(rc, out, "")
         print(f"    restored -> {rstatus} {rdetail}")

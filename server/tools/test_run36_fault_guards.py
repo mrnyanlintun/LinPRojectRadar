@@ -36,7 +36,13 @@ _cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
 from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
                              snapshot_text, CampaignTreeDirty)
 _cs_arm(_cs_pl.Path(ROOT), "test_run36_fault_guards.py",
-        allow=["code_audit/run51_participant_package_v19_checksums.sha256", "code_audit/run52_participant_package_v20_checksums.sha256"])
+        # RUN 55, PHASE B, section 8 item 1: THE ALLOW LIST IS TIGHTENED TO DECLARED
+        # OUTPUTS. Run 54 derived this list by taking every `code_audit/` literal in the
+        # file, which swept in READ-ONLY inputs and fault TARGETS as well as outputs. An
+        # allow entry is a promise that the campaign is designed to write that path;
+        # naming a file it only reads widens the guard for nothing. Established by
+        # execution: this file contains no write to code_audit at all.
+        allow=[])
 # -------------------------------------------------------------------------------------------
 sys.path.insert(0, str(ROOT / "server"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))

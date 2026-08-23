@@ -43,12 +43,28 @@ PROD_DIRT() { git -C .. status --porcelain -- \
     server/app assets index.html research tests.html 2>/dev/null; }
 BASELINE_DIRT="$(PROD_DIRT)"
 
-for f in tools/test_*.py; do
+# --- RUN 55, PHASE B: server/tests/ IS INSIDE THE PASS ---------------------------------------
+# This loop read `tools/test_*.py` only. server/tests/ holds TEN further suites that the pass
+# never ran, four of them mutating fault campaigns -- including test_run34_fault_campaign.py,
+# which injects two of the three guards Run 52 found neutered. THE CAMPAIGN MOST IMPLICATED IN
+# THE LEAK SAT OUTSIDE THE PASS MEANT TO CATCH IT. The owner's ruling at section 8 of the Run 55
+# order is that it comes inside.
+#
+# The two directories hold same-named files with DIFFERENT CONTENTS: server/tools/test_run34_*
+# are stubs that write nothing, server/tests/test_run34_* are the real mutating campaigns. They
+# are NOT conflated -- each suite is keyed and reported by its FULL relative path, and each gets
+# its own database named after that path, so tools/test_run34_fault_campaign.py and
+# tests/test_run34_fault_campaign.py can never share a db or a result line.
+#
+# THE SUITE COUNT CHANGES BECAUSE OF THIS, and that figure is pinned in gate records. It is
+# reconciled at the mint (Run 55 phase D), not left stale.
+for f in tools/test_*.py tests/test_*.py; do
   SUITE_COUNT=$((SUITE_COUNT+1))
-  DB="$TMPDIR/$(basename "$f").db"
+  SUITE_DIR="$(dirname "$f")"
+  DB="$TMPDIR/$(echo "$f" | tr '/' '_').db"
   cp "$TEMPLATE_DB" "$DB"
   case "$VENV_PY" in /*) PY="$VENV_PY" ;; *) PY="../$VENV_PY" ;; esac
-  OUT=$(cd tools && DATABASE_URL="sqlite:///$DB" SESSION_SECRET="$SESSION_SECRET" PYTHONIOENCODING=utf-8 "$PY" "$(basename "$f")" 2>&1)
+  OUT=$(cd "$SUITE_DIR" && DATABASE_URL="sqlite:///$DB" SESSION_SECRET="$SESSION_SECRET" PYTHONIOENCODING=utf-8 "$PY" "$(basename "$f")" 2>&1)
   RC=$?
   # Canonical RESULT line only: "RESULT: <passed>/<total> checks passed". Prose summaries
   # ("34 passed, 0 failed") are NOT accepted — a suite that crashes before printing this,

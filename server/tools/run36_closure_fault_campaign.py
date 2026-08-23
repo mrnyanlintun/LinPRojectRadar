@@ -273,18 +273,24 @@ def main():
             print(f"fault {num:2d}  NOT_APPLIED  ({why})")
             continue
         counts["applied"] += 1
-        state, detail = run_guard(guard)
-        intended = state == "RED" and fragment in detail
-        if state == "CRASH":
-            counts["crashed"] += 1
-        if intended:
-            counts["red"] += 1
-        for p, created in targets:
-            if created:
-                if p.exists():
-                    p.unlink()
-            else:
-                p.write_bytes(before[p])
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare loop after
+        # run_guard(), so a raise there left every mutated file on disk. Run 53
+        # established that the next campaign then snapshots the corruption and cements it
+        # with its own correct restore. The arm() guard is the fix; this is the hygiene.
+        try:
+            state, detail = run_guard(guard)
+            intended = state == "RED" and fragment in detail
+            if state == "CRASH":
+                counts["crashed"] += 1
+            if intended:
+                counts["red"] += 1
+        finally:
+            for p, created in targets:
+                if created:
+                    if p.exists():
+                        p.unlink()
+                else:
+                    p.write_bytes(before[p])
         drop_pycache()
         restored = all((not p.exists()) if created else p.read_bytes() == before[p]
                        for p, created in targets)

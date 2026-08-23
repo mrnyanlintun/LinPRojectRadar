@@ -329,14 +329,21 @@ for fid, sysname, inv, path, old, new, guard, reason in F:
         path.write_text(backup.replace(old, new, 1))
         landed = path.read_text() != backup
         evidence = f"file bytes changed on disk: {landed}"
-    drop_cache()
-    p, t, rc = run_guard(guard)
-    crashed = (t == 0)
-    red = (p != t) and not crashed
-    if fid == 61:
-        target.write_bytes(backup)
-    else:
-        path.write_text(backup)
+    # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement, so a raise
+    # between the injection and it left the mutated bytes on disk, where Run 53 established
+    # the next campaign snapshots them and cements them with its own correct restore. The
+    # arm() guard above is the fix; this is the hygiene, and a known-incomplete repair is
+    # not left half-done.
+    try:
+        drop_cache()
+        p, t, rc = run_guard(guard)
+        crashed = (t == 0)
+        red = (p != t) and not crashed
+    finally:
+        if fid == 61:
+            target.write_bytes(backup)
+        else:
+            path.write_text(backup)
     drop_cache()
     p2, t2, _ = run_guard(guard)
     restored = (p2 == t2 and t2 > 0)

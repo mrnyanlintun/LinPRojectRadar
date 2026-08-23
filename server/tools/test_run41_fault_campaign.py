@@ -50,7 +50,14 @@ _cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
 from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
                              snapshot_text, CampaignTreeDirty)
 _cs_arm(_cs_pl.Path(ROOT), "test_run41_fault_campaign.py",
-        allow=["code_audit/run41_fault_campaign_results.csv"])
+        # RUN 55, PHASE B, section 8 item 1: THE ALLOW LIST IS TIGHTENED TO DECLARED
+        # OUTPUTS. Run 54 derived this list by taking every `code_audit/` literal in the
+        # file, which swept in READ-ONLY inputs and fault TARGETS as well as outputs. An
+        # allow entry is a promise that the campaign is designed to write that path;
+        # naming a file it only reads widens the guard for nothing. Established by
+        # execution: this file contains no write to code_audit at all.
+        # (that artifact is written by run41_fault_campaign.py, a DIFFERENT file.)
+        allow=[])
 # -------------------------------------------------------------------------------------------
 CAMPAIGN = HERE / "run41_fault_campaign.py"
 RESULTS = ROOT / "code_audit" / "run41_fault_campaign_results.csv"
@@ -169,17 +176,24 @@ check(v0 == "GREEN", "baseline: the S2 guard is GREEN before injection", v0)
 
 src = MIGRATION.read_text(encoding="utf-8")
 check(ANCHOR in src, "the injection anchor is present in the live migration")
-MIGRATION.write_text(src.replace(ANCHOR, MUTANT, 1), encoding="utf-8")
-check(MIGRATION.read_bytes() != before, "the injection changed bytes on disk (it was APPLIED)")
+# RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement after run_guard(), so
+# a raise there left a MUTATED ALEMBIC MIGRATION on disk -- the file the freeze gate's S2 guard
+# reads. Run 53 established that the next campaign then snapshots the corruption and cements it
+# with its own correct restore. The arm() guard is the fix; this is the hygiene, and a
+# known-incomplete repair is not left half-done.
+try:
+    MIGRATION.write_text(src.replace(ANCHOR, MUTANT, 1), encoding="utf-8")
+    check(MIGRATION.read_bytes() != before,
+          "the injection changed bytes on disk (it was APPLIED)")
 
-v1, failing = run_guard()
-check(v1 == "RED", "with the trigger removed the S2 guard goes RED (a crash would not count)",
-      f"{v1}: {failing[:160]}")
-check(v1 == "RED" and FRAGMENT in failing,
-      "and it is RED for the INTENDED reason, quoted from the guard's own failing line",
-      failing[:200])
-
-MIGRATION.write_bytes(before)
+    v1, failing = run_guard()
+    check(v1 == "RED", "with the trigger removed the S2 guard goes RED (a crash would not count)",
+          f"{v1}: {failing[:160]}")
+    check(v1 == "RED" and FRAGMENT in failing,
+          "and it is RED for the INTENDED reason, quoted from the guard's own failing line",
+          failing[:200])
+finally:
+    MIGRATION.write_bytes(before)
 check(MIGRATION.read_bytes() == before, "the migration is restored byte for byte")
 v2, _ = run_guard()
 check(v2 == "GREEN", "and the S2 guard is GREEN again after restoration", v2)
