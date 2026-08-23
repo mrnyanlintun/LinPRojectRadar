@@ -38,6 +38,20 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run41_fault_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 AUDIT = ROOT / "code_audit"
 
 MAIN = ROOT / "server" / "app" / "main.py"
@@ -246,44 +260,42 @@ def main() -> int:
     for num, blocker, mut, oracle_name, fragment in FAULTS:
         paths = sorted({m[1] for m in (mut[2] if mut[0] == "multi" else (mut,))})
         before_all = {q: q.read_bytes() for q in paths}
-        drop_pycache()
-        ok, why = apply_one(mut)
-        landed = ok and any((not q.is_file()) or q.read_bytes() != before_all[q]
-                            for q in paths)
-        if not landed:
-            for q in paths:
-                q.write_bytes(before_all[q])
+        # RESTORE IN A `finally` THAT CANNOT BE SKIPPED. Before Run 54 both restore paths were
+        # straight-line code, so any raise in apply_one() or in an oracle left the fault on disk.
+        # Hygiene, not the fix -- see server/tools/campaign_safety.py.
+        with restore_guard(before_all, after=drop_pycache):
             drop_pycache()
-            rows.append([num, blocker, ";".join(str(q.relative_to(ROOT)) for q in paths),
-                         oracle_name, "NOT_APPLIED", "", "", "", "NOT_COUNTED", why, ""])
-            counts["not_applied"] += 1
-            print(f"fault {num:2d}  NOT_APPLIED  ({why})")
-            continue
-        counts["applied"] += 1
+            ok, why = apply_one(mut)
+            landed = ok and any((not q.is_file()) or q.read_bytes() != before_all[q]
+                                for q in paths)
+            if not landed:
+                rows.append([num, blocker, ";".join(str(q.relative_to(ROOT)) for q in paths),
+                             oracle_name, "NOT_APPLIED", "", "", "", "NOT_COUNTED", why, ""])
+                counts["not_applied"] += 1
+                print(f"fault {num:2d}  NOT_APPLIED  ({why})")
+                continue
+            counts["applied"] += 1
 
-        matched = ""
-        verdict, evidence, failed = ORACLES[oracle_name]()
-        if verdict == "CRASH":
-            counts["crashed"] += 1
-            outcome = "CRASH_NOT_COUNTED_AS_RED"
-        elif verdict == "RED" and fragment and fragment in failed:
-            counts["red"] += 1
-            outcome = "RED_FOR_INTENDED_REASON"
-            # RECORD THE EXACT LINE THAT CARRIED THE FRAGMENT, UNTRUNCATED. The full failing-line
-            # list is truncated in the artefact for readability, and a truncated list cannot
-            # support the verdict written beside it - a reader (or test_run41_fault_campaign.py)
-            # checking the evidence would find the fragment missing from its own record.
-            matched = next((ln for ln in failed.split(" | ") if fragment in ln), "")
-        elif verdict == "RED":
-            counts["unrelated"] += 1
-            outcome = "RED_BUT_UNRELATED_NOT_COUNTED"
-        else:
-            counts["undetected"] += 1
-            outcome = "STILL_GREEN_FAULT_UNDETECTED"
-
-        for q in paths:
-            q.write_bytes(before_all[q])
-        drop_pycache()
+            matched = ""
+            verdict, evidence, failed = ORACLES[oracle_name]()
+            if verdict == "CRASH":
+                counts["crashed"] += 1
+                outcome = "CRASH_NOT_COUNTED_AS_RED"
+            elif verdict == "RED" and fragment and fragment in failed:
+                counts["red"] += 1
+                outcome = "RED_FOR_INTENDED_REASON"
+                # RECORD THE EXACT LINE THAT CARRIED THE FRAGMENT, UNTRUNCATED. The full
+                # failing-line list is truncated in the artefact for readability, and a truncated
+                # list cannot support the verdict written beside it - a reader (or
+                # test_run41_fault_campaign.py) checking the evidence would find the fragment
+                # missing from its own record.
+                matched = next((ln for ln in failed.split(" | ") if fragment in ln), "")
+            elif verdict == "RED":
+                counts["unrelated"] += 1
+                outcome = "RED_BUT_UNRELATED_NOT_COUNTED"
+            else:
+                counts["undetected"] += 1
+                outcome = "STILL_GREEN_FAULT_UNDETECTED"
         for q in paths:
             assert q.is_file() and q.read_bytes() == before_all[q], f"restore failed for {q}"
         v2, _e2, _f2 = ORACLES[oracle_name]()

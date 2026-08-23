@@ -4,6 +4,20 @@ import os, pathlib, re, shutil, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run31_synthetic_scope_faults.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 SYNTH = ROOT / "research_fixtures" / "synthetic"
 SCOPE = HERE / "build_run31_synthetic_scope.py"
 SWEEP = HERE / "test_run31_synthetic_checksums.py"

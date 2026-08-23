@@ -19,6 +19,20 @@ HERE = pathlib.Path(__file__).resolve().parent
 SERVER = HERE.parent
 ROOT = SERVER.parent
 
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run32_b3_fault_campaign.py",
+        allow=["code_audit/run32_b3_fault_injection.csv"])
+# -------------------------------------------------------------------------------------------
+
 AGREE = "test_run32_method_class_agreement.py"
 GENERATED = "test_run11_defensibility_claims.py"
 CATEGORIES = ROOT / "assets" / "js" / "categories.js"

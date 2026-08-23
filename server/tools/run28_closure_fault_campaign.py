@@ -39,6 +39,20 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run28_closure_fault_campaign.py",
+        allow=["code_audit/run12_participant_package_checksums.sha256", "code_audit/run28_closure_fault_injection.csv", "code_audit/run28_closure_participant_package_checksums.sha256"])
+# -------------------------------------------------------------------------------------------
 OUT = ROOT / "code_audit" / "run28_closure_fault_injection.csv"
 
 
@@ -200,15 +214,18 @@ def main() -> None:
             continue
 
         if kind == "UNTRACKED_FILE":
-            path.write_text("# Run 28 closure non-vacuity probe. Deleted by the campaign.\n",
-                            encoding="utf-8")
-            confirmed = path.is_file() and "non-vacuity probe" in path.read_text(encoding="utf-8")
-            untracked = subprocess.run(
-                ["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=all"],
-                capture_output=True, text=True).stdout
-            confirmed = confirmed and f"?? {target}" in untracked
-            observed = run_suite(suite)
-            path.unlink()
+            # RESTORE IN A `finally` THAT CANNOT BE SKIPPED. Straight-line restore left the probe
+            # file on disk whenever run_suite() raised.
+            with restore_guard({}, after=lambda: path.unlink(missing_ok=True)):
+                path.write_text("# Run 28 closure non-vacuity probe. Deleted by the campaign.\n",
+                                encoding="utf-8")
+                confirmed = path.is_file() and "non-vacuity probe" in path.read_text(
+                    encoding="utf-8")
+                untracked = subprocess.run(
+                    ["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=all"],
+                    capture_output=True, text=True).stdout
+                confirmed = confirmed and f"?? {target}" in untracked
+                observed = run_suite(suite)
             restored = not path.exists()
         else:
             original = path.read_bytes()
@@ -222,10 +239,11 @@ def main() -> None:
                                  injection_confirmed="site not found", observed="ABORTED",
                                  baseline_after="", verdict="FAIL"))
                 continue
-            path.write_text(text.replace(find, repl, 1), encoding="utf-8")
-            confirmed = repl in path.read_text(encoding="utf-8")  # re-read FROM DISK
-            observed = run_suite(suite)
-            path.write_bytes(original)
+            # RESTORE IN A `finally` THAT CANNOT BE SKIPPED.
+            with restore_guard({path: original}):
+                path.write_text(text.replace(find, repl, 1), encoding="utf-8")
+                confirmed = repl in path.read_text(encoding="utf-8")  # re-read FROM DISK
+                observed = run_suite(suite)
             restored = hashlib.sha256(path.read_bytes()).hexdigest() == digest
 
         base_after = run_suite(suite)

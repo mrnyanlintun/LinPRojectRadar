@@ -23,6 +23,20 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run35_closure_fault_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 SERVER = ROOT / "server"
 AUDIT = ROOT / "code_audit"
 GUARD = HERE / "test_run35_closure_voter_identities.py"
@@ -214,25 +228,25 @@ def main():
     for num, desc, mut, guard, fragment in FAULTS:
         f = mut[1]
         before = f.read_bytes()
-        drop_pycache()
-        ok, why = apply_one(mut)
-        landed = ok and f.read_bytes() != before
-        if not landed:
-            f.write_bytes(before)
+        # RESTORE IN A `finally` THAT CANNOT BE SKIPPED. The restore below was straight-line
+        # code before Run 54: any raise inside apply_one() or run_guard() left the fault on
+        # disk. Hygiene, not the fix -- see server/tools/campaign_safety.py.
+        with restore_guard({f: before}, after=drop_pycache):
             drop_pycache()
-            rows.append([num, desc, "NOT_APPLIED", guard, "", "", why, "", "NOT_COUNTED"])
-            counts["not_applied"] += 1
-            print(f"fault {num:2d}  NOT_APPLIED  ({why})")
-            continue
-        counts["applied"] += 1
-        state, detail = run_guard(guard)
-        intended = state == "RED" and fragment in detail
-        if state == "CRASH":
-            counts["crash_as_red"] += 0            # never accepted
-        if intended:
-            counts["red"] += 1
-        f.write_bytes(before)
-        drop_pycache()
+            ok, why = apply_one(mut)
+            landed = ok and f.read_bytes() != before
+            if not landed:
+                rows.append([num, desc, "NOT_APPLIED", guard, "", "", why, "", "NOT_COUNTED"])
+                counts["not_applied"] += 1
+                print(f"fault {num:2d}  NOT_APPLIED  ({why})")
+                continue
+            counts["applied"] += 1
+            state, detail = run_guard(guard)
+            intended = state == "RED" and fragment in detail
+            if state == "CRASH":
+                counts["crash_as_red"] += 0            # never accepted
+            if intended:
+                counts["red"] += 1
         restored = f.read_bytes() == before
         state2, detail2 = run_guard(guard)
         good = restored and state2 == "GREEN"

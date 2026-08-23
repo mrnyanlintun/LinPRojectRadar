@@ -38,6 +38,8 @@ sys.path.insert(0, str(ROOT / "server" / "tools"))
 
 from app.simulation import canonical_v8 as V8                          # noqa: E402
 
+from campaign_safety import arm, snapshot_text   # noqa: E402
+
 OUT = ROOT / "code_audit" / "run33_portfolio_fault_injection_results.csv"
 FIXTURES = ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.5" / "package_D_portfolio_health"
 REQUIRED = 25
@@ -137,7 +139,8 @@ def source_fault(n, target, path, old, new, mutation, guard_name, guard,
     global REDS, APPLIED, RESTORED, CRASHES
     arg = arg if arg is not None else str(FIXTURES / fixture_name)
     f = ROOT / path
-    original = f.read_text(encoding="utf-8")
+    # Snapshot from the COMMITTED bytes at HEAD, never from disk.
+    original = snapshot_text(ROOT, path)
     drop_pycache()
     base = run_probe(body, arg)
     green_before = check(base.get("ok") is True and guard(base) is True,
@@ -269,6 +272,9 @@ ANM_KEY = "cat8_5_anomaly_score"
 
 
 # =================================================================================================
+# THE START GUARD. See server/tools/campaign_safety.py for why an end-only check is useless.
+arm(ROOT, "run33 portfolio fault injection", allow=[OUT])
+
 head("FAULTS 1-8: PH.1 ISOLATION FOREST")
 # =================================================================================================
 

@@ -26,6 +26,22 @@ TOTAL_PASS=0
 TOTAL_CHECKS=0
 FAILED_SUITES=()
 SUITE_COUNT=0
+DIRTY_SUITES=()
+
+# --- RUN 54, PHASE A: THE RUNNER FAILS WHEN A SUITE LEAVES THE TREE DIRTY --------------------
+# Run 52 found three guards in server/app/simulation/canonical_v8.py replaced by `if False:`,
+# left by a fault campaign that died between injecting and restoring. Five runs missed it
+# because the NEXT campaign snapshotted the corruption from disk, faithfully restored it, and
+# its own assertion then CERTIFIED it. Nothing was failing. So the runner now checks the tree
+# after EVERY suite, not just after campaigns, and names the offending paths.
+#
+# Scope: production and client source only. code_audit/ artifacts are declared suite outputs --
+# Run 52 saw 26 of them rewritten by a single pass -- and are restored by the session, not by
+# the runner. Excluding them is what makes the check runnable at all; it never exempts the leak
+# class, because a fault injection lands in server/app, assets or research, never in code_audit.
+PROD_DIRT() { git -C .. status --porcelain -- \
+    server/app assets index.html research tests.html 2>/dev/null; }
+BASELINE_DIRT="$(PROD_DIRT)"
 
 for f in tools/test_*.py; do
   SUITE_COUNT=$((SUITE_COUNT+1))
@@ -59,11 +75,28 @@ for f in tools/test_*.py; do
       echo "ok    $f  $NUMS"
     fi
   fi
+
+  # THE DIRTY-TREE CHECK, after this suite. A suite that leaves a fault in production or client
+  # source fails the runner even when every one of its own checks passed -- which is exactly the
+  # case that survived five runs.
+  NOW_DIRT="$(PROD_DIRT)"
+  if [ "$NOW_DIRT" != "$BASELINE_DIRT" ]; then
+    DIRTY_SUITES+=("$f")
+    FAILED_SUITES+=("$f: LEFT PRODUCTION/CLIENT SOURCE DIRTY")
+    echo "FAIL  $f  LEFT THE TREE DIRTY -- a fault is on disk:"
+    echo "$NOW_DIRT" | sed 's/^/        /'
+    echo "        Restore before running anything else: the next campaign will SNAPSHOT this."
+    BASELINE_DIRT="$NOW_DIRT"
+  fi
 done
 
 echo ""
 echo "===================================================="
 echo "Suites run: $SUITE_COUNT   Total checks: $TOTAL_PASS/$TOTAL_CHECKS"
+if [ ${#DIRTY_SUITES[@]} -gt 0 ]; then
+  echo "SUITES THAT LEFT PRODUCTION/CLIENT SOURCE DIRTY:"
+  printf '  %s\n' "${DIRTY_SUITES[@]}"
+fi
 if [ ${#FAILED_SUITES[@]} -gt 0 ]; then
   echo "FAILED SUITES:"
   printf '  %s\n' "${FAILED_SUITES[@]}"
