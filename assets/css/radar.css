@@ -640,13 +640,9 @@ body.t-light .theme-switch button.active { color: #fff; }
 .li-pm, .li-period, .li-computed { font-family: var(--font-mono); font-size: 10px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .li-computed-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
 .li-state { font-family: var(--font-mono); font-size: 11px; }
-.li-open {
-  font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
-  padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
-  background: transparent; color: var(--muted); cursor: pointer;
-}
-.li-open:hover { border-color: var(--phosphor); color: var(--phosphor); }
-/* per-row action cluster: Manage · Open → */
+/* RUN 55, PHASE A: the four dead rules for the removed Open control are gone. That control
+   was removed by Run 54 phase C; the rules had no subject left in the DOM. */
+/* per-row action cluster: Manage */
 .li-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; margin-left: auto; }
 .li-manage {
   font-family: var(--font-mono); font-size: 10px; white-space: nowrap;
@@ -3414,7 +3410,6 @@ body.t-light .kn-nav,
 body.t-light .about-section { border-top-color: var(--hairline-gold); }
 
 /* secondary highlights — coral edges on hover, dark ink stays for the label */
-body.t-light .li-open:hover,
 body.t-light .kn-chip:hover,
 body.t-light .btn-secondary:hover,
 body.t-light .recompute-all-btn:hover:not(:disabled) { border-color: var(--coral); }
@@ -3899,9 +3894,9 @@ body { overflow-x: hidden; max-width: 100vw; }
      list this applies to in scope; the dock's own band is ~72px, so 88px clears it with the
      same margin used for the launcher above. */
   #project-list { padding-bottom: 88px; }
-  /* Tap target sizing for these two moves to just after .btn.small below, on purpose: both
-     buttons carry class="btn small li-manage" (or li-open), and .btn.small is two classes,
-     specificity 0,0,2,0, the same as a bare .li-manage/.li-open rule placed here would be if
+  /* Tap target sizing for this moves to just after .btn.small below, on purpose: the button
+     carries class="btn small li-manage", and .btn.small is two classes,
+     specificity 0,0,2,0, the same as a bare .li-manage rule placed here would be if
      written as a compound selector. A single-class .li-manage rule at this point in the file
      LOST to the later, equally-specific .btn.small — measured, not guessed: computed padding
      came back 6px 13px and min-height 40px, .btn.small's values, not this rule's. */
@@ -3932,12 +3927,12 @@ body { overflow-x: hidden; max-width: 100vw; }
   /* ---------- buttons (general) ---------- */
   .btn { min-height: 44px; padding: 10px 16px; }
   .btn.small { min-height: 40px; }
-  /* The project list's Manage / Open buttons are .btn.small: 40px alone is short of the ~44px
+  /* The project list's Manage button is .btn.small: 40px alone is short of the ~44px
      guideline for a thumb, and unlike other small buttons on this site they sit inside a list a
      participant scrolls and taps repeatedly, which is where a miss costs the most. Specificity
      matches .btn.small (two classes) so source order, not accident, decides the winner; this
      rule is later in the file and does. */
-  .li-manage.btn, .li-open.btn { min-height: 44px; padding: 12px 14px; }
+  .li-manage.btn { min-height: 44px; padding: 12px 14px; }
 
   /* ---------- module charts ---------- */
   .mod-chart { max-width: 100%; }

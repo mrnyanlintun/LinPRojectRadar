@@ -1063,6 +1063,20 @@
            <span class="detail-compute-all-msg kn-sub" aria-live="polite"></span>
            <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
+         ${/* RUN 55, PHASE A. THE SIX ADMIN CONTROLS LIVE HERE NOW.
+              Run 54 phase C re-bound Manage to openDetail() and removed Open, which left the
+              inline admin accordion on the portfolio row with no entry point and took six
+              operational controls with it: Save info, Upload documents, Recompute this project,
+              Reset signals, Archive and Close. The owner's ruling at section 6 of the Run 55
+              order is that all six belong on the detail page of the project being viewed.
+
+              THE PANEL IS MOVED, NOT REBUILT. This host is empty markup; the panel inside it is
+              built by LinIngest.openInlineManage(id, host) -- the same function, the same
+              markup, the same six handlers -- with this element as the parent instead of the
+              row's <li>. Every handler is closed over THIS page's project id, taken from
+              render()'s own `p.id`, so each control acts on the project being viewed and no
+              other. See wireDetailAdmin() below. */""}
+         <div class="detail-admin-host" data-admin-for="${esc(p.id)}"></div>
        </div>
         ${/* Release 2 · Phase 2 item 9 — section order: Project Signal Network →
              Signal Flow → Executive Brief → Governance Decision → Signal Web →
@@ -1242,6 +1256,7 @@
 
     wireBack(root);
     wireReset(root);
+    wireDetailAdmin(root, p.id);
     wireProvenanceTrace(root);
     // Initialise any section the session restored as open.
     Object.keys(lazyInits).forEach((secId) => {
@@ -2293,6 +2308,25 @@
       toggle.setAttribute("aria-expanded", String(open));
       toggle.textContent = open ? "hide" : "why?";
     });
+  }
+
+  /* RUN 55, PHASE A. Mount the six admin controls on THIS project's detail page.
+     ------------------------------------------------------------------------------
+     `id` is render()'s own `p.id` -- the project this page was rendered for -- and it is
+     passed straight into the panel builder, which closes every one of the six handlers over
+     it. That is what makes "each control acts on that project and no other" true by
+     construction rather than by inspection: there is no selector, no lookup and no shared
+     mutable id anywhere in the path.
+
+     LinIngest may not be loaded on a surface that renders detail without ingest.js (the
+     render-only test harness is one), so this degrades to leaving the host empty rather than
+     throwing and taking the rest of the page's wiring down with it. */
+  function wireDetailAdmin(root, id) {
+    const host = root.querySelector(".detail-admin-host");
+    if (!host) return;
+    if (!(window.LinIngest && typeof LinIngest.openInlineManage === "function")) return;
+    try { LinIngest.openInlineManage(id, host); }
+    catch (e) { console.warn("[detail] admin panel failed to mount for", id, "reason:", e && e.message); }
   }
 
   // Reset signals: POST resetsignals, clear local signal state, re-render the
