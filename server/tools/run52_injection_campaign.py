@@ -87,13 +87,32 @@ def fault(n, relpath, old, new, guard, expect_in_red, why):
     # `restored == snapshot` then PASSES while the guard stays neutered. A snapshot that cannot
     # see the corruption cannot restore it. The campaign is armed, so it has already refused to
     # begin on a dirty tree before reaching this line.
-    snapshot = head_bytes(ROOT, relpath)           # PRE-INJECTION SNAPSHOT, FROM HEAD
+    # RUN 55: A FAULT MAY NOW ALSO BE A RESURRECTION.
+    # Run 54 phase B DELETED assets/js/deepdive.js, so fault 1's subject no longer exists at
+    # HEAD and its injection could not apply -- a fault that cannot apply proves nothing. The
+    # guarantee it existed to prove has not gone away; it has become STRICTER, from "the button
+    # renders nowhere" to "the file renders nowhere because it does not exist". So the way to
+    # prove that guarantee can still fail is to PUT THE FILE BACK, which is what this branch
+    # does. `absent` faults create the file with `new` and DELETE it again in the `finally`;
+    # everything else -- confirm from disk, require red for the intended reason, restore,
+    # recheck the baseline -- is unchanged.
+    absent = subprocess.run(["git", "cat-file", "-e", f"HEAD:{relpath}"], cwd=ROOT,
+                            capture_output=True).returncode != 0
+    snapshot = None if absent else head_bytes(ROOT, relpath)   # SNAPSHOT FROM HEAD, NOT DISK
+    if absent:
+        check(not p.is_file(),
+              f"NON-VACUITY: {relpath} really is absent before this fault, so recreating it is "
+              f"a real change")
     try:
-        assert old in snapshot, f"the text to replace is not in {relpath}"
-        p.write_bytes(snapshot.replace(old, new, 1))
+        if absent:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(new)
+        else:
+            assert old in snapshot, f"the text to replace is not in {relpath}"
+            p.write_bytes(snapshot.replace(old, new, 1))
         # RE-READ FROM DISK. Not from the variable that was written.
         landed = p.read_bytes()
-        if not check(landed != snapshot and new in landed,
+        if not check(landed != (snapshot or b"") and new in landed,
                      f"INJECTION LANDED in {relpath}, confirmed by re-reading the bytes from "
                      f"disk"):
             return
@@ -106,10 +125,16 @@ def fault(n, relpath, old, new, guard, expect_in_red, why):
               f"expected {expect_in_red!r} in the output")
     finally:
         # RESTORE. Inside a finally that cannot be skipped, whatever happened above.
-        p.write_bytes(snapshot)
-        restored = p.read_bytes()
-        check(restored == snapshot,
-              f"RESTORED: {relpath} is byte-identical to its pre-injection snapshot")
+        if absent:
+            if p.is_file():
+                p.unlink()
+            check(not p.is_file(),
+                  f"RESTORED: {relpath} is absent again, as it is at HEAD")
+        else:
+            p.write_bytes(snapshot)
+            restored = p.read_bytes()
+            check(restored == snapshot,
+                  f"RESTORED: {relpath} is byte-identical to its pre-injection snapshot")
     # BASELINE RECHECK, after EVERY injection.
     rc, out = suite(guard)
     check(rc == 0, f"BASELINE RECHECKED after fault {n}: {guard} is green again",
@@ -120,13 +145,20 @@ try:
     # ---------------------------------------------------------------------------------------
     # GUARANTEE 4/5: the see-Health button renders nowhere, and that check is not vacuous.
     fault(1, "assets/js/deepdive.js",
-          b'healthLine.innerHTML = `${escg(anomaly)}`;',
-          b'healthLine.innerHTML = `${escg(anomaly)} <button type="button" class="dd-link" '
-          b'data-goto-health>see Health &rarr;</button>`;',
+          b'',
+          b'/* RUN 55 INJECTION: this file was DELETED by Run 54 phase B. Recreating it is the\n'
+          b'   fault. */\nwindow.LinDeepDive = { render: function () {} };\n'
+          b'// healthLine.innerHTML = `${escg(anomaly)} <button type="button" class="dd-link" '
+          b'data-goto-health>see Health &rarr;</button>`;\n',
           "test_run28_participant_packages.py",
-          "neither the button nor its handler survives",
-          "the dead see-Health button is PUT BACK into deepdive.js. The guarantee that it "
-          "renders nowhere must go red, or it was never measuring anything.")
+          "really is absent from the tree",
+          "RUN 55 REVISES THIS FAULT. It used to PUT THE DEAD see-Health BUTTON BACK into "
+          "assets/js/deepdive.js. Run 54 phase B deleted that file on the owner's ruling, so "
+          "the anchor no longer existed and the injection could not apply. The guarantee it "
+          "proved has become STRICTER rather than going away -- from 'the button renders "
+          "nowhere' to 'the file renders nowhere because it does not exist' -- so the fault is "
+          "revised to the inverse: THE FILE IS PUT BACK. The v21 package guard must go red, or "
+          "the declared-deletion record was never measuring anything.")
 
     # ---------------------------------------------------------------------------------------
     # GUARANTEE 7: one name for the module identifier, on both sides.
