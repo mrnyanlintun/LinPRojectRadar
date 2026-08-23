@@ -47,7 +47,7 @@ def check(ok: bool, label: str, detail: str = "") -> None:
 def taxonomy(rel: str) -> dict[str, tuple[str, str]]:
     s = (ROOT / rel).read_text(encoding="utf-8")
     return {m.group(1): (m.group(2), m.group(3)) for m in re.finditer(
-        r"key: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'", s)}
+        r"module_id: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'", s)}
 
 
 print("=== 1. EVERY CLIENT METHOD CLASS IS THE ONE ITS RUNNER EMITS ===")
@@ -132,14 +132,18 @@ check("assets/js/categories.js" not in _index,
       "and does NOT load categories.js, so a fix made only there never reaches a participant")
 check("window.LIN_HISTORICAL_METHOD_CLASS" in _tax_src,
       "taxonomy.js declares the historical alias map itself")
-# The resolver itself must read METHOD_TO_NUM[methodClass] exactly ONCE -- that is its body. More
+# The resolver itself must read METHOD_TO_MODULE_ID[methodClass] exactly ONCE -- that is its body. More
 # than once means a call site bypasses it; zero means the resolver was rewritten into calling
 # itself, which is exactly the recursion this closure had to fix.
-_direct = _tax_src.count("METHOD_TO_NUM[methodClass]")
-check("function numForMethodClass" in _tax_src and _direct == 1,
+# RUN 52, RULING 3: the map and the resolver were renamed from METHOD_TO_NUM / numForMethodClass
+# to METHOD_TO_MODULE_ID / moduleIdForMethodClass. THE CHECK IS UNCHANGED -- still exactly one
+# direct read, still the resolver present by name -- only the names it looks for moved. Nothing
+# was weakened and no check was deleted.
+_direct = _tax_src.count("METHOD_TO_MODULE_ID[methodClass]")
+check("function moduleIdForMethodClass" in _tax_src and _direct == 1,
       "and every method-class to module-number lookup goes through the resolver, which reads the "
       "map exactly once: more would be a call site bypassing it, none would be the resolver "
-      "calling itself", f"METHOD_TO_NUM[methodClass] appears {_direct} times")
+      "calling itself", f"METHOD_TO_MODULE_ID[methodClass] appears {_direct} times")
 for _cur, _old in sorted(PP.V9_METHOD_CLASS_PROPAGATION.items()):
     check(re.search(r'\b%s:\s*\[\s*"%s"\s*\]' % (re.escape(_cur), re.escape(_old)),
                     _tax_src) is not None,

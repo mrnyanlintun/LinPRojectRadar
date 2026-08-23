@@ -366,11 +366,11 @@ check(readiness["final_disposition"] == "STUDY_EXECUTION_READY",
 check(freeze["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       freeze["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v34",
-      "and the live simulation is the Run-51 successor sim-2026.08-v34", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v35",
+      "and the live simulation is the Run-52 successor sim-2026.08-v35", SIMULATION_VERSION)
 # RESTATED BY RUN 43: v13 is superseded by v14 and pinned to its own commit rather than rewritten.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v19",
-      "the participant package is superseded at og-participant-2026.08-v19",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v20",
+      "the participant package is superseded at og-participant-2026.08-v20",
       PP.CURRENT.identifier)
 check(freeze["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6")

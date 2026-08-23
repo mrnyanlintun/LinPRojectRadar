@@ -9,6 +9,122 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-23 - Run 52: TWO REDUNDANT CONTROLS, AND ONE NAME ACROSS THE WIRE. MERGED.
+
+**Report:** `REPORT_2026-08-22_run52_controls_and_naming.md`.
+**Branch:** `run52-controls-and-naming`, rooted at `fe35504`, **merged to `main` with `--no-ff`**.
+**Stamp:** `sim-2026.08-v35`. **Package:** `og-participant-2026.08-v20`.
+**193 suites, 0 red.** Freeze gate **15 blocker classes, 0 blocked; suite 34/34; launch 100/100**.
+**Behaviour digest UNCHANGED at `8fb4d366...`.**
+**Repository: the Linux clone. Interpreter: `python3` 3.11.15 (no `.venv` here).**
+
+## READ THIS FIRST: RULING 1'S PREMISE WAS FALSE, AND IT IS THE MOST IMPORTANT THING THIS RUN FOUND
+
+The Run 52 order directed the removal of the project list's **Open** control, on the premise that
+Manage and Open "both lead to the same project detail page". **They do not.** Driven in real
+Chromium against the real application:
+
+- **Manage** -> `LinIngest.openInlineManage(p.id)` (`app.js:1102-1104`, `ingest.js:207-266`) opens
+  an **inline admin accordion under its own row**. Visible page after clicking: `['portfolio']`.
+  It NEVER reaches the detail page.
+- **Open** -> `openDetail(p.id)` (`app.js:1100`, `:1615`) calls `showPage("detail")`. Visible page
+  after clicking: `['detail']`, showing **this row's** project.
+
+**Open is the ONLY route from the project list to the project detail page.** Removing it would
+have removed that route. **The surface is STOPPED under section 8.1. `assets/js/app.js` did not
+move, byte for byte.** Manage was NOT changed to navigate: that alters a control's behaviour and
+no ruling authorises it. The evidence driver is `server/tools/drive_run52_premise.py`, and the
+stop is ENFORCED, not narrated: fault 4 of `run52_injection_campaign.py` removes Open and
+`test_run28_participant_packages.py` goes red.
+
+**A DECISION IS OWED BY THE OWNER before any run touches these two controls again:** leave both;
+or remove Manage instead and reach the inline admin panel from inside the detail page; or make
+Manage navigate and then remove Open. Only the owner can choose.
+
+## WHAT DID MOVE: SEVEN PARTICIPANT-VISIBLE FILES, ONE OF THEM SEQUENCE-BEARING
+
+**Ruling 2, CARRIED.** The dead `see Health` button and its `[data-goto-health]` handler are gone
+from `deepdive.js`. The handler called `window.LinIngest.openHealthModal()`, which exists NOWHERE
+in the repository -- grep returns the call site itself and one comment at `app.js:1381` recording
+that the same check was made earlier and the symbol was absent. **That comment was NOT deleted.**
+Clicking the button did nothing. Nothing became unreachable: `cat8SummaryLine` keeps its caller at
+`deepdive.js:2310` and `.dd-link` keeps `detail.js:937`. The anomaly sentence the button sat beside
+is unchanged and still renders.
+
+**Ruling 3, CARRIED with two named stops.** The module identifier is **`module_id`** on both sides
+of the wire. THE SERVER WAS ALREADY RIGHT -- `registry.py:650,688` and the stored row have always
+used `module_id` -- so the client and the authority moved to the server's name, not the reverse.
+`taxonomy_authority.json` (101 module rows), `build_client_taxonomy.py`, both regenerated mirrors
+(63 rows each) and every client consumer follow, including the dispatch path: `METHOD_TO_NUM` ->
+**`METHOD_TO_MODULE_ID`** and `numForMethodClass` -> **`moduleIdForMethodClass`** in
+`taxonomy.js`. **The CATEGORY identifier deliberately keeps `key`** on all twelve categories: a
+category is not a module, and `module_id` on a category object would be a third wrong name.
+
+**Ruling 4 IS A REVERSAL AND WAS OBEYED AS ONE. NO NAMING SWEEP WAS RUN.** Nothing was stripped
+from rendered text and nothing was restored. Proved, not asserted: the RENDERED TEXT of the
+portfolio, detail and deep-dive surfaces was captured from a worktree at `fe35504` and from the
+live tree with the same fixture and the same driver
+(`server/tools/run52_rendered_text_capture.py`) and diffed. Portfolio: **IDENTICAL**. Deep-dive
+SVG/aria/title: **IDENTICAL**. Deep-dive innerText: **one line**, `Portfolio Health: no anomaly
+flagged. see Health ->` becomes `Portfolio Health: no anomaly flagged.` Detail: only the five
+fixture upload timestamps, because the two captures built their fixtures two minutes apart.
+
+## TWO RENAME SITES ARE STOPPED UNDER SECTION 8.2. DO NOT "FINISH" THEM WITHOUT AUTHORITY
+
+1. **`new_id` / `old_id` in `p0-baseline/module_renumbering_map.csv`**, 309 occurrences across
+   30+ files. It is a renumbering PAIR, not one name for one thing; `old_id` is a retired identity,
+   a different referent. Its name originates in the header row of a frozen baseline artifact the
+   freeze gate pins as `service_roster_digest`. Where the identifier actually crosses the wire it
+   is already `module_id`.
+2. **`deepdive.js:1789-1822`'s methods-comparison `num`.** It holds `"09"`..`"18"`: the ordinal of
+   a METHOD in the synthesis table (09 = conservative-dominance baseline, 10 = Dempster-Shafer),
+   joined to `s09`..`s18`. Registry module identifiers are `A1.7`, `B4.2`. Calling it `module_id`
+   would assert an identity it does not have. A comment at the site records the stop.
+
+## `NAMING_AUTHORITY.md` NOW CONTRADICTS RULING 4, AND THE FILE WAS LEFT ALONE
+
+Lines 96-97 read: *"**Never use a module id or number in user-facing text.** No "Cat 4", no "1.7",
+no "PH.2", no "A4.2"."* Ruling 4 of 2026-08-23 rules those ACCEPTABLE. The order said to report the
+conflict and leave the file; that is what was done. **The banner at the top of this handoff tells
+every session to read `NAMING_AUTHORITY.md` first, so until the owner says which is authoritative,
+a future run will act against ruling 4.** Ask before sweeping anything.
+
+## A FAULT INJECTION LEAKED INTO A PRODUCTION ANALYTICAL FILE DURING THIS RUN
+
+`server/app/simulation/canonical_v8.py` was found carrying three neutered guards -- `if False:` in
+place of the orientation, period and schema-version checks at :283, :388 and :393, plus a silently
+defaulting `orientation` -- left behind by `test_run33_portfolio_fault_injection.py` or a
+`test_run34_*` campaign aborting after writing and before restoring. It produced **eleven**
+collateral suite failures, every one of which went green standing alone once the file was restored
+from `HEAD`. **This is the FIFTH consecutive run (48, 49, 50, 51, 52) to record a mid-injection
+abort, and the first to see one reach a production analytical file.** It was caught only because
+the tree was checked with `git status` rather than trusted. The leaking campaign was NOT identified
+and was NOT repaired. **Check `git status --porcelain` after every campaign, before believing any
+suite result.**
+
+## HOW TO RUN THINGS HERE
+
+- `cd server && PYTHONIOENCODING=utf-8 bash run_all_suites.sh` -- fresh migrated SQLite per suite.
+  It takes roughly six minutes; run it in the background, not in a two-minute foreground window.
+- One suite alone: copy a migrated template db, `cd server/tools`, set `DATABASE_URL`,
+  `SESSION_SECRET` and `PYTHONIOENCODING=utf-8`, run the file.
+- **23 audit artifacts are rewritten per full run** -- 22 under `code_audit/` plus
+  `server/tools/run17/coverage.csv` -- and must be restored and never committed. Runs 48-51 each
+  saw 18; this run saw 23. Run `build_run37_acceptance.py --out-audit <scratch dir>` to keep the
+  three `code_audit/run37_*.csv` files out of the tree entirely.
+- Browsers: Playwright 1.48 expects chromium-1140; the image ships chromium-1194 under
+  `/opt/pw-browsers`. Explicit `executable_path` plus `--headless=new`. Run drivers from a CLEAN
+  subdirectory. The DEng\Demo tell: `api.js`/`boot.js` in `document.scripts` with zero `.page`
+  sections; there should be **7**.
+- The deep-dive route does NOT accept `?project=`. Load `/research/deepdive.html`, set the session
+  token, reload, then `fill("#dd-project", id)` and `click("#dd-load")`.
+
+## RUN 53 IS STILL RUN 53
+
+Carry-forward items 1 and 2 -- the hard-coded deep-dive illustrations, and
+`research/deepdive.html` computing from the legacy client-side signals blob in all 77 panel bodies
+-- were NOT attempted and NOT touched. They remain entangled and remain Run 53.
+
 # 2026-08-22 - Run 51: THE DELIVERY OF WHAT RUN 50 STOPPED ON. MERGED.
 
 **Report:** `REPORT_2026-08-22_run51_delivery.md`.

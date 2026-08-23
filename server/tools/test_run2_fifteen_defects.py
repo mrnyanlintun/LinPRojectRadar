@@ -1785,6 +1785,20 @@ try:
                 'num: m.num, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
                 'rows.push({ index: idx, num: m.num, name: m.name, color: cat.color, bucket });',
             }
+            # RUN 52, RULING 3. ONE NAME FOR THE MODULE IDENTIFIER ON BOTH SIDES: `module_id`.
+            # Run 51 moved these two lines from `num:` to `key:`; Run 52 moves the same two to
+            # `module_id`. They are listed here EXPLICITLY, line by line, so the freeze still
+            # accounts for every line that moved -- the allowance is not widened, it is extended
+            # by exactly the lines this run changed. `key: cat.key,` is NOT here: the CATEGORY
+            # identifier keeps its name and did not move.
+            RUN52_REMOVED = {
+                'key: m.key, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
+                'rows.push({ index: idx, key: m.key, name: m.name, color: cat.color, bucket });',
+            }
+            RUN52_ADDED = {
+                'module_id: m.module_id, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
+                'rows.push({ index: idx, module_id: m.module_id, name: m.name, color: cat.color, bucket });',
+            }
             RUN51_ADDED = {
                 '${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} in service`)}',
                 '${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " in service")}',
@@ -1825,7 +1839,7 @@ try:
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
                   or ln in RUN47_REMOVED or ln in RUN48_REMOVED
-                  or ln in RUN49_REMOVED or ln in RUN51_REMOVED
+                  or ln in RUN49_REMOVED or ln in RUN51_REMOVED or ln in RUN52_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1871,7 +1885,8 @@ try:
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
                       or ln in POSTRUN22_LINES or ln in _run43_added_span
                       or ln in RUN44_ADDED or ln in _run44_added_span
-                      or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED or ln in RUN51_ADDED
+                      or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED
+                      or ln in RUN51_ADDED or ln in RUN52_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

@@ -161,9 +161,13 @@ try:
           "and every VALUE is a category key, not a label and not a bucket number: the thing a "
           "participant reads is derived from the taxonomy at render time and is not in this file "
           "at all", str(sorted(_values)))
-    check("catLabel" in dd and "CAT_KEY_FROM_MODULE[String(num).trim()]" in
-          dd.split("function catLabel(num)", 1)[1].split("\n  }", 1)[0]
-          and "(cat && cat.name)" in dd.split("function catLabel(num)", 1)[1].split("\n  }", 1)[0],
+    # RUN 52, RULING 3: catLabel's parameter was renamed from `num` to `moduleId` -- one name
+    # for the module identifier on both sides of the wire. THE CHECK IS UNCHANGED: it still
+    # requires the label to be the category NAME read from the loaded taxonomy. Only the
+    # parameter name it looks for moved. Nothing was weakened and no check was deleted.
+    _cl = dd.split("function catLabel(moduleId)", 1)[1].split("\n  }", 1)[0]
+    check("catLabel" in dd and "CAT_KEY_FROM_MODULE[String(moduleId).trim()]" in _cl
+          and "(cat && cat.name)" in _cl,
           "and the label a panel renders is the category's NAME read from the loaded taxonomy, "
           "so it can carry no number, no identifier, no ampersand and no dash by construction")
     print(f"    the {len(_values)} distinct category keys: {sorted(_values)}")
@@ -180,7 +184,7 @@ try:
     check("CAT_NUM_FROM_MODULE" in _prior_dd and "CAT_NUM_FROM_MODULE" not in dd,
           "the separate grouping map that Run 49 froze at v32 IS GONE, and it really was there "
           "at ad4f614, so this is not a vacuous absence")
-    _bucket_fn = dd.split("function catBucket(num)", 1)[1].split("\n  }", 1)[0]
+    _bucket_fn = dd.split("function catBucket(moduleId)", 1)[1].split("\n  }", 1)[0]
     check("findIndex" in _bucket_fn and "projectCatList()" in _bucket_fn
           and not re.search(r"return\s+m\s*\?\s*m\[1\]", _bucket_fn),
           "and the bucket is now the category's POSITION in the in-service project-level "

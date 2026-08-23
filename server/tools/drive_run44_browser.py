@@ -138,27 +138,21 @@ def main() -> int:
                   "route)")
         check(page.evaluate("() => !!window.LinDeepDive"),
               "the served deepdive.js is loaded and exposes its renderer")
-        flyout = page.evaluate(r"""
-          async () => {
-            const root = document.createElement('div');
-            document.body.appendChild(root);
-            await window.LinDeepDive.renderCat8Health(root, () => {});
-            const txt = root.innerText;
-            const controls = root.querySelectorAll('[data-run-portfolio-analysis]').length;
-            root.remove();
-            return { text: txt, controls };
-          }
-        """)
-        print("    rendered flyout text, verbatim:")
-        for ln in (flyout["text"] or "").splitlines():
-            print(f"      {ln}")
-        check("no longer in service" in flyout["text"],
-              "the flyout states that Portfolio Health is no longer in service")
-        check("needs at least 3 projects" not in flyout["text"],
-              "and it no longer tells a participant the panel needs at least three projects")
-        check(flyout["controls"] == 1,
-              "the repair control is still rendered: no user-facing control was added, moved or "
-              "removed", flyout["controls"])
+        # RUN 52 FIX. Run 51 DELETED the Portfolio Health flyout and its renderer
+        # `LinDeepDive.renderCat8Health` from the served bytes (see
+        # test_run44_participant_defect_fixes.py:506-566). The block that stood here called that
+        # renderer and would raise `TypeError: window.LinDeepDive.renderCat8Health is not a
+        # function` on every run since. This driver is superseded by drive_run51_browser.py; it is
+        # KEPT (not deleted) because it is the run-44 audit record, and it is FIXED so it runs. The
+        # three checks it made about the flyout's wording cannot be made against a surface that no
+        # longer exists, so they are REPLACED -- not deleted -- by the check that actually holds
+        # now: the renderer is gone from the served export and the surface is unreachable.
+        exports = page.evaluate("() => Object.keys(window.LinDeepDive || {}).sort()")
+        print(f"    window.LinDeepDive exports: {exports}")
+        check("renderCat8Health" not in exports,
+              "SUPERSEDED BY RUN 51: renderCat8Health is gone from the served deepdive.js export, "
+              "so the Portfolio Health flyout this section used to render is unreachable",
+              str(exports))
 
         print()
         print("=" * 90)

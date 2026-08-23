@@ -147,7 +147,7 @@
           idxs[ci].push(mods.length);
           // `required` is the module's own declaration of the signal keys it consumes. It is
           // what makes a DOCUMENT -> MODULE edge derivable instead of positional.
-          mods.push({ mc: m.method_class, name: m.name, key: m.key, catI: ci,
+          mods.push({ mc: m.method_class, name: m.name, module_id: m.module_id, catI: ci,
                       required: (m.required || []).slice() });
         });
       });
@@ -157,7 +157,7 @@
     var fbMods = RAW_MODS.map(function(row, i) {
       var ci = row[0], modI = fbIdxs[ci].length;
       fbIdxs[ci].push(i);
-      return { catI: ci, name: row[1], mc: row[2], key: (ci + 1) + '.' + (modI + 1) };
+      return { catI: ci, name: row[1], mc: row[2], module_id: (ci + 1) + '.' + (modI + 1) };
     });
     return { CATS: FB_CATS, MODULES: fbMods, catModIdxs: fbIdxs, catIds: null };
   }

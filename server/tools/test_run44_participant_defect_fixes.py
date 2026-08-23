@@ -181,7 +181,7 @@ out.briefGreenOverGreens = D.buildBriefPrompt(projectWithSnapshot('Green', A1_MO
 function provFor(catStatus, modStatuses) {
   const cats = [{ id: 'a1', key: 'A1', name: 'Cost and EVM Performance', level: 'project',
                   modules: Object.keys(modStatuses).map((mc, i) => (
-                    { id: 'm' + i, key: 'A1.' + (i + 1), name: mc, method_class: mc })) }];
+                    { id: 'm' + i, module_id: 'A1.' + (i + 1), name: mc, method_class: mc })) }];
   const saveCats = w.LIN_CATEGORIES, saveGet = w.getCategoryStatus, saveMod = w.getModuleStatus;
   w.LIN_CATEGORIES = cats;
   w.projectLevelCategories = () => cats;
@@ -245,7 +245,7 @@ out.cat8RetiredLive = retiredFromTaxonomy(w.LIN_CATEGORIES);
   w.LIN_CATEGORIES = [{ id: 'a1', level: 'project', modules: [{ id: 'x' }] }];
   out.cat8RetiredNoPortfolioCat = retiredFromTaxonomy(w.LIN_CATEGORIES);
   w.LIN_CATEGORIES = (save || []).map(c => (c && c.level === 'portfolio')
-    ? Object.assign({}, c, { modules: [{ id: 'd1_1', key: 'D1.1', name: 'reinstated' }] }) : c);
+    ? Object.assign({}, c, { modules: [{ id: 'd1_1', module_id: 'D1.1', name: 'reinstated' }] }) : c);
   out.cat8RetiredIfReinstated = retiredFromTaxonomy(w.LIN_CATEGORIES);
   w.LIN_CATEGORIES = save;
 })();

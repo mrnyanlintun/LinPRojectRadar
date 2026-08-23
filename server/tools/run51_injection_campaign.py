@@ -178,7 +178,7 @@ def _f3(b: bytes) -> bytes:
 @fault("F5", "server/tools/taxonomy_authority.json",
        "GUARANTEE 7.5 / 10.4: a runtime lookup breaks for one of the 101 registered modules")
 def _f5(b: bytes) -> bytes:
-    return b.replace(b'"key": "A1.7"', b'"key": "A1.7-GONE"', 1)
+    return b.replace(b'"module_id": "A1.7"', b'"module_id": "A1.7-GONE"', 1)
 
 
 @fault("F6", "assets/js/categories.js",

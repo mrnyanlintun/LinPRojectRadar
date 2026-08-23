@@ -425,7 +425,7 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v19",
         "code_audit/run51_participant_package_v19_checksums.sha256",
-        None,
+        "fe35504",
         "RUN 51, THE DELIVERY OF WHAT RUN 50 STOPPED ON. TWENTY-THREE participant-visible files "
         "moved and ALL SIX SEQUENCE-BEARING FILES ARE AMONG THEM. This record says so rather "
         "than claiming otherwise, and each of the six carries its OWN named exception record "
@@ -448,7 +448,64 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "A1.8, no stored figure changed and the behaviour digest is unchanged. The v18 record is "
         "NOT regenerated: it is pinned to the commit whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v20",
+        "code_audit/run52_participant_package_v20_checksums.sha256",
+        None,
+        "RUN 52, TWO REDUNDANT CONTROLS AND ONE NAME ACROSS THE WIRE. SEVEN participant-visible "
+        "files moved and EXACTLY ONE OF THEM IS SEQUENCE-BEARING. This record says so rather "
+        "than claiming otherwise, and that one carries its OWN named exception record rather "
+        "than being excused by widening a comparison, on the owner's rulings 2 and 3 of "
+        "2026-08-23. WHAT MOVED INSIDE assets/js/deepdive.js, EXACTLY: the dead 'see Health' "
+        "button and its [data-goto-health] handler are REMOVED -- the handler called "
+        "window.LinIngest.openHealthModal(), which exists nowhere in the repository, so "
+        "clicking it did nothing; the anomaly sentence it sat beside is unchanged and still "
+        "renders. The module-identifier parameter of catLabel, catBucket and panel is renamed "
+        "from `num` to `moduleId` and the panel's reader-less `data-num` attribute becomes "
+        "`data-module-id`. The methods-comparison array's local `num` is DELIBERATELY NOT "
+        "renamed and is STOPPED under the order's section 8.2: it is a method ordinal, not a "
+        "registry module identifier. THE OTHER SIX ARE RULING 3 AND NOTHING ELSE: "
+        "assets/js/taxonomy.js and assets/js/categories.js are REGENERATED from "
+        "build_client_taxonomy.py with the module identifier emitted as `module_id` instead of "
+        "`key`, and their hand-maintained tails follow -- METHOD_TO_NUM and numForMethodClass "
+        "become METHOD_TO_MODULE_ID and moduleIdForMethodClass, which is THE dispatch path to "
+        "the stored row that has always keyed its modules by module_id. assets/js/detail.js, "
+        "assets/js/signals.js, assets/js/neural_flow.js and assets/js/projectnet2d.js move "
+        "their read of the taxonomy module's identifier from `m.key` to `m.module_id`. The "
+        "CATEGORY identifier is untouched and is still `key` on all twelve categories: a "
+        "category is not a module. RULING 1 WAS NOT CARRIED AND ITS SURFACE IS STOPPED UNDER "
+        "SECTION 8.1: driven in a real browser, the project list's Manage control opens an "
+        "inline admin accordion under its own row and does NOT reach the project detail page, "
+        "while Open is the ONLY route from the list to that page, so assets/js/app.js is byte "
+        "for byte identical to v19. NO RENDERED IDENTIFIER CHANGED and no naming sweep was run, "
+        "on ruling 4. No step of the decision sequence, no reveal gate, no lock, no "
+        "randomization, no server contract and no append-only record moved, and the only "
+        "reachable control removed anywhere is the dead one ruling 2 names. NO SERVER "
+        "COMPUTATION MOVED: 101 registered, 63 in service, voting exactly A1.7 and A1.8, no "
+        "stored figure changed and the behaviour digest is unchanged. The v19 record is NOT "
+        "regenerated: it is pinned to the commit whose blobs it describes.",
+    ),
 )
+
+#: RUN 52. The files whose bytes moved between v19 and v20. SEVEN, and EXACTLY ONE of them is
+#: sequence-bearing. The exception is declared here rather than left for a checksum to discover.
+#: Its authority is the owner's rulings 2 and 3 in the Run 52 order. assets/js/app.js is NOT
+#: here: ruling 1 was stopped under section 8.1 and that file did not move.
+V19_TO_V20_CHANGED = (
+    "assets/js/categories.js",
+    "assets/js/deepdive.js",
+    "assets/js/detail.js",
+    "assets/js/neural_flow.js",
+    "assets/js/projectnet2d.js",
+    "assets/js/signals.js",
+    "assets/js/taxonomy.js",
+)
+
+#: The ONE sequence-bearing file Run 52 was authorised to move, and the only one it moved. Every
+#: other member of SEQUENCE_BEARING_FILES must still be byte-identical across this successor.
+#: Naming the exception rather than widening the comparison is what keeps the invariant a real
+#: one: a second file moving here still fails.
+V19_TO_V20_SEQUENCE_EXCEPTION = ("assets/js/deepdive.js",)
 
 #: RUN 51. The files whose bytes moved between v18 and v19. TWENTY-THREE, and ALL SIX
 #: sequence-bearing files are among them. Every exception is declared here rather than left for

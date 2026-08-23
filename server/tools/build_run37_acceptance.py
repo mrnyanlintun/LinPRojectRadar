@@ -119,13 +119,20 @@ FREEZE = ROOT / "research" / "freeze"
 # run49_successor_freeze_gate.csv, run49_candidate_behaviour_digest.json and the v33 release
 # records all stay exactly as that release wrote them, and remain the historical evidence for
 # everything collected under v33.
-PREDECESSOR_CANDIDATE = "82bd1f855313c09210b1de9829fa6773355534c9"
-PREDECESSOR_VERSION = "sim-2026.08-v33"
-CANDIDATE = "77b24f452c4fc1a6b67f1cd2a93174740c598665"
-EXPECTED_VERSION = "sim-2026.08-v34"
-IDENTITY_FILE = "run51_freeze_candidate_identity.json"
-GATE_FILE = "run51_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run51_candidate_behaviour_digest.json"
+# RESTATED BY RUN 52, and the reasoning is unchanged again. Run 52 removes the dead "see Health"
+# button from the deep-dive surface and moves the module identifier to ONE name on both sides of
+# the wire, `module_id`. WHAT A PARTICIPANT READS is part of the frozen candidate, so the freeze
+# is SUPERSEDED rather than amended. The Run-51 artefacts are NOT rewritten:
+# run51_freeze_candidate_identity.json, run51_successor_freeze_gate.csv,
+# run51_candidate_behaviour_digest.json and the v34 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v34.
+PREDECESSOR_CANDIDATE = "fe355043a8e71a2c9f16b50b8e01ac2696b757ec"
+PREDECESSOR_VERSION = "sim-2026.08-v34"
+CANDIDATE = "d236a2706a801cad8547ba34d68b0dc83521ff52"
+EXPECTED_VERSION = "sim-2026.08-v35"
+IDENTITY_FILE = "run52_freeze_candidate_identity.json"
+GATE_FILE = "run52_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run52_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 

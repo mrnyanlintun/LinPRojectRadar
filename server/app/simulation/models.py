@@ -641,12 +641,47 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1. The stamp advances because
 # the SERVED CLIENT is part of the frozen candidate, not because a computation changed.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v34"
+# -------------------------------------------------------------------------------------------
+# RUN 52, sim-2026.08-v35. TWO NAMES FOR THE MODULE IDENTIFIER BECOME ONE, AND ONE DEAD CONTROL
+# IS REMOVED. THE ANALYTICAL LAYER DID NOT MOVE.
+#
+# What a participant reads is different under v35 in exactly one place: the dead "see Health"
+# button is gone from the research deep-dive surface. Its handler called
+# window.LinIngest.openHealthModal(), which exists nowhere in this repository, so clicking it
+# did nothing; it was a control in appearance only. The anomaly sentence it sat beside is
+# unchanged and still renders.
+#
+# THE REST IS ONE NAME ON BOTH SIDES OF THE WIRE. The module identifier is `module_id`
+# everywhere: in server/tools/taxonomy_authority.json, in the generator, in both generated
+# client mirrors, and in every client consumer. The server already called it `module_id` in the
+# stored row, the API response and the export, so the client and the authority moved to the
+# server's name rather than the server moving to theirs. Run 51 had moved the same field from
+# `num` to `key`; this is the second and final move. The CATEGORY identifier is deliberately
+# NOT renamed: a category is not a module, and `module_id` on a category object would be a
+# third wrong name rather than one right one.
+#
+# NO NAMING SWEEP WAS RUN. The owner's ruling 4 of 2026-08-23 makes displayed identifiers --
+# "Cat 4", "A4.2", "1.7" -- acceptable. Not one identifier was removed from rendered text and
+# not one was restored.
+#
+# WHAT RULING 1 ASKED FOR WAS NOT DONE, AND THE REASON IS RECORDED HERE. The order directed the
+# removal of the project list's "Open" control on the premise that Manage and Open lead to the
+# same project detail page. DRIVEN IN A REAL BROWSER, THEY DO NOT: Manage opens an inline admin
+# accordion under its own row and never leaves the portfolio page, while Open is the ONLY route
+# from the project list to the project detail page. Removing it would have removed that route.
+# The surface is stopped under the Run 52 order's section 8.1 and Open still renders.
+#
+# NOT ONE ANALYTICAL RESULT MOVED. 101 registered, 63 in service, voting exactly A1.7 and A1.8,
+# every stored figure unchanged and the behaviour digest reproduced identically at
+# 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1. The stamp advances because
+# the SERVED CLIENT is part of the frozen candidate, not because a computation changed.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v35"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v33"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v34"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -660,7 +695,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
     "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32", "sim-2026.08-v33",
-    "sim-2026.08-v34",
+    "sim-2026.08-v34", "sim-2026.08-v35",
 )
 
 

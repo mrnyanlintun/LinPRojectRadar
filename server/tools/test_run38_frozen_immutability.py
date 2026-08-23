@@ -414,15 +414,15 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v34",
-      "and the live simulation version is the Run-51 successor sim-2026.08-v34",
+check(SIMULATION_VERSION == "sim-2026.08-v35",
+      "and the live simulation version is the Run-52 successor sim-2026.08-v35",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v19",
-      "the participant package is superseded at og-participant-2026.08-v19",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v20",
+      "the participant package is superseded at og-participant-2026.08-v20",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "

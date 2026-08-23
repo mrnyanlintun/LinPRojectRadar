@@ -19,7 +19,7 @@ THE FIELDS EACH AUTHORITY OWNS, and nothing owns a field twice:
 
     taxonomy_authority.json (this directory)
         everything the registry does not govern: category identity, colour and description, and
-        each module's id, key, required inputs, sector applicability and level flags.
+        each module's id, module_id, required inputs, sector applicability and level flags.
 
 NEITHER GENERATED FILE IS HAND-MAINTAINED. Editing one of them cannot fix or break production,
 because the guard regenerates from the authorities and compares; the only way to change what ships
@@ -27,6 +27,16 @@ is to change an authority and regenerate.
 
     python build_client_taxonomy.py            # writes both files
     python build_client_taxonomy.py --check    # exits 1 if either file is not what this produces
+
+RUN 52, RULING 3. ONE NAME FOR THE MODULE IDENTIFIER ON BOTH SIDES OF THE WIRE: `module_id`.
+Run 51 moved this field from `num` to `key`; the server already called the same thing
+`module_id` in the registry, the qualifier closure and the acceptance builders. Two names for
+one thing is what produced the original identifier defect, so the client and the authority move
+to the server's name rather than the server moving to theirs.
+
+WHAT DID NOT MOVE, AND WHY. The CATEGORY identifier -- "A1", "B4" -- keeps the field name `key`.
+A category is not a module: `module_id` on a category object would be a third wrong name, not a
+consistent one. Ruling 3 names the MODULE identifier and only that field moved.
 """
 from __future__ import annotations
 
@@ -96,7 +106,7 @@ def build() -> str:
         "                                    production runners actually emit",
         "     everything else                server/tools/taxonomy_authority.json -- category",
         "                                    identity, colour, description, and each module's",
-        "                                    id, key, required inputs, sectors and level flags",
+        "                                    id, module_id, required inputs, sectors and level flags",
         "",
         "   WHY. categories.js and taxonomy.js each carried a hand-maintained copy of the same",
         "   101-module taxonomy. index.html loads taxonomy.js and not categories.js, so a fix",
@@ -117,15 +127,15 @@ def build() -> str:
             lines.append("    level: %s," % js(cat["level"]))
         lines.append("    modules: [")
         for _m in cat["modules"]:
-            if _m["key"] not in names and not REG.is_retired(_m["key"]):
+            if _m["module_id"] not in names and not REG.is_retired(_m["module_id"]):
                 raise SystemExit(
-                    f"{_m['key']} is in the taxonomy authority and not in the registry")
+                    f"{_m['module_id']} is in the taxonomy authority and not in the registry")
         # Retired identities are dropped from the emitted array. The comma/terminator logic below
         # counts the emitted rows, so the filter happens here rather than inside the loop.
-        mods = [_m for _m in cat["modules"] if _m["key"] in names]
+        mods = [_m for _m in cat["modules"] if _m["module_id"] in names]
         for mi, m in enumerate(mods):
-            mid = m["key"]
-            parts = ["id: %s" % js(m["id"]), "key: %s" % js(mid),
+            mid = m["module_id"]
+            parts = ["id: %s" % js(m["id"]), "module_id: %s" % js(mid),
                      "name: %s" % js(names[mid])]
             # THE IDENTIFIER THE RUNNER ACTUALLY EMITS. A module with no dispatch entry keeps the
             # authority's own value, which is the case for the supplied and portfolio identities.

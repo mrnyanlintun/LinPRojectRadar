@@ -79,7 +79,7 @@ def check(name, ok, why, got=""):
 # regenerated from the live tree and evaluated against the successor's own identity, gate and
 # release records. The v25 to v33 artefacts are untouched and remain the historical evidence for
 # those releases.
-SUCCESSOR_GATE = "run51_successor_freeze_gate.csv"
+SUCCESSOR_GATE = "run52_successor_freeze_gate.csv"
 SUCCESSOR_RECORD = "RUN51_SUCCESSOR_FREEZE_RECORD.json"
 SUCCESSOR_REPORT = "RUN51_SUCCESSOR_FREEZE_REPORT.md"
 SUCCESSOR_CHECKSUMS = "RUN51_SUCCESSOR_FREEZE_CHECKSUMS.csv"
