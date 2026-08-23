@@ -191,8 +191,6 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
 
 
 # ---------------------------------------------------------------------------------------------
@@ -278,3 +276,59 @@ def user_facing_spans(t: str, suffix: str):
         for m in re.finditer(r"content\s*:\s*(\"[^\"]*\"|'[^']*')", t):
             out.append((m.start(1), m.group(1)))
     return out
+
+
+# ---------------------------------------------------------------------------------------------
+# THE SOURCE-LEVEL SVG TEXT CHECK (order section 7 item 12).
+#
+# WHY IT EXISTS SEPARATELY FROM THE BROWSER SWEEP. `knowledge.js`'s `svgSignalStack()` builds an
+# SVG whose chips carried ten retired module identifiers and whose accessible name stated ten
+# categories where eleven are in service. RUN 51 ESTABLISHED, BY GREP, THAT THE FUNCTION HAS NO
+# CALLER ANYWHERE: it is dead code, so it renders on no surface and a DOM sweep can never see it.
+# It was still in the served bytes and it was still corrected. What checks it is this: the SVG
+# `<text>` and `aria-label` content is extracted FROM THE SOURCE, out of the template literals
+# that build it, and asserted to carry no identifier. Reinstating `01 EVM` turns THIS red.
+# ---------------------------------------------------------------------------------------------
+SVG_ID = re.compile(r"\b0\d\s+[A-Z]|\b[A-D]\d{1,2}\.\d{1,2}\b|\bCat\s*\d|\bModule\s*\d")
+
+
+def svg_source_text(rel: str):
+    """Every SVG text node and accessible name a source file BUILDS, rendered or not."""
+    t = (ROOT / rel).read_text(encoding="utf-8")
+    out = []
+    for m in re.finditer(r"<text\b[^>]*>(.*?)</text>", t, re.S):
+        out.append(("<text>", m.group(1)))
+    for m in re.finditer(r'aria-label="([^"]*)"', t):
+        out.append(("aria-label", m.group(1)))
+    # The chip arrays the SVG builders interpolate, which never appear between <text> tags in
+    # the source because they are looped over at render time.
+    for m in re.finditer(r"mods:\s*\[([^\]]*)\]", t):
+        out.append(("mods[]", m.group(1)))
+    return out
+
+
+def guarantee_twelve() -> int:
+    bad = []
+    read = 0
+    for rel in ("assets/js/knowledge.js", "assets/js/neural_flow.js", "assets/js/charts3d.js",
+                "assets/js/deepdive.js", "index.html",
+                "assets/visualizations/pceif_neural_signal_flow.html"):
+        if not (ROOT / rel).is_file():
+            continue
+        for where, body in svg_source_text(rel):
+            read += 1
+            m = SVG_ID.search(body)
+            if m:
+                bad.append((rel, where, m.group(0), body.strip()[:110]))
+    print(f"SVG text nodes and accessible names read FROM SOURCE: {read}")
+    for row in bad:
+        print(f"  SURVIVOR  {row[0]}  {row[1]}  {row[2]!r}  in  {row[3]!r}")
+    ok = not bad and read >= 20
+    print(f"RESULT: {1 if ok else 0}/1 checks passed")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    if "--guarantee1" in sys.argv or "--svg" in sys.argv:
+        sys.exit(guarantee_twelve())
+    sys.exit(main())

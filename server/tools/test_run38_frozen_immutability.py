@@ -146,11 +146,37 @@ RUN44_AUTHORISED_MANIFEST_CHANGES = {
 RUN49_AUTHORISED_MANIFEST_CHANGES = {
     "assets/js/decision-ui.js",
 }
+# RUN 51. The manifest files this run was authorised to move, named for the same reason.
+# taxonomy_authority.json is the taxonomy's own authority and its PRIMARY-KEY FIELD is renamed
+# from `num` to `key` on the owner's ruling 2, so that a render site cannot mistake the key for a
+# label; not one identifier, module or category changed. decision.js, workspace.js and both
+# questionnaires are sequence-bearing and each carries its own named exception record in the v19
+# checksum record. Any OTHER manifest file that moved still fails this check.
+RUN51_AUTHORISED_MANIFEST_CHANGES = {
+    "server/tools/taxonomy_authority.json",
+    "assets/js/decision.js",
+    "assets/js/workspace.js",
+    "assets/questionnaires/intake.json",
+    "assets/questionnaires/debrief.json",
+    "assets/js/app.js",
+    "assets/js/knowledge.js",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+    "assets/js/deepdive.js",
+    "assets/js/decision-ui.js",
+    "assets/js/taxonomy.js",
+    "assets/js/categories.js",
+    "assets/js/neural_flow.js",
+    "assets/js/charts3d.js",
+    "assets/js/ds_defensibility_data.js",
+    "index.html",
+}
 AUTHORISED_MANIFEST_CHANGES = (RUN41_AUTHORISED_MANIFEST_CHANGES
                                | RUN42_AUTHORISED_MANIFEST_CHANGES
                                | RUN43_AUTHORISED_MANIFEST_CHANGES
                                | RUN44_AUTHORISED_MANIFEST_CHANGES
-                               | RUN49_AUTHORISED_MANIFEST_CHANGES)
+                               | RUN49_AUTHORISED_MANIFEST_CHANGES
+                               | RUN51_AUTHORISED_MANIFEST_CHANGES)
 manifest_targets = sorted(set(manifest_paths) - BOOKKEEPING
                           - AUTHORISED_MANIFEST_CHANGES)
 vs_candidate = [p for p in manifest_targets if diff_committed(CANDIDATE, p)]
@@ -463,6 +489,33 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_run20_declared_production_changes.py",
     "server/tools/test_run25_rail_removal.py",
     "research/study_execution/OWNER_WEBSITE_ACCEPTANCE_CHECKLIST.md",
+} | {
+    # RUN 51, THE DELIVERY OF WHAT RUN 50 STOPPED ON. The suites and tools whose pinned
+    # expectation is a stamp, a package identity, a manifest pointer or a parsed field name that
+    # the successor legitimately moves. Each names the file rather than widening its rule, so all
+    # of them keep their full force over everything else. Not one is executable production or
+    # client code, not one is named by the freeze checksum manifest, and not one is inside a
+    # frozen surface -- all three asserted separately above and below.
+    "server/tools/build_run32_b3_reconciliation.py",
+    "server/tools/run26_fault_campaign.py",
+    "server/tools/run32_b3_browser_verification.py",
+    "server/tools/run32_qualifier_fault_campaign.py",
+    "server/tools/test_run10_synthetic_v03.py",
+    "server/tools/test_run16_material_cost_variance_disabled.py",
+    "server/tools/test_run16_final_flow_and_rail.py",
+    "server/tools/test_run24_empty_project_diagram.py",
+    "server/tools/test_run26_counts_and_wiring.py",
+    "server/tools/test_run28_participant_packages.py",
+    "server/tools/test_run32_client_authority.py",
+    "server/tools/test_run32_defensibility_truth.py",
+    "server/tools/test_run32_method_class_agreement.py",
+    "server/tools/test_run35_closure_voter_identities.py",
+    "server/tools/test_run36_fault_guards.py",
+    "server/tools/test_run41_preservation.py",
+    "server/tools/test_run44_participant_defect_fixes.py",
+    "server/tools/test_run48_current_period.py",
+    "server/tools/test_run49_naming_completion.py",
+    "server/tools/test_run2_fifteen_defects.py",
 } | {
     # RUN 43, THE RETIREMENT. The suites whose pinned expectation is a population, a stamp or a
     # manifest pointer the successor legitimately moves. Each names the file rather than widening

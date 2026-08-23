@@ -452,9 +452,19 @@ try:
         check(len(kn["svgText"]) >= 20,
               "THE SWEEP READS SVG TEXT NODES AT ALL: the handbook's diagrams yielded text nodes "
               "that innerText never exposes", str(len(kn["svgText"])))
-        check(any(x.strip() in ("EVM", "CUSUM", "PERT", "DSM", "CCPM") for x in kn["svgText"]),
-              "AND IT REALLY READ THE SIGNAL STACK: the method chips inside that SVG are in the "
-              "swept text, so an identifier inside it could not hide", str(svgset[:12]))
+        # WHAT THIS PROVES, STATED EXACTLY. It proves the sweep reads text out of the SVGs the
+        # handbook ACTUALLY RENDERS -- the CUSUM chart, the EVM S-curve, the Monte Carlo
+        # distribution, the evidence-to-action flow and the signal agreement map -- by finding
+        # labels that exist only inside them. It does NOT prove anything about
+        # knowledge.js's svgSignalStack(), which RUN 51 ESTABLISHED HAS NO CALLER ANYWHERE and
+        # therefore renders on no surface; that function's contents are checked at the SOURCE by
+        # `run51_dash_sweep.py --guarantee1`, and that check is what fault F12 turns red.
+        check(any(x.strip() in ("H = 5\u03c3 (decision interval)", "SV (schedule variance)",
+                                "CV (cost variance)", "simulated EAC (5,000 iterations) \u2192")
+                  for x in kn["svgText"]),
+              "AND IT REALLY READ INSIDE THOSE SVGs: labels that exist ONLY inside an SVG "
+              "element are in the swept text, so an identifier inside a RENDERED diagram could "
+              "not hide", str(svgset[:12]))
         _svg_ids = [x for x in svgset
                     if re.search(r"^\s*0\d\s|\b[A-D]\d{1,2}\.\d|\bCat\s*\d", x)]
         check(not _svg_ids,

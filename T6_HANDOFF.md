@@ -9,6 +9,57 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-22 - Run 51: THE DELIVERY OF WHAT RUN 50 STOPPED ON. MERGED.
+
+**Report:** `REPORT_2026-08-22_run51_delivery.md`.
+**Branch:** `run51-delivery`, rooted at `ad4f614`, **merged to `main` with `--no-ff`**.
+**Stamp:** `sim-2026.08-v34`. **Package:** `og-participant-2026.08-v19`.
+**193 suites, all green.** Freeze gate **15 blocker classes, 0 blocked; suite 34/34**.
+**Behaviour digest UNCHANGED at `8fb4d366...`.**
+
+## WHAT MOVED, AND IT IS TWENTY-THREE PARTICIPANT-VISIBLE FILES INCLUDING ALL SIX SEQUENCE-BEARING
+
+Six rulings, all delivered. **(1)** The Portfolio Health flyout is DELETED: `renderCat8Health`,
+`CAT8_MODULES`, `cat8HealthData`, `cat8HealthDataFromLive`, `isSnapshotStale`, `cat8Retired` and
+the three buttons inside them. It rendered nowhere and had no caller in the served application.
+**(2)** The taxonomy's primary key is separated from the label and renamed `num` -> `key` across
+`taxonomy_authority.json`, the generator, both mirrors and every consumer; the key dispatches and
+what renders is a name. **(3)** The eight-module compliance panel is SPLIT into two panels, one
+per current category. **(4)** Every en dash and em dash in user-facing text is replaced by words.
+**(5)** Seven mis-filed deep-dive panels are corrected, including the two alias cases. **(6)** The
+grouping loop's bound is DERIVED from the taxonomy, so the eleventh project category renders.
+Every count of modules or categories on a served page now derives from `registry_index()` and
+`service_index()`; the handbook's "96 registered modules" is gone.
+
+## WHAT THE NEXT SESSION MUST KNOW
+
+1. **GUARANTEE 1 IS MET**, for the first time in four runs, measured on the RENDERED DOM of six
+   participant pages and the deep-dive surface, SVG text nodes and accessible names included:
+   8,031 strings read, **zero survivors**. The instrument is
+   `server/tools/drive_run51_browser.py`. A source grep is not the instrument and never was.
+2. **EVERY SWEEP MUST READ SVG `<text>` NODES**, in the DOM *and* in the SOURCE. `innerText`
+   does not expose them. AND: `knowledge.js`'s `svgSignalStack()`, which carried the ten retired
+   identifiers Run 50 reported as "visible", **HAS NO CALLER ANYWHERE** -- it is dead code and
+   renders on no surface, so a DOM sweep can never see it. The source-level instrument is
+   `server/tools/run51_dash_sweep.py --svg`, which reads 113 SVG text bodies, aria-labels and
+   chip arrays out of what the files BUILD.
+3. **All six sequence-bearing files have now moved.** The exception spans the whole set, so what
+   keeps the invariant real is that EACH is named individually, with what moved inside it, in the
+   header of `code_audit/run51_participant_package_v19_checksums.sha256`, and two suites assert
+   that file by file. A seventh file does not exist; a file moving without a record is still red.
+4. **`groupByCategory` used to DROP a panel whose key resolved to no category, silently.** A guard
+   now appends unclaimed panels beneath the groups. Anyone editing `CAT_KEY_FROM_MODULE` should
+   know it used to fail without a sound.
+5. **A reachable control on `research/deepdive.html` has a dead handler:** `see Health ->` calls
+   `LinIngest.openHealthModal()`, which does not exist. NOT removed -- removing a reachable
+   control is a run-level halt. It needs the owner's ruling.
+6. **Three mints again**, as Run 49 predicted: two reconciliations were discoverable only by
+   running the full suite against the new manifests. The third caught a real regression -- the
+   blanket dash sweep clobbered `detail.js:1840`, a PARSER over model-produced text. Reverted and
+   recorded as stop condition 9.3.
+
+---
+
 # 2026-08-22 - Run 49: THE COMPLETION OF THE NAMING CORRECTION. MERGED.
 
 **Report:** `REPORT_2026-08-22_run49_naming_completion.md`.

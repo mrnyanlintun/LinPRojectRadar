@@ -306,11 +306,37 @@ RUN44_AUTHORISED_MANIFEST_CHANGES = {
 RUN49_AUTHORISED_MANIFEST_CHANGES = {
     "assets/js/decision-ui.js",
 }
+# RUN 51. The manifest files this run was authorised to move, named for the same reason.
+# taxonomy_authority.json is the taxonomy's own authority and its PRIMARY-KEY FIELD is renamed
+# from `num` to `key` on the owner's ruling 2, so that a render site cannot mistake the key for a
+# label; not one identifier, module or category changed. decision.js, workspace.js and both
+# questionnaires are sequence-bearing and each carries its own named exception record in the v19
+# checksum record. Any OTHER manifest file that moved still fails this check.
+RUN51_AUTHORISED_MANIFEST_CHANGES = {
+    "server/tools/taxonomy_authority.json",
+    "assets/js/decision.js",
+    "assets/js/workspace.js",
+    "assets/questionnaires/intake.json",
+    "assets/questionnaires/debrief.json",
+    "assets/js/app.js",
+    "assets/js/knowledge.js",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+    "assets/js/deepdive.js",
+    "assets/js/decision-ui.js",
+    "assets/js/taxonomy.js",
+    "assets/js/categories.js",
+    "assets/js/neural_flow.js",
+    "assets/js/charts3d.js",
+    "assets/js/ds_defensibility_data.js",
+    "index.html",
+}
 AUTHORISED_MANIFEST_CHANGES = (RUN41_AUTHORISED_MANIFEST_CHANGES
                                | RUN42_AUTHORISED_MANIFEST_CHANGES
                                | RUN43_AUTHORISED_MANIFEST_CHANGES
                                | RUN44_AUTHORISED_MANIFEST_CHANGES
-                               | RUN49_AUTHORISED_MANIFEST_CHANGES)
+                               | RUN49_AUTHORISED_MANIFEST_CHANGES
+                               | RUN51_AUTHORISED_MANIFEST_CHANGES)
 targets = sorted(set(manifest_paths) - BOOKKEEPING - AUTHORISED_MANIFEST_CHANGES)
 vs_ready = [p for p in targets if diff_committed(RUN38_READY, p)]
 check(not vs_ready,
@@ -380,6 +406,37 @@ PERMITTED_MODIFICATIONS = {
     # pinned production-tree pointer, the suites that asserted the superseded stamp or the old
     # freeze anchors, the three suites that used to reach a column the S2 trigger now protects,
     # and the owner checklist the specification requires be updated to v26.
+    # RUN 51, THE DELIVERY OF WHAT RUN 50 STOPPED ON. The suites and tools whose pinned
+    # expectation is a stamp, a package identity, a manifest pointer or a parsed field name the
+    # successor legitimately moves. Each is NAMED rather than the rule being widened. Not one is
+    # executable production or client code, not one is named by the freeze checksum manifest,
+    # and not one is inside a frozen surface.
+    "server/tools/build_run32_b3_reconciliation.py",
+    "server/tools/run26_fault_campaign.py",
+    "server/tools/run32_b3_browser_verification.py",
+    "server/tools/run32_qualifier_fault_campaign.py",
+    "server/tools/test_run10_synthetic_v03.py",
+    "server/tools/test_run16_material_cost_variance_disabled.py",
+    "server/tools/test_run16_final_flow_and_rail.py",
+    "server/tools/test_run24_empty_project_diagram.py",
+    "server/tools/test_run26_counts_and_wiring.py",
+    "server/tools/test_run28_participant_packages.py",
+    "server/tools/test_run32_client_authority.py",
+    "server/tools/test_run32_defensibility_truth.py",
+    "server/tools/test_run32_method_class_agreement.py",
+    "server/tools/test_run35_closure_voter_identities.py",
+    "server/tools/test_run36_fault_guards.py",
+    "server/tools/test_run41_preservation.py",
+    "server/tools/test_run44_participant_defect_fixes.py",
+    "server/tools/test_run48_current_period.py",
+    "server/tools/test_run49_naming_completion.py",
+    "server/tools/test_run2_fifteen_defects.py",
+    "server/tools/test_run20_declared_production_changes.py",
+    "server/tools/test_run25_rail_removal.py",
+    "server/tools/test_run6_known_answer.py",
+    "server/tools/test_run8_retest_classify_27.py",
+    "server/tools/participant_packages.py",
+    "server/tools/test_run38_frozen_immutability.py",
     "server/tools/test_run10_state_protection.py",
     "server/tools/test_run22_production_tree_completeness.py",
     "server/tools/test_run31_version_boundaries.py",

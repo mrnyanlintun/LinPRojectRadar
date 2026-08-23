@@ -76,9 +76,20 @@ def suite(rel_test):
 
 
 def driver(dbdir):
+    # A FRESH MIGRATED DATABASE PER INVOCATION. The driver creates a participant and a project
+    # through the real routes; reusing a database makes the second invocation fail at
+    # `adminparticipantcreate` with a KeyError, which is a fixture fault and NOT the fault under
+    # test. Each run gets its own directory so a failure here can never be mistaken for a red.
+    import tempfile
+    work = tempfile.mkdtemp(prefix="run51-inj-", dir=dbdir)
+    db = f"sqlite:///{work}/inj.db"
+    mig = run([sys.executable, "-m", "alembic", "upgrade", "head"],
+              cwd=ROOT / "server", env={"DATABASE_URL": db})
+    if mig[0] != 0:
+        return None, "alembic failed: " + mig[1][-400:], []
     code, out = run([sys.executable, str(ROOT / "server/tools/drive_run51_browser.py")],
-                    cwd=dbdir,
-                    env={"DATABASE_URL": f"sqlite:///{dbdir}/inj.db",
+                    cwd=work,
+                    env={"DATABASE_URL": db,
                          "PLAYWRIGHT_BROWSERS_PATH": "/opt/pw-browsers"})
     line = [ln for ln in out.splitlines() if ln.startswith("RESULT:")]
     fails = [ln.strip() for ln in out.splitlines() if ln.strip().startswith("- ")]
@@ -212,7 +223,10 @@ def _f11(b: bytes) -> bytes:
 
 @fault("F12", "assets/js/knowledge.js",
        "GUARANTEE 7.12: the ten module identifiers are reinstated inside the handbook SVG, "
-       "where innerText cannot see them")
+       "where innerText cannot see them. NOTE: svgSignalStack() HAS NO CALLER ANYWHERE, so the "
+       "diagram renders on no surface and a DOM sweep CANNOT catch this. The check that must go "
+       "red is therefore the SOURCE-level SVG text sweep, which reads what a file BUILDS rather "
+       "than what a page happens to draw")
 def _f12(b: bytes) -> bytes:
     return b.replace(b'mods: ["EVM", "CUSUM"]', b'mods: ["01 EVM", "02 CUSUM"]', 1)
 
@@ -265,6 +279,17 @@ def main() -> int:
             return code == 0, out.strip().splitlines()[-1] if out.strip() else "no output"
         return v
 
+    def by_svg_source():
+        def v():
+            code, out = run([sys.executable, "server/tools/run51_dash_sweep.py", "--svg"])
+            line = [ln for ln in out.splitlines() if ln.startswith("RESULT:")]
+            if not line:
+                return None, out[-400:]
+            got, want = line[-1].split()[1].split("/")
+            surv = [ln.strip() for ln in out.splitlines() if "SURVIVOR" in ln]
+            return got == want, line[-1] + ("  " + "; ".join(s[:90] for s in surv) if surv else "")
+        return v
+
     def by_driver(expect_fail_substr=None):
         def v():
             g, d, fails = driver(dbdir)
@@ -285,7 +310,7 @@ def main() -> int:
         ("F9", by_driver()),
         ("F10", by_driver()),
         ("F11", by_driver()),
-        ("F12", by_driver()),
+        ("F12", by_svg_source()),
     ]
     for fid, verify in plan:
         if want and fid not in want:
