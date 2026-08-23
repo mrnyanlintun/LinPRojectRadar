@@ -1,5 +1,5 @@
 blocker_id,blocker,count,requirement,evidence,result
-B01,dirty candidate identity,0,required = 0,11 content-addressed digests recomputed from the tree and compared; git porcelain lines at evaluation: 7,PASS
+B01,dirty candidate identity,0,required = 0,11 content-addressed digests recomputed from the tree and compared; git porcelain lines at evaluation: 2,PASS
 B02,population mismatch,0,required = 0,registered total=101 expected 101; project scientific targets=95 expected 95; Portfolio Health targets=5 expected 5; scientific targets=100 expected 100,PASS
 B03,controlled-stimulus mismatch,0,required = 0,projects=6 periods/project=[6] unique=36 rows=36 duplicates=0 missing=0,PASS
 B04,participant-sequence drift,0,required = 0,6 sequence-bearing files compared against the og-participant-2026.08-v19 record; moved: none,PASS

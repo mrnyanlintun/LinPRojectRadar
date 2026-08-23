@@ -20,10 +20,10 @@
     "Run 51 delivered the six rulings Run 50 stopped on; sim-2026.08-v34.",
     "The v25 to v33 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "7e7fc4e9efef178d72c34b6f219aecdeac3cd601",
-  "candidate_identity_digest": "839d3952a9ab6449cfe130ce4a1a571d3e0f15cd0a95b38cd1b10f6a097155e4",
+  "freeze_candidate_commit": "b4f0a9bbf00408e4d19fba8b6dcd7b0121d2ec22",
+  "candidate_identity_digest": "72782eb15854260f6e7b96c7829a8f1be90c35d33267ddb7d5a110d46ea53fd7",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "9fde78dc4ca5feb55a618c9131dfb9d848e4805348cca3eddd9d1dc4c066df1c",
+  "release_content_digest": "0751b44516bff3d7277723e1b9b406a3a625f3d5a644bf093caed1f8b569aabf",
   "release_content_digest_method": "sha256 over RUN51_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v34",
@@ -140,6 +140,7 @@
     "assets/questionnaires/intake.json",
     "server/app/simulation/models.py",
     "server/tools/build_client_taxonomy.py",
-    "server/tools/taxonomy_authority.json"
+    "server/tools/taxonomy_authority.json",
+    "server/tools/test_run48_current_period.py"
   ]
 }
