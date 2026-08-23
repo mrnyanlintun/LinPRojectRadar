@@ -487,6 +487,40 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     ),
 )
 
+#: RUN 54. THE FIRST LINK IN THIS CHAIN WHOSE DELTA IS A DELETION. `assets/js/deepdive.js` is
+#: not edited between v20 and v21: it CEASES TO EXIST, together with the only page that ever
+#: loaded it, `research/deepdive.html`, and the route in `server/app/main.py` that served that
+#: page. The authority is the owner's ruling at section 8 of the Run 54 order: the surface was
+#: reached by no route the application serves -- index.html carries a comment saying it is not
+#: loaded there -- and all 78 of its panels gated on the legacy client-side blob at store.js:727,
+#: which a project computed through the real pipeline does not have.
+#:
+#: WHY A DELETION NEEDS ITS OWN EXCEPTION RECORD, STATED ONCE. Every earlier exception in this
+#: chain names a sequence-bearing file whose BYTES moved. This one names a sequence-bearing file
+#: that is GONE, which moves the SET and not merely a member of it. Naming it here rather than
+#: quietly shortening SEQUENCE_BEARING_FILES is what keeps the invariant a real one: a second
+#: sequence-bearing file disappearing still fails.
+V20_TO_V21_DELETED = (
+    "assets/js/deepdive.js",
+    "research/deepdive.html",
+)
+
+#: The ONE sequence-bearing file Run 54 was authorised to remove, and the only one it removed.
+#: Every other member of SEQUENCE_BEARING_FILES must still exist and be byte-identical across
+#: this successor.
+V20_TO_V21_SEQUENCE_EXCEPTION = ("assets/js/deepdive.js",)
+
+#: THE SEQUENCE-BEARING SET FROM v21 ONWARD. FIVE, not six. `SEQUENCE_BEARING_FILES` below keeps
+#: all six and is NOT shortened, because every historical comparison from v7 to v20 was taken
+#: against six and a record that silently became five would make those comparisons unreadable.
+#: A guard comparing v21 or later reads this tuple; a guard comparing any earlier link reads the
+#: original. The difference between the two is exactly V20_TO_V21_SEQUENCE_EXCEPTION, which is
+#: asserted rather than assumed.
+SEQUENCE_BEARING_FILES_FROM_V21 = (
+    "assets/js/decision.js", "assets/js/decision-ui.js", "assets/js/workspace.js",
+    "assets/questionnaires/intake.json", "assets/questionnaires/debrief.json",
+)
+
 #: RUN 52. The files whose bytes moved between v19 and v20. SEVEN, and EXACTLY ONE of them is
 #: sequence-bearing. The exception is declared here rather than left for a checksum to discover.
 #: Its authority is the owner's rulings 2 and 3 in the Run 52 order. assets/js/app.js is NOT

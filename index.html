@@ -1326,10 +1326,12 @@
   <script src="assets/js/auditor.js"></script>
   <script src="assets/js/admin.js"></script>
   <script src="assets/js/charts3d.js"></script>
-  <!-- deepdive.js is NOT loaded here. It is the one surface that genuinely computes: it re-runs
-       5,000 Monte Carlo iterations live to animate the working, which is the point of it rather
-       than an accident of its implementation. It therefore needs sim.js and simulations.js, and
-       it now lives on research/deepdive.html with them. See that file. -->
+  <!-- deepdive.js WAS NEVER LOADED HERE, and as of Run 54 it does not exist. Both it and the
+       page that did load it, research/deepdive.html, were deleted on the owner's ruling: the
+       surface was reached by no route this application serves, and all 78 of its panels gated
+       on the legacy client-side blob at store.js:727, which a project computed through the real
+       pipeline does not have. Nothing on this page called it. The participant detail page is
+       detail.js, which reads the stored result. -->
   <script src="assets/js/projectnet2d.js"></script>
   <script src="assets/js/detail.js"></script>
   <script src="assets/js/neural_flow.js"></script>

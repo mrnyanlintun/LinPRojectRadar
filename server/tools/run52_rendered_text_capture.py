@@ -233,6 +233,12 @@ with sync_playwright() as pw:
         document.getElementById('detail-root').querySelectorAll('text,[aria-label],[title]'))
         .map(n => (n.textContent||'') + '|' + (n.getAttribute('aria-label')||'') + '|' + (n.getAttribute('title')||''))
         .filter(s => s.replace(/\\|/g,'').trim()).join('\\n')""")
+    # RUN 54: THIS BLOCK IS HISTORICAL AND WILL NOT RUN AGAIN. `research/deepdive.html`
+    # was DELETED on the owner's ruling at section 8 of the Run 54 order, and the route
+    # that served it went with it. This driver is the EVIDENCE CAPTURE for its own run
+    # and is pinned to what that run measured; rewriting it would falsify the record it
+    # exists to be. It is annotated, not rewritten, on the same principle every
+    # predecessor package record in this repository is kept rather than regenerated.
     dd = browser.new_page(viewport={"width": 1680, "height": 2400})
     dd.goto(BASE + "/research/deepdive.html", wait_until="domcontentloaded")
     dd.evaluate("(t) => sessionStorage.setItem('og-session-token', t)", PM)

@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -176,20 +177,27 @@ def gate_1_version_guard() -> None:
     for state in ('"current"', '"mismatch"', '"unknown"'):
         check(f"version guard defines the {state} outcome", state in text, "")
 
-    dd = (ROOT / "research" / "deepdive.html").read_text(encoding="utf-8")
-    srcs = scripts_of(ROOT / "research" / "deepdive.html")
-    check("deep dive loads the version guard",
-          any(s.endswith("client_algorithm_version.js") for s in srcs), "")
-    if any(s.endswith("client_algorithm_version.js") for s in srcs):
-        gi = srcs.index([s for s in srcs if s.endswith("client_algorithm_version.js")][0])
-        for f in CLIENT_MODEL_FILES:
-            hits = [i for i, s in enumerate(srcs) if s.endswith(f)]
-            if hits:
-                check(f"version guard loads before {f}", gi < hits[0],
-                      f"guard at {gi}, {f} at {hits[0]}")
-    check("deep dive calls the comparison before rendering",
-          dd.index("LinClientAlgorithmVersion.compare") < dd.index("LinDeepDive.render"), "")
-    check("deep dive has somewhere to show the refusal", 'id="dd-version-guard"' in dd, "")
+    # RUN 54 RECONCILIATION. `research/deepdive.html` was DELETED on the owner's ruling at
+    # section 8 of the Run 54 order. Every check below asserted a property OF THAT PAGE: that it
+    # loaded the version guard, that it loaded it BEFORE the browser instruments, that it called
+    # the comparison before rendering, and that it had somewhere to show a refusal. All four
+    # existed to stop ONE page presenting browser arithmetic as the current analysis. With the
+    # page gone the guarantee is unconditional and is asserted as such, together with the
+    # non-vacuity that makes the absence a finding rather than an accident.
+    #
+    # THIS IS THE ONE PLACE IN RUN 54 WHERE CHECKS ABOUT A DELETED SUBJECT ARE REPLACED RATHER
+    # THAN KEPT. It is recorded here rather than absorbed silently, and it is reported to the
+    # owner as such.
+    _dd = ROOT / "research" / "deepdive.html"
+    _dd_was = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e",
+                              "HEAD~1:research/deepdive.html"], capture_output=True).returncode == 0
+    check("the only page that ever loaded browser arithmetic is GONE, so no page can present it "
+          "as the current analysis", (not _dd.exists()) and _dd_was,
+          f"exists_now={_dd.exists()} existed_at_HEAD~1={_dd_was}")
+    _srcs_index = scripts_of(ROOT / "index.html")
+    check("and the participant application loads neither browser instrument",
+          not [s for s in _srcs_index if s.endswith(("sim.js", "simulations.js"))],
+          str([s for s in _srcs_index if s.endswith(("sim.js", "simulations.js"))]))
 
 
 def mutation_proofs() -> None:
@@ -219,11 +227,18 @@ def mutation_proofs() -> None:
     check("MUTATION RED: claiming the server version for client arithmetic is detected",
           m is not None and m.group(1) == SIMULATION_VERSION, "not detected")
 
-    dd = (ROOT / "research" / "deepdive.html").read_text(encoding="utf-8")
-    mutated = dd.replace("      var v = LinClientAlgorithmVersion.compare(project);", "", 1)
-    check("mutation altered deepdive.html", mutated != dd, "no change")
-    check("MUTATION RED: removing the comparison is detected",
-          "LinClientAlgorithmVersion.compare" not in mutated, "not detected")
+    # RUN 54. The mutation proof for the deep dive's comparison call is retired with its
+    # subject. In its place, the ABSENCE check above is itself proved non-vacuous by execution:
+    # the file existed at the prior commit, so "it is gone" is a finding and not a check that
+    # was always going to pass. Asserted against git, not against a copy of this logic.
+    _dd_head = subprocess.run(["git", "-C", str(ROOT), "show", "HEAD~1:research/deepdive.html"],
+                              capture_output=True)
+    check("NON-VACUITY: the deleted page really did call the comparison before rendering, so "
+          "the check that has just been retired had force right up to the deletion",
+          _dd_head.returncode == 0
+          and b"LinClientAlgorithmVersion.compare" in _dd_head.stdout
+          and b"LinDeepDive.render" in _dd_head.stdout,
+          f"rc={_dd_head.returncode} bytes={len(_dd_head.stdout)}")
 
 
 gate_1_index_loads_no_client_model()

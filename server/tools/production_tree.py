@@ -60,9 +60,12 @@ PRODUCTION_ROOTS: tuple[tuple[str, bool, str], ...] = (
      "the served application entry document; app.main returns it by name from REPO_ROOT"),
     ("logo.png", False,
      "served by name from app.main as _LOGO_PNG. NOT in the 143-file freeze"),
-    ("research/deepdive.html", False,
-     "served by name from app.main as _DEEPDIVE_HTML, the researcher-facing surface Run 21 "
-     "corrected the four withdrawn regulatory claims on. NOT in the 143-file freeze"),
+    # RUN 54. `research/deepdive.html` WAS A PRODUCTION ROOT AND IS NOT ONE ANY MORE, because
+    # the file and the route that served it were both DELETED on the owner's ruling at section 8
+    # of the Run 54 order. It is removed rather than left to trip walk_production()'s
+    # "a root that has vanished is a freeze failure" -- that guard is correct and is deliberately
+    # not softened; what changed is that this path is no longer claimed as production. The guard
+    # keeps its full force over index.html and logo.png, the two non-recursive roots that remain.
     ("assets", True,
      "app.main mounts this WHOLE DIRECTORY with StaticFiles, so every file beneath it is served "
      "to a participant, including the vendored fonts and geojson the 143-file freeze omitted"),

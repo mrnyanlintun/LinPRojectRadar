@@ -343,14 +343,17 @@ _LOGO_PNG = REPO_ROOT / "logo.png"
 # which is the point: a participant must not be able to reach any part of the decision sequence
 # by typing a URL, and a route that still served a deleted page would be a second front door.
 #
-# research/deepdive.html is the exception, and deliberately a narrow one. It is the only surface
-# that still runs a model in the browser, because re-running one live IS what it is for. The
-# application does not load sim.js/simulations.js/categories.js at all, so that behaviour cannot
-# exist there; it exists here instead. Nothing links to this page and it holds no data of its
-# own — every action it would call is authenticated and refused server-side for a caller without
-# the role and membership. The guarantee is that no participant-facing route loads a client-side
-# model, not that this URL is secret.
-_DEEPDIVE_HTML = REPO_ROOT / "research" / "deepdive.html"
+# THE DEEP-DIVE EXCEPTION IS GONE, AND SO IS ITS ROUTE. `research/deepdive.html` and
+# `assets/js/deepdive.js` were DELETED by Run 54 on the owner's ruling at section 8 of the Run 54
+# order. The surface was loaded by no page -- index.html carries only a comment saying so -- and
+# every one of its 78 panels gated on the legacy client-side blob at store.js:727, which a
+# project computed through the real pipeline does not have. The route went with the file for the
+# reason stated above: a route that still served a deleted page would be a second front door.
+#
+# WHAT THIS MEANS FOR THE GUARANTEE. It is now unconditional rather than narrow: NO route this
+# service serves loads a client-side model. sim.js, simulations.js and categories.js are reached
+# by no served route at all -- categories.js is still loaded by tests.html and
+# tools/export_lib.html, neither of which app.main serves.
 
 if _ASSETS_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
@@ -378,12 +381,6 @@ def spa_index():
 @app.get("/logo.png", include_in_schema=False)
 def spa_logo():
     return _static_file(_LOGO_PNG, "image/png")
-
-
-@app.get("/research/deepdive.html", include_in_schema=False)
-def research_deepdive():
-    """The researcher-side deep dive. See the note beside _DEEPDIVE_HTML for why it is separate."""
-    return _static_file(_DEEPDIVE_HTML, "text/html")
 
 
 # ---------------------------------------------------------------- document content (T3)
