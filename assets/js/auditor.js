@@ -148,7 +148,7 @@
     const n = String(name || "").toLowerCase();
     if (n.includes("material")) return "Material Submittal";
     if (n.includes("drawing"))  return "Drawing";
-    return "—";
+    return "not recorded";
   }
 
   /* ---------- loaders ---------- */
@@ -325,7 +325,7 @@
      draft-row buttons and state.drafts mapping keep working unchanged. */
   function itemRowHtml(it, i) {
     const sk = statusKey(it.status);
-    const statusLabel = it.status || "—";
+    const statusLabel = it.status || "not recorded";
     const needsDraft = sk === "rejected" || sk === "remark";
     const draft = state.drafts[i];
     const draftBtn = needsDraft
@@ -342,9 +342,9 @@
       : "";
     return `<tr>
       <td class="aud-num">${i + 1}</td>
-      <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "—")}</td>
-      <td>${esc(it.remark || it.comment || it.note || "—")}</td>
-      <td class="aud-cite">${esc(it.citation || it.reference || "—")}</td>
+      <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "not recorded")}</td>
+      <td>${esc(it.remark || it.comment || it.note || "not recorded")}</td>
+      <td class="aud-cite">${esc(it.citation || it.reference || "not recorded")}</td>
       <td><span class="aud-status aud-status-${sk}">${esc(statusLabel)}</span>${draftBtn ? `<div class="aud-draft-actions">${draftBtn}</div>` : ""}</td>
     </tr>${draftRow}`;
   }
@@ -483,10 +483,10 @@
           const sk = statusKey(it.status);
           return `<tr>
             <td class="aud-num">${i + 1}</td>
-            <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "—")}</td>
-            <td>${esc(it.remark || it.comment || it.note || "—")}</td>
-            <td class="aud-cite">${esc(it.citation || it.reference || "—")}</td>
-            <td><span class="aud-status aud-status-${sk}">${esc(it.status || "—")}</span></td>
+            <td>${esc(it.item || it.itemSubmitted || it.submittedItem || "not recorded")}</td>
+            <td>${esc(it.remark || it.comment || it.note || "not recorded")}</td>
+            <td class="aud-cite">${esc(it.citation || it.reference || "not recorded")}</td>
+            <td><span class="aud-status aud-status-${sk}">${esc(it.status || "not recorded")}</span></td>
           </tr>`;
         }).join("");
         return `<tr class="aud-history-detail"><td colspan="5">
@@ -663,7 +663,7 @@
       state.drafts[i] = { loading: true };
       renderAuditorPage();
       try {
-        const question = `Draft a polite contractor response request for: ${item} — ${remark}. ` +
+        const question = `Draft a polite contractor response request for: ${item} with the remark ${remark}. ` +
           `Keep it professional, neutral, and under 100 words.`;
         const answer = await LinStore.chat(question, state.projectId);
         state.drafts[i] = { text: String(answer || "").trim() || "(no draft returned)" };

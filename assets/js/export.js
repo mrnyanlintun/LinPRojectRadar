@@ -128,31 +128,32 @@
     XLSX.utils.book_append_sheet(wb, wsSummary, "Executive Summary");
 
     // ----- Sheet 3: Category Results -----
+    // RUN 51, RULING 2. The sheet carried an IDENTIFIER column beside each NAME column, filled
+    // from the taxonomy's primary key. The key dispatches; it is not a label, and an exported
+    // workbook is user-facing text. The two identifier columns are gone rather than blanked,
+    // because an empty column is a worse artefact than a missing one.
     const catRows = [[
-      "Category", "Category Name", "Overall Status",
-      "Module", "Module Name", "Status", "Evidence Metric"
+      "Category Name", "Overall Status", "Module Name", "Status", "Evidence Metric"
     ]];
     const cats = snapshot.categories || {};
     Object.keys(cats).forEach((key) => {
       const cat = cats[key];
       if (!cat) return;
       if (cat.parked) {
-        catRows.push([cat.num, cat.name, "Stage 2: not yet active", "", "", "", ""]);
-        catRows.push(["", "", "", "", "", "", ""]);
+        catRows.push([cat.name, "Stage 2: not yet active", "", "", ""]);
+        catRows.push(["", "", "", "", ""]);
         return;
       }
       (cat.modules || []).forEach((m, idx) => {
         catRows.push([
-          idx === 0 ? cat.num : "",
           idx === 0 ? cat.name : "",
           idx === 0 ? (cat.status || "No data") : "",
-          m.num,
           m.name,
           m.status || "No data",
           m.evidence_metric || ""
         ]);
       });
-      catRows.push(["", "", "", "", "", "", ""]);
+      catRows.push(["", "", "", "", ""]);
     });
     const wsCat = XLSX.utils.aoa_to_sheet(catRows);
     wsCat["!cols"] = [

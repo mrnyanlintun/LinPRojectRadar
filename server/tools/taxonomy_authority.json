@@ -1,7 +1,7 @@
 [
  {
   "id": "a1",
-  "num": "A1",
+  "key": "A1",
   "name": "Cost and EVM Performance",
   "group": "A",
   "groupName": "Project Health",
@@ -10,7 +10,7 @@
   "modules": [
    {
     "id": "a1_1",
-    "num": "A1.1",
+    "key": "A1.1",
     "active": true,
     "required": [
      "bac",
@@ -20,7 +20,7 @@
    },
    {
     "id": "a1_2",
-    "num": "A1.2",
+    "key": "A1.2",
     "active": true,
     "required": [
      "spi"
@@ -28,7 +28,7 @@
    },
    {
     "id": "a1_3",
-    "num": "A1.3",
+    "key": "A1.3",
     "active": true,
     "required": [
      "bac",
@@ -39,7 +39,7 @@
    },
    {
     "id": "a1_4",
-    "num": "A1.4",
+    "key": "A1.4",
     "active": true,
     "required": [
      "spi",
@@ -48,7 +48,7 @@
    },
    {
     "id": "a1_5",
-    "num": "A1.5",
+    "key": "A1.5",
     "active": true,
     "required": [
      "cpiHistory"
@@ -56,7 +56,7 @@
    },
    {
     "id": "a1_6",
-    "num": "A1.6",
+    "key": "A1.6",
     "active": true,
     "required": [
      "ev",
@@ -68,7 +68,7 @@
    },
    {
     "id": "a1_7",
-    "num": "A1.7",
+    "key": "A1.7",
     "active": true,
     "required": [
      "bac",
@@ -78,7 +78,7 @@
    },
    {
     "id": "a1_8",
-    "num": "A1.8",
+    "key": "A1.8",
     "active": true,
     "required": [
      "bac",
@@ -87,7 +87,7 @@
    },
    {
     "id": "a1_9",
-    "num": "A1.9",
+    "key": "A1.9",
     "active": true,
     "required": [
      "ac",
@@ -97,7 +97,7 @@
    },
    {
     "id": "a1_10",
-    "num": "A1.10",
+    "key": "A1.10",
     "active": true,
     "required": [
      "cpi",
@@ -106,7 +106,7 @@
    },
    {
     "id": "a1_11",
-    "num": "A1.11",
+    "key": "A1.11",
     "active": true,
     "required": [
      "bac",
@@ -119,7 +119,7 @@
  },
  {
   "id": "a2",
-  "num": "A2",
+  "key": "A2",
   "name": "Schedule Performance",
   "group": "A",
   "groupName": "Project Health",
@@ -128,7 +128,7 @@
   "modules": [
    {
     "id": "a2_1",
-    "num": "A2.1",
+    "key": "A2.1",
     "active": true,
     "required": [
      "spi",
@@ -137,7 +137,7 @@
    },
    {
     "id": "a2_2",
-    "num": "A2.2",
+    "key": "A2.2",
     "active": true,
     "required": [
      "spi",
@@ -147,7 +147,7 @@
    },
    {
     "id": "a2_3",
-    "num": "A2.3",
+    "key": "A2.3",
     "active": true,
     "required": [
      "actualPctComplete",
@@ -156,7 +156,7 @@
    },
    {
     "id": "a2_4",
-    "num": "A2.4",
+    "key": "A2.4",
     "active": true,
     "required": [
      "baselineEnd",
@@ -166,7 +166,7 @@
    },
    {
     "id": "a2_5",
-    "num": "A2.5",
+    "key": "A2.5",
     "active": true,
     "required": [
      "totalFloat",
@@ -175,7 +175,7 @@
    },
    {
     "id": "a2_6",
-    "num": "A2.6",
+    "key": "A2.6",
     "active": true,
     "required": [
      "actualPctComplete",
@@ -186,7 +186,7 @@
    },
    {
     "id": "a2_7",
-    "num": "A2.7",
+    "key": "A2.7",
     "active": true,
     "required": [
      "milestoneHistory"
@@ -194,7 +194,7 @@
    },
    {
     "id": "a2_8",
-    "num": "A2.8",
+    "key": "A2.8",
     "active": true,
     "required": [
      "activitiesPlanned",
@@ -203,7 +203,7 @@
    },
    {
     "id": "a2_9",
-    "num": "A2.9",
+    "key": "A2.9",
     "active": true,
     "required": [
      "plannedLaborHours",
@@ -212,7 +212,7 @@
    },
    {
     "id": "a2_10",
-    "num": "A2.10",
+    "key": "A2.10",
     "active": true,
     "required": [
      "spi",
@@ -223,7 +223,7 @@
    },
    {
     "id": "a2_11",
-    "num": "A2.11",
+    "key": "A2.11",
     "active": true,
     "required": [
      "spi",
@@ -235,7 +235,7 @@
  },
  {
   "id": "a3",
-  "num": "A3",
+  "key": "A3",
   "name": "Cost Risk",
   "group": "A",
   "groupName": "Project Health",
@@ -244,7 +244,7 @@
   "modules": [
    {
     "id": "a3_1",
-    "num": "A3.1",
+    "key": "A3.1",
     "active": true,
     "required": [
      "bac",
@@ -253,7 +253,7 @@
    },
    {
     "id": "a3_2",
-    "num": "A3.2",
+    "key": "A3.2",
     "active": true,
     "required": [
      "originalContingency",
@@ -263,7 +263,7 @@
    },
    {
     "id": "a3_3",
-    "num": "A3.3",
+    "key": "A3.3",
     "active": true,
     "required": [
      "plannedLaborHours",
@@ -273,7 +273,7 @@
    },
    {
     "id": "a3_4",
-    "num": "A3.4",
+    "key": "A3.4",
     "active": true,
     "required": [
      "materialCostBaseline",
@@ -282,7 +282,7 @@
    },
    {
     "id": "a3_5",
-    "num": "A3.5",
+    "key": "A3.5",
     "active": true,
     "required": [
      "indirectCostPlan",
@@ -291,7 +291,7 @@
    },
    {
     "id": "a3_6",
-    "num": "A3.6",
+    "key": "A3.6",
     "active": true,
     "required": [
      "bac",
@@ -302,7 +302,7 @@
    },
    {
     "id": "a3_7",
-    "num": "A3.7",
+    "key": "A3.7",
     "active": true,
     "required": [
      "analogousOverrunPct",
@@ -311,7 +311,7 @@
    },
    {
     "id": "a3_8",
-    "num": "A3.8",
+    "key": "A3.8",
     "active": true,
     "required": [
      "bac",
@@ -322,7 +322,7 @@
    },
    {
     "id": "a3_9",
-    "num": "A3.9",
+    "key": "A3.9",
     "active": true,
     "required": [
      "materialCostBaseline",
@@ -333,7 +333,7 @@
  },
  {
   "id": "a4",
-  "num": "A4",
+  "key": "A4",
   "name": "Document-Derived Condition Signals",
   "group": "A",
   "groupName": "Project Health",
@@ -342,7 +342,7 @@
   "modules": [
    {
     "id": "a4_1",
-    "num": "A4.1",
+    "key": "A4.1",
     "method_class": "Doc_Risk_Cat4",
     "active": true,
     "required": [
@@ -351,7 +351,7 @@
    },
    {
     "id": "a4_2",
-    "num": "A4.2",
+    "key": "A4.2",
     "active": true,
     "required": [
      "rfiCount",
@@ -360,7 +360,7 @@
    },
    {
     "id": "a4_3",
-    "num": "A4.3",
+    "key": "A4.3",
     "active": true,
     "required": [
      "submittalsTotal",
@@ -369,7 +369,7 @@
    },
    {
     "id": "a4_4",
-    "num": "A4.4",
+    "key": "A4.4",
     "active": true,
     "required": [
      "ncrIssued",
@@ -383,7 +383,7 @@
    },
    {
     "id": "a4_5",
-    "num": "A4.5",
+    "key": "A4.5",
     "active": true,
     "required": [
      "weatherDaysLost"
@@ -395,7 +395,7 @@
    },
    {
     "id": "a4_6",
-    "num": "A4.6",
+    "key": "A4.6",
     "active": true,
     "required": [
      "changeOrderCount",
@@ -405,7 +405,7 @@
    },
    {
     "id": "a4_7",
-    "num": "A4.7",
+    "key": "A4.7",
     "active": true,
     "required": [
      "docRiskScore",
@@ -415,7 +415,7 @@
    },
    {
     "id": "a4_8",
-    "num": "A4.8",
+    "key": "A4.8",
     "active": true,
     "required": [
      "subcontractorComplianceScore"
@@ -427,7 +427,7 @@
    },
    {
     "id": "a4_9",
-    "num": "A4.9",
+    "key": "A4.9",
     "active": true,
     "required": [
      "longLeadItemsTotal",
@@ -441,7 +441,7 @@
    },
    {
     "id": "a4_10",
-    "num": "A4.10",
+    "key": "A4.10",
     "active": true,
     "required": [
      "docRiskScore",
@@ -452,7 +452,7 @@
  },
  {
   "id": "a5",
-  "num": "A5",
+  "key": "A5",
   "name": "System Dynamics and Complexity",
   "group": "A",
   "groupName": "Project Health",
@@ -461,7 +461,7 @@
   "modules": [
    {
     "id": "a5_1",
-    "num": "A5.1",
+    "key": "A5.1",
     "active": true,
     "required": [
      "cpi",
@@ -470,7 +470,7 @@
    },
    {
     "id": "a5_2",
-    "num": "A5.2",
+    "key": "A5.2",
     "active": true,
     "required": [
      "bac",
@@ -483,7 +483,7 @@
    },
    {
     "id": "a5_3",
-    "num": "A5.3",
+    "key": "A5.3",
     "active": true,
     "required": [
      "cpi",
@@ -495,7 +495,7 @@
    },
    {
     "id": "a5_4",
-    "num": "A5.4",
+    "key": "A5.4",
     "active": true,
     "required": [
      "bac",
@@ -507,7 +507,7 @@
    },
    {
     "id": "a5_5",
-    "num": "A5.5",
+    "key": "A5.5",
     "active": true,
     "required": [
      "cpi",
@@ -517,7 +517,7 @@
    },
    {
     "id": "a5_6",
-    "num": "A5.6",
+    "key": "A5.6",
     "active": true,
     "required": [
      "activitiesPlanned",
@@ -526,7 +526,7 @@
    },
    {
     "id": "a5_7",
-    "num": "A5.7",
+    "key": "A5.7",
     "active": true,
     "required": [
      "longLeadItemsTotal",
@@ -535,7 +535,7 @@
    },
    {
     "id": "a5_8",
-    "num": "A5.8",
+    "key": "A5.8",
     "active": true,
     "required": [
      "spi",
@@ -548,7 +548,7 @@
  },
  {
   "id": "a6",
-  "num": "A6",
+  "key": "A6",
   "name": "Delivery Quality Performance",
   "group": "A",
   "groupName": "Project Health",
@@ -557,7 +557,7 @@
   "modules": [
    {
     "id": "a6_1",
-    "num": "A6.1",
+    "key": "A6.1",
     "active": true,
     "required": [
      "qualityDeficienciesNoted"
@@ -565,7 +565,7 @@
    },
    {
     "id": "a6_2",
-    "num": "A6.2",
+    "key": "A6.2",
     "active": true,
     "required": [
      "safetyIncidentsDiscussed"
@@ -577,7 +577,7 @@
    },
    {
     "id": "a6_3",
-    "num": "A6.3",
+    "key": "A6.3",
     "active": true,
     "required": [
      "environmentalIssuesDiscussed"
@@ -589,7 +589,7 @@
    },
    {
     "id": "a6_4",
-    "num": "A6.4",
+    "key": "A6.4",
     "active": true,
     "required": [
      "overallRating",
@@ -601,7 +601,7 @@
  },
  {
   "id": "b1",
-  "num": "B1",
+  "key": "B1",
   "name": "Signal Synthesis",
   "group": "B",
   "groupName": "Recommendation and Governance",
@@ -610,7 +610,7 @@
   "modules": [
    {
     "id": "b1_1",
-    "num": "B1.1",
+    "key": "B1.1",
     "active": true,
     "required": [
      "cpi",
@@ -620,7 +620,7 @@
    },
    {
     "id": "b1_2",
-    "num": "B1.2",
+    "key": "B1.2",
     "active": true,
     "required": [
      "cpi",
@@ -630,7 +630,7 @@
    },
    {
     "id": "b1_3",
-    "num": "B1.3",
+    "key": "B1.3",
     "active": true,
     "required": [
      "cpi",
@@ -640,7 +640,7 @@
    },
    {
     "id": "b1_4",
-    "num": "B1.4",
+    "key": "B1.4",
     "active": true,
     "required": [
      "cpi",
@@ -652,7 +652,7 @@
  },
  {
   "id": "b2",
-  "num": "B2",
+  "key": "B2",
   "name": "Evidence Combination",
   "group": "B",
   "groupName": "Recommendation and Governance",
@@ -661,7 +661,7 @@
   "modules": [
    {
     "id": "b2_1",
-    "num": "B2.1",
+    "key": "B2.1",
     "active": true,
     "required": [
      "cpi",
@@ -671,7 +671,7 @@
    },
    {
     "id": "b2_2",
-    "num": "B2.2",
+    "key": "B2.2",
     "active": true,
     "required": [
      "cpi",
@@ -681,7 +681,7 @@
    },
    {
     "id": "b2_3",
-    "num": "B2.3",
+    "key": "B2.3",
     "active": true,
     "required": [
      "cpi",
@@ -691,7 +691,7 @@
    },
    {
     "id": "b2_4",
-    "num": "B2.4",
+    "key": "B2.4",
     "active": true,
     "required": [
      "cpi",
@@ -700,7 +700,7 @@
    },
    {
     "id": "b2_5",
-    "num": "B2.5",
+    "key": "B2.5",
     "active": true,
     "required": [
      "cpi",
@@ -710,7 +710,7 @@
    },
    {
     "id": "b2_6",
-    "num": "B2.6",
+    "key": "B2.6",
     "active": true,
     "required": [
      "cpi",
@@ -720,7 +720,7 @@
    },
    {
     "id": "b2_7",
-    "num": "B2.7",
+    "key": "B2.7",
     "active": true,
     "required": [
      "cpi",
@@ -730,7 +730,7 @@
    },
    {
     "id": "b2_8",
-    "num": "B2.8",
+    "key": "B2.8",
     "active": true,
     "required": [
      "cpi",
@@ -740,7 +740,7 @@
    },
    {
     "id": "b2_9",
-    "num": "B2.9",
+    "key": "B2.9",
     "active": true,
     "required": [
      "cpi",
@@ -750,7 +750,7 @@
    },
    {
     "id": "b2_10",
-    "num": "B2.10",
+    "key": "B2.10",
     "active": true,
     "required": [
      "cpi",
@@ -760,7 +760,7 @@
    },
    {
     "id": "b2_11",
-    "num": "B2.11",
+    "key": "B2.11",
     "active": true,
     "required": [
      "cpi",
@@ -770,7 +770,7 @@
    },
    {
     "id": "b2_12",
-    "num": "B2.12",
+    "key": "B2.12",
     "active": true,
     "required": [
      "cpi",
@@ -779,7 +779,7 @@
    },
    {
     "id": "b2_13",
-    "num": "B2.13",
+    "key": "B2.13",
     "active": true,
     "required": [
      "cpi",
@@ -788,7 +788,7 @@
    },
    {
     "id": "b2_14",
-    "num": "B2.14",
+    "key": "B2.14",
     "active": true,
     "required": [
      "cpi",
@@ -798,7 +798,7 @@
    },
    {
     "id": "b2_15",
-    "num": "B2.15",
+    "key": "B2.15",
     "active": true,
     "required": [
      "cpi",
@@ -808,7 +808,7 @@
    },
    {
     "id": "b2_16",
-    "num": "B2.16",
+    "key": "B2.16",
     "active": true,
     "required": [
      "cpi",
@@ -818,7 +818,7 @@
    },
    {
     "id": "b2_17",
-    "num": "B2.17",
+    "key": "B2.17",
     "active": true,
     "required": [
      "cpi",
@@ -827,7 +827,7 @@
    },
    {
     "id": "b2_18",
-    "num": "B2.18",
+    "key": "B2.18",
     "active": true,
     "required": [
      "cpi",
@@ -837,7 +837,7 @@
    },
    {
     "id": "b2_19",
-    "num": "B2.19",
+    "key": "B2.19",
     "active": true,
     "required": [
      "cpi",
@@ -847,7 +847,7 @@
    },
    {
     "id": "b2_20",
-    "num": "B2.20",
+    "key": "B2.20",
     "active": true,
     "required": [
      "cpi",
@@ -859,7 +859,7 @@
  },
  {
   "id": "b3",
-  "num": "B3",
+  "key": "B3",
   "name": "Regulatory and Authority Thresholds",
   "group": "B",
   "groupName": "Recommendation and Governance",
@@ -868,7 +868,7 @@
   "modules": [
    {
     "id": "b3_1",
-    "num": "B3.1",
+    "key": "B3.1",
     "active": true,
     "required": [
      "cpi",
@@ -878,7 +878,7 @@
    },
    {
     "id": "b3_2",
-    "num": "B3.2",
+    "key": "B3.2",
     "active": true,
     "required": [
      "bac",
@@ -889,7 +889,7 @@
    },
    {
     "id": "b3_3",
-    "num": "B3.3",
+    "key": "B3.3",
     "active": true,
     "required": [
      "bac",
@@ -899,7 +899,7 @@
    },
    {
     "id": "b3_4",
-    "num": "B3.4",
+    "key": "B3.4",
     "active": true,
     "required": [
      "bac",
@@ -909,7 +909,7 @@
    },
    {
     "id": "b3_5",
-    "num": "B3.5",
+    "key": "B3.5",
     "active": true,
     "required": [
      "changeOrderCount",
@@ -921,7 +921,7 @@
  },
  {
   "id": "b4",
-  "num": "B4",
+  "key": "B4",
   "name": "Decision Optimization",
   "group": "B",
   "groupName": "Recommendation and Governance",
@@ -930,7 +930,7 @@
   "modules": [
    {
     "id": "b4_1",
-    "num": "B4.1",
+    "key": "B4.1",
     "active": true,
     "required": [
      "cpi",
@@ -940,7 +940,7 @@
    },
    {
     "id": "b4_2",
-    "num": "B4.2",
+    "key": "B4.2",
     "active": true,
     "required": [
      "bac",
@@ -951,7 +951,7 @@
    },
    {
     "id": "b4_3",
-    "num": "B4.3",
+    "key": "B4.3",
     "active": true,
     "required": [
      "cpi",
@@ -961,7 +961,7 @@
    },
    {
     "id": "b4_4",
-    "num": "B4.4",
+    "key": "B4.4",
     "active": true,
     "required": [
      "bac",
@@ -973,7 +973,7 @@
    },
    {
     "id": "b4_5",
-    "num": "B4.5",
+    "key": "B4.5",
     "active": true,
     "required": [
      "cpi",
@@ -983,7 +983,7 @@
    },
    {
     "id": "b4_6",
-    "num": "B4.6",
+    "key": "B4.6",
     "active": true,
     "required": [
      "cpi",
@@ -993,7 +993,7 @@
    },
    {
     "id": "b4_7",
-    "num": "B4.7",
+    "key": "B4.7",
     "active": true,
     "required": [
      "cpi",
@@ -1005,7 +1005,7 @@
  },
  {
   "id": "c1",
-  "num": "C1",
+  "key": "C1",
   "name": "Data Integrity",
   "group": "C",
   "groupName": "Data and Evidence Health",
@@ -1014,7 +1014,7 @@
   "modules": [
    {
     "id": "c1_1",
-    "num": "C1.1",
+    "key": "C1.1",
     "active": true,
     "required": [
      "bac"
@@ -1024,7 +1024,7 @@
    },
    {
     "id": "c1_2",
-    "num": "C1.2",
+    "key": "C1.2",
     "active": true,
     "required": [
      "docDate"
@@ -1034,7 +1034,7 @@
    },
    {
     "id": "c1_3",
-    "num": "C1.3",
+    "key": "C1.3",
     "active": true,
     "required": [
      "bac"
@@ -1044,7 +1044,7 @@
    },
    {
     "id": "c1_4",
-    "num": "C1.4",
+    "key": "C1.4",
     "active": true,
     "required": [
      "bac"
@@ -1054,7 +1054,7 @@
    },
    {
     "id": "c1_5",
-    "num": "C1.5",
+    "key": "C1.5",
     "active": true,
     "required": [
      "bac"
@@ -1064,7 +1064,7 @@
    },
    {
     "id": "c1_6",
-    "num": "C1.6",
+    "key": "C1.6",
     "active": true,
     "required": [
      "ev",
@@ -1075,7 +1075,7 @@
    },
    {
     "id": "c1_7",
-    "num": "C1.7",
+    "key": "C1.7",
     "active": true,
     "required": [
      "docDate"
@@ -1087,7 +1087,7 @@
  },
  {
   "id": "d1",
-  "num": "D1",
+  "key": "D1",
   "name": "Portfolio Health",
   "group": "D",
   "groupName": "Portfolio Level",
@@ -1097,7 +1097,7 @@
   "modules": [
    {
     "id": "d1_1",
-    "num": "D1.1",
+    "key": "D1.1",
     "active": true,
     "required": [
      "portfolioVectors"
@@ -1106,7 +1106,7 @@
    },
    {
     "id": "d1_2",
-    "num": "D1.2",
+    "key": "D1.2",
     "active": true,
     "required": [
      "portfolioVectors"
@@ -1115,7 +1115,7 @@
    },
    {
     "id": "d1_3",
-    "num": "D1.3",
+    "key": "D1.3",
     "active": true,
     "required": [
      "signalHistory"
@@ -1124,7 +1124,7 @@
    },
    {
     "id": "d1_4",
-    "num": "D1.4",
+    "key": "D1.4",
     "active": true,
     "required": [
      "portfolioVectors"
@@ -1133,7 +1133,7 @@
    },
    {
     "id": "d1_5",
-    "num": "D1.5",
+    "key": "D1.5",
     "active": true,
     "required": [
      "portfolioVectors"

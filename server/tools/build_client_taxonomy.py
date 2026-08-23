@@ -19,7 +19,7 @@ THE FIELDS EACH AUTHORITY OWNS, and nothing owns a field twice:
 
     taxonomy_authority.json (this directory)
         everything the registry does not govern: category identity, colour and description, and
-        each module's id, num, required inputs, sector applicability and level flags.
+        each module's id, key, required inputs, sector applicability and level flags.
 
 NEITHER GENERATED FILE IS HAND-MAINTAINED. Editing one of them cannot fix or break production,
 because the guard regenerates from the authorities and compares; the only way to change what ships
@@ -69,6 +69,20 @@ def build() -> str:
     # participant surface, so a retired identity must not reach it. Reinstating a module in the
     # CSV puts it back here with no edit to this generator.
     names = {mid: row["module_name"] for mid, row in REG.service_index().items()}
+    # RUN 51, SECTION 6.1. THE COUNTS SHIP DERIVED, NOT TYPED. Every user-facing statement of
+    # how many modules the platform registers, how many are in service, how many were retired
+    # and how many the analytical server computes was a hand-typed number in prose, which is
+    # what produced the "96 registered modules" the owner saw on the handbook. They are counted
+    # here from the SAME authorities the array is built from -- registry_index() for what is
+    # registered, service_index() for what is in service, VALIDATED for what has a production
+    # runner -- and the surfaces read them. A retirement changes every sentence with no edit.
+    _registered = len(REG.registry_index())
+    _in_service = len(REG.service_index())
+    _computes = len([m for m in REG.service_index() if m in REG.VALIDATED])
+    counts = ("window.LIN_TAXONOMY_COUNTS = { registered: %d, inService: %d, retired: %d, "
+              "serverComputes: %d, supplied: %d };"
+              % (_registered, _in_service, _registered - _in_service,
+                 _computes, _in_service - _computes))
     lines = [
         "/* GENERATED BLOCK. Do not edit by hand.",
         "",
@@ -82,18 +96,19 @@ def build() -> str:
         "                                    production runners actually emit",
         "     everything else                server/tools/taxonomy_authority.json -- category",
         "                                    identity, colour, description, and each module's",
-        "                                    id, num, required inputs, sectors and level flags",
+        "                                    id, key, required inputs, sectors and level flags",
         "",
         "   WHY. categories.js and taxonomy.js each carried a hand-maintained copy of the same",
         "   101-module taxonomy. index.html loads taxonomy.js and not categories.js, so a fix",
         "   made in the wrong copy passed every source check while the live page stayed broken;",
         "   and the two had already drifted apart on their own, with nine modules carrying",
         "   `disabled: true` in one and not the other. */",
+        counts,
         START,
     ]
     for ci, cat in enumerate(authority):
         lines.append("  {")
-        lines.append("    id: %s, num: %s, name: %s," % (js(cat["id"]), js(cat["num"]),
+        lines.append("    id: %s, key: %s, name: %s," % (js(cat["id"]), js(cat["key"]),
                                                          js(cat["name"])))
         lines.append("    group: %s, groupName: %s," % (js(cat["group"]), js(cat["groupName"])))
         lines.append("    color: %s," % js(cat["color"]))
@@ -102,15 +117,15 @@ def build() -> str:
             lines.append("    level: %s," % js(cat["level"]))
         lines.append("    modules: [")
         for _m in cat["modules"]:
-            if _m["num"] not in names and not REG.is_retired(_m["num"]):
+            if _m["key"] not in names and not REG.is_retired(_m["key"]):
                 raise SystemExit(
-                    f"{_m['num']} is in the taxonomy authority and not in the registry")
+                    f"{_m['key']} is in the taxonomy authority and not in the registry")
         # Retired identities are dropped from the emitted array. The comma/terminator logic below
         # counts the emitted rows, so the filter happens here rather than inside the loop.
-        mods = [_m for _m in cat["modules"] if _m["num"] in names]
+        mods = [_m for _m in cat["modules"] if _m["key"] in names]
         for mi, m in enumerate(mods):
-            mid = m["num"]
-            parts = ["id: %s" % js(m["id"]), "num: %s" % js(mid),
+            mid = m["key"]
+            parts = ["id: %s" % js(m["id"]), "key: %s" % js(mid),
                      "name: %s" % js(names[mid])]
             # THE IDENTIFIER THE RUNNER ACTUALLY EMITS. A module with no dispatch entry keeps the
             # authority's own value, which is the case for the supplied and portfolio identities.

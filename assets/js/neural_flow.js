@@ -50,11 +50,11 @@
     { id:1,  taxId:'a1', name:'Quantitative EVM',       group:'A', groupName:'Project Health',                  count:12 },
     { id:2,  taxId:'a2', name:'Schedule Simulation',    group:'A', groupName:'Project Health',                  count:11 },
     { id:3,  taxId:'a3', name:'Cost Simulation',        group:'A', groupName:'Project Health',                  count:10 },
-    { id:4,  taxId:'a4', name:'Document & Risk',        group:'A', groupName:'Project Health',                  count:10 },
+    { id:4,  taxId:'a4', name:'Document and Risk',        group:'A', groupName:'Project Health',                  count:10 },
     { id:5,  taxId:'a5', name:'System Dynamics',        group:'A', groupName:'Project Health',                  count:8  },
     { id:6,  taxId:'b1', name:'Signal Synthesis',       group:'B', groupName:'Recommendation and Governance',   count:4  },
     { id:7,  taxId:'b2', name:'Evidence Combination',   group:'B', groupName:'Recommendation and Governance',   count:20 },
-    { id:8,  taxId:'b3', name:'Governance & Compliance',group:'B', groupName:'Recommendation and Governance',   count:9  },
+    { id:8,  taxId:'b3', name:'Governance and Compliance',group:'B', groupName:'Recommendation and Governance',   count:9  },
     { id:9,  taxId:'c1', name:'Data Integrity',         group:'C', groupName:'Data and Evidence Health',        count:6  },
     { id:10, taxId:'b4', name:'Decision Optimization',  group:'B', groupName:'Recommendation and Governance',   count:8  },
   ];
@@ -147,7 +147,7 @@
           idxs[ci].push(mods.length);
           // `required` is the module's own declaration of the signal keys it consumes. It is
           // what makes a DOCUMENT -> MODULE edge derivable instead of positional.
-          mods.push({ mc: m.method_class, name: m.name, num: m.num, catI: ci,
+          mods.push({ mc: m.method_class, name: m.name, key: m.key, catI: ci,
                       required: (m.required || []).slice() });
         });
       });
@@ -157,7 +157,7 @@
     var fbMods = RAW_MODS.map(function(row, i) {
       var ci = row[0], modI = fbIdxs[ci].length;
       fbIdxs[ci].push(i);
-      return { catI: ci, name: row[1], mc: row[2], num: (ci + 1) + '.' + (modI + 1) };
+      return { catI: ci, name: row[1], mc: row[2], key: (ci + 1) + '.' + (modI + 1) };
     });
     return { CATS: FB_CATS, MODULES: fbMods, catModIdxs: fbIdxs, catIds: null };
   }
@@ -997,7 +997,7 @@
           circle.style.transform = 'scale(1.5)';
           var metStr = info.metric ? '<div class="sub">metric: '+escH(info.metric)+'</div>' : '';
           var statusLabel = info.na ? escH(sectorNAText) : info.status;
-          showTT(evt,'<div class="m">'+escH(m.num)+'</div><div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
+          showTT(evt,'<div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
           modCatEls[mi].setAttribute('opacity','0.70');
           modCatEls[mi].setAttribute('stroke-width','1.4');
           classAFocus(function(e){ return e.modI===mi; });
@@ -1176,9 +1176,13 @@
     sum.className = 'lnf-summary';
     sum.style.cssText = 'padding:8px 12px 2px;font-size:11px;line-height:1.6;' +
       'color:var(--muted, #4a5a7a);font-family:monospace;background:var(--surface, #0b0e17);';
-    var archSentence = 'This diagram shows the platform\u2019s registered architecture: ' +
+    // RUN 51, SECTION 6.1. The three numbers were always derived from the model this file
+    // builds, which is the population IN SERVICE. The word beside them said "registered",
+    // which names a different and larger population, so the sentence read as though the
+    // diagram drew the whole registry. Only the word moved; no count changed.
+    var archSentence = 'This diagram shows the analytical architecture in service: ' +
       DOC_KEYS.length + ' supported document types, ' + MODULES.length +
-      ' registered project modules and ' + CATS.length + ' registered categories. ' +
+      ' project modules in service and ' + CATS.length + ' categories in service. ' +
       'It is what the platform can do, not what this project has done.';
     var actSentence;
     // RUN 24. THE ONE PREDICATE. This is the condition that already decided the empty-project
@@ -1381,7 +1385,7 @@
     btn.style.cssText = 'font-family:monospace;font-size:11.5px;letter-spacing:0.06em;' +
       'padding:8px 14px;border:1px solid var(--line, #1a2440);border-radius:4px;' +
       'background:transparent;color:var(--muted, #5a7898);cursor:pointer;';
-    btn.textContent = 'Show the registered architecture';
+    btn.textContent = 'Show the architecture in service';
     panel.appendChild(btn);
 
     var note = document.createElement('div');
@@ -1397,12 +1401,12 @@
         host.style.display = 'none';
         host.setAttribute('aria-hidden', 'true');
         btn.setAttribute('aria-expanded', 'false');
-        btn.textContent = 'Show the registered architecture';
+        btn.textContent = 'Show the architecture in service';
       } else {
         host.style.display = '';
         host.removeAttribute('aria-hidden');
         btn.setAttribute('aria-expanded', 'true');
-        btn.textContent = 'Hide the registered architecture';
+        btn.textContent = 'Hide the architecture in service';
       }
     });
 

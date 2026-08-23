@@ -10,6 +10,44 @@
 (function () {
   "use strict";
 
+  /* ---------- RUN 51, SECTION 6.1. EVERY COUNT ON THIS PAGE IS DERIVED ----------
+     The handbook stated "96 registered modules" in one article while the two articles
+     either side of it stated 101 registered and 63 in service correctly. All three were
+     hand-typed numbers in prose. A literal is what produced that defect and a corrected
+     literal would produce it again, so nothing below is typed: the registered, retired,
+     computed and supplied counts come from window.LIN_TAXONOMY_COUNTS, which the taxonomy
+     generator writes from registry_index(), service_index() and the dispatch table; the
+     in-service and category counts are counted from the taxonomy the page actually loaded.
+     Retiring or reinstating a module rewrites every sentence with no edit to this file. */
+  function taxCounts() {
+    const c = (typeof window !== "undefined" && window.LIN_TAXONOMY_COUNTS) || {};
+    const cats = (typeof window !== "undefined" && window.LIN_CATEGORIES) || [];
+    const projectCats = cats.filter(function (x) { return !(x && x.level === "portfolio"); });
+    const inService = cats.reduce(function (n, x) { return n + ((x && x.modules) || []).length; }, 0);
+    const projectInService = projectCats.reduce(function (n, x) { return n + ((x && x.modules) || []).length; }, 0);
+    return {
+      registered: c.registered,
+      inService: c.inService != null ? c.inService : inService,
+      countedInService: inService,
+      projectInService: projectInService,
+      portfolioInService: inService - projectInService,
+      retired: c.retired,
+      serverComputes: c.serverComputes,
+      supplied: c.supplied,
+      categories: cats.length,
+      projectCategories: projectCats.length
+    };
+  }
+  /* Substitutes {{token}} for a derived count in any curated string, so a sentence written
+     once in prose cannot carry a stale number. Unknown tokens are left alone rather than
+     replaced with "undefined", which would hide the fault instead of showing it. */
+  function fillCounts(text) {
+    const n = taxCounts();
+    return String(text == null ? "" : text).replace(/\{\{(\w+)\}\}/g, function (whole, k) {
+      return n[k] == null ? whole : String(n[k]);
+    });
+  }
+
   /* ---------- term lens: click a term → definition ---------- */
   // Each term: definition (what it is), formula, and impact (why a
   // project-controls reviewer cares). Impact is curated static text, it
@@ -179,14 +217,14 @@
       definition: "CPI = EV / AC. Measures cost efficiency. CPI = 1.00 means on budget; > 1.00 means under budget; < 1.00 means over budget.",
       thresholds: [
         { label: "Green: CPI ≥ 0.95", color: T.green },
-        { label: "Amber: CPI 0.90–0.94", color: T.amber },
+        { label: "Amber: CPI 0.90 to 0.94", color: T.amber },
         { label: "Red: CPI < 0.90", color: T.red },
       ] },
     { term: "SPI, Schedule Performance Index",
       definition: "SPI = EV / PV. Measures schedule efficiency. SPI = 1.00 means on schedule; > 1.00 means ahead of schedule; < 1.00 means behind schedule.",
       thresholds: [
         { label: "Green: SPI ≥ 0.95", color: T.green },
-        { label: "Amber: SPI 0.90–0.94", color: T.amber },
+        { label: "Amber: SPI 0.90 to 0.94", color: T.amber },
         { label: "Red: SPI < 0.90", color: T.red },
       ] },
     { term: "BAC, Budget at Completion",
@@ -217,7 +255,7 @@
       ] },
     { term: "SPC, Statistical Process Control",
       definition: "The use of statistical methods to monitor and control a process. CUSUM is the SPC method used here to detect schedule drift." },
-    { term: "PERT, Program Evaluation & Review Technique",
+    { term: "PERT, Program Evaluation and Review Technique",
       definition: "Stochastic network scheduling method. Each activity has optimistic (a), most likely (m), and pessimistic (b) durations sampled from a triangular distribution. P80 project duration and path criticality index are computed from 5,000 iterations. Formula: te = (a + 4m + b) / 6" },
     { term: "LOB, Line of Balance",
       definition: "Production scheduling method for repetitive work. Plots crew velocity (units/day) for sequential operations. Flags when the buffer between operations collapses, a leading indicator of schedule collision before it shows in EVM." },
@@ -411,12 +449,17 @@
   // Signal stack grouping → Synthesis (Topic 2)
   function svgSignalStack() {
     const w = 720, h = 290;
+    /* RUN 51, RULING 4 AND SECTION 6.6 ITEM 5. These ten chips carried retired module
+       identifiers as VISIBLE SVG TEXT, and no sweep before Run 51 reached them because SVG
+       <text> does not appear in innerText. Each chip now names the METHOD and nothing else.
+       The accessible name below stated ten categories where eleven project-level categories
+       are in service; it is derived from the loaded taxonomy instead of stated. */
     const groups = [
-      { lab: "Quantitative EVM", mods: ["01 EVM", "02 CUSUM"], color: "var(--clear-green)", x: 30, y: 30 },
-      { lab: "Governance Synthesis", mods: ["03 Doc Risk", "04 Synthesis", "05 ABM"], color: "var(--phosphor)", x: 30, y: 116 },
-      { lab: "Extended Simulation", mods: ["06 PERT", "07 LOB", "08 CCPM", "09 RCF", "10 DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
+      { lab: "Quantitative EVM", mods: ["EVM", "CUSUM"], color: "var(--clear-green)", x: 30, y: 30 },
+      { lab: "Governance Synthesis", mods: ["Doc Risk", "Synthesis", "ABM"], color: "var(--phosphor)", x: 30, y: 116 },
+      { lab: "Extended Simulation", mods: ["PERT", "LOB", "CCPM", "RCF", "DSM"], color: "var(--radar-amber)", x: 30, y: 222 },
     ];
-    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack of 10 categories and Portfolio Health feeding the governance decision">`;
+    let out = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="auto" class="kn-svg" role="img" aria-label="Signal stack: ${taxCounts().inService} modules in service across ${taxCounts().projectCategories} project categories, feeding the governance decision">`;
     groups.forEach((g) => {
       const bx = g.x, by = g.y, bw = 360, bh = 64;
       out += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--surface-soft)" stroke="${g.color}" stroke-width="1.5"></rect>`;
@@ -551,7 +594,7 @@
         <p>The analytical layer runs explicit rules over the evidence and returns a specific recommended action, a responsible authority role, and the documentation required. The PM still records the decision; the platform makes the recommendation traceable to a rule a reviewer can read aloud.</p>
 
         <h3>The analytical layer</h3>
-        <p>101 registered modules, of which 63 are in service, organised into four groups by purpose: Project Health, what condition the project is in; Recommendation and Governance, what should be done and by whom; Data and Evidence Health, how trustworthy the evidence is; and Portfolio Level, patterns that need more than one project to exist. All 63 in service run on a single project; the Portfolio Level modules are not in service. Of the 63, the analytical server computes 62: the remaining one, the document risk score, is a value the extraction model supplies rather than one the server computes. Data and Evidence Health and Portfolio Level do not contribute to a project's status.</p>
+        <p>${taxCounts().registered} registered modules, of which ${taxCounts().inService} are in service, organised into four groups by purpose: Project Health, what condition the project is in; Recommendation and Governance, what should be done and by whom; Data and Evidence Health, how trustworthy the evidence is; and Portfolio Level, patterns that need more than one project to exist. All ${taxCounts().inService} in service run on a single project; the Portfolio Level modules are not in service. Of the ${taxCounts().inService}, the analytical server computes ${taxCounts().serverComputes}: the remaining one, the document risk score, is a value the extraction model supplies rather than one the server computes. Data and Evidence Health and Portfolio Level do not contribute to a project's status.</p>
 
         <h3>Evidence to decision</h3>
         <pre class="kn-flow">Documents uploaded for a reporting period
@@ -576,13 +619,13 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     },
     {
       id: "why-108-modules",
-      title: "Why 101 registered modules across four groups",
+      title: `Why ${taxCounts().registered} registered modules across four groups`,
       eyebrow: "Analytical depth",
       build: () => `
         <p class="kn-lead">Public capital projects are complex adaptive systems. A single EVM index (CPI or SPI) captures cost and schedule performance but misses the systemic, probabilistic, and qualitative dimensions that determine whether a project will succeed. The platform addresses this through four principles.</p>
 
         <h3>1. No human can run this many analyses simultaneously</h3>
-        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. The analytical layer runs the project's 96 registered modules in milliseconds, probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance rules, all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
+        <p>A senior PM reviewing a monthly report might check CPI, SPI, and open RFIs. The analytical layer runs the ${taxCounts().inService} modules in service in milliseconds, probabilistic forecasts, anomaly detection, uncertainty reasoning, optimization, data integrity checks, and governance rules, all before the PM opens their laptop. The platform does not replace human judgment; it gives the PM a complete evidence package to exercise that judgment.</p>
 
         <h3>2. Convergence equals confidence</h3>
         <p>When the great majority of methods agree on a Red classification, the PM can act with high confidence. When methods diverge, some showing Amber, others Red, the divergence itself is the finding: the project is in an ambiguous state that requires investigation before action. No single method can surface that ambiguity.</p>
@@ -597,7 +640,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         </ul>
 
         <h3>4. What the registered count includes, and what it does not</h3>
-        <p>The registry holds 101 modules, of which 63 are in service: 63 at project level and 0 at portfolio level. The analytical server computes 62 of the 63. The one it does not is the document risk score, which the extraction model supplies as a value rather than the server deriving it; if it is later computed server-side, the server's count becomes 63. The 38 modules not in service were retired at Run 43; they keep their registry entries and their audit lineage, and they compute nothing and appear on no participant surface. Every registered module draws on standard project documents available in any public capital program, and every status derives from extracted data: a module whose required inputs are absent abstains and reports "Insufficient data" with the specific missing fields. No status is fabricated. Registration is not activation. A module can be registered and still be advisory, disabled, awaiting calibration, or outside a single project's scope, and it keeps its registry entry either way.</p>
+        <p>The registry holds ${taxCounts().registered} modules, of which ${taxCounts().inService} are in service: ${taxCounts().projectInService} at project level and ${taxCounts().portfolioInService} at portfolio level. The analytical server computes ${taxCounts().serverComputes} of the ${taxCounts().inService}. The one it does not is the document risk score, which the extraction model supplies as a value rather than the server deriving it; if it is later computed server-side, the server's count becomes ${taxCounts().inService}. The ${taxCounts().retired} modules not in service were retired at Run 43; they keep their registry entries and their audit lineage, and they compute nothing and appear on no participant surface. Every registered module draws on standard project documents available in any public capital program, and every status derives from extracted data: a module whose required inputs are absent abstains and reports "Insufficient data" with the specific missing fields. No status is fabricated. Registration is not activation. A module can be registered and still be advisory, disabled, awaiting calibration, or outside a single project's scope, and it keeps its registry entry either way.</p>
       `,
     },
     {
@@ -679,10 +722,10 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         ${ragTable(
           ["Metric", "Green", "Amber", "Red"],
           [
-            ["CPI", { label: "≥ 0.95", color: RAG.green }, { label: "0.90–0.94", color: RAG.amber }, { label: "< 0.90", color: RAG.red }],
-            ["SPI", { label: "≥ 0.95", color: RAG.green }, { label: "0.90–0.94", color: RAG.amber }, { label: "< 0.90", color: RAG.red }],
+            ["CPI", { label: "≥ 0.95", color: RAG.green }, { label: "0.90 to 0.94", color: RAG.amber }, { label: "< 0.90", color: RAG.red }],
+            ["SPI", { label: "≥ 0.95", color: RAG.green }, { label: "0.90 to 0.94", color: RAG.amber }, { label: "< 0.90", color: RAG.red }],
             ["P80 EAC vs BAC", { label: "within +5%", color: RAG.green }, { label: "+5% to +10%", color: RAG.amber }, { label: "> +10%", color: RAG.red }],
-            ["P(milestone delay)", { label: "< 0.30", color: RAG.green }, { label: "0.30–0.60", color: RAG.amber }, { label: "≥ 0.60", color: RAG.red }],
+            ["P(milestone delay)", { label: "< 0.30", color: RAG.green }, { label: "0.30 to 0.60", color: RAG.amber }, { label: "≥ 0.60", color: RAG.red }],
           ]
         )}
 
@@ -758,14 +801,14 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         <p class="kn-lead">EVM lags field conditions by weeks. An RFI log showing 20 open disputes in period 4 predicts a CPI collapse in period 6, but EVM will not show that collapse until it has already happened. Document risk is the leading signal.</p>
 
         <h3>How extraction works</h3>
-        <p>Document Risk Extraction applies transparent keyword and pattern rules over RFIs, submittal logs, OAC meeting minutes, and project correspondence. Each rule has a weight and an evidence excerpt; the document risk score is a weighted sum normalized to 0–1. Every score is inspectable: the matched rule, the source document, and the excerpt are carried into the ledger.</p>
+        <p>Document Risk Extraction applies transparent keyword and pattern rules over RFIs, submittal logs, OAC meeting minutes, and project correspondence. Each rule has a weight and an evidence excerpt; the document risk score is a weighted sum normalized to 0 to 1. Every score is inspectable: the matched rule, the source document, and the excerpt are carried into the ledger.</p>
 
         <h3>The score</h3>
         ${ragTable(
           ["Score", "Status", "Meaning"],
           [
             [{ label: "< 0.30", color: RAG.green }, "Green", "Routine language; no significant risk indicators."],
-            [{ label: "0.30–0.70", color: RAG.amber }, "Amber", "Possible cost / schedule / scope impact language present."],
+            [{ label: "0.30 to 0.70", color: RAG.amber }, "Amber", "Possible cost / schedule / scope impact language present."],
             [{ label: "≥ 0.70", color: RAG.red }, "Red", "High-impact language converging across multiple document types."],
           ]
         )}
@@ -814,7 +857,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
           ["min_buffer = min_u buffer(u)", "headline metric"],
         ])}
         ${ragTable(["Metric", "Green", "Amber", "Red"], [
-          ["min crew buffer (days)", { label: "> 3.0", color: RAG.green }, { label: "1.5–3.0", color: RAG.amber }, { label: "≤ 1.5", color: RAG.red }],
+          ["min crew buffer (days)", { label: "> 3.0", color: RAG.green }, { label: "1.5 to 3.0", color: RAG.amber }, { label: "≤ 1.5", color: RAG.red }],
         ])}
 
         <h3>Reference</h3>
@@ -866,7 +909,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         ])}
 
         <h3>Reference</h3>
-        <p>Flyvbjerg, B. (2008). Curbing optimism bias and strategic misrepresentation in planning. <em>European Planning Studies</em>, 16(1), 3–21. The reference-class method is now embedded in the UK Treasury Green Book guidance.</p>
+        <p>Flyvbjerg, B. (2008). Curbing optimism bias and strategic misrepresentation in planning. <em>European Planning Studies</em>, 16(1), 3 to 21. The reference-class method is now embedded in the UK Treasury Green Book guidance.</p>
       `,
     },
     {
@@ -892,7 +935,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         ])}
 
         <h3>Reference</h3>
-        <p>Steward, D.V. (1981). The Design Structure System: A Method for Managing the Design of Complex Systems. <em>IEEE Transactions on Engineering Management</em>, 28(3), 71–74. Modern DSM analysis underpins building-information-modeling clash detection and integrated-project-delivery coordination practice.</p>
+        <p>Steward, D.V. (1981). The Design Structure System: A Method for Managing the Design of Complex Systems. <em>IEEE Transactions on Engineering Management</em>, 28(3), 71 to 74. Modern DSM analysis underpins building-information-modeling clash detection and integrated-project-delivery coordination practice.</p>
       `,
     },
     {
@@ -952,12 +995,12 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
         ${ragTable(["Conflict Mass K", "Interpretation"], [
           [{ label: "< 0.10 (Low)", color: RAG.green }, "Sources broadly agree, DST result is reliable."],
-          [{ label: "0.10–0.30 (Moderate)", color: RAG.amber }, "Some inter-signal tension, review which sources diverge."],
+          [{ label: "0.10 to 0.30 (Moderate)", color: RAG.amber }, "Some inter-signal tension, review which sources diverge."],
           [{ label: "> 0.30 (High)", color: RAG.red }, "Strong disagreement, divergence itself is a governance signal worth surfacing."],
         ])}
 
         <h3>Reference</h3>
-        <p>Dempster, A.P. (1967). Upper and lower probabilities induced by a multivalued mapping. <em>Annals of Mathematical Statistics</em>, 38(2), 325–339. Shafer, G. (1976). <em>A Mathematical Theory of Evidence</em>. Princeton University Press.</p>
+        <p>Dempster, A.P. (1967). Upper and lower probabilities induced by a multivalued mapping. <em>Annals of Mathematical Statistics</em>, 38(2), 325 to 339. Shafer, G. (1976). <em>A Mathematical Theory of Evidence</em>. Princeton University Press.</p>
       `,
     },
     {
@@ -987,7 +1030,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         ])}
 
         <h3>Reference</h3>
-        <p>Pawlak, Z. (1982). Rough sets. <em>International Journal of Computer and Information Sciences</em>, 11(5), 341–356. Rough set theory remains a foundational framework for decision-making under incomplete information.</p>
+        <p>Pawlak, Z. (1982). Rough sets. <em>International Journal of Computer and Information Sciences</em>, 11(5), 341 to 356. Rough set theory remains a foundational framework for decision-making under incomplete information.</p>
       `,
     },
     {
@@ -1014,7 +1057,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
         ${ragTable(["Indeterminacy (I)", "Interpretation"], [
           [{ label: "< 15% (Low)", color: RAG.green }, "Evidence is sufficiently conclusive for classification."],
-          [{ label: "15–30% (Moderate)", color: RAG.amber }, "Moderate uncertainty, some sources are ambiguous."],
+          [{ label: "15 to 30% (Moderate)", color: RAG.amber }, "Moderate uncertainty, some sources are ambiguous."],
           [{ label: "> 30% (High)", color: RAG.red }, "Evidence architecture needs strengthening before confident classification."],
         ])}
 
@@ -1048,12 +1091,12 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
         ${ragTable(["Uncertainty width", "Interpretation"], [
           [{ label: "< 0.15 (Low)", color: RAG.green }, "Input precision is sufficient for reliable classification."],
-          [{ label: "0.15–0.30 (Moderate)", color: RAG.amber }, "Boundary classification may shift with better input data."],
+          [{ label: "0.15 to 0.30 (Moderate)", color: RAG.amber }, "Boundary classification may shift with better input data."],
           [{ label: "> 0.30 (High)", color: RAG.red }, "Input noise could change the classification, request more precise documents."],
         ])}
 
         <h3>Reference</h3>
-        <p>Sambuc, R. (1975). <em>Fonctions phi-floues</em>. PhD thesis, University of Marseille. Zadeh, L.A. (1975). The concept of a linguistic variable and its application to approximate reasoning. <em>Information Sciences</em>, 8(3), 199–249. Turksen, I.B. (1986). Interval valued fuzzy sets based on normal forms. <em>Fuzzy Sets and Systems</em>, 20(2), 191–210.</p>
+        <p>Sambuc, R. (1975). <em>Fonctions phi-floues</em>. PhD thesis, University of Marseille. Zadeh, L.A. (1975). The concept of a linguistic variable and its application to approximate reasoning. <em>Information Sciences</em>, 8(3), 199 to 249. Turksen, I.B. (1986). Interval valued fuzzy sets based on normal forms. <em>Fuzzy Sets and Systems</em>, 20(2), 191 to 210.</p>
       `,
     },
     {
@@ -1081,12 +1124,12 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
         ${ragTable(["Avg reliability", "Interpretation"], [
           [{ label: "≥ 80%", color: RAG.green }, "High-confidence aggregate, sources are well-instrumented."],
-          [{ label: "60–80%", color: RAG.amber }, "Moderate, at least one source is rule-based or estimated."],
+          [{ label: "60 to 80%", color: RAG.amber }, "Moderate, at least one source is rule-based or estimated."],
           [{ label: "< 60%", color: RAG.red }, "Aggregate is dominated by low-reliability sources; improve instrumentation before acting."],
         ])}
 
         <h3>Reference</h3>
-        <p>Zadeh, L.A. (2011). A note on Z-numbers. <em>Information Sciences</em>, 181(14), 2923–2932. Z-numbers extend the linguistic-variable framework to model the reliability of the data behind a fuzzy assessment, distinct from the assessment itself.</p>
+        <p>Zadeh, L.A. (2011). A note on Z-numbers. <em>Information Sciences</em>, 181(14), 2923 to 2932. Z-numbers extend the linguistic-variable framework to model the reliability of the data behind a fuzzy assessment, distinct from the assessment itself.</p>
       `,
     },
     {
@@ -1111,12 +1154,12 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
         ${ragTable(["P(Red)", "Interpretation"], [
           [{ label: "< 25%", color: RAG.green }, "Aggregate probability of Red is low across sources."],
-          [{ label: "25–50%", color: RAG.amber }, "Non-trivial Red probability; review which sources contribute."],
+          [{ label: "25 to 50%", color: RAG.amber }, "Non-trivial Red probability; review which sources contribute."],
           [{ label: "≥ 50%", color: RAG.red }, "Majority probability mass sits on Red, escalation indicated."],
         ])}
 
         <h3>Reference</h3>
-        <p>Pang, Q., Wang, H., &amp; Xu, Z. (2016). Probabilistic linguistic term sets in multi-attribute group decision making. <em>Information Sciences</em>, 369, 128–143. PLTS now underpins multi-attribute decision frameworks where each criterion's assessment naturally carries a confidence distribution.</p>
+        <p>Pang, Q., Wang, H., &amp; Xu, Z. (2016). Probabilistic linguistic term sets in multi-attribute group decision making. <em>Information Sciences</em>, 369, 128 to 143. PLTS now underpins multi-attribute decision frameworks where each criterion's assessment naturally carries a confidence distribution.</p>
       `,
     },
     {
@@ -1145,7 +1188,7 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
         ${ragTable(["Average contradiction", "Interpretation"], [
           [{ label: "< 30% (Low)", color: RAG.green }, "Signals are broadly consistent."],
-          [{ label: "30–60% (Moderate)", color: RAG.amber }, "Some opposition; review which signals oppose the dominant view."],
+          [{ label: "30 to 60% (Moderate)", color: RAG.amber }, "Some opposition; review which signals oppose the dominant view."],
           [{ label: "> 60% (High)", color: RAG.red }, "Signals are genuinely polarised, the disagreement is the finding."],
         ])}
 
@@ -1176,12 +1219,12 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
 
         ${ragTable(["B(Red) aggregate", "Interpretation"], [
           [{ label: "< 25%", color: RAG.green }, "Matched rules collectively assign low Red belief."],
-          [{ label: "25–50%", color: RAG.amber }, "Non-trivial Red belief from at least one high-weight rule."],
+          [{ label: "25 to 50%", color: RAG.amber }, "Non-trivial Red belief from at least one high-weight rule."],
           [{ label: "≥ 50%", color: RAG.red }, "Aggregate belief mass on Red, escalation indicated."],
         ])}
 
         <h3>Reference</h3>
-        <p>Yang, J.-B., Liu, J., Wang, J., Sii, H.-S., &amp; Wang, H.-W. (2006). Belief rule-base inference methodology using the evidential reasoning approach, RIMER. <em>IEEE Transactions on Systems, Man, and Cybernetics, Part A</em>, 36(2), 266–285. Extended through 2018–2023 with hierarchical and self-adaptive BRB variants.</p>
+        <p>Yang, J.-B., Liu, J., Wang, J., Sii, H.-S., &amp; Wang, H.-W. (2006). Belief rule-base inference methodology using the evidential reasoning approach, RIMER. <em>IEEE Transactions on Systems, Man, and Cybernetics, Part A</em>, 36(2), 266 to 285. Extended through 2018 to 2023 with hierarchical and self-adaptive BRB variants.</p>
       `,
     },
     {
@@ -2510,7 +2553,11 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
     }
     return out;
   }
-  function dsdText(s) { return esc(dsdScrub(s)); }
+  // RUN 51, SECTION 6.1. Every string this handbook renders passes through fillCounts, so a
+  // curated sentence states a population by TOKEN and the token resolves against the taxonomy
+  // the page loaded. ds_defensibility_data.js stated "100 registered computations" as a typed
+  // number; it now states {{registered}} less the one supplied value, and cannot go stale.
+  function dsdText(s) { return esc(fillCounts(dsdScrub(s))); }
   function dsdVal() {
     return (typeof DS_DEFENSIBILITY !== "undefined")
       ? DS_DEFENSIBILITY
@@ -2910,11 +2957,11 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         <li><strong>Cost and EVM Performance Quantitative EVM</strong>, what is happening NOW (cost / schedule indices).</li>
         <li><strong>Schedule Performance Schedule Simulation</strong>, WHEN will problems appear (time-based leading indicators).</li>
         <li><strong>Cost Risk Cost Simulation</strong>, HOW MUCH will it cost (budget-based leading indicators).</li>
-        <li><strong>Document-Derived Condition Signals Document & Risk Signals</strong>, qualitative early warning from project records, BEFORE EVM shows the slip.</li>
+        <li><strong>Document-Derived Condition Signals, Document and Risk Signals</strong>, qualitative early warning from project records, BEFORE EVM shows the slip.</li>
         <li><strong>System Dynamics and Complexity System Dynamics</strong>, how the components AMPLIFY each other (rework propagation).</li>
         <li><strong>Signal Synthesis Signal Synthesis</strong>, the BASELINE classification (conservative dominance), the worst single signal wins.</li>
         <li><strong>Evidence Combination Evidence Combination</strong>, HOW CONFIDENT is the classification (twenty independent uncertainty-reasoning methods cross-check the baseline).</li>
-        <li><strong>Regulatory and Authority Thresholds Governance & Compliance</strong>, the named authority, required action, and audit trail.</li>
+        <li><strong>Regulatory and Authority Thresholds, Governance and Compliance</strong>, the named authority, required action, and audit trail.</li>
         <li><strong>Data and Evidence Health Data Integrity</strong>, how trustworthy ARE the inputs. Missing data, stale data, low-reliability sources, Data and Evidence Health surfaces the quality of the signal package the other categories consumed.</li>
         <li><strong>Decision Optimization Decision Optimization</strong>, given everything the models found, what is the BEST action under constraints (multi-objective, LP, regret minimization).</li>
         <li><strong>Portfolio Health (PH)</strong>, portfolio-wide anomaly detection: how unusual is this project versus the whole program (Isolation Forest, outlier ranking, trajectory, cross-project patterns, composite score).</li>
@@ -2926,8 +2973,8 @@ Recommendation disclosed → Recorded decision, with rationale</pre>
         <li><strong>Check Data and Evidence Health (Data Integrity)</strong>, how much to trust the signals.</li>
         <li><strong>Count how many of Evidence Combination (20 evidence methods) agree with Signal Synthesis:</strong>
           <ul class="kn-list" style="margin-top:6px">
-            <li>16–20 agree: HIGH CONFIDENCE, act on Regulatory and Authority Thresholds recommendation.</li>
-            <li>10–15 agree: MODERATE CONFIDENCE, act but document uncertainty.</li>
+            <li>16 to 20 agree: HIGH CONFIDENCE, act on Regulatory and Authority Thresholds recommendation.</li>
+            <li>10 to 15 agree: MODERATE CONFIDENCE, act but document uncertainty.</li>
             <li>&lt;10 agree: LOW CONFIDENCE, investigate before acting.</li>
           </ul>
         </li>

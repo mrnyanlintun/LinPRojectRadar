@@ -378,7 +378,7 @@
         parked: !!cat.parked,
         conditional: !!cat.conditional,
         ml: cat.id === "cat8", // ML category keeps a labelled grey arc band
-        num: cat.num,
+        key: cat.key,
         a0: -Math.PI / 2 + (Math.PI * 2 * (startSlot - 0.45)) / totalSlots,
         a1: -Math.PI / 2 + (Math.PI * 2 * (endSlot + 0.45)) / totalSlots,
         amid: -Math.PI / 2 + (Math.PI * 2 * ((startSlot + endSlot) / 2)) / totalSlots
@@ -470,7 +470,7 @@
         const norm = active ? normalizeStatus(status) : null;
         const bucket = norm && counts[norm] != null ? norm : "none";
         counts[bucket] += 1;
-        rows.push({ index: idx, num: m.num, name: m.name, color: cat.color, bucket });
+        rows.push({ index: idx, key: m.key, name: m.name, color: cat.color, bucket });
       });
     });
     return { counts, rows };
@@ -527,7 +527,7 @@
       .sort((a, b) => String(a.period).localeCompare(String(b.period)));
   }
   function pcArrow(delta) {
-    if (delta == null || !Number.isFinite(delta) || Math.abs(delta) < 1e-9) return "–";
+    if (delta == null || !Number.isFinite(delta) || Math.abs(delta) < 1e-9) return "no change";
     return delta > 0 ? "▲" : "▼";
   }
   function pcNum(v) {
@@ -536,7 +536,7 @@
     return Number.isFinite(n) ? n : null;
   }
   function pcFmt(v, digits) {
-    if (v == null) return "—";
+    if (v == null) return "not recorded";
     return v.toFixed(digits == null ? 2 : digits);
   }
   // Red-module count from a history snapshot. buildHistorySnapshot() (the
@@ -592,21 +592,21 @@
     const delta = (p != null && c != null) ? c - p : null;
     return `<tr>
         <td class="pc-metric">${esc(label)}</td>
-        <td class="pc-val">${p == null ? "—" : pcFmt(p, digits) + (suffix || "")}</td>
-        <td class="pc-val">${c == null ? "—" : pcFmt(c, digits) + (suffix || "")}</td>
+        <td class="pc-val">${p == null ? "not recorded" : pcFmt(p, digits) + (suffix || "")}</td>
+        <td class="pc-val">${c == null ? "not recorded" : pcFmt(c, digits) + (suffix || "")}</td>
         <td class="pc-arrow">${pcArrow(delta)}</td>
-        <td class="pc-delta">${delta == null ? "—" : (delta > 0 ? "+" : "") + pcFmt(delta, digits) + (suffix || "")}</td>
+        <td class="pc-delta">${delta == null ? "not recorded" : (delta > 0 ? "+" : "") + pcFmt(delta, digits) + (suffix || "")}</td>
       </tr>`;
   }
   function pcDeltaRowText(label, prevVal, curVal) {
     const changed = prevVal !== curVal;
-    const arrow = !changed ? "–" : "▲"; // status is categorical — ▲ just flags "changed"
+    const arrow = !changed ? "same" : "▲"; // status is categorical — ▲ just flags "changed"
     return `<tr>
         <td class="pc-metric">${esc(label)}</td>
-        <td class="pc-val">${esc(prevVal == null ? "—" : String(prevVal))}</td>
-        <td class="pc-val">${esc(curVal == null ? "—" : String(curVal))}</td>
+        <td class="pc-val">${esc(prevVal == null ? "not recorded" : String(prevVal))}</td>
+        <td class="pc-val">${esc(curVal == null ? "not recorded" : String(curVal))}</td>
         <td class="pc-arrow">${arrow}</td>
-        <td class="pc-delta">${changed ? esc((prevVal == null ? "—" : prevVal) + " → " + (curVal == null ? "—" : curVal)) : "no change"}</td>
+        <td class="pc-delta">${changed ? esc((prevVal == null ? "not recorded" : prevVal) + " → " + (curVal == null ? "not recorded" : curVal)) : "no change"}</td>
       </tr>`;
   }
   // Small hand-rolled inline-SVG sparkline (house style — see deepdive.js
@@ -718,7 +718,7 @@
   // "Jun 16, 2026 14:32 EDT" in the user's selected timezone.
   function fmtUploadTime(iso) {
     const d = iso instanceof Date ? iso : new Date(iso);
-    if (!iso || isNaN(d)) return "—";
+    if (!iso || isNaN(d)) return "not recorded";
     const zone = (window.LinTZ && LinTZ.get && LinTZ.get()) || "America/New_York";
     try {
       const parts = new Intl.DateTimeFormat("en-US", {
@@ -781,9 +781,9 @@
     const rows = evs.map((e) => {
       const fields = uploadedDocFields(e, srcByDocType);
       const partial = uploadedDocIsPartial(e, fields, hasStoredInputs);
-      const fileName = e.fileName || e.file || e.name || "—";
+      const fileName = e.fileName || e.file || e.name || "not recorded";
       const at = e.at || e.timestamp || e.recordedAt || e.time || "";
-      const fieldList = fields.length ? fields.join(", ") : "—";
+      const fieldList = fields.length ? fields.join(", ") : "not recorded";
       const pill = partial
         ? `<span class="pill pill-amber up-pill" title="Some expected fields were missing">partial</span>`
         : `<span class="pill pill-green up-pill" title="Fields extracted and on file">✓</span>`;
@@ -1077,11 +1077,11 @@
              `<div class="detail-globe" data-project-id="${esc(p.id)}"></div>
               <p class="detail-globe-note ws-note"></p>`,
              false, hasCoordsFor(p) ? "located" : "no location")}
-        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " registered")}
-        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} registered`)}
+        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " in service")}
+        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} in service`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="Governance decision (project detail)"></section>`, false, pillBadge(overallState))}
-        ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " registered")}
+        ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " in service")}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-docsignals", "Documents and Extracted Signals",
              uploadedDocsPanelHtml(p) +
@@ -1586,14 +1586,17 @@
     if (snap && snap.categories) {
       Object.keys(snap.categories).forEach((k) => {
         const c = snap.categories[k];
-        const num = c && c.num;
-        if (!num) return;
-        if (c.parked || !c.status) { groups.Conditional.push(num); return; }
+        // The KEY dispatches; what goes into the brief is the category's LABEL, which
+        // carries no identifier. Before Run 51 this pushed c.num and the brief read
+        // "RED (2 categories): A1, A3".
+        const label = c && c.name;
+        if (!label) return;
+        if (c.parked || !c.status) { groups.Conditional.push(label); return; }
         const s = String(c.status).toLowerCase();
-        if (s.indexOf("red") >= 0) groups.Red.push(num);
-        else if (s.indexOf("amber") >= 0 || s.indexOf("yellow") >= 0) groups.Amber.push(num);
-        else if (s.indexOf("green") >= 0 || s.indexOf("complete") >= 0) groups.Green.push(num);
-        else groups.Conditional.push(num);
+        if (s.indexOf("red") >= 0) groups.Red.push(label);
+        else if (s.indexOf("amber") >= 0 || s.indexOf("yellow") >= 0) groups.Amber.push(label);
+        else if (s.indexOf("green") >= 0 || s.indexOf("complete") >= 0) groups.Green.push(label);
+        else groups.Conditional.push(label);
       });
     }
     return groups;
@@ -1834,7 +1837,7 @@
     // Signal Pattern — group rows (● STATUS (n) — synthesis) with coloured dots.
     const patItems = parsed.pattern.map((raw) => {
       const line = raw.replace(/^[●○•*-]\s*/, "").trim();
-      const dash = line.indexOf("—") >= 0 ? line.indexOf("—") : line.indexOf(" - ");
+      const dash = line.indexOf("not recorded") >= 0 ? line.indexOf("not recorded") : line.indexOf(" - ");
       const head = dash > 0 ? line.slice(0, dash).trim() : line;
       const body = dash > 0 ? line.slice(dash + 1).replace(/^[—-]\s*/, "").trim() : "";
       const k = statusKeyFromText(head);
@@ -2562,7 +2565,7 @@
           x: (catIdx-CAT_MID)*55 + xJitter,
           y: SY[statusKey] + (((idx*11)%20) - 10),
           z: zSpread,
-          num: m.num, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx
+          key: m.key, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx
         });
       });
     });

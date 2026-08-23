@@ -34,7 +34,7 @@ CONSUMERS = (
 def taxonomy(rel):
     s = (ROOT / rel).read_text(encoding="utf-8")
     return {m.group(1): (m.group(2), m.group(3)) for m in re.finditer(
-        r"num: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'", s)}
+        r"key: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'", s)}
 
 def main() -> int:
     cat = taxonomy("assets/js/categories.js")

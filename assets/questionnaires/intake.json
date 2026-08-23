@@ -2,7 +2,7 @@
   "id": "intake-v0-placeholder",
   "title": "Practitioner Background",
   "presented": "after consent, before the first decision",
-  "note": "PLACEHOLDER INSTRUMENT — NOT FINAL. Item wording, response options, and the risk-attitude scale in particular are still being selected with the researcher's doctoral committee and require IRB approval before this instrument is used with real participants. Nothing here should be treated as the final measure.",
+  "note": "PLACEHOLDER INSTRUMENT, NOT FINAL. Item wording, response options, and the risk-attitude scale in particular are still being selected with the researcher's doctoral committee and require IRB approval before this instrument is used with real participants. Nothing here should be treated as the final measure.",
   "sections": [
     {
       "id": "experience",
@@ -52,10 +52,10 @@
           "label": "Which of the following certifications do you currently hold?",
           "required": false,
           "options": [
-            { "value": "PMP", "label": "PMP — Project Management Professional" },
-            { "value": "PgMP", "label": "PgMP — Program Management Professional" },
-            { "value": "PE", "label": "PE — Professional Engineer" },
-            { "value": "CCM", "label": "CCM — Certified Construction Manager" },
+            { "value": "PMP", "label": "Project Management Professional (PMP)" },
+            { "value": "PgMP", "label": "Program Management Professional (PgMP)" },
+            { "value": "PE", "label": "Professional Engineer (PE)" },
+            { "value": "CCM", "label": "Certified Construction Manager (CCM)" },
             { "value": "other", "label": "Other" },
             { "value": "none", "label": "None" }
           ]
@@ -80,7 +80,7 @@
         {
           "id": "ai_usage_items",
           "type": "multi-select",
-          "label": "Which of the following have you personally used at work? (usage items — placeholder list)",
+          "label": "Which of the following have you personally used at work? (usage items, a placeholder list)",
           "required": false,
           "options": [
             { "value": "chat_assistant", "label": "A general-purpose AI chat assistant" },
@@ -112,7 +112,7 @@
     {
       "id": "risk_attitude",
       "title": "Risk Attitude",
-      "note": "PLACEHOLDER SCALE — the instrument owner has not yet selected the final risk-attitude measure with the committee. These items are illustrative only.",
+      "note": "PLACEHOLDER SCALE. The instrument owner has not yet selected the final risk-attitude measure with the committee. These items are illustrative only.",
       "items": [
         {
           "id": "risk_attitude_general",

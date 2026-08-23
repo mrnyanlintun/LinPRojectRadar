@@ -437,8 +437,21 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: recorded). The guard was observed reporting exactly those four files, and nothing added,
 #: removed or renamed, before this manifest was written. The run48 manifest is NOT rewritten: it
 #: stays exactly as that release wrote it and this successor names it as its parent.
-PINNED = ROOT / "code_audit" / "run49_production_tree.sha256"
-#: The Run-48 manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 51 SUPERSEDES IT. The delivery of the six rulings Run 50 stopped on moved TWENTY-SIX
+#: production files: the twenty-three participant-visible files the v19 package record names one
+#: by one, plus `server/app/simulation/models.py` (the stamp advances to sim-2026.08-v34 with the
+#: boundary recorded), `server/tools/taxonomy_authority.json` (the taxonomy's primary key is
+#: named `key` rather than `num`, so a render site cannot mistake it for a label) and
+#: `server/tools/build_client_taxonomy.py` (it emits that key and, new, a derived counts block so
+#: no served page has to type a population). The guard was observed reporting exactly those
+#: files, and nothing added, removed or renamed, before this manifest was written. The run49
+#: manifest is NOT rewritten: it stays exactly as that release wrote it and this successor names
+#: it as its parent.
+PINNED = ROOT / "code_audit" / "run51_production_tree.sha256"
+#: The Run-49 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN49 = ROOT / "code_audit" / "run49_production_tree.sha256"
+#: The Run-48 manifest, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN48 = ROOT / "code_audit" / "run48_production_tree.sha256"
 #: The Run-47 manifest, kept addressable so a guard can prove the
@@ -538,7 +551,16 @@ PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: addressable below and are NOT rewritten. Nothing frozen moved: no file under assets/,
 #: server/app/, research_fixtures/synthetic/ or index.html changed, and neither this file nor any
 #: authority manifest is named by research/freeze/INSTRUMENT_FINAL_FREEZE_CHECKSUMS.csv.
-PINNED_AUTHORITY = ROOT / "code_audit" / "run39_authority_tree.sha256"
+#: RUN 51. The AUTHORITY tree moved for the first time since Run 39: the taxonomy authority's
+#: primary-key field is named `key` rather than `num`, on the owner's ruling 2 of 2026-08-22, so
+#: that a render site cannot mistake the key for a label. Not one identifier, not one module and
+#: not one category changed; only the name of the field that holds them. The run39 manifest is
+#: NOT rewritten: it stays exactly as that release wrote it and this successor names it as its
+#: parent.
+PINNED_AUTHORITY = ROOT / "code_audit" / "run51_authority_tree.sha256"
+#: The Run-39 authority manifest, the immediate parent, kept addressable so a guard can prove
+#: the supersession is a real change and not a silent rewrite.
+PINNED_AUTHORITY_RUN39 = ROOT / "code_audit" / "run39_authority_tree.sha256"
 #: The Run-38 authority manifest, kept addressable so the supersession is a real change and not a
 #: silent rewrite.
 PINNED_AUTHORITY_RUN38 = ROOT / "code_audit" / "run38_authority_tree.sha256"

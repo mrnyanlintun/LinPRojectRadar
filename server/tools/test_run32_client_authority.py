@@ -102,7 +102,7 @@ head("3. EVERY CURRENT MODULE IDENTITY, NAME AND METHOD CLASS AGREES WITH THE AU
 live = node_eval(TAXONOMY)
 check(live is not None, "the runtime artifact executes and exposes LIN_CATEGORIES")
 if live is not None:
-    rows = {m["num"]: m for c in live for m in c.get("modules", [])}
+    rows = {m["key"]: m for c in live for m in c.get("modules", [])}
     # THE POPULATION IS THE ONE IN SERVICE. load_registry()/registry_index() resolve retired
     # identifiers by design (registry.py:426); service_index() (registry.py:440) is the roster
     # in service, derived from p0-baseline/module_renumbering_map.csv. A retired identity must

@@ -62,7 +62,7 @@
   function buildGraph(cats) {
     var groupA = cats.filter(function (c) { return c.group === "A"; });
     var groupB = cats.filter(function (c) { return c.group === "B"; })
-      .slice().sort(function (a, b) { return String(a.num).localeCompare(String(b.num)); });
+      .slice().sort(function (a, b) { return String(a.key).localeCompare(String(b.key)); });
     var groupC = cats.filter(function (c) { return c.group === "C"; });
     var COL = { a: 110, synth: 360, evid: 580, gov: 800, support: 360 };
     var pos = {};
@@ -175,7 +175,7 @@
           x: pos.x + radius * Math.cos(a),
           y: pos.y + radius * Math.sin(a),
           fill: moduleFill(raw),
-          num: m && m.num, name: m && m.name, status: raw   // identity for the click callout
+          key: m && m.key, name: m && m.name, status: raw   // identity for the click callout
         });
       }
     };

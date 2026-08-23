@@ -470,8 +470,8 @@
     var rings=[
       {R:88,lw:14,col:'#e0556b',label:'Overrun',val:'+'+Math.abs(vacPct*100).toFixed(1)+'%',pct:vacPct*2,partial:true},
       {R:68,lw:14,col:'#4ea0ff',label:'BAC',val:'$'+(d.bac/1e6).toFixed(1)+'M',pct:1.0,partial:false},
-      {R:48,lw:14,col:'#3fcaa6',label:'EV earned',val:d.ev>0?Math.round(d.ev/d.bac*100)+'%':'—',pct:d.ev>0?d.ev/d.bac:0.37,partial:true},
-      {R:28,lw:14,col:'#e2b13c',label:'AC spent',val:d.ac>0?Math.round(d.ac/d.bac*100)+'%':'—',pct:d.ac>0?d.ac/d.bac:0.40,partial:true}
+      {R:48,lw:14,col:'#3fcaa6',label:'EV earned',val:d.ev>0?Math.round(d.ev/d.bac*100)+'%':'not recorded',pct:d.ev>0?d.ev/d.bac:0.37,partial:true},
+      {R:28,lw:14,col:'#e2b13c',label:'AC spent',val:d.ac>0?Math.round(d.ac/d.bac*100)+'%':'not recorded',pct:d.ac>0?d.ac/d.bac:0.40,partial:true}
     ];
     var startA=-Math.PI/2;
     rings.forEach(function(ring){
@@ -621,7 +621,7 @@
     ctx.clearRect(0,0,W,H);
     var maxV=d.iceHigh*1.1;
     var rings2=[
-      {R:80,lw:18,col:'#e0556b',label:'ICE range',val:'$'+(d.iceLow/1e6).toFixed(1)+'–'+(d.iceHigh/1e6).toFixed(1)+'M',
+      {R:80,lw:18,col:'#e0556b',label:'ICE range',val:'$'+(d.iceLow/1e6).toFixed(1)+' to '+(d.iceHigh/1e6).toFixed(1)+'M',
        startPct:(d.iceLow-d.bac)/(maxV-d.bac||1), endPct:(d.iceHigh-d.bac)/(maxV-d.bac||1), partial:true},
       {R:56,lw:14,col:'#e2b13c',label:'Contractor EAC',val:'$'+(d.contractorEac/1e6).toFixed(1)+'M',pct:1.0,partial:false},
       {R:32,lw:14,col:'#4ea0ff',label:'BAC',val:'$'+(d.bac/1e6).toFixed(1)+'M',pct:1.0,partial:false}
@@ -1912,9 +1912,9 @@
         ctx.strokeStyle=col;ctx.lineWidth=v*4;ctx.globalAlpha=0.6;ctx.stroke();ctx.globalAlpha=1;
       }
     }
-    pill(ctx,W/2,18,'MEP–Struct conflict 0.8','#e0556b');
+    pill(ctx,W/2,18,'MEP and Struct conflict 0.8','#e0556b');
     ctx.font='8px SFMono-Regular,monospace';
-    [{col:'#e0556b',label:'>0.6 conflict'},{col:'#e2b13c',label:'0.3–0.6'},{col:'#4ea0ff',label:'<0.3'}].forEach(function(l,i){ctx.fillStyle=l.col;ctx.fillText('─ '+l.label,14,H-28+i*12);});
+    [{col:'#e0556b',label:'>0.6 conflict'},{col:'#e2b13c',label:'0.3 to 0.6'},{col:'#4ea0ff',label:'<0.3'}].forEach(function(l,i){ctx.fillStyle=l.col;ctx.fillText('─ '+l.label,14,H-28+i*12);});
   }
 
   // ═══════════════ CAT 5 RENDERERS ═══════════════════════════
@@ -2275,7 +2275,7 @@
     ctx.font='bold 11px SFMono-Regular,monospace';ctx.fillStyle='#e0556b';ctx.fillText(result.toFixed(3),PAD.l+90,ry2+12);
     pill(ctx,PAD.l+CW*0.7,ry2+12,'→ Red-review','#e0556b');
     [0.25,0.5,0.75,1.0].forEach(function(v){aL(ctx,PAD.l+v*CW,PAD.t+CH+12,v.toFixed(2),'#64748b','center');});
-    aL(ctx,W/2,H-4,'Signal score (0–1)','#64748b','center');
+    aL(ctx,W/2,H-4,'Signal score (0 to 1)','#64748b','center');
   }
   function render_63(ctx,W,H,m,rx,ry){ // Majority Rules — donut
     ctx.clearRect(0,0,W,H);
@@ -2356,7 +2356,7 @@
     });
     ctx.textAlign='center';ctx.font='bold 10px SFMono-Regular,monospace';ctx.fillStyle='#e0556b';ctx.fillText('Red 0.52',cx,cy);ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.fillText('Dempster-Shafer',cx,cy+13);ctx.textAlign='left';
   }
-  function render_72_78(ctx,W,H,m,rx,ry){ // Modules 7.2–7.8 — comparison panel
+  function render_72_78(ctx,W,H,m,rx,ry){ // Modules 7.2 to 7.8 — comparison panel
     ctx.clearRect(0,0,W,H);
     var PAD={l:110,r:20,t:20,b:16};var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
     var methods=[
@@ -2380,7 +2380,7 @@
     [0.25,0.5,0.75,1.0].forEach(function(v){ctx.beginPath();ctx.moveTo(PAD.l+v*CW,PAD.t);ctx.lineTo(PAD.l+v*CW,PAD.t+CH);ctx.strokeStyle='rgba(38,52,79,0.3)';ctx.lineWidth=0.4;ctx.stroke();aL(ctx,PAD.l+v*CW,PAD.t+CH+12,v.toFixed(2),'#64748b','center');});
     aL(ctx,W/2,H-4,'Confidence score','#64748b','center');
   }
-  function render_79_720(ctx,W,H,m,rx,ry){ // Modules 7.9–7.20 — comparison panel
+  function render_79_720(ctx,W,H,m,rx,ry){ // Modules 7.9 to 7.20 — comparison panel
     ctx.clearRect(0,0,W,H);
     var PAD={l:120,r:20,t:20,b:16};var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
     var methods=[
@@ -2565,7 +2565,7 @@
       lines.forEach(function(l,li){ctx.fillText(l,n.x,n.y-(lines.length-1)*5+li*10);});ctx.textAlign='left';
     });
   }
-  function render_92_99(ctx,W,H,m,rx,ry){ // Governance modules 9.2–9.9 overview
+  function render_92_99(ctx,W,H,m,rx,ry){ // Governance modules 9.2 to 9.9 overview
     ctx.clearRect(0,0,W,H);
     var PAD={l:110,r:20,t:20,b:16};var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
     var items=[
@@ -2588,7 +2588,7 @@
       ctx.fillStyle=col;ctx.fillText(m.note,PAD.l+bw+4,y+bh/2+3);
     });
     [0.5,1.0].forEach(function(v){ctx.beginPath();ctx.moveTo(PAD.l+v*CW,PAD.t);ctx.lineTo(PAD.l+v*CW,PAD.t+CH);ctx.strokeStyle='rgba(38,52,79,0.3)';ctx.lineWidth=0.4;ctx.stroke();aL(ctx,PAD.l+v*CW,PAD.t+CH+12,v.toFixed(1),'#64748b','center');});
-    aL(ctx,W/2,H-4,'Compliance score (0–1)','#64748b','center');
+    aL(ctx,W/2,H-4,'Compliance score (0 to 1)','#64748b','center');
   }
 
   // ═══ CAT 10 — Data Integrity ═════════════════════════════════
@@ -2610,7 +2610,7 @@
     fields.forEach(function(f,i){ctx.font='8px SFMono-Regular,monospace';ctx.fillStyle='#64748b';ctx.textAlign='center';ctx.save();ctx.translate(PAD.l+i*cw+cw/2,PAD.t+CH+14);ctx.rotate(-Math.PI/6);ctx.fillText(f,0,0);ctx.restore();ctx.textAlign='left';});
     pill(ctx,W*0.7,16,'73% completeness','#e2b13c');
   }
-  function render_102_107(ctx,W,H,m,rx,ry){ // Data integrity 10.2–10.7
+  function render_102_107(ctx,W,H,m,rx,ry){ // Data integrity 10.2 to 10.7
     ctx.clearRect(0,0,W,H);
     var PAD={l:120,r:20,t:20,b:16};var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
     var items=[
@@ -2630,7 +2630,7 @@
       ctx.fillStyle=m.col;ctx.fillText(m.note,PAD.l+bw+4,y+bh/2+3);
     });
     [0.5,0.75,1.0].forEach(function(v){ctx.beginPath();ctx.moveTo(PAD.l+v*CW,PAD.t);ctx.lineTo(PAD.l+v*CW,PAD.t+CH);ctx.strokeStyle='rgba(38,52,79,0.3)';ctx.lineWidth=0.4;ctx.stroke();aL(ctx,PAD.l+v*CW,PAD.t+CH+12,v.toFixed(2),'#64748b','center');});
-    aL(ctx,W/2,H-4,'Data quality score (0–1)','#64748b','center');
+    aL(ctx,W/2,H-4,'Data quality score (0 to 1)','#64748b','center');
   }
 
   // ═══ CAT 11 — Decision Optimization ═════════════════════════
@@ -2668,7 +2668,7 @@
     if(isFinite(opt.x)){ctx.beginPath();ctx.arc(opt.x,opt.y,6,0,Math.PI*2);ctx.fillStyle='#3fcaa6';ctx.fill();pill(ctx,opt.x,opt.y-16,'Optimal','#3fcaa6');}
     aL(ctx,14,H-8,'Blue = Pareto front · Grey = dominated · drag to rotate','#64748b');
   }
-  function render_112_117(ctx,W,H,m,rx,ry){ // Decision optim 11.2–11.7
+  function render_112_117(ctx,W,H,m,rx,ry){ // Decision optim 11.2 to 11.7
     ctx.clearRect(0,0,W,H);
     var PAD={l:130,r:20,t:20,b:16};var CW=W-PAD.l-PAD.r,CH=H-PAD.t-PAD.b;
     var items=[
@@ -2688,7 +2688,7 @@
       ctx.fillStyle=m.col;ctx.fillText(m.note,PAD.l+bw+4,y+bh/2+3);
     });
     [0.5,1.0].forEach(function(v){ctx.beginPath();ctx.moveTo(PAD.l+v*CW,PAD.t);ctx.lineTo(PAD.l+v*CW,PAD.t+CH);ctx.strokeStyle='rgba(38,52,79,0.3)';ctx.lineWidth=0.4;ctx.stroke();aL(ctx,PAD.l+v*CW,PAD.t+CH+12,v.toFixed(1),'#64748b','center');});
-    aL(ctx,W/2,H-4,'Optimization score (0–1)','#64748b','center');
+    aL(ctx,W/2,H-4,'Optimization score (0 to 1)','#64748b','center');
   }
 
   window.LinCharts3D = {

@@ -209,8 +209,8 @@ print("-" * 78)
 # RESTATED AGAIN BY RUN 48, for the same reason and with the same scope: Run 48 supersedes v31
 # with v32 because WHICH STORED ROW A PAGE READS is executable behaviour. Run 41's boundary is
 # untouched and is still asserted below.
-check(SIMULATION_VERSION == "sim-2026.08-v33", "the live stamp is Run 49's successor "
-      "sim-2026.08-v33", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v34", "the live stamp is Run 51's successor "
+      "sim-2026.08-v34", SIMULATION_VERSION)
 check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v32",
       "and it records v32, Run 48's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
@@ -218,12 +218,13 @@ _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
       "the history is append-only and Run 41's boundary is preserved: v26 still directly "
       "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v33"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v32"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v31"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v30"
-      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v29"
-      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v28",
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v34"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v33"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v32"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v31"
+      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v30"
+      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v29"
+      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v28",
       "and v27 to v32 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
@@ -298,8 +299,8 @@ check(seq_moved == _seq_authorised,
       f"and the deep-dive naming at Run 49, and decision-ui.js's comments -- and the other four "
       f"are byte-identical, so no step of the decision sequence, no reveal gate, no lock and no "
       f"questionnaire moved", str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v18",
-      "the participant package is superseded at og-participant-2026.08-v18, and the v13, v14 and "
+check(PP.CURRENT.identifier == "og-participant-2026.08-v19",
+      "the participant package is superseded at og-participant-2026.08-v19, and the v13, v14 and "
       "v15 records are pinned rather than rewritten",
       PP.CURRENT.identifier)
 

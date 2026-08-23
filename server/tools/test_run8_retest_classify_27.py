@@ -542,6 +542,38 @@ RUN47_SCOPED_FILES = {
     "server/app/evm_consistency.py",
 }
 
+
+# RUN 51's AUTHORISED SCOPE. The delivery of the six rulings Run 50 stopped on. Every file is
+# NAMED, so the set cannot quietly grow: anything else differing from the pinned baseline still
+# fails. Nothing analytical moved -- the behaviour digest is reproduced identically -- and every
+# entry below is a served-client change the owner's rulings 1 to 6 of 2026-08-22 order.
+RUN51_SCOPED_FILES = {
+    "assets/js/admin-ops.js",
+    "assets/js/auditor.js",
+    "assets/js/export.js",
+    "assets/js/ingest.js",
+    "assets/js/projectnet2d.js",
+    "assets/js/store.js",
+    "assets/js/module_charts.js",
+    "assets/js/recommendation_options.js",
+    "assets/js/categories.js",
+    "assets/js/charts3d.js",
+    "assets/js/deepdive.js",
+    "assets/js/workspace.js",
+    "assets/js/decision.js",
+    "assets/js/decision-ui.js",
+    "assets/js/app.js",
+    "assets/js/detail.js",
+    "assets/js/signals.js",
+    "assets/js/knowledge.js",
+    "assets/js/neural_flow.js",
+    "assets/js/taxonomy.js",
+    "assets/js/ds_defensibility_data.js",
+    "assets/questionnaires/debrief.json",
+    "assets/questionnaires/intake.json",
+    "assets/visualizations/pceif_neural_signal_flow.html",
+}
+
 _prod = [p for p in _diff
          if (p.startswith("server/app/") or p.startswith("assets/"))
          and p not in RUN8_SCOPED_FILES and p not in RUN10_SCOPED_FILES
@@ -554,7 +586,8 @@ _prod = [p for p in _diff
          and p not in RUN30_SCOPED_FILES and p not in RUN31_SCOPED_FILES
          and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES
          and p not in RUN41_SCOPED_FILES and p not in RUN43_SCOPED_FILES
-         and p not in RUN47_SCOPED_FILES]
+         and p not in RUN47_SCOPED_FILES
+         and p not in RUN51_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))
@@ -572,7 +605,8 @@ _unscoped_assets = sorted(p for p in _diff
                           # RUN 32 FINAL CLOSURE: the two browser surfaces the metadata
                           # correction moves, named rather than the rule being widened.
                           and p not in RUN32_SCOPED_FILES
-                          and p not in RUN33_SCOPED_FILES)
+                          and p not in RUN33_SCOPED_FILES
+                          and p not in RUN51_SCOPED_FILES)
 check(not _unscoped_assets,
       "nothing under assets/ outside Run 11's authorised browser scope differs from the pinned "
       "baseline", " ".join(_unscoped_assets))

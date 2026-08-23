@@ -116,9 +116,21 @@ loadWithExports(ctx, 'assets/js/detail.js',
    'buildProvenanceTrace', 'provenanceLineHtml', 'provenancePanelHtml'], '__R44_DETAIL');
 loadWithExports(ctx, 'assets/js/signals.js', ['extractedTableHtml', 'FIELD_ROWS'],
                 '__R44_SIGNALS');
-loadWithExports(ctx, 'assets/js/deepdive.js', ['cat8Retired'], '__R44_DD');
+/* RUN 51, RULING 1. `cat8Retired` was one of the six symbols the Portfolio Health flyout was
+   built from, and the flyout is deleted: it rendered nowhere, had no caller anywhere in the
+   served application, and an unreachable button is not a control. The four checks below are
+   NOT deleted. They asserted one fact -- that Portfolio Health is retired, DERIVED from the
+   taxonomy the page loaded rather than stated as a constant -- and that fact is still true and
+   is still asserted, now directly against the taxonomy in each of the same four states, plus
+   a fifth check that the symbol really is gone and really was there to delete. */
+const retiredFromTaxonomy = (cats) => {
+  if (!Array.isArray(cats) || !cats.length) return false;
+  const ph = cats.filter((c) => c && c.level === 'portfolio');
+  if (!ph.length) return false;
+  return ph.every((c) => !(c.modules && c.modules.length));
+};
 
-const D = w.__R44_DETAIL, S = w.__R44_SIGNALS, DD = w.__R44_DD;
+const D = w.__R44_DETAIL, S = w.__R44_SIGNALS;
 const out = {};
 
 /* ---- 1. case-insensitive severity rank ------------------------------------------------ */
@@ -154,7 +166,7 @@ function projectWithSnapshot(catStatus, modules) {
     id: 'PRJ-H', name: 'Harness',
     history: [{
       period: '2026-06', computed_at: '2026-06-30T00:00:00Z',
-      categories: { a1: { id: 'a1', num: 'A1', name: 'Cost and EVM Performance',
+      categories: { a1: { id: 'a1', key: 'A1', name: 'Cost and EVM Performance',
                           status: catStatus, parked: false, modules } },
       summary: {}, governance: { state: 'Amber', action: 'review' }
     }]
@@ -167,9 +179,9 @@ out.briefGreenOverGreens = D.buildBriefPrompt(projectWithSnapshot('Green', A1_MO
 
 /* the provenance line, through the real getCategoryStatus / getModuleStatus resolvers */
 function provFor(catStatus, modStatuses) {
-  const cats = [{ id: 'a1', num: 'A1', name: 'Cost and EVM Performance', level: 'project',
+  const cats = [{ id: 'a1', key: 'A1', name: 'Cost and EVM Performance', level: 'project',
                   modules: Object.keys(modStatuses).map((mc, i) => (
-                    { id: 'm' + i, num: 'A1.' + (i + 1), name: mc, method_class: mc })) }];
+                    { id: 'm' + i, key: 'A1.' + (i + 1), name: mc, method_class: mc })) }];
   const saveCats = w.LIN_CATEGORIES, saveGet = w.getCategoryStatus, saveMod = w.getModuleStatus;
   w.LIN_CATEGORIES = cats;
   w.projectLevelCategories = () => cats;
@@ -225,16 +237,16 @@ S.FIELD_ROWS.forEach(f => {
 out.tableEmpty = S.extractedTableHtml({});
 
 /* ---- 7. Portfolio Health, derived ------------------------------------------------------- */
-out.cat8RetiredLive = DD.cat8Retired();
+out.cat8RetiredLive = retiredFromTaxonomy(w.LIN_CATEGORIES);
 (function () {
   const save = w.LIN_CATEGORIES;
-  w.LIN_CATEGORIES = null;              out.cat8RetiredNoTaxonomy = DD.cat8Retired();
-  w.LIN_CATEGORIES = [];                out.cat8RetiredEmptyTaxonomy = DD.cat8Retired();
+  w.LIN_CATEGORIES = null;              out.cat8RetiredNoTaxonomy = retiredFromTaxonomy(w.LIN_CATEGORIES);
+  w.LIN_CATEGORIES = [];                out.cat8RetiredEmptyTaxonomy = retiredFromTaxonomy(w.LIN_CATEGORIES);
   w.LIN_CATEGORIES = [{ id: 'a1', level: 'project', modules: [{ id: 'x' }] }];
-  out.cat8RetiredNoPortfolioCat = DD.cat8Retired();
+  out.cat8RetiredNoPortfolioCat = retiredFromTaxonomy(w.LIN_CATEGORIES);
   w.LIN_CATEGORIES = (save || []).map(c => (c && c.level === 'portfolio')
-    ? Object.assign({}, c, { modules: [{ id: 'd1_1', num: 'D1.1', name: 'reinstated' }] }) : c);
-  out.cat8RetiredIfReinstated = DD.cat8Retired();
+    ? Object.assign({}, c, { modules: [{ id: 'd1_1', key: 'D1.1', name: 'reinstated' }] }) : c);
+  out.cat8RetiredIfReinstated = retiredFromTaxonomy(w.LIN_CATEGORIES);
   w.LIN_CATEGORIES = save;
 })();
 out.taxonomyPortfolioCats = (w.LIN_CATEGORIES || [])
@@ -483,7 +495,34 @@ check(".ds-computed" in (ROOT / "assets/css/radar.css").read_text(encoding="utf-
 head("7. SECTION 4.4 -- THE PORTFOLIO HEALTH STATEMENT (section 5 items 7 and 13)")
 
 check(JS["cat8RetiredLive"] is True,
-      "cat8Retired() is TRUE against the taxonomy the page actually loads")
+      "Portfolio Health is retired against the taxonomy the page actually loads, derived from "
+      "the roster rather than stated")
+# RUN 51, RULING 1. NON-VACUITY: the six symbols really were there to delete. Asserted against
+# the bytes at ad4f614, not against a memory of them.
+import subprocess as _sp
+_PRIOR = _sp.run(["git", "show", "ad4f614:assets/js/deepdive.js"], cwd=str(ROOT),
+                 capture_output=True, text=True, encoding="utf-8").stdout
+_NOW = (ROOT / "assets/js/deepdive.js").read_text(encoding="utf-8")
+_SIX = ["renderCat8Health", "CAT8_MODULES", "cat8HealthData", "cat8HealthDataFromLive",
+        "isSnapshotStale", "cat8Retired"]
+check(all(sym in _PRIOR for sym in _SIX),
+      "and every one of the six Portfolio Health flyout symbols WAS PRESENT at ad4f614, so the "
+      "absence check below is not vacuous",
+      str([s for s in _SIX if s not in _PRIOR]))
+check(not any(sym in _NOW for sym in _SIX),
+      "and not one of them survives in deepdive.js: renderCat8Health, CAT8_MODULES, "
+      "cat8HealthData, cat8HealthDataFromLive, isSnapshotStale and cat8Retired are gone, and "
+      "the three buttons went with them",
+      str([s for s in _SIX if s in _NOW]))
+check("data-run-portfolio-analysis" in _PRIOR and "data-refresh-health" in _PRIOR
+      and "cat8-flagged-row" in _PRIOR
+      and "data-run-portfolio-analysis" not in _NOW and "data-refresh-health" not in _NOW
+      and "cat8-flagged-row" not in _NOW,
+      "and the three buttons inside it were present at ad4f614 and are absent now, which is the "
+      "non-vacuous form of that claim")
+check("renderCat8Health" in _PRIOR.split("window.LinDeepDive")[1]
+      and "renderCat8Health" not in _NOW,
+      "and window.LinDeepDive no longer exports it")
 check(JS["cat8RetiredNoTaxonomy"] is False and JS["cat8RetiredEmptyTaxonomy"] is False,
       "FALSE with no taxonomy loaded: a page that cannot see the roster asserts nothing about "
       "it", f"{JS['cat8RetiredNoTaxonomy']}/{JS['cat8RetiredEmptyTaxonomy']}")
@@ -498,14 +537,30 @@ check(JS["taxonomyPortfolioCats"] and all(c["modules"] == 0
       "the TRUE above is not vacuously true", json.dumps(JS["taxonomyPortfolioCats"]))
 
 src_dd = (ROOT / "assets/js/deepdive.js").read_text(encoding="utf-8")
-check("Portfolio Health is no longer in service." in src_dd,
-      "the flyout states the current state")
-check("needs at least 3 projects" in src_dd,
-      "and the project-count sentence is RETAINED for the case it is true of, rather than "
-      "deleted: reinstating Portfolio Health restores it with no edit here")
-check(src_dd.count("data-run-portfolio-analysis") == 2,
-      "no user-facing control was added, moved or removed: the repair button and its handler "
-      "are exactly where they were", str(src_dd.count("data-run-portfolio-analysis")))
+# RUN 51, RULING 1. Three checks reconciled, none deleted. They asserted the CONTENT of a
+# surface that rendered nowhere: that its retired-state sentence was correct, that its
+# project-count sentence was retained for the case it is true of, and that its repair button
+# was neither added nor moved. The surface is deleted, so each is restated as the claim that
+# now carries the same meaning: nothing in the served bytes describes Portfolio Health as
+# computable, the retired-state fact is asserted directly against the server, and NO control
+# was removed because no reachable control was there -- proved by the absence of any caller.
+check("Portfolio Health is no longer in service." not in src_dd
+      and "needs at least 3 projects" not in src_dd,
+      "the flyout that carried both sentences is deleted, so neither sentence is served, and "
+      "no surface describing a retired capability exists to be right or wrong")
+check("Portfolio Health is no longer in service." in _PRIOR
+      and "needs at least 3 projects" in _PRIOR,
+      "and both sentences WERE in the bytes at ad4f614, so the two absence claims above are "
+      "not vacuous")
+_callers = [ln for ln in
+            subprocess.run(["git", "grep", "-n", "renderCat8Health", "--",
+                            "assets", "index.html", "research"], cwd=str(ROOT),
+                           capture_output=True, text=True, encoding="utf-8").stdout.splitlines()
+            if ln.strip()]
+check(not _callers,
+      "NO REACHABLE CONTROL WAS REMOVED: grep across assets, index.html and research finds not "
+      "one reference to renderCat8Health, so nothing could ever have rendered the three buttons "
+      "and none of them was reachable", str(_callers))
 for banned in ("D1", "Cat 8", "PH."):
     check(banned not in "Portfolio Health is no longer in service. The analysis that compared a "
           "project against the rest of the portfolio was withdrawn, so this panel does not "

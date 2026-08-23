@@ -35,7 +35,7 @@
      planning/governance docs route to extractsignals too but return only a
      document_risk_score. The select renders these as <optgroup>s. */
   const DOC_TYPE_GROUPS = [
-    { label: "Financial & Schedule Documents", types: [
+    { label: "Financial and Schedule Documents", types: [
       ["contract_value",        "Contract Value / Original Agreement"],
       ["schedule_of_values",    "Schedule of Values (G703)"],
       ["pay_application",       "Pay Application (G702)"],
@@ -44,7 +44,7 @@
       ["change_order",          "Change Order / PCO"],
       ["monthly_report",        "Monthly Progress Report"]
     ]},
-    { label: "Risk & Correspondence Documents", types: [
+    { label: "Risk and Correspondence Documents", types: [
       ["rfi_log",               "RFI Log (register)"],
       ["rfa_log",               "RFA / Approval Log"],
       ["submittal_register",    "Submittal Register"],
@@ -53,14 +53,14 @@
       ["risk_register",         "Risk Register"],
       ["inspection_report",     "Inspection Report / NCR"],
       ["field_report",          "Daily / Weekly Field Report"],
-      ["commissioning_report",  "Test & Commissioning Report"]
+      ["commissioning_report",  "Test and Commissioning Report"]
     ]},
-    { label: "Planning & Governance Documents", types: [
+    { label: "Planning and Governance Documents", types: [
       ["airport_layout_plan",          "Airport Layout Plan (ALP)"],
       ["airport_master_plan",          "Airport Master Plan"],
       ["project_delivery_charter",     "Project Delivery System (PDS) Charter"],
       ["owners_project_requirements",  "Owner's Project Requirements (OPR)"],
-      ["grant_assurances",             "Grant Assurances & Funding Compliance"],
+      ["grant_assurances",             "Grant Assurances and Funding Compliance"],
       ["bim_execution_plan",           "BIM Execution Plan (BEP)"],
       ["front_end_project_manual",     "Front-End / Project Manual"],
       ["technical_specifications",     "Technical Specifications"],
@@ -68,11 +68,11 @@
       ["design_development",           "Design Development (DD) Sets"],
       ["construction_documents",       "Construction Documents (CD Sets)"],
       ["basis_of_design",              "Basis of Design (BOD)"],
-      ["construction_safety_phasing",  "Construction Safety & Phasing Plan (CSPP)"],
+      ["construction_safety_phasing",  "Construction Safety and Phasing Plan (CSPP)"],
       ["project_execution_plan",       "Project Execution Plan (PEP)"],
       ["as_built_drawings",            "As-Built Drawings / Closeout Logs"]
     ]},
-    { label: "Compliance & Performance Documents", types: [
+    { label: "Compliance and Performance Documents", types: [
       ["safety_report",            "Safety Report"],
       ["quality_audit_report",     "Quality Audit Report"],
       ["environmental_report",     "Environmental Compliance Report"],
@@ -420,14 +420,14 @@
         const status = window.getModuleStatus(m.method_class, project);
         const simResult = sim.find((r) => r.method_class === m.method_class) || null;
         return {
-          id: m.id, num: m.num, name: m.name, method_class: m.method_class,
+          id: m.id, key: m.key, name: m.name, method_class: m.method_class,
           status: status || null,
           evidence_metric: simResult ? (simResult.evidence_metric || null) : null,
           raw: simResult
         };
       });
       categoryResults[cat.id] = {
-        id: cat.id, num: cat.num, name: cat.name,
+        id: cat.id, key: cat.key, name: cat.name,
         status: window.getCategoryStatus(cat.id, project),
         parked: !!cat.parked,
         modules: moduleResults
@@ -874,7 +874,7 @@
       saved = await LinStore.saveProject(project);
       if (!saved || saved.ok === false) throw new Error("save returned no project");
     } catch (e) {
-      console.warn("[signals] post-compute saveProject FAILED for", project.id, "—", e && e.message);
+      console.warn("[signals] post-compute saveProject FAILED for", project.id, "not recorded", e && e.message);
       notifySaveFailed(project, si, simPayload, e);
       throw e;   // propagate: callers must not treat a failed save as success
     }
@@ -925,7 +925,7 @@
         if (window.LinUI && LinUI.toast) LinUI.toast("Signal results saved.", true);
         if (window.LinApp && LinApp.refresh) LinApp.refresh();
       } catch (e) {
-        console.warn("[signals] save retry FAILED for", project.id, "—", e && e.message);
+        console.warn("[signals] save retry FAILED for", project.id, "not recorded", e && e.message);
         notifySaveFailed(project, si, simPayload, e);
       }
     };
@@ -1653,7 +1653,7 @@
       } catch (e) {
         // runModels already showed the retry toast + logged the breadcrumb; log the
         // batch-level context too so the failure is traceable, and don't pretend success.
-        console.warn("[upload] batch signal run/save failed for", id, "—", e && e.message);
+        console.warn("[upload] batch signal run/save failed for", id, "not recorded", e && e.message);
       }
       // this project's signals were just (re)computed — clear any sector-changed flag
       try { if (window.LinApp && LinApp.clearSectorDirty) LinApp.clearSectorDirty(id); } catch (e) {}
@@ -1737,7 +1737,7 @@
     const rows = FIELD_ROWS.map((f) => {
       const raw = si ? si[f.key] : undefined;
       const has = raw != null && raw !== "";
-      const val = has ? fmtNum(raw) : "—";
+      const val = has ? fmtNum(raw) : "not recorded";
       // Traceability link: field ← doc. Latest sources entry carries docType + date.
       const srcEntry = latestSource(si, f.key);
       const src = srcEntry ? (srcEntry.docType || srcEntry.doc || srcEntry.type || null) : null;
@@ -1812,7 +1812,7 @@
       if (entry.reason) bits.push(entry.reason);
       return `<div class="ds-source-entry${i === last ? " is-current" : ""}">
         <span>${esc(when)}</span>
-        <strong>${esc(val == null ? "—" : val)}</strong>
+        <strong>${esc(val == null ? "not recorded" : val)}</strong>
         <em>${esc(bits.join(" · "))}</em>
         ${i === last ? `<b>current</b>` : ""}
       </div>`;
@@ -1846,8 +1846,8 @@
       const when = fmtDate(e.at || e.timestamp || e.recordedAt || e.time || "");
       if (t === "signal_overwritten") {
         const field = e.field || "(field)";
-        const from = e.from != null ? fmtNum(e.from) : "—";
-        const to = e.to != null ? fmtNum(e.to) : (e.value != null ? fmtNum(e.value) : "—");
+        const from = e.from != null ? fmtNum(e.from) : "not recorded";
+        const to = e.to != null ? fmtNum(e.to) : (e.value != null ? fmtNum(e.value) : "not recorded");
         const reason = e.reason || "(no reason given)";
         return `<li class="ds-audit-row ds-audit-overwrite">
           <span class="ds-audit-main">Overwrote <strong>${esc(field)}</strong>: ${esc(from)} → ${esc(to)}, reason: “${esc(reason)}”</span>
@@ -1899,7 +1899,7 @@
       ${si ? derivedEstimatesHtml(si) : ""}
       ${datesBlockHtml(dates)}
       <div class="ds-block">
-        <p class="eyebrow">Missing values &amp; required documents</p>
+        <p class="eyebrow">Missing values and required documents</p>
         ${missingHtml(missing)}
       </div>
       <div class="ds-block">

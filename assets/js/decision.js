@@ -392,7 +392,7 @@ const CATEGORY_ACTIONS = {
 function deriveActionPlan(project) {
   const rows = [];
   const cats = (typeof window !== "undefined" && window.LIN_CATEGORIES) || [];
-  const triggeredCatNums = {};
+  const triggeredCatKeys = {};
 
   // 1. One row per Yellow/Amber/Red category (DST-fused status)
   cats.forEach((c) => {
@@ -404,9 +404,9 @@ function deriveActionPlan(project) {
     if (sev !== "Yellow" && sev !== "Amber" && sev !== "Red") return;
     const a = CATEGORY_ACTIONS[c.id];
     if (!a) return;
-    triggeredCatNums[c.num] = true;
+    triggeredCatKeys[c.key] = true;
     rows.push({
-      trigger: c.num + " " + c.name + ": " + sev,
+      trigger: c.name + ": " + sev,
       severity: sev,
       what: a.what,
       who: a.who,
@@ -422,11 +422,11 @@ function deriveActionPlan(project) {
     if (typeof window !== "undefined" && window.getProjectFusion) fusion = window.getProjectFusion(project);
   } catch (e) {}
   ((fusion && fusion.redFlags) || []).forEach((f) => {
-    if (triggeredCatNums[f.category]) return;
-    const cat = cats.find((c) => c.num === f.category);
+    if (triggeredCatKeys[f.category]) return;
+    const cat = cats.find((c) => c.key === f.category);
     const a = cat ? CATEGORY_ACTIONS[cat.id] : null;
     rows.push({
-      trigger: "Module " + f.num + " " + f.module + ": Red",
+      trigger: f.module + ": Red",
       severity: "Red",
       what: "Investigate red module signal",
       who: a ? a.who : "Project Controls Lead",

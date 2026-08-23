@@ -197,7 +197,7 @@
           if (hasComputedSignals(local) && !hasComputedSignals(fresh)) fresh.simulationSignals = local.simulationSignals;
           if (local._localComputedAt) fresh._localComputedAt = local._localComputedAt;
           LIN_PROJECTS[i] = fresh;
-        } catch (e) { console.warn("[store] stale re-fetch failed for", id, "—", e && e.message); }
+        } catch (e) { console.warn("[store] stale re-fetch failed for", id, "reason:", e && e.message); }
       }
     }).finally(() => { staleRefetchQueued = false; });
   }

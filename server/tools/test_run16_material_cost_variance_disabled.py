@@ -228,7 +228,7 @@ disabled_entries = [ln for ln in taxonomy.splitlines()
 check(len(disabled_entries) == len(set(registry.DISABLED_MODULES) & _service) == 0,
       "the taxonomy flags no entry disabled, and that figure is derived: the disabled set and "
       "the set in service have no member in common", str(len(disabled_entries)))
-_a11_rows = [ln for ln in taxonomy.splitlines() if "num: 'A1.1'" in ln]
+_a11_rows = [ln for ln in taxonomy.splitlines() if "key: 'A1.1'" in ln]
 check(not _a11_rows and registry.is_retired("A1.1"),
       "and A1.1, the tenth of them and the one the owner's 2026-08-19 ruling disabled, is "
       "retired from service and carries no taxonomy row at all",

@@ -586,7 +586,7 @@
     catch (e) { box.innerHTML = `<p class="pr-empty">Couldn't load archived projects. Retry.</p>`; return; }
     const dateOf = (p) => {
       const d = p.archivedAt || p.archivedDate || p.updatedAt || p.modified || p.date || null;
-      return d ? (window.LinTZ ? LinTZ.format(d) : String(d)) : "—";
+      return d ? (window.LinTZ ? LinTZ.format(d) : String(d)) : "not recorded";
     };
     const admin = isAdmin();
     box.innerHTML = archived.length

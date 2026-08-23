@@ -30,7 +30,7 @@
     });
   }
   function fmtDate(iso) {
-    if (!iso) return "—";
+    if (!iso) return "not recorded";
     try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
   }
   function token() { return window.LinAuth ? LinAuth.getToken() : null; }
@@ -216,7 +216,7 @@
       // sequence_number and status only. config_id IS in this response — it names the condition —
       // and is deliberately never rendered, which is the one part of the old blinding rule that
       // still has something to protect.
-      return "<tr><td>" + esc(a.sequence_number) + "</td><td>" + esc(a.status || "—") + "</td></tr>";
+      return "<tr><td>" + esc(a.sequence_number) + "</td><td>" + esc(a.status || "not recorded") + "</td></tr>";
     }).join("");
     target.innerHTML = rows
       ? '<table class="ws-table"><thead><tr><th>Order</th><th>Status</th></tr></thead><tbody>'
@@ -413,10 +413,10 @@
       var stuck = stuckHint(p);
       return "<tr><td>" + esc(p.pseudonymous_code) + "</td><td>" + esc(p.account_type) +
         "</td><td>" + (p.is_active ? "active" : "deactivated") + "</td><td>" +
-        esc((p.consent && p.consent.status) || "—") + "</td><td>" +
-        esc(p.current_scenario || "—") + "</td><td>" + esc(p.current_stage || "—") +
-        "</td><td>" + esc(p.completion_status || "—") + "</td><td>" +
-        (stuck ? '<span class="ws-note">' + esc(stuck) + "</span>" : "—") + "</td></tr>";
+        esc((p.consent && p.consent.status) || "not recorded") + "</td><td>" +
+        esc(p.current_scenario || "not recorded") + "</td><td>" + esc(p.current_stage || "not recorded") +
+        "</td><td>" + esc(p.completion_status || "not recorded") + "</td><td>" +
+        (stuck ? '<span class="ws-note">' + esc(stuck) + "</span>" : "not recorded") + "</td></tr>";
     }).join("");
     $("ao-monitor-table").innerHTML =
       '<table class="ws-table"><thead><tr><th>Participant</th><th>Account type</th>' +

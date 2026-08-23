@@ -195,6 +195,47 @@ RUN49_AUTHORISED_SUCCESSOR_CHANGES = {
     "assets/js/deepdive.js",     # the retired scheme, everywhere it still rendered, plus the map
     "assets/js/decision-ui.js",  # comments only at the three inert period literals
 }
+# RESTATED BY RUN 51, AND THE SAME DISCIPLINE AGAIN. Run 51 delivered the six rulings Run 50
+# stopped on. What a participant is SHOWN changes -- a dead surface is deleted, a panel becomes
+# two, seven panels move to the category their module belongs to, an eleventh group appears, and
+# every count on a served page derives instead of being typed -- which is executable behaviour,
+# so it is a freeze SUCCESSOR (sim-2026.08-v34) rather than a violation of this guard. Every file
+# is NAMED here, so the set cannot quietly grow: anything else appearing in a frozen surface
+# still fails. NOTHING ON THE ANALYTICAL SIDE MOVED: the behaviour digest is reproduced
+# identically and no stored figure changed.
+#
+# ALL SIX SEQUENCE_BEARING_FILES ARE NAMED HERE DELIBERATELY and each is an exception OF RECORD,
+# with what moved inside it written into the v19 checksum record's own header. Their authority is
+# the owner's rulings 1 to 6 in the Run 51 order of 2026-08-22.
+RUN51_AUTHORISED_SUCCESSOR_CHANGES = {
+    "assets/js/deepdive.js",       # SEQUENCE-BEARING: the flyout deleted, the panel split, the
+                                   # buckets corrected, the loop bound derived
+    "assets/js/decision.js",       # SEQUENCE-BEARING: no identifier in the action plan
+    "assets/js/decision-ui.js",    # SEQUENCE-BEARING: rendered placeholders say what they mean
+    "assets/js/workspace.js",      # SEQUENCE-BEARING: the same, at six rendered fields
+    "assets/questionnaires/intake.json",    # SEQUENCE-BEARING: wording inside existing labels
+    "assets/questionnaires/debrief.json",   # SEQUENCE-BEARING: one placeholder notice
+    "assets/js/app.js",            # the ledger identifier chips; the derived About counts
+    "assets/js/knowledge.js",      # the handbook counts and the Signal Stack SVG labels
+    "assets/js/detail.js",         # the key/label separation and the brief's category names
+    "assets/js/signals.js",        # the key/label separation and the document group labels
+    "assets/js/neural_flow.js",    # the population it draws is in service, not registered
+    "assets/js/projectnet2d.js",   # the key/label separation
+    "assets/js/export.js",         # the workbook's identifier columns
+    "assets/js/taxonomy.js",       # GENERATED from the authority and the registry
+    "assets/js/categories.js",     # GENERATED from the authority and the registry
+    "assets/js/ds_defensibility_data.js",   # the registry sentence derives; ampersands to words
+    "assets/js/charts3d.js",       # axis and pill labels
+    "assets/js/auditor.js",        # rendered placeholders and one model prompt
+    "assets/js/admin-ops.js",      # rendered placeholders
+    "assets/js/ingest.js",         # one rendered placeholder
+    "assets/js/store.js",          # one console separator
+    "assets/visualizations/pceif_neural_signal_flow.html",   # the page title and heading
+    "index.html",                  # three typed counts become derived spans
+    "server/app/simulation/models.py",       # the stamp advances to sim-2026.08-v34
+    "server/tools/taxonomy_authority.json",  # `num` becomes `key`: the primary key, named
+    "server/tools/build_client_taxonomy.py", # emits `key` and the derived counts block
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN43_AUTHORISED_SUCCESSOR_CHANGES
@@ -202,7 +243,8 @@ AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN45_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN47_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN48_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN49_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN49_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN51_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -298,11 +340,11 @@ check(readiness["final_disposition"] == "STUDY_EXECUTION_READY",
 check(freeze["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       freeze["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v33",
-      "and the live simulation is the Run-49 successor sim-2026.08-v33", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v34",
+      "and the live simulation is the Run-51 successor sim-2026.08-v34", SIMULATION_VERSION)
 # RESTATED BY RUN 43: v13 is superseded by v14 and pinned to its own commit rather than rewritten.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v18",
-      "the participant package is superseded at og-participant-2026.08-v18",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v19",
+      "the participant package is superseded at og-participant-2026.08-v19",
       PP.CURRENT.identifier)
 check(freeze["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6")
