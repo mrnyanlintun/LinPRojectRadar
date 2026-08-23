@@ -1,5 +1,5 @@
 {
-  "candidate_git_commit": "0066be3d9fd6ae2b2828c8d093cac5b5d366d9a1",
+  "candidate_git_commit": "c2fc689fd2feb272781dd70a0279a167d207da7a",
   "candidate_commit_verified_is_head": true,
   "supersedes_candidate": "d236a2706a801cad8547ba34d68b0dc83521ff52",
   "supersedes_simulation_version": "sim-2026.08-v35",
