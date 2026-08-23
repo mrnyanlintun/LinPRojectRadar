@@ -4,6 +4,8 @@
 **Interpreter:** `python3` 3.11.15, the documented fallback. This clone has no `.venv`.
 **Branch:** `run52-controls-and-naming`, rooted at `fe35504`, merged to `main` with `--no-ff`.
 **Stamp:** `sim-2026.08-v35`. **Package:** `og-participant-2026.08-v20`.
+**193 suites, 14,690/14,690, ALL GREEN.** Freeze gate 15 blocker classes, 0 blocked; suite
+34/34; launch gate 100/100. Injection campaign 30/30.
 **Behaviour digest UNCHANGED at `8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1`.**
 
 ## Starting state, verified
@@ -330,7 +332,8 @@ The six, verified from `participant_packages.SEQUENCE_BEARING_FILES`: `assets/js
 
 ## §11 item 10 — Audit artifacts the suites rewrote and restored
 
-**23 rewritten per full run, all restored, none committed:** 22 under `code_audit/` —
+**26 rewritten on the final full run, all restored, none committed** (23 on earlier passes; the
+last pass, in which every suite went green, rewrote three more): 22 under `code_audit/` —
 `run8_expectation_mutation_proof.csv`, `run9_abstention_results.csv`,
 `run9_alias_overlay_verification.csv`, `run9_fixture_import_results.csv`,
 `run9_known_answer_results.csv`, `run9_no_operational_effect.csv`,
@@ -442,13 +445,19 @@ were not attempted here.
 
 ## §10 — Freeze and merge
 
-**Reconciliation first, then the identity.** Run 51 paid four mints. This run paid **two**, and the
-second was discoverable only by running the full suite against the new manifests: the first pass
+**Reconciliation first, then the identity.** Run 51 paid four mints. This run paid **three**, and the
+second and third were discoverable only by running the full suite against the new manifests: the first pass
 reconciled the identifier guards, and the second surfaced ten pinned version-boundary and
 frozen-immutability guards still pinned to `sim-2026.08-v34` / `og-participant-2026.08-v19` plus
 `run36.fault35`, whose exception-record check had to be re-pointed at the record of the successor
-that moved each file rather than at the current record. Blocker B01 then required a third pass
-after the commit, because a dirty working tree is itself the blocker.
+that moved each file rather than at the current record. The third pass found `test_run25_rail_removal.py`'s
+manifest-chain allowlist, which had to be extended by `run52_production_tree.sha256`; because
+that file is a member of `test_suite_identity`, reconciling it moved the candidate identity
+digest, so the identity, the gate and the release records had to be recomputed and committed
+again. Blocker B01 is not cleared by editing anything: a dirty working tree is itself the
+blocker, so it clears only on a pass taken after the commit.
+
+**Final state: 193 suites, 14,690/14,690, ALL SUITES GREEN, zero red.**
 
 **Minted:** `sim-2026.08-v35` (`server/app/simulation/models.py:679`, with the boundary comment and
 `SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v34"`) and `og-participant-2026.08-v20`
