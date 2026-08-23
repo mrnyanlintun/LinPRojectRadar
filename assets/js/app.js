@@ -1080,8 +1080,7 @@
           (periodTxt ? `<span class="li-period">${periodTxt}</span>` : "") +
           computedSpan +
           `<span class="li-actions">` +
-            `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Edit info, upload, archive, reset (inline)">Manage</button>` +
-            `<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project detail">Open →</button>` +
+            `<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Open project detail">Manage</button>` +
           `</span>`;
         // Clicking an already-selected row deselects it (returns the map/globe to the
         // portfolio-wide view) rather than re-flying to the same place.
@@ -1091,17 +1090,33 @@
           maybeFlyToSelection(next);
         });
         // both row buttons stop propagation so they never trigger row-select
-        btn.querySelectorAll(".li-manage, .li-open").forEach((b) =>
+        btn.querySelectorAll(".li-manage").forEach((b) =>
           b.addEventListener("click", (e) => e.stopPropagation()));
-        // The row used to carry a "Signals" button beside this one. Both handlers were the same
-        // call, openDetail(p.id), and openDetail takes only an id: no section, tab or scroll
-        // target, so the two controls were indistinguishable to a user. Merged into this one.
-        // "Open" names the action; "Signals" named an internal concept (NAMING_AUTHORITY.md).
-        btn.querySelector(".li-open").addEventListener("click", () => openDetail(p.id));
-        // Manage → the inline admin accordion directly under this row
-        btn.querySelector(".li-manage").addEventListener("click", () => {
-          if (window.LinIngest && LinIngest.openInlineManage) LinIngest.openInlineManage(p.id);
-        });
+        // RUN 54, PHASE C. THE "Open" CONTROL IS REMOVED, on the owner's ruling at section 9.
+        // The row had carried a "Signals" button too; Run 25 merged that into Open because both
+        // handlers were the same call, openDetail(p.id). Run 54 completes the same reduction:
+        // Manage now makes that call, so Open was a second control for one action and it is
+        // gone. IT WAS REMOVED ONLY AFTER Manage was measured in a real browser reaching the
+        // detail page of its OWN row's project, on every row of the one surface that renders a
+        // project list -- see server/tools/drive_run54_navigation.py. Removing it first would
+        // have left every project's detail page unreachable, which is the run-level halt at
+        // section 15.8 and the stop Run 52 and Run 53 both took correctly.
+        // RUN 54, PHASE C. Manage NAVIGATES TO THIS ROW'S PROJECT DETAIL PAGE, on the owner's
+        // ruling at section 9 of the Run 54 order. It used to call
+        // LinIngest.openInlineManage(p.id), which opened an inline admin accordion under this
+        // row and made no showPage call at all: Run 52 drove that in a real browser and measured
+        // the visible page after clicking Manage as ['portfolio'], never ['detail'].
+        //
+        // THE ORDER OF WORK WAS NOT NEGOTIABLE AND WAS NOT NEGOTIATED. Manage was re-bound
+        // FIRST and verified in a browser, per row and per surface, reaching the detail page of
+        // its OWN row's project. Only then was Open removed. Removing Open first would have left
+        // every project's detail page unreachable, which is the run-level halt at section 15.8.
+        //
+        // WHAT BECOMES OF THE INLINE ADMIN ACCORDION: it is NOT deleted -- the order forbids it
+        // -- and ingest.js:207-266 still builds it, but LinIngest.openInlineManage has exactly
+        // one call site in the repository and this was it, so it now has no entry point. What it
+        // contained is on the record in the Run 54 report.
+        btn.querySelector(".li-manage").addEventListener("click", () => openDetail(p.id));
         li.appendChild(btn);
         ul.appendChild(li);
       } catch (err) {
