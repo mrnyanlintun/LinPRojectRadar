@@ -182,7 +182,7 @@ check("assessed does not mean passed: the artifact records far fewer scientific 
 section("3. THE TAXONOMY THE INTERFACE READS AGREES WITH THE REGISTRY")
 
 TAXONOMY = (ROOT / "assets" / "js" / "taxonomy.js").read_text(encoding="utf-8")
-tax_ids = re.findall(r"num: '([A-D][0-9]+\.[0-9]+)'", TAXONOMY)
+tax_ids = re.findall(r"key: '([A-D][0-9]+\.[0-9]+)'", TAXONOMY)
 # The taxonomy the browser reads carries the population IN SERVICE, not the whole registry.
 # registry_index() resolves retired identifiers by design (registry.py:426); service_index()
 # (registry.py:440) is the in-service population. Comparing the client taxonomy against the
@@ -193,7 +193,7 @@ check("the taxonomy carries exactly the in-service module ids, so the browser an
       "cannot describe different platforms",
       sorted(tax_ids) == sorted(_service),
       f"{len(tax_ids)} taxonomy ids / {len(_service)} in service")
-tax_cats = re.findall(r"num: '([A-D][0-9]+)',\n?\s*name:", TAXONOMY)
+tax_cats = re.findall(r"key: '([A-D][0-9]+)',\n?\s*name:", TAXONOMY)
 check("and twelve categories, eleven of them project level",
       len(re.findall(r"^  \{$", TAXONOMY, re.M)) == 12,
       str(len(re.findall(r"^  \{$", TAXONOMY, re.M))))
@@ -276,8 +276,29 @@ check("the only established category-to-category dependencies are the qualificat
 # ============================================================ 6. terminology
 section("6. TERMINOLOGY: SCOPE, NOT AMBIGUITY, AND NO CLAIM THAT ASSESSED MEANS PASSED")
 
-KNOWLEDGE = (ROOT / "assets" / "js" / "knowledge.js").read_text(encoding="utf-8")
-INDEX = (ROOT / "index.html").read_text(encoding="utf-8")
+def _rendered(text: str) -> str:
+    """RUN 51, SECTION 6.1. Both pages state their counts through tokens the page fills at
+    render time from window.LIN_TAXONOMY_COUNTS, which the generator writes from
+    registry_index() and service_index(). Grepping the source for a literal would now measure
+    the template, not the sentence. The numbers substituted here come from THE REGISTRY IN THIS
+    PROCESS and never from the file under test."""
+    subs = {"registered": registered_total, "inService": _in_service_total,
+            "serverComputes": _computed_in_service,
+            "projectInService": len([m for m in R.service_index()
+                                     if not m.startswith("D")]),
+            "portfolioInService": len([m for m in R.service_index()
+                                       if m.startswith("D")]),
+            "retired": registered_total - _in_service_total,
+            "supplied": _in_service_total - _computed_in_service}
+    for k, v in subs.items():
+        text = text.replace("${taxCounts().%s}" % k, str(v))
+        text = text.replace('<span data-taxcount="%s">&#8230;</span>' % k, str(v))
+        text = text.replace("{{%s}}" % k, str(v))
+    return text
+
+
+KNOWLEDGE = _rendered((ROOT / "assets" / "js" / "knowledge.js").read_text(encoding="utf-8"))
+INDEX = _rendered((ROOT / "index.html").read_text(encoding="utf-8"))
 
 for label, text in (("knowledge.js", KNOWLEDGE), ("index.html", INDEX)):
     # RUN 43, THE RETIREMENT. There are now THREE populations to keep apart, not two: what the

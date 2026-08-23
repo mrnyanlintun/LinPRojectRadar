@@ -358,7 +358,7 @@
       var r = res.result;
       html += '<div class="dc-row"><strong style="flex:1;">Overall project status</strong>' +
         '<span class="dc-dot" style="background:' + statusColor(r.project_status) +
-        ';"></span> ' + esc(r.project_status || "—") + "</div>";
+        ';"></span> ' + esc(r.project_status || "not recorded") + "</div>";
 
       var cats = r.category_statuses || {};
       var byGroup = {};
@@ -408,7 +408,7 @@
       }
 
       html += '<p class="dc-note" style="margin-top:14px;">Stored result, computed ' +
-        esc(r.computed_at ? new Date(r.computed_at).toLocaleString() : "—") + ".</p>";
+        esc(r.computed_at ? new Date(r.computed_at).toLocaleString() : "not recorded") + ".</p>";
     } else {
       html += '<p class="dc-empty">No stored analysis for this period yet.</p>';
     }
@@ -579,7 +579,7 @@
       return;
     }
     var html = '<div class="dc-locked-banner">Shown at ' +
-      esc(revealAt ? new Date(revealAt).toLocaleString() : "—") +
+      esc(revealAt ? new Date(revealAt).toLocaleString() : "not recorded") +
       ". Your preliminary judgment was recorded before this point and is unchanged.</div>";
     html += field("Recommended action", pkg.recommended_action);
     html += field("Detected condition", pkg.detected_condition);
@@ -590,7 +590,7 @@
     html += field("When this expires", pkg.expiration_trigger);
     html += field("Supporting evidence and provenance", pkg.provenance);
     html += '<p class="dc-note" style="margin-top:12px;">Model ' +
-      esc(pkg.model_version || "—") + " · package version " + esc(pkg.version || "—") + "</p>";
+      esc(pkg.model_version || "not recorded") + " · package version " + esc(pkg.version || "not recorded") + "</p>";
     $("dc-package").innerHTML = html;
   }
 

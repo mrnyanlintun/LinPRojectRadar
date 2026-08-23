@@ -421,7 +421,7 @@
       } catch (err) {
         // Never drop a project because its plot math threw — log it and place
         // it at a neutral default so it still appears on the radar.
-        console.error("Radar plot failed for project", p && p.id, "—", err && err.message);
+        console.error("Radar plot failed for project", p && p.id, "reason:", err && err.message);
         return { p, ang: 0, r: healthToRadius(50) };
       }
     });
@@ -582,7 +582,7 @@
      } catch (err) {
       // One project's blip failing must never blank the radar or silently drop
       // the others — log which project and keep going.
-      console.error("Blip render failed for project", q && q.p && q.p.id, "—", err && err.message);
+      console.error("Blip render failed for project", q && q.p && q.p.id, "reason:", err && err.message);
      }
     });
 
@@ -895,7 +895,7 @@
       const marker = new gmaps.Marker({
         position: { lat: lat, lng: lng },
         map: map,
-        title: (p.name || p.id) + (status ? " — " + status : ""),
+        title: (p.name || p.id) + (status ? " is " + status : ""),
         icon: { path: gmaps.SymbolPath.CIRCLE, fillColor: color, fillOpacity: 1,
                 scale: 9, strokeColor: "#05080b", strokeWeight: 2 },
         label: letter ? { text: letter, color: LinGMap.inkFor(color), fontSize: "11px", fontWeight: "700" } : null
@@ -1107,7 +1107,7 @@
       } catch (err) {
         // Keep the list resilient — render a minimal fallback row and log,
         // rather than dropping the project (or breaking the whole list).
-        console.error("List render failed for project", p && p.id, "—", err && err.message);
+        console.error("List render failed for project", p && p.id, "reason:", err && err.message);
         const li = document.createElement("li");
         const btn = document.createElement("button");
         btn.className = "list-item";
@@ -1343,7 +1343,6 @@
           ? "Not available for production use: this module has no production implementation of the analytical structure its name claims."
           : `Not relevant: this module does not apply to ${secName}-sector projects`;
         return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="${esc(naTitle)}"` : ""}>
-          <span class="cat-mod-num">${esc(m.num)}</span>
           <span class="cat-mod-name">${esc(m.name)}</span>
           ${statusPill(st, secName + "-sector", na ? naTitle : null)}
         </div>${finding}${reasonHtml}${chart}`;
@@ -1357,7 +1356,7 @@
 
       return `<details class="cat-row" data-cat="${esc(cat.id)}"${open}>
         <summary class="cat-row-head">
-          <span class="cat-row-num" style="color:${esc(cat.color)}">${esc(cat.num)}</span>
+          <span class="cat-row-swatch" style="background:${esc(cat.color)}" aria-hidden="true"></span>
           <span class="cat-row-name">${esc(cat.name)}</span>
           ${rowPill}
         </summary>
@@ -1637,7 +1636,7 @@
       if (selectedId === id && window.LinDetail && typeof LinDetail.render === "function") {
         LinDetail.render(id);
       }
-    } catch (e) { console.warn("[detail] full-project hydrate failed for", id, "—", e && e.message); }
+    } catch (e) { console.warn("[detail] full-project hydrate failed for", id, "reason:", e && e.message); }
   }
 
   /* ---------- theme switch ---------- */
@@ -1759,7 +1758,7 @@
       // two days with a clean console. Report through the two shapes the codebase already has:
       // console.error, the per-item render shape (buildRadar, buildFallbackList), and
       // LinStore.banner, the user-visible non-fatal shape ("Couldn't reach the project store").
-      console.error("Page render failed for", page, "—", e && e.message, e);
+      console.error("Page render failed for", page, "reason:", e && e.message, e);
       try {
         if (window.LinStore && LinStore.banner) {
           LinStore.banner("The " + page + " page failed to render: " +
@@ -2909,5 +2908,43 @@
     document.addEventListener("DOMContentLoaded", boot);
   } else {
     boot();
+  }
+
+  /* ------------------------------------------------------------------
+     RUN 51, SECTION 6.1. DERIVED COUNTS IN STATIC PROSE.
+     ------------------------------------------------------------------
+     The About page stated "101 registered modules", "63 in service" and
+     "computes 62" as hand-typed numbers in HTML. A typed count is what
+     produced the handbook's "96 registered modules", so every one of them
+     is now a data-taxcount span filled from window.LIN_TAXONOMY_COUNTS,
+     which the taxonomy generator writes from registry_index() and
+     service_index(). A retirement rewrites the sentence with no edit here.
+     If the taxonomy has not loaded, the span keeps its ellipsis rather than
+     claiming a number, because a wrong number is worse than no number.
+     ------------------------------------------------------------------ */
+  function fillTaxCounts() {
+    var c = window.LIN_TAXONOMY_COUNTS;
+    if (!c) return;
+    var cats = window.LIN_CATEGORIES || [];
+    var proj = cats.filter(function (x) { return !(x && x.level === "portfolio"); });
+    var derived = {
+      registered: c.registered,
+      inService: c.inService,
+      retired: c.retired,
+      serverComputes: c.serverComputes,
+      supplied: c.supplied,
+      categories: cats.length,
+      projectCategories: proj.length
+    };
+    var nodes = document.querySelectorAll("[data-taxcount]");
+    for (var i = 0; i < nodes.length; i++) {
+      var k = nodes[i].getAttribute("data-taxcount");
+      if (derived[k] != null) nodes[i].textContent = String(derived[k]);
+    }
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", fillTaxCounts);
+  } else {
+    fillTaxCounts();
   }
 })();

@@ -301,7 +301,7 @@ def g14_label_expectation_comes_from_the_registry_authority():
             continue
         for art in ("assets/js/categories.js", "assets/js/taxonomy.js"):
             text = (ROOT / art).read_text(encoding="utf-8", errors="ignore")
-            line = [ln for ln in text.splitlines() if f"num: '{mid}'" in ln]
+            line = [ln for ln in text.splitlines() if f"key: '{mid}'" in ln]
             if not line:
                 bad.append(f"{mid} is absent from {art}")
                 continue

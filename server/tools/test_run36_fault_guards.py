@@ -384,12 +384,27 @@ _moved_seq = sorted(f for f in _seq_files
 # excused by loosening the comparison: `assets/js/decision-ui.js` gains comments only, at its
 # three inert `period: 1` literals, on the owner's ruling 4 of 2026-08-22. The other four are
 # still held to the frozen v11 bytes, so a third file moving here is still a failure.
-_SEQ_AUTHORISED = set(PP.V14_TO_V15_SEQUENCE_EXCEPTION) | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
+# RUN 51. ALL SIX have now legitimately moved, on the owner's rulings 1 to 6 of 2026-08-22, and
+# every one of them is NAMED rather than excused by loosening the comparison: the exception set
+# below is built from the per-successor exception tuples participant_packages declares, so a file
+# moving without a declared record is still a failure. What keeps this a real invariant now that
+# the exception spans the whole set is the SECOND check: each of the six must carry its own named
+# exception record in the current package's checksum-record header, saying what moved inside it.
+_SEQ_AUTHORISED = (set(PP.V14_TO_V15_SEQUENCE_EXCEPTION) | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
+                   | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION))
 check("run36.fault35.participant_sequence_unaltered",
-      sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 2,
+      sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 6,
       "every file carrying the participant experimental sequence is byte-identical to the frozen "
-      "v11 package, except the TWO the owner authorised Runs 44 and 49 to move; the sequence has "
-      "been altered somewhere else", str(_moved_seq))
+      "v11 package, except the SIX the owner authorised Runs 44, 49 and 51 to move; the sequence "
+      "has been altered somewhere else", str(_moved_seq))
+_v19_record = (ROOT / PP.CURRENT.record).read_text(encoding="utf-8")
+_undeclared = [f for f in PP.V18_TO_V19_SEQUENCE_EXCEPTION
+               if f"# {f} -- SEQUENCE-BEARING" not in _v19_record]
+check("run36.fault35.every_sequence_exception_has_its_own_record",
+      not _undeclared,
+      "and every sequence-bearing file that moved carries its OWN named exception record in the "
+      "current package's checksum record, saying what moved inside it; a file moving without one "
+      "is a failure even though the exception now spans the whole set", str(_undeclared))
 check("run36.fault36.evidence_and_rationale_captured",
       "decision.rationale = payload.get(\"rationale\")" in _dec
       and "decision.evidence_items = evidence_items" in _dec

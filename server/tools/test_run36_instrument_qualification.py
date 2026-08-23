@@ -301,8 +301,11 @@ check(SIMULATION_VERSION_HISTORY[SIMULATION_VERSION_HISTORY.index("sim-2026.08-v
 # RUN 49 minted v18: three of the seventy moved again for the completion of that naming
 # correction, TWO of them sequence-bearing -- deepdive.js on ruling 1 and decision-ui.js, which
 # gains comments only, on ruling 4 -- both declared as named exceptions.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v18",
-      "the current participant package is v18", PP.CURRENT.identifier)
+# RUN 51 minted v19: twenty-three of the seventy moved for the delivery of the owner's six
+# rulings of 2026-08-22, and ALL SIX sequence-bearing files are among them, each carrying its
+# own named exception record in the v19 checksum record's header.
+check(PP.CURRENT.identifier == "og-participant-2026.08-v19",
+      "the current participant package is v19", PP.CURRENT.identifier)
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
       "and every predecessor names the commit its bytes live in, so only one record claims the "

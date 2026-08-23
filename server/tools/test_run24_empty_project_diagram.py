@@ -62,7 +62,7 @@ def registry_counts() -> tuple[int, int, int, int]:
     """
     THE REGISTRY'S OWN FIGURES, parsed from taxonomy.js rather than typed in here.
 
-    Counts `{ id: '...', num: '...', ... }` module records per category block, and the
+    Counts `{ id: '...', key: '...', ... }` module records per category block, and the
     categories themselves, splitting portfolio-level from project-level on the `level`
     field the file carries. If this parse were wrong every count check below would be
     measuring the parser; the non-vacuity section proves it is not, by changing the
@@ -126,8 +126,13 @@ check("MODULES.length + ' REGISTERED PROJECT MODULES'" in FLOW,
       "the module column header reads its figure from the built model")
 check("CATS.length + ' REGISTERED CATEGORIES'" in FLOW,
       "the category column header reads its figure from the built model")
-check("MODULES.length +\n      ' registered project modules and ' + CATS.length +" in FLOW,
+# RUN 51, SECTION 6.1. The two figures are still read from the built model; the WORD beside
+# them changed, because the model this file builds is the population IN SERVICE and calling it
+# "registered" named a different and larger population.
+check("MODULES.length +\n      ' project modules in service and ' + CATS.length +" in FLOW,
       "and the summary sentence reads the same two figures, not a second pair of literals")
+check("registered project modules" not in FLOW,
+      "and it no longer calls the population it draws the registered one, which it is not")
 check(not re.search(r"'\s*9[0-9] REGISTERED PROJECT MODULES", FLOW),
       "no literal project-module count is hardcoded into the diagram headers")
 check("projectModuleCount()" in DETAIL and "totalModulesForBadge = projectModuleCount()" in DETAIL,
@@ -144,6 +149,27 @@ check("projectModuleCount()" in DETAIL and "totalModulesForBadge = projectModule
 # what the registry holds (101), what is in service (63, which is what the browser renders), and
 # what the analytical server computes of the roster in service (62). Every figure is derived.
 _COMPUTED_IN_SERVICE = len(_REG.available_modules())
+
+
+def rendered(text: str) -> str:
+    """RUN 51, SECTION 6.1. The handbook and the About page no longer TYPE their counts; each
+    is a token the page fills from window.LIN_TAXONOMY_COUNTS, which the taxonomy generator
+    writes from registry_index() and service_index(). A check that greps the source for a
+    literal would now measure the template rather than the sentence. This substitutes what the
+    page derives at render time using numbers taken from THE REGISTRY IN THIS PROCESS, never
+    from the file under test, and the assertions below then read the sentence a reader gets."""
+    subs = {"registered": len(_REGISTRY), "inService": len(_SERVICE),
+            "projectInService": len(_SVC_PROJECT), "portfolioInService": len(_SVC_PORTFOLIO),
+            "serverComputes": _COMPUTED_IN_SERVICE, "retired": len(_REG.retired_modules()),
+            "supplied": len(_SERVICE) - _COMPUTED_IN_SERVICE}
+    for k, v in subs.items():
+        text = text.replace("${taxCounts().%s}" % k, str(v))
+        text = text.replace('<span data-taxcount="%s">&#8230;</span>' % k, str(v))
+        text = text.replace("{{%s}}" % k, str(v))
+    return text
+
+
+KNOWLEDGE = rendered(KNOWLEDGE)
 check(f"The registry holds {len(_REGISTRY)} modules, of which {len(_SERVICE)} are in service: "
       f"{len(_SVC_PROJECT)} at project level and {len(_SVC_PORTFOLIO)} at portfolio level"
       in KNOWLEDGE,
@@ -336,9 +362,9 @@ for name, old, new, expect in MUTATIONS:
 
 # The count guard, proved discriminating against a really-changed taxonomy.
 _tax_mut = TAXONOMY.replace(
-    "{ id: 'a4_1', num: 'A4.1', name: 'Document Risk Score'",
-    "{ id: 'a4_99', num: 'A4.99', name: 'Injected Module'\n      },\n"
-    "      { id: 'a4_1', num: 'A4.1', name: 'Document Risk Score'", 1)
+    "{ id: 'a4_1', key: 'A4.1', name: 'Document Risk Score'",
+    "{ id: 'a4_99', key: 'A4.99', name: 'Injected Module'\n      },\n"
+    "      { id: 'a4_1', key: 'A4.1', name: 'Document Risk Score'", 1)
 check(_tax_mut != TAXONOMY, "INJECTION TOOK EFFECT: an extra module added to the taxonomy copy")
 _saved = TAXONOMY
 try:

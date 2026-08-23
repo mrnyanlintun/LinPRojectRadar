@@ -1749,11 +1749,83 @@ try:
                 'purposes, not in identifiers.\\n\\n" +',
                 '${cs("d-docsignals", "Documents and Extracted Signals",',
             }
+            # RUN 51, THE DELIVERY OF WHAT RUN 50 STOPPED ON. Lines move in this file on the
+            # owner's rulings 2 and 4 of 2026-08-22, and every one of them is NAMED here rather
+            # than admitted by widening the rule, on exactly the Run-16 / Run-25 / Run-43 /
+            # Run-44 / Run-47 / Run-48 / Run-49 construction above. (1) The taxonomy's primary
+            # key is read as `key` rather than `num`, so the field a render site sees cannot be
+            # mistaken for a label. (2) The executive brief's category groups carry category
+            # NAMES where they carried category identifiers, so the brief no longer reads
+            # "RED (2 categories): A1, A3". (3) Rendered placeholders that were a bare em dash
+            # say what they mean. (4) The three section badges say "in service" rather than
+            # "registered", because the roster they count is the one in service. No control, no
+            # band, no colour and no stored figure moves.
+            RUN51_REMOVED = {
+                '<td class="pc-delta">${changed ? esc((prevVal == null ? "—" : prevVal) + " → " + (curVal == null ? "—" : curVal)) : "no change"}</td>',
+                '<td class="pc-delta">${delta == null ? "—" : (delta > 0 ? "+" : "") + pcFmt(delta, digits) + (suffix || "")}</td>',
+                '<td class="pc-val">${c == null ? "—" : pcFmt(c, digits) + (suffix || "")}</td>',
+                '<td class="pc-val">${esc(curVal == null ? "—" : String(curVal))}</td>',
+                '<td class="pc-val">${esc(prevVal == null ? "—" : String(prevVal))}</td>',
+                '<td class="pc-val">${p == null ? "—" : pcFmt(p, digits) + (suffix || "")}</td>',
+                'const arrow = !changed ? "–" : "▲"; // status is categorical — ▲ just flags "changed"',
+                'const dash = line.indexOf("—") >= 0 ? line.indexOf("—") : line.indexOf(" - ");',
+                'const fieldList = fields.length ? fields.join(", ") : "—";',
+                'const fileName = e.fileName || e.file || e.name || "—";',
+                'const num = c && c.num;',
+                'else groups.Conditional.push(num);',
+                'else if (s.indexOf("amber") >= 0 || s.indexOf("yellow") >= 0) groups.Amber.push(num);',
+                'else if (s.indexOf("green") >= 0 || s.indexOf("complete") >= 0) groups.Green.push(num);',
+                'if (!iso || isNaN(d)) return "—";',
+                'if (!num) return;',
+                'if (c.parked || !c.status) { groups.Conditional.push(num); return; }',
+                'if (delta == null || !Number.isFinite(delta) || Math.abs(delta) < 1e-9) return "–";',
+                'if (s.indexOf("red") >= 0) groups.Red.push(num);',
+                'if (v == null) return "—";',
+                'num: cat.num,',
+                'num: m.num, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
+                'rows.push({ index: idx, num: m.num, name: m.name, color: cat.color, bucket });',
+            }
+            RUN51_ADDED = {
+                '${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} in service`)}',
+                '${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " in service")}',
+                '${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " in service")}',
+                '// "RED (2 categories): A1, A3".',
+                '// PARSER over text the model produced, splitting a Signal Pattern line at whatever',
+                '// RUN 51, RULING 4, STOP CONDITION 9.3. This em dash is NOT prose and is NOT ours: it is a',
+                "// The KEY dispatches; what goes into the brief is the category's LABEL, which",
+                '// carries no identifier. Before Run 51 this pushed c.num and the brief read',
+                '// separator the model wrote. Replacing it with words would stop the parse. The dash is',
+                "// swept, and the sweep's blanket pass over this file is reverted at this line.",
+                '// syntactically significant here, so this instance is STOPPED and reported rather than',
+                '<td class="pc-delta">${changed ? esc((prevVal == null ? "not recorded" : prevVal) + " → " + (curVal == null ? "not recorded" : curVal)) : "no change"}</td>',
+                '<td class="pc-delta">${delta == null ? "not recorded" : (delta > 0 ? "+" : "") + pcFmt(delta, digits) + (suffix || "")}</td>',
+                '<td class="pc-val">${c == null ? "not recorded" : pcFmt(c, digits) + (suffix || "")}</td>',
+                '<td class="pc-val">${esc(curVal == null ? "not recorded" : String(curVal))}</td>',
+                '<td class="pc-val">${esc(prevVal == null ? "not recorded" : String(prevVal))}</td>',
+                '<td class="pc-val">${p == null ? "not recorded" : pcFmt(p, digits) + (suffix || "")}</td>',
+                'const arrow = !changed ? "same" : "▲"; // status is categorical — ▲ just flags "changed"',
+                'const dash = line.indexOf("\\u2014") >= 0 ? line.indexOf("\\u2014") : line.indexOf(" - ");',
+                'const fieldList = fields.length ? fields.join(", ") : "not recorded";',
+                'const fileName = e.fileName || e.file || e.name || "not recorded";',
+                'const label = c && c.name;',
+                'else groups.Conditional.push(label);',
+                'else if (s.indexOf("amber") >= 0 || s.indexOf("yellow") >= 0) groups.Amber.push(label);',
+                'else if (s.indexOf("green") >= 0 || s.indexOf("complete") >= 0) groups.Green.push(label);',
+                'if (!iso || isNaN(d)) return "not recorded";',
+                'if (!label) return;',
+                'if (c.parked || !c.status) { groups.Conditional.push(label); return; }',
+                'if (delta == null || !Number.isFinite(delta) || Math.abs(delta) < 1e-9) return "no change";',
+                'if (s.indexOf("red") >= 0) groups.Red.push(label);',
+                'if (v == null) return "not recorded";',
+                'key: cat.key,',
+                'key: m.key, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
+                'rows.push({ index: idx, key: m.key, name: m.name, color: cat.color, bucket });',
+            }
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
                   or ln in RUN47_REMOVED or ln in RUN48_REMOVED
-                  or ln in RUN49_REMOVED
+                  or ln in RUN49_REMOVED or ln in RUN51_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1799,7 +1871,7 @@ try:
                       or ln == RUN11_GATE_1_LINE or ln in RUN16_LINES or _run16_badge(ln)
                       or ln in POSTRUN22_LINES or ln in _run43_added_span
                       or ln in RUN44_ADDED or ln in _run44_added_span
-                      or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED
+                      or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED or ln in RUN51_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "
@@ -1829,6 +1901,17 @@ try:
             # class, which the section-3 rename stopped anything from emitting, so the chart
             # silently stopped being drawn rather than failing. The marker is the current class.
             "assets/js/module_charts.js": "Minimax_Regret_Decision_Rule",
+            # RUN 51, RULING 2, 2026-08-22. Two further participant surfaces move and each is
+            # NAMED with the marker it gained rather than the rule being widened. The exported
+            # workbook carried an IDENTIFIER column beside each NAME column, filled from the
+            # taxonomy's primary key, and an exported workbook is user-facing text; the two
+            # identifier columns are removed and the sheet's header row is the marker. The
+            # action plan concatenated a category identifier and a module identifier into its
+            # trigger lines; it now names the category and the module, and the corrected trigger
+            # line is the marker. No band, threshold, arithmetic result or step of the
+            # participant decision sequence moved in either.
+            "assets/js/export.js": '"Category Name", "Overall Status", "Module Name"',
+            "assets/js/decision.js": 'trigger: c.name + ": " + sev,',
         }
         if rel in RUN11_WORDING_SCOPE and live != base:
             marker = RUN11_WORDING_SCOPE[rel]

@@ -97,75 +97,48 @@
      they are not user-facing text and are not renamed. Only the VALUES are printed, and no
      value now carries an identifier, a number, an ampersand or an em dash, and none of them
      names a population that retirement has changed. */
-  const CAT_FROM_MODULE = {
-    "01": "Cost Performance", "02": "Cost Performance", "03": "Cost Performance",
-    "04": "Schedule Simulation", "05": "Schedule Simulation", "06": "Schedule Simulation",
-    "07": "Cost Simulation", "08": "Cost Simulation",
-    "09": "Signal Synthesis",
-    "10": "Evidence Combination", "11": "Evidence Combination", "12": "Evidence Combination",
-    "13": "Evidence Combination", "14": "Evidence Combination", "15": "Evidence Combination",
-    "16": "Evidence Combination", "17": "Evidence Combination", "18": "Evidence Combination",
-    "19": "Governance and Compliance",
-    /* RUN 49, ruling 3. The remaining keys the call sites actually pass. Run 48 corrected the
-       fallback to one neutral phrase, which is correct under the authority but collapsed some
-       sixty panels onto a single heading. Each key below resolves to the purpose of the MODULE
-       ITSELF, read from the module's own title at its call site, and NOT from the collapsible
-       group the panel happens to be filed under: those two disagree from bucket 6 upward, and
-       that mismatch is reported, not corrected, in this run. */
-    "1.4": "Cost Performance", "1.5": "Cost Performance", "1.6": "Cost Performance",
-    "1.7": "Cost Performance", "1.8": "Cost Performance", "1.9": "Cost Performance",
-    "1.10": "Cost Performance", "1.11": "Cost Performance", "1.12": "Cost Performance",
-    "2.4": "Schedule Performance", "2.5": "Schedule Performance", "2.6": "Schedule Performance",
-    "2.7": "Schedule Performance", "2.8": "Schedule Performance", "2.9": "Schedule Performance",
-    "2.10": "Schedule Performance", "2.11": "Schedule Performance",
-    "3.1": "Cost Risk", "3.2": "Cost Risk", "3.3": "Cost Risk", "3.4": "Cost Risk",
-    "3.5": "Cost Risk", "3.6": "Cost Risk", "3.7": "Cost Risk", "3.8": "Cost Risk",
-    "3.9": "Cost Risk", "3.10": "Cost Risk",
-    "4.1": "Document-Derived Condition Signals", "4.2": "Document-Derived Condition Signals",
-    "4.3": "Document-Derived Condition Signals", "4.4": "Document-Derived Condition Signals",
-    "4.5": "Document-Derived Condition Signals", "4.6": "Document-Derived Condition Signals",
-    "4.7": "Document-Derived Condition Signals", "4.8": "Document-Derived Condition Signals",
-    "4.9": "Document-Derived Condition Signals", "4.10": "Document-Derived Condition Signals",
-    "5.1": "System Dynamics and Complexity", "5.2": "System Dynamics and Complexity",
-    "5.3": "System Dynamics and Complexity", "5.4": "System Dynamics and Complexity",
-    "5.5": "System Dynamics and Complexity", "5.6": "System Dynamics and Complexity",
-    "5.7": "System Dynamics and Complexity", "5.8": "System Dynamics and Complexity",
-    "6.1": "Signal Synthesis", "6.2": "Signal Synthesis", "6.3": "Signal Synthesis",
-    "6.4": "Signal Synthesis",
-    "7.1": "Evidence Combination", "7.2\u20137.8": "Evidence Combination",
-    "7.9\u20137.20": "Evidence Combination",
-    "8.1": "Governance and Compliance", "8.2\u20138.9": "Governance and Compliance",
-    "9.1": "Evidence Quality", "9.2\u20139.7": "Evidence Quality",
-    "10.1": "Decision Optimization", "10.2\u201310.7": "Decision Optimization"
+  /* RUN 51, RULINGS 5 AND 6. ONE TABLE, and it holds a CATEGORY KEY, not a label and not a
+     bucket number. The KEYS are the legacy panel numbers the call sites pass; they are matched
+     against and never displayed, so they are not user-facing text. The VALUE is the key of the
+     category the module belongs to in the CURRENT taxonomy, determined from the module's own
+     identity in p0-baseline/module_renumbering_map.csv and never from the retired numbering.
+     What a participant reads (the collapsible header) and which bucket a panel lands in are
+     BOTH derived from this one table through the loaded taxonomy, so the label and the bucket
+     can no longer disagree, and neither is a literal that can drift. Two alias rows are why
+     "03" resolves to A4 and "3.2" to A5: old 1.3 is an alias of 4.1 and old 3.2 of 5.1. */
+  const CAT_KEY_FROM_MODULE = {
+    "01": "A1", "02": "A1", "1.4": "A1", "1.5": "A1", "1.6": "A1", "1.7": "A1", "1.8": "A1",
+    "1.9": "A1", "1.10": "A1", "1.11": "A1", "1.12": "A1",
+    "04": "A2", "05": "A2", "06": "A2", "2.4": "A2", "2.5": "A2", "2.6": "A2", "2.7": "A2",
+    "2.8": "A2", "2.9": "A2", "2.10": "A2", "2.11": "A2",
+    "07": "A3", "3.1": "A3", "3.3": "A3", "3.4": "A3", "3.5": "A3", "3.6": "A3", "3.7": "A3",
+    "3.8": "A3", "3.9": "A3", "3.10": "A3",
+    "03": "A4", "4.1": "A4", "4.2": "A4", "4.3": "A4", "4.4": "A4", "4.5": "A4", "4.6": "A4",
+    "4.7": "A4", "4.8": "A4", "4.9": "A4", "4.10": "A4",
+    "08": "A5", "3.2": "A5", "5.1": "A5", "5.2": "A5", "5.3": "A5", "5.4": "A5", "5.5": "A5",
+    "5.6": "A5", "5.7": "A5", "5.8": "A5",
+    "8.6 to 8.9": "A6",
+    "09": "B1", "6.1": "B1", "6.2": "B1", "6.3": "B1", "6.4": "B1",
+    "10": "B2", "11": "B2", "12": "B2", "13": "B2", "14": "B2", "15": "B2", "16": "B2",
+    "17": "B2", "18": "B2", "7.1": "B2", "7.2 to 7.8": "B2", "7.9 to 7.20": "B2",
+    "19": "B3", "8.1": "B3", "8.2 to 8.5": "B3",
+    "10.1": "B4", "10.2 to 10.7": "B4",
+    "9.1": "C1", "9.2 to 9.7": "C1"
   };
-  /* The GROUPING number, which is NOT user-facing text: it is written to a data attribute and
-     read back by groupByCategory to bucket panels under their collapsible headers. It used to
-     be parsed out of the displayed label, which is why the label could not be corrected
-     without moving the grouping with it. Declared separately here so the two are independent:
-     the displayed text is a purpose, the bucket key is a number, and correcting one cannot
-     silently move the other. The values are exactly the numbers the old labels parsed to. */
-  const CAT_NUM_FROM_MODULE = {
-    "01": "1", "02": "1", "03": "1",
-    "04": "2", "05": "2", "06": "2",
-    "07": "3", "08": "3",
-    "09": "6",
-    "10": "7", "11": "7", "12": "7", "13": "7",
-    "14": "7", "15": "7", "16": "7", "17": "7", "18": "7",
-    "19": "8"
-  };
+  function projectCatList() {
+    return window.projectLevelCategories ? window.projectLevelCategories()
+      : (window.LIN_CATEGORIES || []).filter(function (c) { return !(c && c.level === "portfolio"); });
+  }
   function catLabel(num) {
-    const key = String(num).trim();
-    // The fallback carried the identifier too, by concatenating it onto the retired prefix.
-    // An unmapped module is described by its purpose and nothing else.
-    return CAT_FROM_MODULE[key] || "Signal Analysis";
+    const cat = projectCatList().find(function (c) { return c && c.key === CAT_KEY_FROM_MODULE[String(num).trim()]; });
+    // The name of the category in the loaded taxonomy. Never an identifier, never a literal.
+    return (cat && cat.name) || "Signal Analysis";
   }
   function catBucket(num) {
-    const key = String(num).trim();
-    if (CAT_NUM_FROM_MODULE[key]) return CAT_NUM_FROM_MODULE[key];
-    // Same numbers the retired label scheme produced for an unmapped key: a key that already
-    // carried the old notation kept its own number, and a bare number became that number.
-    const m = key.match(/^Cat\s+(\d+)/) || key.match(/^(\d+)/);
-    return m ? m[1] : "";
+    // The bucket index is the category's POSITION in the in-service project-level taxonomy,
+    // so the number of buckets is whatever the taxonomy holds and no literal bounds it.
+    const i = projectCatList().findIndex(function (c) { return c && c.key === CAT_KEY_FROM_MODULE[String(num).trim()]; });
+    return i >= 0 ? String(i + 1) : "";
   }
 
   function panel(num, title, status, inner) {
@@ -409,7 +382,7 @@
       `Source: ${d.source}. The extracted language points to cost/schedule/scope impact rather than routine correspondence.`,
       `Evidence excerpt: "${d.excerpt}"`
     ] : st === "amber" ? [
-      `Document risk score ${d.score.toFixed(2)} sits in the 0.30–0.70 watch band; impact language is reviewable rather than conclusive.`,
+      `Document risk score ${d.score.toFixed(2)} sits in the 0.30 to 0.70 watch band; impact language is reviewable rather than conclusive.`,
       `Source: ${d.source}.`,
       `Evidence excerpt: "${d.excerpt}"`
     ] : [
@@ -428,7 +401,7 @@
       rule("GREEN if score < 0.30 (routine language); AMBER if 0.30-0.70 (possible cost/schedule/scope impact); RED if >= 0.70 (high-impact language converging across records)."));
   }
 
-  /* ---- Cat 1.4 – 1.12 new module panels ---- */
+  /* ---- Cat 1.4 to 1.12 new module panels ---- */
 
   function m1_4(p) {
     if (!p.signals || !p.signals.evm) return "";
@@ -464,7 +437,7 @@
         metricBox("Overrun vs BAC", (overrunPct>=0?"+":"") + overrunPct.toFixed(1) + "%", bayesS)
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if Bayesian posterior EAC within 5% of BAC; AMBER if 5–10% over; RED if >= 10% over BAC."));
+      rule("GREEN if Bayesian posterior EAC within 5% of BAC; AMBER if 5 to 10% over; RED if >= 10% over BAC."));
   }
 
   function m1_5(p) {
@@ -482,7 +455,7 @@
       `Kalman-smoothed SPI ${smoothed.toFixed(3)} remains below the 0.85 red threshold: the filter eliminates reporting noise but the downtrend is structural.`,
       `Noise-filtering confirms the raw SPI reading is not an artefact; the signal is real.`
     ] : st === "amber" ? [
-      `Smoothed SPI ${smoothed.toFixed(3)} is in the 0.85–0.95 watch band. The filter shows the trend is real, not a single-period blip.`,
+      `Smoothed SPI ${smoothed.toFixed(3)} is in the 0.85 to 0.95 watch band. The filter shows the trend is real, not a single-period blip.`,
       `Amber flags the need for explanation before the trend reaches the red boundary.`
     ] : [
       `Smoothed SPI ${smoothed.toFixed(3)} is above 0.95: the filter confirms schedule performance is within normal variation.`
@@ -499,7 +472,7 @@
         metricBox("Filter", "Kalman", "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if smoothed SPI >= 0.95; AMBER if 0.85–0.95; RED if < 0.85. Same thresholds as raw SPI but confirming the drift is real, not noise."));
+      rule("GREEN if smoothed SPI >= 0.95; AMBER if 0.85 to 0.95; RED if < 0.85. Same thresholds as raw SPI but confirming the drift is real, not noise."));
   }
 
   function m1_6(p) {
@@ -530,7 +503,7 @@
         metricBox("Periods ahead", "3", "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if CPI >= 0.95 and forecast stays above 0.95; AMBER if CPI or forecast in 0.90–0.95 watch band; RED if CPI < 0.90 or forecast breaks through 0.90."));
+      rule("GREEN if CPI >= 0.95 and forecast stays above 0.95; AMBER if CPI or forecast in 0.90 to 0.95 watch band; RED if CPI < 0.90 or forecast breaks through 0.90."));
   }
 
   function m1_7(p) {
@@ -565,7 +538,7 @@
         metricBox("Planned %", plannedPct.toFixed(0) + "%", "green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if SPI(t) >= 0.95; AMBER if 0.85–0.95; RED if < 0.85. SPI(t) does not recover mathematically as the project nears completion: it must be earned back."));
+      rule("GREEN if SPI(t) >= 0.95; AMBER if 0.85 to 0.95; RED if < 0.85. SPI(t) does not recover mathematically as the project nears completion: it must be earned back."));
   }
 
   function m1_8(p) {
@@ -583,7 +556,7 @@
       `A TCPI above 1.10 is widely accepted as infeasible without a schedule or scope adjustment.`,
       `The gauge dials show the widening CPI-to-TCPI gap that must close for the project to finish within BAC.`
     ] : st === "amber" ? [
-      `TCPI ${tcpi.toFixed(3)} is in the 1.05–1.10 watch band: technically feasible but requiring immediate productivity improvement.`,
+      `TCPI ${tcpi.toFixed(3)} is in the 1.05 to 1.10 watch band: technically feasible but requiring immediate productivity improvement.`,
       `Current CPI ${cpi.toFixed(3)} vs required ${tcpi.toFixed(3)} is a ${(gap*100).toFixed(1)}pp gap that typically requires corrective action.`
     ] : [
       `TCPI ${tcpi.toFixed(3)} is below 1.05: the remaining work is achievable at current performance levels without recovery action.`,
@@ -601,7 +574,7 @@
         metricBox("EAC (CPI)", "$" + (bac/cpi/1e6).toFixed(1) + "M", tcpiS)
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if TCPI < 1.05 (current CPI sufficient); AMBER if 1.05–1.10 (feasible, requires action); RED if >= 1.10 (generally considered infeasible without scope/schedule adjustment)."));
+      rule("GREEN if TCPI < 1.05 (current CPI sufficient); AMBER if 1.05 to 1.10 (feasible, requires action); RED if >= 1.10 (generally considered infeasible without scope/schedule adjustment)."));
   }
 
   function m1_9(p) {
@@ -633,8 +606,8 @@
         metricBox("EAC (CPI)", "$" + (eac/1e6).toFixed(1) + "M", vacS) +
         metricBox("VAC", (vac>=0?"+":"-") + "$" + (Math.abs(vac)/1e6).toFixed(1) + "M", vacS) +
         metricBox("VAC %", (vacPct>=0?"+":"") + vacPct.toFixed(1) + "%", vacS) +
-        metricBox("EV earned", ev>0?"$"+(ev/1e6).toFixed(1)+"M":"—", "green") +
-        metricBox("AC spent", ac>0?"$"+(ac/1e6).toFixed(1)+"M":"—", vacS)
+        metricBox("EV earned", ev>0?"$"+(ev/1e6).toFixed(1)+"M":"not recorded", "green") +
+        metricBox("AC spent", ac>0?"$"+(ac/1e6).toFixed(1)+"M":"not recorded", vacS)
       }</div>` +
       reasons(why, st) +
       rule("GREEN if VAC within −5% of BAC; AMBER if −5% to −10%; RED if <= −10%. A negative VAC is a cost overrun; a positive VAC is an underrun."));
@@ -656,7 +629,7 @@
       `Budget execution rate ${ber.toFixed(3)}: actual spend is running more than 8% below planned cumulative expenditure.`,
       `Under-execution risks payment-application disputes and schedule compression in later phases when deferred costs materialise.`
     ] : st === "amber" ? [
-      `BER ${ber.toFixed(3)}: spending is 3–8% below the planned burn curve. This can indicate deferred costs or optimistic monthly closings.`,
+      `BER ${ber.toFixed(3)}: spending is 3 to 8% below the planned burn curve. This can indicate deferred costs or optimistic monthly closings.`,
       `The dual surface chart shows the planned (back, dashed) and actual (front, solid) expenditure curves: the amber curtain lines mark the gap.`
     ] : [
       `Budget execution rate ${ber.toFixed(3)}: actual spend is tracking the planned curve within normal tolerance.`,
@@ -669,12 +642,12 @@
         metricBox("BER", ber.toFixed(3), berS) +
         metricBox("Planned %", (plannedPct*100).toFixed(1) + "%", "green") +
         metricBox("Actual %", (actualPct*100).toFixed(1) + "%", berS) +
-        metricBox("AC spent", ac>0?"$"+(ac/1e6).toFixed(1)+"M":"—", berS) +
+        metricBox("AC spent", ac>0?"$"+(ac/1e6).toFixed(1)+"M":"not recorded", berS) +
         metricBox("BAC", "$"+(bac/1e6).toFixed(1)+"M", "green") +
         metricBox("Trend", ber>0.97?"Tracking":"Under-executing", berS)
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if BER >= 0.97; AMBER if 0.92–0.97 (under-execution watch); RED if < 0.92 (systemic under-execution, deferred cost risk)."));
+      rule("GREEN if BER >= 0.97; AMBER if 0.92 to 0.97 (under-execution watch); RED if < 0.92 (systemic under-execution, deferred cost risk)."));
   }
 
   function m1_11(p) {
@@ -728,7 +701,7 @@
       `An ICE ratio < 0.90 triggers formal reconciliation; the contractor is required to explain the divergence in writing.`,
       `The outer arc ring marks the ICE range; the white dot on the outer ring marks the ICE point estimate.`
     ] : st === "amber" ? [
-      `ICE ratio ${iceRatio.toFixed(3)}: the independent estimate is $${(gap/1e6).toFixed(1)}M above contractor EAC, a 5–10% divergence.`,
+      `ICE ratio ${iceRatio.toFixed(3)}: the independent estimate is $${(gap/1e6).toFixed(1)}M above contractor EAC, a 5 to 10% divergence.`,
       `The gap is within the acceptable variance band but requires monitoring and a documented reconciliation narrative.`
     ] : [
       `ICE ratio ${iceRatio.toFixed(3)}: contractor EAC and independent estimate are within 5%, meeting the acceptable convergence standard.`
@@ -745,7 +718,7 @@
         metricBox("Reconciliation", iceRatio<0.90?"REQUIRED":"Not required", iceRatio<0.90?"red":"green")
       }</div>` +
       reasons(why, st) +
-      rule("GREEN if ICE ratio >= 0.95 (within 5%); AMBER if 0.90–0.95; RED if < 0.90: formal reconciliation required under OMB A-11 / FAR Part 34."));
+      rule("GREEN if ICE ratio >= 0.95 (within 5%); AMBER if 0.90 to 0.95; RED if < 0.90: formal reconciliation required under OMB A-11 / FAR Part 34."));
   }
 
   /* ---- wire all Cat 1 canvas charts after innerHTML is set ---- */
@@ -915,7 +888,7 @@
         `SCI ${sci.toFixed(3)} is below the 1.00 baseline: schedule compression has been accumulating over the last reporting periods.`,
         `ARIMA-style short-range forecast projects continued decline to ${fore} over the next 3 periods.`
       ], st) +
-      rule("GREEN if SCI >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. Compression index below 0.90 indicates severe schedule stress."));
+      rule("GREEN if SCI >= 0.95; AMBER if 0.90 to 0.95; RED if < 0.90. Compression index below 0.90 indicates severe schedule stress."));
   }
 
   function m2_5(p) {
@@ -937,7 +910,7 @@
         `Total float is ${totalFloat} days at current reporting period. At a burn rate of ${burnRate} days/week, the schedule reserve is exhausted in ${weeksLeft} weeks.`,
         `Float below the 15-day threshold indicates critical path activities have no buffer against disruption.`
       ], st) +
-      rule("GREEN if total float >= 20 days; AMBER if 10–20 days; RED if < 10 days. Float below 15 days = critical threshold."));
+      rule("GREEN if total float >= 20 days; AMBER if 10 to 20 days; RED if < 10 days. Float below 15 days = critical threshold."));
   }
 
   function m2_6(p) {
@@ -959,7 +932,7 @@
         `Actual progress ${actual.toFixed(0)}% vs. planned ${planned.toFixed(0)}%: the S-curve deviation gap is ${Math.abs(gap).toFixed(0)} percentage points.`,
         `A widening gap between S-curves signals that the schedule recovery plan is not absorbing the original lag.`
       ], st) +
-      rule("GREEN if S-curve gap <= 5%; AMBER if 5–10%; RED if > 10%. Gap above 10% indicates unrecovered schedule slip."));
+      rule("GREEN if S-curve gap <= 5%; AMBER if 5 to 10%; RED if > 10%. Gap above 10% indicates unrecovered schedule slip."));
   }
 
   function m2_7(p) {
@@ -1003,7 +976,7 @@
         `${rate}% of planned activities in the 6-week window are constrained: ${constrained} of ${total} activities cannot start as planned.`,
         `A constraint rate above 40% in the near-term window is a reliable predictor of schedule slip in the next reporting period.`
       ], st) +
-      rule("GREEN if constraint rate < 20%; AMBER if 20–40%; RED if >= 40% of look-ahead activities are constrained."));
+      rule("GREEN if constraint rate < 20%; AMBER if 20 to 40%; RED if >= 40% of look-ahead activities are constrained."));
   }
 
   function m2_9(p) {
@@ -1025,7 +998,7 @@
         `Resource Loading Index ${rli.toFixed(2)}: actual labor hours are ${Math.round((1-rli)*100)}% below plan at the current reporting period.`,
         `Sustained RLI below 0.97 indicates the resource plan is not being executed, creating a recovery risk as the project approaches completion.`
       ], st) +
-      rule("GREEN if RLI >= 0.97; AMBER if 0.90–0.97; RED if < 0.90. RLI below 0.90 requires resource recovery plan."));
+      rule("GREEN if RLI >= 0.97; AMBER if 0.90 to 0.97; RED if < 0.90. RLI below 0.90 requires resource recovery plan."));
   }
 
   function m2_10(p) {
@@ -1047,7 +1020,7 @@
         `Monte Carlo schedule simulation: P50 delay ${p50.toFixed(1)} days, P80 delay ${p80.toFixed(1)} days. ${pDelay}% probability of any delay.`,
         `P80 above 20 days indicates the schedule risk cannot be absorbed by current float reserves without a formal schedule recovery.`
       ], st) +
-      rule("GREEN if P80 <= 10 days; AMBER if 10–20 days; RED if > 20 days. P80 schedule delay against current total float."));
+      rule("GREEN if P80 <= 10 days; AMBER if 10 to 20 days; RED if > 20 days. P80 schedule delay against current total float."));
   }
 
   function m2_11(p) {
@@ -1071,7 +1044,7 @@
         `Critical path schedule index ${cpiSched.toFixed(3)}: below 0.95 amber threshold, trending toward ${fore} over 3 periods.`,
         `${nearCrit} near-critical paths are tracking within 10% of the critical path and represent the next escalation risk if the dominant path recovers.`
       ], st) +
-      rule("GREEN if CPI(sched) >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. Near-critical paths above 2 add transition risk."));
+      rule("GREEN if CPI(sched) >= 0.95; AMBER if 0.90 to 0.95; RED if < 0.90. Near-critical paths above 2 add transition risk."));
   }
 
   function m10(p) {
@@ -1158,10 +1131,10 @@
       rule("GREEN → routine monitoring (PM/Controls); AMBER → early-warning review (PM + Controls lead); RED-REVIEW when >=2 red signals or CUSUM breach + red forecast (Program director/PMO); fairness-sensitive red-reviews additionally require the contractor fairness gate (deriveDecision in decision.js). Authority assignments reflect the Layer 1 authority matrix derived from agency program controls policy, OMB Circular A-11, and FAR Part 34."));
   }
 
-  /* ---------- simulation modules (04–08, 11) ----------
+  /* ---------- simulation modules (04 to 08, 11) ----------
      Renders project.simulationSignals (built by signals.js after the core run)
      as deep-dive modules — chart + metric grid + reasoning + rule —
-     matching Modules 01–03. Each model object comes from LinSimulations. */
+     matching Modules 01 to 03. Each model object comes from LinSimulations. */
   const simCls = (s) => String(s || "green").toLowerCase();
   const simColor = (s) => COLOR[simCls(s)] || COLOR.green;
   const fByMethod = (arr, m) => arr.find((s) => s.method_class === m);
@@ -1765,7 +1738,7 @@
   function m19(s) {
     const st = simCls(s.status_color);
     return panel("18", "Quantum Probability: Signal Interference", st,
-      note("Quantum Probability (Busemeyer & Bruza, 2012) models signals as wave amplitudes rather than classical probabilities. When signals align (EVM Red, CUSUM breached, forecast Red), they interfere constructively, amplifying the Red classification. When signals oppose (strong EVM deterioration but clean documents), they interfere destructively, reflecting genuine ambiguity. Constructive interference means high classification confidence; destructive means the signals are genuinely contradictory.") +
+      note("Quantum Probability (Busemeyer and Bruza, 2012) models signals as wave amplitudes rather than classical probabilities. When signals align (EVM Red, CUSUM breached, forecast Red), they interfere constructively, amplifying the Red classification. When signals oppose (strong EVM deterioration but clean documents), they interfere destructively, reflecting genuine ambiguity. Constructive interference means high classification confidence; destructive means the signals are genuinely contradictory.") +
       quantumChart(s) +
       `<div class="dd-grid">${
         metricBox("Q-P(Green)", (s.p_green || 0) + "%", s.p_green >= 60 ? "green" : "amber") +
@@ -1781,8 +1754,8 @@
       rule("Amplitudes = sqrt of classical probabilities. Interference = 2 alpha gamma cos(theta) where theta is the phase angle from signal coherence. Busemeyer & Bruza, 2012."));
   }
 
-  /* Synthesis comparison panel — Modules 09–18 agreement table.
-     M09 (Conservative Dominance) is the governance baseline; Modules 10–18 are
+  /* Synthesis comparison panel — Modules 09 to 18 agreement table.
+     M09 (Conservative Dominance) is the governance baseline; Modules 10 to 18 are
      independent evidence-combination methods cross-checking M09. */
   function synthComparisonPanel(project, sims) {
     const arr = sims && sims.signal_array;
@@ -1800,7 +1773,7 @@
 
     const get = function (method) {
       const sig = fByMethod(arr, method);
-      return sig ? (sig.status_color || sig.status || "—") : null;
+      return sig ? (sig.status_color || sig.status || "not recorded") : null;
     };
     const s10 = get("DST_Evidence_Combination");
     const s11 = get("Rough_Sets_Classification");
@@ -1813,7 +1786,7 @@
     const s18 = get("Quantum_Probability");
 
     const entries = [
-      { num: "09", label: "Conservative Dominance", year: "—",         val: s09 },
+      { num: "09", label: "Conservative Dominance", year: "not recorded",         val: s09 },
       { num: "10", label: "Dempster-Shafer",        year: "1967/1976", val: s10 },
       { num: "11", label: "Rough Sets",             year: "1982",      val: s11 },
       { num: "12", label: "Neutrosophic Logic",     year: "1995",      val: s12 },
@@ -1850,7 +1823,7 @@
       const agreesM09 = isBaseline ? "Baseline" : (String(e.val).toLowerCase() === baseline ? "Yes" : "No");
       const agreeCls = isBaseline ? "" : (agreesM09 === "Yes" ? "dd-cmp-yes" : "dd-cmp-no");
       return `<tr><td class="dd-cmp-mod">${esc(e.label)}</td>` +
-        `<td class="dd-cmp-year">${esc(e.year || "—")}</td>` +
+        `<td class="dd-cmp-year">${esc(e.year || "not recorded")}</td>` +
         `<td><span class="dd-verdict status-${c}" style="display:inline-flex;gap:4px;align-items:center"><i></i>${esc(String(e.val).toUpperCase())}</span></td>` +
         `<td class="${agreeCls}">${agreesM09}</td></tr>`;
     }).join("");
@@ -1898,7 +1871,7 @@
         `RCF P80 is $${(rcfP80/1e6).toFixed(1)}M: ${overrunPct}% above BAC. Outside-view priors from comparable infrastructure projects indicate systematic underestimation at this stage of delivery.`,
         `The reference class histogram shows the right tail extends well above BAC, consistent with the Flyvbjerg et al. findings on megaproject cost overruns.`
       ], st) +
-      rule("GREEN if RCF P80 within 8% of BAC; AMBER if 8–15%; RED if > 15%. RCF P80 above BAC indicates the estimate has not absorbed the historical outside-view overrun premium."));
+      rule("GREEN if RCF P80 within 8% of BAC; AMBER if 8 to 15%; RED if > 15%. RCF P80 above BAC indicates the estimate has not absorbed the historical outside-view overrun premium."));
   }
 
   function m3_2(p) {
@@ -1919,7 +1892,7 @@
         `DSM rework multiplier ${multiplier.toFixed(1)}×: every hour of rework at the triggering discipline propagates ${multiplier.toFixed(1)} hours of consequential rework across ${impacted} downstream trades.`,
         `High off-diagonal intensity in the structural/MEP/interior block indicates tightly coupled dependencies that amplify any scope change.`
       ], st) +
-      rule("GREEN if multiplier <= 1.5×; AMBER if 1.5–2.5×; RED if > 2.5×. DSM multiplier above 2.5× indicates highly coupled design disciplines: scope changes carry significant downstream cost consequences."));
+      rule("GREEN if multiplier <= 1.5×; AMBER if 1.5 to 2.5×; RED if > 2.5×. DSM multiplier above 2.5× indicates highly coupled design disciplines: scope changes carry significant downstream cost consequences."));
   }
 
   function m3_3(p) {
@@ -1943,7 +1916,7 @@
         `${burnedPct}% of contingency consumed at ${completion}% project completion: burning ${burnRate}× faster than the planned straight-line depletion rate.`,
         `At this rate the contingency is exhausted before project completion, eliminating the financial buffer for late-stage delivery risks.`
       ], st) +
-      rule("GREEN if contingency burned <= 50%; AMBER if 50–75%; RED if > 75% burned. Burn rate above 1.5× at any completion point requires a formal contingency replenishment or scope reduction plan."));
+      rule("GREEN if contingency burned <= 50%; AMBER if 50 to 75%; RED if > 75% burned. Burn rate above 1.5× at any completion point requires a formal contingency replenishment or scope reduction plan."));
   }
 
   function m3_4(p) {
@@ -1964,7 +1937,7 @@
         `LPI ${lpi.toFixed(3)}: productivity has declined from baseline 1.00 over ${si.lpiPeriods || 7} reporting periods, trending to ${fore} in the next period.`,
         `Sustained LPI below 0.90 cannot be recovered without either a schedule extension or a significant uplift in crew productivity: both carry cost implications.`
       ], st) +
-      rule("GREEN if LPI >= 0.95; AMBER if 0.90–0.95; RED if < 0.90. LPI below 0.90 for 3+ consecutive periods requires a formal productivity recovery plan."));
+      rule("GREEN if LPI >= 0.95; AMBER if 0.90 to 0.95; RED if < 0.90. LPI below 0.90 for 3+ consecutive periods requires a formal productivity recovery plan."));
   }
 
   function m3_5(p) {
@@ -1986,7 +1959,7 @@
         `Structural materials +${structVar.toFixed(1)}%, MEP +${mepVar.toFixed(1)}%: the two highest-value trades are both running above plan, compounding the overall cost variance.`,
         `Civil and finishes are near target; the cost overrun is concentrated in structural and MEP where supply-chain volatility has outpaced the estimate contingency.`
       ], st) +
-      rule("GREEN if no trade variance > 6%; AMBER if any trade 6–12%; RED if any trade > 12%. Structural or MEP variance above 10% requires formal cost forecast revision."));
+      rule("GREEN if no trade variance > 6%; AMBER if any trade 6 to 12%; RED if any trade > 12%. Structural or MEP variance above 10% requires formal cost forecast revision."));
   }
 
   function m3_6(p) {
@@ -2008,7 +1981,7 @@
         `Overhead absorption ${Math.round(rate * 100)}% vs. target ${Math.round(target * 100)}%: a ${gap}% under-absorption gap means indirect costs are not being fully recovered through the current workload mix.`,
         `Three consecutive periods below target indicates a structural under-utilisation of indirect resources, not a transient timing issue.`
       ], st) +
-      rule("GREEN if absorption rate >= 97%; AMBER if 92–97%; RED if < 92%. Under-absorption below 92% for 2+ periods requires an overhead recovery plan or rate revision."));
+      rule("GREEN if absorption rate >= 97%; AMBER if 92 to 97%; RED if < 92%. Under-absorption below 92% for 2+ periods requires an overhead recovery plan or rate revision."));
   }
 
   function m3_7(p) {
@@ -2033,7 +2006,7 @@
         `Monte Carlo cost simulation: P50 $${(p50/1e6).toFixed(1)}M, P80 $${(p80/1e6).toFixed(1)}M: ${vsBAC}% above BAC. ${pDelay}% probability of any cost overrun.`,
         `The long right tail in the distribution is driven by material and labor variance risk: the distribution is positively skewed, consistent with the reference class prior.`
       ], st) +
-      rule("GREEN if P80 within 6% of BAC; AMBER if 6–12%; RED if > 12% above BAC. P80 above BAC by more than 10% requires a formal cost-at-completion revision."));
+      rule("GREEN if P80 within 6% of BAC; AMBER if 6 to 12%; RED if > 12% above BAC. P80 above BAC by more than 10% requires a formal cost-at-completion revision."));
   }
 
   function m3_8(p) {
@@ -2055,7 +2028,7 @@
         `This project at $${thisCost}/sqft is ${premium}% above the peer mean of $${meanCost}/sqft across 6 comparable facilities of similar size and type.`,
         `Cost premium above peer mean for comparable typologies is consistent with the RCF outside-view prior and reinforces the upside risk in the current BAC.`
       ], st) +
-      rule("GREEN if within 4% of peer mean; AMBER if 4–8%; RED if > 8% above peer mean. Consistent premium vs. analogous projects indicates the estimate baseline requires re-anchoring."));
+      rule("GREEN if within 4% of peer mean; AMBER if 4 to 8%; RED if > 8% above peer mean. Consistent premium vs. analogous projects indicates the estimate baseline requires re-anchoring."));
   }
 
   function m3_9(p) {
@@ -2075,7 +2048,7 @@
         `Consensus parametric index ${consensus.toFixed(3)}: all three models (RS Means, ENR, CBRE) are converging below 1.00, indicating the project's cost performance is deteriorating relative to the parametric benchmark.`,
         `A declining multi-model consensus below 0.95 provides independent confirmation of the EVM CPI trend, reducing the probability of a data artefact.`
       ], st) +
-      rule("GREEN if consensus index >= 0.97; AMBER if 0.93–0.97; RED if < 0.93. Three-model convergence below 0.95 is a high-confidence signal of systemic cost underperformance."));
+      rule("GREEN if consensus index >= 0.97; AMBER if 0.93 to 0.97; RED if < 0.93. Three-model convergence below 0.95 is a high-confidence signal of systemic cost underperformance."));
   }
 
   function m3_10(p) {
@@ -2097,7 +2070,7 @@
         `Cumulative inflation impact +${inflationPct.toFixed(1)}%: $${(nominalCost - realCost).toFixed(2)}M of the nominal cost growth is attributable to price-level increases rather than scope change or productivity loss.`,
         `Inflation-adjusted (real) cost is $${realCost.toFixed(2)}M vs. nominal $${nominalCost.toFixed(2)}M. Inflation contribution must be excluded from the scope/productivity variance to correctly diagnose the root cause of cost overruns.`
       ], st) +
-      rule("GREEN if inflation adjustment <= 3%; AMBER if 3–6%; RED if > 6%. Inflation contribution above 6% requires re-baselining the cost forecast with updated escalation factors."));
+      rule("GREEN if inflation adjustment <= 3%; AMBER if 3 to 6%; RED if > 6%. Inflation contribution above 6% requires re-baselining the cost forecast with updated escalation factors."));
   }
 
   /* ---- Cat 4-12 panel functions ---- */
@@ -2110,7 +2083,7 @@
   function m4_7(p){return panel("4.7","Dispute Escalation Index","amber",note("Escalation index 0.38: above 0.30 threshold. Trend rising.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"47\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Index","0.38","amber")+metricBox("Threshold","0.30","amber")+metricBox("Trend","Rising","amber")+'</div>');}
   function m4_8(p){return panel("4.8","Subcontractor Performance","amber",note("2D radar: 3 subs across 5 dimensions. Mech trailing on schedule/cost.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"48\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Elec","70%","amber")+metricBox("Mech","58%","amber")+metricBox("Civil","78%","amber")+'</div>');}
   function m4_9(p){return panel("4.9","Procurement Lead Time","amber",note("3D dot plot: steel +7d, HVAC +12d vs planned. Concrete on schedule.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"49\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Steel","+7d","amber")+metricBox("HVAC","+12d","amber")+metricBox("Concrete","−1d","amber")+'</div>');}
-  function m4_10(p){return panel("4.10","Spec Conflict Index","amber",note("Chord diagram: MEP–Struct conflict 0.8. Arch–MEP 0.5.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"410\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("MEP–Struct","0.8","amber")+metricBox("Arch–MEP","0.5","amber")+metricBox("Status","Amber","amber")+'</div>');}
+  function m4_10(p){return panel("4.10","Spec Conflict Index","amber",note("Chord diagram: MEP and Struct conflict 0.8. Arch and MEP 0.5.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"410\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("MEP and Struct","0.8","amber")+metricBox("Arch and MEP","0.5","amber")+metricBox("Status","Amber","amber")+'</div>');}
   function m5_1(p){return panel("5.1","DSM Propagation","amber",note("3D cascade: Arch scope change propagates through 4 downstream disciplines.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"51\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Rework mult","2.8×","amber")+metricBox("Depth","3 levels","amber")+metricBox("Impacted","4 trades","amber")+'</div>');}
   function m5_2(p){return panel("5.2","Sensitivity Analysis","amber",note("3D tornado: labor rate ±12.4% has largest EAC impact.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"52\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Top driver","Labor rate","amber")+metricBox("Impact","±12.4%","amber")+metricBox("Vars tested","5","amber")+'</div>');}
   function m5_3(p){return panel("5.3","Tornado Ranking","amber",note("2D horizontal: ranked EAC drivers. Labor rate dominates at +12.4%.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"53\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("#1 driver","Labor","amber")+metricBox("Impact","+12.4%","amber")+metricBox("#2","Materials","amber")+'</div>');}
@@ -2124,14 +2097,23 @@
   function m6_3(p){return panel("6.3","Majority Rules","red",note("Signal majority vote. 2R 2A tie: conservative dominance applies.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"63\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Red","2 votes","red")+metricBox("Amber","2 votes","red")+metricBox("Result","Red (tie)","red")+'</div>');}
   function m6_4(p){return panel("6.4","Worst-N-of-M","red",note("Worst 2 of 6 signals above threshold → Red-review.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"64\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Threshold","0.70","red")+metricBox("Worst 2","MC + CUSUM","red")+metricBox("Result","Red-review","red")+'</div>');}
   function m7_1(p){return panel("7.1","Dempster-Shafer Theory","red",note("Belief masses: Red 0.52, Amber 0.28, Conflict 0.12.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"71\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Bel(Red)","0.52","red")+metricBox("Bel(Amb)","0.28","red")+metricBox("Conflict","0.12","red")+'</div>');}
-  function m7_2(p){return panel("7.2–7.8","Evidence Methods (Rough Sets → BRB)","red",note("7 uncertainty methods compared. All converge on Red with varying confidence.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"72_78\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","7","red")+metricBox("Agree Red","6 of 7","red")+metricBox("Avg conf","0.73","red")+'</div>');}
-  function m7_3(p){return panel("7.9–7.20","Advanced Methods Comparison","red",note("12 advanced methods. 10 of 12 agree Red. Confidence range 0.52–0.89.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"79_720\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","12","red")+metricBox("Agree Red","10 of 12","red")+metricBox("Avg conf","0.72","red")+'</div>');}
+  function m7_2(p){return panel("7.2 to 7.8","Evidence Methods (Rough Sets → BRB)","red",note("7 uncertainty methods compared. All converge on Red with varying confidence.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"72_78\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","7","red")+metricBox("Agree Red","6 of 7","red")+metricBox("Avg conf","0.73","red")+'</div>');}
+  function m7_3(p){return panel("7.9 to 7.20","Advanced Methods Comparison","red",note("12 advanced methods. 10 of 12 agree Red. Confidence range 0.52 to 0.89.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"79_720\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Methods","12","red")+metricBox("Agree Red","10 of 12","red")+metricBox("Avg conf","0.72","red")+'</div>');}
   function m9_1(p){return panel("8.1","Agent-Based Governance Model","red",note("Authority matrix decision tree. Signal → synthesis → authority → action.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"91\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Result","Red-review","red")+metricBox("Authority","Prog Director","red")+metricBox("Deadline","48hrs","red")+'</div>');}
-  function m9_2(p){return panel("8.2–8.9","Compliance Modules","amber",note("FAR, OMB, EVM reporting, quality, safety, environmental, contractor score.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"92_99\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Compliant","3 of 8","amber")+metricBox("Amber","4 of 8","amber")+metricBox("Red","1 of 8","amber")+'</div>');}
+  /* RUN 51, RULING 3. One panel drew eight modules that the current taxonomy splits between
+     two categories: old 8.2-8.5 are Regulatory and Authority Thresholds, old 8.6-8.9 are
+     Delivery Quality Performance. It is now two panels, one per category, each naming only
+     its own four modules. The three metric boxes the single panel carried ("3 of 8",
+     "4 of 8", "1 of 8") were illustrations of an eight-module rollup. No honest four-module
+     figure exists for either half and none was reconstructed, so they are not carried over.
+     The eight-series canvas stays on the regulatory panel, which keeps the original chart
+     identity; the quality panel draws no chart rather than reuse an eight-series one. */
+  function m9_2(p){return panel("8.2 to 8.5","Regulatory Threshold Modules","amber",note("Federal acquisition thresholds, budget reporting thresholds, earned value reporting thresholds, and contract modification authority.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"92_99\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom, shift and drag to pan, flat view</p></div>");}
+  function m9_2b(p){return panel("8.6 to 8.9","Delivery Quality Modules","amber",note("Quality performance, safety performance, environmental performance, and contractor performance score.")+"");}
   function m10_1(p){return panel("9.1","Missing Data Index","amber",note("Field completeness heatmap across 5 document types and 8 key fields.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"101\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Complete","73%","amber")+metricBox("Missing","27 fields","amber")+metricBox("Worst","Field Rpt","amber")+'</div>');}
-  function m10_2(p){return panel("9.2–9.7","Data Quality Modules","amber",note("Timeliness, reliability, audit trail, completeness, consistency, frequency.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"102_107\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Audit trail","100%","amber")+metricBox("Timeliness","0.58","amber")+metricBox("Overall","Amber","amber")+'</div>');}
+  function m10_2(p){return panel("9.2 to 9.7","Data Quality Modules","amber",note("Timeliness, reliability, audit trail, completeness, consistency, frequency.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"102_107\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("Audit trail","100%","amber")+metricBox("Timeliness","0.58","amber")+metricBox("Overall","Amber","amber")+'</div>');}
   function m11_1(p){return panel("10.1","Multi-Objective Optimization","red",note("3D Pareto surface: current solution dominated, optimal exists at higher cost tolerance.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"111\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · drag=rotate</p></div>"+'<div class="dd-grid">'+metricBox("Current","Dominated","red")+metricBox("Gap","11.2%","red")+metricBox("Action","Escalate","red")+'</div>');}
-  function m11_2(p){return panel("10.2–10.7","Optimization Modules","red",note("LP, constraint satisfaction, what-if, sensitivity, Pareto, regret minimization.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"112_117\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("LP req CPI","1.076","red")+metricBox("Constraints","2 violated","red")+metricBox("Recommend","Escalate","red")+'</div>');}
+  function m11_2(p){return panel("10.2 to 10.7","Optimization Modules","red",note("LP, constraint satisfaction, what-if, sensitivity, Pareto, regret minimization.")+"<div class=\"dd-canvas-wrap\"><canvas class=\"dd-chart-canvas\" data-chart=\"112_117\" data-nodrag=\"1\"></canvas><p class=\"dd-canvas-hint\">scroll=zoom · shift+drag=pan · 2D view</p></div>"+'<div class="dd-grid">'+metricBox("LP req CPI","1.076","red")+metricBox("Constraints","2 violated","red")+metricBox("Recommend","Escalate","red")+'</div>');}
   function simModules(project) {
     const payload = project.simulationSignals;
     const baseArr = payload && Array.isArray(payload.signal_array) ? payload.signal_array : null;
@@ -2233,7 +2215,7 @@
       // Portfolio Health (ex-"Cat 8" ML/AI) is portfolio-scale, not single-project — its cards moved to
       // the "Portfolio Intelligence" section on the Portfolio page (Release 2
       // item 12). Here it reduces to a one-line summary inside its category group.
-      m9_1(project) + m9_2(project) + m10_1(project) + m10_2(project) + m11_1(project) +
+      m9_1(project) + m9_2(project) + m9_2b(project) + m10_1(project) + m10_2(project) + m11_1(project) +
       m11_2(project) +
       sims.low +
       m10(project) +                                              // displays as Module 09 (Conservative Dominance)
@@ -2279,7 +2261,14 @@
     });
     const wrap = document.createElement("div");
     wrap.className = "dd-catgroups";
-    for (let n = 1; n <= 10; n++) {
+    // A panel whose key resolves to no category would be SILENTLY DROPPED below, because the
+    // reassembly clears the root and appends only the groups it built. Track what is claimed so
+    // an unclaimed panel can be put back rather than lost.
+    const claimed = new Set();
+    // RUN 51, RULING 6. The bound is the number of project-level categories the loaded
+    // taxonomy holds, not a literal. It was 10; there are 11 in service, and C1 Data
+    // Integrity is the eleventh, so the two data-quality panels had nowhere to render.
+    for (let n = 1; n <= projectCats.length; n++) {
       const key = String(n);
       const cat = projectCats[n - 1];
       const catName = (cat && cat.name) || ("Category " + n);
@@ -2302,7 +2291,7 @@
         `</button>` +
         `<div class="dd-cat-body"${open ? "" : " hidden"}></div>`;
       const body = group.querySelector(".dd-cat-body");
-      list.forEach((el) => body.appendChild(el));   // move drawn panels in
+      list.forEach((el) => { claimed.add(el); body.appendChild(el); });   // move drawn panels in
       const header = group.querySelector(".dd-cat-header");
       const chev = group.querySelector(".dd-cat-chev");
       header.addEventListener("click", () => {
@@ -2326,9 +2315,13 @@
     });
     // reassemble: banner (kept) + grouped categories (gapless 1-10) + the
     // separated Portfolio Health line (NOT part of the numbered sequence)
+    const orphans = panels.filter((el) => !claimed.has(el));
     root.innerHTML = "";
     if (banner) root.appendChild(banner);
     root.appendChild(wrap);
+    // Never lose a panel to a key the category table does not know. It renders beneath the
+    // groups instead of vanishing, so a missing mapping is visible rather than silent.
+    orphans.forEach((el) => root.appendChild(el));
     root.appendChild(healthLine);
   }
   function escg(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
@@ -2344,190 +2337,6 @@
     return "Portfolio Health: no anomaly flagged. ";
   }
 
-  // ---------- Portfolio Health dialog (event-driven, v10.35) — real results ----------
-  // Portfolio Health is computed at most once per upload/batch/repair (never on
-  // dialog open — see signals.js runModels/savePortfolioHealthSnapshot) and
-  // persisted server-side as one portfolio_health.json. This dialog is a PURE
-  // READ of that stored snapshot via LinStore.getPortfolioHealth() — it never
-  // recomputes. Falls back to scanning the in-memory mirror only when the
-  // stored snapshot is unavailable (e.g. backend not yet on v10.35).
-  const CAT8_MODULES = [
-    { mc: "Isolation_Forest",     num: "D1.1", name: "Isolation Forest" },
-    { mc: "Portfolio_Outlier",    num: "D1.2", name: "Portfolio Outlier" },
-    { mc: "Trajectory_Classifier",num: "D1.3", name: "Trajectory Classifier" },
-    { mc: "Cross_Project_Pattern",num: "D1.4", name: "Cross-project Pattern" },
-    { mc: "Anomaly_Score",        num: "D1.5", name: "Anomaly Score" }
-  ];
-  function cat8HealthDataFromLive() {
-    const projects = (window.LIN_PROJECTS || []).filter((p) => p && p.id);
-    let anyData = false;
-    const modules = CAT8_MODULES.map((m) => {
-      const flagged = [];
-      let computedCount = 0;
-      projects.forEach((p) => {
-        const arr = (p.simulationSignals && p.simulationSignals.signal_array) || [];
-        const r = arr.find((x) => x && x.method_class === m.mc);
-        if (!r || r.insufficient_data || r.status_color == null) return;
-        computedCount++; anyData = true;
-        if (/red|amber/i.test(String(r.status_color))) {
-          flagged.push({ id: p.id, name: p.name, status: String(r.status_color), evidence: r.evidence_metric || "" });
-        }
-      });
-      return Object.assign({}, m, { flagged, computedCount });
-    });
-    return { modules, anyData, projectCount: projects.length, savedAt: null, stale: false };
-  }
-  // Compare each loaded project's updatedAt against the snapshot's savedAt —
-  // if any active project was touched after the snapshot was computed, the
-  // dialog is showing a stale picture.
-  function isSnapshotStale(savedAt) {
-    if (!savedAt) return false;
-    const savedTime = new Date(savedAt).getTime();
-    if (!Number.isFinite(savedTime)) return false;
-    return (window.LIN_PROJECTS || []).some((p) => {
-      const t = p && p.updatedAt ? new Date(p.updatedAt).getTime() : NaN;
-      return Number.isFinite(t) && t > savedTime;
-    });
-  }
-  async function cat8HealthData() {
-    if (window.LinStore && LinStore.getPortfolioHealth) {
-      try {
-        const resp = await LinStore.getPortfolioHealth();
-        const results = resp && resp.results;
-        if (results && Object.keys(results).length) {
-          let anyData = false;
-          const modules = CAT8_MODULES.map((m) => {
-            const flagged = [];
-            let computedCount = 0;
-            Object.keys(results).forEach((pid) => {
-              const entry = results[pid];
-              const mod = (entry.modules || []).find((x) => x && x.method_class === m.mc);
-              if (!mod || mod.insufficient_data || mod.status_color == null) return;
-              computedCount++; anyData = true;
-              if (/red|amber/i.test(String(mod.status_color))) {
-                flagged.push({ id: pid, name: entry.name || pid, status: String(mod.status_color), evidence: mod.evidence_metric || "" });
-              }
-            });
-            return Object.assign({}, m, { flagged, computedCount });
-          });
-          const savedAt = resp.savedAt || resp.computedAt || null;
-          return { modules, anyData, projectCount: Object.keys(results).length, savedAt, stale: isSnapshotStale(savedAt) };
-        }
-      } catch (e) { /* fall through to the live scan */ }
-    }
-    return cat8HealthDataFromLive();
-  }
 
-  /* ------------------------------------------------------------
-     RUN 44, SECTION 4.4. Is Portfolio Health still in service?
-     ------------------------------------------------------------
-     DERIVED FROM THE TAXONOMY THE PAGE ACTUALLY LOADED, never hardcoded. Run 43 retired every
-     Portfolio Level identity from service, so the category object survives with an empty module
-     list and no stored result can ever carry one of its readings. Deriving it here means that
-     reinstating a Portfolio Level module makes this false again with no edit to this file, and
-     that a page which has not loaded a taxonomy claims nothing either way.
-     ------------------------------------------------------------ */
-  function cat8Retired() {
-    const cats = (typeof window !== "undefined" && window.LIN_CATEGORIES) || null;
-    if (!Array.isArray(cats) || !cats.length) return false;   // no taxonomy loaded: assert nothing
-    const ph = cats.filter((c) => c && c.level === "portfolio");
-    if (!ph.length) return false;
-    return ph.every((c) => !(c.modules && c.modules.length));
-  }
-
-  function statusPillClass(status) {
-    const s = String(status || "").toLowerCase();
-    if (s.indexOf("red") >= 0) return "red";
-    if (s.indexOf("amber") >= 0) return "amber";
-    if (s.indexOf("yellow") >= 0) return "yellow";
-    if (s.indexOf("green") >= 0) return "green";
-    return "none";
-  }
-
-  // Renders the Portfolio Health dialog body (real data, no demo panels). Row
-  // clicks close the dialog and open that project's detail page. Pure read —
-  // never triggers a compute; loads the stored snapshot once on open.
-  async function renderCat8Health(root, closeDialog) {
-    if (!root) return;
-    root.innerHTML = `<p class="kn-sub">Loading Portfolio Health…</p>`;
-    const data = await cat8HealthData();
-    if (!root.isConnected) return; // dialog closed while the fetch was in flight
-    if (!data.anyData) {
-      // RUN 44, SECTION 4.4. The two sentences below both tell a participant that Portfolio
-      // Health would compute given the right portfolio. After the offload neither is true: no
-      // number of projects makes it compute, because nothing computes it any more. The retired
-      // case is tested first and is derived, not assumed.
-      const reason = cat8Retired()
-        ? "Portfolio Health is no longer in service. The analysis that compared a project against the rest of the portfolio was withdrawn, so this panel does not compute for any portfolio, whatever number of projects it holds."
-        : data.projectCount < 3
-        ? "Portfolio Health needs at least 3 projects with computed signals to compare against the population: " + data.projectCount + " loaded."
-        : "Portfolio Health hasn't run yet for the current portfolio.";
-      root.innerHTML =
-        `<p class="kn-sub">${escg(reason)}</p>` +
-        `<div class="dc-actions"><button type="button" class="btn primary small" data-run-portfolio-analysis>Rebuild signals (repair)</button></div>`;
-      const btn = root.querySelector("[data-run-portfolio-analysis]");
-      if (btn) btn.addEventListener("click", () => {
-        const recompute = document.getElementById("recompute-all-btn");
-        if (recompute) { if (closeDialog) closeDialog(); recompute.click(); }
-        else { btn.disabled = true; btn.textContent = "No recompute path available"; }
-      });
-      return;
-    }
-    const openProject = (id) => {
-      if (closeDialog) closeDialog();
-      try { if (window.LinApp) { LinApp.showPage("portfolio"); LinApp.openDetail(id); } } catch (e) {}
-    };
-    const asOf = data.savedAt ? (window.LinTZ ? LinTZ.format(data.savedAt) : String(data.savedAt)) : null;
-    const asOfLine = asOf
-      ? `<p class="kn-sub cat8-asof">Portfolio Health as of ${esc(asOf)}</p>`
-      : "";
-    const staleLine = data.stale
-      ? `<p class="cat8-stale-hint">Portfolio health predates the latest upload: ` +
-        `<button type="button" class="dd-link" data-refresh-health>refresh</button></p>`
-      : "";
-    root.innerHTML =
-      `<p class="kn-sub">Portfolio Health compares how this project's signals stack up against the rest of the portfolio: each project is compared against the population.</p>` +
-      asOfLine + staleLine +
-      data.modules.map((m) => {
-        const rows = m.flagged.length
-          ? m.flagged.map((f) =>
-              `<button type="button" class="cat8-flagged-row" data-open-project="${esc(f.id)}">` +
-                `<span class="cat8-flagged-id mod-mono">${esc(f.id)}</span>` +
-                `<span class="cat8-flagged-name">${esc(f.name)}</span>` +
-                `<span class="li-state state-${statusPillClass(f.status)}">${esc(f.status)}</span>` +
-              `</button>` +
-              (f.evidence ? `<p class="cat8-evidence kn-sub">${esc(f.evidence)}</p>` : "")
-            ).join("")
-          : `<p class="kn-sub cat8-none">No anomalies flagged (${m.computedCount} project${m.computedCount === 1 ? "" : "s"} compared).</p>`;
-        return `<section class="panel dd-panel status-${m.flagged.length ? statusPillClass(m.flagged[0].status) : "green"} cat8-module">` +
-          `<div class="dd-head"><b>${esc(m.name)}</b></div>` +
-          `<div class="cat8-flagged-list">${rows}</div>` +
-        `</section>`;
-      }).join("");
-    root.querySelectorAll("[data-open-project]").forEach((b) =>
-      b.addEventListener("click", () => openProject(b.dataset.openProject)));
-    const refreshBtn = root.querySelector("[data-refresh-health]");
-    if (refreshBtn) refreshBtn.addEventListener("click", async () => {
-      refreshBtn.disabled = true;
-      refreshBtn.textContent = "Refreshing…";
-      try {
-        if (window.LinSignals && LinSignals.runPortfolioAnalysis && LinSignals.savePortfolioHealthSnapshot) {
-          const anyProject = (window.LIN_PROJECTS || [])[0];
-          if (anyProject) {
-            const cat8 = await LinSignals.runPortfolioAnalysis(anyProject, window.LIN_PROJECTS);
-            if (Array.isArray(cat8) && cat8.length) {
-              anyProject.simulationSignals = anyProject.simulationSignals || { signal_array: [] };
-              anyProject.simulationSignals.signal_array = (anyProject.simulationSignals.signal_array || [])
-                .filter((s) => !cat8.some((c) => c.method_class === s.method_class))
-                .concat(cat8);
-            }
-            await LinSignals.savePortfolioHealthSnapshot(anyProject.id, "manual-refresh");
-          }
-        }
-      } catch (e) { /* non-fatal */ }
-      renderCat8Health(root, closeDialog);
-    });
-  }
-
-  window.LinDeepDive = { render, renderCat8Health };
+  window.LinDeepDive = { render };
 })();

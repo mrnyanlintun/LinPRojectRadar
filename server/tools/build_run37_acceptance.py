@@ -110,13 +110,22 @@ FREEZE = ROOT / "research" / "freeze"
 # run48_freeze_candidate_identity.json, run48_successor_freeze_gate.csv,
 # run48_candidate_behaviour_digest.json and the v32 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v32.
-PREDECESSOR_CANDIDATE = "e3d1b698b4797bb0fad4bde413317e56ecfd2398"
-PREDECESSOR_VERSION = "sim-2026.08-v32"
-CANDIDATE = "82bd1f855313c09210b1de9829fa6773355534c9"
-EXPECTED_VERSION = "sim-2026.08-v33"
-IDENTITY_FILE = "run49_freeze_candidate_identity.json"
-GATE_FILE = "run49_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run49_candidate_behaviour_digest.json"
+# RESTATED BY RUN 51, and the reasoning is unchanged again. Run 51 delivers the six rulings
+# Run 50 stopped on: a dead surface deleted, the taxonomy's primary key separated from the label
+# it was being rendered as, a panel split by category, seven mis-filings corrected, an eleventh
+# collapsible group made reachable, and every count on a served page derived rather than typed.
+# WHAT A PARTICIPANT READS is part of the frozen candidate, so the freeze is SUPERSEDED rather
+# than amended. The Run-49 artefacts are NOT rewritten: run49_freeze_candidate_identity.json,
+# run49_successor_freeze_gate.csv, run49_candidate_behaviour_digest.json and the v33 release
+# records all stay exactly as that release wrote them, and remain the historical evidence for
+# everything collected under v33.
+PREDECESSOR_CANDIDATE = "82bd1f855313c09210b1de9829fa6773355534c9"
+PREDECESSOR_VERSION = "sim-2026.08-v33"
+CANDIDATE = "77b24f452c4fc1a6b67f1cd2a93174740c598665"
+EXPECTED_VERSION = "sim-2026.08-v34"
+IDENTITY_FILE = "run51_freeze_candidate_identity.json"
+GATE_FILE = "run51_successor_freeze_gate.csv"
+BEHAVIOUR_FILE = "run51_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 

@@ -173,9 +173,9 @@ head("5. THE CLIENT TAXONOMY CARRIES THE CURRENT IDENTITY, NOT A SUPERSEDED ONE"
 _B47_RETIRED = REG.is_retired("B4.7")
 for rel in ("assets/js/categories.js", "assets/js/taxonomy.js"):
     txt = (ROOT / rel).read_text(encoding="utf-8")
-    m = re.search(r"num: 'B4\.7', name: '([^']*)', method_class: '([^']*)'", txt)
+    m = re.search(r"key: 'B4\.7', name: '([^']*)', method_class: '([^']*)'", txt)
     if _B47_RETIRED:
-        check(m is None and "num: 'B4.7'" not in txt,
+        check(m is None and "key: 'B4.7'" not in txt,
               f"{rel}: B4.7 is retired from service, so the client taxonomy carries no row for "
               f"it, superseded or current", str(m.groups() if m else None))
     else:
@@ -190,9 +190,9 @@ for rel in ("assets/js/categories.js", "assets/js/taxonomy.js"):
     # EVERY module IN SERVICE, not only B4.7: the name and the method class the client publishes
     # are the registry's own. This replaces the per-module coverage the B4.7 branch carried and
     # extends it to the whole roster in service, so nothing that was asserted is lost.
-    _names = dict(re.findall(r"num: '([A-D][0-9]+\.[0-9]+)', name: '([^']*)'", txt))
+    _names = dict(re.findall(r"key: '([A-D][0-9]+\.[0-9]+)', name: '([^']*)'", txt))
     _classes = dict(re.findall(
-        r"num: '([A-D][0-9]+\.[0-9]+)', name: '[^']*', method_class: '([^']*)'", txt))
+        r"key: '([A-D][0-9]+\.[0-9]+)', name: '[^']*', method_class: '([^']*)'", txt))
     _reg_names = {r["new_id"]: r["module_name"] for r in reg}
     _bad_names = sorted(f"{k}: {_names[k]!r} vs {_reg_names[k]!r}"
                         for k in REG.service_index()

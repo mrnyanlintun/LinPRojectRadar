@@ -124,8 +124,18 @@ for absence in ("None", "NotRelevant"):
 
 # ---------------------------------------------------------------- A2: the stated distinction
 check("lnf-summary" in FLOW, "the diagram carries a summary strip")
-check("registered architecture" in FLOW,
-      "which names what the shapes on screen are")
+# RUN 51, SECTION 6.1. The three numbers in this sentence were always derived from the model
+# neural_flow.js builds, which is the population IN SERVICE. The WORD beside them said
+# "registered", which names a different and larger population, so the sentence read as though
+# the diagram drew the whole registry of 101. Only the word moved; no count changed. The check
+# is reconciled to the corrected wording, not deleted.
+check("architecture in service" in FLOW,
+      "which names what the shapes on screen are, and names the population it actually draws")
+check("registered architecture" not in
+      FLOW[FLOW.index("var archSentence"):FLOW.index("container.appendChild(sum)")]
+      and "Show the architecture in service" in FLOW,
+      "and no rendered string calls the drawn population the registered one, which it is not; "
+      "the two surviving occurrences are code comments and are not user-facing text")
 check("not what this project has done" in FLOW,
       "and says plainly that architecture is not activity")
 check("no uploaded documents and no current results" in FLOW,
@@ -135,8 +145,11 @@ for banned in ("—", " & "):
           f"the summary prose obeys the naming rules ({banned!r})")
 
 # ---------------------------------------------------------------- A5: the section badges
-check('totalModulesForBadge} registered' in DETAIL,
-      "the Signal Flow badge names a registry count rather than a tally of what ran")
+# RUN 51, SECTION 6.1, the same correction at the badge: what the section draws is the roster
+# IN SERVICE, so the badge says so. It is still a roster count and not a tally of what ran,
+# which is what this check exists to assert.
+check('totalModulesForBadge} in service' in DETAIL,
+      "the Signal Flow badge names a roster count rather than a tally of what ran")
 check('totalModulesForBadge + " modules"' not in DETAIL,
       "and the old wording is gone")
 check('totalCats + " categories"' not in DETAIL,

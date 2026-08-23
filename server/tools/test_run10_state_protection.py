@@ -218,16 +218,36 @@ RUN28_CLOSURE_BROWSER_SCOPE = {
 RUN32_CLOSURE_BROWSER_SCOPE = {
     "assets/js/ds_defensibility_evidence.js", "assets/js/module_charts.js",
 }
+# RESTATED BY RUN 51, ORIGINAL FINDING PRESERVED. Run 51 delivers the owner's six rulings of
+# 2026-08-22: a dead surface deleted, the taxonomy's primary key separated from the label it was
+# being rendered as, a panel split by category, seven mis-filings corrected, an eleventh
+# collapsible group made reachable, and every count on a served page derived rather than typed.
+# Every file is NAMED here rather than the rule being widened to "assets/" and to ".html".
+# DISPLAY STRINGS, FILING, DERIVED COUNTS AND ONE FIELD RENAME ONLY. No band, boundary,
+# threshold or arithmetic result moved, and the behaviour digest is reproduced identically.
+RUN51_BROWSER_SCOPE = {
+    "assets/js/admin-ops.js", "assets/js/app.js", "assets/js/auditor.js",
+    "assets/js/categories.js", "assets/js/charts3d.js", "assets/js/decision-ui.js",
+    "assets/js/decision.js", "assets/js/deepdive.js", "assets/js/detail.js",
+    "assets/js/ds_defensibility_data.js", "assets/js/export.js", "assets/js/ingest.js",
+    "assets/js/knowledge.js", "assets/js/neural_flow.js", "assets/js/projectnet2d.js",
+    "assets/js/signals.js", "assets/js/store.js", "assets/js/taxonomy.js",
+    "assets/js/workspace.js", "assets/questionnaires/debrief.json",
+    "assets/questionnaires/intake.json",
+    "assets/visualizations/pceif_neural_signal_flow.html",
+}
+RUN51_PAGE_SCOPE = {"index.html", "assets/visualizations/pceif_neural_signal_flow.html"}
 check("this run touched no participant-facing browser asset outside Run 11's authorised scope",
       not [d for d in diff_names
            if d.startswith("assets/") and d not in RUN11_BROWSER_SCOPE
            and d not in RUN12_BROWSER_SCOPE and d not in RUN15_BROWSER_SCOPE
            and d not in RUN16_BROWSER_SCOPE and d not in RUN21_BROWSER_SCOPE
            and d not in RUN23_BROWSER_SCOPE and d not in RUN28_CLOSURE_BROWSER_SCOPE
-           and d not in RUN32_CLOSURE_BROWSER_SCOPE])
+           and d not in RUN32_CLOSURE_BROWSER_SCOPE
+           and d not in RUN51_BROWSER_SCOPE])
 check("this run touched no page the participant is served",
       not [d for d in diff_names if d.endswith(".html") and not d.startswith("tests")
-           and d not in RUN11_PAGE_SCOPE])
+           and d not in RUN11_PAGE_SCOPE and d not in RUN51_PAGE_SCOPE])
 # RESTATED BY RUN 11, ORIGINAL FINDING PRESERVED. Run 10 changed only the analytical layer, and
 # that record stands. Run 11 Gate 6 additionally touches one file outside it: the read path that
 # serves a stored result, which must derive the same conflict state the compute path derives or

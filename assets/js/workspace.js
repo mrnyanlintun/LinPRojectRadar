@@ -133,7 +133,7 @@
     });
   }
   function fmtDate(iso) {
-    if (!iso) return "—";
+    if (!iso) return "not recorded";
     try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
   }
 
@@ -427,13 +427,13 @@
         note.className = "ws-error";
       } else if (resp.recomputed) {
         note.textContent = "Recomputed. " + (resp.reason || "Documents changed") +
-          ". Project status: " + (resp.project_status || "—");
+          ". Project status: " + (resp.project_status || "not recorded");
         note.className = "ws-note";
       } else if (resp.note) {
         note.textContent = resp.note;
         note.className = "ws-note";
       } else {
-        note.textContent = "Computed. Project status: " + (resp.project_status || "—") +
+        note.textContent = "Computed. Project status: " + (resp.project_status || "not recorded") +
           (resp.abstained && resp.abstained.length ?
             " (" + resp.abstained.length + " module(s) abstained on missing data)" : "");
         note.className = "ws-note";
@@ -859,7 +859,7 @@
     var html = "";
     html += '<div class="ws-row"><div><strong>Project status</strong></div>' +
       '<div><span class="ws-dot" style="background:' + statusDotColor(r.project_status) +
-      ';"></span>' + esc(r.project_status || "—") + "</div></div>";
+      ';"></span>' + esc(r.project_status || "not recorded") + "</div></div>";
 
     // Category statuses, by group, using names only — never a category id or module id.
     var cats = r.category_statuses || {};
@@ -945,9 +945,9 @@
 
     html += '<div class="ws-provenance">Stored result, not a live computation. ' +
       "Computed at " + esc(fmtDate(r.computed_at)) +
-      " · simulation " + esc(r.simulation_version || "—") +
-      " · seed " + esc(r.seed || "—") +
-      " · period cutoff " + esc(r.period_cutoff || "—") +
+      " · simulation " + esc(r.simulation_version || "not recorded") +
+      " · seed " + esc(r.seed || "not recorded") +
+      " · period cutoff " + esc(r.period_cutoff || "not recorded") +
       (r.superseded_by ? " · superseded by a later recompute" : "") + "</div>";
 
     return html;

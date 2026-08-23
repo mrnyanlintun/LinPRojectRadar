@@ -624,12 +624,29 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # The stamp advances because the SERVED CLIENT is part of the frozen candidate, and the text a
 # participant reads on the deep-dive surface is different under v33 from what it was under v32.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v33"
+# -------------------------------------------------------------------------------------------
+# RUN 51, sim-2026.08-v34. THE SERVED CLIENT MOVED IN TWENTY-THREE FILES AND THE ANALYTICAL
+# LAYER DID NOT.
+#
+# What a participant reads is different under v34: the Portfolio Health flyout is gone, the
+# eight-module compliance panel is two panels, seven deep-dive panels are filed under the
+# category their module belongs to in the current taxonomy, an eleventh collapsible group
+# exists, the handbook no longer states "96 registered modules", every count on a served page
+# derives from registry_index() and service_index() rather than from prose, and no served
+# string carries a module identifier, a category identifier, the retired scheme, an ampersand,
+# an em dash or an en dash.
+#
+# NOT ONE ANALYTICAL RESULT MOVED. 101 registered, 63 in service, voting exactly A1.7 and A1.8,
+# every stored figure unchanged and the behaviour digest reproduced identically at
+# 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1. The stamp advances because
+# the SERVED CLIENT is part of the frozen candidate, not because a computation changed.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v34"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v32"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v33"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -643,6 +660,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
     "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32", "sim-2026.08-v33",
+    "sim-2026.08-v34",
 )
 
 

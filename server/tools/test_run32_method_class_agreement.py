@@ -47,7 +47,7 @@ def check(ok: bool, label: str, detail: str = "") -> None:
 def taxonomy(rel: str) -> dict[str, tuple[str, str]]:
     s = (ROOT / rel).read_text(encoding="utf-8")
     return {m.group(1): (m.group(2), m.group(3)) for m in re.finditer(
-        r"num: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'", s)}
+        r"key: '([A-D]\d+\.\d+)', name: '([^']*)', method_class: '([^']*)'", s)}
 
 
 print("=== 1. EVERY CLIENT METHOD CLASS IS THE ONE ITS RUNNER EMITS ===")

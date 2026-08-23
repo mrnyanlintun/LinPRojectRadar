@@ -392,7 +392,7 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v18",
         "code_audit/run49_participant_package_v18_checksums.sha256",
-        None,
+        "ad4f614",
         "RUN 49, THE COMPLETION OF THE NAMING CORRECTION. THREE participant-visible files moved "
         "and TWO OF THE THREE ARE SEQUENCE-BEARING. This record says so rather than claiming "
         "otherwise, and "
@@ -422,6 +422,74 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "byte identical to v17. The v17 record is NOT regenerated: it is pinned to the commit "
         "whose blobs it describes.",
     ),
+    Package(
+        "og-participant-2026.08-v19",
+        "code_audit/run51_participant_package_v19_checksums.sha256",
+        None,
+        "RUN 51, THE DELIVERY OF WHAT RUN 50 STOPPED ON. TWENTY-THREE participant-visible files "
+        "moved and ALL SIX SEQUENCE-BEARING FILES ARE AMONG THEM. This record says so rather "
+        "than claiming otherwise, and each of the six carries its OWN named exception record "
+        "rather than being excused by widening a comparison, on the owner's rulings 1 to 6 of "
+        "2026-08-22. WHAT MOVED INSIDE assets/js/deepdive.js, EXACTLY: the Portfolio Health "
+        "flyout is deleted with its six symbols and its three buttons, which rendered nowhere "
+        "and had no caller anywhere in the served application; the eight-module compliance panel "
+        "is split into two panels, one per current category; the panel label map and the panel "
+        "grouping map are replaced by ONE table of category keys from which both the label and "
+        "the bucket are derived through the loaded taxonomy, correcting seven mis-filings; and "
+        "the grouping loop's bound is derived from the taxonomy instead of a literal ten so the "
+        "eleventh project-level category can render. assets/js/decision.js stops concatenating a "
+        "category identifier and a module identifier into the action plan. assets/js/"
+        "decision-ui.js and assets/js/workspace.js replace rendered em-dash placeholders with "
+        "text saying what they mean. Both questionnaires replace em dashes inside existing "
+        "labels and notes with words: NO ITEM, NO RESPONSE OPTION, NO SCALE AND NO ORDER "
+        "CHANGED. No step of the decision sequence, no reveal gate, no lock, no randomization, "
+        "no server contract, no append-only record and NO REACHABLE USER-FACING CONTROL moved. "
+        "NO SERVER COMPUTATION MOVED: 101 registered, 63 in service, voting exactly A1.7 and "
+        "A1.8, no stored figure changed and the behaviour digest is unchanged. The v18 record is "
+        "NOT regenerated: it is pinned to the commit whose blobs it describes.",
+    ),
+)
+
+#: RUN 51. The files whose bytes moved between v18 and v19. TWENTY-THREE, and ALL SIX
+#: sequence-bearing files are among them. Every exception is declared here rather than left for
+#: a checksum to discover. Their authority is the owner's rulings 1 to 6 in the Run 51 order.
+V18_TO_V19_CHANGED = (
+    "assets/js/admin-ops.js",
+    "assets/js/app.js",
+    "assets/js/auditor.js",
+    "assets/js/categories.js",
+    "assets/js/charts3d.js",
+    "assets/js/decision-ui.js",
+    "assets/js/decision.js",
+    "assets/js/deepdive.js",
+    "assets/js/detail.js",
+    "assets/js/ds_defensibility_data.js",
+    "assets/js/export.js",
+    "assets/js/ingest.js",
+    "assets/js/knowledge.js",
+    "assets/js/neural_flow.js",
+    "assets/js/projectnet2d.js",
+    "assets/js/signals.js",
+    "assets/js/store.js",
+    "assets/js/taxonomy.js",
+    "assets/js/workspace.js",
+    "assets/questionnaires/debrief.json",
+    "assets/questionnaires/intake.json",
+    "assets/visualizations/pceif_neural_signal_flow.html",
+    "index.html",
+)
+
+#: The SIX sequence-bearing files Run 51 was authorised to move, and the only six it moved. A
+#: SEVENTH sequence-bearing file does not exist, so this exception is the whole set; what keeps
+#: the invariant real is that each is named WITH WHAT MOVED INSIDE IT in the v19 checksum
+#: record's header, and that the record itself is compared byte for byte against the tree.
+V18_TO_V19_SEQUENCE_EXCEPTION = (
+    "assets/js/decision-ui.js",
+    "assets/js/decision.js",
+    "assets/js/deepdive.js",
+    "assets/js/workspace.js",
+    "assets/questionnaires/debrief.json",
+    "assets/questionnaires/intake.json",
 )
 
 #: RUN 49. The files whose bytes moved between v17 and v18. TWO, and BOTH are sequence-bearing.

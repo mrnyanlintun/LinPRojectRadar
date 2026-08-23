@@ -209,21 +209,22 @@ print("-" * 78)
 # RESTATED AGAIN BY RUN 48, for the same reason and with the same scope: Run 48 supersedes v31
 # with v32 because WHICH STORED ROW A PAGE READS is executable behaviour. Run 41's boundary is
 # untouched and is still asserted below.
-check(SIMULATION_VERSION == "sim-2026.08-v33", "the live stamp is Run 49's successor "
-      "sim-2026.08-v33", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v32",
-      "and it records v32, Run 48's stamp, as the stamp it supersedes",
+check(SIMULATION_VERSION == "sim-2026.08-v34", "the live stamp is Run 51's successor "
+      "sim-2026.08-v34", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v33",
+      "and it records v33, Run 49's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
       "the history is append-only and Run 41's boundary is preserved: v26 still directly "
       "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v33"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v32"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v31"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v30"
-      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v29"
-      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v28",
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v34"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v33"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v32"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v31"
+      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v30"
+      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v29"
+      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v28",
       "and v27 to v32 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
@@ -276,12 +277,12 @@ check(len(rec) > 60, "the v13 participant-package record names its governed file
 # is still red.
 _declared_since_v13 = sorted(set(PP.V13_TO_V14_CHANGED) | set(PP.V14_TO_V15_CHANGED)
                             | set(PP.V15_TO_V16_CHANGED) | set(PP.V16_TO_V17_CHANGED)
-                            | set(PP.V17_TO_V18_CHANGED))
+                            | set(PP.V17_TO_V18_CHANGED) | set(PP.V18_TO_V19_CHANGED))
 moved_pkg = sorted(p for p, h in rec.items()
                    if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
 check(moved_pkg == _declared_since_v13,
       f"of the {len(rec)} governed participant-package bytes, exactly the {len(moved_pkg)} the "
-      f"v14, v15, v16, v17 and v18 successors declare between them moved, and no others",
+      f"v14, v15, v16, v17, v18 and v19 successors declare between them moved, and no others",
       str(moved_pkg[:8]))
 # THE SEQUENCE. Run 44 moves ONE sequence-bearing file on the owner's order at its section 4.4,
 # and it is named rather than tolerated. Every other one is still held to byte-identity against
@@ -290,16 +291,22 @@ seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
                    if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != rec.get(f))
 # RUN 49 adds decision-ui.js, which gains COMMENTS ONLY on the owner's ruling 4. Both are named
 # rather than tolerated, and the other FOUR are still held to byte-identity against v13.
+# RUN 51 adds the remaining four, each on its own ruling's authority and each carrying its own
+# named exception record in the v19 checksum record's header. The union is still exactly what the
+# successors DECLARE, so a sequence-bearing file that moved without a declared record is still
+# red -- which is proved by injection rather than asserted.
 _seq_authorised = sorted(set(PP.V14_TO_V15_SEQUENCE_EXCEPTION)
-                         | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION))
+                         | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
+                         | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION))
 check(seq_moved == _seq_authorised,
-      f"of the {len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files, exactly the two the "
-      f"owner authorised have moved since v13 -- the Portfolio Health flyout's reason sentence "
-      f"and the deep-dive naming at Run 49, and decision-ui.js's comments -- and the other four "
-      f"are byte-identical, so no step of the decision sequence, no reveal gate, no lock and no "
-      f"questionnaire moved", str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v18",
-      "the participant package is superseded at og-participant-2026.08-v18, and the v13, v14 and "
+      f"of the {len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files, exactly the "
+      f"{len(_seq_authorised)} the owner authorised have moved since v13, each with its own "
+      f"named exception record, and no step of the decision sequence, no reveal gate, no lock, "
+      f"no randomization and no questionnaire ITEM, response option, scale or order moved -- "
+      f"which the participant-package suite asserts structurally, not by byte-identity",
+      str(seq_moved))
+check(PP.CURRENT.identifier == "og-participant-2026.08-v19",
+      "the participant package is superseded at og-participant-2026.08-v19, and the v13, v14 and "
       "v15 records are pinned rather than rewritten",
       PP.CURRENT.identifier)
 

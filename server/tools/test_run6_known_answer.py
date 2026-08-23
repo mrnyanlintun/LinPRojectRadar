@@ -251,6 +251,24 @@ RUN7_SCOPED_FILES = {
     "server/app/research_export.py",
 }
 
+#: RUN 51. The served-client files the owner's rulings 1 to 6 of 2026-08-22 order changed, NAMED
+#: one by one so the rule is not widened. Display, wording, filing and derived counts only: no
+#: band, threshold, arithmetic result or step of the participant sequence moved, and every one of
+#: the six sequence-bearing files among them carries its own named exception record in the v19
+#: participant-package checksum record.
+RUN51_SCOPED_FILES = {"assets/js/admin-ops.js", "assets/js/auditor.js", "assets/js/export.js",
+                      "assets/js/ingest.js", "assets/js/projectnet2d.js", "assets/js/store.js",
+                      "assets/js/module_charts.js", "assets/js/recommendation_options.js",
+                      "assets/js/categories.js", "assets/js/charts3d.js",
+                      "assets/js/deepdive.js", "assets/js/workspace.js",
+                      "assets/js/decision.js", "assets/js/decision-ui.js", "assets/js/app.js",
+                      "assets/js/detail.js", "assets/js/signals.js", "assets/js/knowledge.js",
+                      "assets/js/neural_flow.js", "assets/js/taxonomy.js",
+                      "assets/js/ds_defensibility_data.js",
+                      "assets/questionnaires/debrief.json",
+                      "assets/questionnaires/intake.json",
+                      "assets/visualizations/pceif_neural_signal_flow.html"}
+
 _diff = subprocess.run(["git", "diff", "--name-only", GUARD_BASELINE_REV, "--"],
                        cwd=str(ROOT), capture_output=True, text=True).stdout.split()
 _prod = [p for p in _diff if p.startswith("server/app/") or p.startswith("assets/")]
@@ -585,7 +603,13 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # than the comparison being relaxed, so the check keeps full force
                    # outside it. documents.py, detail.js and recommendation_options.js are
                    # already inside the scope of an earlier run above.
-                   - {"server/app/evm_consistency.py"})
+                   - {"server/app/evm_consistency.py"}
+                   # RUN 51, THE DELIVERY OF WHAT RUN 50 STOPPED ON. Every served-client file
+                   # the owner's rulings 1 to 6 of 2026-08-22 order changed, NAMED one by one
+                   # rather than the comparison being relaxed, so the check keeps full force
+                   # outside them. Nothing analytical is in this set and the behaviour digest
+                   # is reproduced identically.
+                   - RUN51_SCOPED_FILES)
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",
@@ -613,12 +637,13 @@ RUN32_CLOSURE_SCOPED_FILES = {"assets/js/module_charts.js",
 check(not (set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
            - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES
            - RUN23_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES
-           - RUN32_CLOSURE_SCOPED_FILES),
+           - RUN32_CLOSURE_SCOPED_FILES - RUN51_SCOPED_FILES),
       "every browser surface outside the authorised browser scope of Runs 11, 12, 15, 16 and 21 "
       "is byte-identical to the freeze",
       str(sorted(set(_assets) - RUN11_SCOPED_FILES - RUN12_SCOPED_FILES
                  - RUN15_SCOPED_FILES - RUN16_SCOPED_FILES - RUN21_SCOPED_FILES
-                 - RUN23_SCOPED_FILES)))
+                 - RUN23_SCOPED_FILES - RUN28_CLOSURE_SCOPED_FILES
+                 - RUN32_CLOSURE_SCOPED_FILES - RUN51_SCOPED_FILES)))
 # THE NARROWER PROPERTIES, STATED SO EACH CAN FAIL ON ITS OWN, and stated ACCURATELY. The first
 # version of this check asserted that no file Run 21 changed is loaded by index.html. That was
 # FALSE and the guard said so: simulations.js is not on the participant route, but neural_flow.js
