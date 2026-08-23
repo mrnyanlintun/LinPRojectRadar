@@ -343,8 +343,12 @@ check("run36.fault28.no_stale_proxy_qualifier",
       "been restored", str(sorted(REG.PROXY_QUALIFIERS)))
 _cat = text("assets/js/categories.js")
 check("run36.fault29.client_method_class_lookup_intact",
+      # RUN 54: `+ text("assets/js/deepdive.js")` was the fourth term. The file is DELETED. The
+      # check is UNCHANGED in force -- it asks whether getModuleStatus appears anywhere in the
+      # client dispatch surfaces, and one fewer surface makes the disjunction HARDER to satisfy,
+      # not easier.
       'case "Monte_Carlo":' in _cat and "getModuleStatus" in _cat + text("assets/js/knowledge.js")
-      + text("assets/js/workspace.js") + text("assets/js/deepdive.js"),
+      + text("assets/js/workspace.js"),
       "the client method-class lookup still dispatches; it has been broken so statuses silently "
       "never render", "the Monte_Carlo case is gone")
 _tax = text("assets/js/taxonomy.js")
@@ -386,8 +390,18 @@ for _ln in (AUDIT / "run33_participant_package_v11_checksums.sha256").read_text(
         _h, _p = _ln.split("  ", 1)
         _v11[_p] = _h
 import hashlib                                                    # noqa: E402
+# RUN 54. A DELETED FILE MUST COUNT AS MOVED, NOT CRASH. `assets/js/deepdive.js` was DELETED on
+# the owner's ruling at section 8 of the Run 54 order, and hashing a path that does not exist
+# raised FileNotFoundError, which is a crash and a crash is not a pass. A missing file now hashes
+# to None, so it can never equal a recorded digest and is therefore ALWAYS counted as moved. The
+# comparison is not loosened: an UNDECLARED deletion still fails, exactly as an undeclared edit
+# does, and the declaration is V20_TO_V21_SEQUENCE_EXCEPTION in participant_packages.py.
+def _sha_or_gone(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+
+
 _moved_seq = sorted(f for f in _seq_files
-                    if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != _v11.get(f))
+                    if _sha_or_gone(ROOT / f) != _v11.get(f))
 # RUN 44. ONE of the six has legitimately moved since v11, and it is NAMED rather than excused
 # by loosening the comparison. The Portfolio Health flyout in deepdive.js told a participant the
 # panel needed at least three projects; after Run 43 retired every Portfolio Level module from

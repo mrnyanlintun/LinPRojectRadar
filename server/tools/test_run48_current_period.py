@@ -58,6 +58,13 @@ from app.simulation.registry import (  # noqa: E402
 )
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it walked back one
+#: commit per later commit until it pointed at a tree where the file was already gone, turning a
+#: real non-vacuity proof into a false one. Caught by running the full suite pass, not by reading.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
+
 client = TestClient(main.app, raise_server_exceptions=False)
 Session = main.SessionFactory
 PASSED = 0
@@ -229,11 +236,11 @@ DETAIL = (ROOT / "assets" / "js" / "detail.js").read_text(encoding="utf-8")
 # loaded taxonomy. Those checks existed to keep a retired identifier scheme out of a rendered
 # surface. THE SURFACE IS GONE, so they are asserted against the file's LAST COMMITTED BYTES,
 # which is the strongest thing that can still be said about a deleted file, and the deletion
-# itself is asserted separately. Reading HEAD~1 rather than the working tree is the same
+# itself is asserted separately. Reading a PINNED commit rather than the working tree is the same
 # discipline the participant-package chain uses for every predecessor record.
 _DEEPDIVE_REL = "assets/js/deepdive.js"
 _DEEPDIVE_LAST = subprocess.run(
-    ["git", "-C", str(ROOT), "show", f"HEAD~1:{_DEEPDIVE_REL}"], capture_output=True)
+    ["git", "-C", str(ROOT), "show", f"{RUN54_PREDELETION_COMMIT}:{_DEEPDIVE_REL}"], capture_output=True)
 DEEPDIVE = _DEEPDIVE_LAST.stdout.decode("utf-8") if _DEEPDIVE_LAST.returncode == 0 else ""
 CHARTS3D = (ROOT / "assets" / "js" / "charts3d.js").read_text(encoding="utf-8")
 
@@ -436,7 +443,7 @@ try:
           and not (ROOT / _DEEPDIVE_REL).exists(),
           "assets/js/deepdive.js: the comment was there right up to the deletion, and the file "
           "is now gone",
-          f"existed_at_HEAD~1={_DEEPDIVE_LAST.returncode == 0} "
+          f"existed_at_bf36ef6={_DEEPDIVE_LAST.returncode == 0} "
           f"exists_now={(ROOT / _DEEPDIVE_REL).exists()}")
 
     print()

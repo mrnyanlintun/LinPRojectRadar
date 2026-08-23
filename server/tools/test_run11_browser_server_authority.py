@@ -40,6 +40,14 @@ sys.path.insert(0, str(ROOT / "server"))
 
 from app.simulation.models import SIMULATION_VERSION  # noqa: E402
 
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it walked back one
+#: commit per later commit until it pointed at a tree where the file was already gone, turning a
+#: real non-vacuity proof into a false one. Caught by running the full suite pass, not by reading.
+#: Pinning the commit is the discipline every predecessor package record already uses.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
+
+
 PASS = 0
 TOTAL = 0
 FAILURES: list[str] = []
@@ -190,10 +198,10 @@ def gate_1_version_guard() -> None:
     # owner as such.
     _dd = ROOT / "research" / "deepdive.html"
     _dd_was = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e",
-                              "HEAD~1:research/deepdive.html"], capture_output=True).returncode == 0
+                              f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"], capture_output=True).returncode == 0
     check("the only page that ever loaded browser arithmetic is GONE, so no page can present it "
           "as the current analysis", (not _dd.exists()) and _dd_was,
-          f"exists_now={_dd.exists()} existed_at_HEAD~1={_dd_was}")
+          f"exists_now={_dd.exists()} existed_at_bf36ef6={_dd_was}")
     _srcs_index = scripts_of(ROOT / "index.html")
     check("and the participant application loads neither browser instrument",
           not [s for s in _srcs_index if s.endswith(("sim.js", "simulations.js"))],
@@ -231,7 +239,7 @@ def mutation_proofs() -> None:
     # subject. In its place, the ABSENCE check above is itself proved non-vacuous by execution:
     # the file existed at the prior commit, so "it is gone" is a finding and not a check that
     # was always going to pass. Asserted against git, not against a copy of this logic.
-    _dd_head = subprocess.run(["git", "-C", str(ROOT), "show", "HEAD~1:research/deepdive.html"],
+    _dd_head = subprocess.run(["git", "-C", str(ROOT), "show", f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"],
                               capture_output=True)
     check("NON-VACUITY: the deleted page really did call the comparison before rendering, so "
           "the check that has just been retired had force right up to the deletion",

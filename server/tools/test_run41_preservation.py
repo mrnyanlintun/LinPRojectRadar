@@ -278,8 +278,18 @@ check(len(rec) > 60, "the v13 participant-package record names its governed file
 _declared_since_v13 = sorted(set(PP.V13_TO_V14_CHANGED) | set(PP.V14_TO_V15_CHANGED)
                             | set(PP.V15_TO_V16_CHANGED) | set(PP.V16_TO_V17_CHANGED)
                             | set(PP.V17_TO_V18_CHANGED) | set(PP.V18_TO_V19_CHANGED))
+# RUN 54. A DELETED FILE MUST COUNT AS MOVED, NOT CRASH. `assets/js/deepdive.js` was DELETED on
+# the owner's ruling at section 8 of the Run 54 order, and hashing a path that does not exist
+# raised FileNotFoundError, which is a crash and a crash is not a pass. A missing file now hashes
+# to None, so it can never equal a recorded digest and is therefore ALWAYS counted as moved. The
+# comparison is not loosened: an UNDECLARED deletion still fails, exactly as an undeclared edit
+# does, and the declaration is V20_TO_V21_SEQUENCE_EXCEPTION in participant_packages.py.
+def _sha_or_gone(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+
+
 moved_pkg = sorted(p for p, h in rec.items()
-                   if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
+                   if _sha_or_gone(ROOT / p) != h)
 check(moved_pkg == _declared_since_v13,
       f"of the {len(rec)} governed participant-package bytes, exactly the {len(moved_pkg)} the "
       f"v14, v15, v16, v17, v18 and v19 successors declare between them moved, and no others",
@@ -288,16 +298,20 @@ check(moved_pkg == _declared_since_v13,
 # and it is named rather than tolerated. Every other one is still held to byte-identity against
 # v13, so the invariant is intact for the five that carry a step of the decision sequence.
 seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
-                   if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != rec.get(f))
+                   if _sha_or_gone(ROOT / f) != rec.get(f))
 # RUN 49 adds decision-ui.js, which gains COMMENTS ONLY on the owner's ruling 4. Both are named
 # rather than tolerated, and the other FOUR are still held to byte-identity against v13.
 # RUN 51 adds the remaining four, each on its own ruling's authority and each carrying its own
 # named exception record in the v19 checksum record's header. The union is still exactly what the
 # successors DECLARE, so a sequence-bearing file that moved without a declared record is still
 # red -- which is proved by injection rather than asserted.
+# RUN 54 adds V20_TO_V21_SEQUENCE_EXCEPTION -- deepdive.js, DELETED. It is named here on
+# exactly the same construction as every earlier exception, so a second sequence-bearing file
+# disappearing is still red.
 _seq_authorised = sorted(set(PP.V14_TO_V15_SEQUENCE_EXCEPTION)
                          | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
-                         | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION))
+                         | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION)
+                         | set(PP.V20_TO_V21_SEQUENCE_EXCEPTION))
 check(seq_moved == _seq_authorised,
       f"of the {len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files, exactly the "
       f"{len(_seq_authorised)} the owner authorised have moved since v13, each with its own "

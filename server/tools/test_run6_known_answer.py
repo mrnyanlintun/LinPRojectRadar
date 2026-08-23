@@ -2413,8 +2413,14 @@ _sims = (ROOT / "assets" / "js" / "simulations.js").read_text(encoding="utf-8")
 # check is not deleted and not weakened -- its subject moved from 'confined to one page'
 # to 'reached by no page', which is the stricter of the two. NON-VACUITY: both files exist
 # at the prior commit, asserted against git rather than assumed.
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it silently walked
+#: back one commit per later commit until it pointed at a tree where the file was already gone,
+#: turning a real non-vacuity proof into a false one. Caught by running the full suite pass, not
+#: by reading. Pinning the commit is the same discipline every predecessor package record uses.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
 _deep_gone = not (ROOT / "research" / "deepdive.html").exists()
-_deep_existed = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", "HEAD~1:research/deepdive.html"],
+_deep_existed = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"],
                                capture_output=True).returncode == 0
 check("DEMO_BAC" in _sim, "the browser instrument still defines the placeholder budget")
 check("p80eacOverrunPct" in _sim,
@@ -2426,7 +2432,7 @@ check(_deep_gone and _deep_existed and not _loads_instrument,
       "NO served route loads either browser instrument file: the one page that did, "
       "research/deepdive.html, is deleted -- and it existed at the prior commit, so this is "
       "not vacuous",
-      f"deleted={_deep_gone} existed_at_HEAD~1={_deep_existed} index_loads={_loads_instrument}")
+      f"deleted={_deep_gone} existed_at_bf36ef6={_deep_existed} index_loads={_loads_instrument}")
 
 
 # =================================================================================================

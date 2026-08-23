@@ -571,6 +571,27 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_run34_provenance_fault_campaign.py",
     "server/tools/test_run36_fault_guards.py",
     "server/tools/test_run41_fault_campaign.py",
+    # RUN 54, PHASES B, C AND D. The deep-dive surface is DELETED on the owner's ruling at
+    # section 8, and the suites that asserted properties OF that surface are reconciled to assert
+    # its absence instead. Each is NAMED here rather than admitted by widening the rule. The two
+    # deleted paths and assets/js/app.js and index.html are named in the successor set below;
+    # these four are the reconciled guards and the deleted page itself.
+    "research/deepdive.html",
+    "server/tools/test_run11_browser_server_authority.py",
+    "server/tools/test_run12_final_verification.py",
+    "server/tools/test_run13_module_evidence.py",
+    "server/tools/test_run28_closure.py",
+    "server/tools/test_run36_fault_guards.py",
+    "server/tools/test_run41_preservation.py",
+    "server/tools/test_run49_naming_completion.py",
+    "server/tools/test_run6_known_answer.py",
+    "server/tools/test_run48_current_period.py",
+    "server/tools/test_run44_participant_defect_fixes.py",
+    "server/tools/test_run38_frozen_immutability.py",
+    "server/tools/test_run39_frozen_immutability.py",
+    "server/tools/drive_run50_browser.py",
+    "server/tools/run52_rendered_text_capture.py",
+    "code_audit/run45_field_classification_proposal.md",
 }
 run39 = [ln.split("\t", 1) for ln in diff_committed(RUN38_READY).splitlines() if ln]
 in_frozen = [p for st, p in run39

@@ -35,6 +35,12 @@ from app.simulation.registry import (  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 AUDIT = ROOT / "code_audit"
+
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it walked back one
+#: commit per later commit until it pointed at a tree where the file was already gone, turning a
+#: real non-vacuity proof into a false one. Caught by running the full suite pass, not by reading.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
 CUTOFF = "2025-06-30"
 NOOP = lambda: 0.5  # noqa: E731
 
@@ -440,7 +446,7 @@ INDEX = (ROOT / "index.html").read_text(encoding="utf-8")
 # NO route -- together with the non-vacuity that makes the absence a finding.
 _DEEP = ROOT / "research" / "deepdive.html"
 _DEEP_WAS = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e",
-                            "HEAD~1:research/deepdive.html"], capture_output=True).returncode == 0
+                            f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"], capture_output=True).returncode == 0
 GUARD = (ROOT / "assets" / "js" / "client_algorithm_version.js").read_text(encoding="utf-8")
 INDEX_SCRIPTS = re.findall(r'<script[^>]*src="([^"]+)"', INDEX)
 check(not [s_ for s_ in INDEX_SCRIPTS if s_.endswith(("sim.js", "simulations.js"))],
@@ -449,9 +455,9 @@ check(not [s_ for s_ in INDEX_SCRIPTS if s_.endswith(("sim.js", "simulations.js"
 check((not _DEEP.exists()) and _DEEP_WAS,
       "the historical arithmetic remains on NO route: the one page that carried it is deleted, "
       "and it existed at the prior commit so this is not vacuous",
-      f"exists_now={_DEEP.exists()} existed_at_HEAD~1={_DEEP_WAS}")
+      f"exists_now={_DEEP.exists()} existed_at_bf36ef6={_DEEP_WAS}")
 check(_DEEP_WAS and b"client_algorithm_version.js" in subprocess.run(
-          ["git", "-C", str(ROOT), "show", "HEAD~1:research/deepdive.html"],
+          ["git", "-C", str(ROOT), "show", f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"],
           capture_output=True).stdout,
       "NON-VACUITY: that route really did load the version guard right up to its deletion")
 check('"client-legacy-2026.07-historical"' in GUARD,

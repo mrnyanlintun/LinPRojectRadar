@@ -23,6 +23,13 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it walked back one
+#: commit per later commit until it pointed at a tree where the file was already gone, turning a
+#: real non-vacuity proof into a false one. Caught by running the full suite pass, not by reading.
+#: Pinning the commit is the discipline every predecessor package record already uses.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
+
 results: list[tuple[bool, str, str]] = []
 
 
@@ -51,11 +58,11 @@ for f in ("sim.js", "simulations.js", "categories.js"):
 # at the prior commit, asserted against git rather than assumed.
 _deep_gone = not (ROOT / "research" / "deepdive.html").exists()
 _deep_existed = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e",
-                                "HEAD~1:research/deepdive.html"], capture_output=True).returncode == 0
+                                f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"], capture_output=True).returncode == 0
 check(_deep_gone and _deep_existed,
       "the researcher deep dive is GONE, so the algorithm-version guard it loaded has no page "
       "left to protect: no served route runs browser arithmetic at all",
-      f"deleted={_deep_gone} existed_at_HEAD~1={_deep_existed}")
+      f"deleted={_deep_gone} existed_at_bf36ef6={_deep_existed}")
 guard = (ROOT / "assets" / "js" / "client_algorithm_version.js").read_text(encoding="utf-8")
 check("simulation_version" in guard,
       "and the guard compares the client stamp against the stored simulation version")
@@ -80,11 +87,11 @@ RETIRED_SURFACES = {
 for name in SURFACES:
     check((ROOT / name).exists(), f"inventoried surface exists: {name}")
 for name in RETIRED_SURFACES:
-    _was = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"HEAD~1:{name}"],
+    _was = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{RUN54_PREDELETION_COMMIT}:{name}"],
                           capture_output=True).returncode == 0
     check(not (ROOT / name).exists() and _was,
           f"retired surface is gone and was present at the prior commit: {name}",
-          f"exists_now={(ROOT / name).exists()} existed_at_HEAD~1={_was}")
+          f"exists_now={(ROOT / name).exists()} existed_at_bf36ef6={_was}")
 
 # No live participant asset may call the historical client arithmetic without the opt-in.
 def strip_comments(src: str) -> str:
@@ -126,6 +133,8 @@ print("=" * 78)
 
 from app.simulation.registry import CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY  # noqa: E402
 from app.simulation.fusion import governed_status_semantics, normalise_status  # noqa: E402
+
+
 
 check(set(CORE_VOTING_MODULES) == {"A1.7", "A1.8"},
       "the voting set is exactly the two cost lineage modules", str(sorted(CORE_VOTING_MODULES)))
