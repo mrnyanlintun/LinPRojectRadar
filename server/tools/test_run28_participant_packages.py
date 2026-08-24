@@ -182,6 +182,14 @@ V20_RECORD = "code_audit/run52_participant_package_v20_checksums.sha256"
 # is byte-identical to the file on disk, and models.py at that commit reads sim-2026.08-v35.
 V20_COMMIT = "d236a270"
 V21_RECORD = "code_audit/run55_participant_package_v21_checksums.sha256"
+# RUN 56, THE MINT. v21 IS NO LONGER THE CURRENT PACKAGE, so its record no longer describes the
+# working tree and every v20-to-v21 comparison below now reads THE COMMIT WHOSE BLOBS IT
+# DESCRIBES instead of disk. EXPLICIT COMMIT HASH, never a relative reference. Verified:
+# `git show V21_COMMIT:V21_RECORD` is byte-identical to the file on disk, and models.py at that
+# commit reads sim-2026.08-v36.
+V21_COMMIT = "e13b4f1"
+V22_IDENTITY = "og-participant-2026.08-v22"
+V22_RECORD = "code_audit/run56_participant_package_v22_checksums.sha256"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -661,7 +669,7 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V21_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V22_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
@@ -669,15 +677,16 @@ check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
       == [V1_IDENTITY, V2_IDENTITY, V3_IDENTITY, V4_IDENTITY, V5_IDENTITY,
           V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY,
           V12_IDENTITY, V13_IDENTITY, V14_IDENTITY, V15_IDENTITY, V16_IDENTITY,
-          V17_IDENTITY, V18_IDENTITY, V19_IDENTITY, V20_IDENTITY, V21_IDENTITY],
+          V17_IDENTITY, V18_IDENTITY, V19_IDENTITY, V20_IDENTITY, V21_IDENTITY,
+          V22_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 21
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 22
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all twenty-one are present, so no link shares a "
+      "each link has its OWN record file and all twenty-two are present, so no link shares a "
       "record with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all nineteen predecessors name the "
+      "and only the current link reads the working tree; all twenty-one predecessors name the "
       "commit their bytes live in")
 # ---- v14, NOW A PREDECESSOR ---------------------------------------------------------------
 # RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. Five files moved: three generated from the
@@ -1397,13 +1406,17 @@ print("-" * 78)
 print("RUN 55: og-participant-2026.08-v21, the deletion of a sequence-bearing file")
 print("-" * 78)
 
-check(PP.CURRENT.identifier == "og-participant-2026.08-v21",
-      "the package chain declares v21 CURRENT", PP.CURRENT.identifier)
-check(PP.CURRENT.record == V21_RECORD,
-      "and names the v21 checksum record as the one that describes the live tree",
-      PP.CURRENT.record)
-check(PP.CURRENT.source_commit is None,
-      "and leaves its source_commit None, which is what 'describes the LIVE TREE' means")
+# RUN 56: v21 IS NOW A PREDECESSOR. Its record is pinned and every check below reads the blobs
+# of V21_COMMIT rather than the working tree. The historical statement does not change; where it
+# is measured does, and it has to, because a predecessor that still matched the live tree would
+# be a second record claiming one tree.
+_v21_pkg = [q for q in PP.PARTICIPANT_PACKAGES if q.identifier == V21_IDENTITY][0]
+check(_v21_pkg.record == V21_RECORD and _v21_pkg.source_commit is not None,
+      "the v21 link is PINNED to the commit whose blobs its record describes, now that a "
+      "successor exists", str(_v21_pkg.source_commit))
+check(_v21_pkg.source_commit.startswith(V21_COMMIT),
+      f"and it is pinned to {V21_COMMIT}, the tip at which v21 was still current",
+      str(_v21_pkg.source_commit))
 _pinned_but_current = [q.identifier for q in PP.PARTICIPANT_PACKAGES[:-1]
                        if q.source_commit is None]
 check(not _pinned_but_current,
@@ -1412,11 +1425,13 @@ check(not _pinned_but_current,
 
 _v21 = parse((ROOT / V21_RECORD).read_text(encoding="utf-8"))
 _v21_bad = sorted(rel for rel, digest in _v21.items()
-                  if not (ROOT / rel).is_file()
-                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if hashlib.sha256(git_bytes(rel, V21_COMMIT)).hexdigest() != digest)
 check(not _v21_bad,
-      "every one of v21's sixty-nine checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v21_bad))
+      f"every one of v21's sixty-nine checksums holds against the tree of commit "
+      f"{V21_COMMIT}, the commit its record describes", str(_v21_bad))
+check((ROOT / V21_RECORD).read_bytes() == git_bytes(V21_RECORD, V21_COMMIT),
+      f"and the v21 record on disk is BYTE-IDENTICAL to its own bytes at {V21_COMMIT}, so "
+      f"pinning it did not rewrite it")
 
 # THE INVENTORY SHRANK BY EXACTLY THE DECLARED DELETIONS, AND BY NOTHING ELSE.
 _left = sorted(set(_v20) - set(_v21))
@@ -1438,7 +1453,7 @@ for _gone in _left:
 # THE FILES THAT MOVED ARE EXACTLY THE FIVE DECLARED, AND NOTHING RODE ALONG.
 _moved21 = sorted(rel for rel, digest in _v20.items()
                   if rel in _v21
-                  and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  and hashlib.sha256(git_bytes(rel, V21_COMMIT)).hexdigest() != digest)
 check(_moved21 == sorted(PP.V20_TO_V21_CHANGED),
       "and the files v21 moved are exactly the five it declares, so nothing rode along with the "
       "delivery", str(sorted(set(_moved21) ^ set(PP.V20_TO_V21_CHANGED))))
@@ -1461,7 +1476,7 @@ check(set(PP.V20_TO_V21_SEQUENCE_EXCEPTION) <= set(PP.V20_TO_V21_DELETED),
       "edit excused by widening a comparison",
       str(PP.V20_TO_V21_SEQUENCE_EXCEPTION))
 _seq21 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES_FROM_V21
-                if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v20.get(rel))
+                if hashlib.sha256(git_bytes(rel, V21_COMMIT)).hexdigest() != _v20.get(rel))
 check(not _seq21,
       "AND NO SURVIVING SEQUENCE-BEARING FILE MOVED ACROSS v20 TO v21: no step of the decision "
       "sequence, no reveal gate, no lock, no randomization and no questionnaire moved",
@@ -1500,6 +1515,106 @@ check(".li-open" not in _css21,
       "styled")
 check(".li-open" in git_bytes("assets/css/radar.css", V20_COMMIT).decode("utf-8"),
       f"NON-VACUITY at {V20_COMMIT}: radar.css DID carry .li-open rules")
+
+# =================================================================================================
+# RUN 56, THE MINT. og-participant-2026.08-v22 -- THE SMALLEST LINK IN THIS CHAIN, AND THE FIRST
+# WHOSE SEQUENCE EXCEPTION IS AN EXPLICITLY DECLARED EMPTY SET.
+#
+# v22 is the current package and is now the ONLY record that reads the working tree. EXACTLY ONE
+# file moved, assets/js/ingest.js, and it is NOT sequence-bearing. The emptiness is DECLARED as
+# V21_TO_V22_SEQUENCE_EXCEPTION and V21_TO_V22_DELETED rather than omitted, so a reader sees a
+# declaration and not a silence, and a sequence-bearing file moving without being named there is
+# still red.
+# =================================================================================================
+print()
+print("-" * 78)
+print("RUN 56: og-participant-2026.08-v22, one file moved and no sequence exception")
+print("-" * 78)
+
+check(PP.CURRENT.identifier == V22_IDENTITY,
+      "the package chain declares v22 CURRENT", PP.CURRENT.identifier)
+check(PP.CURRENT.record == V22_RECORD,
+      "and names the v22 checksum record as the one that describes the live tree",
+      PP.CURRENT.record)
+check(PP.CURRENT.source_commit is None,
+      "and leaves its source_commit None, which is what 'describes the LIVE TREE' means")
+
+_v22 = parse((ROOT / V22_RECORD).read_text(encoding="utf-8"))
+_v22_bad = sorted(rel for rel, digest in _v22.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v22_bad,
+      "every one of v22's sixty-nine checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v22_bad))
+check(len(_v22) == 69, "and the package is sixty-nine files", str(len(_v22)))
+
+# THE INVENTORY DID NOT MOVE AT ALL ACROSS THIS LINK.
+check(sorted(_v22) == sorted(_v21),
+      "v22 covers exactly the same file inventory as v21: nothing joined and nothing left",
+      str(sorted(set(_v21) ^ set(_v22))))
+check(PP.V21_TO_V22_DELETED == (),
+      "and V21_TO_V22_DELETED is an EXPLICITLY DECLARED empty tuple, not an omission",
+      str(PP.V21_TO_V22_DELETED))
+
+# THE FILES THAT MOVED ARE EXACTLY THE ONE DECLARED, AND NOTHING RODE ALONG.
+_moved22 = sorted(rel for rel, digest in _v21.items()
+                  if rel in _v22
+                  and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved22 == sorted(PP.V21_TO_V22_CHANGED),
+      "and the files v22 moved are exactly the one it declares, so nothing rode along with the "
+      "removal and the two confirmations",
+      str(sorted(set(_moved22) ^ set(PP.V21_TO_V22_CHANGED))))
+
+# NO SEQUENCE-BEARING FILE MOVED, AND THE SET IS NOT SHORTENED AGAIN.
+check(PP.V21_TO_V22_SEQUENCE_EXCEPTION == (),
+      "V21_TO_V22_SEQUENCE_EXCEPTION is an EXPLICITLY DECLARED empty tuple",
+      str(PP.V21_TO_V22_SEQUENCE_EXCEPTION))
+_seq22 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES_FROM_V21
+                if not (ROOT / rel).is_file()
+                or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v21.get(rel))
+check(not _seq22,
+      "AND NO SEQUENCE-BEARING FILE MOVED ACROSS v21 TO v22: all five are present and "
+      "byte-identical to v21, so no step of the decision sequence, no reveal gate, no lock, no "
+      "randomization and no questionnaire moved", str(_seq22))
+check(len(PP.SEQUENCE_BEARING_FILES_FROM_V21) == 5
+      and len(PP.SEQUENCE_BEARING_FILES) == 6,
+      "and neither sequence-bearing set was shortened again: still six historical, five from v21",
+      f"{len(PP.SEQUENCE_BEARING_FILES)} / {len(PP.SEQUENCE_BEARING_FILES_FROM_V21)}")
+
+# WHAT MOVED INSIDE ingest.js, MEASURED RATHER THAN ASSERTED.
+_ing22 = (ROOT / "assets/js/ingest.js").read_text(encoding="utf-8")
+check('${hostEl ? "" : `<button class="btn small pe-populate">Upload documents</button>`}'
+      in _ing22,
+      "ingest.js: 'Upload documents' (.pe-populate) is emitted ONLY when no host element is "
+      "supplied, so it is gone from the detail page and the portfolio-row path is untouched")
+check("const populateBtn = box.querySelector(\".pe-populate\");" in _ing22
+      and "if (populateBtn) populateBtn.addEventListener" in _ing22,
+      "and its click listener is GUARDED, not deleted")
+# NON-VACUITY, PINNED TO AN EXPLICIT COMMIT HASH. Never a relative reference.
+check('<button class="btn small pe-populate">Upload documents</button>'
+      in git_bytes("assets/js/ingest.js", V21_COMMIT).decode("utf-8"),
+      f"NON-VACUITY at {V21_COMMIT}: ingest.js DID emit .pe-populate unconditionally before "
+      f"this run, so the absence check above is not vacuous")
+check("function confirmDestructive(opts)" in _ing22
+      and "LinUI.openModal" in _ing22
+      and "window.confirm" not in _ing22.split("function confirmDestructive(opts)")[1][:2000],
+      "ingest.js: the confirmation helper exists and is built on LinUI.openModal, the pattern "
+      "the application already uses for its destructive project-scoped actions, NOT on "
+      "window.confirm, which returns false in this container")
+for _lbl, _fn in (("Archive", "const doArchive = async () => {"),
+                  ("Reset signals", "const doReset = async () => {")):
+    check(_fn in _ing22,
+          f"and '{_lbl}''s action is a named function the confirmation gates, so the action "
+          f"itself is unchanged")
+check("confirmDestructive({" in _ing22 and _ing22.count("confirmDestructive({") == 2,
+      "and EXACTLY TWO controls are gated, Archive and Reset signals, no more",
+      str(_ing22.count("confirmDestructive({")))
+# NON-VACUITY at the same explicit commit: neither carried a confirmation before this run.
+check("confirmDestructive" not in git_bytes("assets/js/ingest.js", V21_COMMIT).decode("utf-8"),
+      f"NON-VACUITY at {V21_COMMIT}: neither control carried ANY confirmation before this run")
+for _dash in ("\u2014", "\u2013"):
+    check(_dash not in "Archive This moves out of the active portfolio Reset signals for",
+          "and no em dash or en dash is in the confirmation text")
 
 print()
 print("=" * 78)

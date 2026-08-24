@@ -9,6 +9,109 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-22 - Run 56: THE DUPLICATE CONTROLS, TWO CONFIRMATIONS, GATE 34/34, MERGED AND PUSHED.
+
+**Report:** `REPORT_2026-08-22_run56_duplicate_controls.md`.
+**Branch:** `run56-duplicate-controls`, rooted at `e13b4f1`. **Merged to `main` with `--no-ff` and PUSHED.**
+**Stamp:** `sim-2026.08-v37`. **Package:** `og-participant-2026.08-v22`.
+**Freeze gate 34/34. 203 suites, 15290/15290, all green.**
+**Repository: the Linux clone. Interpreter: `python3` 3.11.15 (no `.venv`).**
+
+## READ THIS FIRST: HALF OF PHASE A WAS STOPPED, AND THAT IS THE FINDING
+
+The order said remove two duplicate controls from the project detail page. **One removal was
+carried. The other was STOPPED under section 9.1 because the order's premise is false against
+the code, and BOTH of that pair remain.**
+
+- **CARRIED.** The page carried two controls labelled **"Upload documents"** - the pre-existing
+  `.detail-upload` and the `.pe-populate` Run 55 moved onto it. Pinned to the explicit commit
+  `e13b4f1`, the ENTIRE body of `.pe-populate`'s handler is one statement, `openUploadModal(id)`,
+  and `.detail-upload` calls the same function with `render()`'s own `p.id`. The survivor loses
+  nothing, so `.pe-populate` is suppressed **on the hosted path only** (`hostEl` supplied). The
+  row path still builds it and the listener is **guarded, not deleted**. Measured in a browser on
+  three projects: **exactly ONE control opens the upload dialog.**
+- **STOPPED.** The order rules that `.pe-reset` "clears more" than `.detail-reset` and so
+  survives. **It does not.** Measured byte for byte at `e13b4f1`, **NEITHER is a superset**:
+  - only `.detail-reset`: `LinResults.clear()`, `render(id)`, the `LIN_PROJECTS` re-fetch through
+    `LinStore.getProject`, and forcing the in-memory record to awaiting-ingest (`p.history = []`,
+    the document arrays, the status fields).
+  - only `.pe-reset`: `LinStore.load()`, `logEvent()`, `renderPortfolioAdmin()`.
+
+  Removing either loses something the survivor does not do, **so both were left in place** and
+  `assets/js/detail.js` did not move at all this run. **The detail page still carries TWO controls
+  that clear stored signals, deliberately and on the record.** The dispatch hypothesis that only
+  `.detail-reset` has an `aria-live` region is ALSO false: `.pe-msg` is `aria-live="polite"` too.
+
+## PHASE B: THE CONFIRMATION PATTERN WAS REUSED, NOT INVENTED
+
+Archive and Reset signals now ask before acting. Two patterns already existed: `window.confirm`
+(`app.js`, `decision-ui.js`) and `LinUI.openModal` (`openDeleteArchivedModal`,
+`openDeleteProjectModal`). **The second was taken, and the reason is already written down in four
+files in this repository: `window.confirm` RETURNS FALSE in this container**, and, in
+`workspace.js`'s words, "an action behind that is an action nobody can take". Gating Archive on it
+would have made Archive impossible to perform, which is section 10.9.
+
+**NO CONTROL WAS ADDED.** One button, the confirm, exactly as `openDeleteArchivedModal` does;
+cancelling is the modal's own x, Escape and backdrop. Measured live against the phase A commit
+`527cf08`: the detail page's twenty-entry visible button list is IDENTICAL before and after.
+**CANCEL DOES NOTHING**, proved with counting spies on five `LinStore` methods and on
+`LinApp.showPage`: no call, no navigation, no state change. **CONFIRMING IS UNCHANGED**: both
+action bodies BYTE-IDENTICAL to `e13b4f1` once the gate is stripped.
+
+## TWO STALE GUARDS THIS RUN DID NOT CREATE, AND THEY WERE AGREEING WITH EACH OTHER
+
+`test_run37_freeze_gate.py` had `SUCCESSOR_RECORD`, `SUCCESSOR_REPORT` and `SUCCESSOR_CHECKSUMS`
+still pinned at **RUN 51**, and the `no_self_reference` parent anchor still at **RUN 48's**
+candidate. Row 34 kept passing through Runs 51, 52 and 55 **only because the two stale pins
+agreed with each other** - the RUN 51 record's parent really is Run 48's candidate. So gate rows
+28, 33 and 34 had been asserting the disposition of a release three mints old. All four advanced,
+**revised and never loosened**. This is the decision at section 10.3 of the report: those four
+string constants should be derived from `participant_packages.CURRENT`, not hand-edited each mint.
+
+## SEVEN MINTS, AND TWO FIXED POINTS
+
+Run 51 paid four, Run 52 three, Run 55 four. **This run paid seven**, and three of them exist
+only to chase fixed points: `build_run37_acceptance.py`'s `CANDIDATE` constant (carry-forward 14,
+paid three times), and a **sibling of it found here** - blocker **B01's evidence string** records
+`git porcelain lines at evaluation`, which can never read 0 on a mint taken during a regeneration
+because the generator's own unwritten outputs are the dirt it counts. It is reachable: regenerate
+once on an already-clean tree. Done twice, and a fresh regeneration is now byte-identical.
+
+## THE FULL PASS FOUND TEN SUITES, AND ONE OF THEM HELD A TRAP
+
+The first pass came back **15247/15269 with ten red**, every one a guard this run's own mint
+falsified. `test_run41_preservation.py`'s history check tests the tail **position by position**,
+so appending v37 shifts every index below it; inserting a row without shifting the rest would have
+left two clauses on the same index and **silently dropped one stamp from the check while still
+passing**. The whole ladder was shifted instead.
+
+**NO CHECK WAS DELETED AND TWENTY-ONE WERE ADDED.** `test_run28_participant_packages.py`'s v21
+block became a PREDECESSOR block measured at `e13b4f1` - and a full **v22 block** was added,
+because converting v21 would otherwise have left the chain's central guarantee, that the CURRENT
+record's checksums hold against the LIVE TREE, **with no subject at all**. That suite went
+**271 -> 292**, which is the whole of the check-total rise from 15269 to 15290. **The suite
+population is unchanged at 203.**
+
+## THE INCIDENTAL WORTH KNOWING
+
+**The Run 55 release report shipped headed "# Run-52 successor freeze report" for
+`sim-2026.08-v35`.** The builder's Markdown body had never been advanced past Run 52. The Run 55
+artefact is NOT rewritten - it is that release's evidence - but the Run 56 builder writes a
+truthful report, and the record's stale `behavioural_delta_v34_to_v35` key becomes
+`behavioural_delta_v36_to_v37`.
+
+## WHAT THE OWNER MUST DECIDE
+
+1. **Two controls still clear stored signals on the detail page.** Leave both; **MERGE** them
+   (give one the union of the two handler bodies, the only removal that loses nothing, then
+   remove the other); or relabel one. Merging is real work on a handler and was not ordered.
+2. **`.detail-reset` asks nothing** while `.pe-reset` beside it now does. Extend the same
+   confirmation to it?
+3. **The freeze gate's four release pins need deriving, not hand-editing.** Three sat stale for
+   five runs and passed the whole time.
+
+---
+
 # 2026-08-22 - Run 55: THE MINT. FOUR PHASES, GATE 34/34.
 
 **Report:** `REPORT_2026-08-22_run55_mint.md`.

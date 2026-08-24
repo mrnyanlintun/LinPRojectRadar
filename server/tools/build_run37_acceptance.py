@@ -126,12 +126,19 @@ FREEZE = ROOT / "research" / "freeze"
 # run51_freeze_candidate_identity.json, run51_successor_freeze_gate.csv,
 # run51_candidate_behaviour_digest.json and the v34 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v34.
-PREDECESSOR_CANDIDATE = "d236a2706a801cad8547ba34d68b0dc83521ff52"
-PREDECESSOR_VERSION = "sim-2026.08-v35"
-CANDIDATE = "8e557b7b28857171a8611baf28f2c99cfd70c875"
-EXPECTED_VERSION = "sim-2026.08-v36"
-IDENTITY_FILE = "run55_freeze_candidate_identity.json"
-GATE_FILE = "run55_successor_freeze_gate.csv"
+# RESTATED BY RUN 56, and the reasoning is unchanged again. Run 56 removes the duplicate
+# "Upload documents" control from the project detail page and puts a confirmation in front of
+# Archive and of Reset signals. WHAT A PARTICIPANT READS AND CLICKS is part of the frozen
+# candidate, so the freeze is SUPERSEDED rather than amended. The Run-55 artefacts are NOT
+# rewritten: run55_freeze_candidate_identity.json, run55_successor_freeze_gate.csv,
+# run55_candidate_behaviour_digest.json and the v36 release records all stay exactly as that
+# release wrote them, and remain the historical evidence for everything collected under v36.
+PREDECESSOR_CANDIDATE = "8e557b7b28857171a8611baf28f2c99cfd70c875"
+PREDECESSOR_VERSION = "sim-2026.08-v36"
+CANDIDATE = "db942f2ebe4ae27b598f76bd8307517e862f4a69"
+EXPECTED_VERSION = "sim-2026.08-v37"
+IDENTITY_FILE = "run56_freeze_candidate_identity.json"
+GATE_FILE = "run56_successor_freeze_gate.csv"
 # RUN 55, THE MINT. TWO FILENAMES, NOT ONE, AND THAT IS DELIBERATE.
 #
 # The generator used a SINGLE constant for both halves of blocker B15: it read the prior digest
@@ -145,8 +152,12 @@ GATE_FILE = "run55_successor_freeze_gate.csv"
 # 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1. The check is STRICTER after
 # this change than before it: it now spans a supersession instead of only comparing a run to
 # itself.
-PRIOR_BEHAVIOUR_FILE = "run52_candidate_behaviour_digest.json"
-BEHAVIOUR_FILE = "run55_candidate_behaviour_digest.json"
+# RUN 56 KEEPS THE TWO FILENAMES SEPARATE, for exactly the reason Run 55 separated them: B15
+# reads the PREDECESSOR record and writes the successor one, so it compares across a
+# supersession instead of comparing a run to itself. Collapsing them back into one constant
+# would make B15 read a file that does not exist yet and pass without comparing anything.
+PRIOR_BEHAVIOUR_FILE = "run55_candidate_behaviour_digest.json"
+BEHAVIOUR_FILE = "run56_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
