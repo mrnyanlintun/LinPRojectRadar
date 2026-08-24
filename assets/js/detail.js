@@ -1058,10 +1058,17 @@
                 from it, and the platform has already lost one action that way. The button
                 reports what it did instead of asking permission first. */""}
            <button class="btn small detail-compute-all" data-compute-all="${esc(p.id)}">Generate signals for every period</button>
-           <button class="btn small detail-reset" data-reset="${esc(p.id)}"
-             title="Clears this project's stored signal values so its documents can be read again. Does not delete documents and does not touch other projects.">Clear stored signals for this project</button>
+           ${/* RUN 57, PHASE A. `.detail-reset` ("Clear stored signals for this project") AND ITS
+                aria-live SPAN ARE REMOVED. It and `.pe-reset` in the admin panel below were two
+                controls on this one page that both cleared stored signals, and Run 56 measured
+                that NEITHER was a superset of the other, so neither could be removed on its own
+                without losing behaviour. The owner's Run 57 ruling merges the two handler bodies
+                into ONE control doing the UNION and removes the other. The union lives on
+                `.pe-reset` in ingest.js, which now also calls LinResults.clear(), re-fetches
+                through LinStore.getProject into LIN_PROJECTS, forces the in-memory record to
+                awaiting-ingest and calls LinDetail.render(id) -- everything this handler did --
+                and asks before acting, which this one never did. */""}
            <span class="detail-compute-all-msg kn-sub" aria-live="polite"></span>
-           <span class="detail-reset-msg kn-sub" aria-live="polite"></span>
          </div>
          ${/* RUN 55, PHASE A. THE SIX ADMIN CONTROLS LIVE HERE NOW.
               Run 54 phase C re-bound Manage to openDetail() and removed Open, which left the
@@ -1255,7 +1262,6 @@
     Object.keys(lazyDone).forEach((k) => { delete lazyDone[k]; });
 
     wireBack(root);
-    wireReset(root);
     wireDetailAdmin(root, p.id);
     wireProvenanceTrace(root);
     // Initialise any section the session restored as open.
@@ -2329,70 +2335,9 @@
     catch (e) { console.warn("[detail] admin panel failed to mount for", id, "reason:", e && e.message); }
   }
 
-  // Reset signals: POST resetsignals, clear local signal state, re-render the
-  // detail page (which then shows "awaiting ingest"). No confirmation dialog.
-  function wireReset(root) {
-    const btn = root.querySelector(".detail-reset");
-    if (!btn) return;
-    const msg = root.querySelector(".detail-reset-msg");
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.reset;
-      btn.disabled = true;
-      if (msg) msg.textContent = "Resetting…";
-      try {
-        await LinStore.resetSignals(id);
-        // Drop the dropzone's per-project extraction cache so the signals panel
-        // doesn't re-show stale inputs after the reset.
-        if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
-        // RUN 16, WORKSTREAM A7, THE SAME-SESSION HALF. The server now invalidates the derived
-        // result (writes.py w_resetsignals supersedes every live row), but this tab still holds
-        // the row it primed earlier, and every stored-row accessor reads from that cache. Until
-        // this line, the browser drive found the cleared project still drawing 41 modules with a
-        // current result and a project rollup of Amber in the same session, from a row the
-        // server had already retired. The cache is dropped so the accessors fall back to the
-        // server's answer, which is now correctly that there is none. NOTHING is recomputed
-        // here: this discards a copy, it does not derive a replacement.
-        if (window.LinResults && LinResults.clear) LinResults.clear();
-        // Re-fetch the (now-cleared) server copy; fall back to the cached copy.
-        try {
-          const fresh = await LinStore.getProject(id);
-          if (fresh && window.LIN_PROJECTS) {
-            const i = LIN_PROJECTS.findIndex((x) => x.id === id);
-            if (i >= 0) LIN_PROJECTS[i] = fresh;
-          }
-        } catch (e) { /* keep the cached copy on fetch failure */ }
-        // Force the in-memory copy to a true "Awaiting ingest" state, so the UI is
-        // correct even if the backend reset is an older build that didn't clear
-        // history/events/documents (history feeds CUSUM; events backs the
-        // Uploaded Documents table). The server is the source of truth once its
-        // resetSignals_ is redeployed — this just keeps the screen honest meanwhile.
-        const p = LinStore.getCached(id);
-        if (p) {
-          p.signals = null; p.signalInputs = null; p.simulationSignals = null;
-          // POST-RUN-22. `p.events = []` USED TO BE HERE AND IT MADE THE SAME-SESSION PAGE SAY
-          // THE THING RUN 21 PROVED FALSE. The event log is the append-only audit record; the
-          // reset deliberately does not delete it, and the diagram reads it bounded by the last
-          // `signals_reset` entry (Run 18), so blanking it client-side changes NO activity
-          // figure — it only erases the evidence that documents were RETAINED. Measured in this
-          // correction: the same-session page reported "0 UPLOADED ON THIS PROJECT" and "This
-          // project has no uploaded documents", while the SAME project, reloaded from the same
-          // server seconds later, correctly reported "0 UPLOADED SINCE THE RESET, 24 RETAINED".
-          // The mask was making the live page less truthful than the reloaded one. History is
-          // still cleared (it feeds CUSUM and the server clears it).
-          p.history = [];
-          ["documents", "uploadedDocuments", "docs"].forEach((k) => {
-            if (Array.isArray(p[k])) p[k] = [];
-          });
-          p.status = null; p.reportingPeriod = null; p.derivedState = null;
-        }
-        if (window.LinApp) LinApp.refresh();
-        render(id); // re-render → awaiting ingest
-      } catch (e) {
-        btn.disabled = false;
-        if (msg) msg.textContent = "Reset failed. The store is unreachable, so please retry.";
-      }
-    });
-  }
+  // RUN 57, PHASE A. wireReset() IS REMOVED WITH ITS CONTROL. Its whole body is now inside
+  // ingest.js's doReset(), the merged union handler on `.pe-reset`, which this page mounts
+  // through wireDetailAdmin() -> LinIngest.openInlineManage(id, host).
 
   function wireSignalWeb(root, projectId) {
     root.querySelectorAll("[data-history-period]").forEach((btn) =>

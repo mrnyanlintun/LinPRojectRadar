@@ -399,8 +399,38 @@
     // RUN 56, PHASE B. Same shape as Archive above: the confirmation is a gate, doReset() is the
     // handler body unchanged, and the project is NAMED in the title and on the button. The
     // wording of the detail is the application's OWN wording for this action, taken verbatim
-    // from the title attribute detail.js already carries on `.detail-reset`, so the two controls
-    // that clear stored signals describe themselves the same way.
+    // from the title attribute detail.js CARRIED on `.detail-reset` before Run 57 phase A removed
+    // that control, so the surviving control describes itself in the application's own words.
+    // RUN 57, PHASE A. THE MERGED RESET HANDLER -- THE UNION OF THE TWO CONTROLS THAT CLEARED
+    // STORED SIGNALS. Both handler bodies were measured again at the explicit commit 50dfb40 and
+    // NEITHER was a superset of the other, exactly as Run 56 measured at e13b4f1. The owner's
+    // Run 57 ruling is that the two bodies MERGE INTO ONE control doing the union, and the other
+    // control is removed. This body is that union; `.detail-reset` and its markup, its handler
+    // and its dead CSS rule are gone.
+    //
+    // WHY `.pe-reset` IS THE SURVIVOR. Every behaviour unique to `.detail-reset` is reachable
+    // from this file through interfaces that are ALREADY public -- window.LinResults,
+    // window.LIN_PROJECTS, LinStore.getProject/getCached, and detail.js's exported
+    // LinDetail.render -- whereas two behaviours unique to THIS handler, logEvent() and
+    // confirmDestructive(), are module-private to ingest.js and would have had to be newly
+    // EXPORTED to build the same union inside detail.js. Merging here adds nothing to any
+    // module's public surface. It also leaves Run 56's confirmation exactly where Run 56 put it.
+    //
+    // THE ORDER IS BY DEPENDENCY, NOT BY CONCATENATION:
+    //   1. the server is reset FIRST; everything after it reconciles clients to that truth;
+    //   2. caches are dropped BEFORE any re-fetch or re-render, or the re-render repopulates
+    //      from the stale copies. LinResults.clear() is the line whose absence left a cleared
+    //      project still drawing 41 modules with a current result and an Amber project rollup in
+    //      the same session, from a row the server had already retired;
+    //   3. re-fetch: LinStore.load() rebuilds the store's list FIRST, then getProject(id) takes
+    //      the authoritative single record into LIN_PROJECTS -- the other order would let load()
+    //      overwrite the record just fetched;
+    //   4. the in-memory record is forced to awaiting-ingest AFTER the re-fetch, or the fetch
+    //      would restore the very fields that mutation nulls;
+    //   5. logEvent() ONCE, after the state change succeeded and before the re-renders, so the
+    //      activity log renders with the entry already in it;
+    //   6. re-render broadest to narrowest: LinApp.refresh(), renderPortfolioAdmin(), and
+    //      LinDetail.render(id) LAST, because it rebuilds the host that contains this button.
     const doReset = async () => {
       const btn = box.querySelector(".pe-reset");
       btn.disabled = true;
@@ -409,11 +439,43 @@
       try {
         await LinStore.resetSignals(id);
         if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);
+        // FROM `.detail-reset`: drop the derived-results cache. NOTHING is recomputed here; this
+        // discards a copy, it does not derive a replacement.
+        if (window.LinResults && LinResults.clear) LinResults.clear();
         await LinStore.load();
+        // FROM `.detail-reset`: re-fetch the (now-cleared) server copy into LIN_PROJECTS; fall
+        // back to the cached copy on failure, exactly as the removed handler did.
+        try {
+          const fresh = await LinStore.getProject(id);
+          if (fresh && window.LIN_PROJECTS) {
+            const i = LIN_PROJECTS.findIndex((x) => x.id === id);
+            if (i >= 0) LIN_PROJECTS[i] = fresh;
+          }
+        } catch (e) { /* keep the cached copy on fetch failure */ }
+        // FROM `.detail-reset`: force the in-memory copy to a true "Awaiting ingest" state, so
+        // the screen is correct even against an older backend build. `p.events` is deliberately
+        // NOT blanked -- Run 22 proved that mask made the live page less truthful than the
+        // reloaded one -- but history IS cleared, because it feeds CUSUM.
+        const p = LinStore.getCached(id);
+        if (p) {
+          p.signals = null; p.signalInputs = null; p.simulationSignals = null;
+          p.history = [];
+          ["documents", "uploadedDocuments", "docs"].forEach((k) => {
+            if (Array.isArray(p[k])) p[k] = [];
+          });
+          p.status = null; p.reportingPeriod = null; p.derivedState = null;
+        }
         logEvent(`RESET signals for ${id}.`);
         if (window.LinApp) LinApp.refresh();
         renderPortfolioAdmin();
+        // FROM `.detail-reset`: re-render the detail page, which then reads "awaiting ingest".
+        // GUARDED ON hostEl, which is supplied only by the hosted (detail-page) path: on a
+        // portfolio row there is no detail page to re-render and `.detail-reset` never existed
+        // there, so this is the union on the surface each original actually lived on.
+        if (hostEl && window.LinDetail && LinDetail.render) LinDetail.render(id);
       } catch (e) {
+        // The union of both failure paths: re-enable the control and report the failure in the
+        // aria-live region. The survivor's own wording is kept.
         msg.textContent = "Couldn't reset: " + ((e && e.message) || "store unreachable") + ".";
         msg.classList.add("pe-msg-error");
         btn.disabled = false;
