@@ -1795,6 +1795,47 @@ try:
                 'key: m.key, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
                 'rows.push({ index: idx, key: m.key, name: m.name, color: cat.color, bucket });',
             }
+            # RUN 55, PHASE A. THE SIX ADMIN CONTROLS MOVE ONTO THE PROJECT DETAIL PAGE, on the
+            # owner's ruling at section 6 of the Run 55 order. Every line this run added to this
+            # file is listed here EXPLICITLY, line by line, so the freeze still accounts for
+            # every line that moved: the allowance is EXTENDED BY EXACTLY THE LINES THIS RUN
+            # ADDED, never widened by a pattern. An unexplained addition is still red.
+            #
+            # The substance is one host element in the detail head, one wiring function that
+            # mounts the existing panel into it, and the comment recording why. NO HANDLER WAS
+            # WRITTEN HERE: the six controls are built by ingest.js, which is why nothing in
+            # this list is a click handler.
+            RUN55_ADDED = {
+                "${/* RUN 55, PHASE A. THE SIX ADMIN CONTROLS LIVE HERE NOW.",
+                "------------------------------------------------------------------------------",
+                "<div class=\"detail-admin-host\" data-admin-for=\"${esc(p.id)}\"></div>",
+                "LinIngest may not be loaded on a surface that renders detail without ingest.js (the",
+                "Reset signals, Archive and Close. The owner's ruling at section 6 of the Run 55",
+                "Run 54 phase C re-bound Manage to openDetail() and removed Open, which left the",
+                "THE PANEL IS MOVED, NOT REBUILT. This host is empty markup; the panel inside it is",
+                "`id` is render()'s own `p.id` -- the project this page was rendered for -- and it is",
+                "built by LinIngest.openInlineManage(id, host) -- the same function, the same",
+                "catch (e) { console.warn(\"[detail] admin panel failed to mount for\", id, \"reason:\", e && e.message); }",
+                "const host = root.querySelector(\".detail-admin-host\");",
+                "construction rather than by inspection: there is no selector, no lookup and no shared",
+                "function wireDetailAdmin(root, id) {",
+                "if (!(window.LinIngest && typeof LinIngest.openInlineManage === \"function\")) return;",
+                "if (!host) return;",
+                "inline admin accordion on the portfolio row with no entry point and took six",
+                "it. That is what makes \"each control acts on that project and no other\" true by",
+                "markup, the same six handlers -- with this element as the parent instead of the",
+                "mutable id anywhere in the path.",
+                "operational controls with it: Save info, Upload documents, Recompute this project,",
+                "order is that all six belong on the detail page of the project being viewed.",
+                "other. See wireDetailAdmin() below. */\"\"}",
+                "passed straight into the panel builder, which closes every one of the six handlers over",
+                "render()'s own `p.id`, so each control acts on the project being viewed and no",
+                "render-only test harness is one), so this degrades to leaving the host empty rather than",
+                "row's <li>. Every handler is closed over THIS page's project id, taken from",
+                "throwing and taking the rest of the page's wiring down with it. */",
+                "try { LinIngest.openInlineManage(id, host); }",
+                "wireDetailAdmin(root, p.id);",
+            }
             RUN52_ADDED = {
                 'module_id: m.module_id, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
                 'rows.push({ index: idx, module_id: m.module_id, name: m.name, color: cat.color, bucket });',
@@ -1886,7 +1927,7 @@ try:
                       or ln in POSTRUN22_LINES or ln in _run43_added_span
                       or ln in RUN44_ADDED or ln in _run44_added_span
                       or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED
-                      or ln in RUN51_ADDED or ln in RUN52_ADDED
+                      or ln in RUN51_ADDED or ln in RUN52_ADDED or ln in RUN55_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

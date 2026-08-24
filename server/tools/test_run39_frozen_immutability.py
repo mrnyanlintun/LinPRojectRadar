@@ -366,11 +366,11 @@ check(readiness["final_disposition"] == "STUDY_EXECUTION_READY",
 check(freeze["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       freeze["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v35",
-      "and the live simulation is the Run-52 successor sim-2026.08-v35", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v36",
+      "and the live simulation is the Run-55 successor sim-2026.08-v36", SIMULATION_VERSION)
 # RESTATED BY RUN 43: v13 is superseded by v14 and pinned to its own commit rather than rewritten.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v20",
-      "the participant package is superseded at og-participant-2026.08-v20",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v21",
+      "the participant package is superseded at og-participant-2026.08-v21",
       PP.CURRENT.identifier)
 check(freeze["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6")
@@ -447,6 +447,12 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_run39_frozen_immutability.py",
     "server/tools/test_run39_launch_gate.py",
     "server/tools/build_run37_acceptance.py",
+    # RUN 55, THE MINT. NAMED, NOT WIDENED: `tests_render.html`'s row-actions group asserted the
+    # pre-Run-54 project-list state -- exactly one Open control, labelled "Open ->", in a cluster
+    # reading "Manage|Open ->". Run 54 phase C removed that control on the owner's ruling, so the
+    # group was revised to assert the CURRENT state. This entry names that one file; it does not
+    # loosen the rule that every other pre-existing file must be untouched.
+    "tests_render.html",
     "server/tools/test_export.py",
     "server/tools/test_admin_ops_t7t8.py",
     "server/tools/test_decision_ui_t4.py",

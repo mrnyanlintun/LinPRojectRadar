@@ -430,9 +430,15 @@ _moved_seq = sorted(f for f in _seq_files
 # set is still exactly the six sequence-bearing files, and the SECOND check below still requires
 # each file that moved in a given successor to carry its own named record IN THAT SUCCESSOR'S
 # record, which is where the account of what moved inside it actually lives.
+# RUN 55 folds in V20_TO_V21_SEQUENCE_EXCEPTION on exactly the same footing. THE SET DOES NOT
+# GROW: v20-to-v21's exception is `assets/js/deepdive.js`, which v19-to-v20 already named, so the
+# union is still exactly the SIX sequence-bearing files and the `len(...) == 6` assertion below
+# is unchanged. What is new about this link is that the delta is a DELETION rather than an edit,
+# which is why the file's own record in the v21 checksum record says so in those words.
 _SEQ_AUTHORISED = (set(PP.V14_TO_V15_SEQUENCE_EXCEPTION) | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
                    | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION)
-                   | set(PP.V19_TO_V20_SEQUENCE_EXCEPTION))
+                   | set(PP.V19_TO_V20_SEQUENCE_EXCEPTION)
+                   | set(PP.V20_TO_V21_SEQUENCE_EXCEPTION))
 check("run36.fault35.participant_sequence_unaltered",
       sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 6,
       "every file carrying the participant experimental sequence is byte-identical to the frozen "
@@ -447,6 +453,8 @@ _BY_SUCCESSOR = (
      PP.V18_TO_V19_SEQUENCE_EXCEPTION),
     ("code_audit/run52_participant_package_v20_checksums.sha256",
      PP.V19_TO_V20_SEQUENCE_EXCEPTION),
+    ("code_audit/run55_participant_package_v21_checksums.sha256",
+     PP.V20_TO_V21_SEQUENCE_EXCEPTION),
 )
 _undeclared = [f"{f} (in {_rec})" for _rec, _files in _BY_SUCCESSOR for f in _files
                if f"# {f} -- SEQUENCE-BEARING"

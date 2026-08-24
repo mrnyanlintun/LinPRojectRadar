@@ -209,23 +209,23 @@ print("-" * 78)
 # RESTATED AGAIN BY RUN 48, for the same reason and with the same scope: Run 48 supersedes v31
 # with v32 because WHICH STORED ROW A PAGE READS is executable behaviour. Run 41's boundary is
 # untouched and is still asserted below.
-check(SIMULATION_VERSION == "sim-2026.08-v35", "the live stamp is Run 52's successor "
-      "sim-2026.08-v35", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v34",
-      "and it records v34, Run 51's stamp, as the stamp it supersedes",
+check(SIMULATION_VERSION == "sim-2026.08-v36", "the live stamp is Run 55's successor "
+      "sim-2026.08-v36", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v35",
+      "and it records v35, Run 52's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
       "the history is append-only and Run 41's boundary is preserved: v26 still directly "
       "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v35"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v34"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v33"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v32"
-      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v31"
-      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v30"
-      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v29",
-      "and v27 to v35 were appended after v26 rather than replacing it",
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v36"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v35"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v34"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v33"
+      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v32"
+      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v31"
+      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v30",
+      "and v27 to v36 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
@@ -319,8 +319,8 @@ check(seq_moved == _seq_authorised,
       f"no randomization and no questionnaire ITEM, response option, scale or order moved -- "
       f"which the participant-package suite asserts structurally, not by byte-identity",
       str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v20",
-      "the participant package is superseded at og-participant-2026.08-v20, and the v13, v14 and "
+check(PP.CURRENT.identifier == "og-participant-2026.08-v21",
+      "the participant package is superseded at og-participant-2026.08-v21, and the v13, v14 and "
       "v15 records are pinned rather than rewritten",
       PP.CURRENT.identifier)
 
