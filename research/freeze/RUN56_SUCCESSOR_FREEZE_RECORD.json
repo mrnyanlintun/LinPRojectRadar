@@ -25,7 +25,7 @@
   "freeze_candidate_commit": "3d507dca1b32d7b058ec3b95e200ca16fbbefb0e",
   "candidate_identity_digest": "91db6d4e60f8913099a37c56a946ef65c696b1663a25fb6ae407a99810d56efe",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "76b4ba26d2840ead9217886b99d2899b640a78e00df1566205c4742974c1dfe1",
+  "release_content_digest": "642f13eb56a645a72157a39d7e90606ef6ca52d1c15906e5c925c9892a23cb13",
   "release_content_digest_method": "sha256 over RUN56_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v37",
