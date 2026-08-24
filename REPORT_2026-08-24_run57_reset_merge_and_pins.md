@@ -770,3 +770,61 @@ value could not be established it is named **not determinable** rather than reco
 `expected_candidate()` NOT DETERMINABLE branch is that discipline in code. No fix is recommended
 beyond what the order requires; the three items in section 10 are stated as decisions, not as
 recommendations.
+
+---
+
+## THE MERGE AND THE PUSH
+
+### No section-12 run-level condition fired
+
+| # | condition | outcome |
+|---|---|---|
+| 12.1 | the behaviour digest moves from `8fb4d366...` | **did not fire** -- re-derived on all three mints, unchanged |
+| 12.2 | any stored figure changes | **did not fire** -- gate B02/B05/B09/B10/B14 zero |
+| 12.3 | a runtime lookup fails for any of the 101 registered modules | **did not fire** -- gate B06 zero over the 109-row execution census |
+| 12.4 | a check must be deleted | **did not fire** -- none deleted; seventeen added |
+| 12.5 | a gate row fails for a reason other than a manifest this run's edits falsified | **did not fire** -- every red was a guard this run's own phase A or mint falsified |
+| 12.6 | a reachable control other than the one phase A names would be added, moved or removed | **did not fire** -- measured live on three projects: exactly one button lost, none added or moved, panel order unchanged |
+| 12.7 | a rendered identifier would change | **did not fire** |
+| 12.8 | any project's detail page becomes unreachable | **did not fire** -- `pages == ['detail']` on all three |
+| 12.9 | the merged control does something neither original did, or fails to do something either did | **did not fire** -- asserted statement by statement against `50dfb40` and by execution with counting spies |
+
+### The merge
+
+The gate status was **known and clean** before the merge: freeze gate **34/34** and
+**203 suites, 15307/15307, ALL SUITES GREEN**, both re-run on a clean tree at the branch tip.
+
+```
+git checkout main
+git merge --no-ff run57-reset-merge-and-pins
+Merge made by the 'ort' strategy.
+ 34 files changed, 4408 insertions(+), 153 deletions(-)
+git push origin main
+   50dfb40..56684da  main -> main
+git rev-parse HEAD main origin/main
+56684da8671ed002c73fc12d86dd8c2e73863ba8
+56684da8671ed002c73fc12d86dd8c2e73863ba8
+56684da8671ed002c73fc12d86dd8c2e73863ba8
+git status --porcelain    (empty)
+```
+
+**Re-verified after the merge, on `main`:** freeze gate **34/34**, and the `CANDIDATE` fixed
+point still agrees (`set == computed == 13c1509`) -- the merge commit touches no member path of
+the candidate identity, so the constant did not decay.
+
+### The eleven commits on the branch, in order
+
+```
+ee416b8  PHASE A: the two reset controls MERGED into one, and the other removed
+49b5d5c  PHASE B: the four release pins DERIVED, and the two fixed points closed
+d9e0ce5  PHASE B: the derived pins and the CANDIDATE refusal, proved by injection
+5cad9d6  PHASE B: scope guarantee 8 to the release under test, and record what the chain injection shows
+e09ad18  PHASE C: the mint -- sim-2026.08-v38 and og-participant-2026.08-v23
+3ef3b30  PHASE C: THE FIRST MINT, and the gate is 34/34 on it
+bb065bc  PHASE C: the TWELVE suites the full 203-suite pass found, reconciled to true bytes
+884415b  PHASE C: THE SECOND MINT, after the twelve-suite reconciliation
+13c1509  PHASE C: the two immutability guards, the last of the reconciliation
+128c4a1  PHASE C: THE THIRD MINT, after the two immutability guards
+6f9230c  the report, and the handoff updated at the top
+56684da  Merge Run 57 (--no-ff, on main)
+```
