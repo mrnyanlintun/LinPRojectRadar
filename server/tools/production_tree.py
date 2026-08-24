@@ -477,8 +477,24 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: freeze failure still stands, and `assets/js` and `research` are both still roots. The run52
 #: manifest is NOT rewritten: it stays exactly as that release wrote it and this successor names
 #: it as its parent.
-PINNED = ROOT / "code_audit" / "run55_production_tree.sha256"
-#: The Run-52 manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 56 SUPERSEDES IT, and this supersession is a SMALL one that says so rather than dressing
+#: itself up. EXACTLY TWO production files moved and NOTHING was added, removed or renamed:
+#: `assets/js/ingest.js` -- the duplicate "Upload documents" control (.pe-populate) is removed
+#: FROM THE DETAIL PAGE ONLY, because the page already carried .detail-upload calling the same
+#: function with the same project id, and Archive and Reset signals gain a confirmation built on
+#: the LinUI.openModal shape the application already uses for its destructive project-scoped
+#: actions -- and `server/app/simulation/models.py` (the stamp advances to sim-2026.08-v37 with
+#: the boundary recorded). The ordered removal of `.detail-reset` was STOPPED under section 9.1
+#: of the Run 56 order because NEITHER reset control is a superset of the other, so
+#: `assets/js/detail.js` did NOT move and is deliberately absent from this list. The guard was
+#: observed reporting exactly those two CHANGED, nothing added, removed or renamed, before this
+#: manifest was written. The run55 manifest is NOT rewritten: it stays exactly as that release
+#: wrote it and this successor names it as its parent.
+PINNED = ROOT / "code_audit" / "run56_production_tree.sha256"
+#: The Run-55 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN55 = ROOT / "code_audit" / "run55_production_tree.sha256"
+#: The Run-52 manifest, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN52 = ROOT / "code_audit" / "run52_production_tree.sha256"
 #: The Run-51 manifest, kept addressable so a guard can prove the
@@ -602,6 +618,11 @@ PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: is byte for byte the sha256 of the pinned file. So this pin is DELIBERATELY LEFT AT run51,
 #: for the same reason Run 52 left it there: writing a run55 authority manifest identical to the
 #: run51 one would assert a supersession that did not happen.
+#: RUN 56 RE-TOOK IT AND DELIBERATELY DID NOT SUPERSEDE IT, for the third run running and for
+#: the same reason: `compare()` over AUTHORITY_ROOTS reported added=0 removed=0 changed=0
+#: renamed=0, and the manifest sha256 recomputed from the tree,
+#: b52c47a68a20ab1629681ea240abdea2167c67f289d181f446a8170704dc1596, is byte for byte the sha256
+#: of the pinned file. A manifest is superseded when what it describes moves, not once per run.
 PINNED_AUTHORITY = ROOT / "code_audit" / "run51_authority_tree.sha256"
 #: The Run-39 authority manifest, the immediate parent, kept addressable so a guard can prove
 #: the supersession is a real change and not a silent rewrite.

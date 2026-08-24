@@ -686,12 +686,27 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # exactly A1.7 and A1.8, every stored figure unchanged and the behaviour digest RE-DERIVED
 # identically at 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v36"
+# -------------------------------------------------------------------------------------------
+# RUN 56 SUPERSEDES v36 WITH sim-2026.08-v37. THE STAMP ADVANCES BECAUSE THE SERVED CLIENT IS
+# PART OF THE FROZEN CANDIDATE, NOT BECAUSE A COMPUTATION CHANGED. Run 56 removed the duplicate
+# "Upload documents" control from the project detail page -- the page already carried
+# .detail-upload, which calls the same function with the same project id -- and put a
+# confirmation in front of Archive and in front of Reset signals, reusing the LinUI.openModal
+# shape the application already uses for its destructive project-scoped actions rather than
+# inventing a second pattern. The ordered removal of .detail-reset was STOPPED under section 9.1
+# of the Run 56 order: measured byte for byte at e13b4f1, NEITHER reset control is a superset of
+# the other, so removing either loses something the survivor does not do, and both remain.
+# NOT ONE FORMULA, BAND, THRESHOLD, CALIBRATION, ABSTENTION RULE OR POPULATION MOVED: 101
+# registered, 63 in service, voting exactly A1.7 and A1.8, every stored figure unchanged and the
+# behaviour digest RE-DERIVED identically at
+# 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v37"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v35"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v36"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -705,7 +720,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v22", "sim-2026.08-v23", "sim-2026.08-v24", "sim-2026.08-v25",
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
     "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32", "sim-2026.08-v33",
-    "sim-2026.08-v34", "sim-2026.08-v35", "sim-2026.08-v36",
+    "sim-2026.08-v34", "sim-2026.08-v35", "sim-2026.08-v36", "sim-2026.08-v37",
 )
 
 

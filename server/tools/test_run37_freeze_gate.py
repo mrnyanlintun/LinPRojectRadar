@@ -79,10 +79,22 @@ def check(name, ok, why, got=""):
 # regenerated from the live tree and evaluated against the successor's own identity, gate and
 # release records. The v25 to v33 artefacts are untouched and remain the historical evidence for
 # those releases.
-SUCCESSOR_GATE = "run55_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN51_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN51_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN51_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 56. The successor is re-evaluated once more, for the removal of the duplicate "Upload
+# documents" control from the project detail page and the two confirmations. The gate is not
+# edited to say PASS -- it is the same fifteen blocker classes, regenerated from the live tree
+# and evaluated against the successor's own identity, gate and release records. The v25 to v36
+# artefacts are untouched and remain the historical evidence for those releases.
+#
+# ALL FOUR NAMES BELOW ARE ADVANCED TOGETHER, AND THREE OF THEM HAD BEEN LEFT BEHIND. Run 55
+# advanced SUCCESSOR_GATE to its own file but left SUCCESSOR_RECORD, SUCCESSOR_REPORT and
+# SUCCESSOR_CHECKSUMS pinned at RUN51, so rows 28 and 33 of this gate were asserting the
+# disposition of the Run-51 release rather than of the release being minted. That is a stale
+# guard, not a weakened one, and it is REVISED to the current release rather than removed: the
+# same checks run, against the record that is actually being released.
+SUCCESSOR_GATE = "run56_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = "RUN56_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = "RUN56_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = "RUN56_SUCCESSOR_FREEZE_CHECKSUMS.csv"
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")

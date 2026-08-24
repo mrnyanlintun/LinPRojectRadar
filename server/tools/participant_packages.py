@@ -494,7 +494,15 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v21",
         "code_audit/run55_participant_package_v21_checksums.sha256",
-        None,
+        # RUN 56. PINNED, because v21 is no longer the current package. While a package is
+        # current its record describes the LIVE TREE and `source_commit` is None; the moment a
+        # successor is minted the record becomes historical and must be pinned to the commit
+        # whose blobs it describes, so B11 can prove it was never rewritten. e13b4f1 is the tip
+        # of `main` at which v21 was still current, verified: `git show e13b4f1:<record>` is
+        # byte-identical to the file on disk, and models.py at that commit still reads
+        # sim-2026.08-v36. THE RECORD FILE ITSELF IS NOT TOUCHED -- editing its header to stop
+        # saying "LIVE TREE" would be exactly the predecessor rewrite B11 exists to catch.
+        "e13b4f1905de3cd9703d4b2242f278b104c06774",
         "RUNS 54 AND 55, THE FIRST LINK IN THIS CHAIN WHOSE SEQUENCE-BEARING DELTA IS A "
         "DELETION. ONE participant-visible file LEFT the package -- assets/js/deepdive.js -- "
         "and FIVE moved. The deletion is named first because it is what a reader most needs to "
@@ -537,6 +545,53 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "A1.8, no stored figure changed, and the behaviour digest is RE-DERIVED and unchanged. "
         "The v20 record is NOT regenerated: it describes the tree as v20 left it and remains "
         "the evidence for anything collected under v20.",
+    ),
+    Package(
+        "og-participant-2026.08-v22",
+        "code_audit/run56_participant_package_v22_checksums.sha256",
+        None,
+        "RUN 56, ONE DUPLICATE CONTROL REMOVED AND TWO CONFIRMATIONS ADDED. EXACTLY ONE "
+        "participant-visible file moved -- assets/js/ingest.js -- and it is NOT sequence-"
+        "bearing, so this link carries NO sequence exception and none is invented for it. "
+        "PHASE A. The project detail page carried TWO controls labelled 'Upload documents': the "
+        "pre-existing .detail-upload and the .pe-populate that Run 55 moved onto the page inside "
+        "the admin panel. Measured against the explicit commit e13b4f1, the WHOLE of "
+        ".pe-populate's handler body is one statement, openUploadModal(id), and .detail-upload "
+        "calls LinIngest.openUploadModal with render()'s own p.id, so the survivor does "
+        "everything the removed control did. .pe-populate is therefore suppressed ON THE HOSTED "
+        "PATH ONLY: the builder still emits it when no host element is supplied, so the "
+        "portfolio-row journey is untouched, and its listener is guarded rather than deleted. "
+        "Measured in a real browser on three projects, the detail page now carries EXACTLY ONE "
+        "control that opens the upload dialog. THE SECOND REMOVAL THE ORDER DIRECTED WAS "
+        "STOPPED under section 9.1 of the Run 56 order and BOTH controls remain: the order rules "
+        "that .pe-reset 'clears more' than .detail-reset and so survives, and that premise is "
+        "FALSE against the code. Compared byte for byte at e13b4f1, NEITHER is a superset -- "
+        "only .detail-reset calls LinResults.clear(), re-fetches through LinStore.getProject "
+        "into LIN_PROJECTS, forces the in-memory record to awaiting-ingest and re-renders the "
+        "page, and only .pe-reset calls LinStore.load(), logEvent() and renderPortfolioAdmin(). "
+        "Removing either would lose something the survivor does not do. PHASE B. Archive and "
+        "Reset signals now ASK BEFORE ACTING. The pattern is REUSED, NOT INVENTED: the "
+        "application already confirms in two shapes, window.confirm in app.js and decision-ui.js "
+        "and LinUI.openModal for the destructive project-scoped actions in ingest.js and "
+        "admin-ops.js, and the second is the one taken, because four files in this repository "
+        "already record that window.confirm returns false in this container, which would have "
+        "made Archive impossible to perform and so would have changed what the confirmed action "
+        "does. Each confirmation NAMES THE PROJECT in its title, its detail and on its button, "
+        "and that identifier was verified against the one rendered in the detail heading. NO "
+        "CONTROL WAS ADDED: the dialog carries one button, the confirm, exactly as "
+        "openDeleteArchivedModal does, and cancelling is LinUI.openModal's own x, Escape and "
+        "backdrop; measured live against the phase A commit, the detail page's visible button "
+        "list is IDENTICAL before and after. CANCELLING DOES NOTHING AT ALL, proved by execution "
+        "with counting spies on LinStore and on LinApp.showPage: no call, no navigation, no "
+        "state change. CONFIRMING DOES EXACTLY WHAT THE CONTROL DID BEFORE: each action body is "
+        "asserted BYTE-IDENTICAL to e13b4f1 once the gate is stripped. No em dash, no en dash "
+        "and no ampersand in the confirmation text. NO RENDERED IDENTIFIER CHANGED and no naming "
+        "sweep was run. No step of the decision sequence, no reveal gate, no lock, no "
+        "randomization, no questionnaire, no server contract and no append-only record moved. NO "
+        "SERVER COMPUTATION MOVED: 101 registered, 63 in service, voting exactly A1.7 and A1.8, "
+        "no stored figure changed, and the behaviour digest is RE-DERIVED and unchanged. The v21 "
+        "record is NOT regenerated: it describes the tree as v21 left it and remains the "
+        "evidence for anything collected under v21.",
     ),
 )
 
@@ -585,6 +640,26 @@ SEQUENCE_BEARING_FILES_FROM_V21 = (
     "assets/js/decision.js", "assets/js/decision-ui.js", "assets/js/workspace.js",
     "assets/questionnaires/intake.json", "assets/questionnaires/debrief.json",
 )
+
+#: RUN 56. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
+#: omitted, so that the identity builder reads a DECLARATION instead of falling back to a
+#: hard-coded empty list. A member of a pinned identity group disappearing without being named
+#: here still raises, exactly as it did across v20 to v21.
+V21_TO_V22_DELETED: tuple[str, ...] = ()
+
+#: RUN 56. The files whose bytes moved between v21 and v22. ONE, and it is NOT sequence-bearing.
+#: This link therefore carries NO sequence exception, and none is invented for it: the members of
+#: SEQUENCE_BEARING_FILES_FROM_V21 are all still present and all still byte-identical across this
+#: successor, which is asserted rather than assumed.
+V21_TO_V22_CHANGED = (
+    "assets/js/ingest.js",
+)
+
+#: RUN 56. Stated explicitly so that "no exception" is a DECLARATION and not an omission a later
+#: reader has to infer from silence. An empty tuple here means: nothing sequence-bearing moved
+#: across the v21-to-v22 link. A sequence-bearing file moving without being named here still
+#: turns the gate red.
+V21_TO_V22_SEQUENCE_EXCEPTION: tuple[str, ...] = ()
 
 #: RUN 52. The files whose bytes moved between v19 and v20. SEVEN, and EXACTLY ONE of them is
 #: sequence-bearing. The exception is declared here rather than left for a checksum to discover.
