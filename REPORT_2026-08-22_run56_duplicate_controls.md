@@ -806,3 +806,39 @@ of section 8.6 is met, so the branch is merged to `main` with `--no-ff` **and pu
 ordered this run.
 
 ---
+### The merge and the push, recorded exactly
+
+```
+branch          run56-duplicate-controls, rooted at e13b4f1
+main before     e13b4f1905de3cd9703d4b2242f278b104c06774
+merge           git merge --no-ff run56-duplicate-controls
+main after      dbb4bf9
+push            git push origin main
+                To https://github.com/mrnyanlintun/LinPRojectRadar
+                   e13b4f1..dbb4bf9  main -> main
+main == origin/main == dbb4bf9
+freeze gate ON MERGED main   34/34
+git status --porcelain       EMPTY, before and after
+```
+
+**The push is done. Run 55 left its merge local until asked; this run was ordered to push and
+did.** No force-push was used and none would have been.
+
+### The eleven commits on the branch, in order
+
+```
+527cf08  phase A: remove the duplicate "Upload documents"; STOP the reset removal under 9.1
+282e70d  phase B: Archive and Reset signals ask before acting, reusing the app's own pattern
+80f9cc9  PHASE C: the mint. sim-2026.08-v37, og-participant-2026.08-v22
+631be12  PHASE C: THE THIRD MINT, taken against the committed tree
+3d507dc  PHASE C: re-anchor the freeze gate's no-self-reference parent, which had stopped advancing
+b68cc08  PHASE C: THE FOURTH MINT, after the re-anchoring commit
+06d49b0  PHASE C: THE FIFTH MINT, so the committed gate reproduces BYTE FOR BYTE
+db942f2  PHASE C: the TEN suites the full 203-suite pass found, reconciled to true bytes
+09bf7f1  PHASE C: THE SIXTH MINT, after the ten-suite reconciliation
+         (folded with the seventh, taken on a clean tree)
+fa3ad7e  the report, and the handoff updated at the top
+dbb4bf9  Merge Run 56  (--no-ff, on main, pushed)
+```
+
+**Each phase was committed before the next began, as section 1 requires.**
