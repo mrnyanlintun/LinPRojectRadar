@@ -21,10 +21,10 @@
     "Run 52 removed the dead see-Health button and moved the module identifier to one name on both sides of the wire, module_id, and STOPPED ruling 1 under section 8.1 after establishing by execution that Manage does not reach the project detail page; sim-2026.08-v35.",
     "The v25 to v34 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "c2fc689fd2feb272781dd70a0279a167d207da7a",
-  "candidate_identity_digest": "091d3fab7d8ca150591dacee9f5e53e8746368e5cce1f068bb98437cbbc1fd2d",
+  "freeze_candidate_commit": "8e557b7b28857171a8611baf28f2c99cfd70c875",
+  "candidate_identity_digest": "bcbd646c8fc62e00af7197034cefdc073e47d12a98d132e0d87c21dc16c616c2",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "6cd87f8655a614b9df68f9290582724e698e277acd7eaf8d9f4d871f8b450a4c",
+  "release_content_digest": "8a02c83dc9a92ef24ce0c00cd6e3b57e2ebb4dd404c7a8f96f252ac6a5b6c4ba",
   "release_content_digest_method": "sha256 over RUN55_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v36",
