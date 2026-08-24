@@ -22,10 +22,10 @@
     "Runs 54 and 55, taken as one supersession, deleted the unreachable client-side deep-dive surface and its route, made the project list's Manage control navigate to the project detail page in place of a redundant Open control, moved the six operational admin controls onto that detail page, and brought server/tests/ inside the suite runner so the suite population became 203; sim-2026.08-v36.",
     "The v25 to v34 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "282e70d859b63301b04c1c64e0e8ef4f6cc5fbe4",
-  "candidate_identity_digest": "040ab7525b7263e4b69b4a64351c98b921df9cf9722ffa0451a25512a1a1525b",
+  "freeze_candidate_commit": "80f9cc96cf88c466176a4e2334104c17bdc4a8fb",
+  "candidate_identity_digest": "8225d31cfec534d3fb4a898475d5b7af2a17055a51f077c6b128fe68c4a62904",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "bf1e842e5fec54cd5fc107b831620ea06fc050dae421054238871e4c267f7b03",
+  "release_content_digest": "2f733146ab7ffb2396aa5759d88ef3ff66cd24eb2b24a7f12b4aa3a8f5ccaf3e",
   "release_content_digest_method": "sha256 over RUN56_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v37",
