@@ -230,7 +230,7 @@ with sync_playwright() as pw:
     def _goto():
         # The environment throttles; a single 30s goto is not a reliable measurement instrument.
         # Three attempts, and the third failure is allowed to raise so the traceback prints.
-        for _a in range(3):
+        for _a in range(6):
             try:
                 page.goto(BASE + "/", wait_until="domcontentloaded", timeout=60000)
                 return
@@ -486,6 +486,204 @@ with sync_playwright() as pw:
 
     print()
     print("=" * 94)
+    print("6. NO EM DASH OR EN DASH IN USER-FACING TEXT ON THE DETAIL PAGE")
+    print("=" * 94)
+    txt = page.evaluate("() => (document.getElementById('detail-root')||{}).innerText || ''")
+    bad = [c for c in ("—", "–") if c in txt]
+    check(not bad, "no em dash and no en dash renders on the project detail page", repr(bad))
+
+    PHASE_A_COMMIT = "527cf08"   # the phase A commit. EXPLICIT HASH, never a relative reference.
+
+    print()
+    print("=" * 94)
+    print("7. PHASE B: THE CONFIRMATION PATTERN THE APPLICATION ALREADY USES")
+    print("=" * 94)
+    # Established FIRST and reported, as section 7 requirement 6 orders. Reading is enough to
+    # ESTABLISH what exists; what is done with it is measured below.
+    _pat = {}
+    for _f in ("app.js", "decision-ui.js", "ingest.js", "admin-ops.js", "workspace.js",
+               "detail.js"):
+        _t = (ROOT / "assets" / "js" / _f).read_text(encoding="utf-8")
+        _code = "\n".join(l for l in _t.splitlines() if not l.strip().startswith("//"))
+        _pat[_f] = {"window.confirm CALLED": _code.count("window.confirm("),
+                    "LinUI.openModal CALLED": _code.count("LinUI.openModal(")}
+        print(f"    {_f:16} window.confirm calls={_pat[_f]['window.confirm CALLED']:2}   "
+              f"LinUI.openModal calls={_pat[_f]['LinUI.openModal CALLED']:2}")
+    check(_pat["app.js"]["window.confirm CALLED"] >= 1
+          and _pat["decision-ui.js"]["window.confirm CALLED"] >= 1,
+          "PATTERN 1 EXISTS: window.confirm(...) gates 'Recompute every project' (app.js) and "
+          "'Commit your preliminary judgment' (decision-ui.js)")
+    check(_pat["ingest.js"]["LinUI.openModal CALLED"] >= 1
+          and _pat["admin-ops.js"]["LinUI.openModal CALLED"] >= 1,
+          "PATTERN 2 EXISTS: LinUI.openModal(...) gates the destructive PROJECT-SCOPED actions "
+          "(openDeleteArchivedModal, openDeleteProjectModal)")
+    # WHY PATTERN 2 AND NOT PATTERN 1. Written down in the repository already, in four places.
+    _reason = 0
+    for _f in ("ingest.js", "admin-ops.js", "workspace.js", "detail.js"):
+        _t = (ROOT / "assets" / "js" / _f).read_text(encoding="utf-8")
+        if "window.confirm" in _t and ("returns false" in _t or "suppress" in _t):
+            _reason += 1
+            print(f"    {_f}: records that window.confirm returns false in this container")
+    check(_reason >= 4,
+          "and the repository ALREADY records, in four files, that window.confirm returns false "
+          "in this container -- so gating Archive on it would make Archive impossible to "
+          "perform, which would change what the confirmed action does. PATTERN 2 IS REUSED",
+          str(_reason))
+    check("confirmDestructive" in (ROOT / "assets" / "js" / "ingest.js").read_text("utf-8")
+          and "window.confirm" not in brace_block(
+              (ROOT / "assets" / "js" / "ingest.js").read_text("utf-8"),
+              "function confirmDestructive(opts)"),
+          "the new confirmation uses LinUI.openModal and NOT window.confirm")
+
+    print()
+    print("=" * 94)
+    print("8. CONFIRMING DOES EXACTLY WHAT THE CONTROL DID BEFORE (bytes, against " +
+          BASE_COMMIT + ")")
+    print("=" * 94)
+    ING_NOW = ING.read_text(encoding="utf-8")
+
+    def norm(t):
+        """Statement text with comments and whitespace removed -- the ACTION, not its layout."""
+        out = []
+        for line in t.splitlines():
+            line = line.split("//")[0].strip()
+            if line:
+                out.append(line)
+        return " ".join(out)
+
+    for name, sel, newfn in (("Archive", ".pe-archive", "const doArchive = async () => {"),
+                             ("Reset signals", ".pe-reset", "const doReset = async () => {")):
+        base_h = brace_block(ING_BASE, f'box.querySelector("{sel}").addEventListener')
+        base_body = norm(base_h[base_h.index("{") + 1:].rstrip().rstrip("}"))
+        now_h = brace_block(ING_NOW, newfn)
+        now_body = norm(now_h[now_h.index("{") + 1:].rstrip().rstrip("}"))
+        print(f"    {name} action body @{BASE_COMMIT}: {base_body[:150]}")
+        print(f"    {name} action body now         : {now_body[:150]}")
+        check(base_body == now_body,
+              f"{name}: the ACTION body is BYTE-IDENTICAL to {BASE_COMMIT} once the confirmation "
+              f"gate is stripped -- the confirmation changed nothing about what the action does")
+
+    print()
+    print("=" * 94)
+    print("9. THE CONFIRMATIONS, MEASURED IN A BROWSER: TEXT, PROJECT NAMED, CANCEL, CONFIRM")
+    print("=" * 94)
+    SPY = """() => {
+        window.__c56 = [];
+        window.__nav56 = [];
+        ['archiveProject','resetSignals','load','saveProject','deleteProject']
+          .forEach((k) => { const o = LinStore[k];
+             if (typeof o === 'function') LinStore[k] = function (...a) {
+                 window.__c56.push(k + '(' + a.join(',') + ')'); return o.apply(LinStore, a); }; });
+        if (window.LinApp && LinApp.showPage) { const sp = LinApp.showPage;
+            LinApp.showPage = function (...a) { window.__nav56.push('showPage(' + a.join(',') + ')');
+                                                return sp.apply(LinApp, a); }; }
+        window.__href56 = location.href;
+        return true; }"""
+
+    def open_detail(rid):
+        portfolio()
+        page.click(f"#project-list .list-item[data-id='{rid}'] .li-manage")
+        page.wait_for_timeout(2500)
+
+    CONFIRM_TEXT = {}
+    for name, sel, rid in (("Archive", ".pe-archive", ROWS[0]),
+                           ("Reset signals", ".pe-reset", ROWS[0])):
+        open_detail(rid)
+        page.evaluate(SPY)
+        before_modals = page.evaluate("() => document.querySelectorAll('.app-modal').length")
+        page.click(f"#detail-root .detail-admin-host {sel}")
+        page.wait_for_timeout(1200)
+        got = page.evaluate("""() => {
+            const m = document.querySelector('.app-modal');
+            if (!m) return null;
+            return { title: (m.querySelector('.app-modal-title')||{}).textContent || '',
+                     body: (m.querySelector('.app-modal-body p')||{}).textContent || '',
+                     buttons: Array.from(m.querySelectorAll('.app-modal-body button'))
+                                .map(b => b.textContent.trim()),
+                     closers: m.querySelectorAll('.app-modal-x').length,
+                     all: (m.innerText || '') }; }""")
+        print(f"    {name} ({rid}) confirmation:")
+        print(f"      title  : {got and got['title']!r}")
+        print(f"      detail : {got and got['body']!r}")
+        print(f"      buttons: {got and got['buttons']!r}")
+        check(before_modals == 0 and got is not None,
+              f"{name}: ASKS BEFORE ACTING -- a confirmation dialog opens and the action has not "
+              f"run", str(got is not None))
+        CONFIRM_TEXT[name] = got
+        check(rid in got["title"] and rid in got["body"] and rid in got["buttons"][0],
+              f"{name}: the confirmation NAMES THE PROJECT it will act on ({rid}) in its title, "
+              f"its detail and on its button", str(got["buttons"]))
+        _heading = page.evaluate(
+            "() => (document.querySelector('#detail-root h1 .mod-mono')||{}).textContent || ''")
+        check(_heading.strip() == rid,
+              f"{name}: and that identifier is the one RENDERED ON THE PAGE (the detail heading "
+              f"reads {_heading.strip()!r})", _heading)
+        check(len(got["buttons"]) == 1,
+              f"{name}: the dialog carries ONE button, the confirm -- NO CONTROL IS ADDED; "
+              f"cancelling is LinUI.openModal's own x, Escape and backdrop",
+              str(got["buttons"]))
+        bad = [c for c in ("—", "–") if c in got["all"]]
+        check(not bad, f"{name}: no em dash and no en dash in the confirmation text", repr(bad))
+        check("&" not in got["all"],
+              f"{name}: the ampersand rule holds in the confirmation text")
+
+        # --- CANCEL DOES NOTHING AT ALL, PROVED BY EXECUTION ---
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(900)
+        after = page.evaluate("""() => ({
+            calls: window.__c56, nav: window.__nav56, modals:
+            document.querySelectorAll('.app-modal').length,
+            href: location.href === window.__href56,
+            page: Array.from(document.querySelectorAll('.page'))
+                    .filter(p => getComputedStyle(p).display !== 'none')
+                    .map(p => p.getAttribute('data-page')),
+            id: (document.querySelector('#detail-root .pr-admin .pe-id')||{}).value })""")
+        print(f"      after CANCEL: store calls={after['calls']}  navigation={after['nav']}  "
+              f"modals={after['modals']}  page={after['page']}")
+        check(after["calls"] == [],
+              f"{name}: CANCEL MADE NO CALL -- LinStore was not touched at all",
+              str(after["calls"]))
+        check(after["nav"] == [] and after["href"],
+              f"{name}: CANCEL CAUSED NO NAVIGATION", str(after["nav"]))
+        check(after["modals"] == 0, f"{name}: the dialog closed", str(after["modals"]))
+        check(after["page"] == ["detail"] and after["id"] == rid,
+              f"{name}: CANCEL CHANGED NO STATE -- the same detail page for {rid} is still open "
+              f"with its panel intact", str(after))
+
+    # --- CONFIRMING RUNS THE ACTION, on projects chosen so the two do not interfere ---
+    open_detail(ROWS[1])
+    page.evaluate(SPY)
+    page.click("#detail-root .detail-admin-host .pe-reset")
+    page.wait_for_timeout(1200)
+    page.click(".app-modal .app-modal-body button")
+    page.wait_for_timeout(3000)
+    r_calls = page.evaluate("() => window.__c56")
+    print(f"    CONFIRM Reset signals on {ROWS[1]}: store calls = {r_calls}")
+    check(any(c.startswith("resetSignals(" + ROWS[1]) for c in r_calls),
+          f"CONFIRMING 'Reset signals' calls LinStore.resetSignals({ROWS[1]}) -- exactly what "
+          f"the control did before", str(r_calls))
+
+    open_detail(ROWS[2])
+    page.evaluate(SPY)
+    page.click("#detail-root .detail-admin-host .pe-archive")
+    page.wait_for_timeout(1200)
+    page.click(".app-modal .app-modal-body button")
+    page.wait_for_timeout(3000)
+    a_calls = page.evaluate("() => window.__c56")
+    print(f"    CONFIRM Archive on {ROWS[2]}: store calls = {a_calls}")
+    check(any(c.startswith("archiveProject(" + ROWS[2]) for c in a_calls),
+          f"CONFIRMING 'Archive' calls LinStore.archiveProject({ROWS[2]}) -- exactly what the "
+          f"control did before", str(a_calls))
+    portfolio()
+    _left = page.evaluate("""() => Array.from(
+        document.querySelectorAll('#project-list .list-item')).map(r => r.getAttribute('data-id'))""")
+    print(f"    portfolio after the confirmed archive: {_left}")
+    check(ROWS[2] not in _left,
+          f"and the confirmed archive REALLY ARCHIVED {ROWS[2]}: it is gone from the active "
+          f"portfolio", str(_left))
+
+    print()
+    print("=" * 94)
     print("5. THE INVENTORY BEFORE PHASE A, MEASURED LIVE ON A SECOND BROWSER")
     print("=" * 94)
     # INJECTION PROTOCOL. The snapshot is taken from the COMMITTED REFERENCE (BASE_COMMIT), not
@@ -577,11 +775,70 @@ with sync_playwright() as pw:
 
     print()
     print("=" * 94)
-    print("6. NO EM DASH OR EN DASH IN USER-FACING TEXT ON THE DETAIL PAGE")
+    print(f"10. PHASE B ADDED NO CONTROL, MEASURED LIVE AGAINST {PHASE_A_COMMIT}")
     print("=" * 94)
-    txt = page.evaluate("() => (document.getElementById('detail-root')||{}).innerText || ''")
-    bad = [c for c in ("—", "–") if c in txt]
-    check(not bad, "no em dash and no en dash renders on the project detail page", repr(bad))
+    # Taken from the PRIMARY browser BEFORE any second browser is launched: this environment
+    # throttles, and a goto after a second browser has run is not a reliable instrument.
+    open_detail(ROWS[0])
+    CTRL_B = page.evaluate("""() => { const r = document.getElementById('detail-root');
+        const vis = (e) => { const s = getComputedStyle(e);
+            return s.display !== 'none' && s.visibility !== 'hidden'; };
+        return Array.from(r.querySelectorAll('button')).filter(vis)
+                 .map(b => b.textContent.trim()); }""")
+    pre_tree2 = tree_dirty()
+    print(f"    tree before the injection ({len(pre_tree2.splitlines())} line(s)):")
+    for _l in pre_tree2.splitlines():
+        print("      " + _l)
+    live_ing2 = ING.read_text(encoding="utf-8")
+    ING_PHASEA = subprocess.run(
+        ["git", "-C", str(ROOT), "show", f"{PHASE_A_COMMIT}:assets/js/ingest.js"],
+        capture_output=True)
+    assert ING_PHASEA.returncode == 0
+    try:
+        ING.write_text(ING_PHASEA.stdout.decode("utf-8"), encoding="utf-8")
+        b3 = pw.chromium.launch(executable_path=CHROME,
+                                args=["--use-gl=swiftshader", "--no-sandbox", "--headless=new"])
+        p3 = b3.new_page(viewport={"width": 1680, "height": 2400})
+        for pattern in ("**accounts.google.com**", "**apis.google.com**", "**gstatic.com**",
+                        "**tiles.openfreemap.org**", "**maps.googleapis.com**"):
+            p3.route(pattern, lambda r: r.abort())
+        for _a in range(3):
+            try:
+                p3.goto(BASE + "/", wait_until="domcontentloaded", timeout=60000)
+                break
+            except Exception:
+                time.sleep(2)
+        p3.evaluate("(t) => sessionStorage.setItem('og-session-token', t)", PM)
+        p3.goto(BASE + "/", wait_until="domcontentloaded", timeout=90000)
+        p3.wait_for_timeout(6000)
+        p3.evaluate("() => window.LinApp && LinApp.showPage && LinApp.showPage('portfolio')")
+        p3.wait_for_timeout(1200)
+        p3.evaluate("() => window.LinApp && LinApp.buildFallbackList && LinApp.buildFallbackList()")
+        p3.wait_for_timeout(1500)
+        rid1 = ROWS[0]
+        p3.click(f"#project-list .list-item[data-id='{rid1}'] .li-manage")
+        p3.wait_for_timeout(2500)
+        CTRL_A = p3.evaluate("""() => { const r = document.getElementById('detail-root');
+            const vis = (e) => { const s = getComputedStyle(e);
+                return s.display !== 'none' && s.visibility !== 'hidden'; };
+            return Array.from(r.querySelectorAll('button')).filter(vis)
+                     .map(b => b.textContent.trim()); }""")
+        b3.close()
+    finally:
+        ING.write_text(live_ing2, encoding="utf-8")
+        post_tree2 = tree_dirty()
+        print(f"    tree after the injection was restored "
+              f"({len(post_tree2.splitlines())} line(s)):")
+        for _l in post_tree2.splitlines():
+            print("      " + _l)
+        check(post_tree2 == pre_tree2,
+              "INJECTION RESTORED: the tree is byte-identical to what it was before it",
+              f"{pre_tree2!r} -> {post_tree2!r}")
+    print(f"    detail-page controls at {PHASE_A_COMMIT} (phase A only): {CTRL_A}")
+    print(f"    detail-page controls now (phase A + phase B)          : {CTRL_B}")
+    check(CTRL_A == CTRL_B,
+          f"PHASE B ADDED, MOVED AND REMOVED NO REACHABLE CONTROL: the detail page's button list "
+          f"is IDENTICAL to {PHASE_A_COMMIT}'s", f"{CTRL_A} vs {CTRL_B}")
 
     print()
     print("=" * 94)

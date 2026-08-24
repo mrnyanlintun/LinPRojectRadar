@@ -221,6 +221,52 @@
   // "Close" keeps its meaning: it removes the panel. On the row it was reopened by clicking
   // Manage; on the detail page it is reopened by clicking Manage again from the portfolio, which
   // re-renders the detail page. The SAME control undoes it, so no new control is introduced.
+  /* ---------- RUN 56, PHASE B. THE CONFIRMATION BEFORE A DESTRUCTIVE ADMIN CONTROL ----------
+     THE PATTERN IS REUSED, NOT INVENTED. The application already confirms in two shapes:
+
+       1. `window.confirm(...)`  -- app.js:2485 ("Recompute every project") and
+          decision-ui.js:488 ("Commit your preliminary judgment?").
+       2. `LinUI.openModal(...)` -- admin-ops.js `openDeleteProjectModal` and this file's own
+          `openDeleteArchivedModal`, both for destructive PROJECT-SCOPED actions.
+
+     SHAPE 2 IS THE ONE REUSED HERE, and the reason is written down in the repository in four
+     places already: `window.confirm` RETURNS FALSE in this container and in any dialog
+     suppressing browser (ingest.js openDeleteArchivedModal, admin-ops.js openDeleteProjectModal,
+     workspace.js renderFailedUploads, detail.js's "Generate signals for every period"), and, in
+     workspace.js's words, "an action behind that is an action nobody can take". Gating Archive
+     on `window.confirm` would therefore make Archive IMPOSSIBLE TO PERFORM here, which would
+     change what the confirmed action does. It is not used.
+
+     NO CONTROL IS ADDED. The dialog carries ONE button, the confirm, exactly as
+     `openDeleteArchivedModal` does; cancelling is the modal's own x, Escape or backdrop, which
+     `LinUI.openModal` already provides to every dialog in the application. Nothing is added to
+     the page: the dialog exists only while it is open.
+
+     CANCELLING DOES NOTHING AT ALL. `onConfirm` is called from the confirm button's listener and
+     from nowhere else. There is no `onClose` handler, no navigation and no state change on any
+     dismissal path, so dismissing the dialog cannot reach the action.
+
+     NO TYPED CONFIRMATION. That heavier shape is the application's answer to PERMANENT DELETE.
+     Neither of these two actions deletes anything: Archive is reversible from the Archived
+     dialog's Restore, and Reset signals keeps the documents. Reusing the typed shape here would
+     overstate what the action does. */
+  function confirmDestructive(opts) {
+    if (!(window.LinUI && LinUI.openModal)) return;
+    LinUI.openModal({
+      title: opts.title,
+      mount: (body, close) => {
+        body.innerHTML =
+          `<p class="login-error" style="display:block">${esc(opts.detail)}</p>` +
+          `<button type="button" class="btn small danger" data-confirm-go>` +
+            `${esc(opts.confirmLabel)}</button>`;
+        body.querySelector("[data-confirm-go]").addEventListener("click", () => {
+          close();
+          opts.onConfirm();
+        });
+      }
+    });
+  }
+
   function openInlineManage(id, hostEl) {
     const rowBtn = hostEl ? null : findPortfolioRow(id);
     const li = hostEl || (rowBtn && rowBtn.closest("li"));
@@ -326,17 +372,36 @@
     });
 
     // Archive
-    box.querySelector(".pe-archive").addEventListener("click", async () => {
+    // RUN 56, PHASE B. The confirmation is a GATE IN FRONT of the action. The action itself is
+    // the SAME BODY it has always had, moved into doArchive() and called with nothing added,
+    // nothing removed and nothing reordered, so confirming does exactly what the control did
+    // before. The project is NAMED in both the title and the button.
+    const doArchive = async () => {
       try {
         await LinStore.archiveProject(id);
         logEvent(`ARCHIVED ${id}.`);
         if (window.LinApp) LinApp.refresh();
         renderPortfolioAdmin();
       } catch (e) { LinStore.banner("Couldn't archive: store unreachable. Retry.", "warn"); }
+    };
+    box.querySelector(".pe-archive").addEventListener("click", () => {
+      confirmDestructive({
+        title: "Archive " + id,
+        detail: "This moves " + id + " out of the active portfolio. Its documents and its "
+              + "computed results are kept, and it can be brought back from the Archived "
+              + "dialog. Nothing is deleted and no other project is touched.",
+        confirmLabel: "Archive " + id,
+        onConfirm: doArchive
+      });
     });
 
     // Reset signals → clears extraction back to "Awaiting ingest".
-    box.querySelector(".pe-reset").addEventListener("click", async () => {
+    // RUN 56, PHASE B. Same shape as Archive above: the confirmation is a gate, doReset() is the
+    // handler body unchanged, and the project is NAMED in the title and on the button. The
+    // wording of the detail is the application's OWN wording for this action, taken verbatim
+    // from the title attribute detail.js already carries on `.detail-reset`, so the two controls
+    // that clear stored signals describe themselves the same way.
+    const doReset = async () => {
       const btn = box.querySelector(".pe-reset");
       btn.disabled = true;
       msg.classList.remove("pe-msg-error", "pe-msg-ok");
@@ -353,6 +418,15 @@
         msg.classList.add("pe-msg-error");
         btn.disabled = false;
       }
+    };
+    box.querySelector(".pe-reset").addEventListener("click", () => {
+      confirmDestructive({
+        title: "Reset signals for " + id,
+        detail: "This clears " + id + "'s stored signal values so its documents can be read "
+              + "again. It does not delete documents and it does not touch other projects.",
+        confirmLabel: "Reset signals for " + id,
+        onConfirm: doReset
+      });
     });
 
     // Save info (number / name / address) with inline geocode feedback.
