@@ -4,6 +4,20 @@ import os, pathlib, re, shutil, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run31_synthetic_scope_faults.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 SYNTH = ROOT / "research_fixtures" / "synthetic"
 SCOPE = HERE / "build_run31_synthetic_scope.py"
 SWEEP = HERE / "test_run31_synthetic_checksums.py"
@@ -51,57 +65,72 @@ def record(n, desc, landed, p, t, scope, reason):
     rows.append((n, landed, red, verdict))
 
 
+# RUN 55, PHASE B. EVERY RESTORE BELOW IS IN A `finally`. They were bare statements at the
+# end of each fault, so a raise between the mutation and the restore left the mutated bytes
+# on disk -- and this campaign mutates THREE files under server/ and the synthetic package.
+# Run 53 established that the next campaign then snapshots the corruption and cements it
+# with its own correct restore. The arm() guard is the fix; this is the hygiene.
+
 # --- A: remove one locally governed package file -------------------------------------------
 backup = victim.read_bytes()
-victim.unlink()
-landed = not victim.is_file()
-p, t = run(GUARD)
-record("A", f"remove a locally governed file ({victim.name})", landed, p, t, scope_counts(),
-       "the sweep must report it missing rather than passing over it")
-victim.write_bytes(backup)
+try:
+    victim.unlink()
+    landed = not victim.is_file()
+    p, t = run(GUARD)
+    record("A", f"remove a locally governed file ({victim.name})", landed, p, t, scope_counts(),
+           "the sweep must report it missing rather than passing over it")
+finally:
+    victim.write_bytes(backup)
 
 # --- D: mutate one resolved local package byte ----------------------------------------------
-victim.write_bytes(backup + b"\n# RUN31 MUTATION\n")
-landed = victim.read_bytes() != backup
-p, t = run(GUARD)
-record("D", f"mutate a resolved local byte ({victim.name})", landed, p, t, scope_counts(),
-       "the checksum guard must reject the changed file")
-victim.write_bytes(backup)
+try:
+    victim.write_bytes(backup + b"\n# RUN31 MUTATION\n")
+    landed = victim.read_bytes() != backup
+    p, t = run(GUARD)
+    record("D", f"mutate a resolved local byte ({victim.name})", landed, p, t, scope_counts(),
+           "the checksum guard must reject the changed file")
+finally:
+    victim.write_bytes(backup)
 
 # --- B: misclassify a locally governed file as external -------------------------------------
 src = SCOPE.read_text()
 gov = "package_A_project_structures/" + str(victim.relative_to(TARGET))
 mut = src.replace('KNOWN_UNDELIVERED_BY_PROGRAMME = {"OG-SYNTH-0.1": set(CLAIMED_NEVER_DELIVERED)}',
                   'KNOWN_UNDELIVERED_BY_PROGRAMME = {"OG-SYNTH-0.1": set(CLAIMED_NEVER_DELIVERED) | {"%s"}}' % gov)
-SCOPE.write_text(mut)
 sweep_src = SWEEP.read_text()
-SWEEP.write_text(sweep_src.replace(
-    '        "schemas/schema_catalog.json",\n    },',
-    '        "schemas/schema_catalog.json",\n        "%s",\n    },' % gov))
-landed = gov in SCOPE.read_text() and gov in SWEEP.read_text()
-sc = scope_counts()
-# THE GUARD IS THE SWEEP'S SCOPE-AUTHORITY CHECK, which compares the committed never-delivered
-# set against the tree: a file that is PRESENT may not be declared never-delivered.
-gp, gt = run(GUARD)
-red_b = (gp != gt) and gt > 0
-print(f"FAULT B: misclassify a locally governed file as external\n  landed={landed}  "
-      f"{GUARD}: {gp}/{gt}  scope={sc}\n  -> {'RED' if red_b else 'STILL GREEN'}\n"
-      f"  (a present, checksum-matching file may not be declared external)\n")
-rows.append(("B", landed, red_b, "RED" if red_b else "STILL GREEN"))
-SCOPE.write_text(src)
-SWEEP.write_text(sweep_src)
+try:
+    SCOPE.write_text(mut)
+    SWEEP.write_text(sweep_src.replace(
+        '        "schemas/schema_catalog.json",\n    },',
+        '        "schemas/schema_catalog.json",\n        "%s",\n    },' % gov))
+    landed = gov in SCOPE.read_text() and gov in SWEEP.read_text()
+    sc = scope_counts()
+    # THE GUARD IS THE SWEEP'S SCOPE-AUTHORITY CHECK, which compares the committed
+    # never-delivered set against the tree: a file that is PRESENT may not be declared
+    # never-delivered.
+    gp, gt = run(GUARD)
+    red_b = (gp != gt) and gt > 0
+    print(f"FAULT B: misclassify a locally governed file as external\n  landed={landed}  "
+          f"{GUARD}: {gp}/{gt}  scope={sc}\n  -> {'RED' if red_b else 'STILL GREEN'}\n"
+          f"  (a present, checksum-matching file may not be declared external)\n")
+    rows.append(("B", landed, red_b, "RED" if red_b else "STILL GREEN"))
+finally:
+    SCOPE.write_text(src)
+    SWEEP.write_text(sweep_src)
 
 # --- C: misclassify an external reference as locally preserved without supplying the file ----
 mut = src.replace('    "schemas/schema_catalog.json":\n', '    "FAULT_C_REMOVED_schema_catalog.json":\n')
-SCOPE.write_text(mut)
-landed = "FAULT_C_REMOVED" in SCOPE.read_text()
-sc = scope_counts()
-red_c = sc["unclassified"] > base_scope["unclassified"]
-print(f"FAULT C: claim an undelivered file is locally preserved, without supplying it\n"
-      f"  landed={landed}  scope={sc}\n  -> {'RED' if red_c else 'STILL GREEN'}\n"
-      f"  (an entry with no committed authority must be reported UNCLASSIFIED, not passed)\n")
-rows.append(("C", landed, red_c, "RED" if red_c else "STILL GREEN"))
-SCOPE.write_text(src)
+try:
+    SCOPE.write_text(mut)
+    landed = "FAULT_C_REMOVED" in SCOPE.read_text()
+    sc = scope_counts()
+    red_c = sc["unclassified"] > base_scope["unclassified"]
+    print(f"FAULT C: claim an undelivered file is locally preserved, without supplying it\n"
+          f"  landed={landed}  scope={sc}\n  -> {'RED' if red_c else 'STILL GREEN'}\n"
+          f"  (an entry with no committed authority must be reported UNCLASSIFIED, not passed)\n")
+    rows.append(("C", landed, red_c, "RED" if red_c else "STILL GREEN"))
+finally:
+    SCOPE.write_text(src)
 
 p, t = run(GUARD)
 print(f"RESTORED  {GUARD}: {p}/{t} green={p==t}  scope={scope_counts()}")

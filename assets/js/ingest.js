@@ -204,16 +204,32 @@
 
   // Toggle the inline admin accordion for a project id. Reused by the map's
   // "No address set" deep-link (was: open the Manage page's Edit-info panel).
-  function openInlineManage(id) {
-    const rowBtn = findPortfolioRow(id);
-    if (!rowBtn) return;
-    const li = rowBtn.closest("li");
+  //
+  // RUN 55, PHASE A. THE PANEL IS NOW MOUNTABLE ON THE PROJECT DETAIL PAGE.
+  // Run 54 phase C re-bound Manage to openDetail() and removed Open, which left this panel --
+  // and with it Save info, Upload documents, Recompute this project, Reset signals, Archive and
+  // Close -- with no entry point at all. The owner's ruling at section 6 of the Run 55 order is
+  // that all six move onto the detail page of the project being viewed.
+  //
+  // THIS IS A MOVE, NOT A REWRITE (section 11.1). The panel is built by THIS function, from the
+  // same markup, and every one of the six click handlers below is the same code it was on the
+  // portfolio row. The only thing that changes is the PARENT ELEMENT: pass `hostEl` and the box
+  // is appended there instead of to the row's <li>. When `hostEl` is absent the behaviour is
+  // exactly what it was -- find the row, toggle, one-open-at-a-time -- so the row path is byte
+  // -for-byte the same journey it always was.
+  //
+  // "Close" keeps its meaning: it removes the panel. On the row it was reopened by clicking
+  // Manage; on the detail page it is reopened by clicking Manage again from the portfolio, which
+  // re-renders the detail page. The SAME control undoes it, so no new control is introduced.
+  function openInlineManage(id, hostEl) {
+    const rowBtn = hostEl ? null : findPortfolioRow(id);
+    const li = hostEl || (rowBtn && rowBtn.closest("li"));
     if (!li) return;
     // toggle: second click (or Manage again) collapses it
     const open = li.querySelector(".pr-admin");
-    if (open) { open.remove(); rowBtn.classList.remove("mng-open"); return; }
-    closeInlineManage(li);                 // accordion: one open at a time
-    rowBtn.classList.add("mng-open");
+    if (open) { open.remove(); if (rowBtn) rowBtn.classList.remove("mng-open"); return; }
+    if (!hostEl) closeInlineManage(li);    // accordion: one open at a time
+    if (rowBtn) rowBtn.classList.add("mng-open");
 
     const cached = LinStore.getCached(id) || {};
     const populated = hasSignals(cached);
@@ -261,7 +277,7 @@
     }
     const msg = box.querySelector(".pe-msg");
 
-    const close = () => { box.remove(); rowBtn.classList.remove("mng-open"); };
+    const close = () => { box.remove(); if (rowBtn) rowBtn.classList.remove("mng-open"); };
     box.querySelector(".pe-cancel").addEventListener("click", close);
     box.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
 
@@ -366,10 +382,11 @@
         // re-open the (rebuilt) row's panel to surface the geocode outcome
         const outcome = address ? geocodeOutcome(saved) : null;
         const finalId = newId !== id ? newId : id;
-        openInlineManage(finalId);
+        openInlineManage(finalId, hostEl);
         if (outcome) {
-          const li2 = findPortfolioRow(finalId);
-          const box2 = li2 && li2.closest("li").querySelector(".pr-admin");
+          const li2 = hostEl || findPortfolioRow(finalId);
+          const box2 = hostEl ? hostEl.querySelector(".pr-admin")
+                              : (li2 && li2.closest("li").querySelector(".pr-admin"));
           const msg2 = box2 && box2.querySelector(".pe-msg");
           if (msg2) {
             msg2.textContent = outcome.text;
@@ -383,8 +400,17 @@
         save.disabled = false;
       }
     });
-    box.querySelector(".pe-id").focus();
-    box.scrollIntoView({ block: "nearest" });
+    // RUN 55, PHASE A -- THE ONE DEVIATION, AND IT IS REPORTED AS ONE. On the portfolio row the
+    // panel opened in response to a CLICK, so taking focus and scrolling the row into view was
+    // the right answer. On the detail page the panel is mounted by render(), which runs on every
+    // navigation to the page; taking focus and scrolling there would drag the reader past the
+    // project heading every time they opened a project. The two lines are therefore kept for the
+    // row path and skipped for the hosted path. NO HANDLER AND NO ACTION CHANGES.
+    if (!hostEl) {
+      box.querySelector(".pe-id").focus();
+      box.scrollIntoView({ block: "nearest" });
+    }
+    return box;
   }
 
   /* ---------- Portfolio admin (Create / Upload / Archived / Activity) ----------

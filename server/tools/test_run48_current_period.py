@@ -36,6 +36,7 @@ import hashlib
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
@@ -57,6 +58,13 @@ from app.simulation.registry import (  # noqa: E402
 )
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it walked back one
+#: commit per later commit until it pointed at a tree where the file was already gone, turning a
+#: real non-vacuity proof into a false one. Caught by running the full suite pass, not by reading.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
+
 client = TestClient(main.app, raise_server_exceptions=False)
 Session = main.SessionFactory
 PASSED = 0
@@ -222,7 +230,18 @@ def periods_view(legacy: str) -> dict:
 
 
 DETAIL = (ROOT / "assets" / "js" / "detail.js").read_text(encoding="utf-8")
-DEEPDIVE = (ROOT / "assets" / "js" / "deepdive.js").read_text(encoding="utf-8")
+# RUN 54. `assets/js/deepdive.js` was DELETED on the owner's ruling at section 8 of the Run 54
+# order. Every Run-48 check below asserted a property of ITS TEXT -- that its panel table held
+# category KEYS rather than the retired "Cat N" labels, and that a panel's label came from the
+# loaded taxonomy. Those checks existed to keep a retired identifier scheme out of a rendered
+# surface. THE SURFACE IS GONE, so they are asserted against the file's LAST COMMITTED BYTES,
+# which is the strongest thing that can still be said about a deleted file, and the deletion
+# itself is asserted separately. Reading a PINNED commit rather than the working tree is the same
+# discipline the participant-package chain uses for every predecessor record.
+_DEEPDIVE_REL = "assets/js/deepdive.js"
+_DEEPDIVE_LAST = subprocess.run(
+    ["git", "-C", str(ROOT), "show", f"{RUN54_PREDELETION_COMMIT}:{_DEEPDIVE_REL}"], capture_output=True)
+DEEPDIVE = _DEEPDIVE_LAST.stdout.decode("utf-8") if _DEEPDIVE_LAST.returncode == 0 else ""
 CHARTS3D = (ROOT / "assets" / "js" / "charts3d.js").read_text(encoding="utf-8")
 
 try:
@@ -409,13 +428,23 @@ try:
     for _rel, _needle in (
             ("assets/js/app.js", 'Cat 8 (Governance, ex-Cat 9) is open by'),
             ("assets/js/categories.js", 'True for the Portfolio Health suite (ex-"Cat 8")'),
-            ("assets/js/deepdive.js", 'Portfolio Health (ex-"Cat 8") is portfolio-scale'),
             ("assets/js/neural_flow.js", 'Every document row the old array sent to "Cat 8"'),
             ("assets/js/taxonomy.js", "Cat 8")):
         _txt = (ROOT / _rel).read_text(encoding="utf-8")
         check(_needle in _txt,
               f"{_rel}: the comment recording why a thing moved is still there",
               _needle)
+    # RUN 54. assets/js/deepdive.js carried a sixth marker, 'Portfolio Health (ex-"Cat 8") is
+    # portfolio-scale'. The file is DELETED, so the marker is asserted where it now lives -- in
+    # the last committed bytes -- and the deletion is asserted beside it. NON-VACUOUS: the file
+    # existed at the prior commit, proved against git.
+    check(_DEEPDIVE_LAST.returncode == 0
+          and 'Portfolio Health (ex-"Cat 8") is portfolio-scale' in DEEPDIVE
+          and not (ROOT / _DEEPDIVE_REL).exists(),
+          "assets/js/deepdive.js: the comment was there right up to the deletion, and the file "
+          "is now gone",
+          f"existed_at_bf36ef6={_DEEPDIVE_LAST.returncode == 0} "
+          f"exists_now={(ROOT / _DEEPDIVE_REL).exists()}")
 
     print()
     print("=" * 78)

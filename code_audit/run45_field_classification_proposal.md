@@ -9,6 +9,10 @@ Repository: the Linux clone at `/home/user/LinPRojectRadar`. Interpreter: the do
 
 Naming authority, group naming, quoted verbatim (`NAMING_AUTHORITY.md:96-97`):
 
+<!-- RUN 54, PHASE D: the sentence quoted below was SUPERSEDED by the owner on 2026-08-23.
+     Displayed identifiers are acceptable. This is a historical audit document and is
+     ANNOTATED rather than rewritten: it records what the authority said when the
+     proposal was written, and rewriting it would falsify that record. -->
 > **Never use a module id or number in user-facing text.** No "Cat 4", no "1.7", no "PH.2", no
 > "A4.2". Groups and purposes only. The old "Cat N" scheme is retired along with the names.
 

@@ -22,6 +22,20 @@ import csv, os, pathlib, re, shutil, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run31_full_fault_campaign.py",
+        allow=["code_audit/run30_participant_package_v5_checksums.sha256", "code_audit/run31_fault_injection_results.csv"])
+# -------------------------------------------------------------------------------------------
 SIM = ROOT / "server" / "app" / "simulation"
 APP = ROOT / "server" / "app"
 
@@ -315,14 +329,21 @@ for fid, sysname, inv, path, old, new, guard, reason in F:
         path.write_text(backup.replace(old, new, 1))
         landed = path.read_text() != backup
         evidence = f"file bytes changed on disk: {landed}"
-    drop_cache()
-    p, t, rc = run_guard(guard)
-    crashed = (t == 0)
-    red = (p != t) and not crashed
-    if fid == 61:
-        target.write_bytes(backup)
-    else:
-        path.write_text(backup)
+    # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement, so a raise
+    # between the injection and it left the mutated bytes on disk, where Run 53 established
+    # the next campaign snapshots them and cements them with its own correct restore. The
+    # arm() guard above is the fix; this is the hygiene, and a known-incomplete repair is
+    # not left half-done.
+    try:
+        drop_cache()
+        p, t, rc = run_guard(guard)
+        crashed = (t == 0)
+        red = (p != t) and not crashed
+    finally:
+        if fid == 61:
+            target.write_bytes(backup)
+        else:
+            path.write_text(backup)
     drop_cache()
     p2, t2, _ = run_guard(guard)
     restored = (p2 == t2 and t2 > 0)

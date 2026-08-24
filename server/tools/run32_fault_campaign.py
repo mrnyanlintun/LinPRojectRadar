@@ -37,6 +37,20 @@ HERE = pathlib.Path(__file__).resolve().parent
 SERVER = HERE.parent
 ROOT = SERVER.parent
 
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run32_fault_campaign.py",
+        allow=["code_audit/run30_participant_package_v5_checksums.sha256", "code_audit/run32_fault_injection_results.csv"])
+# -------------------------------------------------------------------------------------------
+
 APP = SERVER / "app"
 SIM = APP / "simulation"
 
@@ -554,24 +568,33 @@ def main() -> int:
             continue
         tally["applied"] += 1
 
-        # ---- RUN THE GUARD.
-        frc, fout, fres = run_guard(guard)
-        crash = fres is None
-        red = (fres is not None) and (not is_green(fres))
-        # THE INTENDED REASON MUST BE ONE OF THE GUARD'S OWN FAILING CHECKS. Matching against the
-        # whole output would accept a PASSING line carrying the same words, and matching loosely
-        # would accept an unrelated failure -- both are ways a check has lied here before.
-        fails = failing_lines(fout)
-        key = reason.strip().lower()
-        hit = [f for f in fails if key in f.strip().lower()]
-        intended = red and bool(hit)
-        actual = ("no RESULT line (crash)" if crash else
-                  ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
-                  else "GREEN - guard did not notice")
+        # RUN 55, PHASE B. THE GUARD RUN IS INSIDE A `try` AND THE RESTORE IS ITS
+        # `finally`. The restore was a bare statement after run_guard(), so a raise in
+        # run_guard -- a timeout, a decode error, a kill -- left the mutated bytes on
+        # disk. Run 53 established that the next campaign then snapshots the corruption
+        # and cements it with its own correct restore. The arm() guard is the fix; this
+        # is the hygiene, and a known-incomplete repair is not left half-done.
+        try:
+            # ---- RUN THE GUARD.
+            frc, fout, fres = run_guard(guard)
+            crash = fres is None
+            red = (fres is not None) and (not is_green(fres))
+            # THE INTENDED REASON MUST BE ONE OF THE GUARD'S OWN FAILING CHECKS. Matching against the
+            # whole output would accept a PASSING line carrying the same words, and matching loosely
+            # would accept an unrelated failure -- both are ways a check has lied here before.
+            fails = failing_lines(fout)
+            key = reason.strip().lower()
+            hit = [f for f in fails if key in f.strip().lower()]
+            intended = red and bool(hit)
+            actual = ("no RESULT line (crash)" if crash else
+                      ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
+                      else "GREEN - guard did not notice")
+        finally:
+            clear_pycache()
+            target.write_bytes(original)
 
-        # ---- RESTORE BYTE FOR BYTE, CLEARING CACHE ON BOTH SIDES.
-        clear_pycache()
-        target.write_bytes(original)
+        # ---- RESTORE BYTE FOR BYTE, CLEARING CACHE ON BOTH SIDES: done in the `finally`
+        # above as of Run 55 phase B; this only re-reads to confirm it took.
         restored = target.read_bytes() == original
         clear_pycache()
         rrc, rout, rres = run_guard(guard)

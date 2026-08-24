@@ -35,12 +35,14 @@ import hashlib
 import json
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import participant_packages as PP  # noqa: E402
 import production_tree as pt  # noqa: E402
 
 ROOT = pt.ROOT
@@ -89,9 +91,22 @@ _old = {line.partition("  ")[2]
         for line in (ROOT / "code_audit" / "run20_production_freeze.sha256")
         .read_text(encoding="utf-8").splitlines() if line.strip()}
 check("the Run-20 freeze it replaces named exactly 143 files", len(_old) == 143, str(len(_old)))
-check("and every one of those 143 is still in the Run-22 production inventory, so the tree walk "
-      "is a strict superset of the list it replaces",
-      _old <= _paths, str(sorted(_old - _paths)))
+# RUNS 54 AND 55. TWO PATHS THE RUN-20 FREEZE NAMED HAVE BEEN DELETED ON THE OWNER'S RULING --
+# assets/js/deepdive.js and research/deepdive.html, the client-side deep-dive surface, which was
+# reached by no route the service serves. THE SUBSUMPTION RULE IS NOT WEAKENED. It is narrowed by
+# a DECLARED deletion list read from participant_packages.V20_TO_V21_DELETED, the record the
+# package chain already carries. A path leaving the inventory WITHOUT being declared there is
+# still a failure, which is the whole point of the check; and the declaration is refused for a
+# file that is still present, so it cannot be used to drop a live path out of scope.
+_declared_gone = set(PP.V20_TO_V21_DELETED)
+check("every declared deletion really is absent from the tree, so the declaration records a "
+      "deletion rather than excusing a file that is still there",
+      not [f for f in _declared_gone if (ROOT / f).is_file()],
+      str(sorted(f for f in _declared_gone if (ROOT / f).is_file())))
+check("and every one of those 143 is still in the Run-22 production inventory except the ones "
+      "V20_TO_V21_DELETED declares gone, so the tree walk is still a superset of the list it "
+      "replaces and nothing left it unannounced",
+      (_old - _declared_gone) <= _paths, str(sorted(_old - _declared_gone - _paths)))
 check("the walk finds strictly more than the old list did, which is the defect being closed",
       len(_paths) > 143, str(len(_paths)))
 
@@ -104,10 +119,24 @@ for _lost in ("server/app/simulation/lineage.py",
               "server/app/simulation/qualification_gate.py"):
     check(f"{_lost} -- live backend code, invisible to the 143-file freeze -- is now in scope",
           _lost in _paths and _lost not in _old)
-for _lost in ("logo.png", "research/deepdive.html", "render.yaml",
+for _lost in ("logo.png", "render.yaml",
               "server/requirements.txt", "server/alembic/versions/0025_project_notices.py"):
     check(f"{_lost} -- served or deployed, invisible to the 143-file freeze -- is now in scope",
           _lost in _paths and _lost not in _old)
+# RUNS 54 AND 55: research/deepdive.html WAS in this list and is DELETED. The check is REPLACED,
+# not removed, and what replaces it is stricter -- the page is not merely in scope, it does not
+# exist and the route that served it returns 404. NON-VACUITY IS PINNED TO AN EXPLICIT COMMIT
+# HASH, never to a relative reference.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
+for _gone in sorted(_declared_gone):
+    check(f"{_gone} -- deleted by Run 54 phase B -- is out of scope because it does not exist, "
+          f"which is stricter than being in scope",
+          _gone not in _paths and not (ROOT / _gone).is_file())
+    check(f"NON-VACUITY at {RUN54_PREDELETION_COMMIT}: {_gone} DID exist there, so the absence "
+          f"check above is not vacuous",
+          subprocess.run(["git", "cat-file", "-e",
+                          f"{RUN54_PREDELETION_COMMIT}:{_gone}"],
+                         cwd=str(ROOT), capture_output=True).returncode == 0)
 
 check("the inventory ordering is canonical: byte-sorted by path, so two checkouts in two "
       "locales produce the identical manifest",

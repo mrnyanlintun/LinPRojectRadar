@@ -23,6 +23,20 @@ import sys
 import traceback
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text, head_bytes,  # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run52_injection_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 TOOLS = ROOT / "server" / "tools"
 PASSED = 0
 FAILED = 0
@@ -67,13 +81,38 @@ def fault(n, relpath, old, new, guard, expect_in_red, why):
     print(f"FAULT {n}: {why}")
     print("=" * 94)
     p = ROOT / relpath
-    snapshot = p.read_bytes()                      # PRE-INJECTION SNAPSHOT
+    # RUN 55: THE SNAPSHOT IS TAKEN FROM THE COMMITTED BYTES AT HEAD, NOT FROM DISK. Run 53
+    # established the cementing sequence: a fault left on disk by a process that died before its
+    # `finally` is SNAPSHOTTED by the next campaign, faithfully restored, and its own assertion
+    # `restored == snapshot` then PASSES while the guard stays neutered. A snapshot that cannot
+    # see the corruption cannot restore it. The campaign is armed, so it has already refused to
+    # begin on a dirty tree before reaching this line.
+    # RUN 55: A FAULT MAY NOW ALSO BE A RESURRECTION.
+    # Run 54 phase B DELETED assets/js/deepdive.js, so fault 1's subject no longer exists at
+    # HEAD and its injection could not apply -- a fault that cannot apply proves nothing. The
+    # guarantee it existed to prove has not gone away; it has become STRICTER, from "the button
+    # renders nowhere" to "the file renders nowhere because it does not exist". So the way to
+    # prove that guarantee can still fail is to PUT THE FILE BACK, which is what this branch
+    # does. `absent` faults create the file with `new` and DELETE it again in the `finally`;
+    # everything else -- confirm from disk, require red for the intended reason, restore,
+    # recheck the baseline -- is unchanged.
+    absent = subprocess.run(["git", "cat-file", "-e", f"HEAD:{relpath}"], cwd=ROOT,
+                            capture_output=True).returncode != 0
+    snapshot = None if absent else head_bytes(ROOT, relpath)   # SNAPSHOT FROM HEAD, NOT DISK
+    if absent:
+        check(not p.is_file(),
+              f"NON-VACUITY: {relpath} really is absent before this fault, so recreating it is "
+              f"a real change")
     try:
-        assert old in snapshot, f"the text to replace is not in {relpath}"
-        p.write_bytes(snapshot.replace(old, new, 1))
+        if absent:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(new)
+        else:
+            assert old in snapshot, f"the text to replace is not in {relpath}"
+            p.write_bytes(snapshot.replace(old, new, 1))
         # RE-READ FROM DISK. Not from the variable that was written.
         landed = p.read_bytes()
-        if not check(landed != snapshot and new in landed,
+        if not check(landed != (snapshot or b"") and new in landed,
                      f"INJECTION LANDED in {relpath}, confirmed by re-reading the bytes from "
                      f"disk"):
             return
@@ -86,10 +125,16 @@ def fault(n, relpath, old, new, guard, expect_in_red, why):
               f"expected {expect_in_red!r} in the output")
     finally:
         # RESTORE. Inside a finally that cannot be skipped, whatever happened above.
-        p.write_bytes(snapshot)
-        restored = p.read_bytes()
-        check(restored == snapshot,
-              f"RESTORED: {relpath} is byte-identical to its pre-injection snapshot")
+        if absent:
+            if p.is_file():
+                p.unlink()
+            check(not p.is_file(),
+                  f"RESTORED: {relpath} is absent again, as it is at HEAD")
+        else:
+            p.write_bytes(snapshot)
+            restored = p.read_bytes()
+            check(restored == snapshot,
+                  f"RESTORED: {relpath} is byte-identical to its pre-injection snapshot")
     # BASELINE RECHECK, after EVERY injection.
     rc, out = suite(guard)
     check(rc == 0, f"BASELINE RECHECKED after fault {n}: {guard} is green again",
@@ -100,13 +145,20 @@ try:
     # ---------------------------------------------------------------------------------------
     # GUARANTEE 4/5: the see-Health button renders nowhere, and that check is not vacuous.
     fault(1, "assets/js/deepdive.js",
-          b'healthLine.innerHTML = `${escg(anomaly)}`;',
-          b'healthLine.innerHTML = `${escg(anomaly)} <button type="button" class="dd-link" '
-          b'data-goto-health>see Health &rarr;</button>`;',
+          b'',
+          b'/* RUN 55 INJECTION: this file was DELETED by Run 54 phase B. Recreating it is the\n'
+          b'   fault. */\nwindow.LinDeepDive = { render: function () {} };\n'
+          b'// healthLine.innerHTML = `${escg(anomaly)} <button type="button" class="dd-link" '
+          b'data-goto-health>see Health &rarr;</button>`;\n',
           "test_run28_participant_packages.py",
-          "neither the button nor its handler survives",
-          "the dead see-Health button is PUT BACK into deepdive.js. The guarantee that it "
-          "renders nowhere must go red, or it was never measuring anything.")
+          "really is absent from the tree",
+          "RUN 55 REVISES THIS FAULT. It used to PUT THE DEAD see-Health BUTTON BACK into "
+          "assets/js/deepdive.js. Run 54 phase B deleted that file on the owner's ruling, so "
+          "the anchor no longer existed and the injection could not apply. The guarantee it "
+          "proved has become STRICTER rather than going away -- from 'the button renders "
+          "nowhere' to 'the file renders nowhere because it does not exist' -- so the fault is "
+          "revised to the inverse: THE FILE IS PUT BACK. The v21 package guard must go red, or "
+          "the declared-deletion record was never measuring anything.")
 
     # ---------------------------------------------------------------------------------------
     # GUARANTEE 7: one name for the module identifier, on both sides.
@@ -129,16 +181,32 @@ try:
           "generated-from-authority guard must go red.")
 
     # ---------------------------------------------------------------------------------------
-    # SECTION 8.1: the project list's only route to the detail page.
+    # RUN 55, PHASE C. FAULT 4 IS REVISED, NOT DELETED.
+    #
+    # WHAT IT INJECTED BEFORE: it REMOVED the Open control from the project list and required
+    # test_run28_participant_packages.py to go red, because Run 52's section 8.1 had stopped
+    # that removal and the campaign proved the stop was enforced rather than merely written
+    # down. Run 54 phase C carried out the removal on the owner's ruling, so THE ANCHOR THIS
+    # FAULT SEARCHED FOR NO LONGER EXISTS IN app.js: the injection could not apply, and a fault
+    # that cannot apply proves nothing.
+    #
+    # WHAT IT INJECTS NOW: THE EXACT INVERSE. It PUTS THE Open CONTROL BACK, byte for byte as
+    # Run 52 recorded it, and requires the revised guard to go red. That is the proof section 9
+    # of the Run 55 order asks for -- restore Open, confirm red, restore -- run inside this
+    # campaign's own protocol: snapshot from the committed bytes, restore in a `finally`, and
+    # recheck the baseline afterwards.
     fault(4, "assets/js/app.js",
-          '<button class="btn small li-open" data-open="${esc(p.id)}" title="Open project '
-          'detail">Open \u2192</button>'.encode("utf-8"),
-          b'',
+          '<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Open project '
+          'detail">Manage</button>`'.encode("utf-8"),
+          '<button class="btn small li-manage" data-manage="${esc(p.id)}" title="Open project '
+          'detail">Manage</button>` +\n            `<button class="btn small li-open" '
+          'data-open="${esc(p.id)}" title="Open project detail">Open \u2192</button>`'
+          .encode("utf-8"),
           "test_run28_participant_packages.py",
-          "BYTE FOR BYTE identical to v19: ruling 1 was stopped",
-          "the Open control is REMOVED from the project list, which is what ruling 1 asked "
-          "for and what section 8.1 stopped. The package guard must go red, proving the "
-          "stop is enforced and not merely asserted in prose.")
+          "the project list no longer renders the Open control",
+          "the Open control is PUT BACK into the project list, which is the state Run 54 "
+          "phase C reversed. The revised package guard must go red, proving the revision "
+          "measures the CURRENT state and is not merely asserted in prose.")
 
     # ---------------------------------------------------------------------------------------
     # GUARANTEE 9 / SECTION 9.4: dispatch across all 101.

@@ -7,6 +7,20 @@ prose -- and must return GREEN once the bytes are restored. A crash is not RED.
 import csv, os, re, shutil, subprocess, sys, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run32_qualifier_count_fault_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 GUARD = os.path.join(ROOT, "server", "tools", "test_run32_qualifier_count_closure.py")
 RECON = os.path.join(ROOT, "code_audit", "run32_proxy_qualifier_reconciliation.csv")
 BUILDER = os.path.join(ROOT, "server", "tools", "build_run32_qualifier_count_closure.py")
@@ -100,13 +114,20 @@ def main():
 
     rows = []
     for num, label, mutate, expect in FAULTS:
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement after
+        # run_guard(), so a raise there left the mutated bytes on disk -- and one of these four
+        # faults mutates server/tools' own reconciliation builder. Run 53 established that the
+        # next campaign then snapshots the corruption and cements it with its own correct
+        # restore. The arm() guard is the fix; this is the hygiene.
         path, original = mutate()
-        applied = open(path, "rb").read() != original          # re-read from disk
-        clear_pycache()
-        state, out, failing = run_guard()
-        joined = " | ".join(failing).lower()
-        reason_ok = any(e.lower() in joined for e in expect)
-        open(path, "wb").write(original)
+        try:
+            applied = open(path, "rb").read() != original      # re-read from disk
+            clear_pycache()
+            state, out, failing = run_guard()
+            joined = " | ".join(failing).lower()
+            reason_ok = any(e.lower() in joined for e in expect)
+        finally:
+            open(path, "wb").write(original)
         clear_pycache()
         back, _, _ = run_guard()
         rows.append({

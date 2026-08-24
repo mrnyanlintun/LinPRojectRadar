@@ -93,8 +93,18 @@ and the distinction above stops being needed.
 **Group C does not contribute to project status.** Evidence quality describes what is known about
 a project, not the project's condition.
 
-**Never use a module id or number in user-facing text.** No "Cat 4", no "1.7", no "PH.2", no
-"A4.2". Groups and purposes only. The old "Cat N" scheme is retired along with the names.
+**Displayed identifiers are acceptable.** "Cat 4", "1.7", "PH.2" and "A4.2" may appear in
+user-facing text. The owner ruled the former prohibition SUPERSEDED on 2026-08-23, and Run 54
+records the ruling here so that this file and the handoff agree. Groups and purposes remain the
+better default where the identifier adds nothing, but an identifier is no longer a defect.
+
+**This ruling does not change one word of rendered text.** No identifier an earlier run removed
+is restored, and no identifier that remains is stripped. Every guard that pins the CURRENT
+rendered wording keeps its full force and was deliberately left alone: the superseded
+rule is what changed, not the pages. The old "Cat N" LABEL SCHEME stays retired: that was a naming
+decision about what the categories are called, and it is separate from this ruling.
+
+**The dash rules and the ampersand rule below are NOT superseded and STAND.**
 
 **User-facing text uses "and", not the ampersand the code constants use.** Write "Recommendation
 and Governance". Do not rename the code constants.
@@ -104,7 +114,11 @@ and Governance". Do not rename the code constants.
 Verify against the code rather than taking this list on trust.
 
 - **Computation is server-side.** The browser renders stored results and computes nothing.
-  `sim.js`, `simulations.js` and `categories.js` do not load on participant-facing routes.
+  `sim.js`, `simulations.js` and `categories.js` load on NO route this service serves. Run 54
+  deleted `research/deepdive.html`, the one page that loaded them, and the route that served
+  it, so the statement is now unconditional rather than confined to participant-facing
+  routes. `categories.js` is still loaded by `tests.html` and `tools/export_lib.html`, which
+  the server does not serve.
 - **Documents extract once per unique file**, cached by content hash, so the same document always
   yields the same values.
 - **Every computed result is stored** with its simulation version, seed, and period cutoff.

@@ -39,6 +39,20 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run38_fault_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 AUDIT = ROOT / "code_audit"
 GATE = HERE / "test_run38_readiness.py"
 IMMUT = HERE / "test_run38_frozen_immutability.py"
@@ -275,22 +289,27 @@ def main() -> int:
             continue
         counts["applied"] += 1
 
-        oracle = run_immutability if num == 1 else run_gate
-        verdict, evidence, failed = oracle()
-        if verdict == "CRASH":
-            counts["crashed"] += 1
-            outcome = "CRASH_NOT_COUNTED_AS_RED"
-        elif verdict == "RED" and fragment in failed:
-            counts["red"] += 1
-            outcome = "RED_FOR_INTENDED_REASON"
-        elif verdict == "RED":
-            counts["unrelated"] += 1
-            outcome = "RED_BUT_UNRELATED_NOT_COUNTED"
-        else:
-            outcome = "STILL_GREEN_FAULT_UNDETECTED"
-
-        for q in paths:
-            q.write_bytes(before_all[q])
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare loop after the
+        # oracle ran, so a raise there left every mutated file on disk. Run 53 established
+        # that the next campaign then snapshots the corruption and cements it with its own
+        # correct restore. The arm() guard is the fix; this is the hygiene.
+        try:
+            oracle = run_immutability if num == 1 else run_gate
+            verdict, evidence, failed = oracle()
+            if verdict == "CRASH":
+                counts["crashed"] += 1
+                outcome = "CRASH_NOT_COUNTED_AS_RED"
+            elif verdict == "RED" and fragment in failed:
+                counts["red"] += 1
+                outcome = "RED_FOR_INTENDED_REASON"
+            elif verdict == "RED":
+                counts["unrelated"] += 1
+                outcome = "RED_BUT_UNRELATED_NOT_COUNTED"
+            else:
+                outcome = "STILL_GREEN_FAULT_UNDETECTED"
+        finally:
+            for q in paths:
+                q.write_bytes(before_all[q])
         drop_pycache()
         for q in paths:
             assert q.read_bytes() == before_all[q], f"restore failed for {q}"

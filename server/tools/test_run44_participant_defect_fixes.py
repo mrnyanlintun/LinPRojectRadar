@@ -390,8 +390,15 @@ check("(worst:" not in JS["briefAmberOverGreens"],
       "an Amber category over modules that all read Green offers NO module as its driver in "
       "the brief prompt", JS["briefAmberOverGreens"][:160])
 # RUN 48 CHANGED THE EXPECTED STRING, AND ONLY THE STRING. The owner's ruling 2 of 2026-08-22
-# orders the category IDENTIFIER out of the text this prompt carries: NAMING_AUTHORITY.md:96,
-# "Never use a module id or number in user-facing text." The line the brief builds is now
+# ordered the category IDENTIFIER out of the text this prompt carries, on what was then
+# NAMING_AUTHORITY.md:96, "Never use a module id or number in user-facing text."
+#
+# RUN 54, PHASE D: THAT RULE IS SUPERSEDED. Displayed identifiers are acceptable. THE CHECK BELOW
+# IS NOT WEAKENED AND NOT TOUCHED, because the ruling that supersedes the rule also says, in
+# terms, that no identifier an earlier run removed may be restored and none that remains may be
+# stripped: the RENDERED TEXT is not changed by it. This check pins the current rendered wording,
+# so it keeps its full force. Only this comment's account of WHY is reconciled.
+# The line the brief builds is now
 # `c.name + ": " + c.status`, so the identifier "A1 " is gone and the category and its status
 # are still there. The check keeps its full force -- it still fails if the category or its
 # status stops being reported -- and it now also fails if the identifier comes back. This is a
@@ -502,7 +509,20 @@ check(JS["cat8RetiredLive"] is True,
 import subprocess as _sp
 _PRIOR = _sp.run(["git", "show", "ad4f614:assets/js/deepdive.js"], cwd=str(ROOT),
                  capture_output=True, text=True, encoding="utf-8").stdout
-_NOW = (ROOT / "assets/js/deepdive.js").read_text(encoding="utf-8")
+# RUN 54, PHASE B. `assets/js/deepdive.js` was DELETED on the owner's ruling at section 8 of the
+# Run 54 order. Every absence check below already reads as "this symbol does not survive in
+# deepdive.js", and deletion is the strongest possible form of that claim: a file that does not
+# exist contains no symbol. _NOW is therefore the EMPTY STRING when the file is gone, and the
+# deletion is asserted separately so the emptiness is a measured fact rather than an accident of
+# a missing read. Not one check below is deleted or weakened, and every one keeps its existing
+# non-vacuity proof against the bytes at ad4f614.
+_DD = ROOT / "assets/js/deepdive.js"
+_DD_GONE = not _DD.exists()
+_NOW = "" if _DD_GONE else _DD.read_text(encoding="utf-8")
+check(_DD_GONE and bool(_PRIOR),
+      "assets/js/deepdive.js IS DELETED, and it existed at ad4f614, so every absence check "
+      "below is not vacuous and now holds in its strongest form",
+      f"exists_now={not _DD_GONE} prior_bytes={len(_PRIOR)}")
 _SIX = ["renderCat8Health", "CAT8_MODULES", "cat8HealthData", "cat8HealthDataFromLive",
         "isSnapshotStale", "cat8Retired"]
 check(all(sym in _PRIOR for sym in _SIX),
@@ -536,7 +556,7 @@ check(JS["taxonomyPortfolioCats"] and all(c["modules"] == 0
       "the live taxonomy does carry a portfolio-level category and it carries zero modules, so "
       "the TRUE above is not vacuously true", json.dumps(JS["taxonomyPortfolioCats"]))
 
-src_dd = (ROOT / "assets/js/deepdive.js").read_text(encoding="utf-8")
+src_dd = _NOW   # RUN 54: the file is deleted; see the note above.
 # RUN 51, RULING 1. Three checks reconciled, none deleted. They asserted the CONTENT of a
 # surface that rendered nowhere: that its retired-state sentence was correct, that its
 # project-count sentence was retained for the case it is true of, and that its repair button

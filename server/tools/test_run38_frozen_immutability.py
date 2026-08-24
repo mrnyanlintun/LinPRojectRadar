@@ -414,15 +414,15 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v35",
-      "and the live simulation version is the Run-52 successor sim-2026.08-v35",
+check(SIMULATION_VERSION == "sim-2026.08-v36",
+      "and the live simulation version is the Run-55 successor sim-2026.08-v36",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v20",
-      "the participant package is superseded at og-participant-2026.08-v20",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v21",
+      "the participant package is superseded at og-participant-2026.08-v21",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "
@@ -477,6 +477,12 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_run39_frozen_immutability.py",
     "server/tools/test_run39_launch_gate.py",
     "server/tools/build_run37_acceptance.py",
+    # RUN 55, THE MINT. NAMED, NOT WIDENED: `tests_render.html`'s row-actions group asserted the
+    # pre-Run-54 project-list state -- exactly one Open control, labelled "Open ->", in a cluster
+    # reading "Manage|Open ->". Run 54 phase C removed that control on the owner's ruling, so the
+    # group was revised to assert the CURRENT state. This entry names that one file; it does not
+    # loosen the rule that every other pre-existing file must be untouched.
+    "tests_render.html",
     "server/tools/test_export.py",
     "server/tools/test_admin_ops_t7t8.py",
     "server/tools/test_decision_ui_t4.py",
@@ -566,6 +572,77 @@ PERMITTED_MODIFICATIONS = {
     # five. Not executable production or client code, and not named by the freeze checksum
     # manifest.
     "server/tools/test_run36_fault_guards.py",
+} | {
+    # RUN 54, PHASE A: THE CAMPAIGN-SAFETY GUARD. Every fault campaign in the repository -- 39 of
+    # them, 35 in server/tools and 4 in server/tests -- is armed with the start-AND-end dirty-tree
+    # guard, and the suite runner now fails when a suite leaves production or client source dirty.
+    # The authority is the owner's section 7 of the Run 54 order. Each file is NAMED here rather
+    # than admitted by widening the rule, on exactly the Run-41 / Run-43 / Run-44 construction
+    # above, so the check keeps its full force over everything else. NOT ONE is executable
+    # production or client code, not one is named by the freeze checksum manifest, and not one is
+    # inside a frozen surface -- all three asserted separately above and below. server/tools/
+    # campaign_safety.py itself is an ADDITION, not a modification, and needs no entry.
+    "server/run_all_suites.sh",
+    "server/tests/test_run33_ph1_fault_campaign.py",
+    "server/tests/test_run34_count_fault_campaign.py",
+    "server/tests/test_run34_fault_campaign.py",
+    "server/tests/test_run34_provenance_fault_campaign.py",
+    "server/tools/drive_run26_faults.py",
+    "server/tools/run20_cycle12_cycle3_fault_battery.py",
+    "server/tools/run22_guard_mutation_campaign.py",
+    "server/tools/run26_fault_campaign.py",
+    "server/tools/run27_fault_campaign.py",
+    "server/tools/run28_closure_fault_campaign.py",
+    "server/tools/run28_fault_campaign.py",
+    "server/tools/run31_full_fault_campaign.py",
+    "server/tools/run31_pass2_targeted_faults.py",
+    "server/tools/run31_synthetic_scope_faults.py",
+    "server/tools/run32_b3_fault_campaign.py",
+    "server/tools/run32_closure_fault_campaign.py",
+    "server/tools/run32_fault_campaign.py",
+    "server/tools/run32_qualifier_count_fault_campaign.py",
+    "server/tools/run32_qualifier_fault_campaign.py",
+    "server/tools/run35_closure_fault_campaign.py",
+    "server/tools/run35_fault_campaign.py",
+    "server/tools/run36_closure_fault_campaign.py",
+    "server/tools/run36_fault_campaign.py",
+    "server/tools/run37_documentation_scope_campaign.py",
+    "server/tools/run37_freeze_gate_campaign.py",
+    "server/tools/run38_fault_campaign.py",
+    "server/tools/run39_fault_campaign.py",
+    "server/tools/run41_fault_campaign.py",
+    "server/tools/run51_injection_campaign.py",
+    "server/tools/run52_injection_campaign.py",
+    "server/tools/test_run20_cycle12_fault_evidence.py",
+    "server/tools/test_run29_fault_campaign.py",
+    "server/tools/test_run33_ph1_fault_campaign.py",
+    "server/tools/test_run33_portfolio_fault_injection.py",
+    "server/tools/test_run34_count_fault_campaign.py",
+    "server/tools/test_run34_fault_campaign.py",
+    "server/tools/test_run34_provenance_fault_campaign.py",
+    "server/tools/test_run36_fault_guards.py",
+    "server/tools/test_run41_fault_campaign.py",
+    # RUN 54, PHASES B, C AND D. The deep-dive surface is DELETED on the owner's ruling at
+    # section 8, and the suites that asserted properties OF that surface are reconciled to assert
+    # its absence instead. Each is NAMED here rather than admitted by widening the rule. The two
+    # deleted paths and assets/js/app.js and index.html are named in the successor set below;
+    # these four are the reconciled guards and the deleted page itself.
+    "research/deepdive.html",
+    "server/tools/test_run11_browser_server_authority.py",
+    "server/tools/test_run12_final_verification.py",
+    "server/tools/test_run13_module_evidence.py",
+    "server/tools/test_run28_closure.py",
+    "server/tools/test_run36_fault_guards.py",
+    "server/tools/test_run41_preservation.py",
+    "server/tools/test_run49_naming_completion.py",
+    "server/tools/test_run6_known_answer.py",
+    "server/tools/test_run48_current_period.py",
+    "server/tools/test_run44_participant_defect_fixes.py",
+    "server/tools/test_run38_frozen_immutability.py",
+    "server/tools/test_run39_frozen_immutability.py",
+    "server/tools/drive_run50_browser.py",
+    "server/tools/run52_rendered_text_capture.py",
+    "code_audit/run45_field_classification_proposal.md",
 }
 modified = [p for st, p in run38 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]

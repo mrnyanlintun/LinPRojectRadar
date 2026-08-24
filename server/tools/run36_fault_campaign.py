@@ -29,6 +29,20 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run36_fault_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 AUDIT = ROOT / "code_audit"
 GUARD = HERE / "test_run36_fault_guards.py"
 S = ROOT / "server" / "app" / "simulation"
@@ -400,18 +414,24 @@ def main():
             print(f"fault {num:2d}  NOT_APPLIED  ({why})")
             continue
         counts["applied"] += 1
-        state, detail = run_guard(guard)
-        intended = state == "RED" and fragment in detail
-        if state == "CRASH":
-            counts["crashed"] += 1
-        if intended:
-            counts["red"] += 1
-        for p, c in targets:
-            if c:
-                if p.exists():
-                    p.unlink()
-            else:
-                p.write_bytes(saved[p])
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare loop after
+        # run_guard(), so a raise there left every mutated file on disk. Run 53
+        # established that the next campaign then snapshots the corruption and cements it
+        # with its own correct restore. The arm() guard is the fix; this is the hygiene.
+        try:
+            state, detail = run_guard(guard)
+            intended = state == "RED" and fragment in detail
+            if state == "CRASH":
+                counts["crashed"] += 1
+            if intended:
+                counts["red"] += 1
+        finally:
+            for p, c in targets:
+                if c:
+                    if p.exists():
+                        p.unlink()
+                else:
+                    p.write_bytes(saved[p])
         drop_pycache()
         restored = all((not p.exists()) if c else p.read_bytes() == saved[p]
                        for p, c in targets)

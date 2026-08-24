@@ -14,6 +14,20 @@ import csv, pathlib, re, shutil, subprocess, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run31_pass2_targeted_faults.py",
+        allow=["code_audit/run30_participant_package_v5_checksums.sha256", "code_audit/run31_pass2_targeted_faults.csv"])
+# -------------------------------------------------------------------------------------------
 SIM = ROOT / "server" / "app" / "simulation"
 
 
@@ -149,20 +163,28 @@ for n, desc, path, old, new, guard, reason in FAULTS:
         # INSERTION mutation, where the anchor deliberately survives: fault 6 landed and was
         # reported NOT_APPLIED by that test.
         landed = path.read_text() != backup
-    drop_cache()
-    print(f"  injection landed (re-read from disk): {landed}")
-    p, t, ok = run_suite(guard)
-    # A CRASH IS NOT RED. `run_suite` returns (0, 0, False) when no anchored RESULT line was
-    # printed, which means the process died rather than the guard failing. Scoring that as RED
-    # would be the vacuity this campaign exists to prevent, so it is recorded as CRASH and fails.
-    crashed = (t == 0)
-    red = (not ok) and not crashed
-    verdict = "CRASH (not RED)" if crashed else ("RED" if red else "STILL GREEN")
-    print(f"  {guard}: {p}/{t} -> {verdict}  ({reason})")
-    if n == 8:
-        target.write_bytes(backup)
-    else:
-        path.write_text(backup)
+    # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement, so a raise
+    # between the injection and it left the mutated bytes on disk, where Run 53 established
+    # the next campaign snapshots them and cements them with its own correct restore. The
+    # arm() guard above is the fix; this is the hygiene, and a known-incomplete repair is
+    # not left half-done.
+    try:
+        drop_cache()
+        print(f"  injection landed (re-read from disk): {landed}")
+        p, t, ok = run_suite(guard)
+        # A CRASH IS NOT RED. `run_suite` returns (0, 0, False) when no anchored RESULT line was
+        # printed, which means the process died rather than the guard failing. Scoring that as
+        # RED would be the vacuity this campaign exists to prevent, so it is recorded as CRASH
+        # and fails.
+        crashed = (t == 0)
+        red = (not ok) and not crashed
+        verdict = "CRASH (not RED)" if crashed else ("RED" if red else "STILL GREEN")
+        print(f"  {guard}: {p}/{t} -> {verdict}  ({reason})")
+    finally:
+        if n == 8:
+            target.write_bytes(backup)
+        else:
+            path.write_text(backup)
     drop_cache()
     p2, t2, ok2 = run_suite(guard)
     print(f"  restored: {p2}/{t2} green={ok2}")

@@ -52,7 +52,17 @@ def check(ok, label, detail=""):
 
 
 def text(rel: str) -> str:
-    return (ROOT / rel).read_text(encoding="utf-8")
+    """RUN 54. A DELETED FILE READS AS THE EMPTY STRING, NOT AS A CRASH.
+
+    `assets/js/deepdive.js` was DELETED on the owner's ruling at section 8 of the Run 54 order.
+    Every check in this suite that reads it asks whether a RETIRED NAME still appears in it, and
+    deletion is the strongest possible form of "it does not": a file that does not exist contains
+    no text at all. Not one check is loosened -- a surviving name in any file that DOES exist
+    still fails -- and the deletion itself is asserted below so the emptiness is a measured fact
+    and not an accident of a missing read.
+    """
+    p_ = ROOT / rel
+    return p_.read_text(encoding="utf-8") if p_.is_file() else ""
 
 
 def git_text(rel: str, commit: str) -> str:
@@ -81,8 +91,20 @@ try:
     print("RUN 49: THE COMPLETION OF THE NAMING CORRECTION")
     print("=" * 94)
 
-    dd = text("assets/js/deepdive.js")
+    # RUN 54. `assets/js/deepdive.js` was DELETED on the owner's ruling at section 8. Every check
+    # in this suite reads its TEXT -- the panel label map, the group headers, the call-site keys.
+    # They are asserted against the file's LAST COMMITTED BYTES at the pinned pre-deletion commit,
+    # which is the strongest thing that can still be said about a deleted file and is the same
+    # discipline every predecessor package record in this repository uses. NOT ONE CHECK IS
+    # DELETED, and the deletion is asserted separately so it is a measured fact.
+    RUN54_PREDELETION_COMMIT = "bf36ef6"
+    dd = (text("assets/js/deepdive.js")
+          or git_text("assets/js/deepdive.js", RUN54_PREDELETION_COMMIT))
     dd32 = git_text("assets/js/deepdive.js", V32_COMMIT)
+    check("RUN 54: assets/js/deepdive.js is DELETED, so every 'the retired name is gone from it' "
+          "check below holds in its strongest form",
+          (not (ROOT / "assets/js/deepdive.js").is_file()) and bool(dd32),
+          f"exists_now={(ROOT / 'assets/js/deepdive.js').is_file()} bytes_at_v32={len(dd32)}")
     det = text("assets/js/detail.js")
     det32 = git_text("assets/js/detail.js", V32_COMMIT)
     du = text("assets/js/decision-ui.js")
@@ -253,11 +275,20 @@ try:
         "assets/js/neural_flow.js": ('Every document row the old array sent to "Cat 8" was rendered',),
         "assets/js/taxonomy.js": (None,),
     }
+    # RUN 54. assets/js/deepdive.js is DELETED, so its two markers are asserted where they now
+    # live -- the last committed bytes -- and the deletion is asserted beside them. The other four
+    # files are read from the live tree exactly as before.
     for rel, needles in MARKERS.items():
+        _gone = not (ROOT / rel).is_file()
+        _src = (text(rel) if not _gone
+                else git_text(rel, RUN54_PREDELETION_COMMIT))
         for n in needles:
             if n is None:
                 continue
-            check(n in text(rel), f"{rel}: the comment marker is unchanged", n[:60])
+            check(n in _src,
+                  f"{rel}: the comment marker is unchanged"
+                  + (" right up to the deletion, and the file is now gone" if _gone else ""),
+                  n[:60])
     _tax = git_text("assets/js/taxonomy.js", V33_COMMIT)
     check(_tax.splitlines()[285] == git_text("assets/js/taxonomy.js",
                                              V32_COMMIT).splitlines()[285],

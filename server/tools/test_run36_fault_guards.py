@@ -24,6 +24,26 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "test_run36_fault_guards.py",
+        # RUN 55, PHASE B, section 8 item 1: THE ALLOW LIST IS TIGHTENED TO DECLARED
+        # OUTPUTS. Run 54 derived this list by taking every `code_audit/` literal in the
+        # file, which swept in READ-ONLY inputs and fault TARGETS as well as outputs. An
+        # allow entry is a promise that the campaign is designed to write that path;
+        # naming a file it only reads widens the guard for nothing. Established by
+        # execution: this file contains no write to code_audit at all.
+        allow=[])
+# -------------------------------------------------------------------------------------------
 sys.path.insert(0, str(ROOT / "server"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
@@ -329,8 +349,12 @@ check("run36.fault28.no_stale_proxy_qualifier",
       "been restored", str(sorted(REG.PROXY_QUALIFIERS)))
 _cat = text("assets/js/categories.js")
 check("run36.fault29.client_method_class_lookup_intact",
+      # RUN 54: `+ text("assets/js/deepdive.js")` was the fourth term. The file is DELETED. The
+      # check is UNCHANGED in force -- it asks whether getModuleStatus appears anywhere in the
+      # client dispatch surfaces, and one fewer surface makes the disjunction HARDER to satisfy,
+      # not easier.
       'case "Monte_Carlo":' in _cat and "getModuleStatus" in _cat + text("assets/js/knowledge.js")
-      + text("assets/js/workspace.js") + text("assets/js/deepdive.js"),
+      + text("assets/js/workspace.js"),
       "the client method-class lookup still dispatches; it has been broken so statuses silently "
       "never render", "the Monte_Carlo case is gone")
 _tax = text("assets/js/taxonomy.js")
@@ -372,8 +396,18 @@ for _ln in (AUDIT / "run33_participant_package_v11_checksums.sha256").read_text(
         _h, _p = _ln.split("  ", 1)
         _v11[_p] = _h
 import hashlib                                                    # noqa: E402
+# RUN 54. A DELETED FILE MUST COUNT AS MOVED, NOT CRASH. `assets/js/deepdive.js` was DELETED on
+# the owner's ruling at section 8 of the Run 54 order, and hashing a path that does not exist
+# raised FileNotFoundError, which is a crash and a crash is not a pass. A missing file now hashes
+# to None, so it can never equal a recorded digest and is therefore ALWAYS counted as moved. The
+# comparison is not loosened: an UNDECLARED deletion still fails, exactly as an undeclared edit
+# does, and the declaration is V20_TO_V21_SEQUENCE_EXCEPTION in participant_packages.py.
+def _sha_or_gone(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+
+
 _moved_seq = sorted(f for f in _seq_files
-                    if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != _v11.get(f))
+                    if _sha_or_gone(ROOT / f) != _v11.get(f))
 # RUN 44. ONE of the six has legitimately moved since v11, and it is NAMED rather than excused
 # by loosening the comparison. The Portfolio Health flyout in deepdive.js told a participant the
 # panel needed at least three projects; after Run 43 retired every Portfolio Level module from
@@ -396,9 +430,15 @@ _moved_seq = sorted(f for f in _seq_files
 # set is still exactly the six sequence-bearing files, and the SECOND check below still requires
 # each file that moved in a given successor to carry its own named record IN THAT SUCCESSOR'S
 # record, which is where the account of what moved inside it actually lives.
+# RUN 55 folds in V20_TO_V21_SEQUENCE_EXCEPTION on exactly the same footing. THE SET DOES NOT
+# GROW: v20-to-v21's exception is `assets/js/deepdive.js`, which v19-to-v20 already named, so the
+# union is still exactly the SIX sequence-bearing files and the `len(...) == 6` assertion below
+# is unchanged. What is new about this link is that the delta is a DELETION rather than an edit,
+# which is why the file's own record in the v21 checksum record says so in those words.
 _SEQ_AUTHORISED = (set(PP.V14_TO_V15_SEQUENCE_EXCEPTION) | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
                    | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION)
-                   | set(PP.V19_TO_V20_SEQUENCE_EXCEPTION))
+                   | set(PP.V19_TO_V20_SEQUENCE_EXCEPTION)
+                   | set(PP.V20_TO_V21_SEQUENCE_EXCEPTION))
 check("run36.fault35.participant_sequence_unaltered",
       sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 6,
       "every file carrying the participant experimental sequence is byte-identical to the frozen "
@@ -413,6 +453,8 @@ _BY_SUCCESSOR = (
      PP.V18_TO_V19_SEQUENCE_EXCEPTION),
     ("code_audit/run52_participant_package_v20_checksums.sha256",
      PP.V19_TO_V20_SEQUENCE_EXCEPTION),
+    ("code_audit/run55_participant_package_v21_checksums.sha256",
+     PP.V20_TO_V21_SEQUENCE_EXCEPTION),
 )
 _undeclared = [f"{f} (in {_rec})" for _rec, _files in _BY_SUCCESSOR for f in _files
                if f"# {f} -- SEQUENCE-BEARING"

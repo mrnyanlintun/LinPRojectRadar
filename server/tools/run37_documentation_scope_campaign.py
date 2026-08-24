@@ -28,6 +28,20 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run37_documentation_scope_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 FREEZE = ROOT / "research" / "freeze"
 GUARD = HERE / "test_run37_documentation_scope.py"
 RECORD = FREEZE / "INSTRUMENT_FINAL_FREEZE_RECORD.json"
@@ -96,30 +110,31 @@ def main():
     out, counts = [], {"applied": 0, "red": 0, "restored": 0, "not_applied": 0, "crashed": 0}
     for num, desc, (path, old, new), guard, fragment in FAULTS:
         before = path.read_bytes()
-        s = path.read_text(encoding="utf-8")
-        if old not in s:
-            out.append([num, desc, "NOT_APPLIED", guard, "", "",
-                        "the anchor text is not present", "", "NOT_COUNTED"])
-            counts["not_applied"] += 1
-            print(f"fault {num:2d}  NOT_APPLIED (anchor absent)")
-            continue
-        path.write_text(s.replace(old, new, 1), encoding="utf-8")
-        if path.read_bytes() == before:
-            path.write_bytes(before)
-            out.append([num, desc, "NOT_APPLIED", guard, "", "",
-                        "the injection changed no bytes", "", "NOT_COUNTED"])
-            counts["not_applied"] += 1
-            print(f"fault {num:2d}  NOT_APPLIED (no byte change)")
-            continue
-        counts["applied"] += 1
-        state, detail = run_guard(guard)
-        intended = state == "RED" and fragment in detail
-        if state == "CRASH":
-            counts["crashed"] += 1
-        if intended:
-            counts["red"] += 1
-        path.write_bytes(before)
-        drop_pycache()
+        # RESTORE IN A `finally` THAT CANNOT BE SKIPPED. The restore below was straight-line
+        # code before Run 54: any raise inside apply_one() or run_guard() left the fault on
+        # disk. Hygiene, not the fix -- see server/tools/campaign_safety.py.
+        with restore_guard({path: before}, after=drop_pycache):
+            s = path.read_text(encoding="utf-8")
+            if old not in s:
+                out.append([num, desc, "NOT_APPLIED", guard, "", "",
+                            "the anchor text is not present", "", "NOT_COUNTED"])
+                counts["not_applied"] += 1
+                print(f"fault {num:2d}  NOT_APPLIED (anchor absent)")
+                continue
+            path.write_text(s.replace(old, new, 1), encoding="utf-8")
+            if path.read_bytes() == before:
+                out.append([num, desc, "NOT_APPLIED", guard, "", "",
+                            "the injection changed no bytes", "", "NOT_COUNTED"])
+                counts["not_applied"] += 1
+                print(f"fault {num:2d}  NOT_APPLIED (no byte change)")
+                continue
+            counts["applied"] += 1
+            state, detail = run_guard(guard)
+            intended = state == "RED" and fragment in detail
+            if state == "CRASH":
+                counts["crashed"] += 1
+            if intended:
+                counts["red"] += 1
         restored = path.read_bytes() == before
         state2, _ = run_guard(guard)
         good = restored and state2 == "GREEN"

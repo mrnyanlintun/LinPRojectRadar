@@ -33,6 +33,8 @@ ROOT = _HERE.parents[1]
 sys.path.insert(0, str(ROOT / "server"))
 sys.path.insert(0, str(ROOT / "server" / "tools"))
 
+from campaign_safety import arm, snapshot_text   # noqa: E402
+
 OUT = ROOT / "code_audit" / "run34_fault_injection_results.csv"
 FX5 = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.5" / "package_D_portfolio_health")
 FX6 = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.6"
@@ -105,7 +107,9 @@ def fault(n, target, path, edits, mutation, guard_name, guard, body, arg=""):
     """One fault against a FILE the platform reads: production source, or a governed artefact."""
     global APPLIED, REDS, RESTORED, CRASHES
     f = ROOT / path
-    original = f.read_text(encoding="utf-8")
+    # Snapshot from the COMMITTED bytes at HEAD, never from disk. A disk snapshot taken after
+    # an earlier leak captures the corruption and the restore then cements it.
+    original = snapshot_text(ROOT, path)
     drop_pycache()
     base = run_probe(body, arg)
     green = check(base.get("ok") is True and guard(base) is True,
@@ -167,6 +171,11 @@ run = V8.compute_portfolio_health(fx["cohort"], fx["feature_schema"], fx["featur
                                   fx.get("histories", []))
 '''
 
+
+# =================================================================================================
+# THE START GUARD. A campaign must not begin on a dirty tree: it would snapshot the corruption,
+# faithfully restore it, and then CERTIFY it. See server/tools/campaign_safety.py.
+arm(ROOT, "run34 20-fault calibration campaign", allow=[OUT])
 
 # =================================================================================================
 head("FAULTS 1-5: PH.1 THRESHOLD, COHORT SIZE, AND MODEL IDENTITY")

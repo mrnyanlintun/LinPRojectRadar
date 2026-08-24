@@ -209,23 +209,23 @@ print("-" * 78)
 # RESTATED AGAIN BY RUN 48, for the same reason and with the same scope: Run 48 supersedes v31
 # with v32 because WHICH STORED ROW A PAGE READS is executable behaviour. Run 41's boundary is
 # untouched and is still asserted below.
-check(SIMULATION_VERSION == "sim-2026.08-v35", "the live stamp is Run 52's successor "
-      "sim-2026.08-v35", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v34",
-      "and it records v34, Run 51's stamp, as the stamp it supersedes",
+check(SIMULATION_VERSION == "sim-2026.08-v36", "the live stamp is Run 55's successor "
+      "sim-2026.08-v36", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v35",
+      "and it records v35, Run 52's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
       "the history is append-only and Run 41's boundary is preserved: v26 still directly "
       "follows v25", str(SIMULATION_VERSION_HISTORY[-3:]))
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v35"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v34"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v33"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v32"
-      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v31"
-      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v30"
-      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v29",
-      "and v27 to v35 were appended after v26 rather than replacing it",
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v36"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v35"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v34"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v33"
+      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v32"
+      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v31"
+      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v30",
+      "and v27 to v36 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
@@ -278,8 +278,18 @@ check(len(rec) > 60, "the v13 participant-package record names its governed file
 _declared_since_v13 = sorted(set(PP.V13_TO_V14_CHANGED) | set(PP.V14_TO_V15_CHANGED)
                             | set(PP.V15_TO_V16_CHANGED) | set(PP.V16_TO_V17_CHANGED)
                             | set(PP.V17_TO_V18_CHANGED) | set(PP.V18_TO_V19_CHANGED))
+# RUN 54. A DELETED FILE MUST COUNT AS MOVED, NOT CRASH. `assets/js/deepdive.js` was DELETED on
+# the owner's ruling at section 8 of the Run 54 order, and hashing a path that does not exist
+# raised FileNotFoundError, which is a crash and a crash is not a pass. A missing file now hashes
+# to None, so it can never equal a recorded digest and is therefore ALWAYS counted as moved. The
+# comparison is not loosened: an UNDECLARED deletion still fails, exactly as an undeclared edit
+# does, and the declaration is V20_TO_V21_SEQUENCE_EXCEPTION in participant_packages.py.
+def _sha_or_gone(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+
+
 moved_pkg = sorted(p for p, h in rec.items()
-                   if hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != h)
+                   if _sha_or_gone(ROOT / p) != h)
 check(moved_pkg == _declared_since_v13,
       f"of the {len(rec)} governed participant-package bytes, exactly the {len(moved_pkg)} the "
       f"v14, v15, v16, v17, v18 and v19 successors declare between them moved, and no others",
@@ -288,16 +298,20 @@ check(moved_pkg == _declared_since_v13,
 # and it is named rather than tolerated. Every other one is still held to byte-identity against
 # v13, so the invariant is intact for the five that carry a step of the decision sequence.
 seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
-                   if hashlib.sha256((ROOT / f).read_bytes()).hexdigest() != rec.get(f))
+                   if _sha_or_gone(ROOT / f) != rec.get(f))
 # RUN 49 adds decision-ui.js, which gains COMMENTS ONLY on the owner's ruling 4. Both are named
 # rather than tolerated, and the other FOUR are still held to byte-identity against v13.
 # RUN 51 adds the remaining four, each on its own ruling's authority and each carrying its own
 # named exception record in the v19 checksum record's header. The union is still exactly what the
 # successors DECLARE, so a sequence-bearing file that moved without a declared record is still
 # red -- which is proved by injection rather than asserted.
+# RUN 54 adds V20_TO_V21_SEQUENCE_EXCEPTION -- deepdive.js, DELETED. It is named here on
+# exactly the same construction as every earlier exception, so a second sequence-bearing file
+# disappearing is still red.
 _seq_authorised = sorted(set(PP.V14_TO_V15_SEQUENCE_EXCEPTION)
                          | set(PP.V17_TO_V18_SEQUENCE_EXCEPTION)
-                         | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION))
+                         | set(PP.V18_TO_V19_SEQUENCE_EXCEPTION)
+                         | set(PP.V20_TO_V21_SEQUENCE_EXCEPTION))
 check(seq_moved == _seq_authorised,
       f"of the {len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files, exactly the "
       f"{len(_seq_authorised)} the owner authorised have moved since v13, each with its own "
@@ -305,8 +319,8 @@ check(seq_moved == _seq_authorised,
       f"no randomization and no questionnaire ITEM, response option, scale or order moved -- "
       f"which the participant-package suite asserts structurally, not by byte-identity",
       str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v20",
-      "the participant package is superseded at og-participant-2026.08-v20, and the v13, v14 and "
+check(PP.CURRENT.identifier == "og-participant-2026.08-v21",
+      "the participant package is superseded at og-participant-2026.08-v21, and the v13, v14 and "
       "v15 records are pinned rather than rewritten",
       PP.CURRENT.identifier)
 

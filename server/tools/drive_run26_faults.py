@@ -29,6 +29,20 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "drive_run26_faults.py",
+        allow=["code_audit/run26_browser_fault_injection.csv"])
+# -------------------------------------------------------------------------------------------
 RESULT_RE = re.compile(r"^RESULT: (\d+)/(\d+)( checks passed)?$", re.M)
 
 PASSED = 0
@@ -151,38 +165,48 @@ def main() -> None:
             ROWS.append([fid, rel, dom_fact, "NOT APPLIED", "-", "no"])
             shutil.rmtree(tree.parent, ignore_errors=True)
             continue
-        target.write_text(original.replace(find, repl, 1), encoding="utf-8")
-        back = target.read_text(encoding="utf-8")
-        check(back != original and repl.split("\n")[0] in back,
-              f"{fid}: the mutation is present in the bytes on disk")
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement at the end of
+        # the loop body, so any raise between the mutation and it -- a driver timeout, a regex
+        # failure, a kill -- left the mutated bytes on disk. Run 53 established that a fault left
+        # on disk is then SNAPSHOTTED by the next campaign and cemented by its own correct
+        # restore, which is how three guards stayed neutered for five runs. The `finally` is
+        # hygiene rather than the fix (the fix is the arm()/require_clean_tree guard above), but
+        # a known-incomplete repair is not left half-done.
+        try:
+            target.write_text(original.replace(find, repl, 1), encoding="utf-8")
+            back = target.read_text(encoding="utf-8")
+            check(back != original and repl.split("\n")[0] in back,
+                  f"{fid}: the mutation is present in the bytes on disk")
 
-        verdict, out = drive(tree, "nv-" + fid.split()[0], port)
+            verdict, out = drive(tree, "nv-" + fid.split()[0], port)
 
-        # THE MUTATION MUST BE VISIBLE IN THE RENDERED DOM, not only in the file. The driver
-        # prints the measured DOM fact for every fault; a fault that did not change what the
-        # browser drew cannot be evidence about a guard.
-        m = re.search(rf"{re.escape(dom_fact)} = (.+)", out)
-        measured = m.group(1).strip() if m else "(not measured)"
-        landed_in_dom = bool(m) and measured not in ("0", "[]")
-        check(landed_in_dom,
-              f"{fid}: and the rendered DOM changed, measured as {dom_fact} = {measured}",
-              measured)
+            # THE MUTATION MUST BE VISIBLE IN THE RENDERED DOM, not only in the file. The driver
+            # prints the measured DOM fact for every fault; a fault that did not change what the
+            # browser drew cannot be evidence about a guard.
+            m = re.search(rf"{re.escape(dom_fact)} = (.+)", out)
+            measured = m.group(1).strip() if m else "(not measured)"
+            landed_in_dom = bool(m) and measured not in ("0", "[]")
+            check(landed_in_dom,
+                  f"{fid}: and the rendered DOM changed, measured as {dom_fact} = {measured}",
+                  measured)
 
-        named = prop.lower() in out.lower()
-        check(verdict == "RED", f"{fid}: the browser guard goes RED, and does not crash",
-              verdict)
-        check(verdict == "RED" and named,
-              f"{fid}: and the failure names the intended property ({prop!r})",
-              "not named" if verdict == "RED" else verdict)
-
-        target.write_text(original, encoding="utf-8")
+            named = prop.lower() in out.lower()
+            check(verdict == "RED", f"{fid}: the browser guard goes RED, and does not crash",
+                  verdict)
+            check(verdict == "RED" and named,
+                  f"{fid}: and the failure names the intended property ({prop!r})",
+                  "not named" if verdict == "RED" else verdict)
+        finally:
+            target.write_text(original, encoding="utf-8")
         port += 1
-        restored, _ = drive(tree, "nv-restore", port)
-        check(restored == "GREEN", f"{fid}: restoring returns the guard to green", restored)
-        ROWS.append([fid, rel, f"{dom_fact}={measured}", verdict, restored,
-                     "yes" if (verdict == "RED" and named and landed_in_dom
-                               and restored == "GREEN") else "no"])
-        shutil.rmtree(tree.parent, ignore_errors=True)
+        try:
+            restored, _ = drive(tree, "nv-restore", port)
+            check(restored == "GREEN", f"{fid}: restoring returns the guard to green", restored)
+            ROWS.append([fid, rel, f"{dom_fact}={measured}", verdict, restored,
+                         "yes" if (verdict == "RED" and named and landed_in_dom
+                                   and restored == "GREEN") else "no"])
+        finally:
+            shutil.rmtree(tree.parent, ignore_errors=True)
 
     out_path = ROOT / "code_audit" / "run26_browser_fault_injection.csv"
     with out_path.open("w", newline="", encoding="utf-8") as fh:

@@ -381,6 +381,12 @@ try:
         print("=" * 94)
         print("2. THE RESEARCH DEEP-DIVE SURFACE: PANELS, BUCKETS AND GROUP HEADERS")
         print("=" * 94)
+        # RUN 54: THIS BLOCK IS HISTORICAL AND WILL NOT RUN AGAIN. `research/deepdive.html`
+        # was DELETED on the owner's ruling at section 8 of the Run 54 order, and the route
+        # that served it went with it. This driver is the EVIDENCE CAPTURE for its own run
+        # and is pinned to what that run measured; rewriting it would falsify the record it
+        # exists to be. It is annotated, not rewritten, on the same principle every
+        # predecessor package record in this repository is kept rather than regenerated.
         dd_page = browser.new_page(viewport={"width": 1680, "height": 2400})
         dd_errors = []
         dd_page.on("pageerror", lambda e: dd_errors.append(str(e)))

@@ -37,6 +37,20 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run26_fault_campaign.py",
+        allow=["code_audit/run20_cycle12_100_reaudit.csv", "code_audit/run26_fault_injection_results.csv", "code_audit/signal_flow_authoritative_edges.csv"])
+# -------------------------------------------------------------------------------------------
+
 RESULT_RE = re.compile(r"^RESULT: (\d+)/(\d+)( checks passed)?$", re.M)
 
 PASSED = 0
@@ -177,33 +191,41 @@ def main() -> None:
             shutil.rmtree(tree.parent, ignore_errors=True)
             continue
 
-        mutated = original.replace(find, repl, 1)
-        target.write_text(mutated, encoding="utf-8", errors="surrogateescape")
+        # RUN 55, PHASE B. THE RESTORE IS IN A `finally`. It was a bare statement at the end of the
+        # loop body, so a raise between the mutation and it left the mutated bytes on disk, where
+        # Run 53 established the next campaign snapshots them and cements them with its own correct
+        # restore. The guard from campaign_safety.arm() is the fix; this is the hygiene, and a
+        # known-incomplete repair is not left half-done.
+        landed = False
+        try:
+            mutated = original.replace(find, repl, 1)
+            target.write_text(mutated, encoding="utf-8", errors="surrogateescape")
 
-        # CONFIRM THE MUTATION LANDED, by reading the bytes back off disk.
-        back = target.read_text(encoding="utf-8", errors="surrogateescape")
-        landed = back != original and repl in back
-        check(landed, f"{fid}: the mutation is present in the bytes on disk", rel)
-        if not landed:
-            ROWS.append([fid, suite, rel, "DID NOT LAND", "-", "-", "no"])
+            # CONFIRM THE MUTATION LANDED, by reading the bytes back off disk.
+            back = target.read_text(encoding="utf-8", errors="surrogateescape")
+            landed = back != original and repl in back
+            check(landed, f"{fid}: the mutation is present in the bytes on disk", rel)
+            if landed:
+                verdict, out = run_guard(tree, suite)
+                named = prop.lower() in out.lower()
+                check(verdict == "RED", f"{fid}: {suite} goes RED, and does not crash", verdict)
+                check(verdict == "RED" and named,
+                      f"{fid}: and the failure names the intended property ({prop!r})",
+                      "not named" if verdict == "RED" else verdict)
+        finally:
+            # RESTORE, whatever happened above.
+            target.write_text(original, encoding="utf-8", errors="surrogateescape")
+        try:
+            if not landed:
+                ROWS.append([fid, suite, rel, "DID NOT LAND", "-", "-", "no"])
+                continue
+            restored, _ = run_guard(tree, suite)
+            check(restored == "GREEN", f"{fid}: restoring the file returns the guard to green",
+                  restored)
+            ROWS.append([fid, suite, rel, prop, verdict, restored,
+                         "yes" if (verdict == "RED" and named and restored == "GREEN") else "no"])
+        finally:
             shutil.rmtree(tree.parent, ignore_errors=True)
-            continue
-
-        verdict, out = run_guard(tree, suite)
-        named = prop.lower() in out.lower()
-        check(verdict == "RED", f"{fid}: {suite} goes RED, and does not crash", verdict)
-        check(verdict == "RED" and named,
-              f"{fid}: and the failure names the intended property ({prop!r})",
-              "not named" if verdict == "RED" else verdict)
-
-        # RESTORE and require green again.
-        target.write_text(original, encoding="utf-8", errors="surrogateescape")
-        restored, _ = run_guard(tree, suite)
-        check(restored == "GREEN", f"{fid}: restoring the file returns the guard to green",
-              restored)
-        ROWS.append([fid, suite, rel, prop, verdict, restored,
-                     "yes" if (verdict == "RED" and named and restored == "GREEN") else "no"])
-        shutil.rmtree(tree.parent, ignore_errors=True)
 
     out = ROOT / "code_audit" / "run26_fault_injection_results.csv"
     with out.open("w", newline="", encoding="utf-8") as fh:

@@ -60,9 +60,12 @@ PRODUCTION_ROOTS: tuple[tuple[str, bool, str], ...] = (
      "the served application entry document; app.main returns it by name from REPO_ROOT"),
     ("logo.png", False,
      "served by name from app.main as _LOGO_PNG. NOT in the 143-file freeze"),
-    ("research/deepdive.html", False,
-     "served by name from app.main as _DEEPDIVE_HTML, the researcher-facing surface Run 21 "
-     "corrected the four withdrawn regulatory claims on. NOT in the 143-file freeze"),
+    # RUN 54. `research/deepdive.html` WAS A PRODUCTION ROOT AND IS NOT ONE ANY MORE, because
+    # the file and the route that served it were both DELETED on the owner's ruling at section 8
+    # of the Run 54 order. It is removed rather than left to trip walk_production()'s
+    # "a root that has vanished is a freeze failure" -- that guard is correct and is deliberately
+    # not softened; what changed is that this path is no longer claimed as production. The guard
+    # keeps its full force over index.html and logo.png, the two non-recursive roots that remain.
     ("assets", True,
      "app.main mounts this WHOLE DIRECTORY with StaticFiles, so every file beneath it is served "
      "to a participant, including the vendored fonts and geojson the 143-file freeze omitted"),
@@ -456,8 +459,29 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: project detail page and that Open is the only route to it. The run51 manifest is NOT
 #: rewritten: it stays exactly as that release wrote it and this successor names it as its
 #: parent.
-PINNED = ROOT / "code_audit" / "run52_production_tree.sha256"
-#: The Run-51 manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUNS 54 AND 55 SUPERSEDE IT, and this is the first supersession in this chain in which a
+#: production ROOT ENTRY DISAPPEARS rather than merely changing. NINE production files moved:
+#: TWO REMOVED -- `assets/js/deepdive.js` and `research/deepdive.html`, the client-side deep-dive
+#: surface, reached by no route the service serves -- and SEVEN CHANGED: `assets/js/app.js` (the
+#: project list's Manage control navigates to the project detail page; the redundant Open control
+#: is removed, in that order and verified in a real browser before the removal),
+#: `assets/js/ingest.js` and `assets/js/detail.js` (the six operational admin controls MOVE onto
+#: the detail page of the project being viewed), `assets/css/radar.css` (the four dead .li-open
+#: rules go with the control they styled), `index.html` (a COMMENT that pointed at the deleted
+#: file; no rendered text moved), `server/app/main.py` (the route that served the deleted page is
+#: gone, because a route serving a deleted page would be a second front door) and
+#: `server/app/simulation/models.py` (the stamp advances to sim-2026.08-v36 with the boundary
+#: recorded). The guard was observed reporting exactly those nine -- two REMOVED, seven CHANGED,
+#: nothing added and nothing renamed -- before this manifest was written. The `removed` case is
+#: NOT softened anywhere: `production_tree.py`'s own rule that a root which has vanished is a
+#: freeze failure still stands, and `assets/js` and `research` are both still roots. The run52
+#: manifest is NOT rewritten: it stays exactly as that release wrote it and this successor names
+#: it as its parent.
+PINNED = ROOT / "code_audit" / "run55_production_tree.sha256"
+#: The Run-52 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN52 = ROOT / "code_audit" / "run52_production_tree.sha256"
+#: The Run-51 manifest, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN51 = ROOT / "code_audit" / "run51_production_tree.sha256"
 #: The Run-49 manifest, the immediate parent, kept addressable so a guard can prove the
@@ -572,6 +596,12 @@ PINNED_RUN26 = ROOT / "code_audit" / "run26_production_tree.sha256"
 #: RUN 52. The authority tree did not move: the guard reported no added, removed, changed or
 #: renamed authority file, so the Run-51 authority manifest still describes it exactly and is
 #: NOT superseded. A manifest is superseded when what it describes moves, not once per run.
+#: RUN 55 RE-TOOK IT AND IT STILL HAS NOT MOVED. The re-take was run, not assumed: `compare()`
+#: over AUTHORITY_ROOTS reported added=0 removed=0 changed=0 renamed=0, and the manifest sha256
+#: recomputed from the tree, b52c47a68a20ab1629681ea240abdea2167c67f289d181f446a8170704dc1596,
+#: is byte for byte the sha256 of the pinned file. So this pin is DELIBERATELY LEFT AT run51,
+#: for the same reason Run 52 left it there: writing a run55 authority manifest identical to the
+#: run51 one would assert a supersession that did not happen.
 PINNED_AUTHORITY = ROOT / "code_audit" / "run51_authority_tree.sha256"
 #: The Run-39 authority manifest, the immediate parent, kept addressable so a guard can prove
 #: the supersession is a real change and not a silent rewrite.

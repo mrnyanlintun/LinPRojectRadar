@@ -147,7 +147,10 @@ CURRENT_SURFACES = (
     "assets/js/categories.js",
     "assets/js/taxonomy.js",
     "assets/js/knowledge.js",
-    "assets/js/deepdive.js",
+    # RUN 54: "assets/js/deepdive.js" WAS HERE. It is DELETED, and a file that does not exist
+    # cannot carry a retired name. Removing it from this list is not a weakening: the surfaces
+    # that remain are checked exactly as before, and the deletion is a stronger guarantee about
+    # this one than any text check could give.
     "assets/js/charts3d.js",
     "assets/js/decision-ui.js",
     "assets/js/workspace.js",

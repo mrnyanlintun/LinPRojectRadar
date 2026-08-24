@@ -19,6 +19,20 @@ HERE = pathlib.Path(__file__).resolve().parent
 SERVER = HERE.parent
 ROOT = SERVER.parent
 
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run32_b3_fault_campaign.py",
+        allow=["code_audit/run32_b3_fault_injection.csv"])
+# -------------------------------------------------------------------------------------------
+
 AGREE = "test_run32_method_class_agreement.py"
 GENERATED = "test_run11_defensibility_claims.py"
 CATEGORIES = ROOT / "assets" / "js" / "categories.js"
@@ -160,16 +174,24 @@ def main():
             t["na"] += 1
             continue
         t["app"] += 1
-        frc, fout, fres = run_guard(guard)
-        crash = fres is None
-        red = fres is not None and not is_green(fres)
-        fails = failing_lines(fout)
-        intended = red and any(reason.strip().lower() in f.strip().lower() for f in fails)
-        actual = ("no RESULT line (crash)" if crash else
-                  ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
-                  else "GREEN - guard did not notice")
-        clear_pycache()
-        target.write_bytes(orig)
+        # RUN 55, PHASE B. THE GUARD RUN IS INSIDE A `try` AND THE RESTORE IS ITS
+        # `finally`. The restore was a bare statement after run_guard(), so a raise in
+        # run_guard -- a timeout, a decode error, a kill -- left the mutated bytes on
+        # disk. Run 53 established that the next campaign then snapshots the corruption
+        # and cements it with its own correct restore. The arm() guard is the fix; this
+        # is the hygiene, and a known-incomplete repair is not left half-done.
+        try:
+            frc, fout, fres = run_guard(guard)
+            crash = fres is None
+            red = fres is not None and not is_green(fres)
+            fails = failing_lines(fout)
+            intended = red and any(reason.strip().lower() in f.strip().lower() for f in fails)
+            actual = ("no RESULT line (crash)" if crash else
+                      ("; ".join(dict.fromkeys(f.strip()[:110] for f in fails)) or fres) if red
+                      else "GREEN - guard did not notice")
+        finally:
+            clear_pycache()
+            target.write_bytes(orig)
         restored = target.read_bytes() == orig
         clear_pycache()
         rrc, rout, rres = run_guard(guard)

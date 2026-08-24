@@ -46,6 +46,20 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run28_fault_campaign.py",
+        allow=["code_audit/run20_production_freeze.sha256", "code_audit/run28_fault_injection.csv"])
+# -------------------------------------------------------------------------------------------
 OUT = ROOT / "code_audit" / "run28_fault_injection.csv"
 
 RESULT_RE = re.compile(r"^RESULT: (\d+)/(\d+)( checks passed)?$", re.M)
@@ -158,29 +172,29 @@ def campaign(fault_id: str, what: str, rel: str, old: str, new: str, suite: str,
                      "expected_reason": expect_reason, "baseline_after": "n/a",
                      "bytes_restored": "n/a", "verdict": "CAMPAIGN FAILURE"})
         return
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
-    _drop_bytecode(path)
-
-    # STEP 3. CONFIRM THE INJECTION TOOK EFFECT, by re-reading the file FROM DISK.
-    reread = path.read_bytes()
-    applied = (hashlib.sha256(reread).hexdigest() != before_sha
-               and new in reread.decode("utf-8")
-               and old not in reread.decode("utf-8"))
-    if not applied:
-        path.write_bytes(before_bytes)
+    # RESTORE IN A `finally` THAT CANNOT BE SKIPPED. Before Run 54 the restore was straight-line
+    # code, so any raise inside run_suite() left the fault on disk. Hygiene, not the fix: see
+    # server/tools/campaign_safety.py for why a `finally` alone would not have caught the leak.
+    with restore_guard({path: before_bytes}, after=lambda: _drop_bytecode(path)):
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
         _drop_bytecode(path)
-        FAILURES.append(f"{fault_id}: THE INJECTION DID NOT TAKE EFFECT on disk")
-        ROWS.append({"fault_id": fault_id, "what_was_broken": what, "file": rel,
-                     "guard": suite, "baseline_before": baseline_detail,
-                     "injection_applied": "NO", "observed": "NOT RUN",
-                     "expected_reason": expect_reason, "baseline_after": "n/a",
-                     "bytes_restored": "yes", "verdict": "CAMPAIGN FAILURE"})
-        return
 
-    verdict, detail = run_suite(suite)
+        # STEP 3. CONFIRM THE INJECTION TOOK EFFECT, by re-reading the file FROM DISK.
+        reread = path.read_bytes()
+        applied = (hashlib.sha256(reread).hexdigest() != before_sha
+                   and new in reread.decode("utf-8")
+                   and old not in reread.decode("utf-8"))
+        if not applied:
+            FAILURES.append(f"{fault_id}: THE INJECTION DID NOT TAKE EFFECT on disk")
+            ROWS.append({"fault_id": fault_id, "what_was_broken": what, "file": rel,
+                         "guard": suite, "baseline_before": baseline_detail,
+                         "injection_applied": "NO", "observed": "NOT RUN",
+                         "expected_reason": expect_reason, "baseline_after": "n/a",
+                         "bytes_restored": "yes", "verdict": "CAMPAIGN FAILURE"})
+            return
 
-    path.write_bytes(before_bytes)
-    _drop_bytecode(path)
+        verdict, detail = run_suite(suite)
+
     restored = sha(path) == before_sha
     after, after_detail = run_suite(suite)
 

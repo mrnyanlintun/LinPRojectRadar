@@ -126,13 +126,27 @@ FREEZE = ROOT / "research" / "freeze"
 # run51_freeze_candidate_identity.json, run51_successor_freeze_gate.csv,
 # run51_candidate_behaviour_digest.json and the v34 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v34.
-PREDECESSOR_CANDIDATE = "fe355043a8e71a2c9f16b50b8e01ac2696b757ec"
-PREDECESSOR_VERSION = "sim-2026.08-v34"
-CANDIDATE = "d236a2706a801cad8547ba34d68b0dc83521ff52"
-EXPECTED_VERSION = "sim-2026.08-v35"
-IDENTITY_FILE = "run52_freeze_candidate_identity.json"
-GATE_FILE = "run52_successor_freeze_gate.csv"
-BEHAVIOUR_FILE = "run52_candidate_behaviour_digest.json"
+PREDECESSOR_CANDIDATE = "d236a2706a801cad8547ba34d68b0dc83521ff52"
+PREDECESSOR_VERSION = "sim-2026.08-v35"
+CANDIDATE = "8e557b7b28857171a8611baf28f2c99cfd70c875"
+EXPECTED_VERSION = "sim-2026.08-v36"
+IDENTITY_FILE = "run55_freeze_candidate_identity.json"
+GATE_FILE = "run55_successor_freeze_gate.csv"
+# RUN 55, THE MINT. TWO FILENAMES, NOT ONE, AND THAT IS DELIBERATE.
+#
+# The generator used a SINGLE constant for both halves of blocker B15: it read the prior digest
+# from it and wrote the new digest to it. Renaming that one constant to the successor's filename
+# would have made B15 read a file that does not exist yet, take the "first evaluation" branch,
+# and PASS WITHOUT COMPARING ANYTHING -- a blocker silently turned vacuous by a rename. That is
+# not a reconciliation, it is a weakening, and section 12.9 of the Run 55 order forbids it.
+#
+# So the read and the write are separated. B15 compares the FRESHLY DERIVED digest against the
+# v35 record, which carries the digest of record
+# 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1. The check is STRICTER after
+# this change than before it: it now spans a supersession instead of only comparing a run to
+# itself.
+PRIOR_BEHAVIOUR_FILE = "run52_candidate_behaviour_digest.json"
+BEHAVIOUR_FILE = "run55_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
@@ -489,12 +503,38 @@ def freeze_gate():
         if re.match(r"^[0-9a-f]{64}  ", ln):
             h, p = ln.split("  ", 1)
             current_pkg[p] = h
-    seq_moved = sorted(f for f in PP.SEQUENCE_BEARING_FILES
+    # RUN 55, THE MINT. THE SEQUENCE-BEARING SET ITSELF MOVED ACROSS v20 TO v21, and this is the
+    # first time in this chain that has happened. `assets/js/deepdive.js` was sequence-bearing
+    # and Run 54 phase B DELETED it, so from v21 onward the set is FIVE members and not six.
+    #
+    # THIS IS NOT A WEAKENING AND IT IS BUILT SO THAT IT CANNOT BECOME ONE. The shorter set is
+    # used only when the CURRENT package declares it, and three things are asserted before it is
+    # used, every one of them counting into this blocker rather than being taken on trust:
+    #   (a) the difference between the two sets is EXACTLY V20_TO_V21_SEQUENCE_EXCEPTION -- so
+    #       the set cannot be quietly shortened by any other member;
+    #   (b) every excepted file is genuinely ABSENT from the tree -- so the exception cannot be
+    #       used to stop measuring a file that is still there;
+    #   (c) every excepted file is named in V20_TO_V21_DELETED -- so the deletion is declared in
+    #       the package chain and not only here.
+    # A SECOND sequence-bearing file disappearing still turns this blocker red, because it would
+    # not be in the exception tuple and (a) would fail.
+    _from_v21 = PP.CURRENT.identifier >= "og-participant-2026.08-v21"
+    _seq_set = PP.SEQUENCE_BEARING_FILES_FROM_V21 if _from_v21 else PP.SEQUENCE_BEARING_FILES
+    _exc = PP.V20_TO_V21_SEQUENCE_EXCEPTION if _from_v21 else ()
+    set_bad = 0
+    if _from_v21:
+        set_bad += 0 if (set(PP.SEQUENCE_BEARING_FILES) - set(_seq_set)) == set(_exc) else 1
+        set_bad += sum(1 for f in _exc if (ROOT / f).is_file())
+        set_bad += sum(1 for f in _exc if f not in PP.V20_TO_V21_DELETED)
+    seq_moved = sorted(f for f in _seq_set
                        if hashlib.sha256((ROOT / f).read_bytes()).hexdigest()
                        != current_pkg.get(f))
-    blocker(4, "participant-sequence drift", len(seq_moved),
-            f"{len(PP.SEQUENCE_BEARING_FILES)} sequence-bearing files compared against the "
-            f"{PP.CURRENT.identifier} record; moved: {seq_moved or 'none'}")
+    blocker(4, "participant-sequence drift", len(seq_moved) + set_bad,
+            f"{len(_seq_set)} sequence-bearing files compared against the "
+            f"{PP.CURRENT.identifier} record; moved: {seq_moved or 'none'}; "
+            f"set shortened from {len(PP.SEQUENCE_BEARING_FILES)} to {len(_seq_set)} by the "
+            f"named exception {list(_exc) or 'none'}, each proved absent and declared in "
+            f"V20_TO_V21_DELETED: {'yes' if set_bad == 0 else 'NO'}")
 
     # B05 false defensibility statement -------------------------------------------------------
     drows, crows, census, populated, exceptions = defensibility_and_census()
@@ -614,7 +654,7 @@ def freeze_gate():
 
     # B15 candidate behaviour changed during Run 37 ----------------------------------------------------
     behav = behaviour_digest()
-    prior = (FREEZE / BEHAVIOUR_FILE)
+    prior = (FREEZE / PRIOR_BEHAVIOUR_FILE)
     changed = 0
     detail = "first evaluation: behaviour digest recorded"
     if prior.is_file():
@@ -624,8 +664,9 @@ def freeze_gate():
             detail = (f"behaviour digest moved: {was.get('behaviour_digest')} -> "
                       f"{behav['behaviour_digest']}")
         else:
-            detail = (f"behaviour digest reproduced identically: "
-                      f"{behav['behaviour_digest']}")
+            detail = (f"behaviour digest RE-DERIVED and reproduced identically across the "
+                      f"v35-to-v36 supersession, compared against "
+                      f"{PRIOR_BEHAVIOUR_FILE}: {behav['behaviour_digest']}")
     blocker(15, "candidate behaviour changed during the run", changed, detail)
     return g, drows, crows
 

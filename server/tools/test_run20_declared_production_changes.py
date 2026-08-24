@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import pathlib
+import subprocess
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -46,6 +47,7 @@ from run20_production_changes import (  # noqa: E402
     RUN20_NEW_PRODUCTION_FILES,
     RUN20_PRODUCTION_CHANGES,
 )
+import participant_packages as PP  # noqa: E402
 from run21_production_changes import RUN21_PRODUCTION_CHANGES  # noqa: E402
 from run23_production_changes import RUN23_PRODUCTION_CHANGES  # noqa: E402
 from run25_production_changes import RUN25_PRODUCTION_CHANGES  # noqa: E402
@@ -103,11 +105,36 @@ check("the freeze is genuinely frozen: it still records the pre-cycle-1 bytes of
       baseline.get("server/app/simulation/models_ext.py")
       == "8911c9d86fc73fd913907cb9b489a5649d2b400cfaa7cc26dcdf9c66e65bb5d3")
 
-missing = [rel for rel in baseline if not (ROOT / rel).is_file()]
-check("every file the baseline names still exists", not missing, str(missing))
+# RUNS 54 AND 55. TWO FILES THE BASELINE NAMES HAVE BEEN DELETED ON THE OWNER'S RULING, and this
+# guard is NARROWED BY DECLARATION rather than weakened. The declared set is read from
+# participant_packages.V20_TO_V21_DELETED, the record the package chain already carries; an
+# UNDECLARED disappearance is still red, and a declaration for a file that is STILL PRESENT is
+# red too, so the declaration can record a deletion but cannot cause one. NON-VACUITY IS PINNED
+# TO AN EXPLICIT COMMIT HASH -- never a relative reference, which is the defect Run 54 caught in
+# its own work.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
+DECLARED_GONE = set(PP.V20_TO_V21_DELETED)
+missing = [rel for rel in baseline
+           if not (ROOT / rel).is_file() and rel not in DECLARED_GONE]
+check("every file the baseline names still exists, except the ones V20_TO_V21_DELETED declares "
+      "deleted", not missing, str(missing))
+_falsely_declared = sorted(f for f in DECLARED_GONE if (ROOT / f).is_file())
+check("and every declared deletion really is absent: a declaration records a deletion, it does "
+      "not excuse a file that is still there", not _falsely_declared, str(_falsely_declared))
+for _gone in sorted(DECLARED_GONE):
+    check(f"NON-VACUITY at {RUN54_PREDELETION_COMMIT}: {_gone} DID exist there, so the absence "
+          f"above is a real change and not a vacuous check",
+          subprocess.run(["git", "cat-file", "-e",
+                          f"{RUN54_PREDELETION_COMMIT}:{_gone}"],
+                         cwd=str(ROOT), capture_output=True).returncode == 0)
 
+# A DECLARED DELETION IS THE STRONGEST POSSIBLE FORM OF "DIFFERS FROM THE FREEZE": the file is
+# not merely changed, it is gone. It therefore counts into `differing`, which keeps the
+# set-equality guard below EXACT rather than letting a deleted file quietly drop out of both
+# sides of it.
 differing = {rel for rel, digest in baseline.items()
-             if (ROOT / rel).is_file() and sha(ROOT / rel) != digest}
+             if (ROOT / rel).is_file() and sha(ROOT / rel) != digest} | (
+             DECLARED_GONE & set(baseline))
 run20_declared = ({entry[1] for entry in RUN20_PRODUCTION_CHANGES.values()}
                   | {entry[1] for entry in RUN20_ARCHITECTURAL_CHANGES.values()})
 # RUN 21. Runs after Run 20 declare their own production changes in their own manifest. The
@@ -257,23 +284,28 @@ check("and no path is declared by two manifests at all, so one change cannot be 
       not _overlap, f"in more than one manifest: {sorted(_overlap)}")
 for mid, (why_item, path, why) in sorted(RUN28_PRODUCTION_CHANGES.items()):
     check(f"the Run-28 manifest entry for {mid} names an authority, a real file and a "
-          f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
+          f"reason", bool(why_item) and bool(why) and ((ROOT / path).is_file()
+                                            or path in DECLARED_GONE),
           f"{why_item!r} {path!r}")
 for mid, (why_item, path, why) in sorted(RUN26_PRODUCTION_CHANGES.items()):
     check(f"the Run-26 manifest entry for {mid} names an authority, a real file and a "
-          f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
+          f"reason", bool(why_item) and bool(why) and ((ROOT / path).is_file()
+                                            or path in DECLARED_GONE),
           f"{why_item!r} {path!r}")
 for mid, (why_item, path, why) in sorted(RUN25_PRODUCTION_CHANGES.items()):
     check(f"the Run-25 manifest entry for {mid} names an authority, a real file and a "
-          f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
+          f"reason", bool(why_item) and bool(why) and ((ROOT / path).is_file()
+                                            or path in DECLARED_GONE),
           f"{why_item!r} {path!r}")
 for mid, (why_item, path, why) in sorted(RUN23_PRODUCTION_CHANGES.items()):
     check(f"the post-Run-22 manifest entry for {mid} names an authority, a real file and a "
-          f"reason", bool(why_item) and bool(why) and (ROOT / path).is_file(),
+          f"reason", bool(why_item) and bool(why) and ((ROOT / path).is_file()
+                                            or path in DECLARED_GONE),
           f"{why_item!r} {path!r}")
 for mid, (why_item, path, why) in sorted(RUN21_PRODUCTION_CHANGES.items()):
     check(f"the Run-21 manifest entry for {mid} names an authority, a real file and a reason",
-          bool(why_item) and bool(why) and (ROOT / path).is_file(), f"{why_item!r} {path!r}")
+          bool(why_item) and bool(why) and ((ROOT / path).is_file()
+                                            or path in DECLARED_GONE), f"{why_item!r} {path!r}")
 check("and the two sets are therefore exactly equal, which is the whole guard",
       differing == declared, f"{sorted(differing)} vs {sorted(declared)}")
 

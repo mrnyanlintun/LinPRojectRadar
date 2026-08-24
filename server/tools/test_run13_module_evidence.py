@@ -35,6 +35,12 @@ from app.simulation.registry import (  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 AUDIT = ROOT / "code_audit"
+
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it walked back one
+#: commit per later commit until it pointed at a tree where the file was already gone, turning a
+#: real non-vacuity proof into a false one. Caught by running the full suite pass, not by reading.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
 CUTOFF = "2025-06-30"
 NOOP = lambda: 0.5  # noqa: E731
 
@@ -434,16 +440,26 @@ check(run_module("A5.4", unversioned, NOOP, CUTOFF).get("insufficient_data") is 
 section("GATE 10 — one computational authority, and the guard that keeps it")
 # =============================================================================================
 INDEX = (ROOT / "index.html").read_text(encoding="utf-8")
-DEEP = (ROOT / "research" / "deepdive.html").read_text(encoding="utf-8")
+# RUN 54 RECONCILIATION. `research/deepdive.html` was DELETED on the owner's ruling at section 8
+# of the Run 54 order. The two checks that asserted the historical arithmetic was CONFINED to
+# that route are replaced by the stronger statement the deletion makes true -- it is confined to
+# NO route -- together with the non-vacuity that makes the absence a finding.
+_DEEP = ROOT / "research" / "deepdive.html"
+_DEEP_WAS = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e",
+                            f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"], capture_output=True).returncode == 0
 GUARD = (ROOT / "assets" / "js" / "client_algorithm_version.js").read_text(encoding="utf-8")
 INDEX_SCRIPTS = re.findall(r'<script[^>]*src="([^"]+)"', INDEX)
 check(not [s_ for s_ in INDEX_SCRIPTS if s_.endswith(("sim.js", "simulations.js"))],
       "the participant page loads neither browser instrument file; the only mentions left are "
       "comments recording why they are gone", str(INDEX_SCRIPTS[-3:]))
-check("sim.js" in DEEP and "simulations.js" in DEEP,
-      "the historical arithmetic remains on the researcher deep-dive route only")
-check("client_algorithm_version.js" in DEEP,
-      "and that route loads the version guard before them")
+check((not _DEEP.exists()) and _DEEP_WAS,
+      "the historical arithmetic remains on NO route: the one page that carried it is deleted, "
+      "and it existed at the prior commit so this is not vacuous",
+      f"exists_now={_DEEP.exists()} existed_at_bf36ef6={_DEEP_WAS}")
+check(_DEEP_WAS and b"client_algorithm_version.js" in subprocess.run(
+          ["git", "-C", str(ROOT), "show", f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"],
+          capture_output=True).stdout,
+      "NON-VACUITY: that route really did load the version guard right up to its deletion")
 check('"client-legacy-2026.07-historical"' in GUARD,
       "the guard stamps the browser arithmetic as historical and never as a server version")
 check(SIMULATION_VERSION not in GUARD,

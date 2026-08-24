@@ -23,6 +23,13 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
+#: RUN 54. THE COMMIT THE DEEP-DIVE SURFACE WAS DELETED FROM, PINNED. It must NOT be written as
+#: `HEAD~1`: that was true only while the deletion was the last commit, and it walked back one
+#: commit per later commit until it pointed at a tree where the file was already gone, turning a
+#: real non-vacuity proof into a false one. Caught by running the full suite pass, not by reading.
+#: Pinning the commit is the discipline every predecessor package record already uses.
+RUN54_PREDELETION_COMMIT = "bf36ef6"
+
 results: list[tuple[bool, str, str]] = []
 
 
@@ -42,9 +49,20 @@ for f in ("sim.js", "simulations.js", "categories.js"):
     check(f'assets/js/{f}' not in index_html,
           f"the participant application does not load {f}")
 
-deep = (ROOT / "research" / "deepdive.html").read_text(encoding="utf-8")
-check("client_algorithm_version.js" in deep,
-      "the researcher deep dive loads the algorithm version guard")
+# RUN 54 RECONCILIATION. `research/deepdive.html` and `assets/js/deepdive.js` were DELETED
+# on the owner's ruling at section 8 of the Run 54 order. The check below asserted that the
+# browser instruments were CONFINED to that one route. With the route gone the same
+# guarantee is STRONGER and is asserted as such: no served route loads them at all. The
+# check is not deleted and not weakened -- its subject moved from 'confined to one page'
+# to 'reached by no page', which is the stricter of the two. NON-VACUITY: both files exist
+# at the prior commit, asserted against git rather than assumed.
+_deep_gone = not (ROOT / "research" / "deepdive.html").exists()
+_deep_existed = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e",
+                                f"{RUN54_PREDELETION_COMMIT}:research/deepdive.html"], capture_output=True).returncode == 0
+check(_deep_gone and _deep_existed,
+      "the researcher deep dive is GONE, so the algorithm-version guard it loaded has no page "
+      "left to protect: no served route runs browser arithmetic at all",
+      f"deleted={_deep_gone} existed_at_bf36ef6={_deep_existed}")
 guard = (ROOT / "assets" / "js" / "client_algorithm_version.js").read_text(encoding="utf-8")
 check("simulation_version" in guard,
       "and the guard compares the client stamp against the stored simulation version")
@@ -57,10 +75,23 @@ SURFACES = {
     "assets/js/signals.js": "server-stored results through projectresults",
     "assets/js/taxonomy.js": "server-stored results through projectresults",
     "assets/js/decision-ui.js": "server-stored results through projectresults",
-    "research/deepdive.html": "historical client artefacts, behind the version guard",
+}
+#: RUN 54. `research/deepdive.html` was the sixth entry -- "historical client artefacts, behind
+#: the version guard". It is DELETED, so it is no longer a surface and the inventory says so. The
+#: entry is not silently dropped: the check below asserts it is GONE and that it EXISTED at the
+#: prior commit, so the inventory's count of live surfaces falls by one for a reason on the
+#: record rather than by an edit nobody has to justify.
+RETIRED_SURFACES = {
+    "research/deepdive.html": "DELETED by Run 54 on the owner's ruling at section 8",
 }
 for name in SURFACES:
     check((ROOT / name).exists(), f"inventoried surface exists: {name}")
+for name in RETIRED_SURFACES:
+    _was = subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{RUN54_PREDELETION_COMMIT}:{name}"],
+                          capture_output=True).returncode == 0
+    check(not (ROOT / name).exists() and _was,
+          f"retired surface is gone and was present at the prior commit: {name}",
+          f"exists_now={(ROOT / name).exists()} existed_at_bf36ef6={_was}")
 
 # No live participant asset may call the historical client arithmetic without the opt-in.
 def strip_comments(src: str) -> str:
@@ -102,6 +133,8 @@ print("=" * 78)
 
 from app.simulation.registry import CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY  # noqa: E402
 from app.simulation.fusion import governed_status_semantics, normalise_status  # noqa: E402
+
+
 
 check(set(CORE_VOTING_MODULES) == {"A1.7", "A1.8"},
       "the voting set is exactly the two cost lineage modules", str(sorted(CORE_VOTING_MODULES)))

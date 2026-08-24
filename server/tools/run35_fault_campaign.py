@@ -25,6 +25,20 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+
+# --- CAMPAIGN SAFETY (Run 54, phase A) -----------------------------------------------------
+# THE START-AND-END DIRTY-TREE GUARD. A campaign must not BEGIN on a dirty tree: Run 53
+# established that a leaked fault is snapshotted from disk by the next campaign, faithfully
+# restored by its `finally`, and thereby CERTIFIED by its own passing assertion. An end-only
+# check cannot see that, because the leak began in an earlier process. See
+# server/tools/campaign_safety.py for the full mechanism and the proof.
+import sys as _cs_sys, pathlib as _cs_pl                                       # noqa: E402
+_cs_sys.path.insert(0, str(_cs_pl.Path(ROOT) / "server" / "tools"))
+from campaign_safety import (arm as _cs_arm, restore_guard, head_text,          # noqa: E402,F401
+                             snapshot_text, CampaignTreeDirty)
+_cs_arm(_cs_pl.Path(ROOT), "run35_fault_campaign.py",
+        allow=[])
+# -------------------------------------------------------------------------------------------
 SERVER = ROOT / "server"
 AUDIT = ROOT / "code_audit"
 GUARD = HERE / "test_run35_validation_governance.py"
@@ -313,29 +327,30 @@ def main():
             continue
         files = files_of(mut)
         before = {f: f.read_bytes() for f in files}
-        drop_pycache()
-        ok, why = apply_one(mut)
-        after = {f: f.read_bytes() for f in files}
-        landed = ok and any(after[f] != before[f] for f in files)
-        if not landed:
-            for f, b in before.items():
-                f.write_bytes(b)
+        # RESTORE IN A `finally` THAT CANNOT BE SKIPPED. Run 53 singled this campaign out: its
+        # restore was straight-line code with NO `try` at all, while faults 24 and 25 target
+        # server/app/simulation/canonical_v8.py through the `S / "canonical_v8.py"` join at :157
+        # and :164 -- a variable join, so a path-STRING sweep of the campaigns does not see it.
+        # Any raise inside run_guard() left a neutered production guard on disk.
+        # Hygiene, not the fix -- see server/tools/campaign_safety.py.
+        with restore_guard(before, after=drop_pycache):
             drop_pycache()
-            rows.append([num, desc, "NOT_APPLIED", guard, "", "", why, "", "NOT_COUNTED"])
-            counts["not_applied"] += 1
-            print(f"fault {num:2d}  NOT_APPLIED  ({why})")
-            continue
-        counts["applied"] += 1
-        state, detail = run_guard(guard)
-        intended = state == "RED" and fragment in detail
-        if state == "CRASH":
-            counts["crash_as_red"] += 0     # never accepted
-        if intended:
-            counts["red"] += 1
-        # ---- restore and verify byte-for-byte
-        for f, b in before.items():
-            f.write_bytes(b)
-        drop_pycache()
+            ok, why = apply_one(mut)
+            after = {f: f.read_bytes() for f in files}
+            landed = ok and any(after[f] != before[f] for f in files)
+            if not landed:
+                rows.append([num, desc, "NOT_APPLIED", guard, "", "", why, "", "NOT_COUNTED"])
+                counts["not_applied"] += 1
+                print(f"fault {num:2d}  NOT_APPLIED  ({why})")
+                continue
+            counts["applied"] += 1
+            state, detail = run_guard(guard)
+            intended = state == "RED" and fragment in detail
+            if state == "CRASH":
+                counts["crash_as_red"] += 0     # never accepted
+            if intended:
+                counts["red"] += 1
+        # ---- verify byte-for-byte, after the guaranteed restore above
         restored = all(f.read_bytes() == before[f] for f in files)
         state2, detail2 = run_guard(guard)
         if restored and state2 == "GREEN":
