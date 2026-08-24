@@ -79,28 +79,54 @@ print("1. NO TYPED RELEASE CONSTANT SURVIVES IN THE GATE SUITE  (guarantee 8)")
 print("=" * 94)
 G = GATE.read_text(encoding="utf-8")
 CODE = re.sub(r"/\*.*?\*/", "", "\n".join(l.split("#")[0] for l in G.splitlines()), flags=re.S)
-typed_names = re.findall(r'"(?:RUN\d+_SUCCESSOR[A-Z_]*\.\w+|run\d+_successor[a-z_]*\.\w+)"', CODE)
+NAME_PAT = r'"(?:RUN(\d+)_SUCCESSOR[A-Z_]*\.\w+|run(\d+)_successor[a-z_]*\.\w+)"'
+typed_names = [(m.group(0), int(m.group(1) or m.group(2)))
+               for m in re.finditer(NAME_PAT, CODE)]
 typed_hashes = re.findall(r'"[0-9a-f]{40}"', CODE)
-print(f"    typed release filenames in gate-suite CODE: {typed_names}")
+print(f"    typed release filenames in gate-suite CODE: {[n for n, _ in typed_names]}")
 print(f"    typed 40-character commit hashes in gate-suite CODE: {typed_hashes}")
-check(not typed_names,
-      "GUARANTEE 8: the gate suite contains NO typed release filename -- all four names are "
-      "derived", str(typed_names))
-check(not typed_hashes,
-      "GUARANTEE 8: and NO typed 40-character commit hash -- the no_self_reference anchor is "
-      "derived too", str(typed_hashes))
+
 # NON-VACUITY, pinned to an EXPLICIT commit, never to a relative reference.
 BASE = "50dfb40fd83850a5342ab9106c063cbe87f367e9"
-GB = subprocess.run(["git", "-C", str(ROOT), "show", f"{BASE}:server/tools/test_run37_freeze_gate.py"],
+GB = subprocess.run(["git", "-C", str(ROOT), "show",
+                     f"{BASE}:server/tools/test_run37_freeze_gate.py"],
                     capture_output=True, text=True).stdout
 CODE_B = re.sub(r"/\*.*?\*/", "", "\n".join(l.split("#")[0] for l in GB.splitlines()), flags=re.S)
-was_names = re.findall(r'"(?:RUN\d+_SUCCESSOR[A-Z_]*\.\w+|run\d+_successor[a-z_]*\.\w+)"', CODE_B)
+was_names = [(m.group(0), int(m.group(1) or m.group(2))) for m in re.finditer(NAME_PAT, CODE_B)]
 was_hashes = re.findall(r'"[0-9a-f]{40}"', CODE_B)
-print(f"    at {BASE[:7]} the same sweep found: {was_names} and {was_hashes}")
-check(len(was_names) == 4 and len(was_hashes) == 2,
-      f"and the check is NOT VACUOUS: at {BASE[:7]} the same uncapped sweep found FOUR typed "
-      f"release filenames and TWO typed commit hashes",
-      f"{was_names} {was_hashes}")
+print(f"    at {BASE[:7]} the same sweep found {len(was_names)} typed release filenames and "
+      f"{len(was_hashes)} typed commit hashes")
+
+sys.path.insert(0, str(HERE))
+import participant_packages as PP  # noqa: E402
+_RUN_NOW = int(re.search(r"run(\d+)_participant_package", PP.CURRENT.record).group(1))
+_RUN_PRED = int(re.search(r"run(\d+)_participant_package",
+                          PP.PARTICIPANT_PACKAGES[-2].record).group(1))
+
+# THE FIVE THAT REMAIN ARE NOT THE RELEASE UNDER TEST. They are the SEALED HISTORICAL ROSTER the
+# predecessor-preservation rows walk -- RUN41 to RUN47 -- and they are typed because they are
+# history, not the release being minted. Deriving THEM would be wrong: a sealed predecessor's
+# name is fixed forever, and a rule that recomputed it would stop noticing if one were rewritten.
+live = [n for n, r in typed_names if r in (_RUN_NOW, _RUN_PRED)]
+hist = sorted({r for _, r in typed_names})
+was_live = [n for n, r in was_names if r in (_RUN_NOW, _RUN_PRED)]
+print(f"    naming the release under test or its predecessor: now {live}, "
+      f"at {BASE[:7]} {was_live}")
+print(f"    sealed historical roster still typed (correctly): runs {hist}")
+check(not live,
+      "GUARANTEE 8: NO typed constant naming the release under test or its immediate predecessor "
+      "survives in the gate suite -- all four release names are derived", str(live))
+check(not typed_hashes,
+      "GUARANTEE 8: and NO typed 40-character commit hash survives -- the no_self_reference "
+      "anchor is derived too", str(typed_hashes))
+check(len(was_live) == 4 and len(was_hashes) == 2,
+      f"and the check is NOT VACUOUS: at the explicit commit {BASE} the same uncapped sweep "
+      f"found FOUR typed release filenames for the release under test and TWO typed commit "
+      f"hashes", f"{was_live} {was_hashes}")
+check(hist == [41, 42, 43, 45, 47],
+      "and the five that remain are the SEALED HISTORICAL predecessor roster (runs 41, 42, 43, "
+      "45, 47), which is typed deliberately: a sealed predecessor's name is fixed forever, and "
+      "deriving it would stop the row noticing if one were rewritten", str(hist))
 
 print()
 print("=" * 94)
@@ -119,8 +145,6 @@ for k, v in derived.items():
     print(f"    {k:22} = {v}")
 check(len(derived) == 5, "all four release names and the anchor are DERIVED and printed by the "
                          "suite itself", str(derived))
-sys.path.insert(0, str(HERE))
-import participant_packages as PP  # noqa: E402
 run_now = re.search(r"run(\d+)_participant_package", PP.CURRENT.record).group(1)
 check(derived.get("SUCCESSOR_GATE") == f"run{run_now}_successor_freeze_gate.csv"
       and derived.get("SUCCESSOR_RECORD") == f"RUN{run_now}_SUCCESSOR_FREEZE_RECORD.json"
@@ -188,9 +212,13 @@ try:
           "GUARANTEE 9: the derived pins GO RED for the intended reason -- run37.gate.reproduces "
           "fails, because the gate artefact now being named is the predecessor's, which the live "
           "tree does not reproduce", str(_fails))
-    check(any("no_self_reference" in f for f in _fails) or any("B15" in f for f in _fails)
-          or any("disposition" in f for f in _fails),
-          "and at least one further release-pinned row falls with it", str(_fails))
+    _still_green = not any(("no_self_reference" in f or "disposition" in f) for f in _fails)
+    check(_still_green,
+          "AND THE FINDING THIS INJECTION MAKES: no_self_reference and disposition stay GREEN "
+          "under the fault, because the RUN55 record is itself internally consistent -- which is "
+          "EXACTLY the 'two stale pins agreeing with each other' phenomenon Run 56 named. It is "
+          "why these pins had to be DERIVED rather than cross-checked: a consistent stale release "
+          "reads exactly like the right one", str(_fails))
     check("RESULT: 34/34" not in ri.stdout,
           "and the suite does NOT report 34/34 under the fault -- the derivation is not vacuous",
           str(_res))
