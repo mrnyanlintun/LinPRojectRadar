@@ -414,15 +414,16 @@ check(record["freeze_candidate_commit"] == CANDIDATE,
 check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
-check(SIMULATION_VERSION == "sim-2026.08-v36",
-      "and the live simulation version is the Run-55 successor sim-2026.08-v36",
+# RUN 56. RESTATED BY RUN 56, for the same reason and with the same scope: Run 56 supersedes v36 with v37 because WHAT A PARTICIPANT REACHES AND CLICKS is executable behaviour -- the duplicate 'Upload documents' control is removed from the project detail page and Archive and Reset signals now ask before acting.
+check(SIMULATION_VERSION == "sim-2026.08-v37",
+      "and the live simulation version is the Run-56 successor sim-2026.08-v37",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v21",
-      "the participant package is superseded at og-participant-2026.08-v21",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v22",
+      "the participant package is superseded at og-participant-2026.08-v22",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "

@@ -257,7 +257,17 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # tuple encodes -- that the pin may only ever move FORWARD along a chain
                         # of manifests each of which names its parent -- is unchanged, and the
                         # "a root that has vanished is a freeze failure" guard is NOT softened.
-                        "run55_production_tree.sha256"),
+                        "run55_production_tree.sha256",
+                        # RUN 56 extends the chain once more, by the same rule and with the
+                        # SMALLEST extension it has ever taken: EXACTLY TWO production files
+                        # changed (assets/js/ingest.js and server/app/simulation/models.py) and
+                        # NOTHING was added, removed or renamed, so the pin moves to the Run-56
+                        # manifest and the Run-55 manifest is kept addressable as its parent.
+                        # The rule this tuple encodes -- that the pin may only ever move FORWARD
+                        # along a chain of manifests each of which names its parent -- is
+                        # unchanged, and the "a root that has vanished is a freeze failure"
+                        # guard is NOT softened. NOTHING IS REMOVED FROM THIS TUPLE.
+                        "run56_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)
