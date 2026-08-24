@@ -472,9 +472,23 @@ def freeze_gate():
                 dirty += 1
     porcelain = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
                                capture_output=True, text=True).stdout.strip()
+    # RUN 57, PHASE B. THE B01 EVIDENCE FIXED POINT, CLOSED UNDER SECTION 9.3 ITEM 1.
+    # B01's COUNT is `dirty`: the number of content-addressed digests in the candidate identity
+    # that the live tree no longer reproduces. THAT is the governed property, and it is unchanged
+    # by this edit. The git porcelain line count is INCIDENTAL to it -- B01 does not read it, does
+    # not compare it and does not fail on it -- but recording it in the artefact made the artefact
+    # irreproducible: a regeneration taken while the generator's own outputs are unwritten counts
+    # its own dirt, so the committed gate would not reproduce byte for byte unless one further
+    # regeneration was taken on an already-clean tree. Run 56 paid a whole mint for exactly that.
+    # The evidence now records the GOVERNED PROPERTY. The porcelain count is not discarded: it is
+    # PRINTED to the mint log below, where a varying number belongs, instead of into a committed
+    # artefact that is checked for byte-for-byte reproduction.
+    print(f"B01: git porcelain lines at evaluation: {len(porcelain.splitlines())} "
+          f"(INCIDENTAL to B01 and deliberately not written into the gate artefact; B01's "
+          f"governed property is the digest comparison, whose divergence count is {dirty})")
     blocker(1, "dirty candidate identity", dirty,
             f"{len(recomputed)} content-addressed digests recomputed from the tree and compared; "
-            f"git porcelain lines at evaluation: {len(porcelain.splitlines())}")
+            f"digests that diverge from the candidate identity: {dirty}")
 
     # B02 population mismatch ---------------------------------------------------------------
     pops = {"registered total": (len(_idx), 101),
@@ -703,12 +717,78 @@ def behaviour_digest():
             "behaviour_digest": hashlib.sha256(body.encode()).hexdigest()}
 
 
+def expected_candidate() -> tuple[str | None, str]:
+    """What CANDIDATE should read, COMPUTED from the commit the candidate identity describes.
+
+    RUN 57, PHASE B, SECTION 9.2. `CANDIDATE` remains a constant the owner sets deliberately --
+    it is not derived away, because a candidate identity is an assignment, not a lookup. What is
+    removed is the GUESSWORK: this computes the value the constant should carry and the mint
+    refuses to proceed while it does not match, naming both. A wrong value is then discovered at
+    the moment it is wrong instead of three mints later.
+
+    THE COMPUTATION. The candidate identity's member paths are the files the release is about.
+    Walk back from HEAD while each commit's tree still agrees with the working tree on EVERY one
+    of those paths; the OLDEST commit in that unbroken run is the commit at which the candidate's
+    content became what it is, and that is the candidate. Later commits that touched only
+    reports, handoffs and records do not move it -- which is why the value survives the several
+    commits a mint makes after the production edit lands.
+
+    Returns (expected_or_None, why). `None` means NOT DETERMINABLE -- the working tree agrees
+    with no commit at all on those paths, which is a dirty tree, which is blocker B01's job and
+    not this function's. NOT DETERMINABLE is reported plainly and does NOT refuse, because the
+    generator must remain runnable on the dirty tree that a mint necessarily starts from.
+    """
+    ident_path = FREEZE / IDENTITY_FILE
+    if not ident_path.is_file():
+        return None, f"the candidate identity {IDENTITY_FILE} does not exist yet"
+    ident = json.loads(ident_path.read_text(encoding="utf-8"))
+    members = sorted({p for v in ident.values()
+                      if isinstance(v, dict) and "members" in v for p in v["members"]})
+    if not members:
+        return None, f"{IDENTITY_FILE} names no member paths"
+    revs = subprocess.run(["git", "rev-list", "-n", "200", "HEAD"], cwd=ROOT,
+                          capture_output=True, text=True).stdout.split()
+    found = None
+    for c in revs:
+        diff = subprocess.run(["git", "diff", "--name-only", c, "--"] + members, cwd=ROOT,
+                              capture_output=True, text=True).stdout.split()
+        if diff:
+            break
+        found = c
+    if found is None:
+        return None, ("the working tree agrees with NO commit on the candidate identity's "
+                      f"{len(members)} member paths -- the tree is dirty in the files the "
+                      "release is about, which is blocker B01, not a wrong constant")
+    return found, (f"the oldest commit in the unbroken run back from HEAD whose tree agrees with "
+                   f"the working tree on all {len(members)} member paths of {IDENTITY_FILE}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-audit", default=str(AUDIT))
     ap.add_argument("--out-freeze", default=str(FREEZE))
     args = ap.parse_args()
     oa, of = pathlib.Path(args.out_audit), pathlib.Path(args.out_freeze)
+
+    # RUN 57, PHASE B, SECTION 9.2. THE CANDIDATE FIXED POINT. Reported plainly, always; and the
+    # mint REFUSES to proceed while a determinable expected value disagrees with the constant.
+    # It does not edit the constant, and it does not warn and continue.
+    _exp, _why = expected_candidate()
+    print("=" * 94)
+    print("CANDIDATE FIXED POINT (Run 57 section 9.2)")
+    print(f"  CANDIDATE as set in this file : {CANDIDATE}")
+    print(f"  CANDIDATE as computed         : {_exp if _exp else 'NOT DETERMINABLE'}")
+    print(f"  how                           : {_why}")
+    print("=" * 94)
+    if _exp is not None and _exp != CANDIDATE:
+        print()
+        print("REFUSING TO PROCEED. The candidate constant does not describe the commit the "
+              "candidate identity describes.")
+        print(f"  build_run37_acceptance.py CANDIDATE = {CANDIDATE}")
+        print(f"  it should read                      = {_exp}")
+        print("  Set it to that value and run the mint again. This generator does not edit the "
+              "constant: the assignment is the owner's, and only the guesswork is removed.")
+        return 3
 
     gate, drows, crows = freeze_gate()
 

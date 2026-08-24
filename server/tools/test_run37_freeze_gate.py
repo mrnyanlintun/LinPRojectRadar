@@ -15,6 +15,7 @@ from __future__ import annotations
 import csv
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -85,16 +86,78 @@ def check(name, ok, why, got=""):
 # and evaluated against the successor's own identity, gate and release records. The v25 to v36
 # artefacts are untouched and remain the historical evidence for those releases.
 #
-# ALL FOUR NAMES BELOW ARE ADVANCED TOGETHER, AND THREE OF THEM HAD BEEN LEFT BEHIND. Run 55
-# advanced SUCCESSOR_GATE to its own file but left SUCCESSOR_RECORD, SUCCESSOR_REPORT and
-# SUCCESSOR_CHECKSUMS pinned at RUN51, so rows 28 and 33 of this gate were asserting the
-# disposition of the Run-51 release rather than of the release being minted. That is a stale
-# guard, not a weakened one, and it is REVISED to the current release rather than removed: the
-# same checks run, against the record that is actually being released.
-SUCCESSOR_GATE = "run56_successor_freeze_gate.csv"
-SUCCESSOR_RECORD = "RUN56_SUCCESSOR_FREEZE_RECORD.json"
-SUCCESSOR_REPORT = "RUN56_SUCCESSOR_FREEZE_REPORT.md"
-SUCCESSOR_CHECKSUMS = "RUN56_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+# RUN 57, PHASE B. THE FOUR RELEASE NAMES ARE NO LONGER TYPED, AND NEITHER IS THE ANCHOR.
+#
+# The four names below used to be four hand-edited strings. Run 55 advanced SUCCESSOR_GATE to its
+# own file and left SUCCESSOR_RECORD, SUCCESSOR_REPORT and SUCCESSOR_CHECKSUMS pinned at RUN51,
+# and the `no_self_reference` anchor was last advanced by Run 49 and still named Run 48's
+# candidate. Rows 28, 33 and 34 therefore asserted the disposition of a release three mints old,
+# AND THEY PASSED THE WHOLE TIME, because the stale pins agreed with one another. Two stale
+# guards that reinforce each other read exactly like a passing check.
+#
+# All four are now DERIVED FROM ONE PLACE: the participant-package chain, whose CURRENT link is
+# the one thing a mint must advance anyway, and whose checksum record carries the minting run's
+# own number in its filename. FOUR NAMES BECOME ONE FACT. The Run-55 condition -- one pin
+# advanced and three left behind -- IS NOT EXPRESSIBLE HERE ANY MORE: there is no second place
+# to leave behind.
+#
+# NOTHING IS LOOSENED. Each name still resolves to ONE specific file for ONE specific release, and
+# the anchor below still resolves to ONE specific named commit at evaluation time. A rule that
+# accepted "any commit" would be the weakening the order forbids, and it is not what this is: the
+# anchor is read out of the PREDECESSOR link's own release record, so it names a commit the
+# predecessor release itself declared, not a pattern.
+import participant_packages as _PP  # noqa: E402
+
+
+def _minting_run(pkg) -> int:
+    """The run that minted a package link, read from that link's own checksum-record filename.
+
+    A SPECIFIC integer derived from the chain. If the filename does not carry one, this raises
+    rather than guessing: a derivation that cannot resolve must stop, never fall back to a
+    pattern that matches anything.
+    """
+    m = re.search(r"run(\d+)_participant_package", pkg.record)
+    if m is None:
+        raise SystemExit(
+            f"RUN 57 DERIVATION FAILED: the package link {pkg.identifier} names the checksum "
+            f"record {pkg.record!r}, which carries no run number, so the release names cannot be "
+            f"derived from the chain. Stopping rather than falling back to a typed constant.")
+    return int(m.group(1))
+
+
+_RUN = _minting_run(_PP.CURRENT)
+_PRED_RUN = _minting_run(_PP.PARTICIPANT_PACKAGES[-2])
+SUCCESSOR_GATE = f"run{_RUN}_successor_freeze_gate.csv"
+SUCCESSOR_RECORD = f"RUN{_RUN}_SUCCESSOR_FREEZE_RECORD.json"
+SUCCESSOR_REPORT = f"RUN{_RUN}_SUCCESSOR_FREEZE_REPORT.md"
+SUCCESSOR_CHECKSUMS = f"RUN{_RUN}_SUCCESSOR_FREEZE_CHECKSUMS.csv"
+
+#: The `no_self_reference` anchor. DERIVED, and still a SPECIFIC NAMED COMMIT at evaluation time:
+#: it is the freeze candidate the IMMEDIATE PREDECESSOR release declared as its own, read out of
+#: that release's record. The check it feeds is unchanged -- the current record may not point at
+#: this commit as its own candidate, and must name it as the one it supersedes.
+_PRED_RECORD_PATH = ROOT / "research" / "freeze" / f"RUN{_PRED_RUN}_SUCCESSOR_FREEZE_RECORD.json"
+if not _PRED_RECORD_PATH.is_file():
+    raise SystemExit(
+        f"RUN 57 DERIVATION FAILED: the predecessor release record {_PRED_RECORD_PATH} does not "
+        f"exist, so the no_self_reference anchor cannot be derived. Stopping rather than "
+        f"loosening the check to accept any commit.")
+PREDECESSOR_ANCHOR = json.loads(
+    _PRED_RECORD_PATH.read_text(encoding="utf-8")).get("freeze_candidate_commit")
+if not isinstance(PREDECESSOR_ANCHOR, str) or not re.fullmatch(r"[0-9a-f]{40}", PREDECESSOR_ANCHOR):
+    raise SystemExit(
+        f"RUN 57 DERIVATION FAILED: {_PRED_RECORD_PATH.name} carries freeze_candidate_commit="
+        f"{PREDECESSOR_ANCHOR!r}, which is not a full 40-character commit hash, so the anchor "
+        f"would not name a specific commit. Stopping rather than loosening the check.")
+
+print(f"  DERIVED from participant_packages.CURRENT ({_PP.CURRENT.identifier}, record "
+      f"{_PP.CURRENT.record}): run {_RUN}")
+print(f"    SUCCESSOR_GATE      = {SUCCESSOR_GATE}")
+print(f"    SUCCESSOR_RECORD    = {SUCCESSOR_RECORD}")
+print(f"    SUCCESSOR_REPORT    = {SUCCESSOR_REPORT}")
+print(f"    SUCCESSOR_CHECKSUMS = {SUCCESSOR_CHECKSUMS}")
+print(f"  DERIVED from the predecessor link ({_PP.PARTICIPANT_PACKAGES[-2].identifier}, run "
+      f"{_PRED_RUN}): no_self_reference anchor = {PREDECESSOR_ANCHOR}")
 
 print("=" * 94)
 print("RUN 37-EQUIVALENT FREEZE GATE, RE-EXECUTED FOR THE RUN-42 SUCCESSOR")
@@ -223,9 +286,9 @@ if _record.is_file():
           # point of the check is that the record cannot point at itself and cannot silently
           # reparent; loosening it here would be the weakening the order forbids.
           and _rec.get("freeze_candidate_commit")
-          != "8e557b7b28857171a8611baf28f2c99cfd70c875"
+          != PREDECESSOR_ANCHOR
           and _rec.get("supersedes_candidate")
-          == "8e557b7b28857171a8611baf28f2c99cfd70c875"
+          == PREDECESSOR_ANCHOR
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),
           "the record distinguishes freeze_candidate_commit, release_content_digest and "
