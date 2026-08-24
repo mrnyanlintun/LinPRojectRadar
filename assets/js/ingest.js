@@ -252,7 +252,16 @@
        </div>
        <div class="dc-actions">
          <button class="btn primary small pe-save">Save info</button>
-         <button class="btn small pe-populate">Upload documents</button>
+         ${/* RUN 56, PHASE A. NOT RENDERED ON THE DETAIL PAGE. The detail page already carries
+              .detail-upload, labelled "Upload documents", which calls the SAME function with the
+              SAME project id (detail.js data-upload -> LinIngest.openUploadModal). Run 55 phase A
+              moved this panel onto that page and so put a SECOND control with the same label and
+              the same action beside it. The owner's Run 56 ruling is that .detail-upload survives
+              and this one is removed FROM THE DETAIL PAGE ONLY. hostEl is supplied only by the
+              hosted (detail-page) path, so the row path -- if any caller ever supplies no host
+              again -- still builds the button exactly as it always did. NOTHING ELSE CHANGES:
+              the listener below is guarded, not deleted. */""}
+         ${hostEl ? "" : `<button class="btn small pe-populate">Upload documents</button>`}
          <button class="btn small pe-recompute"${populated ? "" : " disabled title=\"No signals to recompute: upload documents first\""}>Recompute this project</button>
          <button class="btn small pe-reset">Reset signals</button>
          <button class="btn small pe-archive">Archive</button>
@@ -282,7 +291,8 @@
     box.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
 
     // Populate / Re-upload → open the Upload modal with this project preselected.
-    box.querySelector(".pe-populate").addEventListener("click", () => {
+    const populateBtn = box.querySelector(".pe-populate");
+    if (populateBtn) populateBtn.addEventListener("click", () => {
       openUploadModal(id);
     });
 

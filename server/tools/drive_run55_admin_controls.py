@@ -368,7 +368,16 @@ with sync_playwright() as pw:
         check(got["hostCount"] == 1, f"{rid}: exactly ONE admin host on the detail page",
               str(got["hostCount"]))
         for (sel, label), n in zip(SIX, got["found"]):
-            check(n == 1, f"{rid}: '{label}' ({sel}) renders exactly once on the detail page",
+            # RUN 56, PHASE A. REVISED, NOT DELETED, AND NARROWED RATHER THAN WEAKENED. The
+            # owner's Run 56 ruling removed the moved '.pe-populate' ("Upload documents") FROM
+            # THE DETAIL PAGE ONLY, because the page already carried '.detail-upload' with the
+            # same label calling the same function with the same project id. The expectation is
+            # therefore EXACTLY ZERO for that one selector and EXACTLY ONE for the other five --
+            # a count that is still asserted exactly, so a reappearance of the duplicate turns
+            # this row red just as its disappearance used to.
+            want = 0 if sel == ".pe-populate" else 1
+            check(n == want,
+                  f"{rid}: '{label}' ({sel}) renders exactly {want} time(s) on the detail page",
                   str(n))
         check(got["hostFor"] == rid,
               f"{rid}: the host is stamped with THIS project's id, not another's",
@@ -405,7 +414,12 @@ with sync_playwright() as pw:
     portfolio()
     page.click(f"#project-list .list-item[data-id='{ROWS[0]}'] .li-manage")
     page.wait_for_timeout(2200)
-    page.click("#detail-root .detail-admin-host .pe-populate")
+    # RUN 56, PHASE A. REVISED, NOT DELETED. '.pe-populate' no longer renders on the detail
+    # page; '.detail-upload' is the SURVIVING control of that pair and it is the one this row
+    # now drives. The assertion below is unchanged: the dialog must open and must name THIS
+    # project. The check got stricter in one respect -- it now exercises the control the owner
+    # kept, which nothing previously drove in a browser.
+    page.click("#detail-root .detail-head-actions .detail-upload")
     page.wait_for_timeout(1500)
     _up = page.evaluate("""(pid) => {
         const t = document.body.innerText || '';
