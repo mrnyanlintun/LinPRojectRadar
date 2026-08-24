@@ -701,12 +701,26 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # behaviour digest RE-DERIVED identically at
 # 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v37"
+# -------------------------------------------------------------------------------------------
+# RUN 57 SUPERSEDES v37 WITH sim-2026.08-v38. THE STAMP ADVANCES BECAUSE THE SERVED CLIENT IS
+# PART OF THE FROZEN CANDIDATE, NOT BECAUSE A COMPUTATION CHANGED. The project detail page
+# carried TWO controls that clear stored signals, and Run 56 measured that NEITHER was a superset
+# of the other and so stopped rather than remove either. Run 57 MERGES the two handler bodies
+# into ONE control that does the UNION and removes the other: `.pe-reset` survives with the
+# union and Run 56's confirmation, and `.detail-reset`, its aria-live span, its handler, its call
+# site and its now-dead CSS rule are gone. WHAT A PARTICIPANT READS AND CLICKS is part of the
+# frozen candidate, so the freeze is SUPERSEDED rather than amended.
+# NOT ONE FORMULA, BAND, THRESHOLD, CALIBRATION, ABSTENTION RULE OR POPULATION MOVED: 101
+# registered, 63 in service, voting exactly A1.7 and A1.8, every stored figure unchanged and the
+# behaviour digest RE-DERIVED identically at
+# 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v38"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v36"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v37"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -721,6 +735,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
     "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32", "sim-2026.08-v33",
     "sim-2026.08-v34", "sim-2026.08-v35", "sim-2026.08-v36", "sim-2026.08-v37",
+ "sim-2026.08-v38",
 )
 
 

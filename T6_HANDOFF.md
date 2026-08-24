@@ -9,6 +9,107 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-24 - Run 57: THE RESET MERGE, THE DERIVED PINS, GATE 34/34, MERGED AND PUSHED.
+
+**Report:** `REPORT_2026-08-24_run57_reset_merge_and_pins.md`.
+**Branch:** `run57-reset-merge-and-pins`, rooted at `50dfb40`. **Merged to `main` with `--no-ff` and PUSHED.**
+**Stamp:** `sim-2026.08-v38`. **Package:** `og-participant-2026.08-v23`.
+**Freeze gate 34/34. 203 suites, 15307/15307, ALL GREEN.**
+**Repository: the Linux clone. Interpreter: `python3` 3.11.15 (no `.venv`).**
+
+## READ THIS FIRST: THE RUN 56 STOP IS CLOSED, BY MERGING RATHER THAN BY OVERRULING
+
+Run 56 stopped the removal of `.detail-reset` because NEITHER reset handler was a superset of
+the other. Run 57 removes the objection instead of the check: **the survivor was given the UNION
+of both bodies first, and only then was the other control removed.**
+
+- **`.pe-reset` survives**, and the reason is on the record: every behaviour unique to
+  `.detail-reset` is reachable from `ingest.js` through **already public** interfaces
+  (`window.LinResults`, `window.LIN_PROJECTS`, `LinStore.getProject`/`getCached`,
+  `LinDetail.render`), whereas `logEvent()` and `confirmDestructive()` are **module-private** to
+  `ingest.js` and would have had to be newly **exported** to build the union in `detail.js`.
+- **Re-measured at `50dfb40`, not taken from Run 56's table.** Run 56's eleven behaviours
+  reproduce exactly; a twelfth probe found a **sixth** `.detail-reset`-only behaviour,
+  `LinStore.getCached(`. The difference is in the probe, not the code, and this run acted on its
+  own measurement.
+- **Removed:** the markup, the `.detail-reset-msg` aria-live span, `wireReset()`, its call site,
+  and `radar.css:895`'s now-dead rule. **The dead-CSS check is REAL this run, not vacuous** --
+  the rule existed at `50dfb40`.
+- **Browser, three projects, 65/65:** two reset controls before, exactly one after; one button
+  lost, none added or moved.
+
+## THE FOUR RELEASE PINS ARE DERIVED, AND SO IS THE ANCHOR
+
+`test_run37_freeze_gate.py`'s `SUCCESSOR_GATE`/`RECORD`/`REPORT`/`CHECKSUMS` and the
+`no_self_reference` anchor are now computed from `participant_packages.CURRENT` and its
+predecessor link. **Four names became one fact, and the Run-55 state -- one pin advanced, three
+left behind -- is no longer expressible.** Nothing loosened: the anchor still resolves, at
+evaluation time, to one specific named commit (`git cat-file -t` confirms). Proved by injection:
+pointing the chain one link back moves **all four together** and turns `reproduces` red.
+
+**AND THE INJECTION MADE A FINDING.** Under the fault, `no_self_reference` and `disposition`
+stayed **GREEN**, because the RUN55 record is internally consistent. That is exactly the "two
+stale pins agreeing with each other" phenomenon, and it is why these had to be **derived** rather
+than cross-checked.
+
+## THE TWO FIXED POINTS ARE CLOSED
+
+- **`CANDIDATE` stays the owner's constant.** The mint now computes what it should read, prints
+  both values on every run, and **refuses (exit 3)** when they disagree -- naming both, editing
+  nothing, producing no gate. It fired for real on mint 1.
+- **B01's evidence is now the governed property** (digest divergence), not the porcelain line
+  count. **Section 9.3 item 1, not item 2**: B01's *count* never read that number.
+
+## THREE MINTS, AND WHAT THE TWO EXTRA ONES REALLY WERE
+
+Run 51 paid four, Run 52 three, Run 55 four, Run 56 seven. **This run paid three.** Four of Run
+56's seven existed to chase the three fixed points above, and **none of them recurred**. The two
+extra mints here were **not** fixed points: both were forced by the same mechanism, that
+reconciling a pinned guard edits a `test_*.py` file and every `test_*.py` file is a member of
+`test_suite_identity`, so the identity must be re-taken. **That is the largest remaining
+hand-edit surface and section 10 of the report names it as the owner's decision.**
+
+## TWO PREMISES OF THE ORDER CORRECTED, NEITHER REQUIRING A STOP
+
+1. The order says `main == dbb4bf9`. **It is `50dfb40`** -- `dbb4bf9` is Run 56's merge commit and
+   `50dfb40` is the record commit on top of it. The branch is rooted at the real tip.
+2. The order says pin v22's `source_commit` to `dbb4bf9`, "the commit whose blobs it describes".
+   **Six commits reproduce those blobs exactly**, byte-verified member by member, so the record
+   alone is under-determined. Pinned to **`50dfb40`** under the chain's own rule -- *the tip of
+   `main` at which the package was still current* -- which is the rule v21 was pinned under.
+
+## THE FULL PASS FOUND FOURTEEN, AND ONE HELD THE RUN 56 TRAP AGAIN
+
+Pass 1: `15264/15290`, twelve red. Pass 2: `15305/15307`, two red. Pass 3: **`15307/15307`, all
+green.** **NO CHECK DELETED, SEVENTEEN ADDED** (`test_run21` 32->33, `test_run28` 292->308).
+`test_run41_preservation`'s history tail is checked **position by position**, so the ladder was
+**shifted** by one rather than inserted into -- inserting would have left two clauses on the same
+index and silently dropped a stamp while still passing.
+
+## WHAT THE OWNER MUST DECIDE
+
+1. **Is any other hand-edited mint constant to be derived?** `PREDECESSOR_CANDIDATE`,
+   `PREDECESSOR_VERSION`, `EXPECTED_VERSION`, `IDENTITY_FILE`, `GATE_FILE`,
+   `PRIOR_BEHAVIOUR_FILE`, `BEHAVIOUR_FILE`, `production_tree.PINNED`. Same shape as the four
+   just derived.
+2. **Keep `CANDIDATE` as the owner's assignment (current design), or let the mint write it when
+   the computed value is unambiguous?**
+3. **The pinned-ladder guards are the remaining cost of a mint and they are not shrinking**
+   (Run 56 reconciled ten, Run 57 fourteen). Build the same "derive from one fact" mechanism for
+   the `sim-2026.08-vNN` tails and current-stamp assertions? Not ordered, not done.
+
+## THE INCIDENTAL WORTH KNOWING
+
+**`server/tools/drive_run56_duplicate_controls.py` no longer passes against this tree** -- it
+asserts `.detail-reset` exists and that `.detail-reset-msg` is not dead CSS. **It is NOT
+rewritten**: it is Run 56's evidence for Run 56's release, and it is a `drive_*` file, so it is
+not in the 203-suite population and nothing in the acceptance run depends on it.
+
+**`assets/js/ingest.js:590` still gates the upload modal's "leave anyway?" on `window.confirm`**,
+which returns false in this container. Pre-existing, untouched, unacted.
+
+---
+
 # 2026-08-22 - Run 56: THE DUPLICATE CONTROLS, TWO CONFIRMATIONS, GATE 34/34, MERGED AND PUSHED.
 
 **Report:** `REPORT_2026-08-22_run56_duplicate_controls.md`.

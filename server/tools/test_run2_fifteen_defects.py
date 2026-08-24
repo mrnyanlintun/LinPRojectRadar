@@ -1836,6 +1836,75 @@ try:
                 "try { LinIngest.openInlineManage(id, host); }",
                 "wireDetailAdmin(root, p.id);",
             }
+            RUN57_REMOVED = {
+                # RUN 57, PHASE A, OWNER-DIRECTED. The project detail page carried TWO
+                # controls that clear stored signals and Run 56 measured that NEITHER handler
+                # was a superset of the other, so it stopped rather than remove either. Run 57
+                # MERGES the two bodies into one control that does the UNION -- `.pe-reset` in
+                # ingest.js -- and removes the other. What leaves THIS file is `.detail-reset`'s
+                # markup, its aria-live span, wireReset() in full, and wireReset's call site.
+                # EVERY LINE IS LISTED EXPLICITLY, never allowed by a pattern: an unexplained
+                # removal is still red, and a line removed for any other reason still fails.
+                "// Drop the dropzone's per-project extraction cache so the signals panel",
+                '// Force the in-memory copy to a true "Awaiting ingest" state, so the UI is',
+                '// Re-fetch the (now-cleared) server copy; fall back to the cached copy.',
+                '// Reset signals: POST resetsignals, clear local signal state, re-render the',
+                '// Uploaded Documents table). The server is the source of truth once its',
+                "// correct even if the backend reset is an older build that didn't clear",
+                '// detail page (which then shows "awaiting ingest"). No confirmation dialog.',
+                "// doesn't re-show stale inputs after the reset.",
+                '// history/events/documents (history feeds CUSUM; events backs the',
+                '// resetSignals_ is redeployed — this just keeps the screen honest meanwhile.',
+                '<button class="btn small detail-reset" data-reset="${esc(p.id)}"',
+                '<span class="detail-reset-msg kn-sub" aria-live="polite"></span>',
+                '["documents", "uploadedDocuments", "docs"].forEach((k) => {',
+                'await LinStore.resetSignals(id);',
+                'btn.addEventListener("click", async () => {',
+                'btn.disabled = false;',
+                'btn.disabled = true;',
+                'const btn = root.querySelector(".detail-reset");',
+                'const fresh = await LinStore.getProject(id);',
+                'const i = LIN_PROJECTS.findIndex((x) => x.id === id);',
+                'const id = btn.dataset.reset;',
+                'const msg = root.querySelector(".detail-reset-msg");',
+                'const p = LinStore.getCached(id);',
+                'function wireReset(root) {',
+                'if (!btn) return;',
+                'if (Array.isArray(p[k])) p[k] = [];',
+                'if (fresh && window.LIN_PROJECTS) {',
+                'if (i >= 0) LIN_PROJECTS[i] = fresh;',
+                'if (msg) msg.textContent = "Reset failed. The store is unreachable, so please retry.";',
+                'if (msg) msg.textContent = "Resetting…";',
+                'if (p) {',
+                'if (window.LinApp) LinApp.refresh();',
+                'if (window.LinSignals && LinSignals.clearCache) LinSignals.clearCache(id);',
+                'p.signals = null; p.signalInputs = null; p.simulationSignals = null;',
+                'p.status = null; p.reportingPeriod = null; p.derivedState = null;',
+                'render(id); // re-render → awaiting ingest',
+                'title="Clears this project\'s stored signal values so its documents can be read again. Does not delete documents and does not touch other projects.">Clear stored signals for this project</button>',
+                'wireReset(root);',
+                '} catch (e) {',
+                '} catch (e) { /* keep the cached copy on fetch failure */ }',
+            }
+            RUN57_ADDED = {
+                # RUN 57, PHASE A. Everything this run ADDS to this file is prose: the
+                # template comment that records where the removed control went, and the comment
+                # that replaces wireReset(). NO CODE WAS ADDED HERE -- the union handler lives in
+                # ingest.js. Listed line by line for the same reason the removals are.
+                '${/* RUN 57, PHASE A. `.detail-reset` ("Clear stored signals for this project") AND ITS',
+                '// RUN 57, PHASE A. wireReset() IS REMOVED WITH ITS CONTROL. Its whole body is now inside',
+                "// ingest.js's doReset(), the merged union handler on `.pe-reset`, which this page mounts",
+                '// through wireDetailAdmin() -> LinIngest.openInlineManage(id, host).',
+                '`.pe-reset` in ingest.js, which now also calls LinResults.clear(), re-fetches',
+                'and asks before acting, which this one never did. */""}',
+                'aria-live SPAN ARE REMOVED. It and `.pe-reset` in the admin panel below were two',
+                'awaiting-ingest and calls LinDetail.render(id) -- everything this handler did --',
+                'controls on this one page that both cleared stored signals, and Run 56 measured',
+                'into ONE control doing the UNION and removes the other. The union lives on',
+                'that NEITHER was a superset of the other, so neither could be removed on its own',
+                'through LinStore.getProject into LIN_PROJECTS, forces the in-memory record to',
+                "without losing behaviour. The owner's Run 57 ruling merges the two handler bodies",
+            }
             RUN52_ADDED = {
                 'module_id: m.module_id, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
                 'rows.push({ index: idx, module_id: m.module_id, name: m.name, color: cat.color, bucket });',
@@ -1881,6 +1950,7 @@ try:
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
                   or ln in RUN47_REMOVED or ln in RUN48_REMOVED
                   or ln in RUN49_REMOVED or ln in RUN51_REMOVED or ln in RUN52_REMOVED
+                  or ln in RUN57_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1928,6 +1998,7 @@ try:
                       or ln in RUN44_ADDED or ln in _run44_added_span
                       or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED
                       or ln in RUN51_ADDED or ln in RUN52_ADDED or ln in RUN55_ADDED
+                      or ln in RUN57_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

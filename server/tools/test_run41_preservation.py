@@ -210,10 +210,14 @@ print("-" * 78)
 # with v32 because WHICH STORED ROW A PAGE READS is executable behaviour. Run 41's boundary is
 # untouched and is still asserted below.
 # RUN 56. RESTATED BY RUN 56, for the same reason and with the same scope: Run 56 supersedes v36 with v37 because WHAT A PARTICIPANT REACHES AND CLICKS is executable behaviour -- the duplicate 'Upload documents' control is removed from the project detail page and Archive and Reset signals now ask before acting. Run 41's boundary is untouched and is still asserted below.
-check(SIMULATION_VERSION == "sim-2026.08-v37", "the live stamp is Run 56's successor "
-      "sim-2026.08-v37", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v36",
-      "and it records v36, Run 55's stamp, as the stamp it supersedes",
+# RUN 57. RESTATED BY RUN 57, for the same reason and with the same scope: Run 57 supersedes
+# v37 with v38 because WHAT A PARTICIPANT REACHES AND CLICKS is executable behaviour -- the two
+# controls that cleared stored signals are MERGED into one that does the union of both handler
+# bodies, and the other is removed. Run 41's boundary is untouched and is still asserted below.
+check(SIMULATION_VERSION == "sim-2026.08-v38", "the live stamp is Run 57's successor "
+      "sim-2026.08-v38", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v37",
+      "and it records v37, Run 56's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
@@ -223,15 +227,20 @@ check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-
 # position by position, so appending v37 moves every index below it; adding a row without
 # shifting the rest would have left two clauses asserting the same index and silently dropped
 # one stamp from the check.
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v37"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v36"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v35"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v34"
-      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v33"
-      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v32"
-      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v31"
-      and SIMULATION_VERSION_HISTORY[-8] == "sim-2026.08-v30",
-      "and v27 to v37 were appended after v26 rather than replacing it",
+# RUN 57 SHIFTS THE WHOLE LADDER BY ONE AGAIN, for the reason Run 56 recorded: the tail is
+# checked POSITION BY POSITION, so appending v38 moves every index below it, and adding a row
+# without shifting the rest would leave two clauses asserting the same index and silently drop
+# one stamp from the check while still passing.
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v38"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v37"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v36"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v35"
+      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v34"
+      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v33"
+      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v32"
+      and SIMULATION_VERSION_HISTORY[-8] == "sim-2026.08-v31"
+      and SIMULATION_VERSION_HISTORY[-9] == "sim-2026.08-v30",
+      "and v27 to v38 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
@@ -325,8 +334,8 @@ check(seq_moved == _seq_authorised,
       f"no randomization and no questionnaire ITEM, response option, scale or order moved -- "
       f"which the participant-package suite asserts structurally, not by byte-identity",
       str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v22",
-      "the participant package is superseded at og-participant-2026.08-v22, and the v13, v14 and "
+check(PP.CURRENT.identifier == "og-participant-2026.08-v23",
+      "the participant package is superseded at og-participant-2026.08-v23, and the v13, v14 and "
       "v15 records are pinned rather than rewritten",
       PP.CURRENT.identifier)
 

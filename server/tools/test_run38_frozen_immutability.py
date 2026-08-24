@@ -415,15 +415,15 @@ check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
 # RUN 56. RESTATED BY RUN 56, for the same reason and with the same scope: Run 56 supersedes v36 with v37 because WHAT A PARTICIPANT REACHES AND CLICKS is executable behaviour -- the duplicate 'Upload documents' control is removed from the project detail page and Archive and Reset signals now ask before acting.
-check(SIMULATION_VERSION == "sim-2026.08-v37",
-      "and the live simulation version is the Run-56 successor sim-2026.08-v37",
+check(SIMULATION_VERSION == "sim-2026.08-v38",
+      "and the live simulation version is the Run-57 successor sim-2026.08-v38",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v22",
-      "the participant package is superseded at og-participant-2026.08-v22",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v23",
+      "the participant package is superseded at og-participant-2026.08-v23",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "
@@ -641,6 +641,13 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_run44_participant_defect_fixes.py",
     "server/tools/test_run38_frozen_immutability.py",
     "server/tools/test_run39_frozen_immutability.py",
+    # RUN 57. The reset control merged into one and the pinned guards that named it advanced.
+    # `test_run21_reset_disclosure.py` read the reset control's promise off `.detail-reset`'s
+    # title in detail.js; the control MOVED FILE when the two handlers were merged, so the guard
+    # is re-pointed at ingest.js, where the surviving control makes the promise in the same
+    # words, and a further check is ADDED requiring detail.js to carry no reset control at all.
+    # NAMED HERE rather than admitted by widening the rule.
+    "server/tools/test_run21_reset_disclosure.py",
     "server/tools/drive_run50_browser.py",
     "server/tools/run52_rendered_text_capture.py",
     "code_audit/run45_field_classification_proposal.md",

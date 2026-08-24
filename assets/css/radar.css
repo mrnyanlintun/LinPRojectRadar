@@ -892,7 +892,6 @@ body.t-light .theme-switch button.active { color: #fff; }
 .detail-head { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin: 8px 0 18px; }
 .detail-back { flex: 0 0 auto; }
 .detail-head-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-.detail-reset-msg { margin: 0; }
 
 /* additional simulation signals (deep dive) — long evidence text per model */
 .dd-sim-panel .dd-grid { grid-template-columns: 1fr 1fr; }

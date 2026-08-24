@@ -444,7 +444,11 @@ _SEQ_AUTHORISED = (set(PP.V14_TO_V15_SEQUENCE_EXCEPTION) | set(PP.V17_TO_V18_SEQ
                    # unchanged. Folding an empty set in explicitly is the point: the union is
                    # built from every declared link, so a link that is silently left out of it
                    # cannot hide a move.
-                   | set(PP.V21_TO_V22_SEQUENCE_EXCEPTION))
+                   | set(PP.V21_TO_V22_SEQUENCE_EXCEPTION)
+                   # RUN 57 folds in V22_TO_V23_SEQUENCE_EXCEPTION on the same footing and for
+                   # the same reason. It is EMPTY too, so THE SET STILL DOES NOT GROW and the
+                   # `len(...) == 6` assertion below is unchanged.
+                   | set(PP.V22_TO_V23_SEQUENCE_EXCEPTION))
 check("run36.fault35.participant_sequence_unaltered",
       sorted(_moved_seq) == sorted(_SEQ_AUTHORISED) and len(_SEQ_AUTHORISED) == 6,
       "every file carrying the participant experimental sequence is byte-identical to the frozen "
@@ -472,6 +476,17 @@ _BY_SUCCESSOR = (
     # there would then require its own "-- SEQUENCE-BEARING" paragraph in the v22 record here.
     ("code_audit/run56_participant_package_v22_checksums.sha256",
      PP.V21_TO_V22_SEQUENCE_EXCEPTION),
+    # RUN 57. The v22-to-v23 link moved THREE participant-visible files -- assets/css/radar.css,
+    # assets/js/detail.js and assets/js/ingest.js -- and NOT ONE is sequence-bearing, so this
+    # link's exception tuple is EMPTY and is DECLARED empty in participant_packages.py rather
+    # than omitted. The entry is added here for the same two reasons the v22 entry was: the
+    # clause below requires PP.CURRENT.record to BE the last entry of this tuple, so a mint that
+    # forgot its own link goes red rather than passing by omission; and the invariant is
+    # unweakened, because a sequence-bearing file moving across this link would have to be named
+    # in V22_TO_V23_SEQUENCE_EXCEPTION, which would then require its own "-- SEQUENCE-BEARING"
+    # paragraph in the v23 record here.
+    ("code_audit/run57_participant_package_v23_checksums.sha256",
+     PP.V22_TO_V23_SEQUENCE_EXCEPTION),
 )
 _undeclared = [f"{f} (in {_rec})" for _rec, _files in _BY_SUCCESSOR for f in _files
                if f"# {f} -- SEQUENCE-BEARING"

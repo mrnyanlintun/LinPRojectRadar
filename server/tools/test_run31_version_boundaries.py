@@ -425,12 +425,19 @@ check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19"
                          # now ask before acting, which changes WHAT A PARTICIPANT REACHES AND
                          # CLICKS and therefore cannot be made under the v36 stamp. NOTHING IS
                          # REMOVED FROM THIS TUPLE.
-                         "sim-2026.08-v37"),
+                         "sim-2026.08-v37",
+                         # RESTATED BY RUN 57, same reasoning once more: v38 is Run 57's own
+                         # single authorised append -- the two controls that cleared stored
+                         # signals are MERGED into one that does the union of both, and the
+                         # other is removed, which changes WHAT A PARTICIPANT REACHES AND
+                         # CLICKS and therefore cannot be made under the v37 stamp. NOTHING IS
+                         # REMOVED FROM THIS TUPLE.
+                         "sim-2026.08-v38"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
       "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds, the "
       "one Run 41 adds, the one Run 42 adds, the one Run 43 adds, the one Run 44 adds, the one "
       "Run 45 adds, the one Run 47 adds, the one Run 48 adds, the one Run 49 adds and the one "
-      "Run 55 adds and the one Run 56 adds",
+      "Run 55 adds, the one Run 56 adds and the one Run 57 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.
