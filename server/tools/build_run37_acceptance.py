@@ -135,7 +135,7 @@ FREEZE = ROOT / "research" / "freeze"
 # release wrote them, and remain the historical evidence for everything collected under v36.
 PREDECESSOR_CANDIDATE = "db942f2ebe4ae27b598f76bd8307517e862f4a69"
 PREDECESSOR_VERSION = "sim-2026.08-v37"
-CANDIDATE = "bb065bc7a996f5bc20dd72ad34b0100b7f5a6732"
+CANDIDATE = "13c150960d608a677ef2f5030ad58b58443ff81a"
 EXPECTED_VERSION = "sim-2026.08-v38"
 IDENTITY_FILE = "run57_freeze_candidate_identity.json"
 GATE_FILE = "run57_successor_freeze_gate.csv"
