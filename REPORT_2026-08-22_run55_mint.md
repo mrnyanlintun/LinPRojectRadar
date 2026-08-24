@@ -706,3 +706,24 @@ edit and once for a deletion.
 **The campaign guard Run 54 built refused to begin twice during this run, both times correctly,
 on this session's own uncommitted work.** A guard that only ever fires on other people's mistakes
 has not been tested.
+
+---
+
+## THE MERGE, RECORDED EXACTLY
+
+```
+$ git checkout main && git merge --no-ff run54-phases
+Merge made by the 'ort' strategy.
+ 94 files changed, 6985 insertions(+), 3140 deletions(-)
+ delete mode 100644 assets/js/deepdive.js
+ delete mode 100644 research/deepdive.html
+```
+
+`main` was `bf36ef6b9f5b3111dc010f015ef5e6dd30a666c8` and is now
+`1f223468f170c1574deefb87326842f29cfbdeff`. The freeze gate was re-run **after** the merge, on
+`main`: **34/34.** The working tree is clean and the audit artifacts that run rewrote were
+restored and not committed.
+
+**`origin/main` IS STILL AT `bf36ef6`. NOTHING WAS PUSHED.** The merge is local. Pushing was not
+ordered and was not done; the branch `run54-phases` also remains, so the eight phases are
+addressable both as a branch and as a merge commit.
