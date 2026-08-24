@@ -9,6 +9,98 @@
 > newest first. Never renumber an existing section; on a merge conflict keep both sections whole.
 > The historic T-numbered sections below keep their names as history.
 
+# 2026-08-22 - Run 55: THE MINT. FOUR PHASES, GATE 34/34.
+
+**Report:** `REPORT_2026-08-22_run55_mint.md`.
+**Branch:** `run54-phases`, rooted at `bf36ef6`. Completes Run 54's four phases and mints them.
+**Stamp:** `sim-2026.08-v36`. **Package:** `og-participant-2026.08-v21`.
+**Freeze gate 34/34.** **Repository: the Linux clone. Interpreter: `python3` 3.11.15 (no `.venv`).**
+
+## READ THIS FIRST: THE GATE IS GREEN AND THE MINT IS PAID
+
+Run 54 completed four phases and could merge none of them, because
+`build_run37_acceptance.py:443` hashed a pinned candidate identity that still named
+`assets/js/deepdive.js`, which Run 54 phase B had deleted. Rows 2 and 3 of the 34-row freeze
+gate failed. That is fixed **without restoring the file and without weakening the generator**:
+the pinned identity is reconciled to the current tree through a DECLARED deletion list read from
+`participant_packages.V20_TO_V21_DELETED`, and the refusal it replaces is narrowed, not removed
+- an UNDECLARED disappearance still raises, and a declaration for a file that is still present
+still raises.
+
+## THE FOUR PHASES
+
+- **A. The six admin controls are on the project detail page.** Save info, Upload documents,
+  Recompute this project, Reset signals, Archive, Close. Hosted in a `.detail-admin-host` div
+  inside `.detail-head`, stamped `data-admin-for` with the viewed project's id, immediately
+  after the pre-existing `.detail-head-actions` cluster. **MOVED, NOT REWRITTEN**: the same
+  builder in `ingest.js`, the same markup, the same six handlers; `openInlineManage(id, hostEl)`
+  simply takes a parent. Measured in a real browser on three projects, **66/66**. Archive and
+  Reset signals carried **no confirmation dialog** before the move and carry none after it, and
+  their handler bodies are byte-identical to their pre-move bytes.
+- **B. All 23 campaigns now restore inside a `finally`** (Run 54 did 8, Run 55 the remaining
+  15), **`server/tests/` is inside `server/run_all_suites.sh`**, and `arm()`'s allow lists are
+  tightened to declared outputs in the four campaigns that over-permitted.
+- **C. Four stale guards revised, not deleted** - two the order named, one found by sweep
+  (`tests_render.html`'s row-actions group), one found by RUNNING the campaign
+  (`run52_injection_campaign.py` fault 1, whose subject `deepdive.js` no longer exists).
+- **D. The mint.** `sim-2026.08-v36`, `og-participant-2026.08-v21`, the v21 checksum record, the
+  production-tree re-take, the authority-tree re-take, `run55_freeze_candidate_identity.json`,
+  the gate CSV, the behaviour digest and the v21 `Package(...)` prose.
+
+## THE SUITE COUNT IS 203, NOT 193
+
+`server/run_all_suites.sh` globbed `tools/test_*.py` only. `server/tests/` holds ten further
+suites the pass never ran, four of them mutating fault campaigns - including
+`test_run34_fault_campaign.py`, which injects two of the three guards Run 52 found neutered.
+**The campaign most implicated in the leak sat outside the pass meant to catch it.** It is
+inside now. `test_suite_identity` in the candidate identity globs both directories, which is the
+runner's own glob, so the freeze measures what the pass runs. **`server/tools/test_run34_*` and
+`server/tests/test_run34_*` are DIFFERENT FILES** - the first are stubs that write nothing - and
+the runner keys every suite by its full relative path so they can never be conflated.
+
+## THE BEHAVIOUR DIGEST IS RE-DERIVED, NOT ASSUMED
+
+Run 54 could not re-derive it and said so. Executed over all 100 scientific targets on the
+frozen controlled corpus it comes back
+`8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1`, the digest of record,
+unmoved across the v35-to-v36 supersession. `CORE_VOTING_MODULES = ['A1.7','A1.8']`,
+`service_index()` 63, `registry_index()` 101.
+
+## PIN EVERY PROOF OF ABSENCE TO AN EXPLICIT COMMIT HASH
+
+Run 54 wrote its phase-B non-vacuity proofs against `HEAD~1`, true only while the deletion was
+the last commit, and they decayed silently into FALSE proofs that still passed as later commits
+walked the reference back. Every proof of absence this run adds names an explicit hash:
+`d5f4243` (pre-move), `bf36ef6` (pre-deletion), `d236a270` (v20), `fe35504` (v19).
+
+## THE FULL PASS AND THE MERGE
+
+**203 suites, 15269/15269 checks, ALL SUITES GREEN**, and no suite left production or client
+source dirty. **Freeze gate 34/34.** `run54-phases` was merged to `main` with `--no-ff`, which
+carries Run 54's four phases and Run 55's four on one clean gate. **FOUR MINTS WERE PAID**; the
+first exposed two further crash sites the identity had been masking, and each of the other three
+was a candidate identity chasing the commit that carried it.
+
+## TWO THINGS FOR THE OWNER TO DECIDE
+
+1. **The detail page now has TWO controls labelled "Upload documents"** and two that clear stored
+   signals. `.detail-upload` and the moved `.pe-populate` call the same function with the same
+   argument; `.detail-reset` ("Clear stored signals for this project") and the moved `.pe-reset`
+   ("Reset signals") both call `LinStore.resetSignals(id)`. Removing either pre-existing one is a
+   run-level halt without an explicit instruction, so both were left and the tension is reported.
+2. **Archive and Reset signals ask nothing before acting**, and they now sit on the page the
+   owner works from. They were the same on the portfolio row; the move did not change that, but
+   it did change how easily they are reached.
+
+## THE AUTHORITY TREE WAS RE-TAKEN AND IS DELIBERATELY NOT SUPERSEDED
+
+`compare()` over `AUTHORITY_ROOTS` reported added=0 removed=0 changed=0 renamed=0 and the
+recomputed manifest sha256 is byte for byte the pinned file's. Writing a `run55` authority
+manifest identical to the `run51` one would assert a supersession that did not happen. A
+manifest is superseded when what it describes moves, not once per run.
+
+---
+
 # 2026-08-23 - Run 54: FOUR PHASES, IN ORDER. COMMITTED, NOT MERGED.
 
 **Report:** `REPORT_2026-08-22_run54_phases.md`.
