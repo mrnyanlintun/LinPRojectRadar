@@ -212,16 +212,20 @@ if _record.is_file():
     check("run37.gate.no_self_reference",
           "PENDING_FINAL_COMMIT" not in _record.read_text(encoding="utf-8")
           and _rec.get("freeze_candidate_commit")
-          # RE-ANCHORED BY RUN 49, on Run 48's own construction, which was Run 47's, Run 45's,
-          # Run 44's and Run 43's. Each successor must name its IMMEDIATE predecessor's candidate
-          # as its parent: Run 48 named Run 47's, and Run 49 supersedes v32, so the record must
-          # now name RUN 48's candidate. Named explicitly rather than loosened to "any commit",
-          # because the point of the check is that the record cannot point at itself and cannot
-          # silently reparent.
+          # RE-ANCHORED BY RUN 56, on Run 49's own construction, which was Run 48's, Run 47's,
+          # Run 45's, Run 44's and Run 43's. Each successor must name its IMMEDIATE
+          # predecessor's candidate as its parent. THIS ANCHOR HAD STOPPED ADVANCING: it still
+          # named RUN 48's candidate, and it kept passing only because SUCCESSOR_RECORD above
+          # was itself still pinned at the RUN 51 record, whose parent really is Run 48's
+          # candidate. With SUCCESSOR_RECORD advanced to the release actually being minted, the
+          # anchor must advance with it, to RUN 55's candidate -- the immediate predecessor of
+          # sim-2026.08-v37. Named EXPLICITLY rather than loosened to "any commit", because the
+          # point of the check is that the record cannot point at itself and cannot silently
+          # reparent; loosening it here would be the weakening the order forbids.
           and _rec.get("freeze_candidate_commit")
-          != "e3d1b698b4797bb0fad4bde413317e56ecfd2398"
+          != "8e557b7b28857171a8611baf28f2c99cfd70c875"
           and _rec.get("supersedes_candidate")
-          == "e3d1b698b4797bb0fad4bde413317e56ecfd2398"
+          == "8e557b7b28857171a8611baf28f2c99cfd70c875"
           and bool(_rec.get("release_content_digest"))
           and bool(_rec.get("release_commit_recording_method")),
           "the record distinguishes freeze_candidate_commit, release_content_digest and "
