@@ -395,6 +395,13 @@ check(len(AX.ANALYSIS_COLUMNS) == readiness["export_column_count"],
 # neither is inside a frozen surface, and neither is named by the freeze checksum manifest --
 # all three of which are asserted separately above and below.
 PERMITTED_MODIFICATIONS = {
+    # RUN 57. The reset control merged into one and the pinned guards that named it advanced.
+    # `test_run21_reset_disclosure.py` read the reset control's promise off `.detail-reset`'s
+    # title in detail.js; the control MOVED FILE when the two handlers were merged, so the guard
+    # is re-pointed at ingest.js, where the surviving control makes the promise in the same
+    # words, and a further check is ADDED requiring detail.js to carry no reset control at all.
+    # NAMED HERE rather than admitted by widening the rule.
+    "server/tools/test_run21_reset_disclosure.py",
     "T6_HANDOFF.md",
     "REPORT_2026-08-19_run38-study-execution-readiness.md",
     "server/tools/test_run38_frozen_immutability.py",

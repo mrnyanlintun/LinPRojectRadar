@@ -641,6 +641,13 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/test_run44_participant_defect_fixes.py",
     "server/tools/test_run38_frozen_immutability.py",
     "server/tools/test_run39_frozen_immutability.py",
+    # RUN 57. The reset control merged into one and the pinned guards that named it advanced.
+    # `test_run21_reset_disclosure.py` read the reset control's promise off `.detail-reset`'s
+    # title in detail.js; the control MOVED FILE when the two handlers were merged, so the guard
+    # is re-pointed at ingest.js, where the surviving control makes the promise in the same
+    # words, and a further check is ADDED requiring detail.js to carry no reset control at all.
+    # NAMED HERE rather than admitted by widening the rule.
+    "server/tools/test_run21_reset_disclosure.py",
     "server/tools/drive_run50_browser.py",
     "server/tools/run52_rendered_text_capture.py",
     "code_audit/run45_field_classification_proposal.md",
