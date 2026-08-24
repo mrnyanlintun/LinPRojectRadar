@@ -307,8 +307,11 @@ check(SIMULATION_VERSION_HISTORY[SIMULATION_VERSION_HISTORY.index("sim-2026.08-v
 # RUN 56 minted v22: EXACTLY ONE of the sixty-nine moved, assets/js/ingest.js, and it is NOT
 # sequence-bearing, so this link carries NO exception record and declares that emptiness rather
 # than omitting it.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v22",
-      "the current participant package is v22", PP.CURRENT.identifier)
+# RUN 57 minted v23: THREE of the sixty-nine moved -- assets/css/radar.css, assets/js/detail.js
+# and assets/js/ingest.js -- and NOT ONE is sequence-bearing, so this link too carries NO
+# exception record and DECLARES that emptiness rather than omitting it.
+check(PP.CURRENT.identifier == "og-participant-2026.08-v23",
+      "the current participant package is v23", PP.CURRENT.identifier)
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
       "and every predecessor names the commit its bytes live in, so only one record claims the "

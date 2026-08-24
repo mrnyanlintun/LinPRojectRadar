@@ -54,6 +54,17 @@ FLOW_PATH = ROOT / "assets" / "js" / "neural_flow.js"
 DETAIL_PATH = ROOT / "assets" / "js" / "detail.js"
 FLOW = FLOW_PATH.read_text(encoding="utf-8")
 DETAIL = DETAIL_PATH.read_text(encoding="utf-8")
+# RUN 57. THE RESET CONTROL MOVED FILE; THE PROMISE DID NOT MOVE AND IS NOT WEAKENED.
+# Until Run 57 the project detail page carried TWO controls that clear stored signals, and this
+# suite read the promise off `.detail-reset`'s title attribute in detail.js. Run 57 MERGED the
+# two handler bodies into one control -- `.pe-reset` in ingest.js, which does the union of both
+# and asks before acting -- and removed `.detail-reset`. The promise is made in exactly the same
+# words by the surviving control's confirmation, so the guard is RE-POINTED AT WHERE THE CONTROL
+# NOW LIVES rather than deleted or loosened: it still requires the sentence, and it additionally
+# requires that detail.js no longer carries a reset control, so the sentence cannot be satisfied
+# by a control that is no longer there.
+INGEST_PATH = ROOT / "assets" / "js" / "ingest.js"
+INGEST = INGEST_PATH.read_text(encoding="utf-8")
 
 passed = total = 0
 failures: list[str] = []
@@ -114,8 +125,16 @@ check("retainedBeforeReset" not in (m.group(1) if m else ""),
       "and the retained documents are NOT re-admitted to that window",
       (m.group(1)[:200] if m else ""))
 # The reset control's promise, which is the authority for all of the above.
-check("Does not delete documents" in DETAIL,
-      "the reset control still states that it does not delete documents")
+check("does not delete documents" in INGEST.lower()
+      and 'class="btn small pe-reset">Reset signals<' in INGEST,
+      "the reset control still states that it does not delete documents, in the file that now "
+      "carries it (assets/js/ingest.js, the surviving .pe-reset and its confirmation)",
+      "promise=%s survivor=%s" % ("does not delete documents" in INGEST.lower(),
+                                  'class="btn small pe-reset">Reset signals<' in INGEST))
+check('class="btn small detail-reset"' not in DETAIL
+      and "function wireReset(" not in DETAIL,
+      "and detail.js no longer carries a reset control at all, so the promise cannot be "
+      "satisfied by a control that is no longer there")
 
 print()
 print("=" * 78)

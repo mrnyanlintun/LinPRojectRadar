@@ -149,8 +149,13 @@ check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-
                                                        "sim-2026.08-v36",
                                                        # RUN 56's own single authorised append.
                                                        # NOTHING IS REMOVED FROM THIS TUPLE.
-                                                       "sim-2026.08-v37"),
-      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42, 43, 44, 45, 47, 48, 49 and 55 "
+                                                       "sim-2026.08-v37",
+                                                       # RUN 57's own single authorised
+                                                       # append. NOTHING IS REMOVED FROM
+                                                       # THIS TUPLE.
+                                                       "sim-2026.08-v38"),
+      "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42, 43, 44, 45, 47, 48, 49, 55, "
+      "56 and 57 "
       "were "
       "each authorised "
       "to add",
