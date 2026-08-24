@@ -490,8 +490,24 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: observed reporting exactly those two CHANGED, nothing added, removed or renamed, before this
 #: manifest was written. The run55 manifest is NOT rewritten: it stays exactly as that release
 #: wrote it and this successor names it as its parent.
-PINNED = ROOT / "code_audit" / "run56_production_tree.sha256"
-#: The Run-55 manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 57 SUPERSEDES IT, and this supersession says exactly how small it is. EXACTLY FOUR
+#: production files moved and NOTHING was added, removed or renamed: `assets/js/ingest.js` (the
+#: surviving reset control now carries the UNION of both reset handler bodies),
+#: `assets/js/detail.js` (`.detail-reset`, its aria-live span, its handler `wireReset()` and its
+#: call site are removed), `assets/css/radar.css` (the `.detail-reset-msg` rule died with that
+#: control and is removed rather than left as dead CSS) and `server/app/simulation/models.py`
+#: (the stamp advances to sim-2026.08-v38 with the boundary recorded). The removal Run 56 STOPPED
+#: under its section 9.1 is what this run carries, and it carries it by MERGING first: neither
+#: reset handler was a superset of the other, so the survivor was given the union before the
+#: other was removed, which is the only removal that loses no behaviour. The guard was observed
+#: reporting exactly those four CHANGED, nothing added, removed or renamed, BEFORE this manifest
+#: was written. The run56 manifest is NOT rewritten: it stays exactly as that release wrote it
+#: and this successor names it as its parent.
+PINNED = ROOT / "code_audit" / "run57_production_tree.sha256"
+#: The Run-56 manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN56 = ROOT / "code_audit" / "run56_production_tree.sha256"
+#: The Run-55 manifest, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN55 = ROOT / "code_audit" / "run55_production_tree.sha256"
 #: The Run-52 manifest, kept addressable so a guard can prove the

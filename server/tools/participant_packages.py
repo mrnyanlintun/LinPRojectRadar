@@ -549,7 +549,20 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v22",
         "code_audit/run56_participant_package_v22_checksums.sha256",
-        None,
+        # RUN 57 PINS IT. The v22 record described the LIVE TREE while v22 was current; Run 57
+        # phase A moves three of its sixty-nine members, so the live tree stops being evidence
+        # for it and it is reconstructed from a commit instead.
+        #
+        # WHICH COMMIT, ESTABLISHED BY BYTE COMPARISON AND NOT BY ASSERTION. Every one of the
+        # sixty-nine members was re-read with `git show <commit>:<path>` and sha256'd against the
+        # record. SIX commits reproduce it exactly -- db942f2, 67e709d, 09bf7f1, fa3ad7e, dbb4bf9
+        # and 50dfb40 -- so the record's bytes alone do not single one out. The chain's own rule
+        # settles it, and it is the rule v21 was pinned under: THE TIP OF `main` AT WHICH THE
+        # PACKAGE WAS STILL CURRENT. v21 is pinned to e13b4f1 on exactly that ground. For v22
+        # that tip is 50dfb40, the last commit on `main` before this link's successor exists.
+        # dbb4bf9 is Run 56's --no-ff merge commit and 50dfb40 is the record commit Run 56 made
+        # on top of it after pushing; both reproduce the bytes, and the tip is the one taken.
+        "50dfb40fd83850a5342ab9106c063cbe87f367e9",
         "RUN 56, ONE DUPLICATE CONTROL REMOVED AND TWO CONFIRMATIONS ADDED. EXACTLY ONE "
         "participant-visible file moved -- assets/js/ingest.js -- and it is NOT sequence-"
         "bearing, so this link carries NO sequence exception and none is invented for it. "
@@ -592,6 +605,61 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "no stored figure changed, and the behaviour digest is RE-DERIVED and unchanged. The v21 "
         "record is NOT regenerated: it describes the tree as v21 left it and remains the "
         "evidence for anything collected under v21.",
+    ),
+    Package(
+        "og-participant-2026.08-v23",
+        "code_audit/run57_participant_package_v23_checksums.sha256",
+        None,
+        "RUN 57, THE TWO RESET CONTROLS MERGED INTO ONE. THREE participant-visible files moved "
+        "-- assets/js/ingest.js, assets/js/detail.js and assets/css/radar.css -- and NOT ONE of "
+        "them is sequence-bearing, so this link carries NO sequence exception and "
+        "V22_TO_V23_SEQUENCE_EXCEPTION is an EMPTY tuple that is DECLARED rather than omitted. "
+        "THE PROBLEM RUN 56 LEFT ON THE RECORD. The project detail page carried TWO controls "
+        "that clear stored signals: .detail-reset ('Clear stored signals for this project') and "
+        "the .pe-reset ('Reset signals') that Run 55 moved onto the page inside the admin panel. "
+        "Run 56 measured both handler bodies and found that NEITHER was a superset of the other, "
+        "so removing either alone would have lost behaviour, and it stopped. THE OWNER'S RUN 57 "
+        "RULING MERGES THEM: the survivor does the UNION of both, and the other is removed. "
+        "RE-MEASURED AT THE EXPLICIT COMMIT 50dfb40 rather than taken from Run 56's table: Run "
+        "56's eleven-behaviour comparison is reproduced exactly, and a twelfth probe finds a "
+        "sixth .detail-reset-only behaviour, LinStore.getCached(, which this link acts on. "
+        ".pe-reset SURVIVES, and the reason is stated rather than picked silently: every "
+        "behaviour unique to .detail-reset is reachable from ingest.js through interfaces that "
+        "are ALREADY public -- window.LinResults, window.LIN_PROJECTS, LinStore.getProject and "
+        "getCached, and detail.js's exported LinDetail.render -- whereas two behaviours unique "
+        "to .pe-reset, logEvent() and confirmDestructive(), are module-private to ingest.js and "
+        "would have had to be newly EXPORTED to build the same union inside detail.js. Merging "
+        "into the survivor adds nothing to any module's public surface, and it leaves Run 56's "
+        "confirmation exactly where Run 56 put it, byte-identical. THE MERGED HANDLER IS ORDERED "
+        "BY DEPENDENCY, NOT CONCATENATED: the server reset first, because everything after it "
+        "reconciles clients to that truth; both caches dropped BEFORE any re-fetch or re-render, "
+        "or the re-render repopulates from the stale copies; LinStore.load() before "
+        "getProject(id) so the store-wide reload cannot overwrite the authoritative record just "
+        "fetched; the awaiting-ingest mutation AFTER the re-fetch, or the fetch restores the "
+        "fields it nulls; logEvent() ONCE, after the state change succeeded and before the "
+        "re-renders; and the re-renders broadest to narrowest with LinDetail.render(id) LAST, "
+        "because it rebuilds the host that contains the surviving button. THE UNION IS EXACT: "
+        "every behaviour of both originals is present and nothing else is, asserted statement by "
+        "statement against 50dfb40, with two declared adaptations -- detail.js's guarded "
+        "LinResults.clear() verbatim, and its render(id) reached through the LinDetail export and "
+        "guarded on the hosted path, because on a portfolio row there is no detail page to "
+        "re-render and .detail-reset never existed there. REMOVED WITH IT: .detail-reset's "
+        "markup, its .detail-reset-msg aria-live span, wireReset(), wireReset's call site in "
+        "render(), and radar.css's now-dead .detail-reset-msg rule -- and that dead-CSS check is "
+        "a real one this time, not a vacuous one, because the rule existed at 50dfb40. MEASURED "
+        "IN A REAL BROWSER ON THREE PROJECTS, 65/65: BEFORE the merge each detail page carried "
+        "TWO controls that clear stored signals, AFTER it carries EXACTLY ONE; exactly one button "
+        "was lost and NONE was added or moved; the admin panel's control order is unchanged; the "
+        "surviving control's panel is bound to the viewed project and no other. CONFIRMING really "
+        "calls resetSignals, LinResults.clear(), LinStore.load(), getProject(), "
+        "LinDetail.render() and logEvent(), proved with counting spies rather than by reading, "
+        "and touches NO other project. CANCELLING makes NO call and changes NO state. No "
+        "window.confirm was introduced: ingest.js carries exactly as many as it did at 50dfb40. "
+        "NO SERVER COMPUTATION MOVED: 101 registered, 63 in service, voting exactly A1.7 and "
+        "A1.8, no stored figure changed, and the behaviour digest is RE-DERIVED and unchanged. "
+        "The v22 record is NOT regenerated: it describes the tree as v22 left it, and it is "
+        "PINNED to 50dfb40 -- byte-verified member by member -- rather than edited to agree with "
+        "the present, which is the predecessor rewrite B11 exists to catch.",
     ),
 )
 
@@ -660,6 +728,30 @@ V21_TO_V22_CHANGED = (
 #: across the v21-to-v22 link. A sequence-bearing file moving without being named here still
 #: turns the gate red.
 V21_TO_V22_SEQUENCE_EXCEPTION: tuple[str, ...] = ()
+
+#: RUN 57. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
+#: omitted, so the identity builder reads a DECLARATION instead of falling back to a hard-coded
+#: empty list. A member of a pinned identity group disappearing without being named here still
+#: raises.
+V22_TO_V23_DELETED: tuple[str, ...] = ()
+
+#: RUN 57. The files whose bytes moved between v22 and v23. THREE, and NOT ONE of them is
+#: sequence-bearing. `assets/js/detail.js` is here for the first time since v20: the removed
+#: `.detail-reset` control lived in it. `assets/css/radar.css` is here because the rule
+#: `.detail-reset-msg` died with that control and was removed rather than left behind as dead
+#: CSS.
+V22_TO_V23_CHANGED = (
+    "assets/css/radar.css",
+    "assets/js/detail.js",
+    "assets/js/ingest.js",
+)
+
+#: RUN 57. Stated explicitly so that "no exception" is a DECLARATION and not an omission a later
+#: reader has to infer from silence. An empty tuple here means: nothing sequence-bearing moved
+#: across the v22-to-v23 link. All five members of SEQUENCE_BEARING_FILES_FROM_V21 are present
+#: and byte-identical across this successor, which is asserted rather than assumed. A
+#: sequence-bearing file moving without being named here still turns the gate red.
+V22_TO_V23_SEQUENCE_EXCEPTION: tuple[str, ...] = ()
 
 #: RUN 52. The files whose bytes moved between v19 and v20. SEVEN, and EXACTLY ONE of them is
 #: sequence-bearing. The exception is declared here rather than left for a checksum to discover.

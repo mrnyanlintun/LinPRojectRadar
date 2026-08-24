@@ -133,12 +133,12 @@ FREEZE = ROOT / "research" / "freeze"
 # rewritten: run55_freeze_candidate_identity.json, run55_successor_freeze_gate.csv,
 # run55_candidate_behaviour_digest.json and the v36 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v36.
-PREDECESSOR_CANDIDATE = "8e557b7b28857171a8611baf28f2c99cfd70c875"
-PREDECESSOR_VERSION = "sim-2026.08-v36"
+PREDECESSOR_CANDIDATE = "db942f2ebe4ae27b598f76bd8307517e862f4a69"
+PREDECESSOR_VERSION = "sim-2026.08-v37"
 CANDIDATE = "db942f2ebe4ae27b598f76bd8307517e862f4a69"
-EXPECTED_VERSION = "sim-2026.08-v37"
-IDENTITY_FILE = "run56_freeze_candidate_identity.json"
-GATE_FILE = "run56_successor_freeze_gate.csv"
+EXPECTED_VERSION = "sim-2026.08-v38"
+IDENTITY_FILE = "run57_freeze_candidate_identity.json"
+GATE_FILE = "run57_successor_freeze_gate.csv"
 # RUN 55, THE MINT. TWO FILENAMES, NOT ONE, AND THAT IS DELIBERATE.
 #
 # The generator used a SINGLE constant for both halves of blocker B15: it read the prior digest
@@ -156,8 +156,8 @@ GATE_FILE = "run56_successor_freeze_gate.csv"
 # reads the PREDECESSOR record and writes the successor one, so it compares across a
 # supersession instead of comparing a run to itself. Collapsing them back into one constant
 # would make B15 read a file that does not exist yet and pass without comparing anything.
-PRIOR_BEHAVIOUR_FILE = "run55_candidate_behaviour_digest.json"
-BEHAVIOUR_FILE = "run56_candidate_behaviour_digest.json"
+PRIOR_BEHAVIOUR_FILE = "run56_candidate_behaviour_digest.json"
+BEHAVIOUR_FILE = "run57_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 
