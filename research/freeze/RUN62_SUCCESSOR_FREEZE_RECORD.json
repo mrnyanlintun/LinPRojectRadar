@@ -23,10 +23,10 @@
     "Runs 60 and 61, taken as one supersession and PUBLISHED by Run 62: Run 60 diagnosed in a rendered browser that the stored-signal row a project detail page reads was not necessarily the row of the period the page holds, and Run 61 fixed it by making the caller state its question -- the row cache keyed by (project, period), the period travelling with the row, and the workspace resolving the period before it asks for results; sim-2026.08-v40.",
     "The v25 to v34 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "e2f6b99bbff87520000a02c3235b157cbd72bbbc",
-  "candidate_identity_digest": "0728269f259823a16df6b9bfaddf754aa71df86272f1f41defbd7c670fdab00f",
+  "freeze_candidate_commit": "d1976a064ec9f37a0a56eb3555040a80196876f4",
+  "candidate_identity_digest": "00981c37858133cc23c74e920157e1df5869ec9bf4d5704596251275f327b381",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "83b894eda6b261de38000efe38eba566a310cfe3b5b354700b9679f5cdf29c3b",
+  "release_content_digest": "8a125703730038488c7323fc08817e15cd617c7532ba79c7487ea9c20c30c9ea",
   "release_content_digest_method": "sha256 over RUN59_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v40",
