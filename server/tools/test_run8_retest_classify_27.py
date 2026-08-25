@@ -542,6 +542,15 @@ RUN47_SCOPED_FILES = {
     "server/app/evm_consistency.py",
 }
 
+# RUN 59's AUTHORISED SCOPE. NO MARKDOWN DOCUMENT CARRIES AUTHORITY. ONE file under server/app/
+# that no earlier scope names, and WHAT MOVED IN IT IS A COMMENT AND NOTHING ELSE: it cited a
+# module-identifier prohibition the owner SUPERSEDED on 2026-08-23, and the citation is dropped
+# with the reason stated directly. Not one executable byte moved, which is why the behaviour
+# digest is re-derived identically. NAMED so the set cannot quietly grow.
+RUN59_SCOPED_FILES = {
+    "server/app/document_evidence.py",
+}
+
 
 # RUN 51's AUTHORISED SCOPE. The delivery of the six rulings Run 50 stopped on. Every file is
 # NAMED, so the set cannot quietly grow: anything else differing from the pinned baseline still
@@ -587,7 +596,8 @@ _prod = [p for p in _diff
          and p not in RUN32_SCOPED_FILES and p not in RUN33_SCOPED_FILES
          and p not in RUN41_SCOPED_FILES and p not in RUN43_SCOPED_FILES
          and p not in RUN47_SCOPED_FILES
-         and p not in RUN51_SCOPED_FILES]
+         and p not in RUN51_SCOPED_FILES
+         and p not in RUN59_SCOPED_FILES]
 
 check(not _prod, "no production file under server/app/ or assets/ differs from the pinned "
                  "baseline", " ".join(_prod))

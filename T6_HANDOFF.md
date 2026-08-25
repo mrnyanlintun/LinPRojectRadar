@@ -1,3 +1,53 @@
+> **THIS FILE IS HISTORY. IT CARRIES NO AUTHORITY.** Owner's ruling, 2026-08-25, Run 59.
+> It is the history of the changes, nothing more. No markdown document in this repository
+> carries authority: production code is the truth, `REPORT_*.md` / `code_audit/REPORT_*.md` /
+> `research/freeze/*.md` / the fixture records are sealed evidence, and everything else --
+> this file included -- is transport or history and governs nothing. Where this file and the
+> code disagree, THE CODE IS TRUE. Nothing here is to be obeyed, and no check may assert this
+> file's content: Run 59 retired the two that did.
+>
+> **THE FOUR ORDERING BREAKS BELOW ARE LEFT AS THEY ARE.** Run 46 and Run 47 sit at the bottom
+> and are headed `##`; nineteen dated sections sit below the historic T-numbered block; "READ
+> FIRST" is at line 8005; the ordering is by run number, not by date. Runs 48 through 58 each
+> left them and were right to. Moving them rewrites history. This is the ONE addition Run 59
+> made to this file, at the top, which the file's own rule permits; nothing below it was edited.
+
+# 2026-08-25 - Run 59: NO MARKDOWN DOCUMENT CARRIES AUTHORITY. sim-2026.08-v39, og-participant-2026.08-v24, GATE 15/15.
+
+**Report:** `REPORT_2026-08-25_run59_no_markdown_authority.md`. Run 58's audit landed with it,
+unedited, at `3ba789a`.
+
+**Phase A.** Eight documents corrected against production, not the five the order named: an
+uncapped sweep added `COPY_GLOSSARY.md:89`, `README.md:85` and `BACKEND_CHANGES_NEEDED.md:322` to
+Run 58's inventory. `MODULE_RETIREMENT_DECISIONS.md` said the REGISTERED count fell 101 to 63; it
+is the IN-SERVICE count that fell, and `registry_index()` is still 101. `GROUP_ASSIGNMENT.md` and
+`p0-baseline/MODULE_TAXONOMY.md` now mark their counts as the figure at a date. **No new number
+was invented.** All five code citations of the superseded identifier rule were DROPPED and the
+reason stated directly; one of them, `portfolio_health.py`, cited the very section that recorded
+the reversal. The specification's CONTROLLING designation is withdrawn and its read-first order
+gone; the specification is NOT deleted, NOT renamed, NOT removed from the authority tree, whose
+manifest sha256 `b52c47a6...` is unmoved for a fifth run.
+
+**Phase B.** Four guards RE-POINTED at non-markdown production oracles, each proved still able to
+fail BY BREAKING PRODUCTION. `test_group_assignment.py` no longer aborts the suite with
+`SystemExit` when a fenced markdown block goes missing: proved by removing both blocks, 16/16,
+exit 0. Fifteen checks RETIRED the way modules were retired -- they stop running, their bodies are
+not deleted, the reason is recorded beside each. **No check was deleted.** Two STOPPED under
+11.1 and 11.3 rather than re-pointed at an invented oracle, and are named in the report.
+
+**Phase D.** THREE MINTS PAID. Pass 1 and pass 2 were the CANDIDATE fixed-point refusal Run 57
+built; pass 3 was clean. The four release pins and the `no_self_reference` anchor needed NO
+reconciliation, because Run 57 derived them. Fourteen typed pinned guards did.
+**`test_run41_preservation`'s positional ladder caught this run dropping a stamp from it** -- the
+first attempt changed `[-1]` alone and it went red; the ladder was shifted properly and deepened
+by one clause. That is carry-forward item 1 and it is still not fixed.
+
+**THE FINDING RUN 58 REPORTED FIRST-ORDER IS CLOSED.**
+`REPORT_2026-08-18_run34-portfolio-health-calibration.md`, sealed evidence, was read as an
+AUTHORITY by four live suites, one of them out of a merged commit so that even a correct edit
+could not restore green. Those halves stop. The CSV they were redundant with is still asserted,
+at HEAD and at `41f01e8`.
+
 > **READ `NAMING_AUTHORITY.md` BEFORE ANY CONTENT WORK.** It is the authority for what the platform
 > and its analytical taxonomy are called, and it carries the standing description that every
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a

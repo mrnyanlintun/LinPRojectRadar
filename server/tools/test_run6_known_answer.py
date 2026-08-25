@@ -610,7 +610,17 @@ _unscoped = sorted(set(_prod) - RUN30_SCOPED_FILES - RUN7_SCOPED_FILES - RUN10_S
                    # rather than the comparison being relaxed, so the check keeps full force
                    # outside them. Nothing analytical is in this set and the behaviour digest
                    # is reproduced identically.
-                   - RUN51_SCOPED_FILES)
+                   - RUN51_SCOPED_FILES
+                   # RUN 59, NO MARKDOWN DOCUMENT CARRIES AUTHORITY. ONE production file
+                   # under server/app/ that no earlier scope names. WHAT MOVED IN IT IS A
+                   # COMMENT AND NOTHING ELSE: it cited a module-identifier prohibition the
+                   # owner SUPERSEDED on 2026-08-23, and the citation is dropped with the
+                   # reason stated directly. Not one executable byte moved, which is why the
+                   # behaviour digest is re-derived identically. NAMED rather than the
+                   # comparison being relaxed, so the check keeps full force outside it.
+                   # research_export.py, models.py, portfolio_health.py, evm_consistency.py and
+                   # decision-ui.js are already inside the scope of an earlier run above.
+                   - {"server/app/document_evidence.py"})
 check(not _unscoped,
       "no production file outside the authorised scope of Run 7, Run 10, Run 10B, Run 11, "
       "Run 12, Run 14, Run 20 or Run 21 differs from the pinned baseline",

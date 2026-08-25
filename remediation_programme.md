@@ -276,7 +276,8 @@ Roughly a dozen vacuous checks have been found, every one by injection and none 
 
 ## Naming rules
 
-- No module ids or numbers in user-facing text. Groups by name and purpose.
+- Groups by name and purpose where the identifier adds nothing. Displayed module ids and
+  numbers are acceptable: the former prohibition was SUPERSEDED by the owner on 2026-08-23.
 - No em dashes in user-facing text.
 - User-facing text uses "and", not the ampersand the code constants use. Do not rename code
   constants.

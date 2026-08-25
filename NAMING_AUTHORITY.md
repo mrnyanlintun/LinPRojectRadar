@@ -141,7 +141,6 @@ Anything that says the browser computes signals is stale.
 - Loud refusal over quiet approximation.
 - Stop at a clean boundary. Partial work on a research-critical path is worse than none.
 - No em dashes in user-facing text.
-- No module ids or numbers in user-facing text.
 - Do not describe capability the platform does not have.
 - Do not adopt liability or consent language on your own judgement. Draft it and mark it as
   requiring Lin's review.

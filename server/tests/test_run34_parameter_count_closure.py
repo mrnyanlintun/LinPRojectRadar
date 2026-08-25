@@ -220,46 +220,73 @@ def parse_report_distribution(text: str) -> dict[str, int]:
     return {c: (v[0] if len(set(v)) == 1 else -1) for c, v in counts.items()}
 
 
-_text = REPORT.read_text(encoding="utf-8")
-_rep = parse_report_distribution(_text)
-check(set(_rep) == set(V8.PARAMETER_CLASSES),
-      "the report publishes a count for ALL SEVEN classes, so none can be quietly omitted",
-      str(sorted(set(V8.PARAMETER_CLASSES) - set(_rep))))
-_occurrences = parse_report_counts(_text)
-check(all(len(set(v)) == 1 for v in _occurrences.values()),
-      "every class count published in the report agrees with every other occurrence of it, so a "
-      "second table cannot drift from the first",
-      str({c: v for c, v in _occurrences.items() if len(set(v)) != 1}))
-check(_rep == dist,
-      "AND THE REPORT'S DISTRIBUTION EQUALS THE ARTIFACT'S, class for class",
-      f"report {_rep} vs artifact {dist}")
-check(sum(_rep.values()) == len(params),
-      "and it sums to the true parameter total", f"{sum(_rep.values())} == {len(params)}")
-check("19 parameters" in _text,
-      "the report states the true parameter count in words")
-check("Parameter-provenance count correction" in _text,
-      "and carries the count-correction section, so the correction is visible rather than a "
-      "silent replacement")
-check("21 rows" in _text and "2 counters = 21 rows" in _text,
-      "which explains the 21 as a ROW count and reconciles it: 19 parameters + 2 counters")
+# RUN 59, PHASE B. RETIRED, NOT DELETED.
+#
+# THE FINDING OF THE FIRST ORDER, from Run 58: an EVIDENCE document was being read as an
+# AUTHORITY by four live suites. REPORT_2026-08-18_run34-portfolio-health-calibration.md is a
+# REPORT_*.md -- sealed evidence by the owner's own classification -- and this suite asserted its
+# published distribution class for class, at HEAD (section 6) and again out of the merged commit
+# (section 8). Editing that report turned this suite red, and the commit-history assertion meant
+# even a CORRECT edit could not make it green again.
+#
+# Owner's ruling, 2026-08-25: no markdown document carries authority. Established here by reading
+# every assertion: THE REPORT IS A REDUNDANT ORACLE. The real subject is production -- V8's
+# PARAMETER_CLASSES and the parameters that carry them -- witnessed by
+# code_audit/run34_portfolio_parameter_provenance.csv, which is a CSV, is asserted against
+# production above, and is STILL asserted at the merged commit in section 8. NOTHING ABOUT
+# PRODUCTION STOPPED BEING ASSERTED. Section 7 goes with them: it proved section 6 could fail,
+# and a non-vacuity proof for a retired check has nothing left to prove.
+#
+# Retired the way modules were retired: THE CHECKS STOP RUNNING, THE BODIES ARE NOT DELETED, AND
+# THE REASON IS RECORDED. Clear the flag to run them again.
+RETIRED_RUN59_REPORT_AS_ORACLE = True
+
+if not RETIRED_RUN59_REPORT_AS_ORACLE:
+    _text = REPORT.read_text(encoding="utf-8")
+    _rep = parse_report_distribution(_text)
+    check(set(_rep) == set(V8.PARAMETER_CLASSES),
+          "the report publishes a count for ALL SEVEN classes, so none can be quietly omitted",
+          str(sorted(set(V8.PARAMETER_CLASSES) - set(_rep))))
+    _occurrences = parse_report_counts(_text)
+    check(all(len(set(v)) == 1 for v in _occurrences.values()),
+          "every class count published in the report agrees with every other occurrence of it, so a "
+          "second table cannot drift from the first",
+          str({c: v for c, v in _occurrences.items() if len(set(v)) != 1}))
+    check(_rep == dist,
+          "AND THE REPORT'S DISTRIBUTION EQUALS THE ARTIFACT'S, class for class",
+          f"report {_rep} vs artifact {dist}")
+    check(sum(_rep.values()) == len(params),
+          "and it sums to the true parameter total", f"{sum(_rep.values())} == {len(params)}")
+    check("19 parameters" in _text,
+          "the report states the true parameter count in words")
+    check("Parameter-provenance count correction" in _text,
+          "and carries the count-correction section, so the correction is visible rather than a "
+          "silent replacement")
+    check("21 rows" in _text and "2 counters = 21 rows" in _text,
+          "which explains the 21 as a ROW count and reconciles it: 19 parameters + 2 counters")
 
 
-# =================================================================================================
-head("7. THE GUARD WOULD HAVE CAUGHT A REPORT/ARTIFACT DISAGREEMENT")
-# =================================================================================================
-# Non-vacuity, proved on real text rather than asserted: a report whose table drops a class, or
-# whose counts are the row count rather than the parameter count, must fail the section-6 checks.
-_dropped = re.sub(r"^\|\s*`HEURISTIC`\s*\|.*$", "", _text, flags=re.M)
-check(set(parse_report_distribution(_dropped)) != set(V8.PARAMETER_CLASSES),
-      "a report with a class dropped from its tables FAILS the all-seven-classes check")
-_split = _text.replace("| `HEURISTIC` | 0 | — |", "| `HEURISTIC` | 3 | — |", 1)
-check(any(len(set(v)) != 1 for v in parse_report_counts(_split).values()),
-      "and a report whose two tables DISAGREE fails the every-occurrence check, so the second "
-      "table cannot mask a drift in the first")
-_padded = _text.replace("| `UNSUPPORTED` | 7 |", "| `UNSUPPORTED` | 9 |", 1)
-check(parse_report_distribution(_padded) != dist,
-      "and a report padded to make the classes sum to 21 FAILS the equality check",
-      "UNSUPPORTED 7 -> 9 would sum to 21 and is refused")
+    # =================================================================================================
+    head("7. THE GUARD WOULD HAVE CAUGHT A REPORT/ARTIFACT DISAGREEMENT")
+    # =================================================================================================
+    # Non-vacuity, proved on real text rather than asserted: a report whose table drops a class, or
+    # whose counts are the row count rather than the parameter count, must fail the section-6 checks.
+    _dropped = re.sub(r"^\|\s*`HEURISTIC`\s*\|.*$", "", _text, flags=re.M)
+    check(set(parse_report_distribution(_dropped)) != set(V8.PARAMETER_CLASSES),
+          "a report with a class dropped from its tables FAILS the all-seven-classes check")
+    _split = _text.replace("| `HEURISTIC` | 0 | — |", "| `HEURISTIC` | 3 | — |", 1)
+    check(any(len(set(v)) != 1 for v in parse_report_counts(_split).values()),
+          "and a report whose two tables DISAGREE fails the every-occurrence check, so the second "
+          "table cannot mask a drift in the first")
+    _padded = _text.replace("| `UNSUPPORTED` | 7 |", "| `UNSUPPORTED` | 9 |", 1)
+    check(parse_report_distribution(_padded) != dist,
+          "and a report padded to make the classes sum to 21 FAILS the equality check",
+          "UNSUPPORTED 7 -> 9 would sum to 21 and is refused")
+else:
+    print("  RETIRED (Run 59)  section 6, the report's published distribution -- the\n"
+          "                    report is sealed EVIDENCE, not an authority; the CSV it\n"
+          "                    was compared against is still asserted against production")
+    print("  RETIRED (Run 59)  section 7, the non-vacuity proof for section 6")
 
 
 # =================================================================================================
@@ -294,19 +321,27 @@ check({r["parameter"] for r in _old_counters}
 
 _old_dist = {c: sum(1 for r in _old_params if r["parameter_class"] == c)
              for c in V8.PARAMETER_CLASSES}
-_old_rep = parse_report_distribution(_old_report)
 check(_old_dist == dist,
       "the artifact's class distribution at the merged commit is the SAME distribution as now: "
       "this closure changed structure and description, not any classification", str(_old_dist))
-check(_old_rep == _old_dist,
-      "AND THE REPORT'S DISTRIBUTION AT THAT COMMIT ALREADY EQUALLED THE ARTIFACT'S. There was "
-      "NO report/artifact disagreement to catch: both were correct, about different things -- "
-      "21 rows and 19 parameters", f"report {_old_rep} vs artifact {_old_dist}")
-check("19 parameters" in _old_report,
-      "the merged report stated 19 parameters in words, so it never claimed 21 parameters")
-for _bad in ("rows = 21", "21 parameters", "= 21"):
-    check(_bad not in _old_report,
-          f"and the merged report contains no {_bad!r} claim")
+# RUN 59, PHASE B. RETIRED, NOT DELETED -- the same ruling as section 6, and this is the half
+# Run 58 singled out: `git_show` read the REPORT out of the merged commit, so its history was
+# pinned as well as its content and even a correct edit could not restore green. The CSV half of
+# section 8, immediately above and below, is untouched and still asserts the merged artifact.
+if not RETIRED_RUN59_REPORT_AS_ORACLE:
+    _old_rep = parse_report_distribution(_old_report)
+    check(_old_rep == _old_dist,
+          "AND THE REPORT'S DISTRIBUTION AT THAT COMMIT ALREADY EQUALLED THE ARTIFACT'S. There "
+          "was NO report/artifact disagreement to catch: both were correct, about different "
+          "things -- 21 rows and 19 parameters", f"report {_old_rep} vs artifact {_old_dist}")
+    check("19 parameters" in _old_report,
+          "the merged report stated 19 parameters in words, so it never claimed 21 parameters")
+    for _bad in ("rows = 21", "21 parameters", "= 21"):
+        check(_bad not in _old_report,
+              f"and the merged report contains no {_bad!r} claim")
+else:
+    print("  RETIRED (Run 59)  section 8's four REPORT assertions, read out of commit 41f01e8 "
+          "-- the report is sealed evidence, not an authority")
 check("row_type" not in _old_prov,
       "WHAT WAS ACTUALLY MISSING: the merged artifact had no row_type column, so nothing "
       "distinguished a counter row from a parameter row and a row count could not be told from "

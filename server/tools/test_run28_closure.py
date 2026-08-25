@@ -129,10 +129,33 @@ check(_names.get("A1.10") == "CPI Shrinkage Forecast",
 check(_names.get("A1.11") == "Independent EAC Reconciliation Index",
       "and the second", str(_names.get("A1.11")))
 
-_taxonomy_md = (ROOT / "p0-baseline" / "MODULE_TAXONOMY.md").read_text(encoding="utf-8")
-check("single source of truth" in _taxonomy_md and "module_renumbering_map.csv" in _taxonomy_md,
-      "the designation is a fact in the repository rather than an assumption of this suite",
-      "MODULE_TAXONOMY.md")
+# RUN 59, PHASE B. RETIRED, NOT DELETED.
+#
+# Owner's ruling, 2026-08-25: NO MARKDOWN DOCUMENT IN THIS REPOSITORY CARRIES AUTHORITY.
+# Production code is the truth; REPORT_*.md, code_audit/REPORT_*.md, research/freeze/*.md and
+# the fixture records are SEALED EVIDENCE; everything else is transport or history. A check
+# whose real subject is a markdown document's CONTENT is therefore asserting nothing that
+# matters, and it can turn red for an edit to a file that governs nothing.
+#
+# Retired the way modules were retired: THE CHECK STOPS RUNNING, THE BODY IS NOT DELETED, AND
+# THE REASON IS RECORDED. Clear the flag to run it again. Nothing is removed from this file.
+#
+# WHAT THE RETIRED CHECK ASSERTED: that p0-baseline/MODULE_TAXONOMY.md contains the strings
+# "single source of truth" and "module_renumbering_map.csv". Its subject is a markdown document's
+# wording. It was NOT re-pointed, because re-pointing it would mean inventing an oracle for a
+# designation that exists nowhere executable: nothing in production reads that sentence, and
+# manufacturing a source that agrees with it would be worse than the check it replaced. The CSV
+# itself is still read and asserted above, which is the part that bears on production.
+RETIRED_RUN59_TAXONOMY_MD = True
+if not RETIRED_RUN59_TAXONOMY_MD:
+    _taxonomy_md = (ROOT / "p0-baseline" / "MODULE_TAXONOMY.md").read_text(encoding="utf-8")
+    check("single source of truth" in _taxonomy_md
+          and "module_renumbering_map.csv" in _taxonomy_md,
+          "the designation is a fact in the repository rather than an assumption of this suite",
+          "MODULE_TAXONOMY.md")
+else:
+    print("  RETIRED (Run 59)  the designation is a fact in the repository -- MODULE_TAXONOMY.md "
+          "is markdown and carries no authority")
 
 # =================================================================================================
 head("2. DEFECT 2: THE APPROVED RENAMES, ON EVERY CURRENT SURFACE")

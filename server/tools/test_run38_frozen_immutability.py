@@ -376,6 +376,23 @@ RUN51_AUTHORISED_SUCCESSOR_CHANGES = {
     "server/tools/taxonomy_authority.json",  # `num` becomes `key`: the primary key, named
     "server/tools/build_client_taxonomy.py", # emits `key` and the derived counts block
 }
+RUN59_AUTHORISED_SUCCESSOR_CHANGES = {
+    # RUN 59. NO MARKDOWN DOCUMENT CARRIES AUTHORITY. Six production-tree members moved and EVERY
+    # ONE OF THE SIX EDITS IS A COMMENT OR A DOCUMENT HEADING. Not one executable byte moved, no
+    # rendered string moved, and no control was added, moved or removed.
+    "assets/js/decision-ui.js",    # SEQUENCE-BEARING: the block comment heading the NAME tables
+                                   # stated the SUPERSEDED identifier prohibition as its reason.
+                                   # Named exception of record, V23_TO_V24_SEQUENCE_EXCEPTION.
+                                   # Not one entry of GROUP_NAMES or MODULE_NAMES changed.
+    "server/app/research_export.py",             # cited "NAMING_AUTHORITY.md rule 6" BY NUMBER
+    "server/app/document_evidence.py",           # cited the same superseded rule
+    "server/app/evm_consistency.py",             # cited the same superseded rule
+    "server/app/simulation/portfolio_health.py", # cited "NAMING_AUTHORITY section 4", which is
+                                   # the section that RECORDED THE REVERSAL: the code cited the
+                                   # reversal as the source of the rule
+    "server/app/simulation/models.py",           # the stamp advances to sim-2026.08-v39
+    "p0-baseline/MODULE_TAXONOMY.md",            # the count is marked as the figure at a date
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN43_AUTHORISED_SUCCESSOR_CHANGES
@@ -384,7 +401,8 @@ AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN47_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN48_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN49_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN51_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN51_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN59_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -415,15 +433,15 @@ check(record["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       record["simulation_version"])
 # RUN 56. RESTATED BY RUN 56, for the same reason and with the same scope: Run 56 supersedes v36 with v37 because WHAT A PARTICIPANT REACHES AND CLICKS is executable behaviour -- the duplicate 'Upload documents' control is removed from the project detail page and Archive and Reset signals now ask before acting.
-check(SIMULATION_VERSION == "sim-2026.08-v38",
-      "and the live simulation version is the Run-57 successor sim-2026.08-v38",
+check(SIMULATION_VERSION == "sim-2026.08-v39",
+      "and the live simulation version is the Run-59 successor sim-2026.08-v39",
       SIMULATION_VERSION)
 # RESTATED BY RUN 43. Run 43 moves five participant-visible bytes, so v13 is superseded by v14
 # and pinned to its own commit rather than rewritten. The v25 RECORD still names v13, and that
 # is the correct historical statement: it is the package that release shipped. What must hold is
 # that the record was not rewritten to name the successor, which is asserted directly below.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v23",
-      "the participant package is superseded at og-participant-2026.08-v23",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v24",
+      "the participant package is superseded at og-participant-2026.08-v24",
       PP.CURRENT.identifier)
 check(record["participant_package"] == "og-participant-2026.08-v13",
       "and the v25 freeze record still names v13, the package that release shipped, so the "
@@ -651,6 +669,45 @@ PERMITTED_MODIFICATIONS = {
     "server/tools/drive_run50_browser.py",
     "server/tools/run52_rendered_text_capture.py",
     "code_audit/run45_field_classification_proposal.md",
+    # RUN 59. NO MARKDOWN DOCUMENT CARRIES AUTHORITY. Each file is NAMED here rather than the
+    # rule widened, and NOT ONE is executable production or client code that a participant runs.
+    # The documents corrected against production, all of them transport or history:
+    "BACKEND_CHANGES_NEEDED.md",
+    "COPY_GLOSSARY.md",
+    "GROUP_ASSIGNMENT.md",
+    "MODULE_RETIREMENT_DECISIONS.md",
+    "README.md",
+    "T6_HANDOFF.md",
+    "remediation_programme.md",
+    "training_pmp_upgrade_roadmap.md",
+    "p0-baseline/MODULE_TAXONOMY.md",
+    "server/tools/run17/categories/WORKER_BRIEF.md",
+    # The four server comments that cited the SUPERSEDED module-identifier rule. COMMENTS ONLY:
+    # not one executable byte moved in any of them, which the freeze checksum manifest records
+    # as a digest change and the behaviour digest records as no change at all.
+    "server/app/document_evidence.py",
+    "server/app/evm_consistency.py",
+    "server/app/research_export.py",
+    "server/app/simulation/portfolio_health.py",
+    # The mint machinery and the pinned guards this mint advanced:
+    "server/tools/production_tree.py",
+    "server/tools/build_run37_acceptance.py",
+    "server/tools/test_run25_rail_removal.py",
+    "server/tools/test_run31_version_boundaries.py",
+    "server/tools/test_run32_closure_version_boundary.py",
+    "server/tools/test_run36_instrument_qualification.py",
+    "server/tools/test_run37_documentation_scope.py",
+    "server/tools/test_run39_launch_gate.py",
+    # PHASE B: the guards re-pointed off markdown, and the guards retired. Every retired body is
+    # PRESENT; nothing was deleted.
+    "server/tools/test_disclaimers.py",
+    "server/tools/test_export_workbook.py",
+    "server/tools/test_group_assignment.py",
+    "server/tools/test_run32_qualifier_count_closure.py",
+    "server/tests/test_run34_parameter_count_closure.py",
+    "server/tests/test_run34_holdout_provenance.py",
+    "server/tests/test_run34_count_fault_campaign.py",
+    "server/tests/test_run34_provenance_fault_campaign.py",
 }
 modified = [p for st, p in run38 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]

@@ -86,8 +86,9 @@ names and action names are not copy.
 Do not substitute a hyphen mechanically; that is its own tell. The standalone `—` used as an
 empty-value placeholder in a table cell is not prose and stays.
 
-**Module ids never appear in user-facing text.** `A1.1` is a key, not a name. Say "Monte Carlo
-EAC".
+**Module ids are acceptable in user-facing text, and a name is usually better.** `A1.1` is a
+key; "Monte Carlo EAC" is the name. The former prohibition was SUPERSEDED by the owner on
+2026-08-23.
 
 **Internal identifiers are not content.** A ULID or a project id is not the name of anything. Show
 the name; if an id is genuinely needed, make it secondary and truncated.

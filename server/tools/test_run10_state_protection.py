@@ -313,12 +313,24 @@ RUN43_NON_ANALYTICAL_SCOPE = {"server/app/research_export.py", "server/app/train
 # statements. It carries no band, no colour and no severity, and nothing in the analytical layer
 # imports it. `documents.py` is already inside Run 11 Gate 6's named read path.
 RUN47_NON_ANALYTICAL_SCOPE = {"server/app/evm_consistency.py"}
+# RESTATED BY RUN 59, ORIGINAL FINDINGS PRESERVED. Run 59 touches TWO further files under
+# server/app/ that are not in the simulation package, and both are NAMED here rather than the
+# rule being widened. IN BOTH, WHAT MOVED IS A COMMENT AND NOTHING ELSE: each cited a
+# module-identifier prohibition the owner SUPERSEDED on 2026-08-23, and the citation is dropped
+# with the reason stated directly. `research_export.py` cited it BY NUMBER as "NAMING_AUTHORITY.md
+# rule 6"; `document_evidence.py` cited it unnumbered. No executable byte moved in either, which
+# is why the behaviour digest is re-derived identically. `evm_consistency.py` and
+# `simulation/portfolio_health.py` carry the same correction and are already covered -- the first
+# by RUN47_NON_ANALYTICAL_SCOPE above, the second by the `server/app/simulation/` prefix.
+RUN59_NON_ANALYTICAL_SCOPE = {"server/app/research_export.py",
+                              "server/app/document_evidence.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
           or d in RUN14_NON_ANALYTICAL_SCOPE or d in RUN16_NON_ANALYTICAL_SCOPE
           or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE or d in RUN41_NON_ANALYTICAL_SCOPE
           or d in RUN43_NON_ANALYTICAL_SCOPE or d in RUN47_NON_ANALYTICAL_SCOPE
+          or d in RUN59_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning

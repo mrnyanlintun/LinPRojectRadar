@@ -82,7 +82,8 @@ From `NAMING_AUTHORITY.md`, which carries the full list:
   code still carries in places (`PCEIF_*` constants and development-era artifacts) are retired;
   do not use them in anything user-facing and do not reason from their framing.
 - Quote the standing description verbatim; never paraphrase it into a new variant.
-- No module ids or numbers in user-facing text, and no em dashes.
+- No em dashes in user-facing text. Displayed module ids and numbers are acceptable; the former
+  prohibition was SUPERSEDED by the owner on 2026-08-23.
 - Do not describe capability the platform does not have. Extraction has never run against a real
   project document.
 - Do not adopt liability or consent language on your own judgement; draft it for review.

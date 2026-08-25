@@ -45,7 +45,7 @@ HOLDOUT = "code_audit/run34_ph1_holdout_result.csv"
 REPORT = "REPORT_2026-08-18_run34-portfolio-health-calibration.md"
 OUT = ROOT / "code_audit" / "run34_provenance_fault_injection_results.csv"
 
-REQUIRED = 5
+REQUIRED = 4   # RUN 59: was 5. Fault 5 retired; see the block below.
 PASSED = FAILED = 0
 FAILURES: list[str] = []
 ROWS = [["fault", "target", "mutation", "applied", "confirmed_applied", "guard", "intended_red",
@@ -188,13 +188,30 @@ head("FAULT 5: THE REPORT AND THE ARTIFACT DISAGREE")
 # THE SHAPE THAT WOULD HAVE CAUGHT THE EARLIER COUNT DISCREPANCY. The report's stated value is
 # changed while the artifact keeps its own, so the two disagree -- and the guard compares the
 # report's value against the ARTIFACT's, not against a second copy of itself.
-fault(5, "the Run-34 report", REPORT,
-      "| `holdout_changed_selection` | **NO** |",
-      "| `holdout_changed_selection` | **YES** |",
-      "the report states holdout_changed_selection = YES while the artifact states NO, so the "
-      "published claim and the recorded fact disagree",
-      "the report's stated holdout_changed_selection equals the artifact's",
-      "stated holdout_changed_selection equals the artifact")
+# RUN 59, PHASE B. RETIRED, NOT DELETED.
+#
+# Owner's ruling, 2026-08-25: no markdown document carries authority, and this fault's TARGET is
+# REPORT_2026-08-18_run34-portfolio-health-calibration.md -- sealed evidence. The guard it
+# existed to prove red has itself been retired for exactly that reason, so this injection now
+# proves nothing: mutating a document nothing asserts cannot turn anything red, and reporting it
+# as a passing fault would be a vacuous check dressed as a guarantee.
+#
+# REQUIRED falls from 5 to 4 with it. That is a deliberate, recorded reduction and not a silent
+# one: the constant is changed HERE, beside the reason, and the four surviving faults all inject
+# into CSV artifacts or production and are unaffected. Clear the flag and restore REQUIRED to 5
+# to run it again. THE BODY IS NOT DELETED.
+RETIRED_RUN59_REPORT_FAULT = True
+
+if not RETIRED_RUN59_REPORT_FAULT:
+    fault(5, "the Run-34 report", REPORT,
+          "| `holdout_changed_selection` | **NO** |",
+          "| `holdout_changed_selection` | **YES** |",
+          "the report states holdout_changed_selection = YES while the artifact states NO, so the "
+          "published claim and the recorded fact disagree",
+          "the report's stated holdout_changed_selection equals the artifact's",
+          "stated holdout_changed_selection equals the artifact")
+else:
+    print("  RETIRED (Run 59)  FAULT 5, which mutated a sealed evidence document to prove a guard that is itself now retired")
 
 
 # =================================================================================================

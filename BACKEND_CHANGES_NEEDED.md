@@ -319,7 +319,9 @@ When the prompt asks for an "executive brief for a program director", Lin must:
 - Name the single most important concern.
 - State the recommended action and who takes it.
 - Note the confidence level (do the 19 methods agree or disagree?).
-- Never mention module numbers (no "Module 09", "M10", "DST", etc).
+- Module numbers may be mentioned; prefer the name where the number adds nothing. The former
+  prohibition was SUPERSEDED by the owner on 2026-08-23. The retired "Module 09"/"M10"/"DST"
+  notation stays retired, which is a separate decision about what the categories are called.
 - Never read out metric values (no "CPI 0.92", no "P80 EAC +7%").
 - No bullet points, no headers, no preamble.
 

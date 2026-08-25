@@ -137,7 +137,8 @@ effect tables and the interaction between variables need judgement.
   escalating spends float.
 - The narration layer computes nothing.
 - Signals compute through the platform's own path. No training-only computation.
-- No module ids or numbers in user-facing text.
+- Groups and purposes are the better default. Displayed module ids and numbers are acceptable;
+  the former prohibition was SUPERSEDED by the owner on 2026-08-23.
 
 ## Open before or alongside
 
