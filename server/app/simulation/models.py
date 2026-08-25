@@ -738,12 +738,16 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # work of Runs 60 and 61, which were finished, gated nowhere and stacked unmerged. Run 60
 # DIAGNOSED, in a rendered browser, that the stored-signal row a project detail page reads was
 # not necessarily the row of the period the page holds; Run 61 FIXED it by making the caller
-# state its question -- assets/js/taxonomy.js now keys its row cache by (project, period) and
-# exposes rowForPeriod / latest / rowsForPeriods, assets/js/workspace.js resolves the computed
-# period before it asks for results, and assets/js/detail.js re-renders its provenance line from
-# the row it actually received.
-# THREE production-tree members moved: assets/js/detail.js, assets/js/taxonomy.js and
-# assets/js/workspace.js. assets/js/workspace.js is SEQUENCE-BEARING and its move is a NAMED
+# state its question -- the client taxonomy module now keys its row cache by (project, period)
+# and exposes rowForPeriod / latest / rowsForPeriods, the workspace module resolves the computed
+# period before it asks for results, and the detail module re-renders its provenance line from
+# the row it actually received. (The client file names are deliberately NOT written as paths
+# here: test_run16_material_cost_variance_disabled.py asserts that no source under server/app
+# resolves the browser's taxonomy file, and it makes that assertion by substring search, so even
+# a comment naming the path turns it red. The guard is over-broad against its own stated intent
+# -- reported, not changed.)
+# THREE production-tree members moved: the client detail, taxonomy and workspace modules under
+# assets/js/. The workspace module is SEQUENCE-BEARING and its move is a NAMED
 # EXCEPTION of record on the v24-to-v25 link, declared in
 # participant_packages.V24_TO_V25_SEQUENCE_EXCEPTION rather than discovered by a checksum.
 # NOT ONE FORMULA, BAND, THRESHOLD, CALIBRATION, ABSTENTION RULE OR POPULATION MOVED: 101
