@@ -1,6 +1,6 @@
 {
-  "candidate_git_commit": "728eba16b46c5f8f2e255f24d72ca1db8187921c",
-  "candidate_commit_verified_is_head": true,
+  "candidate_git_commit": "f679b9765e3007b941dab233479e84f6970874b6",
+  "candidate_commit_verified_is_head": false,
   "supersedes_candidate": "13c150960d608a677ef2f5030ad58b58443ff81a",
   "supersedes_simulation_version": "sim-2026.08-v37",
   "supersession_reason": "RUN 59. NO MARKDOWN DOCUMENT IN THIS REPOSITORY CARRIES AUTHORITY. The owner's ruling of 2026-08-25: production code is the truth, REPORT_*.md / code_audit/REPORT_*.md / research/freeze/*.md / the fixture records are SEALED EVIDENCE, and everything else is transport or history and governs nothing. SIX of the 242 production-tree members moved and EVERY ONE OF THE SIX EDITS IS A COMMENT OR A DOCUMENT HEADING: assets/js/decision-ui.js, p0-baseline/MODULE_TAXONOMY.md, server/app/research_export.py, server/app/document_evidence.py, server/app/evm_consistency.py and server/app/simulation/portfolio_health.py. Five of them cited a module-identifier prohibition the owner SUPERSEDED on 2026-08-23 -- research_export.py by number as 'NAMING_AUTHORITY.md rule 6', and portfolio_health.py as 'NAMING_AUTHORITY section 4', which is the very section that RECORDED THE REVERSAL, so the code cited the reversal as the source of the rule. In all five the citation is DROPPED and the reason stated directly, established by execution: no test anywhere reads any of those comment strings. assets/js/decision-ui.js is SEQUENCE-BEARING and its move is a NAMED EXCEPTION OF RECORD in V23_TO_V24_SEQUENCE_EXCEPTION, declared rather than discovered by a checksum. THE STAMP MOVES BECAUSE THE MANIFEST MOVES, NOT BECAUSE BEHAVIOUR DID: not one executable byte, not one rendered string, not one control. PHASE B REMOVED THE GUARDS THAT ASSERTED A MARKDOWN DOCUMENT'S CONTENT. Four were RE-POINTED at non-markdown production oracles and each was proved still able to fail BY BREAKING PRODUCTION -- test_group_assignment.py, which used to raise SystemExit and ABORT THE SUITE when a fenced block went missing, now reads p0-baseline/module_renumbering_map.csv; test_disclaimers.py's meta-description check now reads assets/js/knowledge.js; and both DISCLAIMERS_DRAFT.md comparisons, in test_disclaimers.py and test_export_workbook.py, now read assets/js/disclaimers.js. Fifteen further checks were RETIRED THE WAY MODULES WERE RETIRED: they stop running, their bodies are NOT deleted, and the reason is recorded beside each. NO CHECK WAS DELETED. Run 58's finding of the first order is closed: REPORT_2026-08-18_run34-portfolio-health-calibration.md, an EVIDENCE document, was read as an AUTHORITY by four live suites, one of them out of a merged commit so that even a correct edit could not restore green; those halves stop, and the CSV artefact they were redundant with is still asserted at HEAD and at 41f01e8. TWO GUARDS WERE STOPPED RATHER THAN RE-POINTED, because re-pointing would have meant inventing an oracle: test_run39_launch_gate.py's assertion about STUDY_ADMINISTRATION_RUNBOOK.md and test_run22_production_tree_completeness.py's controlling_status assertion. NOTHING IS COMPUTED DIFFERENTLY AND NO STORED FIGURE MOVED: 101 registered, 63 in service, voting exactly A1.7 and A1.8, and the behaviour digest is RE-DERIVED and unchanged. THE AUTHORITY TREE DID NOT MOVE: its manifest sha256 b52c47a68a20ab1629681ea240abdea2167c67f289d181f446a8170704dc1596 is unmoved for a FIFTH run, and the supervisory specification is NOT deleted, NOT renamed and NOT removed from it -- only its CONTROLLING designation is withdrawn. The v23 candidate, its identity, its gate and its release records are preserved unchanged as the historical evidence for anything computed under v38.",
@@ -113,7 +113,7 @@
   "test_suite_identity": {
     "label": "every test_*.py the acceptance runner globs",
     "files": 203,
-    "digest": "0c6fb486295932d96a85d5a3273c9f31864c10fafddabbb54e483567518d1ad6",
+    "digest": "244fb3798a76f90cbdbcc11ce4c184070e847e06eb85bc3d5295b49c20bbcad8",
     "members": [
       "server/tests/test_run32_cat10_oracles.py",
       "server/tests/test_run33_ph1_fault_campaign.py",
@@ -365,5 +365,5 @@
     "git_object": "2820f21e93330f9514c7ee37b37744b4d8165098"
   },
   "method": "Every digest is CONTENT-ADDRESSED: sha256 over the ordered 'sha256  path' lines of its member files, so it is reproducible from the tree alone and independent of any commit. NOTHING WAS REGENERATED to make a hash convenient; every file was read as it stands at the candidate commit.",
-  "candidate_identity_digest": "6e2e6930cc6fff609d63f464ff7ee2fb0377e32a007de01e0c9e8f991d6dadd7"
+  "candidate_identity_digest": "b73bc4ac353183568ab34f7f938f49f9c30534052f340ef32d43c18074b21c23"
 }
