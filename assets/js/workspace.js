@@ -986,12 +986,34 @@
     }
     listEl.innerHTML = '<p class="ws-note">Loading…</p>';
     var rows = await Promise.all(mine.map(async function (p) {
-      var resp = await call("projectresults", { id: p.project_id, period: p.period || 1 });
+      /* RUN 61, THE OWNER'S RULING. THIS LOADER ASKS FOR THE LATEST COMPUTED PERIOD — SHAPE 2 —
+         AND IS TOLD WHICH ONE IT GOT.
+
+         It used to send `period: p.period || 1`, the last surviving copy of the period-1
+         fallback Run 48 removed from `detail.js:1267`. It was worse than a fallback. `p.period`
+         is `workspaceprojects`'s own field, and the server derives that from
+         `_resolve_period(session, project, {})` with an EMPTY payload: for a project outside the
+         research chain that function returns the literal 1 every time (`documents.py`
+         `_resolve_period`, the `supplied is None` / no-date arm). So `|| 1` never even fired —
+         this call asked for period 1 on every operational project, whatever period it held.
+
+         That is the row that reached `ROWS` before the detail page rendered, and it is why the
+         provenance line named a Green module as the driver of a status a Red module set. The
+         same derivation the detail page uses since Run 48 is used here: `projectperiods`
+         returns `latest_computed_period`, read from the result table by the server. A project
+         with no computed result in any period returns null; nothing is fetched for it and it
+         reports as uncomputed exactly as it did before. Nothing guesses, and no period is
+         substituted for another. */
+      var per = await call("projectperiods", { id: p.project_id });
+      var latest = (per && per.ok === true) ? per.latest_computed_period : null;
+      if (latest === null || latest === undefined) return { project: p, resp: null, period: null };
+      var resp = await call("projectresults", { id: p.project_id, period: latest });
       // Same reason as the detail panel: this is the loader that already has the row, so it is
       // the one that shares it. The portfolio radar reads statuses through taxonomy.js and
-      // never fetches anything of its own.
+      // never fetches anything of its own. The row is primed into ITS OWN period's slot, so it
+      // cannot be handed to a reader holding a different period.
       if (resp && resp.ok === true && window.LinResults) LinResults.prime(p.project_id, resp.result);
-      return { project: p, resp: resp };
+      return { project: p, resp: resp, period: latest };
     }));
     // Portfolio Health is a property of the whole portfolio, not of each project:
     // when the portfolio is too small (or the snapshot is otherwise unavailable),

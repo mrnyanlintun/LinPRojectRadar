@@ -1044,7 +1044,13 @@
              Reporting period: <span class="mod-mono">${esc(p.reportingPeriod)}</span> ·
              State: <span class="li-state state-${stateKey}">${esc(state)}</span>
            </p>
-           ${populated ? provenanceLineHtml(p) : ""}
+           ${/* RUN 61, SECTION 4.4. The provenance line lives inside a NAMED HOST so it can be
+                rebuilt when the correct period's row arrives, exactly as the section badges and
+                the brief's consistency block already are. The host is an empty, unstyled
+                container: it adds no text, no control and no visible box. Without it there is
+                no anchor to rebuild into on the one case that matters most -- a first render
+                that honestly had no row and therefore emitted no line at all. */""}
+           <div data-provenance-host>${populated ? provenanceLineHtml(p) : ""}</div>
          </div>
          <div class="detail-head-actions">
            <button class="btn small primary detail-upload" data-upload="${esc(p.id)}">Upload documents</button>
@@ -1433,6 +1439,20 @@
     // a panel that already exists and touches no control.
     refreshBriefConsistency(p);
 
+    // RUN 61, SECTION 4.4. THE PROVENANCE LINE GETS THE SAME SECOND PASS EVERY OTHER PANEL HAS.
+    //
+    // It is built inside render()'s innerHTML at detail.js:1047, from whatever row was in hand
+    // at that moment, and until now it was the ONE surface on this page that never re-read the
+    // row when the correct one arrived. Run 60 measured the consequence directly: the same
+    // project rendered twice in one page gave two different drivers, and only the second was
+    // right. The first is the one a user gets.
+    //
+    // With the period rule in taxonomy.js this pass should have nothing to correct -- the first
+    // render either has the right row or honestly has none. It is here so that the moment the
+    // right row lands, the line is rebuilt from it rather than leaving whatever the first pass
+    // produced. Necessary, and on its own not sufficient; that is why both changes exist.
+    refreshProvenanceLine(p);
+
     // A scripted Executive Brief generated before the row arrived would have cached its
     // "No computed key signals are available yet" fallback. Drop that stale scripted brief so the
     // re-run below regenerates it from the now-complete row. A live (chat) brief the user
@@ -1473,6 +1493,27 @@
     const anchor = panel.querySelector(".eb-flags") || panel.querySelector(".eb-head");
     if (anchor) anchor.insertAdjacentHTML("afterend", html);
     else panel.insertAdjacentHTML("afterbegin", html);
+  }
+
+  /* RUN 61, SECTION 4.4. Rebuild the status provenance line from the now-complete row.
+
+     REPLACES TEXT INSIDE AN ELEMENT THAT ALREADY EXISTS AND MOVES NO CONTROL. The "why?"
+     disclosure is part of the line's own markup, so it is re-emitted in the same place, in the
+     same order, by the same builder, and re-wired by the same `wireProvenanceTrace` render()
+     uses. Its expanded/collapsed state is deliberately NOT carried across: the panel's content
+     is the trace being replaced, and re-showing an old trace inside a rebuilt line would be the
+     same class of error this run exists to remove.
+
+     Where the rebuilt trace is empty (no module in the driving category has a status on the row
+     the page holds) the line is removed rather than left saying something the row cannot
+     support. An absent claim is honest; a wrong one is not. */
+  function refreshProvenanceLine(project) {
+    const host = document.querySelector("[data-provenance-host]");
+    if (!host) return;
+    let html = "";
+    try { html = provenanceLineHtml(project); } catch (e) { html = ""; }
+    host.innerHTML = html;
+    if (html) wireProvenanceTrace(host);
   }
 
   function refreshSectionBadges(project) {

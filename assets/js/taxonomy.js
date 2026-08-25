@@ -360,11 +360,74 @@ window.projectLevelCategories = function () {
 (function () {
   "use strict";
 
-  // Stored rows, keyed by the project's display id. Deliberately a plain cache with no
-  // fetching of its own: a module that could fetch would eventually fetch during a render,
-  // and a render that can issue a request is a render that can audit an evidence view the
-  // participant did not ask for.
+  /* Stored rows, keyed by the project's display id AND THEN BY PERIOD. Deliberately a plain
+     cache with no fetching of its own: a module that could fetch would eventually fetch during
+     a render, and a render that can issue a request is a render that can audit an evidence view
+     the participant did not ask for.
+
+     RUN 61, THE OWNER'S RULING: THE CALLER STATES WHAT IT IS ASKING FOR, AND THE ANSWER MATCHES
+     THE QUESTION OR REFUSES.
+
+     This cache used to be one row per project. That single slot is what made the defect Run 60
+     measured possible: the portfolio loader primed the project's PERIOD 1 row at page load,
+     the detail page then held PERIOD 4, and `rowFor` handed the period-1 row to every reader
+     asking for module statuses because it was the only complete row in the slot. The page named
+     a Green module as the driver of the project status and did not mention the Red one. Nothing
+     in the answer said which period it came from, so no caller could have noticed.
+
+     One slot per (project, period) removes the collision at its source, and the three shapes
+     below let a caller say which of them it is:
+
+       rowForPeriod(project, n)  — SHAPE 1. That period's row, or null. Never a substitute.
+       latest(project)           — SHAPE 2. {row, period} for the latest primed period, or null.
+                                   The period is returned WITH the row, so a caller that asked
+                                   for "the latest" is told which one it got.
+       rowsForPeriods(project, ns) — SHAPE 3. The rows for exactly those periods, in the order
+                                   asked, absent periods reported as null. The longitudinal
+                                   readers (CUSUM history, Milestone Trend, Period Comparison)
+                                   take many rows DELIBERATELY, and making shape 1 strict must
+                                   not break them.
+
+     `rowFor(project)` remains the default and is now shape 1 in disguise: the period it asks
+     for is the one the PAGE holds, `project.storedResult.period`. */
   var ROWS = Object.create(null);
+
+  // The bucket a row with no usable period number goes in. Rows constructed in JavaScript by a
+  // test harness carry no `period`; they must still be readable, and they must not be mistaken
+  // for a real period's row. Kept as a string key so it can never equal a period number.
+  var NO_PERIOD = "_";
+
+  function periodKey(value) {
+    var n = Number(value);
+    return (value === null || value === undefined || value === "" || !isFinite(n))
+      ? NO_PERIOD : n;
+  }
+
+  function bucket(projectId) {
+    return projectId ? (ROWS[projectId] || null) : null;
+  }
+
+  /* Which primed row answers a request for period `want`.
+
+     `want === null` means the caller stated no period — it has no `storedResult` to state one
+     from. There is nothing to contradict, so the unstated-period bucket answers first and the
+     LATEST primed period answers after it. That is not a substitution: no period was asked for.
+
+     `want` a number is strict. A row primed for a DIFFERENT period is not an answer to it and
+     is not returned. That single line is the fix. */
+  function primedFor(projectId, want) {
+    var b = bucket(projectId);
+    if (!b) return null;
+    if (want !== null) return b[want] || null;
+    if (b[NO_PERIOD]) return b[NO_PERIOD];
+    var best = null, bestKey = null;
+    Object.keys(b).forEach(function (k) {
+      if (k === NO_PERIOD) return;
+      var n = Number(k);
+      if (bestKey === null || n > bestKey) { bestKey = n; best = b[k]; }
+    });
+    return best;
+  }
 
   // method_class -> module number ("A1.1"), built once from the taxonomy above. The stored row
   // keys modules by that number; the call sites ask by method_class.
@@ -445,19 +508,87 @@ window.projectLevelCategories = function () {
      may have attached more to it. */
   function rowFor(project) {
     var k = keyOf(project);
-    var primed = k ? (ROWS[k] || null) : null;
     var stored = (project && project.storedResult) || null;
+    /* RUN 61. THE PERIOD THIS CALLER IS ASKING FOR IS THE ONE THE PAGE HOLDS. `storedResult` is
+       the a_get projection and it carries `period`; that number is the question. A primed row
+       for any other period is not an answer to it, however complete it happens to be, and
+       `primedFor` will not return one. Preferring completeness over the correct period is
+       exactly how a Green module came to be named as the driver of a status a Red module set. */
+    var want = stored ? periodKey(stored.period) : null;
+    if (want === NO_PERIOD) want = null;
+    var primed = primedFor(k, want);
     if (stored && primed && !stored.module_results && primed.module_results) return primed;
     if (stored) return stored;
     return primed;
   }
 
+  /* SHAPE 1. The row for exactly this period, or null. Never another period's. */
+  function rowForPeriod(project, period) {
+    var want = periodKey(period);
+    if (want === NO_PERIOD) return null;
+    var stored = (project && project.storedResult) || null;
+    if (stored && periodKey(stored.period) === want) {
+      var primed1 = primedFor(keyOf(project), want);
+      if (primed1 && !stored.module_results && primed1.module_results) return primed1;
+      return stored;
+    }
+    return primedFor(keyOf(project), want);
+  }
+
+  /* SHAPE 2. The latest period this project has a primed row for, AND WHICH ONE IT IS.
+     Returns null when nothing is primed. The caller is told the period because a caller that
+     asked for "the latest" and is not told which one it got cannot check the answer. */
+  function latest(project) {
+    var b = bucket(keyOf(project));
+    var stored = (project && project.storedResult) || null;
+    var bestKey = null;
+    if (b) {
+      Object.keys(b).forEach(function (k) {
+        if (k === NO_PERIOD) return;
+        var n = Number(k);
+        if (bestKey === null || n > bestKey) bestKey = n;
+      });
+    }
+    var storedKey = stored ? periodKey(stored.period) : NO_PERIOD;
+    if (storedKey !== NO_PERIOD && (bestKey === null || storedKey > bestKey)) bestKey = storedKey;
+    if (bestKey === null) {
+      var only = primedFor(keyOf(project), null) || stored;
+      return only ? { row: only, period: null } : null;
+    }
+    var row = rowForPeriod(project, bestKey);
+    return row ? { row: row, period: bestKey } : null;
+  }
+
+  /* SHAPE 3. The longitudinal read. The periods asked for, in the order asked, each answered
+     with its own row or with null. Nothing is substituted and nothing is filled in. */
+  function rowsForPeriods(project, periods) {
+    if (!Array.isArray(periods)) return [];
+    return periods.map(function (p) {
+      return { period: Number(p), row: rowForPeriod(project, p) };
+    });
+  }
+
   window.LinResults = {
-    /* Record the stored row for a project. Called by the loader that fetched it. */
+    /* Record the stored row for a project, IN ITS OWN PERIOD'S SLOT. Called by the loader that
+       fetched it. A row that states no period goes in the unstated-period bucket rather than
+       overwriting a real period's row. */
     prime: function (projectId, row) {
-      if (projectId && row) ROWS[projectId] = row;
+      if (!projectId || !row) return;
+      var b = ROWS[projectId] || (ROWS[projectId] = Object.create(null));
+      b[periodKey(row.period)] = row;
     },
     rowFor: rowFor,
+    rowForPeriod: rowForPeriod,
+    latest: latest,
+    rowsForPeriods: rowsForPeriods,
+    /* Which periods this project has a primed row for. Read-only; the longitudinal callers use
+       it to state the range they want instead of discovering it by trial. */
+    primedPeriods: function (project) {
+      var b = bucket(keyOf(project));
+      if (!b) return [];
+      return Object.keys(b).filter(function (k) { return k !== NO_PERIOD; })
+        .map(Number).sort(function (a, c) { return a - c; });
+    },
     /* True when this project has a stored result to read. Screens use it to tell
        "computed and healthy" apart from "not computed yet". */
     hasResult: function (project) { return !!rowFor(project); },
@@ -568,7 +699,10 @@ window.projectLevelCategories = function () {
        early warning" on a project whose server result says the conflict is not estimable.
        Same shape as the module_results case documented above: take the projection when it can
        answer, and the primed row when it cannot. Neither is recomputed here. */
-    var full = (project && keyOf(project) && ROWS[keyOf(project)]) || null;
+    /* RUN 61. Same period rule as `rowFor`: the fuller copy consulted here is the one for the
+       period the page holds, never another period's. */
+    var wantFull = (project && project.storedResult) ? periodKey(project.storedResult.period) : NO_PERIOD;
+    var full = primedFor(keyOf(project), wantFull === NO_PERIOD ? null : wantFull);
     function pick(field) {
       if (row[field] != null) return row[field];
       return full && full[field] != null ? full[field] : null;
