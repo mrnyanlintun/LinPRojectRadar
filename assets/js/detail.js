@@ -1389,6 +1389,15 @@
       if (resp.result.signal_inputs && !p.storedResult.signal_inputs) {
         p.storedResult.signal_inputs = resp.result.signal_inputs;
       }
+      // RUN 63. `source_documents` — which document versions produced this row — is on the
+      // served result (documents.py `_result_view`) and was NOT on the list projection, so
+      // `LinResults.rowFor(p).source_documents` came back undefined on every detail page.
+      // MEASURED, not read: the Run 63 driver captured `row_source_documents: null` in the
+      // browser against a stored row holding seventeen of them. Grafted here for the same
+      // reason module_results and signal_inputs are, and by the same guarded shape.
+      if (resp.result.source_documents && !p.storedResult.source_documents) {
+        p.storedResult.source_documents = resp.result.source_documents;
+      }
       // The served basis for the recommendation travels with the row for the same reason the
       // other two fields do: `rowFor` prefers `storedResult`, and the Governance Decision card
       // reads the basis off whatever `rowFor` returns. Without this graft the card fell back to
@@ -2750,5 +2759,13 @@
     if (detailGlobe) { try { detailGlobe.destroy(); } catch (e) {} detailGlobe = null; }
   }
 
-  window.LinDetail = { render, teardown, __resetMapForTest };
+  // RUN 63, ORDER SECTION 5.3.2. THE DOCUMENTS PANEL AND THE SIGNAL FLOW READ ONE SOURCE.
+  //
+  // The owner's render showed "0 uploaded documents across 0 types" on a page listing 100
+  // documents. Both surfaces walk the project's own extraction record, but they walked it
+  // through two different implementations under two different windows: this one over the whole
+  // log, and neural_flow.js's over the slice since the last `signals_reset`. Two accounts of
+  // one quantity is a defect whatever each says alone, so there is now ONE implementation and
+  // the diagram calls it rather than keeping a copy.
+  window.LinDetail = { render, teardown, __resetMapForTest, uploadedDocEvents };
 })();
