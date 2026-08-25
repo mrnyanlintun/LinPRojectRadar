@@ -93,8 +93,12 @@ for rel in READ_PATH_FILES:
     check(f"no hard-coded period literal on a read path in {rel}", not hits, "; ".join(hits))
 
 # ---------------------------------------------------------------- the provenance line rebuilds
-check("the provenance line has a rebuild host",
-      "data-provenance-host" in DET,
+# THE HOST MUST BE EMITTED BY render(), not merely mentioned by the rebuilder. An earlier form
+# of this check tested for the attribute name anywhere in the file and stayed GREEN when the
+# render-site host was deleted, because refreshProvenanceLine's own selector still carried the
+# string. It was caught by injection F7 and is pinned to the render site here.
+check("render() emits the provenance rebuild host",
+      '<div data-provenance-host>${populated ? provenanceLineHtml(p) : ""}</div>' in DET,
       "detail.js no longer renders the provenance host, so the line cannot be rebuilt")
 check("refreshProvenanceLine exists",
       "function refreshProvenanceLine(" in DET, "detail.js lost refreshProvenanceLine")
