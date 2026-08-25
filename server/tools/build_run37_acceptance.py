@@ -136,12 +136,12 @@ FREEZE = ROOT / "research" / "freeze"
 # RUN 59. Advanced to the v38 candidate; the run57 artefacts are NOT rewritten.
 # RUN 62. Advanced to the v39 candidate; the run59 artefacts are NOT rewritten. This mint
 # PUBLISHES Runs 60 and 61, which were finished and gated nowhere.
-PREDECESSOR_CANDIDATE = "5f5cf60ad6b510f7d44b88e64bc669eaa4601f3e"
-PREDECESSOR_VERSION = "sim-2026.08-v39"
-CANDIDATE = "d1976a064ec9f37a0a56eb3555040a80196876f4"
-EXPECTED_VERSION = "sim-2026.08-v40"
-IDENTITY_FILE = "run62_freeze_candidate_identity.json"
-GATE_FILE = "run62_successor_freeze_gate.csv"
+PREDECESSOR_CANDIDATE = "d1976a064ec9f37a0a56eb3555040a80196876f4"
+PREDECESSOR_VERSION = "sim-2026.08-v40"
+CANDIDATE = "5c023bc97372570bac4d7985b524b229854e6783"
+EXPECTED_VERSION = "sim-2026.08-v41"
+IDENTITY_FILE = "run63_freeze_candidate_identity.json"
+GATE_FILE = "run63_successor_freeze_gate.csv"
 # RUN 55, THE MINT. TWO FILENAMES, NOT ONE, AND THAT IS DELIBERATE.
 #
 # The generator used a SINGLE constant for both halves of blocker B15: it read the prior digest
@@ -167,8 +167,8 @@ GATE_FILE = "run62_successor_freeze_gate.csv"
 # PREDECESSOR record and writes the successor one, so it compares ACROSS a supersession instead
 # of comparing a run to itself. Collapsing them would make B15 read a file that does not exist
 # yet, take the first-evaluation branch and PASS WITHOUT COMPARING ANYTHING.
-PRIOR_BEHAVIOUR_FILE = "run59_candidate_behaviour_digest.json"
-BEHAVIOUR_FILE = "run62_candidate_behaviour_digest.json"
+PRIOR_BEHAVIOUR_FILE = "run62_candidate_behaviour_digest.json"
+BEHAVIOUR_FILE = "run63_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 

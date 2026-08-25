@@ -216,6 +216,14 @@ V25_RECORD = "code_audit/run62_participant_package_v25_checksums.sha256"
 #: commit's blob AND member by member over all sixty-nine members; models.py at this commit reads
 #: sim-2026.08-v39.
 V24_COMMIT = "5f5cf60"
+#: RUN 63. The v26 link. TWO governed files moved and NEITHER is sequence-bearing.
+V26_IDENTITY = "og-participant-2026.08-v26"
+V26_RECORD = "code_audit/run63_participant_package_v26_checksums.sha256"
+#: RUN 63. The tip of `main` at which v25 was still current. EXPLICIT HASH, never a relative
+#: reference. Established by BYTE COMPARISON of the v25 record itself against this commit's blob
+#: AND member by member over all sixty-nine members; models.py at this commit reads
+#: sim-2026.08-v40.
+V25_COMMIT = "5fec302"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -695,7 +703,7 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V25_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V26_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
@@ -704,15 +712,15 @@ check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
           V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY,
           V12_IDENTITY, V13_IDENTITY, V14_IDENTITY, V15_IDENTITY, V16_IDENTITY,
           V17_IDENTITY, V18_IDENTITY, V19_IDENTITY, V20_IDENTITY, V21_IDENTITY,
-          V22_IDENTITY, V23_IDENTITY, V24_IDENTITY, V25_IDENTITY],
+          V22_IDENTITY, V23_IDENTITY, V24_IDENTITY, V25_IDENTITY, V26_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 25
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 26
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all twenty-five are present, so no link shares a "
+      "each link has its OWN record file and all twenty-six are present, so no link shares a "
       "record with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all twenty-four predecessors name the "
+      "and only the current link reads the working tree; all twenty-five predecessors name the "
       "commit their bytes live in")
 # ---- v14, NOW A PREDECESSOR ---------------------------------------------------------------
 # RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. Five files moved: three generated from the
@@ -1894,21 +1902,27 @@ print("-" * 78)
 print("RUN 62: og-participant-2026.08-v25, three files moved and ONE is sequence-bearing")
 print("-" * 78)
 
-check(PP.CURRENT.identifier == V25_IDENTITY,
-      "the package chain declares v25 CURRENT", PP.CURRENT.identifier)
-check(PP.CURRENT.record == V25_RECORD,
-      "and names the v25 checksum record as the one that describes the live tree",
-      PP.CURRENT.record)
-check(PP.CURRENT.source_commit is None,
-      "and leaves its source_commit None, which is what 'describes the LIVE TREE' means")
+# RUN 63. v25 IS NO LONGER CURRENT, so these three now read the PINNED COMMIT rather than the
+# live tree. The record itself is NOT rewritten -- rewriting a predecessor to agree with the
+# present is the failure B11 exists to catch -- and it is verified byte for byte against the
+# commit at which v25 was still current.
+_v25_pkg = [x for x in PP.PARTICIPANT_PACKAGES if x.identifier == V25_IDENTITY][0]
+check(_v25_pkg.record == V25_RECORD,
+      "the v25 link still names its own checksum record", _v25_pkg.record)
+check(_v25_pkg.source_commit == "5fec302c29c9f90256d74c1eeded1747d34e2900",
+      "and v25 is now PINNED to the tip of main at which it was still current, by explicit hash",
+      str(_v25_pkg.source_commit))
+check((ROOT / V25_RECORD).read_bytes() == git_bytes(V25_RECORD, V25_COMMIT),
+      "and the v25 record in the working tree is BYTE-IDENTICAL to the one that commit carried, "
+      "so it has not been rewritten to agree with the present")
 
 _v25 = parse((ROOT / V25_RECORD).read_text(encoding="utf-8"))
 _v25_bad = sorted(rel for rel, digest in _v25.items()
-                  if not (ROOT / rel).is_file()
-                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if git_bytes(rel, V25_COMMIT) is None
+                  or hashlib.sha256(git_bytes(rel, V25_COMMIT)).hexdigest() != digest)
 check(not _v25_bad,
-      "every one of v25's sixty-nine checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v25_bad))
+      "every one of v25's sixty-nine checksums holds against the COMMIT IT IS PINNED TO, which "
+      "is where a superseded package correctly lives", str(_v25_bad))
 check(len(_v25) == 69, "and the package is sixty-nine files", str(len(_v25)))
 
 check(sorted(_v25) == sorted(_v24),
@@ -1921,7 +1935,7 @@ check(PP.V24_TO_V25_DELETED == (),
 # THE FILES THAT MOVED ARE EXACTLY THE ONES DECLARED, AND NOTHING RODE ALONG.
 _moved25 = sorted(rel for rel, digest in _v24.items()
                   if rel in _v25
-                  and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  and hashlib.sha256(git_bytes(rel, V25_COMMIT)).hexdigest() != digest)
 check(_moved25 == sorted(PP.V24_TO_V25_CHANGED),
       "and the files v25 moved are exactly the three it declares, so nothing rode along with the "
       "period fix",
@@ -1938,8 +1952,8 @@ check(PP.V24_TO_V25_SEQUENCE_EXCEPTION == ("assets/js/workspace.js",),
       "V24_TO_V25_SEQUENCE_EXCEPTION names assets/js/workspace.js and nothing else",
       str(PP.V24_TO_V25_SEQUENCE_EXCEPTION))
 _seq25 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES_FROM_V21
-                if not (ROOT / rel).is_file()
-                or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v24.get(rel))
+                if git_bytes(rel, V25_COMMIT) is None
+                or hashlib.sha256(git_bytes(rel, V25_COMMIT)).hexdigest() != _v24.get(rel))
 check(_seq25 == sorted(PP.V24_TO_V25_SEQUENCE_EXCEPTION),
       "AND THE ONLY SEQUENCE-BEARING FILE THAT MOVED IS THE DECLARED ONE: the other FOUR are "
       "present and byte-identical to v24, so no step of the decision sequence, no reveal gate, "
@@ -1950,7 +1964,7 @@ check(len(PP.SEQUENCE_BEARING_FILES_FROM_V21) == 5,
 
 # WHAT MOVED INSIDE workspace.js: THE ORDER OF THE SERVER CALLS. PINNED TO THE SITE IT IS ABOUT
 # rather than to a name appearing anywhere in the file, which is the vacuity Run 61's F7 caught.
-_ws25 = (ROOT / "assets/js/workspace.js").read_text(encoding="utf-8")
+_ws25 = git_bytes("assets/js/workspace.js", V25_COMMIT).decode("utf-8")
 _ws24 = git_bytes("assets/js/workspace.js", V24_COMMIT).decode("utf-8")
 check(_ws25 != _ws24,
       f"NON-VACUITY at {V24_COMMIT}: workspace.js really did move, so the comparisons below are "
@@ -1977,6 +1991,97 @@ check(_i_periods != -1 and _i_latest != -1 and _i_results != -1
 check(_SITE_RESULTS not in _ws24,
       f"NON-VACUITY, pinned to {V24_COMMIT}: that exact call site does not exist in v24, so the "
       f"three clauses above are about bytes this link introduced")
+
+
+# =================================================================================================
+print("-" * 78)
+print("RUN 63: og-participant-2026.08-v26, two files moved and NEITHER is sequence-bearing")
+print("-" * 78)
+
+check(PP.CURRENT.identifier == V26_IDENTITY,
+      "the package chain declares v26 CURRENT", PP.CURRENT.identifier)
+check(PP.CURRENT.record == V26_RECORD,
+      "and names the v26 checksum record as the one that describes the live tree",
+      PP.CURRENT.record)
+check(PP.CURRENT.source_commit is None,
+      "and leaves its source_commit None, which is what 'describes the LIVE TREE' means")
+
+_v26 = parse((ROOT / V26_RECORD).read_text(encoding="utf-8"))
+_v26_bad = sorted(rel for rel, digest in _v26.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v26_bad,
+      "every one of v26's sixty-nine checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v26_bad))
+check(len(_v26) == 69, "and the package is sixty-nine files", str(len(_v26)))
+check(sorted(_v26) == sorted(_v25),
+      "v26 covers exactly the same file inventory as v25: nothing joined and nothing left",
+      str(sorted(set(_v25) ^ set(_v26))))
+check(PP.V25_TO_V26_DELETED == (),
+      "and V25_TO_V26_DELETED is an EXPLICITLY DECLARED empty tuple, not an omission",
+      str(PP.V25_TO_V26_DELETED))
+
+# THE FILES THAT MOVED ARE EXACTLY THE ONES DECLARED, AND NOTHING RODE ALONG. Measured against
+# the COMMIT v25 is pinned to, so this is a real comparison across the link and not a file
+# compared with itself.
+_moved26 = sorted(rel for rel, digest in _v25.items()
+                  if rel in _v26
+                  and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved26 == sorted(PP.V25_TO_V26_CHANGED),
+      "and the files v26 moved are exactly the two it declares, so nothing rode along with the "
+      "four-charts fix",
+      str(sorted(set(_moved26) ^ set(PP.V25_TO_V26_CHANGED))))
+
+# THE EMPTY EXCEPTION IS DECLARED RATHER THAN OMITTED, which the Run 63 order requires in those
+# words. MEASURED, not assumed: neither file that moved is a member of the sequence-bearing set.
+check("assets/js/detail.js" not in PP.SEQUENCE_BEARING_FILES_FROM_V21
+      and "assets/js/neural_flow.js" not in PP.SEQUENCE_BEARING_FILES_FROM_V21,
+      "NEITHER file that moved is a member of the sequence-bearing set -- established by "
+      "membership, not assumed")
+check(PP.V25_TO_V26_SEQUENCE_EXCEPTION == (),
+      "V25_TO_V26_SEQUENCE_EXCEPTION is the EXPLICITLY DECLARED EMPTY TUPLE, written out rather "
+      "than omitted, so a guard reads a declaration and not an absence",
+      str(PP.V25_TO_V26_SEQUENCE_EXCEPTION))
+_seq26 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES_FROM_V21
+                if not (ROOT / rel).is_file()
+                or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v25.get(rel))
+check(_seq26 == [],
+      "AND NOT ONE SEQUENCE-BEARING FILE MOVED: all five are present and byte-identical to v25, "
+      "so no step of the decision sequence, no reveal gate, no lock, no randomization and no "
+      "questionnaire moved", str(_seq26))
+check(len(PP.SEQUENCE_BEARING_FILES_FROM_V21) == 5,
+      "and the sequence-bearing set is NOT shortened: still five",
+      str(len(PP.SEQUENCE_BEARING_FILES_FROM_V21)))
+
+# WHAT MOVED INSIDE THE TWO FILES, PINNED TO THE SITES THEY ARE ABOUT rather than to a name
+# appearing anywhere in the file -- the vacuity Run 61's F7 and Run 62's first draft both hit.
+_nf26 = (ROOT / "assets/js/neural_flow.js").read_text(encoding="utf-8")
+_nf25 = git_bytes("assets/js/neural_flow.js", V25_COMMIT).decode("utf-8")
+_dt26 = (ROOT / "assets/js/detail.js").read_text(encoding="utf-8")
+_dt25 = git_bytes("assets/js/detail.js", V25_COMMIT).decode("utf-8")
+check(_nf26 != _nf25 and _dt26 != _dt25,
+      f"NON-VACUITY at {V25_COMMIT}: both files really did move, so the comparisons below are "
+      f"not two copies of the same bytes")
+_SITE_DOCS = "currentDocs = LinDetail.uploadedDocEvents(project) || [];"
+check(_SITE_DOCS in _nf26 and _SITE_DOCS not in _nf25,
+      f"THE DOCUMENT COUNT: the Signal Flow now calls the Documents panel's own reader; that "
+      f"call site is absent at {V25_COMMIT} and present now")
+_SITE_ROW = "hasCurrentRow = !!(window.LinResults && LinResults.rowFor(project));"
+check(_SITE_ROW in _nf26 and _SITE_ROW not in _nf25,
+      f"and currency is decided by the live stored row rather than the reset marker; that site "
+      f"is absent at {V25_COMMIT} and present now")
+_OLD_WINDOW = "      var evs = sinceReset;"
+check(_OLD_WINDOW in _nf25 and _OLD_WINDOW not in _nf26,
+      f"and the since-the-reset window it replaced was PRESENT at {V25_COMMIT} and is gone now, "
+      f"so this link records a real replacement and not an addition beside the old code")
+_SITE_EXPORT = "window.LinDetail = { render, teardown, __resetMapForTest, uploadedDocEvents };"
+check(_SITE_EXPORT in _dt26 and _SITE_EXPORT not in _dt25,
+      f"and detail.js exports that one reader, so the two surfaces cannot count different sets; "
+      f"absent at {V25_COMMIT} and present now")
+_SITE_GRAFT = "p.storedResult.source_documents = resp.result.source_documents;"
+check(_SITE_GRAFT in _dt26 and _SITE_GRAFT not in _dt25,
+      f"and detail.js grafts the served source_documents record; absent at {V25_COMMIT} and "
+      f"present now")
 
 print()
 

@@ -424,16 +424,13 @@
     }
 
     // ── 1. Determine uploaded doc types from project events ───────────────────
+    // RUN 63. The set of document types this project's CURRENT evidence covers. It is filled
+    // in one place, below, from the same document list the Documents panel renders, and only
+    // when a live stored row exists. It is deliberately NOT seeded from the reset window or
+    // from `project.signalInputs`: the legacy client blob is absent on every server-computed
+    // project (detail.js records this at its own read sites), which is why the type count read
+    // zero on a project holding twelve document types.
     var uploadedNorm = {};
-    sinceReset.forEach(function(e) {
-      if (e.event === 'signals_extracted' && e.docType) uploadedNorm[normKey(e.docType)] = true;
-    });
-    // Union with signalInputs.sources (events may be partially cleared by resets)
-    if (project.signalInputs && project.signalInputs.sources) {
-      Object.values(project.signalInputs.sources).forEach(function(src) {
-        if (src && src.docType) uploadedNorm[normKey(src.docType)] = true;
-      });
-    }
     function isUploaded(name) { return !!uploadedNorm[normKey(name)]; }
 
     // RUN 16, WORKSTREAM A4. HOW MANY DOCUMENTS THIS PROJECT HAS ACTUALLY UPLOADED.
@@ -441,27 +438,56 @@
     // counts, unioned with the surviving `signalInputs.sources` so a partially cleared event
     // log does not undercount. It is NOT the number of document types the platform supports,
     // which is what the old column header was reporting.
-    var uploadedDocCount = 0;
-    (function () {
-      // RUN 18, GATE 2. Counted from the last reset onward, for the reason recorded above.
-      var evs = sinceReset;
-      var seen = {};
-      evs.forEach(function (e) {
-        var ty = (e && (e.type || e.event || e.kind)) || '';
-        if (ty !== 'signals_extracted') return;
-        uploadedDocCount++;
-        if (e.docType) seen[normKey(e.docType)] = true;
-      });
-      if (project && project.signalInputs && project.signalInputs.sources) {
-        Object.values(project.signalInputs.sources).forEach(function (src) {
-          if (!src || !src.docType) return;
-          var k = normKey(src.docType);
-          if (seen[k]) return;
-          seen[k] = true;
-          uploadedDocCount++;
+    //
+    // RUN 63. WHAT THE RESET WINDOW GOT WRONG, MEASURED RATHER THAN ARGUED.
+    //
+    // The window above is "documents uploaded since the last `signals_reset`". It rests on a
+    // premise the server does not honour: that evidence becomes current again only by being
+    // uploaded again. It does not. `w_resetsignals` (writes.py) supersedes every live row and
+    // appends `signals_reset` but DELETES NO DOCUMENT -- its own control says so -- and
+    // `projectcompute` then re-reads those retained documents and writes a fresh LIVE row
+    // WITHOUT appending a single new `signals_extracted` event. A project in that state has its
+    // documents on file, a live computed result standing on them, and zero extraction events
+    // after the reset marker. This diagram read that as "0 UPLOADED, 0 TYPES".
+    //
+    // REPRODUCED IN A REAL BROWSER before the change, on a fixture built to the same shape
+    // (server/tools/drive_run63_four_charts.py): thirty-five documents uploaded, reset,
+    // recomputed; the Documents panel on the same page rendered "Documents: 35 documents" and
+    // thirty-five rows while this header rendered "0 UPLOADED SINCE THE RESET, 35 RETAINED"
+    // and the caption "0 uploaded documents across 0 types". That is the owner's report of
+    // PRJ-001, at 35 instead of 100.
+    //
+    // THE PREDICATE THAT REPLACES THE WINDOW, and why it is stronger rather than looser. What
+    // Run 18 actually needed was "is this project's evidence CURRENT", and the server answers
+    // that directly: a live stored row exists for the period the page holds, or it does not. A
+    // reset supersedes every live row, so a project reset and NOT recomputed still has no
+    // current evidence and still lights nothing -- Run 18's defect stays fixed, by the row
+    // rather than by a proxy for it. A project reset and RECOMPUTED has a live row, and its
+    // documents are exactly what that row was computed from.
+    //
+    // THE SOURCE IS THE DOCUMENTS PANEL'S OWN. `LinDetail.uploadedDocEvents` is the single
+    // implementation both surfaces now call, so the two counts cannot drift apart again; that
+    // is section 5.3.2 of the order and it is why this is a call and not a copy.
+    var hasCurrentRow = false;
+    try {
+      hasCurrentRow = !!(window.LinResults && LinResults.rowFor(project));
+    } catch (e) { hasCurrentRow = false; }
+    var currentDocs = [];
+    if (hasCurrentRow) {
+      if (window.LinDetail && typeof LinDetail.uploadedDocEvents === 'function') {
+        currentDocs = LinDetail.uploadedDocEvents(project) || [];
+      } else {
+        // Script-order failure only. Same walk, over the same log, so the fallback cannot
+        // report a different set than the function it stands in for.
+        currentDocs = evAll.filter(function (e) {
+          return ((e && (e.type || e.event || e.kind)) || '') === 'signals_extracted';
         });
       }
-    })();
+      currentDocs.forEach(function (e) {
+        if (e && e.docType) uploadedNorm[normKey(e.docType)] = true;
+      });
+    }
+    var uploadedDocCount = currentDocs.length;
     var uploadedTypeCount = Object.keys(uploadedNorm).length;
 
     // RUN 21. HOW MANY DOCUMENTS THE PROJECT STILL HOLDS FROM BEFORE THE RESET.
@@ -557,6 +583,23 @@
     // the STABLE internal id (catIds[ci]) rather than array position, since
     // Portfolio Health is filtered out of this project-level CATS list.
     // Worst-of is only a fallback.
+    //
+    // RUN 63. THE WORST-OF FALLBACK IS GONE, AND WHY ITS REMOVAL IS THE FIX.
+    //
+    // What stood here: when the stored row carried no status for a category, this recomputed
+    // one in the browser as the worst of that category's module statuses. The server already
+    // decided this question -- taxonomy.js's getCategoryStatus reads `row.category_statuses`
+    // and derives nothing, and its own comment records that browser-side fusion was removed
+    // for exactly this reason -- and a category's status is fused from its VOTING modules
+    // only (`module_count` on the stored entry; CORE_VOTING_MODULES is A1.7 and A1.8). So a
+    // non-voting module holding a result in a category the server gave no status was enough
+    // to make this diagram announce a category the row does not have.
+    //
+    // MEASURED: the owner's PRJ-001 render says "2 estimable categories" while the Project
+    // Signal Network, on the same page and the same row, says "1 Amber, 10 No-data" over
+    // eleven categories. Two accounts of one row, and this was the one that was inventing.
+    // NOTHING REPLACES IT: a category the row gives no status is 'None' and reads as no data,
+    // which is what the Project Signal Network already says and what the row supports.
     var catStatuses = CATS.map(function(cat, ci) {
       try {
         if (window.getCategoryStatus && catIds && catIds[ci]) {
@@ -564,7 +607,7 @@
           if (s) return s; // 'Green' | 'Yellow' | 'Amber' | 'Red' | 'Complete'
         }
       } catch (e) {}
-      return worstStatus(catModIdxs[ci].map(function(mi) { return modInfos[mi].status; }));
+      return 'None';
     });
 
     // Project status — the app's DST project fusion (Red weighted 1.5x)
@@ -755,10 +798,13 @@
       // project, so the original wording is kept exactly. After one, the figure is a
       // since-the-reset count and says so, and the retained documents are named beside it
       // instead of being silently reported as absent.
+      // RUN 63. The since-the-reset wording is now reached only in the state it describes: a
+      // project whose stored results were cleared and NOT recomputed, which therefore has no
+      // current evidence but still holds its documents. Once a live row exists those documents
+      // are what it was computed from, and the honest sentence is the project one.
       [CX.doc, DOC_KEYS.length + ' SUPPORTED DOCUMENT TYPES',
-               retainedBeforeReset > 0
-                 ? (uploadedDocCount + ' UPLOADED SINCE THE RESET, ' + retainedBeforeReset +
-                    ' RETAINED')
+               (!hasCurrentRow && retainedBeforeReset > 0)
+                 ? ('0 CURRENT, ' + retainedBeforeReset + ' RETAINED')
                  : (uploadedDocCount + ' UPLOADED ON THIS PROJECT')],
       [CX.mod, MODULES.length + ' REGISTERED PROJECT MODULES',
                modWithResult + ' WITH A CURRENT RESULT'],
@@ -1197,7 +1243,7 @@
       // nothing uploaded reads. What changed is that a project whose signals were CLEARED no
       // longer reads it, because for that project it is false: the documents were deliberately
       // not deleted, the server still serves them, and regenerating signals reads them again.
-      actSentence = retainedBeforeReset > 0
+      actSentence = (!hasCurrentRow && retainedBeforeReset > 0)
         ? ('This project has no documents uploaded since its stored signals were cleared and no '
            + 'current results, so nothing on the diagram is active and the '
            + (governedLabel || 'project status') + ' is not estimable. '

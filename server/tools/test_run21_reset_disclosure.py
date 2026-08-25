@@ -110,6 +110,43 @@ print("=" * 78)
 print("SECTION 2  what deliberately did NOT change")
 print("=" * 78)
 
+# ============================================================================================
+# RUN 63. FOUR OF THIS FILE'S GUARDS ARE RETIRED, AND NOT ONE IS DELETED.
+#
+# They are kept, in place and readable, with the reason recorded, and they no longer run.
+#
+# WHAT THEY PINNED, AND WHY IT IS FALSE. Run 21 pinned the Signal Flow's document count to the
+# window "since the last `signals_reset`", and pinned the header wording that names it. That
+# window rests on a premise the server does not honour: that evidence becomes current again
+# only by being uploaded again. `w_resetsignals` (writes.py) supersedes every live row and
+# appends the marker but DELETES NO DOCUMENT, and `projectcompute` then re-reads the retained
+# documents and writes a fresh LIVE row WITHOUT appending one new `signals_extracted` event.
+# A project reset and recomputed therefore has its documents on file, a live computed result
+# standing on them, and permanently zero extraction events after the marker.
+#
+# MEASURED, NOT ARGUED. server/tools/drive_run63_four_charts.py built a fixture in exactly that
+# shape and read the rendered DOM: the Documents panel rendered "Documents: 35 documents" and
+# thirty-five rows while, on the same page and the same render, this header rendered
+# "0 UPLOADED SINCE THE RESET, 35 RETAINED" and the caption "0 uploaded documents across 0
+# types". That is the owner's report of PRJ-001 at 35 instead of 100.
+#
+# THE OWNER'S RULING GOVERNS. Where a guard conflicts with a ruling from the owner, the owner
+# wins and the conflict is reported. It is reported here and in the Run 63 report.
+#
+# WHAT REPLACES THEM. Run 18's requirement -- a project whose evidence was cleared must light
+# nothing -- is not abandoned; it is pinned to a STRONGER predicate, the presence of a live
+# stored row for the period the page holds, which a reset removes. Those replacements are
+# asserted in server/tools/test_run63_four_charts.py and are re-asserted below so this file
+# still guards the behaviour it was written for.
+RUN63_RETIRED = (
+    "the document count is still taken from the since-the-reset window only",
+    "and the retained documents are NOT re-admitted to that window",
+    "header-since-reset",
+    "window-no-longer-since-reset",
+    "retained-readmitted-to-window",
+)
+# ============================================================================================
+
 # A project that was never reset must read exactly as it did before this fix.
 check("' UPLOADED ON THIS PROJECT'" in FLOW,
       "a project with no reset still reads UPLOADED ON THIS PROJECT, unchanged")
@@ -117,13 +154,33 @@ check("'This project has no uploaded documents and no current results, so nothin
       or "This project has no uploaded documents and no current results" in FLOW,
       "the empty-project sentence is kept for a project that has never been reset")
 # The since-reset window itself is untouched: the count still starts from sinceReset.
-m = re.search(r"var uploadedDocCount = 0;(.{0,600})", FLOW, re.S)
-check(bool(m) and "var evs = sinceReset;" in m.group(1),
-      "the document count is still taken from the since-the-reset window only",
-      (m.group(1)[:160] if m else "block not found"))
-check("retainedBeforeReset" not in (m.group(1) if m else ""),
-      "and the retained documents are NOT re-admitted to that window",
-      (m.group(1)[:200] if m else ""))
+# RETIRED (Run 63), kept and not deleted -- see RUN63_RETIRED above. These two pinned the
+# since-the-reset window as the document source. They are replaced, immediately below, by
+# guards over the predicate that took its place.
+# m = re.search(r"var uploadedDocCount = 0;(.{0,600})", FLOW, re.S)
+# check(bool(m) and "var evs = sinceReset;" in m.group(1),
+#       "the document count is still taken from the since-the-reset window only", ...)
+# check("retainedBeforeReset" not in (m.group(1) if m else ""),
+#       "and the retained documents are NOT re-admitted to that window", ...)
+print(f"  RETIRED (Run 63)  {RUN63_RETIRED[0]} -- the reset window is not what makes evidence "
+      f"current; see the note above")
+print(f"  RETIRED (Run 63)  {RUN63_RETIRED[1]} -- same premise")
+
+# THE REPLACEMENT, and it is stronger than what it replaces. Run 18's requirement stands: a
+# project whose stored signals were cleared and NOT recomputed must still light nothing. It is
+# now pinned to the live stored row, which a reset supersedes, rather than to the event window.
+check("hasCurrentRow = !!(window.LinResults && LinResults.rowFor(project));" in FLOW,
+      "RUN 63 REPLACEMENT: currency is decided by the live stored row for the period the page "
+      "holds, not by the reset marker",
+      "neural_flow.js no longer reads the row to decide whether evidence is current")
+check("if (hasCurrentRow) {" in FLOW,
+      "RUN 63 REPLACEMENT: and a project with no live row still reports no current documents, "
+      "so Run 18's cleared project lights nothing",
+      "the document set is filled unconditionally")
+check("currentDocs = LinDetail.uploadedDocEvents(project) || [];" in FLOW,
+      "RUN 63 REPLACEMENT: and the count comes from the Documents panel's own reader, so the "
+      "two surfaces cannot report different totals for one project",
+      "neural_flow.js is counting its own document set again")
 # The reset control's promise, which is the authority for all of the above.
 check("does not delete documents" in INGEST.lower()
       and 'class="btn small pe-reset">Reset signals<' in INGEST,
@@ -147,7 +204,9 @@ def scan(text: str) -> list[str]:
     bad = []
     for needle, name in (
         ("retainedBeforeReset", "computes-retained"),
-        ("UPLOADED SINCE THE RESET", "header-since-reset"),
+        # RETIRED (Run 63) -- ("UPLOADED SINCE THE RESET", "header-since-reset"): the header
+        # now reads that wording only when there is no live row, which is the state it
+        # describes. Kept here, not deleted, and no longer scanned.
         ("retained and will be read again when signals are regenerated", "summary-retained"),
         ("no documents uploaded since its stored signals were cleared", "summary-since-reset"),
         ("evAll.slice(0, evAll.length - sinceReset.length)", "boundary-before-side"),
@@ -155,22 +214,25 @@ def scan(text: str) -> list[str]:
         if needle not in text:
             bad.append(name)
     # The window must not be widened. This is the direction that would silently undo Run 18.
-    mm = re.search(r"var uploadedDocCount = 0;(.{0,600})", text, re.S)
-    block = mm.group(1) if mm else ""
-    if "var evs = sinceReset;" not in block:
-        bad.append("window-no-longer-since-reset")
-    if "retainedBeforeReset" in block:
-        bad.append("retained-readmitted-to-window")
+    # RETIRED (Run 63), kept and not deleted -- see RUN63_RETIRED. These two required the
+    # document count to be taken from the since-the-reset window. What replaces them is the
+    # live-row predicate, scanned here so this function still has something to be red about.
+    # mm = re.search(r"var uploadedDocCount = 0;(.{0,600})", text, re.S)
+    # block = mm.group(1) if mm else ""
+    # if "var evs = sinceReset;" not in block: bad.append("window-no-longer-since-reset")
+    # if "retainedBeforeReset" in block: bad.append("retained-readmitted-to-window")
+    if "hasCurrentRow = !!(window.LinResults && LinResults.rowFor(project));" not in text:
+        bad.append("currency-not-from-live-row")
+    if "currentDocs = LinDetail.uploadedDocEvents(project) || [];" not in text:
+        bad.append("count-not-from-documents-panel-reader")
     return bad
 
 # Each mutation reverts exactly one part of the fix, or re-introduces the defect, in a COPY of
 # the shipped file. The named guard must go red on that copy. Anything that does not go red is a
 # guard that would not have caught the defect this file exists for.
 MUTATIONS = [
-    ("revert the header to the false wording",
-     "uploadedDocCount + ' UPLOADED SINCE THE RESET, ' + retainedBeforeReset +",
-     "uploadedDocCount + ' UPLOADED ON THIS PROJECT' + (0 &&",
-     "header-since-reset"),
+    # RETIRED (Run 63): its target is gone with the guard it proved. Kept, not deleted.
+    # ("revert the header to the false wording", ..., "header-since-reset"),
     ("revert the summary strip to the false sentence",
      "retained and will be read again when signals are regenerated",
      "no uploaded documents at all",
@@ -182,13 +244,21 @@ MUTATIONS = [
     ("count the retained documents from the WRONG side of the boundary",
      "evAll.slice(0, evAll.length - sinceReset.length)", "sinceReset",
      "boundary-before-side"),
-    ("widen the document window back across the reset, undoing Run 18",
-     "      var evs = sinceReset;", "      var evs = evAll;",
-     "window-no-longer-since-reset"),
-    ("re-admit the retained documents into the current window",
-     "      var evs = sinceReset;",
-     "      var evs = sinceReset; retainedBeforeReset = retainedBeforeReset;",
-     "retained-readmitted-to-window"),
+    # RETIRED (Run 63): both targeted `var evs = sinceReset;`, which no longer decides the
+    # count. Kept, not deleted.
+    # ("widen the document window back across the reset, undoing Run 18", ...),
+    # ("re-admit the retained documents into the current window", ...),
+    #
+    # RUN 63 REPLACEMENTS. Each undoes one half of the predicate that replaced the window, and
+    # each must turn its own named property red.
+    ("remove the live-row gate, so a cleared project would light again (undoing Run 18)",
+     "hasCurrentRow = !!(window.LinResults && LinResults.rowFor(project));",
+     "hasCurrentRow = true;",
+     "currency-not-from-live-row"),
+    ("count a private document set again instead of the Documents panel's",
+     "currentDocs = LinDetail.uploadedDocEvents(project) || [];",
+     "currentDocs = [];",
+     "count-not-from-documents-panel-reader"),
 ]
 
 for label, find, repl, expect in MUTATIONS:

@@ -289,7 +289,13 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # added, removed or renamed, so the pin moves to the Run-62 manifest and
                         # the Run-59 manifest is kept addressable as its parent.
                         # NOTHING IS REMOVED FROM THIS TUPLE.
-                        "run62_production_tree.sha256"),
+                        "run62_production_tree.sha256",
+                        # RUN 63. Two production files changed (assets/js/detail.js and
+                        # assets/js/neural_flow.js) and NOTHING was removed or renamed,
+                        # so the pin moves to the Run-63 manifest and the Run-62
+                        # manifest is kept addressable as its parent.
+                        # NOTHING IS REMOVED FROM THIS TUPLE.
+                        "run63_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

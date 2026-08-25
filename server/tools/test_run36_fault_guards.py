@@ -499,6 +499,18 @@ _BY_SUCCESSOR = (
     # by membership of SEQUENCE_BEARING_FILES_FROM_V21 rather than assumed, so it needs none.
     ("code_audit/run62_participant_package_v25_checksums.sha256",
      PP.V24_TO_V25_SEQUENCE_EXCEPTION),
+    # RUN 63. The v26 link, whose exception tuple is EMPTY and is DECLARED empty in
+    # participant_packages.py rather than omitted -- the Run 63 order requires the empty tuple to
+    # be written out. The entry is added here for the same two reasons the v22 and v23 entries
+    # were: the clause below requires PP.CURRENT.record to BE the last entry of this tuple, so a
+    # mint that forgot its own link goes red rather than passing by omission; and the invariant
+    # is unweakened, because a sequence-bearing file moving across this link would have to be
+    # named in V25_TO_V26_SEQUENCE_EXCEPTION, which would then require its own
+    # "-- SEQUENCE-BEARING" paragraph in the v26 record here. NEITHER file that moved --
+    # assets/js/detail.js, assets/js/neural_flow.js -- is a member of
+    # SEQUENCE_BEARING_FILES_FROM_V21, established by membership rather than assumed.
+    ("code_audit/run63_participant_package_v26_checksums.sha256",
+     PP.V25_TO_V26_SEQUENCE_EXCEPTION),
 )
 _undeclared = [f"{f} (in {_rec})" for _rec, _files in _BY_SUCCESSOR for f in _files
                if f"# {f} -- SEQUENCE-BEARING"

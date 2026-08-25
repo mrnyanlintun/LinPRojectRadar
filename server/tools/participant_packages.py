@@ -703,7 +703,11 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v25",
         "code_audit/run62_participant_package_v25_checksums.sha256",
-        None,
+        # RUN 63, THE MINT. v25 is no longer current, so it is PINNED to the tip of `main` at
+        # which it was still current -- established by BYTE COMPARISON of the record itself
+        # against this commit's blob and member by member over all sixty-nine members. EXPLICIT
+        # HASH, never a relative reference.
+        "5fec302c29c9f90256d74c1eeded1747d34e2900",
         "RUN 62, THE PUBLICATION OF RUNS 60 AND 61. THREE of the sixty-nine governed files moved "
         "-- assets/js/detail.js, assets/js/taxonomy.js and assets/js/workspace.js -- and nothing "
         "was added and nothing deleted. assets/js/workspace.js IS SEQUENCE-BEARING, so this link "
@@ -725,7 +729,63 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "5f5cf60, byte-verified member by member over all sixty-nine, rather than edited to "
         "agree with the present -- which is the predecessor rewrite B11 exists to catch.",
     ),
+    Package(
+        "og-participant-2026.08-v26",
+        "code_audit/run63_participant_package_v26_checksums.sha256",
+        None,
+        "RUN 63, THE FOUR CHARTS. TWO of the sixty-nine governed files moved -- "
+        "assets/js/detail.js and assets/js/neural_flow.js -- and nothing was added and nothing "
+        "deleted. NEITHER IS SEQUENCE-BEARING, MEASURED against SEQUENCE_BEARING_FILES_FROM_V21 "
+        "and not assumed, so this link carries NO named exception and "
+        "V25_TO_V26_SEQUENCE_EXCEPTION is declared as the EMPTY TUPLE rather than omitted. All "
+        "five sequence-bearing files -- decision.js, decision-ui.js, workspace.js, intake.json, "
+        "debrief.json -- are present and byte for byte identical to v25, measured and not "
+        "assumed. WHAT MOVED: the owner named four charts as broken. The Signal Flow reported "
+        "'0 uploaded documents across 0 types' on a page listing 100 documents, because it "
+        "counted extraction events since the last `signals_reset` -- a window that is "
+        "permanently zero for a project that was reset and then recomputed, since "
+        "`projectcompute` re-reads the retained documents without appending one new "
+        "`signals_extracted` event. neural_flow.js now calls LinDetail.uploadedDocEvents, the "
+        "Documents panel's own reader, gated on a LIVE stored row for the period the page "
+        "holds; that is a STRONGER form of Run 18's cleared-project requirement, not a weaker "
+        "one, because a reset supersedes every live row. It also no longer recomputes a "
+        "category status in the browser as the worst of its module statuses, which is how it "
+        "announced two estimable categories where the Project Signal Network read one from the "
+        "same row. detail.js exports that one document reader and grafts the served "
+        "`source_documents` record onto the stored result, which the Run 63 browser driver "
+        "measured arriving as null against a stored row holding seventeen. Both defects were "
+        "REPRODUCED and both fixes MEASURED in real Chromium against a fixture built to "
+        "PRJ-001's shape. NO STEP OF THE DECISION SEQUENCE, no reveal gate, no lock, no "
+        "randomization, no questionnaire and no append-only record moved. NO CONTROL was added, "
+        "moved or removed. NO SERVER COMPUTATION MOVED: 101 registered, 63 in service, voting "
+        "exactly A1.7 and A1.8, no stored figure changed, and the behaviour digest is "
+        "RE-DERIVED and unchanged. The v25 record is NOT regenerated: it describes the tree as "
+        "v25 left it and is PINNED to 5fec302, byte-verified member by member over all "
+        "sixty-nine, rather than edited to agree with the present -- which is the predecessor "
+        "rewrite B11 exists to catch.",
+    ),
 )
+
+#: RUN 63. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
+#: omitted, so the identity builder reads a DECLARATION instead of falling back to a hard-coded
+#: empty list. A member of a pinned identity group disappearing without being named here still
+#: raises.
+V25_TO_V26_DELETED: tuple[str, ...] = ()
+
+#: RUN 63. The files whose bytes moved between v25 and v26. TWO, and NEITHER is sequence-bearing.
+V25_TO_V26_CHANGED = (
+    "assets/js/detail.js",
+    "assets/js/neural_flow.js",
+)
+
+#: RUN 63. THE EMPTY EXCEPTION, DECLARED RATHER THAN OMITTED, because the Run 63 order requires
+#: it: "if nothing moves, declare the empty tuple rather than omitting it". MEASURED, not
+#: assumed: neither `assets/js/detail.js` nor `assets/js/neural_flow.js` is a member of
+#: SEQUENCE_BEARING_FILES_FROM_V21, whose five members are decision.js, decision-ui.js,
+#: workspace.js, intake.json and debrief.json, and all five are present and byte for byte
+#: identical across this successor. An omitted record and an empty one read the same to a
+#: person and differently to a guard; this is the empty one, and it says so.
+V25_TO_V26_SEQUENCE_EXCEPTION: tuple[str, ...] = ()
 
 #: RUN 62. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
 #: omitted, so the identity builder reads a DECLARATION instead of falling back to a hard-coded
