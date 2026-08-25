@@ -217,10 +217,10 @@ print("-" * 78)
 # RUN 59. RESTATED AGAIN, same scope: no markdown document carries authority, six production-tree
 # members moved, and one of them -- assets/js/decision-ui.js -- is SEQUENCE-BEARING, so v38 is
 # SUPERSEDED rather than amended. Run 41's boundary is untouched and is still asserted below.
-check(SIMULATION_VERSION == "sim-2026.08-v40", "the live stamp is Run 62's successor "
-      "sim-2026.08-v40", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v39",
-      "and it records v39, Run 59's stamp, as the stamp it supersedes",
+check(SIMULATION_VERSION == "sim-2026.08-v41", "the live stamp is Run 63's successor "
+      "sim-2026.08-v41", SIMULATION_VERSION)
+check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v40",
+      "and it records v40, Run 62's stamp, as the stamp it supersedes",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
@@ -248,18 +248,26 @@ check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-
 # asserting the same index and SILENTLY DROP ONE STAMP from the check while still passing, which
 # is exactly what Run 59's first attempt did. The eleventh clause is added so v30 is still
 # reached after the shift, rather than falling off the bottom of the ladder.
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v40"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v39"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v38"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v37"
-      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v36"
-      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v35"
-      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v34"
-      and SIMULATION_VERSION_HISTORY[-8] == "sim-2026.08-v33"
-      and SIMULATION_VERSION_HISTORY[-9] == "sim-2026.08-v32"
-      and SIMULATION_VERSION_HISTORY[-10] == "sim-2026.08-v31"
-      and SIMULATION_VERSION_HISTORY[-11] == "sim-2026.08-v30",
-      "and v27 to v40 were appended after v26 rather than replacing it",
+# RUN 63 SHIFTS THE WHOLE LADDER BY ONE AGAIN AND DEEPENS IT BY ONE CLAUSE, for the reason
+# Runs 56, 57, 59 and 62 recorded and Run 59 proved by going red, and which Run 62 then got
+# wrong in a different place: this tail is checked POSITION BY POSITION. Appending v41 moves
+# every index below it. Changing [-1] alone would leave two clauses asserting the same index and
+# SILENTLY DROP ONE STAMP from the check while still passing. The twelfth clause is added so v30
+# is still reached after the shift, rather than falling off the bottom of the ladder. NOT ONE
+# STAMP IS REMOVED, NOT ONE IS REPLACED, AND NOT ONE IS INSERTED IN THE MIDDLE.
+check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v41"
+      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v40"
+      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v39"
+      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v38"
+      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v37"
+      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v36"
+      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v35"
+      and SIMULATION_VERSION_HISTORY[-8] == "sim-2026.08-v34"
+      and SIMULATION_VERSION_HISTORY[-9] == "sim-2026.08-v33"
+      and SIMULATION_VERSION_HISTORY[-10] == "sim-2026.08-v32"
+      and SIMULATION_VERSION_HISTORY[-11] == "sim-2026.08-v31"
+      and SIMULATION_VERSION_HISTORY[-12] == "sim-2026.08-v30",
+      "and v27 to v41 were appended after v26 rather than replacing it",
       str(SIMULATION_VERSION_HISTORY[-3:]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
@@ -353,8 +361,8 @@ check(seq_moved == _seq_authorised,
       f"no randomization and no questionnaire ITEM, response option, scale or order moved -- "
       f"which the participant-package suite asserts structurally, not by byte-identity",
       str(seq_moved))
-check(PP.CURRENT.identifier == "og-participant-2026.08-v25",
-      "the participant package is superseded at og-participant-2026.08-v25, and the v13, v14 and "
+check(PP.CURRENT.identifier == "og-participant-2026.08-v26",
+      "the participant package is superseded at og-participant-2026.08-v26, and the v13, v14 and "
       "v15 records are pinned rather than rewritten",
       PP.CURRENT.identifier)
 

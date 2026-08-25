@@ -514,8 +514,15 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: assets/js/taxonomy.js and assets/js/workspace.js -- the publication of Run 60's diagnosis and
 #: Run 61's fix. Nothing was added to the production tree and nothing removed. The run59 manifest
 #: is NOT rewritten -- it describes the tree as v39 left it and stays addressable below.
-PINNED = ROOT / "code_audit" / "run62_production_tree.sha256"
-#: The Run-59 production manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 63 SUPERSEDES THE RUN-62 MANIFEST. TWO of the 242 members moved: assets/js/detail.js and
+#: assets/js/neural_flow.js -- the four-charts fix. TWO files were ADDED under server/tools,
+#: drive_run63_four_charts.py and test_run63_four_charts.py; nothing was removed. The run62
+#: manifest is NOT rewritten -- it describes the tree as v40 left it and stays addressable below.
+PINNED = ROOT / "code_audit" / "run63_production_tree.sha256"
+#: The Run-62 production manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN62 = ROOT / "code_audit" / "run62_production_tree.sha256"
+#: The Run-59 production manifest, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN59 = ROOT / "code_audit" / "run59_production_tree.sha256"
 #: The Run-57 production manifest, kept addressable so a guard can prove the

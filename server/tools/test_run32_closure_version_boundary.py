@@ -163,9 +163,15 @@ check(SIMULATION_VERSION_HISTORY[len(_old_stamps):] == ("sim-2026.08-v20", "sim-
                                                        # edit: v39 keeps its position.
                                                        # NOTHING IS REMOVED FROM THIS
                                                        # TUPLE.
-                                                       "sim-2026.08-v40"),
+                                                       "sim-2026.08-v40",
+                                                       # RUN 63's own single authorised
+                                                       # append, an EXTENSION and not an
+                                                       # edit: v40 keeps its position.
+                                                       # NOTHING IS REMOVED FROM THIS
+                                                       # TUPLE.
+                                                       "sim-2026.08-v41"),
       "and it grew by exactly the stamps Runs 32, 33, 34, 35, 36, 41, 42, 43, 44, 45, 47, 48, 49, 55, "
-      "56, 57, 59 and 62 "
+      "56, 57, 59, 62 and 63 "
       "were "
       "each authorised "
       "to add",

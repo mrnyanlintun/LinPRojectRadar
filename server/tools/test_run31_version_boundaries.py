@@ -447,7 +447,18 @@ check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19"
                          # period the page holds, which changes WHAT A PARTICIPANT READS and
                          # therefore cannot be made under the v39 stamp. NOTHING IS REMOVED FROM
                          # THIS TUPLE.
-                         "sim-2026.08-v40"),
+                         "sim-2026.08-v40",
+                         # RUN 63's own single authorised append, and it is an
+                         # EXTENSION, never an edit: v40 above keeps its position. v41
+                         # publishes the four-charts fix -- two production-tree members
+                         # moved, assets/js/detail.js and assets/js/neural_flow.js, and
+                         # NEITHER is sequence-bearing, so this link declares the EMPTY
+                         # exception tuple rather than omitting one. The Signal Flow now
+                         # reports the documents the project holds instead of zero, and
+                         # announces no category the stored row does not carry, which
+                         # changes WHAT A PARTICIPANT READS and therefore cannot be made
+                         # under the v40 stamp. NOTHING IS REMOVED FROM THIS TUPLE.
+                         "sim-2026.08-v41"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
       "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds, the "
       "one Run 41 adds, the one Run 42 adds, the one Run 43 adds, the one Run 44 adds, the one "
