@@ -672,7 +672,11 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v24",
         "code_audit/run59_participant_package_v24_checksums.sha256",
-        None,
+        # RUN 62, THE MINT. v24 is no longer current, so it is PINNED to the tip of `main` at
+        # which it was still current -- established by BYTE COMPARISON of the record itself
+        # against this commit's blob and member by member over all sixty-nine members. EXPLICIT
+        # HASH, never a relative reference.
+        "5f5cf60ad6b510f7d44b88e64bc669eaa4601f3e",
         "RUN 59, NO MARKDOWN DOCUMENT CARRIES AUTHORITY. EXACTLY ONE of the sixty-nine governed "
         "files moved -- assets/js/decision-ui.js -- and nothing was added and nothing deleted. "
         "IT IS SEQUENCE-BEARING, so this link carries a NAMED EXCEPTION OF RECORD, declared in "
@@ -696,6 +700,63 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "edited to agree with the present -- which is the predecessor rewrite B11 exists to "
         "catch.",
     ),
+    Package(
+        "og-participant-2026.08-v25",
+        "code_audit/run62_participant_package_v25_checksums.sha256",
+        None,
+        "RUN 62, THE PUBLICATION OF RUNS 60 AND 61. THREE of the sixty-nine governed files moved "
+        "-- assets/js/detail.js, assets/js/taxonomy.js and assets/js/workspace.js -- and nothing "
+        "was added and nothing deleted. assets/js/workspace.js IS SEQUENCE-BEARING, so this link "
+        "carries a NAMED EXCEPTION OF RECORD, declared in V24_TO_V25_SEQUENCE_EXCEPTION rather "
+        "than discovered by a checksum, and its authority is the owner's Run 62 order at section "
+        "6.3. WHAT MOVED INSIDE IT is the order in which the client asks the server its "
+        "questions: `projectperiods` then `latest_computed_period` then `projectresults`, so the "
+        "period is resolved BEFORE the results are requested rather than after. NO STEP OF THE "
+        "DECISION SEQUENCE, no reveal gate, no lock, no randomization, no questionnaire and no "
+        "append-only record moved, and the three inert `period: 1` literals Run 49 documented in "
+        "decision-ui.js are untouched -- decision-ui.js, decision.js, intake.json and "
+        "debrief.json are present and byte for byte identical to v24, measured and not assumed. "
+        "assets/js/taxonomy.js keys its stored-row cache by (project, period) and exposes "
+        "rowForPeriod / latest / rowsForPeriods; assets/js/detail.js re-renders its provenance "
+        "line from the row it actually received. NO CONTROL was added, moved or removed. NO "
+        "SERVER COMPUTATION MOVED: 101 registered, 63 in service, voting exactly A1.7 and A1.8, "
+        "no stored figure changed, and the behaviour digest is RE-DERIVED and unchanged. The v24 "
+        "record is NOT regenerated: it describes the tree as v24 left it and is PINNED to "
+        "5f5cf60, byte-verified member by member over all sixty-nine, rather than edited to "
+        "agree with the present -- which is the predecessor rewrite B11 exists to catch.",
+    ),
+)
+
+#: RUN 62. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
+#: omitted, so the identity builder reads a DECLARATION instead of falling back to a hard-coded
+#: empty list. A member of a pinned identity group disappearing without being named here still
+#: raises.
+V24_TO_V25_DELETED: tuple[str, ...] = ()
+
+#: RUN 62. The files whose bytes moved between v24 and v25. THREE, and ONE of them IS
+#: SEQUENCE-BEARING.
+V24_TO_V25_CHANGED = (
+    "assets/js/detail.js",
+    "assets/js/taxonomy.js",
+    "assets/js/workspace.js",
+)
+
+#: RUN 62. THE NAMED EXCEPTION OF RECORD FOR THIS LINK, declared here rather than discovered by a
+#: checksum. Its authority is the owner's Run 62 order, section 6.3, which required this run to
+#: establish whether taxonomy.js or workspace.js is sequence-bearing and to write the exception
+#: record if either is. MEASURED: `taxonomy.js` is NOT a member of SEQUENCE_BEARING_FILES_FROM_V21
+#: and `workspace.js` IS, so exactly one exception is declared and it is workspace.js.
+#:
+#: WHAT MOVED INSIDE THAT FILE, EXACTLY: the ORDER OF THE SERVER CALLS the workspace makes when
+#: it loads a project's stored signals. It previously asked for `projectresults` without first
+#: establishing which period the page was about; it now asks `projectperiods`, then
+#: `latest_computed_period`, then `projectresults`, so the caller states its question. NO STEP OF
+#: THE DECISION SEQUENCE MOVED: no reveal gate, no lock, no randomization, no questionnaire, no
+#: server contract for the participant sequence and no append-only record. The other FOUR members
+#: of SEQUENCE_BEARING_FILES_FROM_V21 are present and byte for byte identical across this
+#: successor, MEASURED and not assumed.
+V24_TO_V25_SEQUENCE_EXCEPTION = (
+    "assets/js/workspace.js",
 )
 
 #: RUN 54. THE FIRST LINK IN THIS CHAIN WHOSE DELTA IS A DELETION. `assets/js/deepdive.js` is

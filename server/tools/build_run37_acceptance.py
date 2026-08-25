@@ -134,12 +134,14 @@ FREEZE = ROOT / "research" / "freeze"
 # run55_candidate_behaviour_digest.json and the v36 release records all stay exactly as that
 # release wrote them, and remain the historical evidence for everything collected under v36.
 # RUN 59. Advanced to the v38 candidate; the run57 artefacts are NOT rewritten.
-PREDECESSOR_CANDIDATE = "13c150960d608a677ef2f5030ad58b58443ff81a"
-PREDECESSOR_VERSION = "sim-2026.08-v38"
-CANDIDATE = "beeb73d31253525a3dd8ded58855a5574cdfb651"
-EXPECTED_VERSION = "sim-2026.08-v39"
-IDENTITY_FILE = "run59_freeze_candidate_identity.json"
-GATE_FILE = "run59_successor_freeze_gate.csv"
+# RUN 62. Advanced to the v39 candidate; the run59 artefacts are NOT rewritten. This mint
+# PUBLISHES Runs 60 and 61, which were finished and gated nowhere.
+PREDECESSOR_CANDIDATE = "5f5cf60ad6b510f7d44b88e64bc669eaa4601f3e"
+PREDECESSOR_VERSION = "sim-2026.08-v39"
+CANDIDATE = "PENDING"
+EXPECTED_VERSION = "sim-2026.08-v40"
+IDENTITY_FILE = "run62_freeze_candidate_identity.json"
+GATE_FILE = "run62_successor_freeze_gate.csv"
 # RUN 55, THE MINT. TWO FILENAMES, NOT ONE, AND THAT IS DELIBERATE.
 #
 # The generator used a SINGLE constant for both halves of blocker B15: it read the prior digest
@@ -161,8 +163,12 @@ GATE_FILE = "run59_successor_freeze_gate.csv"
 # PREDECESSOR record and writes the successor one, so it compares ACROSS a supersession instead
 # of comparing a run to itself. Collapsing them would make B15 read a file that does not exist
 # yet, take the first-evaluation branch and PASS WITHOUT COMPARING ANYTHING.
-PRIOR_BEHAVIOUR_FILE = "run57_candidate_behaviour_digest.json"
-BEHAVIOUR_FILE = "run59_candidate_behaviour_digest.json"
+# RUN 62 KEEPS THE TWO FILENAMES SEPARATE, for the reason Run 55 separated them: B15 reads the
+# PREDECESSOR record and writes the successor one, so it compares ACROSS a supersession instead
+# of comparing a run to itself. Collapsing them would make B15 read a file that does not exist
+# yet, take the first-evaluation branch and PASS WITHOUT COMPARING ANYTHING.
+PRIOR_BEHAVIOUR_FILE = "run59_candidate_behaviour_digest.json"
+BEHAVIOUR_FILE = "run62_candidate_behaviour_digest.json"
 STIM = (ROOT / "research_fixtures" / "synthetic" / "OG-SYNTH-0.2"
         / "Opus_Gubernatio_Synthetic_Programme_v0.2" / "package_A_project_structures")
 

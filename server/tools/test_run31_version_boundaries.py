@@ -438,7 +438,7 @@ check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19"
                          # edits a comment or a document heading, and one of them is the
                          # SEQUENCE-BEARING assets/js/decision-ui.js, whose move carries a named
                          # exception of record. NOTHING IS REMOVED FROM THIS TUPLE.
-                         "sim-2026.08-v39"),
+                         "sim-2026.08-v40"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
       "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds, the "
       "one Run 41 adds, the one Run 42 adds, the one Run 43 adds, the one Run 44 adds, the one "

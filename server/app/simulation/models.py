@@ -731,12 +731,32 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # behaviour digest RE-DERIVED identically at
 # 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v39"
+# -------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------
+# RUN 62 SUPERSEDES v39 WITH sim-2026.08-v40. THE STAMP ADVANCES BECAUSE THE SERVED CLIENT IS
+# PART OF THE FROZEN CANDIDATE, NOT BECAUSE A COMPUTATION CHANGED. This release PUBLISHES the
+# work of Runs 60 and 61, which were finished, gated nowhere and stacked unmerged. Run 60
+# DIAGNOSED, in a rendered browser, that the stored-signal row a project detail page reads was
+# not necessarily the row of the period the page holds; Run 61 FIXED it by making the caller
+# state its question -- assets/js/taxonomy.js now keys its row cache by (project, period) and
+# exposes rowForPeriod / latest / rowsForPeriods, assets/js/workspace.js resolves the computed
+# period before it asks for results, and assets/js/detail.js re-renders its provenance line from
+# the row it actually received.
+# THREE production-tree members moved: assets/js/detail.js, assets/js/taxonomy.js and
+# assets/js/workspace.js. assets/js/workspace.js is SEQUENCE-BEARING and its move is a NAMED
+# EXCEPTION of record on the v24-to-v25 link, declared in
+# participant_packages.V24_TO_V25_SEQUENCE_EXCEPTION rather than discovered by a checksum.
+# NOT ONE FORMULA, BAND, THRESHOLD, CALIBRATION, ABSTENTION RULE OR POPULATION MOVED: 101
+# registered, 63 in service, voting exactly A1.7 and A1.8, every stored figure unchanged and the
+# behaviour digest RE-DERIVED identically at
+# 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1.
+# -------------------------------------------------------------------------------------------
+SIMULATION_VERSION = "sim-2026.08-v40"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v38"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v39"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -751,7 +771,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v26", "sim-2026.08-v27", "sim-2026.08-v28", "sim-2026.08-v29",
     "sim-2026.08-v30", "sim-2026.08-v31", "sim-2026.08-v32", "sim-2026.08-v33",
     "sim-2026.08-v34", "sim-2026.08-v35", "sim-2026.08-v36", "sim-2026.08-v37",
- "sim-2026.08-v38", "sim-2026.08-v39",
+ "sim-2026.08-v38", "sim-2026.08-v39", "sim-2026.08-v40",
 )
 
 

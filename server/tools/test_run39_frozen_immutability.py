@@ -253,6 +253,19 @@ RUN59_AUTHORISED_SUCCESSOR_CHANGES = {
     "server/app/simulation/models.py",           # the stamp advances to sim-2026.08-v39
     "p0-baseline/MODULE_TAXONOMY.md",            # the count is marked as the figure at a date
 }
+
+#: RUN 62. THE PUBLICATION OF RUNS 60 AND 61.
+RUN62_AUTHORISED_SUCCESSOR_CHANGES = {
+    # RUN 62. THE PUBLICATION OF RUNS 60 AND 61. Three production-tree members moved and the
+    # change is the correction the owner has waited ten runs for: a project detail page now
+    # renders the stored-signal row of the period the page holds. No control was added, moved or
+    # removed and no stored figure changed.
+    "assets/js/detail.js",         # re-renders its provenance line from the row it received
+    "assets/js/taxonomy.js",       # the stored-row cache is keyed by (project, period)
+    "assets/js/workspace.js",      # SEQUENCE-BEARING: the ORDER of the server calls, so the
+                                   # period is resolved BEFORE results are requested. Named
+                                   # exception of record, V24_TO_V25_SEQUENCE_EXCEPTION.
+}
 AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN42_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN43_AUTHORISED_SUCCESSOR_CHANGES
@@ -262,7 +275,8 @@ AUTHORISED_SUCCESSOR_CHANGES = (RUN41_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN48_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN49_AUTHORISED_SUCCESSOR_CHANGES
                                 | RUN51_AUTHORISED_SUCCESSOR_CHANGES
-                                | RUN59_AUTHORISED_SUCCESSOR_CHANGES)
+                                | RUN59_AUTHORISED_SUCCESSOR_CHANGES
+                                | RUN62_AUTHORISED_SUCCESSOR_CHANGES)
 _surface_paths = sorted({ln.split("\t", 1)[-1] for ln in changed_surfaces if ln})
 _unauthorised = [p for p in _surface_paths if p not in AUTHORISED_SUCCESSOR_CHANGES]
 check(not _unauthorised,
@@ -385,11 +399,11 @@ check(freeze["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       freeze["simulation_version"])
 # RUN 56. RESTATED BY RUN 56, for the same reason and with the same scope: Run 56 supersedes v36 with v37 because WHAT A PARTICIPANT REACHES AND CLICKS is executable behaviour -- the duplicate 'Upload documents' control is removed from the project detail page and Archive and Reset signals now ask before acting.
-check(SIMULATION_VERSION == "sim-2026.08-v39",
-      "and the live simulation is the Run-59 successor sim-2026.08-v39", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v40",
+      "and the live simulation is the Run-62 successor sim-2026.08-v40", SIMULATION_VERSION)
 # RESTATED BY RUN 43: v13 is superseded by v14 and pinned to its own commit rather than rewritten.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v24",
-      "the participant package is superseded at og-participant-2026.08-v24",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v25",
+      "the participant package is superseded at og-participant-2026.08-v25",
       PP.CURRENT.identifier)
 check(freeze["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6")
