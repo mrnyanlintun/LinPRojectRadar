@@ -201,34 +201,40 @@ def main() -> int:
 
     rec = {
         "release_disposition": "FINAL_FREEZE_ACCEPTED",
-        "label": "Opus Gubernatio research instrument, Run-59 successor freeze (sim-2026.08-v39)",
+        "label": "Opus Gubernatio research instrument, Run-63 successor freeze (sim-2026.08-v41)",
         "created": datetime.date(2026, 8, 25).isoformat(),
         "authority": (
-            "THE OWNER'S RUN 62 ORDER, SECTION 2: the fix exists and is not on the site. Two branches "
-            "were finished, gated nowhere and stacked unmerged -- Run 60's diagnosis at 75ea02e and "
-            "Run 61's fix at a8fa1bd -- and Run 61 correctly refused to merge production bytes whose "
-            "gate status was unknown. THIS RELEASE RUNS THE GATE AND PUBLISHES THEM. THREE of the 242 "
-            "production-tree members moved: assets/js/detail.js, assets/js/taxonomy.js and "
-            "assets/js/workspace.js. TWO files were ADDED under server/tools -- "
-            "drive_run61_caller_shapes.py and test_run61_caller_states_its_question.py -- so the suite "
-            "population this release measures is 204, up from 203, and test_suite_identity is DERIVED "
-            "from the filesystem rather than copied so the new suite cannot be silently unmeasured. "
-            "WHAT WAS FIXED: the stored-signal row a project detail page reads was not necessarily the "
-            "row of the period the page holds. taxonomy.js now keys its row cache by (project, period) "
-            "and exposes rowForPeriod, latest and rowsForPeriods, with the period travelling with the "
-            "row; workspace.js resolves projectperiods then latest_computed_period then projectresults, "
-            "so the caller states its question before it asks; detail.js re-renders its provenance line "
-            "from the row it actually received. assets/js/workspace.js IS SEQUENCE-BEARING and this "
-            "link therefore carries a NAMED EXCEPTION OF RECORD in V24_TO_V25_SEQUENCE_EXCEPTION, "
-            "declared rather than discovered by a checksum; what moved inside it is the ORDER OF THE "
-            "SERVER CALLS and no step of the decision sequence, no reveal gate, no lock, no "
-            "randomization and no questionnaire moved. assets/js/taxonomy.js is NOT sequence-bearing, "
-            "MEASURED against SEQUENCE_BEARING_FILES_FROM_V21. NO CONTROL was added, moved or removed. "
-            "NOTHING IS COMPUTED DIFFERENTLY AND NO STORED FIGURE MOVED: 101 registered, 63 in service, "
-            "voting exactly A1.7 and A1.8, and the behaviour digest is RE-DERIVED and unchanged. THE "
-            "AUTHORITY TREE DID NOT MOVE: its manifest sha256 b52c47a68a20ab1629681ea240abdea2167c67f2"
-            "89d181f446a8170704dc1596 is unmoved for a SIXTH run. The v24 record is NOT regenerated: it "
-            "describes the tree as v24 left it and is PINNED to 5f5cf60."),
+            "THE OWNER'S RUN 63 ORDER, SECTION 3: the owner looked at the live site and named four "
+            "charts as broken -- Signal Flow, Project Signal Network, Signal Web and Ensemble "
+            "Analysis -- and required each count to be MEASURED against the stored row before "
+            "anything was changed, with two outcomes treated as equally valid: WRONG, which is "
+            "fixed, and CORRECT BUT BLEAK, which is reported and left alone. TWO of the 242 "
+            "production-tree members moved: assets/js/detail.js and assets/js/neural_flow.js. TWO "
+            "files were ADDED under server/tools -- drive_run63_four_charts.py and "
+            "test_run63_four_charts.py -- so the suite population this release measures is 205, up "
+            "from 204, and test_suite_identity is DERIVED from the filesystem rather than copied so "
+            "the new suite cannot be silently unmeasured. WHAT WAS FIXED, both reproduced and then "
+            "measured in real Chromium against a fixture built to PRJ-001's shape. FIRST, the Signal "
+            "Flow reported '0 uploaded documents across 0 types' on a page listing 100 documents, "
+            "because it counted extraction events since the last signals_reset -- a window that is "
+            "permanently zero for a project reset and then recomputed, since projectcompute re-reads "
+            "the retained documents without appending one new event. It now calls "
+            "LinDetail.uploadedDocEvents, the Documents panel's own reader, gated on a LIVE stored "
+            "row for the period the page holds, which is a STRONGER form of Run 18's cleared-project "
+            "requirement because a reset supersedes every live row. SECOND, it recomputed a category "
+            "status in the browser as the worst of its module statuses whenever the stored row "
+            "carried none, and a category is fused from its VOTING modules only, so a non-voting "
+            "result announced a category the row does not have. That fallback is removed and nothing "
+            "replaces it. THIRD, detail.js grafts the served source_documents record onto the stored "
+            "result. NEITHER moved file is SEQUENCE-BEARING, measured against "
+            "SEQUENCE_BEARING_FILES_FROM_V21, so V25_TO_V26_SEQUENCE_EXCEPTION is the EXPLICITLY "
+            "DECLARED EMPTY TUPLE rather than an omitted record. NO CONTROL was added, moved or "
+            "removed. NOTHING IS COMPUTED DIFFERENTLY AND NO STORED FIGURE MOVED: 101 registered, 63 "
+            "in service, voting exactly A1.7 and A1.8, and the behaviour digest is RE-DERIVED and "
+            "unchanged. THE AUTHORITY TREE DID NOT MOVE: its manifest sha256 b52c47a68a20ab16296"
+            "81ea240abdea2167c67f289d181f446a8170704dc1596 is unmoved for a SEVENTH run. The v25 "
+            "record is NOT regenerated: it describes the tree as v25 left it and is PINNED to "
+            "5fec302."),
         "supersedes_candidate": pred["freeze_candidate_commit"],
         "supersedes_simulation_version": pred["simulation_version"],
         "history": [
@@ -275,6 +281,13 @@ def main() -> int:
             "by making the caller state its question -- the row cache keyed by (project, period), "
             "the period travelling with the row, and the workspace resolving the period before it "
             "asks for results; sim-2026.08-v40.",
+            "Run 63 fixed two of the four charts the owner named: the Signal Flow's document "
+            "count, which read zero on a project holding a hundred documents because it counted "
+            "extraction events since a reset that deletes no document, and its browser-side "
+            "category fusion, which announced a category the stored row does not carry. The "
+            "Project Signal Network, the Signal Web and the Ensemble Analysis were MEASURED "
+            "against the stored row and found CORRECT BUT SPARSE, and were deliberately left "
+            "alone; sim-2026.08-v41.",
             "The v25 to v34 releases remain historical evidence and are "
             "not rewritten. Results computed under any of them remain interpretable against "
             "their own records.",
@@ -291,19 +304,16 @@ def main() -> int:
         "simulation_version_history": list(SIMULATION_VERSION_HISTORY),
         "participant_package": PP.CURRENT.identifier,
         "participant_package_decision": (
-            "SUPERSEDED to og-participant-2026.08-v25. Determined mechanically, not assumed: EXACTLY "
-            "THREE of the sixty-nine governed files moved -- assets/js/detail.js, "
-            "assets/js/taxonomy.js and assets/js/workspace.js -- and nothing was added and nothing "
-            "deleted. ONE of the three IS SEQUENCE-BEARING, assets/js/workspace.js, so this link "
-            "carries a NAMED EXCEPTION OF RECORD in V24_TO_V25_SEQUENCE_EXCEPTION with its own "
-            "paragraph in the v25 checksum record. Whether taxonomy.js or workspace.js was "
-            "sequence-bearing was ESTABLISHED BY MEASUREMENT against SEQUENCE_BEARING_FILES_FROM_V21 "
-            "rather than assumed: taxonomy.js is not a member, workspace.js is. The other FOUR members "
-            "of that set -- decision.js, decision-ui.js, intake.json and debrief.json -- are present "
-            "and byte for byte identical to v24, measured. What moved inside workspace.js is the ORDER "
-            "OF THE SERVER CALLS the client makes when loading a project's stored signals. NO step of "
-            "the decision sequence, NO reveal gate, NO lock, NO randomization, NO questionnaire, NO "
-            "append-only record and NO REACHABLE USER-FACING CONTROL was added, moved or removed."),
+            "SUPERSEDED to og-participant-2026.08-v26. Determined mechanically, not assumed: EXACTLY "
+            "TWO of the sixty-nine governed files moved -- assets/js/detail.js and "
+            "assets/js/neural_flow.js -- and nothing was added and nothing deleted. NEITHER is "
+            "SEQUENCE-BEARING, ESTABLISHED BY MEMBERSHIP of SEQUENCE_BEARING_FILES_FROM_V21 rather "
+            "than assumed, so this link carries NO named exception and V25_TO_V26_SEQUENCE_EXCEPTION "
+            "is DECLARED AS THE EMPTY TUPLE rather than omitted. All five members of that set -- "
+            "decision.js, decision-ui.js, workspace.js, intake.json and debrief.json -- are present "
+            "and byte for byte identical to v25, measured. NO step of the decision sequence, NO "
+            "reveal gate, NO lock, NO randomization, NO questionnaire, NO append-only record and NO "
+            "REACHABLE USER-FACING CONTROL was added, moved or removed."),
         "synthetic_package": "OG-SYNTH-0.6",
         "analysis_schema": "og-analysis-2026.08-v1",
         "canonical_field_classification": {
@@ -313,17 +323,21 @@ def main() -> int:
             "declared_in": "server/app/field_registry.py IDENTITY_FIELDS / PERIOD_FIELDS / "
                            "UNDETERMINED_FIELDS, asserted at import to partition FIELD_KINDS",
         },
-        "behavioural_delta_v39_to_v40": [
-            "THE ONE OBSERVABLE CHANGE IS A CORRECTION, and it is named rather than denied: a project "
-            "detail page now renders the stored-signal row of the period the page holds. Before this "
-            "release a page holding period 4 could render period 1's figures, which the owner saw as "
-            "CPI 1.22 on a period-4 page and which the owner's own production query has since closed "
-            "as period-mixing rather than as a data defect",
-            "NO formula, band, threshold, calibration, abstention rule or population moved. NO stored "
-            "figure moved and nothing is derived into storage",
+        "behavioural_delta_v40_to_v41": [
+            "THE OBSERVABLE CHANGES ARE CORRECTIONS, and they are named rather than denied. The "
+            "Signal Flow now reports the documents the project holds instead of zero: before this "
+            "release a project whose signals were reset and then recomputed read '0 UPLOADED SINCE "
+            "THE RESET' and '0 uploaded documents across 0 types' on a page whose Documents panel "
+            "listed every one of them",
+            "The Signal Flow no longer announces a category the stored row does not carry. It "
+            "recomputed a category status in the browser as the worst of its module statuses "
+            "whenever the row gave none, which is how it read 'two estimable categories' against "
+            "the Project Signal Network's 'one Amber, ten No-data' over the same row",
+            "NO formula, band, threshold, calibration, abstention rule or population moved. NO "
+            "stored figure moved and nothing is derived into storage",
             "NO user-facing control was added, moved or removed",
-            "assets/js/workspace.js is SEQUENCE-BEARING and its move is a NAMED EXCEPTION of record. "
-            "What moved inside it is the ORDER OF THE SERVER CALLS, not a step of the sequence"
+            "NEITHER moved file is sequence-bearing and this link therefore carries the EXPLICITLY "
+            "DECLARED EMPTY exception tuple rather than an omitted record"
         ],
         "behavioural_delta_scope_statement": (
             "ONE BEHAVIOUR MOVES AND IT IS THE DEFECT BEING CORRECTED: which stored row a project "
@@ -401,7 +415,7 @@ def main() -> int:
         },
         "governed_files_moved_since_v32": moved,
     }
-    (FREEZE / "RUN62_SUCCESSOR_FREEZE_RECORD.json").write_text(
+    (FREEZE / "RUN63_SUCCESSOR_FREEZE_RECORD.json").write_text(
         json.dumps(rec, indent=2) + "\n", encoding="utf-8")
 
     report = f"""# Run-62 successor freeze report
@@ -445,11 +459,11 @@ removed.
 
 The v25 to v39 release records are preserved unchanged and still record their own stamps.
 """
-    (FREEZE / "RUN62_SUCCESSOR_FREEZE_REPORT.md").write_text(report, encoding="utf-8")
+    (FREEZE / "RUN63_SUCCESSOR_FREEZE_REPORT.md").write_text(report, encoding="utf-8")
 
-    print("wrote RUN62_SUCCESSOR_FREEZE_CHECKSUMS.csv:", len(rows), "rows")
-    print("wrote RUN62_SUCCESSOR_FREEZE_RECORD.json")
-    print("wrote RUN62_SUCCESSOR_FREEZE_REPORT.md")
+    print("wrote RUN63_SUCCESSOR_FREEZE_CHECKSUMS.csv:", len(rows), "rows")
+    print("wrote RUN63_SUCCESSOR_FREEZE_RECORD.json")
+    print("wrote RUN63_SUCCESSOR_FREEZE_REPORT.md")
     print("governed files moved since v32:", moved or "(none)")
     print("release content digest:", release_digest)
     return 0

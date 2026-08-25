@@ -138,7 +138,7 @@ FREEZE = ROOT / "research" / "freeze"
 # PUBLISHES Runs 60 and 61, which were finished and gated nowhere.
 PREDECESSOR_CANDIDATE = "d1976a064ec9f37a0a56eb3555040a80196876f4"
 PREDECESSOR_VERSION = "sim-2026.08-v40"
-CANDIDATE = "d1976a064ec9f37a0a56eb3555040a80196876f4"
+CANDIDATE = "514096af9ba8be2ea3511b205e335300864a8074"
 EXPECTED_VERSION = "sim-2026.08-v41"
 IDENTITY_FILE = "run63_freeze_candidate_identity.json"
 GATE_FILE = "run63_successor_freeze_gate.csv"
