@@ -236,6 +236,14 @@ from run43_production_changes import (  # noqa: E402
 # path may appear in two.
 from run51_production_changes import (                                     # noqa: E402
     RUN51_NEW_PRODUCTION_FILES, RUN51_PRODUCTION_CHANGES)
+# RUN 59, NO MARKDOWN DOCUMENT CARRIES AUTHORITY. Its own manifest, same construction, same
+# property: the union of all manifests must still equal the differing set EXACTLY, so an
+# undeclared production edit is still red and a declared file that was never touched is still
+# red. assets/js/decision-ui.js, server/app/research_export.py, server/app/evm_consistency.py,
+# server/app/simulation/portfolio_health.py and server/app/simulation/models.py are NOT in it,
+# because earlier manifests already declare each of them and no path may appear in two.
+from run59_production_changes import (                                     # noqa: E402
+    RUN59_NEW_PRODUCTION_FILES, RUN59_PRODUCTION_CHANGES)
 from run44_production_changes import (  # noqa: E402
     RUN44_NEW_PRODUCTION_FILES, RUN44_PRODUCTION_CHANGES)
 run30_declared = {entry[1] for entry in RUN30_PRODUCTION_CHANGES.values()
@@ -259,10 +267,14 @@ run44_declared = {entry[1] for entry in RUN44_PRODUCTION_CHANGES.values()
 # file that was never touched is still red.
 run51_declared = {entry[1] for entry in RUN51_PRODUCTION_CHANGES.values()
                   if entry[1] not in RUN51_NEW_PRODUCTION_FILES}
+# RUN 59 joins the union on exactly the same footing. Nothing is loosened.
+run59_declared = {entry[1] for entry in RUN59_PRODUCTION_CHANGES.values()
+                  if entry[1] not in RUN59_NEW_PRODUCTION_FILES}
 declared = (run20_declared | run21_declared | run23_declared | run25_declared
             | run26_declared | run28_declared | run29_declared | run30_declared
             | run31_declared | run32_declared | run36_declared | run41_declared
-            | run42_declared | run43_declared | run44_declared | run51_declared)
+            | run42_declared | run43_declared | run44_declared | run51_declared
+            | run59_declared)
 
 check("every production file that differs from the Run-20 freeze is declared in the Run-20 "
       "manifest or a later run's manifest, so an undeclared production edit cannot pass",
