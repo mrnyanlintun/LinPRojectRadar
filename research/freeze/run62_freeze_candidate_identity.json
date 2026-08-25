@@ -1,5 +1,5 @@
 {
-  "candidate_git_commit": "92ddc0e837083011eff67c5f9af3c83331502eab",
+  "candidate_git_commit": "e2f6b99bbff87520000a02c3235b157cbd72bbbc",
   "candidate_commit_verified_is_head": true,
   "supersedes_candidate": "beeb73d31253525a3dd8ded58855a5574cdfb651",
   "supersedes_simulation_version": "sim-2026.08-v39",
@@ -66,7 +66,7 @@
   "simulation_authority_digest": {
     "label": "the analytical layer",
     "files": 40,
-    "digest": "c9e83595aaa8531d157034009306530f17de178933cb2f7e68be1d90c9144872",
+    "digest": "fb43ac1edcff98652c1c6d33173f3f0e5d1f82022d1acd282405d5a546e12349",
     "members": [
       "server/app/simulation/__init__.py",
       "server/app/simulation/abm.py",
@@ -113,7 +113,7 @@
   "test_suite_identity": {
     "label": "every test_*.py the acceptance runner globs",
     "files": 204,
-    "digest": "5919eab81728eb778529054278b29bf730409b5a5a5e60da11dd77fdc3ea466b",
+    "digest": "6f44c5fc59ef6e90122ec5999de5a1acadf1e754a57b006ca417d3c79d277d47",
     "members": [
       "server/tests/test_run32_cat10_oracles.py",
       "server/tests/test_run33_ph1_fault_campaign.py",
@@ -366,5 +366,5 @@
     "git_object": "2820f21e93330f9514c7ee37b37744b4d8165098"
   },
   "method": "Every digest is CONTENT-ADDRESSED: sha256 over the ordered 'sha256  path' lines of its member files, so it is reproducible from the tree alone and independent of any commit. NOTHING WAS REGENERATED to make a hash convenient; every file was read as it stands at the candidate commit.",
-  "candidate_identity_digest": "e9f403eac31962697238a83ee7cb946797c4cf56215bdf12f99cf3f5aa8fc3f5"
+  "candidate_identity_digest": "0728269f259823a16df6b9bfaddf754aa71df86272f1f41defbd7c670fdab00f"
 }
