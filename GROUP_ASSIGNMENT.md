@@ -1,6 +1,6 @@
 # Group assignment: the verified taxonomy
 
-**100 computations, in four groups — the figure at 2026-08-25, not a settled fact.** The module
+**100 computations, in four groups: the figure at 2026-08-25, not a settled fact.** The module
 set is not settled: 101 are registered, 63 are in service, and this table counts the 100 the
 server both registers and computes. This file carries no authority. It was generated from the
 code, not from a document, and a check in the test suite compares the code against the registry
