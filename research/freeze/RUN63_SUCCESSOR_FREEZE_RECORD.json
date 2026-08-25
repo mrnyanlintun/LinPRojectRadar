@@ -24,10 +24,10 @@
     "Run 63 fixed two of the four charts the owner named: the Signal Flow's document count, which read zero on a project holding a hundred documents because it counted extraction events since a reset that deletes no document, and its browser-side category fusion, which announced a category the stored row does not carry. The Project Signal Network, the Signal Web and the Ensemble Analysis were MEASURED against the stored row and found CORRECT BUT SPARSE, and were deliberately left alone; sim-2026.08-v41.",
     "The v25 to v34 releases remain historical evidence and are not rewritten. Results computed under any of them remain interpretable against their own records."
   ],
-  "freeze_candidate_commit": "514096af9ba8be2ea3511b205e335300864a8074",
-  "candidate_identity_digest": "6b4829c421241a3fce7150b42aeeab426ef7e7e8b6b3d7b1dbf282a78946c10f",
+  "freeze_candidate_commit": "5c023bc97372570bac4d7985b524b229854e6783",
+  "candidate_identity_digest": "0beedca8e3c56b99b280efeb1aab0dca324db509afb288385bac5e2c288700fe",
   "candidate_behaviour_digest": "8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1",
-  "release_content_digest": "d34235b8ff1d83addadbaf896f63b3b0b5a69756468e4a41d068e0ccae4c321f",
+  "release_content_digest": "e883cb793d8018eac43aef81bc2e023802a1bf7f91d148f29eab5d295c56e0f8",
   "release_content_digest_method": "sha256 over RUN63_SUCCESSOR_FREEZE_CHECKSUMS.csv, which content-addresses every governed file of the successor instrument. Reproducible from the tree alone.",
   "release_commit_recording_method": "THE GIT COMMIT CONTAINING THIS RECORD IS ESTABLISHED EXTERNALLY BY REPOSITORY HISTORY, not embedded here. A file cannot contain the hash of the commit that contains it. The repository has no release-tagging convention -- its single tag, pre-consolidation-v1, is a UI-history marker and does not authorise one -- so no tag is created. Identity is carried instead by freeze_candidate_commit, candidate_identity_digest, candidate_behaviour_digest and release_content_digest, every one of which is verifiable without knowing the containing commit.",
   "simulation_version": "sim-2026.08-v41",
