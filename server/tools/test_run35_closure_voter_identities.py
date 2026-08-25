@@ -341,13 +341,24 @@ def g15_a1_1_finding_carried_forward():
                    f"the finding must be restated, not silently dropped")
     if rec.get("remediation_attempted_in_this_closure") != "NONE":
         bad.append("the record claims a remediation this closure did not perform")
-    hand = (ROOT / "T6_HANDOFF.md").read_text(encoding="utf-8")
-    if "DECLARED_STRUCTURE_UNCONSUMED_AND_REACHABLE_PARAMETER_UNRESOLVED" not in hand:
-        bad.append("the Run-36 handoff does not carry the finding")
-    if "costDriverDistributions" not in hand:
-        bad.append("the Run-36 handoff does not name the declared structure")
+    # RUN 59, PHASE B. RETIRED, NOT DELETED. Owner's ruling, 2026-08-25: no markdown document
+    # carries authority. These two conditions asserted that T6_HANDOFF.md -- history, which
+    # governs nothing -- contains two particular strings. Nothing about production depended on
+    # them. The finding itself is still asserted, above, against the recorded structure. The body
+    # is kept and runs again if the flag is cleared.
+    if not RETIRED_RUN59_HANDOFF_STRINGS:
+        hand = (ROOT / "T6_HANDOFF.md").read_text(encoding="utf-8")
+        if "DECLARED_STRUCTURE_UNCONSUMED_AND_REACHABLE_PARAMETER_UNRESOLVED" not in hand:
+            bad.append("the Run-36 handoff does not carry the finding")
+        if "costDriverDistributions" not in hand:
+            bad.append("the Run-36 handoff does not name the declared structure")
     return not bad, "; ".join(bad[:4])
 
+
+#: RUN 59, PHASE B. Retired, not deleted: the two T6_HANDOFF.md string conditions inside
+#: the guard above stop running, their body is kept, and the reason is recorded there.
+#: Owner's ruling, 2026-08-25: no markdown document in this repository carries authority.
+RETIRED_RUN59_HANDOFF_STRINGS = True
 
 GUARDS = [
     ("run35c.fault01.tcpi_bands_from_full_precision", g01_tcpi_bands_from_full_precision),

@@ -50,7 +50,7 @@ PROV = ROOT / "code_audit" / "run34_portfolio_parameter_provenance.csv"
 REPORT = ROOT / "REPORT_2026-08-18_run34-portfolio-health-calibration.md"
 OUT = ROOT / "code_audit" / "run34_count_fault_injection_results.csv"
 
-REQUIRED = 5
+REQUIRED = 4   # RUN 59: was 5. Fault 5 retired; see the block below.
 PASSED = FAILED = 0
 FAILURES: list[str] = []
 ROWS = [["fault", "target", "mutation", "applied", "confirmed_applied", "guard", "intended_red",
@@ -183,14 +183,31 @@ head("FAULT 5: THE REPORT DISTRIBUTION DISAGREES WITH THE CSV")
 # =================================================================================================
 # THE DEFECT THIS CLOSURE EXISTS TO GUARD AGAINST. The report is padded so its class counts sum to
 # 21 instead of the true 19 -- exactly the shape of the error the contract supposed had occurred.
-fault(5, "the Run-34 report", "REPORT_2026-08-18_run34-portfolio-health-calibration.md",
-      "| `UNSUPPORTED` | 7 | operational anomaly threshold",
-      "| `UNSUPPORTED` | 9 | operational anomaly threshold",
-      "the report's published UNSUPPORTED count is padded from 7 to 9 so the seven classes sum to "
-      "21 rather than to the true 19 -- the precise defect this closure guards against",
-      "the report's distribution equals the artifact's, class for class, and sums to the true "
-      "parameter total",
-      "REPORT'S DISTRIBUTION EQUALS THE ARTIFACT'S")
+# RUN 59, PHASE B. RETIRED, NOT DELETED.
+#
+# Owner's ruling, 2026-08-25: no markdown document carries authority, and this fault's TARGET is
+# REPORT_2026-08-18_run34-portfolio-health-calibration.md -- sealed evidence. The guard it
+# existed to prove red has itself been retired for exactly that reason, so this injection now
+# proves nothing: mutating a document nothing asserts cannot turn anything red, and reporting it
+# as a passing fault would be a vacuous check dressed as a guarantee.
+#
+# REQUIRED falls from 5 to 4 with it. That is a deliberate, recorded reduction and not a silent
+# one: the constant is changed HERE, beside the reason, and the four surviving faults all inject
+# into CSV artifacts or production and are unaffected. Clear the flag and restore REQUIRED to 5
+# to run it again. THE BODY IS NOT DELETED.
+RETIRED_RUN59_REPORT_FAULT = True
+
+if not RETIRED_RUN59_REPORT_FAULT:
+    fault(5, "the Run-34 report", "REPORT_2026-08-18_run34-portfolio-health-calibration.md",
+          "| `UNSUPPORTED` | 7 | operational anomaly threshold",
+          "| `UNSUPPORTED` | 9 | operational anomaly threshold",
+          "the report's published UNSUPPORTED count is padded from 7 to 9 so the seven classes sum to "
+          "21 rather than to the true 19 -- the precise defect this closure guards against",
+          "the report's distribution equals the artifact's, class for class, and sums to the true "
+          "parameter total",
+          "REPORT'S DISTRIBUTION EQUALS THE ARTIFACT'S")
+else:
+    print("  RETIRED (Run 59)  FAULT 5, which mutated a sealed evidence document to prove a guard that is itself now retired")
 
 
 # =================================================================================================

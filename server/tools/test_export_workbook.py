@@ -283,11 +283,35 @@ def main() -> None:
           "LONG_COLUMNS shares no name with a free-text column", str(long_header))
 
     # ================================================================== 4. notice text
-    print("\n4. The Notice sheet matches DISCLAIMERS_DRAFT.md character for character")
-    draft = pathlib.Path(__file__).resolve().parents[2] / "DISCLAIMERS_DRAFT.md"
-    draft_text = draft.read_text(encoding="utf-8")
+    # RUN 59, PHASE B. RE-POINTED AT A NON-MARKDOWN ORACLE.
+    #
+    # Owner's ruling, 2026-08-25: no markdown document in this repository carries authority. This
+    # block compared the exported workbook's Notice sheet with blockquotes parsed out of
+    # DISCLAIMERS_DRAFT.md. The real subject is production: the XLSX is a file that LEAVES the
+    # platform and is read by people who never saw a footer, and what matters is that it carries
+    # the SAME characters the browser surfaces carry. `assets/js/disclaimers.js` is where those
+    # characters live in production -- it is the shipped constant the upload panels render from,
+    # and export.js writes the Notice sheet from `window.LinDisclaimers`. So the oracle is now
+    # that file. Same assertion, production source, still fails on one character.
+    #
+    # DISCLAIMERS_DRAFT.md is not deleted, not moved and not edited. It simply no longer decides
+    # whether a check is red.
+    print("\n4. The Notice sheet matches assets/js/disclaimers.js character for character")
+    _js = (pathlib.Path(__file__).resolve().parents[2] / "assets" / "js"
+           / "disclaimers.js").read_text(encoding="utf-8")
 
-    def blockquote(n: int) -> list[str]:
+    def _js_paras(var: str) -> list[str]:
+        import ast as _ast
+        m = re.search(r"var\s+%s\s*=\s*\[(.*?)\];" % var, _js, re.S)
+        assert m is not None, "disclaimers.js no longer declares var %s" % var
+        lits = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))
+        return [re.sub(r"\s+", " ", _ast.literal_eval('"%s"' % s)).strip() for s in lits]
+
+    def _retired_run59_blockquote(n: int) -> list[str]:
+        """RETIRED BY RUN 59, NOT DELETED. The markdown parse is kept verbatim below so the
+        retirement is reversible and the record of what it did survives. It is not called."""
+        draft = pathlib.Path(__file__).resolve().parents[2] / "DISCLAIMERS_DRAFT.md"
+        draft_text = draft.read_text(encoding="utf-8")
         section = draft_text.split(f"## {n}.")[1].split("\n## ")[0]
         paras, current = [], []
         for line in section.splitlines():
@@ -310,8 +334,12 @@ def main() -> None:
         # the sheet carries — the sheet holds the plain sentence. Strip it before comparing.
         return [re.sub(r"\*\*(.+?)\*\*", r"\1", p) for p in cleaned]
 
-    research_source = blockquote(1)
-    operational_source = blockquote(2)
+    research_source = _js_paras("RESEARCH")
+    operational_source = _js_paras("OPERATIONAL")
+    check(len(research_source) == 3 and len(operational_source) == 3,
+          "disclaimers.js still ships three research and three operational paragraphs, so the "
+          "comparisons below cannot be vacuously satisfied by an empty list",
+          f"{len(research_source)} / {len(operational_source)}")
     notice_pi_ws = pi_wb["Notice"]
     notice_pi_text = " ".join(str(c[0].value) for c in notice_pi_ws.iter_rows() if c[0].value)
     for para in research_source:

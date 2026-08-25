@@ -77,13 +77,70 @@ def strip_tags(s: str) -> str:
     return norm(html.unescape(re.sub(r"<[^>]+>", " ", s)))
 
 
+# ==================================================================================================
+# RUN 59, PHASE B. RE-POINTED AT A NON-MARKDOWN ORACLE.
+#
+# Owner's ruling, 2026-08-25: NO MARKDOWN DOCUMENT IN THIS REPOSITORY CARRIES AUTHORITY. This
+# file's central check compared index.html's rendered notices with blockquotes parsed out of
+# DISCLAIMERS_DRAFT.md and failed on a single differing character. That is A PRODUCTION
+# ASSERTION WEARING A DOCUMENT AS ITS ORACLE: what it is really about is whether the four
+# surfaces that carry the approved notice -- index.html's sign-in box and footer, and the four
+# upload panels built as HTML strings by signals.js and auditor.js -- all carry THE SAME
+# characters.
+#
+# THE ASSERTION IS KEPT AND ITS ORACLE IS REPLACED BY `assets/js/disclaimers.js`, which is
+# production JavaScript shipped to the browser and already the single constant the upload panels
+# render from. It holds exactly the three groups the markdown held: RESEARCH (3 paragraphs),
+# OPERATIONAL (3) and ATTRIBUTION + COPYRIGHT (the 2 "constant in both states" paragraphs). So
+# the comparison becomes index.html against a production source, both shipped, neither markdown,
+# and it still fails on one character.
+#
+# NON-VACUITY, PROVED BY BREAKING PRODUCTION AND NOT BY BREAKING A DOCUMENT: Run 59 changed one
+# word in index.html's rendered research notice and this file went RED; restored from the
+# committed bytes and re-taken green. The injection is recorded in the Run 59 report.
+#
+# WHAT THIS DID NOT DO: DISCLAIMERS_DRAFT.md is not deleted, not moved and not edited. It stays
+# the place a human edits approved liability text first. It simply no longer decides whether a
+# check is red.
+# ==================================================================================================
+
+def _js_strings(block: str) -> list[str]:
+    """Every double-quoted literal in a JS fragment, with `+` concatenations joined."""
+    import ast as _ast
+    parts, cur, i = [], [], 0
+    lits = re.findall(r'"((?:[^"\\]|\\.)*)"', block)
+    return [_ast.literal_eval('"%s"' % s) for s in lits]
+
+
 def source_variants() -> dict[str, list[str]]:
     """
-    The approved paragraphs, extracted from the numbered sections of the source file.
+    The approved paragraphs, read from PRODUCTION JAVASCRIPT (`assets/js/disclaimers.js`).
 
-    Parsed rather than hardcoded, deliberately: a copy of the text in this file would be a third
-    copy to drift, which is the very thing the check exists to prevent.
+    Parsed rather than hardcoded, deliberately: a copy of the text in this file would be a copy
+    that drifts, which is the very thing the check exists to prevent. RUN 59 changed WHICH file
+    is parsed, not that it is parsed. Was: the numbered sections of DISCLAIMERS_DRAFT.md.
     """
+    js = SHARED.read_text(encoding="utf-8")
+    out: dict[str, list[str]] = {}
+    for key, var in (("research", "RESEARCH"), ("operational", "OPERATIONAL")):
+        m = re.search(r"var\s+%s\s*=\s*\[(.*?)\];" % var, js, re.S)
+        if m is None:
+            raise AssertionError("disclaimers.js no longer declares var %s" % var)
+        out[key] = [norm(s) for s in _js_strings(m.group(1))]
+    const = []
+    for var in ("ATTRIBUTION", "COPYRIGHT"):
+        m = re.search(r"var\s+%s\s*=\s*(.*?);" % var, js, re.S)
+        if m is None:
+            raise AssertionError("disclaimers.js no longer declares var %s" % var)
+        const.append(norm("".join(_js_strings(m.group(1)))))
+    out["constant"] = const
+    return out
+
+
+def _retired_run59_source_variants_from_markdown() -> dict[str, list[str]]:
+    """RETIRED BY RUN 59, NOT DELETED. The body below is the markdown parse verbatim, kept so
+    the retirement is reversible and so the record of what it did survives. It is not called.
+    Reason: its oracle was DISCLAIMERS_DRAFT.md, and no markdown document carries authority."""
     text = SOURCE.read_text(encoding="utf-8")
     out: dict[str, list[str]] = {}
     for key, heading in (("research", "## 1."), ("operational", "## 2."),
@@ -254,8 +311,9 @@ ATTRIBUTION = next((p for p in constant if "George Washington" in p), "")
 COPYRIGHT = next((p for p in constant if p.startswith("©")), "")
 check(bool(ATTRIBUTION), "section 3 carries the university attribution sentence")
 check(bool(COPYRIGHT), "section 3 carries the copyright paragraph")
-# The three things the 2026-08-02 revision removed. Asserted against the SOURCE as well as the
-# live surfaces, so reintroducing them by "fixing" the source is also a red suite.
+# The three things the 2026-08-02 revision removed. RUN 59: asserted against
+# assets/js/disclaimers.js as well as the live surfaces, so reintroducing them by "fixing" the
+# shipped constant is also a red suite. It was DISCLAIMERS_DRAFT.md; that file has no authority.
 check("is not a party to this notice" in ATTRIBUTION,
       "the attribution states the university is not a party to the notice")
 check("does not endorse or warrant" in ATTRIBUTION,
@@ -332,14 +390,28 @@ meta = re.search(r'<meta name="description" content="([^"]*)"', live_doc)
 check(meta is not None, "index.html has a meta description")
 if meta:
     desc = norm(html.unescape(meta.group(1)))
-    authority = (ROOT / "NAMING_AUTHORITY.md").read_text(encoding="utf-8")
-    # The short form, parsed from the authority rather than copied here, for the same reason
-    # source_variants() parses: a copy in this file is a copy that can drift.
-    short = re.search(r"\*\*Short form, one sentence:\*\*\s*\n\s*\n((?:> .*\n)+)", authority)
-    check(short is not None, "the authority still carries a short-form standing description")
-    if short:
-        want = norm(" ".join(l.lstrip("> ").rstrip() for l in short.group(1).splitlines()))
-        check(desc == want, "the meta description is the short form verbatim", desc[:70])
+    # RUN 59, PHASE B. RE-POINTED AT A NON-MARKDOWN ORACLE.
+    #
+    # WAS: the `**Short form, one sentence:**` blockquote parsed out of NAMING_AUTHORITY.md, so
+    # that deleting a heading in a markdown file turned this check red. No markdown document
+    # carries authority (owner's ruling, 2026-08-25), and the real subject here is production:
+    # whether the standing description is THE SAME SENTENCE on every surface that carries it.
+    #
+    # NOW: the same sentence read from `assets/js/knowledge.js`, which ships it as the glossary
+    # definition of "Opus Gubernatio", and from index.html's own About panel. Both are
+    # production; both are rendered to a participant. Three surfaces, one sentence, no markdown.
+    kn = (ROOT / "assets" / "js" / "knowledge.js").read_text(encoding="utf-8")
+    _m = re.search(r'\{\s*term:\s*"Opus Gubernatio",\s*definition:\s*"((?:[^"\\]|\\.)*)"', kn)
+    check(_m is not None,
+          "assets/js/knowledge.js still ships the standing description as a glossary definition")
+    if _m:
+        want = norm(_m.group(1))
+        check(desc == want,
+              "the meta description is the standing description verbatim, as knowledge.js ships "
+              "it", desc[:70])
+        check(want in norm(live_doc),
+              "and index.html's own About panel carries the same sentence, so the three "
+              "production surfaces agree", want[:70])
     for claim in ("AEC", "capital program", "capital project", "public sector", "public-sector"):
         check(claim.lower() not in desc.lower(),
               f"the meta description does not assert a domain ({claim})", desc[:70])

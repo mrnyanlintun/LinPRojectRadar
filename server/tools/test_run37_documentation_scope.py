@@ -105,14 +105,30 @@ def widening_claims(text: str) -> list[str]:
     return sorted(set(hits))
 
 
-_hits = widening_claims(_report_text)
-check("run37doc.report_makes_no_repository_wide_claim", not _hits,
-      "the FINAL RELEASE REPORT does not claim the whole repository is free of the placeholder",
-      str(_hits))
-check("run37doc.report_scopes_the_claim_to_the_record",
-      "final release record contains no" in _report_text.lower()
-      and "INSTRUMENT_FINAL_FREEZE_RECORD.json" in _report_text,
-      "and it scopes its zero-placeholder claim explicitly to the release record by name")
+# RUN 59, PHASE B. RETIRED, NOT DELETED. Owner's ruling, 2026-08-25: no markdown document in
+# this repository carries authority. These three checks assert what two markdown documents SAY --
+# research/freeze/INSTRUMENT_FINAL_FREEZE_REPORT.md, which is SEALED EVIDENCE, and T6_HANDOFF.md,
+# which is history. Their subject is a document's wording and nothing else; no production
+# behaviour depends on either sentence. They were NOT re-pointed, because there is no
+# non-markdown source that states what a report claims, and inventing one would be worse than
+# the check it replaced. The placeholder's ACTUAL occurrences in the tree are counted in
+# section 1 of this file, against the tree, and that section is untouched.
+#
+# THE BODIES ARE NOT DELETED. Clear the flag to run them again.
+RETIRED_RUN59_DOCUMENT_WORDING = True
+
+if not RETIRED_RUN59_DOCUMENT_WORDING:
+    _hits = widening_claims(_report_text)
+    check("run37doc.report_makes_no_repository_wide_claim", not _hits,
+          "the FINAL RELEASE REPORT does not claim the whole repository is free of the "
+          "placeholder", str(_hits))
+    check("run37doc.report_scopes_the_claim_to_the_record",
+          "final release record contains no" in _report_text.lower()
+          and "INSTRUMENT_FINAL_FREEZE_RECORD.json" in _report_text,
+          "and it scopes its zero-placeholder claim explicitly to the release record by name")
+else:
+    print("  RETIRED (Run 59)  the release report's wording -- sealed evidence, no authority")
+    print("  RETIRED (Run 59)  and the scope of its zero-placeholder claim")
 # THE EXPLANATION MUST BE ABOUT THE HISTORICAL MANIFEST, not merely about self-reference in
 # general. The first version of this check accepted the report's OTHER sentence -- "A file cannot
 # contain the hash of the commit that contains it", which is about the release record -- so
@@ -157,10 +173,13 @@ check("run37doc.recording_method_names_repository_history",
 
 # ------------------------------------------------------------------ 5. the handoff carries no
 #     equivalent overstatement
-_handoff = HANDOFF.read_text(encoding="utf-8")
-_hh = widening_claims(_handoff)
-check("run37doc.handoff_makes_no_repository_wide_claim", not _hh,
-      "T6_HANDOFF.md carries no equivalent repository-wide zero-occurrence claim", str(_hh))
+if not RETIRED_RUN59_DOCUMENT_WORDING:
+    _handoff = HANDOFF.read_text(encoding="utf-8")
+    _hh = widening_claims(_handoff)
+    check("run37doc.handoff_makes_no_repository_wide_claim", not _hh,
+          "T6_HANDOFF.md carries no equivalent repository-wide zero-occurrence claim", str(_hh))
+else:
+    print("  RETIRED (Run 59)  the handoff's wording -- history, no authority")
 
 # ------------------------------------------------------------------ 6. the frozen disposition
 check("run37doc.disposition_unchanged",

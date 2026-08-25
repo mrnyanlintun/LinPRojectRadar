@@ -251,26 +251,48 @@ check(prov["is_new_calibration_evidence"]["value"] == "NO",
 # =================================================================================================
 head("5. THE REPORT AGREES WITH THE ARTIFACT")
 # =================================================================================================
-def report_value(field: str) -> str | None:
-    m = re.search(r"^\|\s*`" + re.escape(field) + r"`\s*\|\s*\**([^|*]+?)\**\s*\|", report_text,
-                  re.M)
-    return m.group(1).strip().strip("`") if m else None
+# RUN 59, PHASE B. RETIRED, NOT DELETED.
+#
+# Owner's ruling, 2026-08-25: no markdown document in this repository carries authority, and
+# REPORT_2026-08-18_run34-portfolio-health-calibration.md is SEALED EVIDENCE besides. Section 5
+# asserted eight fields of that report's prose against `prov`, plus four phrases it must contain.
+# ESTABLISHED BY READING IT: the report is a REDUNDANT ORACLE here. Every one of the eight fields
+# is read from `prov`, the provenance artifact, and `prov` is asserted against the holdout and
+# selection CSVs and against git ancestry in sections 1 to 4, which are untouched and still run.
+# Section 2's git_first_commit ordering checks are NOT retired: they assert PROVENANCE -- which
+# object was committed before which -- and not a document's content, so the ruling does not reach
+# them.
+#
+# Retired the way modules were retired: THE CHECKS STOP RUNNING, THE BODY IS NOT DELETED, AND THE
+# REASON IS RECORDED. Clear the flag to run them again.
+RETIRED_RUN59_REPORT_AS_ORACLE = True
+
+if not RETIRED_RUN59_REPORT_AS_ORACLE:
+    def report_value(field: str) -> str | None:
+        m = re.search(r"^\|\s*`" + re.escape(field) + r"`\s*\|\s*\**([^|*]+?)\**\s*\|", report_text,
+                      re.M)
+        return m.group(1).strip().strip("`") if m else None
 
 
-for _f in ("selection_completed_before_holdout", "holdout_changed_selection", "selection_commit",
-           "holdout_evaluation_commit", "selection_artifact", "holdout_artifact",
-           "parameter_retuned_after_holdout_inspection", "is_new_calibration_evidence"):
-    _rv, _av = report_value(_f), prov[_f]["value"]
-    check(_rv is not None and _rv == _av,
-          f"the report's stated {_f} equals the artifact's", f"report {_rv!r} vs artifact {_av!r}")
-check("Holdout selection-order closure" in report_text,
-      "the report carries the holdout selection-order subsection")
-check("booby-trapped" in report_text and "non-consumption" in report_text.lower(),
-      "and states that the evidence is non-consumption proved by execution, not commit ordering")
-check("REPORTED_LIMITATION" in report_text or "limitations are recorded plainly" in report_text,
-      "and records the two limitations rather than glossing them")
-check(re.search(r"\*\*not\*\*\s+new calibration evidence", report_text) is not None,
-      "and says the closure is not new calibration evidence")
+    for _f in ("selection_completed_before_holdout", "holdout_changed_selection", "selection_commit",
+               "holdout_evaluation_commit", "selection_artifact", "holdout_artifact",
+               "parameter_retuned_after_holdout_inspection", "is_new_calibration_evidence"):
+        _rv, _av = report_value(_f), prov[_f]["value"]
+        check(_rv is not None and _rv == _av,
+              f"the report's stated {_f} equals the artifact's", f"report {_rv!r} vs artifact {_av!r}")
+    check("Holdout selection-order closure" in report_text,
+          "the report carries the holdout selection-order subsection")
+    check("booby-trapped" in report_text and "non-consumption" in report_text.lower(),
+          "and states that the evidence is non-consumption proved by execution, not commit ordering")
+    check("REPORTED_LIMITATION" in report_text or "limitations are recorded plainly" in report_text,
+          "and records the two limitations rather than glossing them")
+    check(re.search(r"\*\*not\*\*\s+new calibration evidence", report_text) is not None,
+          "and says the closure is not new calibration evidence")
+else:
+    print("  RETIRED (Run 59)  section 5, THE REPORT AGREES WITH THE ARTIFACT -- twelve\n"
+          "                    assertions about a sealed evidence document's prose. The\n"
+          "                    artifact they were compared against is still asserted in\n"
+          "                    sections 1 to 4, against the CSVs and against git ancestry.")
 
 
 # =================================================================================================
