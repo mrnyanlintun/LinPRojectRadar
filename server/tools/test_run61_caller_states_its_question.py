@@ -176,6 +176,16 @@ check("voting modules are exactly A1.7 and A1.8",
       sorted(CORE_VOTING_MODULES) == ["A1.7", "A1.8"], str(sorted(CORE_VOTING_MODULES)))
 
 print(f"checks: {CHECKS}")
+# RUN 62. THE CANONICAL RESULT LINE, WHICH THIS SUITE DID NOT PRINT.
+#
+# server/run_all_suites.sh accepts ONE form -- "RESULT: <passed>/<total> checks passed" -- and
+# says why in its own comment: a prose summary is not accepted because a suite that crashes
+# before printing this, or that prints its own wording, must FAIL the runner rather than look
+# clean. This suite printed "checks: 29" and "ALL GREEN", so the runner reported it as NO
+# CANONICAL RESULT LINE and its twenty-nine checks counted for nothing in the pass total. The
+# suite was green; the pass could not see it. The line is added; NOT ONE CHECK is changed,
+# added or removed, and the existing output is kept beside it rather than replaced.
+print(f"RESULT: {CHECKS - len(FAILURES)}/{CHECKS} checks passed")
 if FAILURES:
     print(f"FAILURES: {len(FAILURES)}")
     for f in FAILURES:

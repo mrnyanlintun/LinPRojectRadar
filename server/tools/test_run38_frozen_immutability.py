@@ -722,6 +722,13 @@ PERMITTED_MODIFICATIONS = {
     "server/tests/test_run34_holdout_provenance.py",
     "server/tests/test_run34_count_fault_campaign.py",
     "server/tests/test_run34_provenance_fault_campaign.py",
+    # RUN 62, THE PUBLICATION OF RUNS 60 AND 61. This entry records a modification RUN 61 made
+    # and did not declare here: its verification rule -- no harness that drives LinDetail.render
+    # may call LinResults.prime on an executable line -- required this pre-existing suite to stop
+    # pre-priming the row it then claims to have read. NOTHING was deleted from it. The entry is
+    # ADDED to this list rather than the check being loosened, which is the whole point of a
+    # permitted-modification list: the modification is DECLARED, not excused.
+    "server/tools/test_run11_status_and_conflict.py",
 }
 modified = [p for st, p in run38 if not st.startswith("A")]
 unexpected = [p for p in modified if p not in PERMITTED_MODIFICATIONS]
