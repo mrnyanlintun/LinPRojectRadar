@@ -136,7 +136,7 @@ FREEZE = ROOT / "research" / "freeze"
 # RUN 59. Advanced to the v38 candidate; the run57 artefacts are NOT rewritten.
 PREDECESSOR_CANDIDATE = "13c150960d608a677ef2f5030ad58b58443ff81a"
 PREDECESSOR_VERSION = "sim-2026.08-v38"
-CANDIDATE = "f679b9765e3007b941dab233479e84f6970874b6"
+CANDIDATE = "beeb73d31253525a3dd8ded58855a5574cdfb651"
 EXPECTED_VERSION = "sim-2026.08-v39"
 IDENTITY_FILE = "run59_freeze_candidate_identity.json"
 GATE_FILE = "run59_successor_freeze_gate.csv"
