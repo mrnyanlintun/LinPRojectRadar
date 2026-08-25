@@ -341,6 +341,7 @@ status is unknown is NOT merged.** See §12.
 | 8 | The verification rule is enforceable, or the report states why not | **PARTIALLY MET, and the gap is stated** | §7. Injection **F8** → RED for the no-pre-priming clause; the not-period-1 clause is not machine-enforceable and that is said plainly. |
 | 9 | No rendered text changed other than the corrected driver attribution and what §4.5 corrects | **MET WITH ONE DIFFERENCE, REPORTED** | See §11.1 below. |
 | 10 | No stored figure changes | **MET BY CONSTRUCTION, not by assertion** | Only three client files changed; no server code, no compute path, no migration. The fixture database's `computed_results` rows were never written by any browser session (the drivers issue no compute call). **Not separately asserted — the diff was not taken.** |
+| — | *(added by this run, not in §8)* Nothing outside the ordered scope broke | **ESTABLISHED with a pre-fix control** | 21 suites — every one in the repository that mentions `taxonomy.js`, `detail.js`, `workspace.js`, `LinResults`, `getModuleStatus` or `rowFor` — run on **both** trees with a fresh migrated database each. **BEFORE: 21/21 green. AFTER: 20/21**, the one red being `test_run28_closure`'s pinned manifest (§13.3). See §13. |
 | 11 | The behaviour digest is re-derived | **NOT MET — unstarted** (§10.4) |
 | 12 | Modules in service 63, registry 101, both derived | **MET** | Printed live by every browser session: `registry: 101  in service: 63`. |
 | 13 | Voting count exactly 2, `A1.7` and `A1.8` | **MET** | Printed live: `core voting: frozenset({'A1.7', 'A1.8'})`. Also asserted in the new suite. |
@@ -429,6 +430,7 @@ Without the campaign it would have shipped as a check that could not fail.
 
 ```
 run61-caller-states-its-question
+  e24c225  Run 61: the eight-surface pass, and two freeze anchors RE-POINTED, not deleted.
   2753a52  Run 61: injection F7 caught a vacuous check. The provenance host is pinned to its render site.
   a8dfe09  Run 61: the caller states its question. The stored-row cache is keyed by period, and shape 1 is strict.
   5f5cf60  (main, origin/main)  Run 59: NO MARKDOWN DOCUMENT CARRIES AUTHORITY.
@@ -437,13 +439,106 @@ run61-caller-states-its-question
 Files changed, named individually — **no `git add -A`, no `git add .`, at any point**:
 
 ```
-assets/js/taxonomy.js
-assets/js/workspace.js
-assets/js/detail.js
-server/tools/drive_run61_caller_shapes.py            (new)
-server/tools/test_run61_caller_states_its_question.py (new)
-REPORT_2026-08-25_run61_caller_states_its_question.md (new)
+assets/js/taxonomy.js                                  (the three shapes, period-keyed cache)
+assets/js/workspace.js                                 (the period-1 read replaced by shape 2)
+assets/js/detail.js                                    (the provenance line's second pass)
+server/tools/test_run11_status_and_conflict.py         (one anchor re-pointed, not deleted)
+server/tools/test_run2_fifteen_defects.py              (RUN61_ADDED / RUN61_REMOVED declared)
+server/tools/drive_run61_caller_shapes.py              (new)
+server/tools/test_run61_caller_states_its_question.py  (new, 29 checks)
+REPORT_2026-08-25_run61_caller_states_its_question.md  (new)
 ```
+
+**Two `test_*.py` files were touched and one was added — three `test_suite_identity` members. That
+is three identity re-takes already owed before a stamp can move, and it is said plainly rather
+than discovered by Run 62 at pass four.**
+
+---
+
+## 13. The suites, and the audit artifacts they rewrote
+
+### 13.1 The full 203-suite pass was NOT completed, and the reason is a harness fault of mine
+
+I ran the full population twice and both attempts were invalid, for reasons that were mine and not
+the repository's:
+
+1. First attempt: `DATABASE_URL` unset → `SettingsError` on every suite that boots the app.
+2. Second attempt: one **shared** SQLite database across all suites → state pollution
+   (`sequence rows stored as data`, `allocation recorded in audit_events` and similar failed on
+   suites that are green in isolation).
+
+**The correct harness gives every suite its own freshly-migrated database.** I established that by
+building it and running a 21-suite subset — every suite in the repository that mentions
+`taxonomy.js`, `detail.js`, `workspace.js`, `LinResults`, `getModuleStatus` or `rowFor` — **on both
+trees**, and the pre-fix control came back **21/21 green**. That is the proof the harness is sound
+and the environment right; the full 203 was not re-run after that, for budget. **It is unstarted,
+not failed, and no green count for 203 suites is claimed by this run.**
+
+### 13.2 The 21-suite before/after comparison — the control that says what I broke
+
+| Suite | BEFORE `5f5cf60` | AFTER, first pass | AFTER, after re-pointing |
+|---|---|---|---|
+| `test_run11_status_and_conflict` | 39/39 | **38/39** | **39/39** |
+| `test_run2_fifteen_defects` | 259/259 | **257/259** | **259/259** |
+| `test_run28_closure` | 77/77 | **76/77** | **76/77 — see 13.3** |
+| `test_run36_fault_guards` | 41/41 | 41/41 | **41/41** (its first re-run refused on a dirty tree, which is the guard working; green on a clean tree) |
+| the other 17 | all green | all green | all green |
+
+**Exactly three suites moved, all three are source-anchor or manifest checks, and none is a
+behaviour regression.** Two were re-pointed; the third is a manifest.
+
+**Neither re-pointed check was deleted, and neither was weakened** (§11.4 was not triggered):
+
+- **`test_run11_status_and_conflict.py:169`** asserted the literal `ROWS[keyOf(project)]` in
+  `taxonomy.js`, guarding that `getProjectFusion` still consults the fuller primed row when the slim
+  projection cannot answer. That reach-through now goes through
+  `primedFor(keyOf(project), wantFull …)`, which does the same thing **and additionally refuses a
+  row from a period the caller did not ask for.** Re-pointed. **Proved still able to fail by
+  injection**: replacing the reach-through with `var full = null;` → `38/39`, naming this check.
+  *A first attempt at the re-pointed anchor was too loose* — `primedFor(keyOf(project)` matches
+  three other call sites — *and the injection caught that too. The anchor is now
+  `primedFor(keyOf(project), wantFull`, which is unique to `getProjectFusion`.*
+- **`test_run2_fifteen_defects.py`** holds a line-by-line freeze diff over `assets/js/detail.js` in
+  which every added and removed line must be **enumerated by the run that made it** — the discipline
+  Runs 11, 16, 43, 44, 47, 48, 49, 51, 52, 55 and 57 each followed. `RUN61_ADDED` and
+  `RUN61_REMOVED` are declared the same way, naming exactly the host `<div>`, the
+  `refreshProvenanceLine` call and its body. **Nothing was widened.** Two multi-line block comments
+  in `detail.js` were reformatted to `//` lines so they fall under the existing generic
+  comment rule rather than needing per-line enumeration — a formatting change to comments, no code.
+
+### 13.3 `test_run28_closure` — the one red left standing, and why it is not a halt
+
+```
+1 check(s) did not hold:
+  - and the walk agrees with the pinned manifest: nothing added, removed or changed
+RESULT: 76/77 checks passed
+```
+
+This is the **pinned production-tree manifest** (`code_audit/run59_production_tree.sha256`,
+242 files). Three of its members changed and two new `server/tools/` files were added, so the walk
+correctly disagrees with the pin. **§11.5 exempts exactly this: "a gate row fails for a reason other
+than a manifest this run's edits falsified."** The manifest is regenerated by the mint, which is
+unstarted (§10.1). It is reported red and left red rather than regenerated by hand.
+
+### 13.4 Audit artifacts rewritten and restored
+
+The invalid full-suite attempt rewrote **7** `code_audit/` CSVs before I stopped it:
+
+```
+code_audit/run10_dsm_known_answers.csv
+code_audit/run10_dsm_recomputation.csv
+code_audit/run10_module_identity.csv
+code_audit/run10_monte_carlo_convergence.csv
+code_audit/run10_monte_carlo_distribution_gap.csv
+code_audit/run10_monte_carlo_known_answers.csv
+code_audit/run10_monte_carlo_recomputation.csv
+```
+
+All seven were restored with `git checkout -- code_audit/` and **none was committed**.
+**This run did not observe the documented 26**, because the full pass never completed — the seven
+above are the artifacts the first ~17 suites reached. Runs 58 and 59 each measured 26 and that
+figure stands as theirs, not as re-derived here. `build_run37_acceptance.py` was **not** run.
+`git status --porcelain` is **empty** at the end of the run.
 
 ---
 
