@@ -1945,12 +1945,40 @@ try:
                 'key: m.key, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx',
                 'rows.push({ index: idx, key: m.key, name: m.name, color: cat.color, bucket });',
             }
+            # RUN 61. THE PROVENANCE LINE GETS THE SECOND PASS EVERY OTHER PANEL ALREADY HAD.
+            # Named line by line, for the same reason every run above names its own: an
+            # unexplained addition to this file is still red. Two things change here and both are
+            # in service of ONE ruling -- a caller states what period it is asking for, and the
+            # answer matches the question or refuses.
+            #   1. The provenance line moves inside a NAMED, EMPTY, UNSTYLED HOST so that it can
+            #      be rebuilt when the correct period's row arrives. No control is added, moved or
+            #      removed; the host renders no text and no box.
+            #   2. `refreshProvenanceLine(p)` runs beside `refreshSectionBadges(p)` and
+            #      `refreshBriefConsistency(p)` in primeAndRefresh. Run 60 measured that the line
+            #      was the only stored-row surface built during render() with no second pass, and
+            #      that it therefore kept the first render's answer -- which named a Green module
+            #      as the driver of a status a Red module set.
+            RUN61_REMOVED = {
+                '${populated ? provenanceLineHtml(p) : ""}',
+            }
+            RUN61_ADDED = {
+                '<div data-provenance-host>${populated ? provenanceLineHtml(p) : ""}</div>',
+                'refreshProvenanceLine(p);',
+                'function refreshProvenanceLine(project) {',
+                'const host = document.querySelector("[data-provenance-host]");',
+                'if (!host) return;',
+                'let html = "";',
+                'try { html = provenanceLineHtml(project); } catch (e) { html = ""; }',
+                'host.innerHTML = html;',
+                'if (html) wireProvenanceTrace(host);',
+                '${/* RUN 61, SECTION 4.4. NAMED HOST so the line can be rebuilt when the row arrives. */""}',
+            }
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
                   or ln in RUN47_REMOVED or ln in RUN48_REMOVED
                   or ln in RUN49_REMOVED or ln in RUN51_REMOVED or ln in RUN52_REMOVED
-                  or ln in RUN57_REMOVED
+                  or ln in RUN57_REMOVED or ln in RUN61_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -1998,7 +2026,7 @@ try:
                       or ln in RUN44_ADDED or ln in _run44_added_span
                       or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED
                       or ln in RUN51_ADDED or ln in RUN52_ADDED or ln in RUN55_ADDED
-                      or ln in RUN57_ADDED
+                      or ln in RUN57_ADDED or ln in RUN61_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

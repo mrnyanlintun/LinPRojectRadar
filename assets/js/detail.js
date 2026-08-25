@@ -1044,12 +1044,7 @@
              Reporting period: <span class="mod-mono">${esc(p.reportingPeriod)}</span> ·
              State: <span class="li-state state-${stateKey}">${esc(state)}</span>
            </p>
-           ${/* RUN 61, SECTION 4.4. The provenance line lives inside a NAMED HOST so it can be
-                rebuilt when the correct period's row arrives, exactly as the section badges and
-                the brief's consistency block already are. The host is an empty, unstyled
-                container: it adds no text, no control and no visible box. Without it there is
-                no anchor to rebuild into on the one case that matters most -- a first render
-                that honestly had no row and therefore emitted no line at all. */""}
+           ${/* RUN 61, SECTION 4.4. NAMED HOST so the line can be rebuilt when the row arrives. */""}
            <div data-provenance-host>${populated ? provenanceLineHtml(p) : ""}</div>
          </div>
          <div class="detail-head-actions">
@@ -1495,18 +1490,18 @@
     else panel.insertAdjacentHTML("afterbegin", html);
   }
 
-  /* RUN 61, SECTION 4.4. Rebuild the status provenance line from the now-complete row.
-
-     REPLACES TEXT INSIDE AN ELEMENT THAT ALREADY EXISTS AND MOVES NO CONTROL. The "why?"
-     disclosure is part of the line's own markup, so it is re-emitted in the same place, in the
-     same order, by the same builder, and re-wired by the same `wireProvenanceTrace` render()
-     uses. Its expanded/collapsed state is deliberately NOT carried across: the panel's content
-     is the trace being replaced, and re-showing an old trace inside a rebuilt line would be the
-     same class of error this run exists to remove.
-
-     Where the rebuilt trace is empty (no module in the driving category has a status on the row
-     the page holds) the line is removed rather than left saying something the row cannot
-     support. An absent claim is honest; a wrong one is not. */
+  // RUN 61, SECTION 4.4. Rebuild the status provenance line from the now-complete row.
+  //
+  // REPLACES TEXT INSIDE AN ELEMENT THAT ALREADY EXISTS AND MOVES NO CONTROL. The "why?"
+  // disclosure is part of the line's own markup, so it is re-emitted in the same place, in the
+  // same order, by the same builder, and re-wired by the same `wireProvenanceTrace` render()
+  // uses. Its expanded/collapsed state is deliberately NOT carried across: the panel's content
+  // is the trace being replaced, and re-showing an old trace inside a rebuilt line would be the
+  // same class of error this run exists to remove.
+  //
+  // Where the rebuilt trace is empty (no module in the driving category has a status on the row
+  // the page holds) the line is removed rather than left saying something the row cannot
+  // support. An absent claim is honest; a wrong one is not.
   function refreshProvenanceLine(project) {
     const host = document.querySelector("[data-provenance-host]");
     if (!host) return;

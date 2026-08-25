@@ -166,9 +166,16 @@ check("the ledger banner reads the stored conflict sentence",
       "_f.conflictSentence" in app_js, "")
 check("and taxonomy.js exposes it from the stored row without deriving it",
       'conflictSentence: pick("project_conflict_sentence")' in tax_js, "")
+# RUN 61 RE-POINTED THIS ANCHOR, IT WAS NOT DELETED AND ITS FORCE IS UNCHANGED. The check asks
+# whether getProjectFusion still consults the fuller PRIMED row when the slim list projection
+# cannot answer. It asserted the literal `ROWS[keyOf(project)]`. Run 61 keyed the row cache by
+# PERIOD as well as by project, so that reach-through now goes through `primedFor(keyOf(project),
+# ...)` -- which additionally refuses a row from a period the caller did not ask for. The
+# behaviour under guard is the same behaviour, reached by a stricter accessor; only the byte-level
+# anchor moved. Proved still able to fail by injection: deleting the reach-through turns this red.
 check("and it falls back to the primed row when the slim list projection cannot answer, "
       "which is what the browser drive caught",
-      "function pick(field)" in tax_js and "ROWS[keyOf(project)]" in tax_js, "")
+      "function pick(field)" in tax_js and "primedFor(keyOf(project), wantFull" in tax_js, "")
 check("and nothing in the browser computes a conflict coefficient",
       "project_conflict_state" not in app_js or "compute" not in app_js.split(
           "project_conflict_state")[0][-200:], "")

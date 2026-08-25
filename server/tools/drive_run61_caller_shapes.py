@@ -144,6 +144,21 @@ CAP = {"label": LABEL, "database_url": os.environ.get("DATABASE_URL"),
 
 PROJECTS = ["PRJ-R60", "PRJ-R60B"]
 
+OPEN_SECTIONS_JS = r"""() => {
+  // The DOM-rendered panels only. The three WebGL surfaces (Signal Web sphere, Project Signal
+  // Network, Signal Flow's animated canvas) are NOT opened here: opening all of them at once
+  // under swiftshader wedges the page, measured in Run 61, which lost a browser session to it.
+  const ids = ['d-ledger','d-ensemble','d-docsignals','d-brief','d-decision','d-signals'];
+  const done = [];
+  ids.forEach(id => {
+    const body = document.getElementById('body-' + id);
+    if (!body) return;
+    if (body.style.display === 'none' && window.toggleSection) { window.toggleSection(id); done.push(id); }
+    else { done.push(id + '(already open)'); }
+  });
+  return done;
+}"""
+
 SURFACE_JS = r"""(id) => {
   const q = (s) => document.querySelector(s);
   const t = (s) => { const e = q(s); return e ? (e.innerText || '').trim() : null; };
@@ -240,6 +255,35 @@ with sync_playwright() as pw:
         page.wait_for_timeout(11000)
         settled = page.evaluate(SURFACE_JS, LEGACY)
 
+        # ---- SECTION 4.5. EVERY SURFACE THAT READS MODULE STATUS. ------------------------
+        # Each of the eight is a LAZILY-INITIALISED panel: it does not read a stored row at all
+        # until its section is opened, which is why a capture taken on a freshly rendered page
+        # sees only the provenance line and the brief. Open them all, then attribute every
+        # module-status read that follows to the file and line that made it, and record WHICH
+        # PERIOD the page held when it did. That is the per-surface answer section 4.5 asks for,
+        # established by execution rather than by reading the panel's own caption.
+        page.evaluate("() => window.__R61.calls.length = 0")
+        opened = page.evaluate(OPEN_SECTIONS_JS)
+        page.wait_for_timeout(9000)
+        surface_calls = page.evaluate("() => window.__R61.calls.slice(0, 8000)")
+        by_file = {}
+        for c in surface_calls:
+            st = c.get("stack") or ""
+            frame = next((f for f in st.split(" | ") if "/assets/js/" in f), st[:60])
+            line = frame.split("/assets/js/")[-1].split(")")[0] if "/assets/js/" in frame else "?"
+            rec = by_file.setdefault(line, {"held": set(), "got": set(), "n": 0})
+            rec["n"] += 1
+            rec["held"].add(str(c.get("heldPeriod")))
+            rec["got"].add(str(c.get("got"))[:12])
+        print(f"      sections opened: {opened}")
+        print("      -- SECTION 4.5, per reader: which period the page held, what it returned --")
+        for k in sorted(by_file):
+            r = by_file[k]
+            print(f"         {k:44s} n={r['n']:5d} held={sorted(r['held'])} got={sorted(r['got'])[:6]}")
+        SURFACES = {k: {"n": v["n"], "held": sorted(v["held"]), "got": sorted(v["got"])}
+                    for k, v in by_file.items()}
+        after_open = page.evaluate(SURFACE_JS, LEGACY)
+
         # ---- SECOND RENDER of the same project, row already primed. -----------------------
         page.evaluate("(id) => window.LinDetail && LinDetail.render(id)", LEGACY)
         page.wait_for_timeout(400)
@@ -275,6 +319,8 @@ with sync_playwright() as pw:
         print(f"        settled   held row  : period {p1_settled['held_row_period']}")
 
         CAP["projects"][LEGACY] = {
+            "surfaces_by_reader": SURFACES, "sections_opened": opened,
+            "after_open": after_open,
             "p1_primed_render": p1_render, "p1_primed_settled": p1_settled,
             "primes_before_render": primes_before,
             "first_render": first, "settled": settled,
