@@ -438,12 +438,21 @@ check(H[len(_prev):] == ("sim-2026.08-v17", "sim-2026.08-v18", "sim-2026.08-v19"
                          # edits a comment or a document heading, and one of them is the
                          # SEQUENCE-BEARING assets/js/decision-ui.js, whose move carries a named
                          # exception of record. NOTHING IS REMOVED FROM THIS TUPLE.
-                         "sim-2026.08-v39"),
+                         "sim-2026.08-v39",
+                         # RUN 62's own single authorised append, and it is an EXTENSION, never
+                         # an edit: v39 above keeps its position. v40 publishes Runs 60 and 61 --
+                         # three production-tree members moved, one of them the SEQUENCE-BEARING
+                         # assets/js/workspace.js, whose move carries a named exception of
+                         # record. A project detail page now renders the stored row of the
+                         # period the page holds, which changes WHAT A PARTICIPANT READS and
+                         # therefore cannot be made under the v39 stamp. NOTHING IS REMOVED FROM
+                         # THIS TUPLE.
+                         "sim-2026.08-v40"),
       "and it grew by exactly the three stamps Run 31 added, the one Run 32 added, the one Run 33 "
       "added, the one Run 34 adds, the one the Run-35 closure adds, the one Run 36 adds, the "
       "one Run 41 adds, the one Run 42 adds, the one Run 43 adds, the one Run 44 adds, the one "
       "Run 45 adds, the one Run 47 adds, the one Run 48 adds, the one Run 49 adds and the one "
-      "Run 55 adds, the one Run 56 adds, the one Run 57 adds and the one Run 59 adds",
+      "Run 55 adds, the one Run 56 adds, the one Run 57 adds, the one Run 59 adds and the one Run 62 adds",
       str(H[len(_prev):]))
 
 # PREDECESSOR RECONSTRUCTION: the v17 package still reconstructs from its own object.

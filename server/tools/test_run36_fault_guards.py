@@ -492,6 +492,13 @@ _BY_SUCCESSOR = (
     # which is what this guard checks, so the exception is declared and not merely tolerated.
     ("code_audit/run59_participant_package_v24_checksums.sha256",
      PP.V23_TO_V24_SEQUENCE_EXCEPTION),
+    # RUN 62. The v25 link, which also carries a non-empty sequence exception:
+    # assets/js/workspace.js. Its "-- SEQUENCE-BEARING" paragraph is present in the v25 record,
+    # which is what this guard checks, so the exception is declared and not merely tolerated.
+    # assets/js/taxonomy.js also moved across this link and is NOT sequence-bearing, established
+    # by membership of SEQUENCE_BEARING_FILES_FROM_V21 rather than assumed, so it needs none.
+    ("code_audit/run62_participant_package_v25_checksums.sha256",
+     PP.V24_TO_V25_SEQUENCE_EXCEPTION),
 )
 _undeclared = [f"{f} (in {_rec})" for _rec, _files in _BY_SUCCESSOR for f in _files
                if f"# {f} -- SEQUENCE-BEARING"
