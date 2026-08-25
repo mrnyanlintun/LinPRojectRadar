@@ -505,7 +505,15 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: reporting exactly those four CHANGED, nothing added, removed or renamed, BEFORE this manifest
 #: was written. The run56 manifest is NOT rewritten: it stays exactly as that release wrote it
 #: and this successor names it as its parent.
-PINNED = ROOT / "code_audit" / "run57_production_tree.sha256"
+#: RUN 59 SUPERSEDES THE RUN-57 MANIFEST. Six of the 242 members moved: assets/js/decision-ui.js,
+#: p0-baseline/MODULE_TAXONOMY.md, server/app/document_evidence.py, server/app/evm_consistency.py,
+#: server/app/research_export.py and server/app/simulation/portfolio_health.py. Every one of the
+#: six edits is a COMMENT or a document heading; not one executable byte moved. The run57 manifest
+#: is NOT rewritten -- it describes the tree as v38 left it and stays addressable below.
+PINNED = ROOT / "code_audit" / "run59_production_tree.sha256"
+#: The Run-57 production manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN57 = ROOT / "code_audit" / "run57_production_tree.sha256"
 #: The Run-56 manifest, the immediate parent, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN56 = ROOT / "code_audit" / "run56_production_tree.sha256"

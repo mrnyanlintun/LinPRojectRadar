@@ -199,6 +199,14 @@ V22_RECORD = "code_audit/run56_participant_package_v22_checksums.sha256"
 V22_COMMIT = "50dfb40"
 V23_IDENTITY = "og-participant-2026.08-v23"
 V23_RECORD = "code_audit/run57_participant_package_v23_checksums.sha256"
+#: RUN 59. The v24 link. ONE governed file moved and it IS sequence-bearing.
+V24_IDENTITY = "og-participant-2026.08-v24"
+V24_RECORD = "code_audit/run59_participant_package_v24_checksums.sha256"
+#: RUN 59. The tip of `main` at which v23 was still current. EXPLICIT HASH, never a relative
+#: reference. Established by BYTE COMPARISON over all sixty-nine members: exactly two commits
+#: reproduce the v23 record, f4c1dbf and 56684da, and the chain's own rule -- the tip at which
+#: the package was still current -- settles it on f4c1dbf.
+V23_COMMIT = "f4c1dbf"
 V3_COMMIT = "01e943ef71689c468dd343695fbc89901bc02964"
 RECORD = "code_audit/run12_participant_package_checksums.sha256"
 SUCCESSOR = "code_audit/run28_closure_participant_package_checksums.sha256"
@@ -678,7 +686,7 @@ for _pkg in PP.PARTICIPANT_PACKAGES:
            and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() == digest
            for rel, digest in _rec.items()):
         _matches_tree.append(_pkg.identifier)
-check(_matches_tree == [PP.CURRENT.identifier] == [V23_IDENTITY],
+check(_matches_tree == [PP.CURRENT.identifier] == [V24_IDENTITY],
       "PACKAGE IDENTITY IS TRUTHFUL: exactly ONE record in the chain describes the live tree and "
       "it is the one declared current. A CURRENT FILE CANNOT MASQUERADE AS A PREDECESSOR PACKAGE",
       str(_matches_tree))
@@ -687,15 +695,15 @@ check([p.identifier for p in PP.PARTICIPANT_PACKAGES]
           V6_IDENTITY, V7_IDENTITY, V8_IDENTITY, V9_IDENTITY, V10_IDENTITY, V11_IDENTITY,
           V12_IDENTITY, V13_IDENTITY, V14_IDENTITY, V15_IDENTITY, V16_IDENTITY,
           V17_IDENTITY, V18_IDENTITY, V19_IDENTITY, V20_IDENTITY, V21_IDENTITY,
-          V22_IDENTITY, V23_IDENTITY],
+          V22_IDENTITY, V23_IDENTITY, V24_IDENTITY],
       "the chain is declared oldest first and every link is named", str(PP.PARTICIPANT_PACKAGES))
-check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 23
+check(len({p.record for p in PP.PARTICIPANT_PACKAGES}) == 24
       and all((ROOT / p.record).is_file() for p in PP.PARTICIPANT_PACKAGES),
-      "each link has its OWN record file and all twenty-three are present, so no link shares a "
+      "each link has its OWN record file and all twenty-four are present, so no link shares a "
       "record with another")
 check(PP.CURRENT.source_commit is None
       and all(p.source_commit for p in PP.PARTICIPANT_PACKAGES[:-1]),
-      "and only the current link reads the working tree; all twenty-two predecessors name the "
+      "and only the current link reads the working tree; all twenty-three predecessors name the "
       "commit their bytes live in")
 # ---- v14, NOW A PREDECESSOR ---------------------------------------------------------------
 # RUN 43, THE RETIREMENT OF 38 MODULES FROM SERVICE. Five files moved: three generated from the
@@ -1651,21 +1659,27 @@ print("-" * 78)
 print("RUN 57: og-participant-2026.08-v23, three files moved and no sequence exception")
 print("-" * 78)
 
-check(PP.CURRENT.identifier == V23_IDENTITY,
-      "the package chain declares v23 CURRENT", PP.CURRENT.identifier)
-check(PP.CURRENT.record == V23_RECORD,
-      "and names the v23 checksum record as the one that describes the live tree",
-      PP.CURRENT.record)
-check(PP.CURRENT.source_commit is None,
-      "and leaves its source_commit None, which is what 'describes the LIVE TREE' means")
+# RUN 59 CONVERTS v23 TO A PINNED PREDECESSOR. It is no longer the record that describes the
+# live tree -- v24 is -- so the three currency checks below now assert the OPPOSITE, and the
+# checksum check is re-pointed at the pinned commit's blobs. THE RECORD FILE IS NOT REWRITTEN.
+_v23_link = next(k for k in PP.PARTICIPANT_PACKAGES if k.identifier == V23_IDENTITY)
+check(PP.CURRENT.identifier != V23_IDENTITY,
+      "v23 is no longer CURRENT: Run 59 superseded it", PP.CURRENT.identifier)
+check(_v23_link.record == V23_RECORD,
+      "and it still names its own checksum record, which was not rewritten", _v23_link.record)
+check(_v23_link.source_commit is not None
+      and _v23_link.source_commit.startswith(V23_COMMIT),
+      f"and its source_commit is PINNED to {V23_COMMIT}, the tip of main at which it was still "
+      f"current, byte-verified member by member rather than assumed",
+      str(_v23_link.source_commit))
 
 _v23 = parse((ROOT / V23_RECORD).read_text(encoding="utf-8"))
 _v23_bad = sorted(rel for rel, digest in _v23.items()
-                  if not (ROOT / rel).is_file()
-                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  if git_bytes(rel, V23_COMMIT) is None
+                  or hashlib.sha256(git_bytes(rel, V23_COMMIT)).hexdigest() != digest)
 check(not _v23_bad,
-      "every one of v23's sixty-nine checksums holds against the LIVE TREE, which is where the "
-      "current package correctly lives", str(_v23_bad))
+      f"every one of v23's sixty-nine checksums holds against the blobs at {V23_COMMIT}, which "
+      f"is what pins the record to that commit rather than to a claim", str(_v23_bad))
 check(len(_v23) == 69, "and the package is sixty-nine files", str(len(_v23)))
 
 # THE INVENTORY DID NOT MOVE AT ALL ACROSS THIS LINK.
@@ -1679,7 +1693,7 @@ check(PP.V22_TO_V23_DELETED == (),
 # THE FILES THAT MOVED ARE EXACTLY THE THREE DECLARED, AND NOTHING RODE ALONG.
 _moved23 = sorted(rel for rel, digest in _v22.items()
                   if rel in _v23
-                  and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+                  and hashlib.sha256(git_bytes(rel, V23_COMMIT)).hexdigest() != digest)
 check(_moved23 == sorted(PP.V22_TO_V23_CHANGED),
       "and the files v23 moved are exactly the three it declares, so nothing rode along with the "
       "merge and the removal",
@@ -1690,17 +1704,19 @@ check(PP.V22_TO_V23_SEQUENCE_EXCEPTION == (),
       "V22_TO_V23_SEQUENCE_EXCEPTION is an EXPLICITLY DECLARED empty tuple",
       str(PP.V22_TO_V23_SEQUENCE_EXCEPTION))
 _seq23 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES_FROM_V21
-                if not (ROOT / rel).is_file()
-                or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v22.get(rel))
+                if git_bytes(rel, V23_COMMIT) is None
+                or hashlib.sha256(git_bytes(rel, V23_COMMIT)).hexdigest() != _v22.get(rel))
 check(not _seq23,
       "AND NO SEQUENCE-BEARING FILE MOVED ACROSS v22 TO v23: all five are present and "
       "byte-identical to v22, so no step of the decision sequence, no reveal gate, no lock, no "
       "randomization and no questionnaire moved", str(_seq23))
 
 # WHAT MOVED INSIDE THE THREE FILES, MEASURED RATHER THAN ASSERTED.
-_ing23 = (ROOT / "assets/js/ingest.js").read_text(encoding="utf-8")
-_det23 = (ROOT / "assets/js/detail.js").read_text(encoding="utf-8")
-_css23 = (ROOT / "assets/css/radar.css").read_text(encoding="utf-8")
+# RUN 59: read at the PINNED COMMIT, not from disk. v23 no longer describes the working tree,
+# and a predecessor block that reads the working tree would be measuring the wrong release.
+_ing23 = git_bytes("assets/js/ingest.js", V23_COMMIT).decode("utf-8")
+_det23 = git_bytes("assets/js/detail.js", V23_COMMIT).decode("utf-8")
+_css23 = git_bytes("assets/css/radar.css", V23_COMMIT).decode("utf-8")
 check('class="btn small detail-reset"' not in _det23
       and 'class="detail-reset-msg kn-sub" aria-live="polite"' not in _det23
       and "function wireReset(root)" not in _det23
@@ -1743,5 +1759,104 @@ if _fail:
     print(f"{len(_fail)} check(s) did not hold:")
     for f in _fail:
         print(f"  - {f}")
+
+
+# =================================================================================================
+# RUN 59, THE MINT. og-participant-2026.08-v24 -- NO MARKDOWN DOCUMENT CARRIES AUTHORITY.
+#
+# v24 is the current package and is now the ONLY record that reads the working tree. EXACTLY ONE
+# file moved -- assets/js/decision-ui.js -- and IT IS SEQUENCE-BEARING, so this link is the first
+# since v20-to-v21 to carry a NON-EMPTY sequence exception. The exception is DECLARED in
+# V23_TO_V24_SEQUENCE_EXCEPTION and carries its own "-- SEQUENCE-BEARING" paragraph in the v24
+# record, which test_run36_fault_guards.py asserts.
+#
+# THIS BLOCK IS ADDED, NOT SUBSTITUTED FOR THE v23 BLOCK ABOVE. Converting v23 to a predecessor
+# without adding this would have left the chain's central guarantee -- that the CURRENT record's
+# checksums hold against the LIVE TREE -- with no subject at all, which is exactly the shape Run
+# 57 warned about.
+# =================================================================================================
+print()
+print("-" * 78)
+print("RUN 59: og-participant-2026.08-v24, one file moved and it IS sequence-bearing")
+print("-" * 78)
+
+check(PP.CURRENT.identifier == V24_IDENTITY,
+      "the package chain declares v24 CURRENT", PP.CURRENT.identifier)
+check(PP.CURRENT.record == V24_RECORD,
+      "and names the v24 checksum record as the one that describes the live tree",
+      PP.CURRENT.record)
+check(PP.CURRENT.source_commit is None,
+      "and leaves its source_commit None, which is what 'describes the LIVE TREE' means")
+
+_v24 = parse((ROOT / V24_RECORD).read_text(encoding="utf-8"))
+_v24_bad = sorted(rel for rel, digest in _v24.items()
+                  if not (ROOT / rel).is_file()
+                  or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(not _v24_bad,
+      "every one of v24's sixty-nine checksums holds against the LIVE TREE, which is where the "
+      "current package correctly lives", str(_v24_bad))
+check(len(_v24) == 69, "and the package is sixty-nine files", str(len(_v24)))
+
+# THE INVENTORY DID NOT MOVE AT ALL ACROSS THIS LINK.
+check(sorted(_v24) == sorted(_v23),
+      "v24 covers exactly the same file inventory as v23: nothing joined and nothing left",
+      str(sorted(set(_v23) ^ set(_v24))))
+check(PP.V23_TO_V24_DELETED == (),
+      "and V23_TO_V24_DELETED is an EXPLICITLY DECLARED empty tuple, not an omission",
+      str(PP.V23_TO_V24_DELETED))
+
+# THE ONE FILE THAT MOVED IS EXACTLY THE ONE DECLARED, AND NOTHING RODE ALONG.
+_moved24 = sorted(rel for rel, digest in _v23.items()
+                  if rel in _v24
+                  and hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != digest)
+check(_moved24 == sorted(PP.V23_TO_V24_CHANGED),
+      "and the file v24 moved is exactly the one it declares, so nothing rode along with the "
+      "comment correction",
+      str(sorted(set(_moved24) ^ set(PP.V23_TO_V24_CHANGED))))
+
+# THE SEQUENCE EXCEPTION IS DECLARED, AND IT IS THE ONLY ONE.
+check(PP.V23_TO_V24_SEQUENCE_EXCEPTION == ("assets/js/decision-ui.js",),
+      "V23_TO_V24_SEQUENCE_EXCEPTION names assets/js/decision-ui.js and nothing else",
+      str(PP.V23_TO_V24_SEQUENCE_EXCEPTION))
+_seq24 = sorted(rel for rel in PP.SEQUENCE_BEARING_FILES_FROM_V21
+                if not (ROOT / rel).is_file()
+                or hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != _v23.get(rel))
+check(_seq24 == sorted(PP.V23_TO_V24_SEQUENCE_EXCEPTION),
+      "AND THE ONLY SEQUENCE-BEARING FILE THAT MOVED IS THE DECLARED ONE: the other FOUR are "
+      "present and byte-identical to v23, so no step of the decision sequence, no reveal gate, "
+      "no lock, no randomization and no questionnaire moved", str(_seq24))
+check(len(PP.SEQUENCE_BEARING_FILES_FROM_V21) == 5,
+      "and the sequence-bearing set is NOT shortened to excuse the exception: still five",
+      str(len(PP.SEQUENCE_BEARING_FILES_FROM_V21)))
+
+# WHAT MOVED INSIDE THAT FILE: A COMMENT, AND NOTHING ELSE. MEASURED, NOT ASSERTED.
+_du24 = (ROOT / "assets/js/decision-ui.js").read_text(encoding="utf-8")
+_du23 = git_bytes("assets/js/decision-ui.js", V23_COMMIT).decode("utf-8")
+
+
+def _strip_block_comments(src: str) -> str:
+    return re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+
+
+check(_strip_block_comments(_du24) == _strip_block_comments(_du23),
+      "decision-ui.js is byte-identical to v23 once BLOCK COMMENTS are stripped: what moved is a "
+      "comment and nothing else, and NO RENDERED STRING MOVED")
+# NON-VACUITY, pinned to an explicit commit hash and not to a relative reference: the two files
+# really do differ, so the equality above is a statement about comments and not about two
+# identical inputs.
+check(_du24 != _du23,
+      f"NON-VACUITY at {V23_COMMIT}: the file really did move, so the comparison above is not "
+      f"two copies of the same bytes")
+check("must never appear in participant-facing text" in _du23
+      and "must never appear in participant-facing text" not in _du24,
+      f"and what left it is the SUPERSEDED prohibition, present at {V23_COMMIT} and gone now")
+for _n in ("GROUP_NAMES", "MODULE_NAMES"):
+    _a = re.search(_n + r"\s*=\s*\{(.*?)\n  \};", _du23, re.S)
+    _b = re.search(_n + r"\s*=\s*\{(.*?)\n  \};", _du24, re.S)
+    check(_a is not None and _b is not None and _a.group(1) == _b.group(1),
+          f"and {_n} is byte-identical across the link, so not one displayed name changed")
+
+print()
+
 print(f"RESULT: {PASSED}/{PASSED + FAILED} checks passed")
 sys.exit(0 if FAILED == 0 else 1)

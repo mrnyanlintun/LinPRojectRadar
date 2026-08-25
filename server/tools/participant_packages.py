@@ -609,7 +609,15 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     Package(
         "og-participant-2026.08-v23",
         "code_audit/run57_participant_package_v23_checksums.sha256",
-        None,
+        # RUN 59 PIN. Established by BYTE COMPARISON, member by member, with `git show
+        # <commit>:<path>` over all sixty-nine members: exactly TWO commits on main reproduce
+        # this record's blobs, f4c1dbf and 56684da, so the bytes alone do not single one out.
+        # The chain's own rule -- the tip of `main` at which the package was still current, the
+        # rule v21 and v22 were pinned under -- settles it on f4c1dbf, the tip of main when Run
+        # 59 began. THE RECORD FILE ITSELF IS NOT EDITED: its header still says it describes the
+        # LIVE TREE, and rewriting a predecessor record to agree with the present is the failure
+        # B11 exists to catch.
+        "f4c1dbfddde280f2856c539f2ed7120be189e316",
         "RUN 57, THE TWO RESET CONTROLS MERGED INTO ONE. THREE participant-visible files moved "
         "-- assets/js/ingest.js, assets/js/detail.js and assets/css/radar.css -- and NOT ONE of "
         "them is sequence-bearing, so this link carries NO sequence exception and "
@@ -660,6 +668,33 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
         "The v22 record is NOT regenerated: it describes the tree as v22 left it, and it is "
         "PINNED to 50dfb40 -- byte-verified member by member -- rather than edited to agree with "
         "the present, which is the predecessor rewrite B11 exists to catch.",
+    ),
+    Package(
+        "og-participant-2026.08-v24",
+        "code_audit/run59_participant_package_v24_checksums.sha256",
+        None,
+        "RUN 59, NO MARKDOWN DOCUMENT CARRIES AUTHORITY. EXACTLY ONE of the sixty-nine governed "
+        "files moved -- assets/js/decision-ui.js -- and nothing was added and nothing deleted. "
+        "IT IS SEQUENCE-BEARING, so this link carries a NAMED EXCEPTION OF RECORD, declared in "
+        "V23_TO_V24_SEQUENCE_EXCEPTION rather than discovered by a checksum, and its authority "
+        "is the owner's Run 59 order at section 6.3. WHAT MOVED INSIDE IT IS A COMMENT AND "
+        "NOTHING ELSE: the block comment heading the module and category NAME tables gave as its "
+        "reason that the analytical layer's ids must never appear in participant-facing text, "
+        "and that prohibition was SUPERSEDED by the owner on 2026-08-23 -- so the file was "
+        "carrying a dead rule as the justification for a live table. The comment now records "
+        "that displayed identifiers are acceptable and that the table holds names because a name "
+        "is what a participant can read. NO RENDERED STRING MOVED and no executable byte moved: "
+        "not one entry of GROUP_NAMES or MODULE_NAMES changed, no step of the decision sequence, "
+        "no reveal gate, no lock, no randomization, no questionnaire, no server contract and no "
+        "append-only record moved, and the three inert period literals Run 49 documented are "
+        "untouched. Every other member of SEQUENCE_BEARING_FILES_FROM_V21 is present and byte "
+        "for byte identical to v23, measured and not assumed. NO CONTROL was added, moved or "
+        "removed. NO SERVER COMPUTATION MOVED: 101 registered, 63 in service, voting exactly "
+        "A1.7 and A1.8, no stored figure changed, and the behaviour digest is RE-DERIVED and "
+        "unchanged. The v23 record is NOT regenerated: it describes the tree as v23 left it and "
+        "is PINNED to f4c1dbf, byte-verified member by member over all sixty-nine, rather than "
+        "edited to agree with the present -- which is the predecessor rewrite B11 exists to "
+        "catch.",
     ),
 )
 
@@ -752,6 +787,39 @@ V22_TO_V23_CHANGED = (
 #: and byte-identical across this successor, which is asserted rather than assumed. A
 #: sequence-bearing file moving without being named here still turns the gate red.
 V22_TO_V23_SEQUENCE_EXCEPTION: tuple[str, ...] = ()
+
+#: RUN 59. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
+#: omitted, so the identity builder reads a DECLARATION instead of falling back to a hard-coded
+#: empty list. A member of a pinned identity group disappearing without being named here still
+#: raises.
+V23_TO_V24_DELETED: tuple[str, ...] = ()
+
+#: RUN 59. The files whose bytes moved between v23 and v24. ONE, and it IS SEQUENCE-BEARING.
+V23_TO_V24_CHANGED = (
+    "assets/js/decision-ui.js",
+)
+
+#: RUN 59. THE NAMED EXCEPTION OF RECORD FOR THIS LINK, declared here rather than discovered by
+#: a checksum. Its authority is the owner's Run 59 order, section 6.3: assets/js/decision-ui.js
+#: restated the module-identifier prohibition the owner SUPERSEDED on 2026-08-23, and the order
+#: requires that citation corrected or dropped in all five code sites that carry it.
+#:
+#: WHAT MOVED INSIDE THAT FILE, EXACTLY: A COMMENT, AND NOTHING ELSE. The block comment heading
+#: the module and category NAME tables read "module and category NAMES (never ids)" and gave as
+#: its reason that "the analytical layer's ids (A1.1, B4.4) must never appear in
+#: participant-facing text". That reason WAS the superseded rule. It now records that displayed
+#: identifiers are acceptable, that no markdown document carries authority over this file, and
+#: that the table holds NAMES because a name is what a participant can read and because loading
+#: categories.js would pull in the client-side simulation bundle this route must not have.
+#:
+#: NO RENDERED STRING MOVED. Not one entry of GROUP_NAMES or MODULE_NAMES changed; no step of
+#: the decision sequence, no reveal gate, no lock, no randomization, no server contract and no
+#: append-only record moved; the three inert `period: 1` literals Run 49 documented are
+#: untouched. Every OTHER member of SEQUENCE_BEARING_FILES_FROM_V21 is present and byte for byte
+#: identical across this successor, MEASURED and not assumed.
+V23_TO_V24_SEQUENCE_EXCEPTION = (
+    "assets/js/decision-ui.js",
+)
 
 #: RUN 52. The files whose bytes moved between v19 and v20. SEVEN, and EXACTLY ONE of them is
 #: sequence-bearing. The exception is declared here rather than left for a checksum to discover.

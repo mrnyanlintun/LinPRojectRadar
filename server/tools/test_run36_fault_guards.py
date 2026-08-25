@@ -487,6 +487,11 @@ _BY_SUCCESSOR = (
     # paragraph in the v23 record here.
     ("code_audit/run57_participant_package_v23_checksums.sha256",
      PP.V22_TO_V23_SEQUENCE_EXCEPTION),
+    # RUN 59. The v24 link, and the FIRST since v21 to carry a non-empty sequence exception:
+    # assets/js/decision-ui.js. Its "-- SEQUENCE-BEARING" paragraph is present in the v24 record,
+    # which is what this guard checks, so the exception is declared and not merely tolerated.
+    ("code_audit/run59_participant_package_v24_checksums.sha256",
+     PP.V23_TO_V24_SEQUENCE_EXCEPTION),
 )
 _undeclared = [f"{f} (in {_rec})" for _rec, _files in _BY_SUCCESSOR for f in _files
                if f"# {f} -- SEQUENCE-BEARING"
