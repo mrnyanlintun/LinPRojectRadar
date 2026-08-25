@@ -1973,12 +1973,33 @@ try:
                 'if (html) wireProvenanceTrace(host);',
                 '${/* RUN 61, SECTION 4.4. NAMED HOST so the line can be rebuilt when the row arrives. */""}',
             }
+            # RUN 63. THE FOUR CHARTS. Two lines of substance and one export line, named exactly
+            # rather than tolerated as an unexplained difference, so this file still has no
+            # difference from the freeze that a run's authorised scope does not account for.
+            #
+            #   1. The Signal Flow reported "0 uploaded documents across 0 types" on a page whose
+            #      Documents panel listed a hundred. Both surfaces walk the project's own
+            #      extraction record and they walked it through two implementations under two
+            #      windows. `uploadedDocEvents` is now EXPORTED on LinDetail so there is one
+            #      implementation, which is why the export line moved.
+            #   2. `source_documents` -- which document versions produced this row -- is on the
+            #      served result and was not on the list projection, so
+            #      LinResults.rowFor(p).source_documents came back undefined on every detail
+            #      page. It is grafted beside module_results and signal_inputs.
+            RUN63_REMOVED = {
+                'window.LinDetail = { render, teardown, __resetMapForTest };',
+            }
+            RUN63_ADDED = {
+                'window.LinDetail = { render, teardown, __resetMapForTest, uploadedDocEvents };',
+                'if (resp.result.source_documents && !p.storedResult.source_documents) {',
+                'p.storedResult.source_documents = resp.result.source_documents;',
+            }
             check(all('" modules")' in ln or '" categories")' in ln or "modules`)" in ln
                   or _postrun22_removed(ln) or _run25_rail_removed(ln)
                   or ln in _run43_removed_span or ln in RUN44_REMOVED
                   or ln in RUN47_REMOVED or ln in RUN48_REMOVED
                   or ln in RUN49_REMOVED or ln in RUN51_REMOVED or ln in RUN52_REMOVED
-                  or ln in RUN57_REMOVED or ln in RUN61_REMOVED
+                  or ln in RUN57_REMOVED or ln in RUN61_REMOVED or ln in RUN63_REMOVED
                   for ln in removed),
                   f"{rel}: the freeze removed nothing from this file beyond the three section "
                   f"badges Run 16 reworded", str(removed)[:200])
@@ -2026,7 +2047,7 @@ try:
                       or ln in RUN44_ADDED or ln in _run44_added_span
                       or ln in RUN47_ADDED or ln in RUN48_ADDED or ln in RUN49_ADDED
                       or ln in RUN51_ADDED or ln in RUN52_ADDED or ln in RUN55_ADDED
-                      or ln in RUN57_ADDED or ln in RUN61_ADDED
+                      or ln in RUN57_ADDED or ln in RUN61_ADDED or ln in RUN63_ADDED
                       for ln in added),
                   f"{rel}: and everything it added is the abstention-reason graft, Run 11's "
                   f"client-analytics gate, Run 16's registry-count wording and cache drop, or "

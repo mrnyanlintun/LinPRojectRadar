@@ -399,11 +399,11 @@ check(freeze["simulation_version"] == "sim-2026.08-v25",
       "the v25 freeze record still says sim-2026.08-v25 and was not rewritten by the successor",
       freeze["simulation_version"])
 # RUN 56. RESTATED BY RUN 56, for the same reason and with the same scope: Run 56 supersedes v36 with v37 because WHAT A PARTICIPANT REACHES AND CLICKS is executable behaviour -- the duplicate 'Upload documents' control is removed from the project detail page and Archive and Reset signals now ask before acting.
-check(SIMULATION_VERSION == "sim-2026.08-v40",
-      "and the live simulation is the Run-62 successor sim-2026.08-v40", SIMULATION_VERSION)
+check(SIMULATION_VERSION == "sim-2026.08-v41",
+      "and the live simulation is the Run-63 successor sim-2026.08-v41", SIMULATION_VERSION)
 # RESTATED BY RUN 43: v13 is superseded by v14 and pinned to its own commit rather than rewritten.
-check(PP.CURRENT.identifier == "og-participant-2026.08-v25",
-      "the participant package is superseded at og-participant-2026.08-v25",
+check(PP.CURRENT.identifier == "og-participant-2026.08-v26",
+      "the participant package is superseded at og-participant-2026.08-v26",
       PP.CURRENT.identifier)
 check(freeze["synthetic_package"] == "OG-SYNTH-0.6",
       "the synthetic package is unchanged at OG-SYNTH-0.6")
