@@ -94,8 +94,12 @@ def live_portfolio_modules() -> tuple[str, ...]:
 
 #: The reason recorded on every offloaded snapshot. One sentence, written once, so the API, the
 #: stored row and any surface that reads either all quote the same words.
-#: NAMING_AUTHORITY section 4 governs this sentence: no module id and no module number appears
-#: in it, and it names the group and its purpose instead. It says "no longer part of" rather
+#: RUN 59: the citation of "NAMING_AUTHORITY section 4" is DROPPED. That section is where the
+#: identifier prohibition was RECORDED AS SUPERSEDED on 2026-08-23, so the comment cited the
+#: reversal as the source of the rule. No markdown document governs this sentence. What is true
+#: of it is stated directly: it names the group and its purpose, and carries no module id and no
+#: module number -- not because either is forbidden, but because neither would tell a reader of
+#: the portfolio card anything. It says "no longer part of" rather
 #: than "retired from the registry" because the registry is an internal artifact a reader of the
 #: portfolio card has no way to see, and describing a surface by an artifact behind it is how
 #: this programme has repeatedly produced text that only its author could read.

@@ -1,3 +1,17 @@
+> **THIS FILE IS HISTORY. IT CARRIES NO AUTHORITY.** Owner's ruling, 2026-08-25, Run 59.
+> It is the history of the changes, nothing more. No markdown document in this repository
+> carries authority: production code is the truth, `REPORT_*.md` / `code_audit/REPORT_*.md` /
+> `research/freeze/*.md` / the fixture records are sealed evidence, and everything else --
+> this file included -- is transport or history and governs nothing. Where this file and the
+> code disagree, THE CODE IS TRUE. Nothing here is to be obeyed, and no check may assert this
+> file's content: Run 59 retired the two that did.
+>
+> **THE FOUR ORDERING BREAKS BELOW ARE LEFT AS THEY ARE.** Run 46 and Run 47 sit at the bottom
+> and are headed `##`; nineteen dated sections sit below the historic T-numbered block; "READ
+> FIRST" is at line 8005; the ordering is by run number, not by date. Runs 48 through 58 each
+> left them and were right to. Moving them rewrites history. This is the ONE addition Run 59
+> made to this file, at the top, which the file's own rule permits; nothing below it was edited.
+
 > **READ `NAMING_AUTHORITY.md` BEFORE ANY CONTENT WORK.** It is the authority for what the platform
 > and its analytical taxonomy are called, and it carries the standing description that every
 > user-facing surface quotes verbatim. It lives in the repository so it cannot fail to reach a

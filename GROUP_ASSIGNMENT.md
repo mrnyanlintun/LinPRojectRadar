@@ -1,8 +1,10 @@
 # Group assignment: the verified taxonomy
 
-**100 computations, in four groups.** This file is the authority for how the analytical layer is
-described. It was generated from the code, not from a document, and a check in the test suite
-fails if the code and this file stop agreeing.
+**100 computations, in four groups — the figure at 2026-08-25, not a settled fact.** The module
+set is not settled: 101 are registered, 63 are in service, and this table counts the 100 the
+server both registers and computes. This file carries no authority. It was generated from the
+code, not from a document, and a check in the test suite compares the code against the registry
+CSV, not against this file.
 
 | Group | Name in user-facing text | Count |
 |---|---|---|
@@ -14,8 +16,10 @@ fails if the code and this file stop agreeing.
 
 ## How to use this in user-facing text
 
-- **Refer to groups by group and purpose, never by module id or number.** "Cat 4", "1.7", "PH.2"
-  and "A4.2" do not belong in anything a user reads. The ids below are keys, not names.
+- **Groups and purposes are the better default; displayed identifiers are acceptable.** The
+  owner ruled the former prohibition SUPERSEDED on 2026-08-23 and NAMING_AUTHORITY.md section 4
+  records it. "Cat 4", "1.7", "PH.2" and "A4.2" may appear in user-facing text. Prefer the group
+  and the purpose where the identifier adds nothing; an identifier is no longer a defect.
 - **Write "and", not an ampersand.** The code constants spell two of these names with "&". User
   facing text says "Recommendation and Governance" and "Data and Evidence Health". Do not rename
   the code constants to match.

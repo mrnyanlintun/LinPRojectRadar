@@ -45,12 +45,15 @@
 (function () {
   "use strict";
 
-  /* ---------- module and category NAMES (never ids) ----------
-     Same table T3/T5 established, and for the same reason: the analytical
-     layer's ids (A1.1, B4.4) must never appear in participant-facing text, and
-     loading categories.js to get the names would pull in the client-side
-     simulation bundle this route must not have. Names only — no thresholds, no
-     formulas, no computation. */
+  /* ---------- module and category NAMES ----------
+     Same table T3/T5 established. RUN 59: the restated prohibition on the
+     analytical layer's ids appearing in participant-facing text is DROPPED. It
+     was SUPERSEDED by the owner on 2026-08-23 and no markdown document carries
+     authority over this file. Displayed identifiers are acceptable; this table
+     holds NAMES because a name is what a participant can read, and because
+     loading categories.js to get them would pull in the client-side simulation
+     bundle this route must not have. Names only — no thresholds, no formulas,
+     no computation. NO RENDERED STRING MOVES: this is a comment. */
 
   var GROUP_NAMES = {
     A: "Project Health",

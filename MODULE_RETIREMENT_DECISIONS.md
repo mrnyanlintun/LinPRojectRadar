@@ -14,7 +14,7 @@ Implementing commits:
 | Decision | Commit |
 |---|---|
 | Prose count correction, 100 -> 101 and Group A 52 -> 53 | `5282d72` |
-| Retirement of 38 modules, registry 101 -> 63 | `b37f133` |
+| Retirement of 38 modules, in service 101 -> 63 (registry stays 101) | `b37f133` |
 | This decision record and the run report | see the final commit on `claude/run43-module-retirement` |
 
 ---
@@ -80,8 +80,9 @@ disputed band: every one of them is a `SHARED_GOVERNED_STRUCTURE` verdict with
 
 ## 3. Every retired module, with its assigned reason
 
-38 modules. Registered count falls from 101 to 63 (Group A 53 -> 44, B 36 -> 12, C 7 -> 7,
-D 5 -> 0).
+38 modules. The IN-SERVICE count falls from 101 to 63 (Group A 53 -> 44, B 36 -> 12, C 7 -> 7,
+D 5 -> 0). The REGISTERED count does not fall: `registry_index()` is 101 and `service_index()`
+is 63, both derived by execution. Line 584 of this file states it correctly.
 
 Each module carries exactly ONE reason, the lowest-numbered that applied. The "Also met" column
 is derived mechanically, not asserted: reason 4 is taken from `distinct_analytical_function ==

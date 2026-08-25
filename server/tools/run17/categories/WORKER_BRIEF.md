@@ -2,11 +2,14 @@
 
 You are a category worker in a scientific audit. You do NOT remediate anything.
 
-## THE CONTROLLING AUTHORITY
+## THE SUPERVISORY SPECIFICATION (NOT AN AUTHORITY)
 `/home/user/LinPRojectRadar/research/methodology/PCEIF_100_MODULE_SUPERVISORY_METHOD_SPECIFICATION_v1.md`
 (3,600 lines, SHA-256 328b50133f1d2a8d710d3cca787c24c22e2cdad0b09fe92ae2c7b7a55b8d299e).
 
-READ THE SECTIONS THAT DEFINE YOUR MODULES, IN FULL, BEFORE OPENING ANY PRODUCTION FILE.
+The framework has changed. This specification is NOT an authority and does not govern: it
+floats until a new specification exists. It is not to be read before opening a production file,
+and where it and the implementation disagree, the implementation is what is true. It is kept,
+unrenamed and unmoved, as the record of what the method was taken to be.
 Also read sections 4, 5, 6, 9, 21, 22, 23, 24, 26, 28 — vocabulary, dispositions, basis classes,
 test protocol, threshold provenance, lineage, synthetic-data rule, oracle independence, the
 results-matrix columns, and the interpretation rules. These govern every judgement you make.
@@ -117,7 +120,9 @@ EMPIRICALLY_CALIBRATED | OWNER_POLICY | HEURISTIC_UNCALIBRATED | UNSUPPORTED | n
 `finding_summary` is prose a supervisor will read: what you established, what you did not.
 
 ## HOUSE STYLE FOR ANY USER-FACING OR REPORT PROSE
-No module ids or numbers in participant-facing text. No em dashes. "and", not "&".
+Groups and purposes are the better default in participant-facing text; displayed module ids and
+numbers are acceptable, the former prohibition having been SUPERSEDED on 2026-08-23. No em
+dashes. "and", not "&".
 PCEIF and PDAF are retired as product names. Write plainly and specifically.
 
 ## IDENTITY DISCIPLINE

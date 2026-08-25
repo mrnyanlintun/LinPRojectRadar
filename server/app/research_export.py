@@ -178,10 +178,12 @@ STIMULUS_COLUMNS: tuple[str, ...] = (
 
 # --------------------------------------------------------------------------- Module results sheet
 #
-# One row per project, period and computation. Referred to by NAME and GROUP, per
-# NAMING_AUTHORITY.md rule 6 ("never a module id or number in user-facing text") — this sheet
-# reaches a committee, which is exactly that surface. `computation` and `group` are the only
-# identifying columns; the internal new_id ("A1.1") never appears.
+# One row per project, period and computation. Referred to by NAME and GROUP. RUN 59: the
+# citation of "NAMING_AUTHORITY.md rule 6" is DROPPED. No markdown document carries authority,
+# and that rule was SUPERSEDED by the owner on 2026-08-23 in any case. The reason stands on its
+# own: this sheet reaches a committee, a name and a group are what a committee can read, and an
+# internal key is not. `computation` and `group` are the only identifying columns; the internal
+# new_id ("A1.1") never appears. THIS IS A PROPERTY OF THE COLUMNS BELOW, not of a document.
 MODULE_RESULT_COLUMNS: tuple[str, ...] = (
     "project",
     "period",

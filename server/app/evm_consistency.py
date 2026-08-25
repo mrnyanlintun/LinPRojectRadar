@@ -41,9 +41,11 @@ against it. The other reading, relative to the stated value, gives 31.62 per cen
 pair; it is not used, and the wording on every surface says "differ by" rather than naming a
 base, so nothing on a surface depends on which was chosen.
 
-WORDING. NAMING_AUTHORITY governs it: no module identifier and no number-scheme label in
-user-facing text, no em dash, state what disagrees and by how much, do not tell the project
-manager what to conclude and do not assert which figure is wrong.
+WORDING. RUN 59: no markdown document governs this, and the identifier prohibition once cited
+here was SUPERSEDED on 2026-08-23. What governs is stated directly: no em dash; state what
+disagrees and by how much; do not tell the project manager what to conclude and do not assert
+which figure is wrong. A module identifier would be permitted and is simply not used, because
+the sentence names the two figures rather than the computation that compared them.
 """
 from __future__ import annotations
 

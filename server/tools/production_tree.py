@@ -101,9 +101,11 @@ PRODUCTION_ROOTS: tuple[tuple[str, bool, str], ...] = (
 #: new methodology document nobody declared, is detected rather than described.
 AUTHORITY_ROOTS: tuple[tuple[str, bool, str], ...] = (
     ("research/methodology", True,
-     "the controlling supervisory method specification and its metadata record. CONTROLLING "
-     "status: where this and the implementation disagree, this governs what the method ought "
-     "to be"),
+     "the supervisory method specification and its metadata record. RUN 59: the framework "
+     "has changed and this specification is NO LONGER CONTROLLING. It floats until a "
+     "new specification exists. Where it and the implementation disagree, THE "
+     "IMPLEMENTATION IS WHAT IS TRUE. It stays walked and pinned so a silent edit is "
+     "still detected"),
     (".gitattributes", False,
      "carries the `-text` rule that stops any checkout filter rewriting the specification's line "
      "endings. If this file changes, the specification's bytes can change without the "

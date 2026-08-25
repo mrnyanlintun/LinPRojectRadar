@@ -49,7 +49,10 @@ from .risk_exposure import register_exposure
 # in the vocabulary turns this table red instead of silently reporting nothing forever.
 #
 # `bearing` is what the finding bears on, in the reader's language, not a module or category
-# name. NAMING_AUTHORITY: no module ids, no numbers, no "Cat N".
+# name. RUN 59: the citation of NAMING_AUTHORITY is DROPPED -- no markdown document carries
+# authority, and the identifier prohibition it named was SUPERSEDED on 2026-08-23. The reason
+# stands on its own: this string is read by someone deciding what to do about a document, and a
+# key tells them nothing. Displayed identifiers are permitted; they are simply not useful here.
 #
 # `singular`/`plural` are formatted with the integer value. They are written to read as a
 # statement of fact and never as advice: this module reports, it does not recommend.

@@ -1,4 +1,8 @@
-# Module taxonomy: 101 distinct computations across four groups
+# Module taxonomy: four groups
+
+**101 registered and 63 in service at 2026-08-25 — the figure at a date, not a settled fact.**
+The module set is not settled and no count in this file is final. `registry_index()` and
+`service_index()` are the executed figures; this document carries no authority.
 
 `module_renumbering_map.csv` in this directory is the single source of truth for module numbering
 and grouping. `assets/js/categories.js` is generated from it; every other reference is updated from
