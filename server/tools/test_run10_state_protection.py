@@ -324,13 +324,39 @@ RUN47_NON_ANALYTICAL_SCOPE = {"server/app/evm_consistency.py"}
 # by RUN47_NON_ANALYTICAL_SCOPE above, the second by the `server/app/simulation/` prefix.
 RUN59_NON_ANALYTICAL_SCOPE = {"server/app/research_export.py",
                               "server/app/document_evidence.py"}
+# RESTATED BY RUN 68, ORIGINAL FINDINGS PRESERVED. Run 68 touches THREE files under server/app/
+# that are not in the simulation package, and each is NAMED here rather than the rule being
+# widened. All three are on the EXTRACTION side of the model boundary -- what is asked of a
+# document and how its table is read back -- and not one of them computes a value any module
+# reads, bands a quantity, or moves a figure the analytical layer produces.
+#
+# `extraction_fields.py` adds three names to what a `time_phased_schedule` is asked for
+# (`baseline_curve_json` and the two provenance fields the baseline document states on its face).
+# It is a list of field names; it evaluates nothing.
+#
+# `extraction_client.py` adds the SHAPE HINT for that field to the prompt, on exactly the
+# precedent `milestones_json` set: a whole-table answer inside one JSON field is not something
+# the general instructions describe, so the shape is named. The hint FORBIDS extending,
+# completing or interpolating the profile and forbids converting a periodic column into a
+# cumulative one, so it narrows what the model may return rather than widening it.
+#
+# `baseline_curve.py` is new and is a READER, in the same position as `schedule_activities.py`:
+# it maps a printed table's own column headings onto the two quantities `canonical_v3`'s
+# structures are defined on. It refuses a periodic column, drops a row that prints no figure,
+# and neither sorts, sums, interpolates nor fills. Every figure it returns is a cell the document
+# printed, and where the document prints less than a curve it returns fewer rows and the modules
+# abstain on their own guards. `documents.py`, which assembles the structures from what this
+# reader returns, is already inside Run 11 Gate 6's named read path.
+RUN68_NON_ANALYTICAL_SCOPE = {"server/app/extraction_fields.py",
+                              "server/app/extraction_client.py",
+                              "server/app/baseline_curve.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
           or d in RUN14_NON_ANALYTICAL_SCOPE or d in RUN16_NON_ANALYTICAL_SCOPE
           or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE or d in RUN41_NON_ANALYTICAL_SCOPE
           or d in RUN43_NON_ANALYTICAL_SCOPE or d in RUN47_NON_ANALYTICAL_SCOPE
-          or d in RUN59_NON_ANALYTICAL_SCOPE
+          or d in RUN59_NON_ANALYTICAL_SCOPE or d in RUN68_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning

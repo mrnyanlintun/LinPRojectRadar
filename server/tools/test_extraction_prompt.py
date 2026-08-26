@@ -108,6 +108,48 @@ def main() -> None:
               f"{doc_type}: milestones_json is NOT requested, so the hint is ABSENT",
               "would silently grow every prompt if this leaked")
 
+    section("2b. RUN 68. baseline_curve_json's SHAPE HINT, HELD TO THE SAME DISCIPLINE")
+
+    # THE SECOND TABLE FIELD, and the reason it gets its own marker rather than sharing the one
+    # above. Both hints describe a whole table inside one JSON field, so a shared phrase would
+    # make section 2's absence check pass for the wrong reason -- a `time_phased_schedule` prompt
+    # would satisfy "the milestones hint is absent" while carrying a sentence that reads almost
+    # identically. The two markers are therefore kept distinct ON PURPOSE, and this section
+    # asserts the same present-only-when-requested property for the new field independently.
+    BASELINE_MARKER = "one object per PRINTED ROW of that table"
+
+    with_curve = [t for t in DOC_TYPES if "baseline_curve_json" in extraction_fields_for(t)]
+    without_curve = [t for t in DOC_TYPES if "baseline_curve_json" not in extraction_fields_for(t)]
+    check(bool(with_curve) and bool(without_curve),
+          "the vocabulary genuinely has both cases to test",
+          f"with={with_curve} without-sample={without_curve[:2]}")
+
+    for doc_type in with_curve:
+        prompt = build_prompt(doc_type, extraction_fields_for(doc_type))
+        check(BASELINE_MARKER in prompt,
+              f"{doc_type}: baseline_curve_json is requested, so the shape hint IS present")
+
+    for doc_type in without_curve:
+        prompt = build_prompt(doc_type, extraction_fields_for(doc_type))
+        check(BASELINE_MARKER not in prompt,
+              f"{doc_type}: baseline_curve_json is NOT requested, so the hint is ABSENT",
+              "would silently grow every prompt if this leaked")
+
+    # THE TWO MARKERS MUST NOT COLLIDE. If a later edit reworded either hint back onto the
+    # other's phrase, both of the absence checks above would go quietly useless. This asserts the
+    # separation directly rather than relying on it.
+    check(HINT_MARKER != BASELINE_MARKER, "the two table hints carry DISTINCT markers")
+
+    # THE CURVE MUST NOT BE COMPLETED, EXTENDED OR CONVERTED. A baseline period the document does
+    # not print is exactly the invented value the extractor must never supply, and a cumulative
+    # figure summed out of a periodic column is a curve the document never printed. The prompt
+    # says both in terms; this is what stops a future edit from dropping either.
+    tps_prompt = build_prompt("time_phased_schedule", extraction_fields_for("time_phased_schedule"))
+    check("do not extend, complete or interpolate the profile" in tps_prompt,
+          "the hint forbids extending, completing or interpolating the baseline")
+    check("cumulative figure from a periodic one" in tps_prompt,
+          "the hint forbids converting a periodic column into a cumulative one")
+
     section("3. THE HINT SAYS DATES INSIDE THE TABLE ARE NOT ISO-CONSTRAINED")
 
     # The real activity table carries THREE non-ISO date shapes in one column

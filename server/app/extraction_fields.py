@@ -173,9 +173,30 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "completed_to_date", "work_period_from", "work_period_to", "application_date",
         "original_contingency", "remaining_contingency",
     ],
+    # RUN 68. THE BASELINE DOCUMENT'S OWN TABLE, ASKED FOR AS A TABLE.
+    #
+    # A time-phased baseline document IS a period-by-period table -- that is the whole document
+    # -- and until this run the only thing asked of it was the single cumulative figure standing
+    # at its data date (`planned_value_to_date`). Three modules are defined on the CURVE and not
+    # on that one point: A1.6 Earned Schedule interpolates the work performed onto it, A2.6
+    # S-Curve Deviation compares it against the actual series, and A1.9 Budget Execution Rate
+    # reads the planned SPEND off it at the status period. All three abstained, and the census
+    # sentence each printed named the curve in the document's own words.
+    #
+    # `baseline_curve_json` follows `milestones_json` exactly: a table is not a scalar, so it is
+    # asked for as one field carrying one object per printed row, keyed by the table's own column
+    # headings, with the shape named explicitly in the prompt (`extraction_client`). Nothing is
+    # derived by the model -- every figure is a cell the document prints.
+    #
+    # `baseline_version` and `baseline_approval_source` are the provenance `canonical_v3`
+    # REFUSES to default (`_provenance`: "a blank source silently reads as an unsourced number").
+    # A baseline document states both on its face. Where it does not, they come back absent, the
+    # structure is not assembled, and all three modules go on abstaining -- which is the correct
+    # outcome and not a gap to be filled with a placeholder.
     "time_phased_schedule": [
         "planned_value_to_date", "planned_percent_complete", "data_date", "total_float",
-        "consumed_float",
+        "consumed_float", "baseline_curve_json", "baseline_version",
+        "baseline_approval_source",
     ],
     "schedule_update": [
         "planned_percent_complete", "planned_value_to_date", "data_date", "total_float",

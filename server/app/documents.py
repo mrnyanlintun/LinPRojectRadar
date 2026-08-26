@@ -1272,6 +1272,171 @@ def _events_as_of(project: Project, cutoff: date) -> list[dict]:
     return out
 
 
+# ---------------------------------------------------------------- RUN 68, THE TIME-PHASED CURVE
+#
+# THREE MODULES ABSTAINED ON A CURVE THE BASELINE DOCUMENT PRINTS. A1.6 Earned Schedule, A2.6
+# S-Curve Deviation and A1.9 Budget Execution Rate are each defined on a period-by-period
+# baseline, and each printed the curve's name in its abstention: "a time phased baseline: the
+# cumulative value of work planned to be complete at the end of each period", and for A1.9 "an
+# approved time phased expenditure baseline: the amount planned to be spent by the end of each
+# period". The single figure the platform already extracted from that document
+# (`planned_value_to_date`) is ONE POINT ON THAT CURVE, and one point is not a curve --
+# `earned_schedule` refuses fewer than two periods in its own words.
+#
+# So `baseline_curve_json` now asks the document for the table, `baseline_curve.read_baseline_curve`
+# maps its headings onto the two quantities, and this assembles the two governed structures. It
+# runs on the DOCUMENT PATH ONLY, for the same reason the Category-9 record above does: a training
+# period's signal inputs are projected from a deterministic state, and no baseline document was
+# uploaded to it.
+#
+# WHAT IS READ OFF THE DOCUMENT AND WHAT IS READ OFF THE PLATFORM, stated separately because the
+# difference is the whole safety argument.
+#
+#   FROM THE DOCUMENT, and from nothing else: every figure on both curves, the period each row
+#   states, the baseline version and the approval source. `_provenance` in canonical_v3 REFUSES to
+#   default the last two ("a blank source silently reads as an unsourced number"), so where the
+#   document does not state them the structure is not assembled at all and the three modules go on
+#   abstaining. That is the correct outcome and it is not a gap to be filled.
+#
+#   FROM THE PLATFORM, and only facts it already holds: the reporting period being computed, and
+#   this project's own earned value as each earlier period stored it. Neither is a judgement.
+#
+# THE ACTUAL SERIES IS ALIGNED TO THE CURVE'S ROWS, NOT APPENDED TO THEM. `s_curve_deviation`
+# pairs the two series BY POSITION (`a[i] - p[i]`) and truncates to the shorter, so an actual
+# series merely appended in period order would silently pair period 3's earned value against
+# period 1's plan the moment the baseline began at period 0 or skipped a period. It is therefore
+# built by walking the curve's own rows in order and looking up the earned value for each row's
+# stated period, STOPPING at the first row the project has no earned value for. The pairing is
+# then positional by construction and the series ends where the project's record ends.
+#
+# THE ELAPSED TIME IS THE REPORTING PERIOD'S POSITION ON THE CURVE. `earned_schedule` measures
+# earned schedule in curve POSITIONS -- its own oracle runs PV = [0, 20, 40, 60] "indexed from
+# period 0" -- so the actual time it is compared against has to be on that same axis or the index
+# is an off-by-one. It is taken as the zero-based position, in the ordered curve, of the row whose
+# period the platform is reporting: a baseline printing periods 1..12 puts period 2 at position 1,
+# and a baseline printing 0..12 puts it at position 2, which is the oracle's own convention. Where
+# the curve does not reach the reporting period there is no position, none is invented, and the
+# module abstains.
+def _baseline_structures(session: Session, project: Project, period: int, documents: list[dict],
+                         si: dict) -> dict:
+    """The Run-68 governed curves this period's baseline documents support. See above."""
+    from .baseline_curve import read_baseline_curve
+
+    rows: list[dict] = []
+    version = approval = None
+    for d in documents:
+        if d.get("doc_type") != "time_phased_schedule":
+            continue
+        ex = d.get("extraction") or {}
+        if not isinstance(ex, dict):
+            continue
+        read = read_baseline_curve(ex.get("baseline_curve_json"))
+        if not read:
+            continue
+        # ONE DOCUMENT SUPPLIES THE CURVE. Two baseline documents in one period state two
+        # baselines, and stitching their rows together would produce a curve neither of them
+        # printed. The longest is taken and the other is left alone; where they tie the first
+        # the period's document ordering yields wins, which is the same deterministic rule the
+        # rest of assembly uses rather than a judgement about which baseline is better.
+        if len(read) > len(rows):
+            rows = read
+            version = str(ex.get("baseline_version") or "").strip() or None
+            approval = str(ex.get("baseline_approval_source") or "").strip() or None
+    if len(rows) < 2 or not version or not approval:
+        # FEWER THAN TWO PRINTED PERIODS IS NOT A CURVE, and an unsourced curve is one no reading
+        # could be interpreted from later. Either way the key is ABSENT rather than partial, so
+        # each module abstains on its own guard with its own sentence.
+        return {}
+
+    ordered = sorted(rows, key=lambda r: r["period_index"])
+    out: dict = {}
+
+    pv_rows = [r for r in ordered if "cumulative_pv" in r]
+    if len(pv_rows) >= 2:
+        # THIS PROJECT'S OWN EARNED VALUE, AS EACH PERIOD STORED IT. `_earlier_live_results` is
+        # the one read every cross-period series here is built from: strictly earlier live rows,
+        # so recomputing an earlier period cannot see a later one.
+        ev_by_period: dict[int, float] = {}
+        for r in _earlier_live_results(session, project, period):
+            v = (r.signal_inputs or {}).get("ev")
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                ev_by_period[int(r.period)] = float(v)
+        current_ev = si.get("ev")
+        if isinstance(current_ev, (int, float)) and not isinstance(current_ev, bool):
+            ev_by_period[int(period)] = float(current_ev)
+
+        # A2.6 IS NOT IN SERVICE. It was retired by Run 43 and `service_index` excludes it, so the
+        # series below reaches no module today and this run's measured gain is A1.6 and A1.9. It
+        # is assembled anyway because it is a fact about this project that the structure is
+        # defined to carry, and because leaving the structure half-built would make returning A2.6
+        # to service look like a wiring gap when it is a retirement decision.
+        actual: list[float] = []
+        for r in pv_rows:
+            got = ev_by_period.get(int(r["period_index"]))
+            if got is None:
+                break
+            actual.append(got)
+
+        # THE ELAPSED TIME IS ONLY SUPPLIED WHERE THE CURVE'S AXIS IS ANCHORED AT ZERO, and this
+        # guard is the whole of the off-by-one argument. `earned_schedule` returns a curve
+        # POSITION, and SPI(t) is that position divided by the elapsed time, so the two are a
+        # ratio only when position and elapsed periods share an origin. A baseline printed from
+        # period 1 does not: its position 0 is the END of period 1, so at the end of period 2 the
+        # position is 1 while two periods have elapsed, and EITHER figure fed in as the elapsed
+        # time yields an index that is wrong in a stated direction -- 1 makes a project ahead of
+        # schedule look further ahead than it is, 2 makes the same project look behind.
+        #
+        # This was worked through rather than assumed, on the fixture's own numbers: earned value
+        # 2,000,000 against a curve of 1,020,000 and 1,500,000 at periods 1 and 2 sits at position
+        # 1.625, which is period 2.625 -- genuinely AHEAD at the end of period 2 -- and dividing
+        # 1.625 by an elapsed 2 reports 0.81, a project behind schedule. The module's own oracle
+        # settles it: PV = [0, 20, 40, 60] is "indexed from period 0", so position equals periods
+        # elapsed exactly when the baseline prints its zero origin.
+        #
+        # So where the curve carries that origin row the elapsed time is the reporting period
+        # itself, and where it does not the key is OMITTED and A1.6 abstains on its own guard.
+        # An index that is quietly wrong is worse than a measure that declines to report.
+        at_position = None
+        if float(pv_rows[0]["period_index"]) == 0.0:
+            for i, r in enumerate(pv_rows):
+                if float(r["period_index"]) == float(period):
+                    if float(i) == float(period):
+                        at_position = float(period)
+                    break
+
+        structure: dict = {
+            "periods": [{"period_index": r["period_index"], "period": r["period"],
+                         "cumulative_pv": r["cumulative_pv"]} for r in pv_rows],
+            "baseline_version": version,
+            "approval_source": approval,
+            "period_index_basis": pv_rows[0]["index_basis"],
+            "assembled_by": "document extraction",
+            "source_document_type": "time_phased_schedule",
+        }
+        if at_position is not None:
+            structure["actual_time_periods"] = at_position
+        if actual:
+            structure["cumulative_actual"] = actual
+            structure["cumulative_actual_basis"] = (
+                "this project's own earned value as each reporting period stored it, taken at "
+                "the periods the baseline itself prints and stopping where the record stops")
+        out["timePhasedBaseline"] = structure
+
+    spend_rows = [r for r in ordered if "expected_spend" in r]
+    if len(spend_rows) >= 2:
+        out["expenditureBaseline"] = {
+            "periods": [{"period_index": r["period_index"], "period": r["period"],
+                         "expected_spend": r["expected_spend"]} for r in spend_rows],
+            "baseline_version": version,
+            "approval_source": approval,
+            "status_period_index": float(period),
+            "period_index_basis": spend_rows[0]["index_basis"],
+            "assembled_by": "document extraction",
+            "source_document_type": "time_phased_schedule",
+        }
+    return out
+
+
 # ------------------------------------------------------------------- RUN 67, THE CATEGORY-9 GAP
 #
 # WHAT WAS FOUND, AND IT IS NOT WHAT THE PREVIOUS RUN CONCLUDED. Run 66 measured seventeen
@@ -1435,6 +1600,14 @@ def _compute_and_store(session: Session, project: Project, period: int,
     _eq = _evidence_qualification(period, observations)
     if _eq is not None:
         si["evidenceQualification"] = _eq
+
+    # RUN 68. THE TWO GOVERNED CURVES, where this period's baseline document printed a table to
+    # build them from. See `_baseline_structures` above for what each figure is read off and for
+    # why the key is absent rather than partial when the document states less than a curve.
+    # `setdefault`, so a structure a project supplied through the governed intake is never
+    # displaced -- the same precedence rule `project_data.py` states, applied here.
+    for _key, _structure in _baseline_structures(session, project, period, documents, si).items():
+        si.setdefault(_key, _structure)
 
     result = run_and_store(session, project, period, si, cutoff,
                            source_documents=[

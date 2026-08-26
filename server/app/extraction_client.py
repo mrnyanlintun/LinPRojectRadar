@@ -229,6 +229,21 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "YYYY-MM-DD, unlike every other date field below); return an empty array only if the "
         "document has no such table."
     ) if "milestones_json" in fields else ""
+    # RUN 68. THE SECOND TABLE FIELD, and it needs its own sentence for the same reason the
+    # first one did: a whole-table answer inside one JSON field is not something the general
+    # instructions describe, and without naming the shape the model returns null for a table
+    # that is plainly printed on the page. The hint asks for the ROWS AS PRINTED and forbids
+    # completing, extending or interpolating the curve, because a baseline period the document
+    # does not print is exactly the invented value the extractor must never supply.
+    baseline_hint = (
+        " baseline_curve_json, if requested and the document contains a time-phased baseline "
+        "table (a period-by-period profile of planned value, planned cost or planned spend), is "
+        "a JSON array with one object per PRINTED ROW of that table, using the table's own column "
+        "headings as keys and its values as printed; return every row the document prints and "
+        "no others -- do not extend, complete or interpolate the profile, and do not compute a "
+        "cumulative figure from a periodic one or the other way round unless the document "
+        "prints both columns; return an empty array only if the document has no such table."
+    ) if "baseline_curve_json" in fields else ""
     return (
         "You are a precise construction project-controls data extractor. Read this ONE document "
         f"(type: {doc_type}) and return ONLY these fields as clean JSON: "
@@ -241,7 +256,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "
