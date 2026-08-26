@@ -518,8 +518,18 @@ def manifest_sha256(root: pathlib.Path | None = None, roots=None) -> str:
 #: assets/js/neural_flow.js -- the four-charts fix. TWO files were ADDED under server/tools,
 #: drive_run63_four_charts.py and test_run63_four_charts.py; nothing was removed. The run62
 #: manifest is NOT rewritten -- it describes the tree as v40 left it and stays addressable below.
-PINNED = ROOT / "code_audit" / "run63_production_tree.sha256"
-#: The Run-62 production manifest, the immediate parent, kept addressable so a guard can prove the
+#: RUN 67 SUPERSEDES THE RUN-63 MANIFEST. THREE of the 242 members moved and nothing was added
+#: or removed: server/app/simulation/compute.py (Run 65 -- every module that produced a value
+#: votes into its own category), server/app/documents.py (Run 67 -- the period's Category-9
+#: assessment, written for the first time) and server/app/simulation/models.py (Run 67 -- the
+#: comment governing the calibration-pending contract, corrected where Run 65 falsified it; no
+#: executable byte moved in that file). The run63 manifest is NOT rewritten -- it describes the
+#: tree as v41 left it and stays addressable below.
+PINNED = ROOT / "code_audit" / "run67_production_tree.sha256"
+#: The Run-63 production manifest, the immediate parent, kept addressable so a guard can prove the
+#: supersession is a real change and not a silent rewrite.
+PINNED_RUN63 = ROOT / "code_audit" / "run63_production_tree.sha256"
+#: The Run-62 production manifest, kept addressable so a guard can prove the
 #: supersession is a real change and not a silent rewrite.
 PINNED_RUN62 = ROOT / "code_audit" / "run62_production_tree.sha256"
 #: The Run-59 production manifest, kept addressable so a guard can prove the

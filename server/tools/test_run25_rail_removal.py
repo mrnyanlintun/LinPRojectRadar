@@ -295,7 +295,14 @@ check(pt.PINNED.name in ("run25_production_tree.sha256", "run26_production_tree.
                         # so the pin moves to the Run-63 manifest and the Run-62
                         # manifest is kept addressable as its parent.
                         # NOTHING IS REMOVED FROM THIS TUPLE.
-                        "run63_production_tree.sha256"),
+                        "run63_production_tree.sha256",
+                        # RUN 67. Three production files changed -- compute.py (Run 65's
+                        # voting change), documents.py (the period's Category-9 assessment)
+                        # and models.py (a comment Run 65 falsified) -- and NOTHING was
+                        # added, removed or renamed, so the pin moves to the Run-67 manifest
+                        # and the Run-63 manifest is kept addressable as its parent.
+                        # NOTHING IS REMOVED FROM THIS TUPLE.
+                        "run67_production_tree.sha256"),
       "the freeze guard's pinned manifest is the Run-25 one or one of the manifests that "
       "supersede it "
       "it", pt.PINNED.name)

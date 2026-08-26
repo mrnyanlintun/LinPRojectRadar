@@ -684,6 +684,16 @@ PERMITTED_MODIFICATIONS = {
     # ADDED to this list rather than the check being loosened, which is the whole point of a
     # permitted-modification list: the modification is DECLARED, not excused.
     "server/tools/test_run11_status_and_conflict.py",
+    # RUN 67, THE PUBLICATION OF RUNS 65 AND 66, AND THE SAME MECHANISM AS THE RUN-62 ENTRY
+    # ABOVE: the modification is DECLARED here rather than the check being loosened. Run 65
+    # removed the CORE_VOTING_MODULES filter from the computed loop in compute.py with the
+    # owner's authority -- every module that produced a value votes into its own category --
+    # which left eleven pre-existing suites asserting the superseded two-module rule and
+    # therefore permanently red. These two are the members of that set not already named above.
+    # NOTHING was deleted from either; each stale assertion was re-pointed at the rule that
+    # replaced it and proved able to go red again by injection at the exact site Run 65 moved.
+    "server/tools/test_run20_voting_lineage.py",
+    "server/tools/test_training_detail.py",
 }
 run39 = [ln.split("\t", 1) for ln in diff_committed(RUN38_READY).splitlines() if ln]
 in_frozen = [p for st, p in run39
