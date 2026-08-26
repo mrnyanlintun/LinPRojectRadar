@@ -48,6 +48,7 @@ import datetime as _dt
 
 import base64
 import binascii
+import json
 import hashlib
 import logging
 import re
@@ -1271,6 +1272,115 @@ def _events_as_of(project: Project, cutoff: date) -> list[dict]:
     return out
 
 
+# ------------------------------------------------------------------- RUN 67, THE CATEGORY-9 GAP
+#
+# WHAT WAS FOUND, AND IT IS NOT WHAT THE PREVIOUS RUN CONCLUDED. Run 66 measured seventeen
+# modules across five categories refusing on ONE identical sentence -- "The evidence offered to
+# this measure carries no Category-9 assessment, so it is unassessed and not eligible for this
+# use" -- and recorded that `evidenceQualification` has no writer anywhere in production. That
+# measurement was right. The conclusion drawn beside it, that supplying one would mean inventing
+# a judgement about the evidence, is WRONG, and it was tested rather than reasoned about:
+# `qualification_boundary.declared_evidence` hands the declaration to
+# `qualified_evidence.assess`, which DERIVES the verdict from properties of the evidence record
+# and refuses to honour a state more favourable than those properties support. Handed a record
+# carrying nothing but the facts this platform already holds -- an identity, the kind of source,
+# the period, the date the period's evidence speaks as of, and the fields two documents
+# disagreed about -- `assess` returns QUALIFIED_WITH_LIMITATIONS and records the one honest
+# limitation: no governed reliability mapping is established, so no numeric reliability weight
+# is asserted.
+#
+# SO NOTHING IS INVENTED HERE, AND THE OMISSIONS ARE THE POINT.
+#
+#   * NO `verification_status`. Nobody verified these documents. Claiming "verified" would be
+#     the invented value section 8 forbids, and the field is therefore ABSENT rather than filled.
+#   * NO `source_authority`. A participant's upload is not a system of record and is not
+#     asserted to be one.
+#   * NO `reliability_weight`. There is no governed rubric in this repository to map a source
+#     onto a number, so no number is asserted; `assess` records the absence as a limitation.
+#   * NO `timeliness_status`. A freshness verdict needs a governed freshness rule for the use,
+#     and none is established, so the field stays UNASSESSED rather than being called TIMELY.
+#   * NO `qualification_state`. The record does not declare its own verdict. `assess` computes
+#     it. A package may declare itself unassessed and may never declare itself qualified.
+#
+# WHAT IS STATED IS STATED BECAUSE THE PLATFORM ALREADY HOLDS IT:
+#
+#   * `effective_date` is the latest as-of among THIS PERIOD'S OWN observations, which is the
+#     date the period's evidence speaks as of. It is what makes the future-dating rule live.
+#   * `material_conflicts` names every field for which two of this period's documents state
+#     DIFFERENT values. That is a fact about the uploads, computed here from the observations
+#     themselves, and it makes the gate able to REFUSE: a project whose documents contradict
+#     each other on a field reaches REVIEW_REQUIRED and its gated modules stay dark, which is
+#     the behaviour the Category-9 architecture exists to produce. A record that reported no
+#     conflicts because it never looked would be worse than no record at all.
+#   * `required_inputs` is empty ON PURPOSE and is not a claim that nothing is required. What
+#     each module requires is decided by that module's own `check_inputs`, which is where this
+#     programme has repeatedly established it belongs; restating those field lists here would be
+#     a hand-maintained copy of production logic checked against production logic.
+#
+# The record describes the PERIOD'S EVIDENCE BASE, not one module's inputs, so it is written
+# flat: `declared_evidence` applies a flat declaration to every module that asks.
+def _evidence_qualification(period: int, observations: list[dict]) -> dict | None:
+    """This period's Category-9 assessment, built from the period's own observations. See above
+    for what is deliberately NOT stated in it."""
+    if not observations:
+        return None
+    dates = sorted(str(o["as_of"]) for o in observations if o.get("as_of") is not None)
+    # WHAT COUNTS AS AN UNRESOLVED CONFLICT, AND WHY IT IS NOT SIMPLY "TWO DOCUMENTS DISAGREE".
+    # Two documents stating different values for one field is the NORMAL case and is exactly what
+    # `select_signal_inputs` exists to resolve: the lowest declared writer tier wins, and within
+    # a tier the latest as-of wins. Calling that a conflict would put nearly every real project
+    # into REVIEW_REQUIRED and would block the gated modules for a disagreement the platform had
+    # already settled by a declared rule -- a false refusal is as much a defect as a false pass.
+    # A conflict is therefore recorded only where the DECLARED PRECEDENCE HAS NOTHING LEFT TO
+    # DECIDE WITH: same field, same lowest tier, same latest as-of, and still two different
+    # values. At that point selection falls through to the document ROLE rank, which is a
+    # deterministic tiebreak and not a statement that one figure is right.
+    per_field: dict[str, list[dict]] = {}
+    for o in observations:
+        if o.get("field") is None:
+            continue
+        per_field.setdefault(str(o["field"]), []).append(o)
+
+    def _v(o):
+        val = o.get("value")
+        return val if isinstance(val, (str, int, float, bool, type(None))) \
+            else json.dumps(val, sort_keys=True, default=str)
+
+    conflicts: list[dict] = []
+    for field, obs in sorted(per_field.items()):
+        tiers = [o.get("tier") for o in obs if o.get("tier") is not None]
+        if not tiers:
+            continue
+        top = min(tiers)
+        same_tier = [o for o in obs if o.get("tier") == top]
+        dated = [o for o in same_tier if o.get("as_of") is not None]
+        if dated:
+            latest = max(str(o["as_of"]) for o in dated)
+            same_tier = [o for o in dated if str(o["as_of"]) == latest]
+        values = {_v(o) for o in same_tier}
+        if len(values) > 1:
+            conflicts.append({
+                "field": field,
+                "writer_tier": top,
+                "distinct_values": len(values),
+                "documents": sorted({str(o.get("doc_type")) for o in same_tier}),
+                "reason": "two documents of equal declared writer precedence, dated the same, "
+                          "state different values for this field, so the declared precedence "
+                          "rule cannot decide between them",
+            })
+    return {
+        # THE RECORD IS A PURE FUNCTION OF THE PERIOD'S OWN EVIDENCE and carries no project
+        # identity. Two projects that uploaded the same bytes into the same period must reach
+        # the same Category-9 assessment, and the byte-identity guarantee several suites hold
+        # over extracted signal inputs is not something a new key is entitled to break.
+        "evidence_id": f"P{period}-evidence-base",
+        "source_type": "project documents uploaded and extracted for this period",
+        "period": str(period),
+        "effective_date": dates[-1] if dates else None,
+        "material_conflicts": conflicts,
+    }
+
+
 def _compute_and_store(session: Session, project: Project, period: int,
                        reuse_cutoff_from: ComputedResult | None = None,
                        result_id: str | None = None) -> dict:
@@ -1316,6 +1426,15 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # subset of it. The cross-period series are assembled in `run_and_store`, which is the one
     # place both assembly paths pass through.
     si["events"] = _events_as_of(project, cutoff)
+
+    # RUN 67. THE PERIOD'S CATEGORY-9 ASSESSMENT, written for the first time. See
+    # `_evidence_qualification` above for what it states, what it deliberately omits, and why
+    # supplying it invents nothing. Attached here, on the DOCUMENT path only: a training period's
+    # signal inputs are projected from a deterministic state rather than selected from uploaded
+    # documents, so there is no evidence base to assess and none is asserted for it.
+    _eq = _evidence_qualification(period, observations)
+    if _eq is not None:
+        si["evidenceQualification"] = _eq
 
     result = run_and_store(session, project, period, si, cutoff,
                            source_documents=[

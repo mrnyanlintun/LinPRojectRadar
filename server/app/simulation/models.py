@@ -882,8 +882,28 @@ def insufficient(method_class: str, message: str | None = None,
 # So the module reports the number and asserts NO colour. `status_color` is None, `band_asserted`
 # is False, and `calibration_pending` is True. This is NOT an abstention: the method ran, the
 # figure is real, and `insufficient_data` is absent. The registry keeps such a row in `computed`
-# rather than in `abstained`, and the row cannot reach status fusion because fusion reads only
-# the two voting modules, neither of which is in this run's scope.
+# rather than in `abstained`.
+#
+# CORRECTED BY RUN 67, BECAUSE THE SENTENCE THAT STOOD HERE IS NO LONGER TRUE AND IT IS
+# LOAD-BEARING. It read: "the row cannot reach status fusion because fusion reads only the two
+# voting modules". RUN 65 REMOVED THAT FILTER with the owner's authority, so a
+# calibration-pending row DOES reach `by_category` now. What happens when it gets there was
+# established by execution rather than assumed: `fusion.fuse_signals` skips a signal whose band
+# is None before any mass is assigned, so such a row CONTRIBUTES NO MASS, cannot drag its
+# category down and cannot lift it either. A category all of whose modules asserted no band
+# fuses to nothing at all -- not to Unknown -- so it carries no status and does not vote.
+# `test_run67_category9_and_no_band.py` pins all of that, including the proof that it is the
+# missing band and not the fixture doing the work.
+#
+# WHAT THIS COSTS, STATED PLAINLY: 34 of the 63 modules in service can return this shape, and
+# every one of them computes a real figure that contributes NOTHING to any status. That is the
+# largest single reason a category stays grey with modules computing beneath it. It is not a
+# defect to be repaired by attaching a ladder: every one of those 34 carries parameter class
+# UNSUPPORTED in `parameters.PARAMETER_PROVENANCE`, whose own words are that no source in this
+# repository, in the supervisory specification, or in any publication cited by this platform
+# specifies a boundary for the quantity -- and that "replacing an invented number with a
+# different invented number is not a repair". Only A1.7 and A1.8 have an entry in
+# `registry.BAND_SOURCES`. A band attached to any of the other 34 would be invented.
 #
 # Run 33 owns the calibration campaign that may later attach bands to these quantities.
 # -------------------------------------------------------------------------------------------

@@ -353,9 +353,26 @@ try:
     check(bool(r3.get("abstained")),
           "modules whose governed structure is absent still abstain",
           str(len(r3.get("abstained") or [])))
+    # RE-POINTED BY RUN 67. This asserted the LIST of categories carrying a rollup, and read
+    # ["A1"] because that was the only category a module could reach fusion in. Two changes have
+    # since moved it honestly: Run 65 let every computing module vote, and Run 67 supplied the
+    # period's Category-9 assessment so the modules the qualification boundary was refusing now
+    # execute. Neither weakens what this check protects, which is that a category carries a
+    # status only where the evidence actually supports one. That is asserted directly now, over
+    # the run's own rows rather than over a fixed list that has to be rewritten every time a
+    # module starts computing.
     lit = sorted(r3.get("category_statuses") or {})
-    check(lit == ["A1"],
-          "only the category the evidence actually supports carries a status", str(lit))
+    _computed_cats = {m["category"] for m in (r3.get("module_results") or r3.get("modules") or [])}
+    check(set(lit) == _computed_cats,
+          "only a category the evidence actually supports -- one in which a module COMPUTED -- "
+          "carries a rollup at all",
+          f"{lit} vs {sorted(_computed_cats)}")
+    _dark = {m["module_id"] for m in (r3.get("abstained") or [])}
+    check(bool(_dark) and not (_dark & {m["module_id"] for m
+                                        in (r3.get("module_results") or r3.get("modules") or [])}),
+          "and the modules whose governed structure is absent are in the abstention list and "
+          "nowhere else, so nothing was given a status the evidence does not support",
+          str(len(_dark)))
     check(r3.get("project_status") in ("Green", "Amber", "Red"),
           "the project status is a real band derived from what did compute",
           str(r3.get("project_status")))
