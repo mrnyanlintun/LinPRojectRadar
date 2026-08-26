@@ -755,12 +755,19 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # behaviour digest RE-DERIVED identically at
 # 8fb4d3663fd3ee421814521b5b89257d90524eaf5ffba9018ebd19a9bb3dd7a1.
 # -------------------------------------------------------------------------------------------
-SIMULATION_VERSION = "sim-2026.08-v41"
+# RUN 67 ADVANCES THE STAMP TO v42, AND THE BEHAVIOUR BEHIND IT HAS GENUINELY MOVED, which is
+# why it is a new stamp and not a re-derivation of the old one. Runs 65, 66 and 67 are published
+# together. What a participant sees is different: categories carry statuses they did not carry
+# before, because every module that produced a value now votes into its own category (Run 65),
+# and five more modules compute because the period's Category-9 assessment is written for the
+# first time (Run 67). 101 registered, 63 in service, voting boundaries still sourced for exactly
+# A1.7 and A1.8. Results computed under sim-2026.08-v41 remain valid under that stamp.
+SIMULATION_VERSION = "sim-2026.08-v42"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v40"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v41"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -777,6 +784,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
     "sim-2026.08-v34", "sim-2026.08-v35", "sim-2026.08-v36", "sim-2026.08-v37",
  "sim-2026.08-v38", "sim-2026.08-v39", "sim-2026.08-v40",
  "sim-2026.08-v41",
+ "sim-2026.08-v42",
 )
 
 
