@@ -228,6 +228,11 @@ FIX["no_band"] = sorted(m.get("module_id") for m in _mr if m.get("status_color")
 FIX["no_band_declared_calibration_pending"] = sorted(
     m.get("module_id") for m in _mr
     if m.get("status_color") is None and m.get("calibration_pending"))
+_ab = ROW.get("abstained") or []
+FIX["abstained_count"] = len(_ab)
+FIX["still_refused_on_category9"] = sorted(
+    a.get("module_id") for a in _ab if "Category-9" in (a.get("evidence_metric") or ""))
+FIX["abstention_sentences"] = sorted({(a.get("evidence_metric") or "")[:110] for a in _ab})
 FIX["no_band_UNDECLARED"] = sorted(
     m.get("module_id") for m in _mr
     if m.get("status_color") is None and not m.get("calibration_pending"))
