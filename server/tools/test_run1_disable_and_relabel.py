@@ -33,7 +33,7 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 from app.simulation import compute_project  # noqa: E402
 from app.simulation.registry import (  # noqa: E402
     CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, PROXY_QUALIFIERS, VALIDATED,
-    activation_state, is_retired, run_module,
+    activation_state, is_retired, registry_index, run_module,
 )
 from app.simulation.rng import make_rng  # noqa: E402
 
@@ -133,16 +133,44 @@ print("=" * 78)
 check(set(CORE_VOTING_MODULES) == {"A1.7", "A1.8"},
       "the voting set is exactly the two measures whose band boundaries are sourced",
       str(sorted(CORE_VOTING_MODULES)))
-core_cats = {m["category"] for m in run["modules"] if m["module_id"] in CORE_VOTING_MODULES}
-check(core_cats == set(run["category_statuses"].keys()),
-      "layer (a): category rollup opens only for categories carrying a CORE module",
-      str((sorted(core_cats), sorted(run["category_statuses"].keys()))))
-non_core_cats = {m["category"] for m in run["modules"]} - core_cats
-check(bool(non_core_cats) and not (non_core_cats & set(run["category_statuses"].keys())),
-      "categories with no CORE module have no rollup entry at all",
-      str(sorted(non_core_cats)))
+# RE-POINTED BY RUN 65, AND RUN 67 UPDATES THE ASSERTION TO THE RULE THAT IS NOW IN FORCE.
+# Run 65 removed the CORE_VOTING_MODULES filter from the computed loop in compute.py, with the
+# owner's authority: EVERY MODULE THAT PRODUCED A VALUE VOTES INTO ITS OWN CATEGORY. The two
+# checks below asserted the superseded rule -- that a rollup opens only for a category carrying
+# one of the two CORE modules -- and were therefore asserting something deliberately false and
+# permanently red. They are not deleted; they are re-pointed at the rule that replaced them, and
+# they are asserted more tightly than before: the exact category sets, derived from the run's own
+# computed rows rather than restated by hand.
+computed_cats = {m["category"] for m in run["modules"]}
+check(computed_cats == set(run["category_statuses"].keys()),
+      "layer (a): every category carrying a module that COMPUTED has a rollup, and no other "
+      "category does",
+      str((sorted(computed_cats), sorted(run["category_statuses"].keys()))))
+# RULE 3. A MODULE THAT DECLINED DOES NOT VOTE AND DOES NOT DRAG ITS CATEGORY DOWN. A category
+# whose only members abstained therefore has no rollup entry at all, which is the half of the
+# old assertion that survives the change intact.
+_IDX = registry_index()
+abstained_only = {_IDX[m["module_id"]]["category"] for m in run["abstained"]
+                  if m["module_id"] in _IDX} - computed_cats
+check(bool(abstained_only) and not (abstained_only & set(run["category_statuses"].keys())),
+      "a category in which every module declined has no rollup entry at all: an abstention is "
+      "not an adverse reading",
+      str(sorted(abstained_only)))
+# RULE 4. THE CATEGORY RECORDS WHICH MODULE SET IT, and every named setter is a module that
+# actually computed in that category -- so a status can never be attributed to a module that
+# never spoke.
+lit = {c: v for c, v in run["category_statuses"].items() if v.get("status")}
+computed_by_cat: dict[str, set] = {}
+for m in run["modules"]:
+    computed_by_cat.setdefault(m["category"], set()).add(m["module_id"])
+check(bool(lit) and all(v.get("status_set_by") and
+                        set(v["status_set_by"]) <= computed_by_cat.get(c, set())
+                        for c, v in lit.items()),
+      "layer (a): every category carrying a status names the module that set it, and every "
+      "named setter computed in that category",
+      str({c: v.get("status_set_by") for c, v in lit.items()}))
 check(run.get("project_status") is not None,
-      "layer (a): project status is still produced, fused from CORE-carrying categories only")
+      "layer (a): project status is still produced, fused from the categories that carry one")
 
 # layer (b): non-voting modules do not drive the generated recommendation / courses of action.
 # recommendation_options.js gates on module_results[...].votes === false for the scoring module
@@ -194,18 +222,25 @@ check(core_status != base_status,
       "this check can go red",
       f"base={base_status} perturbed={core_status}")
 
-# FAULT INJECTION 2 (the inverse), proving the check is not trivially insensitive: perturbing a
-# NON-core module's input must NOT change status.
+# FAULT INJECTION 2 (the inverse), proving the check is not trivially insensitive: perturbing an
+# input NO MODULE ON THIS FIXTURE READS must not change status. Under Run 65's rule this is the
+# only remaining way to hold status still from the input side, and it is the honest one: a
+# reading nobody produced cannot move a rollup.
 non_core_fault = dict(base)
-non_core_fault["weatherDaysLost"] = 400   # Weather Day Impact, a proxy, non-voting
+non_core_fault["weatherDaysLost"] = 400   # read by no module that computes on this fixture
 non_core_status = status(non_core_fault)
 check(non_core_status == base_status,
-      "perturbing only a non-CORE module's input (Weather Day Impact) leaves project status "
+      "perturbing an input that no computing module on this fixture reads leaves project status "
       "unchanged",
       f"base={base_status} perturbed={non_core_status}")
 
-# THE ACTUAL REGRESSION: several non-CORE inputs move at once, CORE inputs untouched -> status
-# holds. This is the property the run's "most important check" names directly.
+# RE-POINTED BY RUN 67. WHAT THIS CHECK NOW PROTECTS IS THE RULE THAT REPLACED THE OLD ONE.
+# Until Run 65 this asserted the opposite: nine non-CORE inputs could move as sharply as they
+# liked and project status had to hold, because only two modules reached fusion. Run 65 removed
+# that filter with the owner's authority, so the assertion became deliberately false and the
+# suite was permanently red. RULE 1 IS NOW ASSERTED IN ITS PLACE: every module that produced a
+# value votes into its own category, so nine computing modules' inputs moving sharply MUST be
+# able to move the project status. Holding still would now be the defect.
 regression_fault = dict(base)
 regression_fault["docRiskScore"] = 0.95
 regression_fault["changeOrderCount"] = 60
@@ -220,9 +255,9 @@ regression_fault["activitiesConstrained"] = 49
 regression_fault["remainingContingency"] = 1000
 regression_fault["materialCostCurrent"] = 3000000
 regression_status = status(regression_fault)
-check(regression_status == base_status,
-      "REGRESSION: project status is unchanged for a project whose voting modules' own inputs "
-      "are unchanged, even though nine non-voting modules' inputs moved sharply",
+check(regression_status != base_status,
+      "RULE 1: nine computing modules' inputs moving sharply DOES move project status, because "
+      "every module that produced a value now votes into its own category",
       f"base={base_status} regression={regression_status}")
 
 print()

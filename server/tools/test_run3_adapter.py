@@ -343,12 +343,25 @@ try:
           "every one of the fourteen that computed carries votes:false")
     cats = r4.get("category_statuses") or {}
     voting_cats = {registry.registry_index()[m]["category"] for m in CORE_VOTING_MODULES}
-    check(set(cats.keys()) <= voting_cats,
-          "no category rollup exists for a category carried only by the fourteen",
-          f"{sorted(set(cats.keys()) - voting_cats)}")
+    # RE-POINTED BY RUN 67 TO THE RULE RUN 65 PUT IN FORCE. Both checks below asserted that a
+    # category rollup exists only where one of the two CORE modules sits, and that the
+    # fourteen's categories never reach project status fusion. Run 65 removed that filter with
+    # the owner's authority: every module that produced a value votes into its own category, so
+    # the fourteen's categories DO reach fusion now and both assertions were deliberately false
+    # and permanently red. What Run 3 is actually about -- that the ADAPTER invents no signal and
+    # hands nothing a vote it did not earn by computing -- is asserted in its place, and more
+    # tightly: a rollup exists exactly where a module computed.
+    _computed_cats = {m["category"] for m in (r4.get("module_results") or [])}
+    check(set(cats.keys()) == _computed_cats,
+          "a category rollup exists exactly where a module computed, the fourteen included: "
+          "every module that produced a value votes into its own category",
+          f"{sorted(set(cats.keys()) ^ _computed_cats)}")
     fourteen_cats = {registry.service_index()[m]["category"] for m in IN_SERVICE}
-    check(not (set(cats.keys()) & (fourteen_cats - voting_cats)),
-          "and none of their categories reaches project status fusion")
+    check(all(cats[c].get("status_set_by") for c in (set(cats.keys()) & fourteen_cats)
+              if cats[c].get("status")),
+          "and every one of their categories that carries a status names the module that set "
+          "it, so a vote the adapter enabled is attributable",
+          str({c: cats[c].get("status_set_by") for c in sorted(set(cats) & fourteen_cats)}))
     # Layer (b) and (c): the courses of action and the decision card read the `votes` field and
     # the fused status respectively, both covered by the two checks above plus this one.
     check(all(m not in CORE_VOTING_MODULES for m in IN_SERVICE),
@@ -407,11 +420,23 @@ try:
     check(before["project_status"] == after["project_status"],
           "project status is identical with the adapter and without it",
           f"{before['project_status']} vs {after['project_status']}")
-    check(before["project_conflict"] == after["project_conflict"],
-          "and so is the conflict mass the status was fused with")
-    check(json.dumps(before["category_statuses"], sort_keys=True)
-          == json.dumps(after["category_statuses"], sort_keys=True),
-          "and so is every category rollup")
+    # RE-POINTED BY RUN 67. Until Run 65 the fourteen could not reach the rollup at all, so
+    # switching the adapter off could not move a conflict coefficient or a category status and
+    # this pair asserted byte-identity. Run 65 lets every computing module vote, so returning
+    # the fourteen to the pre-adapter path DOES move the rollup -- in exactly the categories the
+    # fourteen sit in, and nowhere else. Byte-identity was therefore asserting the superseded
+    # rule. THE CONFINEMENT IS ASSERTED INSTEAD, which is the stronger statement and the one Run
+    # 3 was always making: the adapter changes the rollup only where the fourteen sit.
+    _moved_cats = {c for c in set(before["category_statuses"]) | set(after["category_statuses"])
+                   if json.dumps(before["category_statuses"].get(c), sort_keys=True)
+                   != json.dumps(after["category_statuses"].get(c), sort_keys=True)}
+    check(_moved_cats <= fourteen_cats,
+          "and every category the adapter moves is a category one of the fourteen sits in: it "
+          "reaches no rollup it does not compute in",
+          f"moved={sorted(_moved_cats)} fourteen={sorted(fourteen_cats)}")
+    check(bool(_moved_cats),
+          "and it moves at least one, so this confinement check is not vacuous",
+          f"moved={sorted(_moved_cats)}")
     check(after["project_status"] == r4.get("project_status"),
           "and the stored row on the real path agrees with both",
           f"{after['project_status']} vs {r4.get('project_status')}")
@@ -478,11 +503,53 @@ try:
     movers = {m: v for m, v in only.items() if v != after["project_status"]}
     print(f"    REPLACING the voting set with one module moves it for {len(movers)} of "
           f"{len(only)}")
-    check(bool(movers),
-          "FAULT: the voting set is genuinely consulted -- replacing it with a single "
-          "non-voting module DOES move project status, exhausted over every computed module "
-          "rather than a chosen few, so the exclusion above is not vacuous",
-          f"{len(only)} tried, {len(movers)} moved")
+
+    # RE-POINTED BY RUN 67, AND THIS IS THE CHECK THE RUN WAS MOST WORTH FINDING. The injection
+    # above -- replacing CORE_VOTING_MODULES with a single module -- WAS the fault proof for
+    # this section, and Run 65 made it VACUOUS: compute.py no longer reads that set when
+    # deciding who votes, only when deciding whose abstention is reported to the gate. The
+    # injection therefore moved nothing, could no longer go red, and a check that cannot fail is
+    # worse than no check. It is not deleted; it is re-pointed AT THE SITE RUN 65 ACTUALLY
+    # MOVED: the computed-row loop that fills `by_category`. Dropping one computed row from that
+    # loop must be able to move the project status, and the space is exhausted over every
+    # computed module rather than a chosen few.
+    import app.simulation.compute as compute_mod
+
+    def run_keeping_only(module_id: str) -> dict:
+        saved = compute_mod.run_all
+
+        def keeping(*a, **k):
+            run = dict(saved(*a, **k))
+            run["computed"] = [r for r in run["computed"] if r["module_id"] == module_id]
+            return run
+
+        compute_mod.run_all = keeping
+        try:
+            return compute_project(dict(si4), PRJ, "P4", CUTOFF)
+        finally:
+            compute_mod.run_all = saved
+
+    kept = {}
+    for _m in (r4.get("module_results") or []):
+        _mid = _m["module_id"]
+        _r = run_keeping_only(_mid)
+        kept[_mid] = (sorted(_r["category_statuses"].keys()),
+                      _r["category_statuses"].get(registry.registry_index()[_mid]["category"], {})
+                      .get("status_set_by"),
+                      _r["project_status"])
+    print(f"    KEEPING one computed row: {kept}")
+    check(all(cats_ == [registry.registry_index()[m]["category"]]
+              for m, (cats_, _s, _p) in kept.items()),
+          "FAULT: the computed rows are genuinely consulted -- keeping exactly one of them in "
+          "the loop that fills by_category leaves exactly one category rollup, that module's "
+          "own, for every computed module without exception",
+          str({m: c for m, (c, _s, _p) in kept.items()
+               if c != [registry.registry_index()[m]["category"]]}))
+    check(all(_s == [m] for m, (_c, _s, _p) in kept.items()
+              if kept[m][2] is not None),
+          "and the category names that module as the one that set it, so the vote is the "
+          "module's own and not inherited from the set it used to be excluded from",
+          str({m: _s for m, (_c, _s, _p) in kept.items()}))
     restored = run_with_adapter(si4, CUTOFF)
     check(restored["project_status"] == after["project_status"]
           and json.dumps(restored["category_statuses"], sort_keys=True)

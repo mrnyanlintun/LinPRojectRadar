@@ -689,9 +689,27 @@ rich = compute_project(dict(WITH_STRUCTURES), "S-A", "P1", CUTOFF)
 check(plain["project_status"] == rich["project_status"],
       "adding every structure this run integrated leaves the fused project status exactly where "
       "it was", f"{plain['project_status']} vs {rich['project_status']}")
-check(plain["categories_voting"] == rich["categories_voting"],
-      "and the same categories vote", f"{plain['categories_voting']} vs "
-      f"{rich['categories_voting']}")
+# RE-POINTED BY RUN 67 TO THE RULE RUN 65 PUT IN FORCE. This asserted that adding every
+# structure this run integrated leaves the SAME NUMBER OF CATEGORIES VOTING. That was true only
+# while two modules reached fusion and the integrated modules could not vote at all. Run 65
+# removed that filter with the owner's authority, so a structure that lets a module compute now
+# also lets its category vote, the count legitimately rises, and the assertion was deliberately
+# false and permanently red. WHAT RUN 10B IS ABOUT IS UNCHANGED AND IS ASSERTED HERE INSTEAD:
+# supplying a structure adds readings and never removes one, so no category that voted on the
+# plain fixture stops voting on the rich one, and any category that starts voting is one whose
+# module needed a structure to compute at all.
+_plain_voting = {c for c, v in plain["category_statuses"].items()
+                 if v["status"] and v["contributes_to_project_status"]}
+_rich_voting = {c for c, v in rich["category_statuses"].items()
+                if v["status"] and v["contributes_to_project_status"]}
+check(_plain_voting <= _rich_voting,
+      "and no category that voted without the structures stops voting once they are supplied: "
+      "a structure adds a reading and never removes one",
+      f"lost {sorted(_plain_voting - _rich_voting)}")
+check(bool(_rich_voting - _plain_voting),
+      "while at least one category votes only because a structure let its module compute, so "
+      "this check is measuring the integration rather than restating it",
+      f"gained {sorted(_rich_voting - _plain_voting)}")
 _rich_computed = {m["module_id"] for m in rich["modules"]}
 _plain_computed = {m["module_id"] for m in plain["modules"]}
 # RUN 14, EXPECTATION CORRECTED WITH ITS REASON. Until Run 14 the two reference-object modules

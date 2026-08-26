@@ -1191,6 +1191,10 @@ try:
     print("   period | project status before -> after | conflict before -> after")
     status_moves = 0
     conflict_moves = 0
+    # RUN 67. Every (old rule, new rule) conflict-coefficient pair the rollup produces, project
+    # level and category level, collected as it is printed so the assertion below is made over
+    # the same numbers the table shows and not over a second derivation of them.
+    conflict_pairs: list[tuple[float, float]] = []
     for p, before, after, stored_row in rows:
         b_s, a_s = before["project_status"], after["project_status"]
         b_k, a_k = _k(before["project_conflict"]), _k(after["project_conflict"])
@@ -1198,6 +1202,7 @@ try:
             status_moves += 1
         if b_k != a_k:
             conflict_moves += 1
+        conflict_pairs.append((a_k, b_k))
         print(f"     {p}    | {b_s} -> {a_s}   | {b_k} -> {a_k}")
         check(a_s == stored_row.get("project_status"),
               f"period {p}: the recomputed 'after' equals what the real path actually stored",
@@ -1217,6 +1222,7 @@ try:
                 cat_status_moves += 1
             if b_k != a_k:
                 cat_conflict_moves += 1
+            conflict_pairs.append((a_k, b_k))
             print(f"     period {p} {cat}: {b_s} -> {a_s}, conflict {b_k} -> {a_k}")
 
     print()
@@ -1244,11 +1250,22 @@ try:
           "old rule counted ignorance as disagreement and reported 0.32, and the corrected rule "
           "reports none, which is measured rather than asserted",
           f"old {_k_old}, new {_k_new}")
-    check(conflict_moves == 0 and cat_conflict_moves == 0,
-          "and the rollup itself no longer moves, because after the lineage correction the one "
-          "voting category is one body of evidence and no conflict coefficient is estimated for "
-          "it at all, in either the old rule or the new",
-          f"{conflict_moves} project, {cat_conflict_moves} category")
+    # RE-POINTED BY RUN 67. Until Run 65 exactly ONE category could carry a status, and that
+    # category was a single body of earned-value evidence, so no conflict coefficient was
+    # estimable anywhere and this check could assert a flat zero. Run 65 let every computing
+    # module vote, so several categories now carry statuses drawn from several bodies and a
+    # conflict coefficient IS estimated for some of them. Asserting the flat zero was therefore
+    # asserting the superseded rule. What Run 2's fix actually claims is asserted instead, and it
+    # is the stronger statement: wherever the corrected rule DOES report a conflict coefficient
+    # it is never larger than the old rule's, because the correction only removes the ignorance
+    # cross terms the old rule miscounted as disagreement. That is measured over every period and
+    # every category in the table above, not asserted.
+    check(all(a <= b + 1e-9 for a, b in conflict_pairs),
+          "and no conflict coefficient the corrected rule reports anywhere in the rollup is "
+          "larger than the old rule's for the same period and category, which is the direction "
+          "the ignorance correction can only move it",
+          f"{len(conflict_pairs)} pairs compared, "
+          f"{sum(1 for a, b in conflict_pairs if a < b - 1e-9)} strictly reduced")
     check(all(a["project_status"] in ("Green", "Yellow", "Amber", "Red", None)
               for _, _, a, _ in rows),
           "and every resulting project status is still a band the platform can render")
@@ -1364,9 +1381,19 @@ try:
     cats = r4.get("category_statuses") or {}
     from app.simulation.registry import registry_index  # noqa: E402
     voting_cats = {registry_index()[m]["category"] for m in CORE_VOTING_MODULES}
-    check(set(cats.keys()) <= voting_cats,
-          "and no category rollup exists for a category carried only by them",
-          str(sorted(set(cats.keys()) - voting_cats)))
+    # RE-POINTED BY RUN 67 TO THE RULE RUN 65 PUT IN FORCE. This asserted that a rollup exists
+    # ONLY for a category carrying one of the two CORE modules. Run 65 removed that filter with
+    # the owner's authority -- every module that produced a value votes into its own category --
+    # so the assertion was deliberately false and permanently red. The property Run 2 actually
+    # protects is untouched and is what is asserted now: fixing arithmetic handed nothing a vote
+    # it had not earned by COMPUTING, so every category carrying a rollup carries a module that
+    # computed, and no rollup exists for a category in which every module declined.
+    _computed_cats = {m["category"] for m in (r4.get("module_results") or [])}
+    check(set(cats.keys()) == _computed_cats,
+          "and a category rollup exists exactly where a module computed -- not where one merely "
+          "exists, and not where every module declined",
+          str((sorted(set(cats.keys()) - _computed_cats),
+               sorted(_computed_cats - set(cats.keys())))))
 
     print()
     print("=" * 78)

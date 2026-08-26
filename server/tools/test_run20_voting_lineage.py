@@ -334,9 +334,23 @@ check("on a fixture carrying more than the earned-value primitives, modules OUTS
       "and not a run in which only two modules existed",
       len(_rich_ids - set(registry.CORE_VOTING_MODULES)) >= 1,
       f"{len(_rich_ids)} computed: {sorted(_rich_ids)}")
-check("and not one of those extra computed modules votes",
-      set(_rich["voting_module_ids"]) == {"A1.7", "A1.8"},
-      str(_rich["voting_module_ids"]))
+# RE-POINTED BY RUN 67 TO THE RULE RUN 65 PUT IN FORCE. This asserted that the modules outside
+# the sourced-band pair compute and DO NOT vote. Run 65 removed that filter with the owner's
+# authority -- every module that produced a value votes into its own category -- so
+# `voting_module_ids` now names every module that computed, the assertion was deliberately false,
+# and the suite was permanently red. WHAT RUN 20 IS ABOUT DOES NOT MOVE AND IS NOT WEAKENED: this
+# suite exists to prove that lineage is respected when votes are combined, and the lineage rule
+# is asserted unchanged in every other check here. The one thing re-pointed is which rows reach
+# the combination, and it is asserted exactly: the voters are the computed rows, no more and no
+# fewer, so a module that never computed can never appear among them.
+check("and every one of those extra computed modules votes, and only modules that computed do: "
+      "the voters are exactly the computed rows",
+      set(_rich["voting_module_ids"]) == _rich_ids,
+      f"{sorted(set(_rich['voting_module_ids']) ^ _rich_ids)} differ")
+check("and the sourced-band pair is still inside that set rather than replaced by it, so the "
+      "widening added voters and removed none",
+      set(registry.CORE_VOTING_MODULES) <= set(_rich["voting_module_ids"]),
+      str(sorted(_rich["voting_module_ids"])))
 check("and the seats in the whole category rollup number exactly two, so no computed module "
       "outside the voting pair contributed a status to any category that votes",
       _voting_seats == 2, f"{_voting_seats} seats")

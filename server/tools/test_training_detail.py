@@ -145,16 +145,28 @@ for m in mods:
 # dropped.
 from app.simulation.registry import CORE_VOTING_MODULES  # noqa: E402
 
+# RE-POINTED BY RUN 67 TO THE RULE RUN 65 PUT IN FORCE. The comment above describes the
+# interim scope Run 1 set: a rollup opens only where a CORE module sits. Run 65 removed that
+# filter from compute.py with the owner's authority -- every module that produced a value votes
+# into its own category -- so the two checks below asserted a scope that is no longer in force
+# and this suite was permanently red. As with the scope they replaced, the retired rule is
+# recorded here rather than silently dropped, and the checks are re-pointed rather than deleted.
 voting_cats = {m["category"] for m in mods if m["module_id"] in CORE_VOTING_MODULES}
-check(voting_cats and voting_cats == set(cats.keys()),
-      "exactly the categories carrying a CORE voting module have a rollup to open",
-      str((sorted(voting_cats), sorted(cats.keys()))))
-check(all(len(v) >= 1 for cat, v in by_cat.items() if cat in voting_cats),
+check(set(by_cat) == set(cats.keys()),
+      "exactly the categories carrying a module that COMPUTED have a rollup to open",
+      str((sorted(by_cat), sorted(cats.keys()))))
+check(all(len(v) >= 1 for cat, v in by_cat.items() if cat in cats),
       "and each of those carries the computations that fed it")
-check(any(cat not in cats for cat in by_cat),
-      "while a category with no CORE contributor still shows its computations in the ledger "
-      "and has no interim rollup of its own",
+check(bool(set(by_cat) - voting_cats),
+      "while the rollup now reaches categories carrying no CORE module at all, which is the "
+      "change that re-pointed these checks",
       str(sorted(set(by_cat) - voting_cats)))
+# RULE 3, PROVED ON THIS FIXTURE RATHER THAN ASSUMED: a module that DECLINED is not in `mods`,
+# so its category opens no rollup on its account and cannot be dragged down by it.
+check(all(cat in by_cat for cat in cats),
+      "and no rollup exists for a category in which nothing computed: an abstention is an "
+      "absence of a reading, not an adverse one",
+      str(sorted(set(cats) - set(by_cat))))
 
 # THE MEASURED CORRECTION the report leads with: the category status is an evidence
 # combination, NOT the worst contributor. If this ever became a true maximum the display's

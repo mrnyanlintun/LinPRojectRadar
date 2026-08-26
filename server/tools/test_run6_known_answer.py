@@ -1963,7 +1963,7 @@ check(len(_conflict_dep) > 0,
 if _conflict_dep:
     print(f"     example: {_conflict_dep[0][0]} -> {_conflict_dep[0][1]}")
 
-print("\n-- The rollup: only the two voting modules open a category --")
+print("\n-- The rollup: every module that computed votes into its own category --")
 _SI = {"cpi": 0.92, "spi": 0.90, "bac": 12000000, "ev": 4000000, "ac": 4400000, "pv": 4200000,
        "docRiskScore": 0.35, "actualPctComplete": 35, "plannedPctComplete": 38,
        "activitiesPlanned": 120, "activitiesConstrained": 20,
@@ -1972,11 +1972,29 @@ _SI = {"cpi": 0.92, "spi": 0.90, "bac": 12000000, "ev": 4000000, "ac": 4400000, 
        "rfiCount": 24, "rfiPeriodDays": 90, "rfiOverdue": 5,
        "submittalsTotal": 60, "submittalsRejected": 9}
 res = compute_project(_SI, "scenario-run6", "P1", "2025-06-30")
+# RE-POINTED BY RUN 67 TO THE RULE RUN 65 PUT IN FORCE. Every assertion in this block described
+# the rollup as it stood when exactly two modules reached fusion and exactly one category could
+# carry a status. Run 65 removed that filter with the owner's authority -- every module that
+# produced a value votes into its own category -- so all five were asserting something
+# deliberately false and this suite was permanently red. They are not deleted: each is re-pointed
+# at the property the change left in place, and each is still a KNOWN ANSWER, taken from the
+# run's own computed rows rather than from a number typed here that would drift with the fixture.
 _voting_cats = {registry.registry_index()[m]["category"] for m in registry.CORE_VOTING_MODULES}
-ka(set(res["category_statuses"].keys()), _voting_cats,
-   "rollup: exactly the categories carrying a voting module have a fused status")
-ka(res["categories_voting"], 1,
-   "rollup: one category votes, so project conflict of zero means one source and not agreement")
+_computed_cats = {registry.registry_index()[m["module_id"]]["category"] for m in res["modules"]}
+ka(set(res["category_statuses"].keys()), _computed_cats,
+   "rollup: exactly the categories carrying a module that COMPUTED have a rollup entry")
+check(_voting_cats < _computed_cats,
+      "rollup: and that is strictly more categories than the sourced-band voting set opens, so "
+      "the re-pointing above is measuring the widening and not restating the old rule",
+      f"{sorted(_voting_cats)} within {sorted(_computed_cats)}")
+# RULE 3. A CATEGORY WHOSE MODULES ALL DECLINED TO ASSERT A BAND CARRIES NO STATUS, and it does
+# not drag the project down to Unknown either: it simply does not vote. `categories_voting`
+# counts the categories that actually carried a band into the project fusion.
+_lit = {c: v for c, v in res["category_statuses"].items() if v.get("status")}
+ka(res["categories_voting"],
+   len([c for c, v in _lit.items() if v["contributes_to_project_status"]]),
+   "rollup: the categories that vote are exactly the categories that carried a band and "
+   "contribute to project status -- a category with no band does not vote and does not drag")
 # RESTATED BY RUN 11 GATE 6, AND THE ORIGINAL FINDING IS THE REASON THE RESTATEMENT EXISTS.
 # Run 6 recorded that the rollup's conflict was structurally zero, and named why in the line
 # above: one source, not agreement. That finding was correct and it is what Run 11 acted on. A
@@ -1984,15 +2002,37 @@ ka(res["categories_voting"], 1,
 # only by never combining anything, and no genuine two-source combine produces it. The assertion
 # is therefore that the coefficient is NOT REPORTED under one-lineage voting, and that the state
 # says so in words.
-ka(res["project_conflict"], None,
-   "rollup: with one voting lineage no conflict coefficient is published, because zero would "
-   "read as agreement that was never tested")
-ka(res["project_conflict_state"], "NOT_ESTIMABLE_SINGLE_LINEAGE",
-   "rollup: and the state names why rather than leaving a blank")
+# RUN 11 GATE 6'S FINDING IS UNCHANGED AND IS WHAT IS ASSERTED HERE, re-pointed only in which
+# arm of it this fixture now exercises. A zero is still never published as though it were
+# agreement: the coefficient is published only when more than one INDEPENDENT BODY of evidence
+# voted, and withheld with a named state when only one did. Before Run 65 one category voted and
+# this fixture took the withheld arm; it now takes the published arm, so the assertion is made
+# over the RULE rather than over the arm, and both arms are named.
+_bodies_voting = len({b for c, v in _lit.items()
+                      if v["contributes_to_project_status"] for b in v["lineage_bodies"]})
+if _bodies_voting > 1:
+    ka(res["project_conflict_state"], "ESTIMATED",
+       "rollup: with more than one voting body of evidence the conflict coefficient IS published")
+    check(isinstance(res["project_conflict"], float),
+          "rollup: and it is a real coefficient rather than a withheld blank",
+          str(res["project_conflict"]))
+else:
+    ka(res["project_conflict"], None,
+       "rollup: with one voting lineage no conflict coefficient is published, because zero "
+       "would read as agreement that was never tested")
+    ka(res["project_conflict_state"], "NOT_ESTIMABLE_SINGLE_LINEAGE",
+       "rollup: and the state names why rather than leaving a blank")
 _c_cats = {registry.registry_index()[m]["category"] for m in VALIDATED
            if registry.group_of(m) == "C"}
-ka(_c_cats & set(res["category_statuses"].keys()), set(),
-   "rollup: no data and evidence health category has a fused status on a real computation")
+# RE-POINTED BY RUN 67. A data and evidence health category now HAS a rollup entry, because a
+# module in it computed. What must still hold -- and what this check was always protecting -- is
+# that a statement about the EVIDENCE never becomes another vote on the project's condition.
+# That exclusion did not move: it lives in `contributes_to_project_status`, one level below the
+# filter Run 65 removed, so it is asserted there now instead of on the presence of the entry.
+ka({c for c in _c_cats & set(res["category_statuses"].keys())
+    if res["category_statuses"][c]["contributes_to_project_status"]}, set(),
+   "rollup: no data and evidence health category contributes to project status, even now that "
+   "it carries a rollup of its own")
 _votes = {m["module_id"] for m in res["modules"] if m.get("votes")}
 ka(_votes, set(registry.CORE_VOTING_MODULES),
    "rollup: exactly two modules carry a vote on the stored row")

@@ -795,14 +795,30 @@ check(non_voting_count >= len(comp) - 2 and non_voting_count == len(comp) - len(
 cats = r4.get("category_statuses") or {}
 index = registry.registry_index()
 voting_cats = {index[m]["category"] for m in voting_ids}
-check(set(cats.keys()) == voting_cats,
-      "layer one, the category rollup: only categories carrying a voting module have a rollup "
-      "at all", f"{sorted(cats)} vs {sorted(voting_cats)}")
+# RE-POINTED BY RUN 67 TO THE RULE RUN 65 PUT IN FORCE. This asserted that ONLY a category
+# carrying one of the two modules Run 4 restored has a rollup at all. Run 65 removed that filter
+# with the owner's authority -- every module that produced a value votes into its own category --
+# so the assertion was deliberately false and the suite permanently red. RUN 4'S OWN FINDING IS
+# NOT WEAKENED BY THE RE-POINTING AND IS NOT WHAT MOVED: the two modules whose band boundaries a
+# published source specifies are still exactly CORE_VOTING_MODULES, still asserted above, and
+# what a module contributes to a rollup is still its OWN band and nobody else's. What changed is
+# only which computed rows reach the rollup, so that is what is asserted here.
 by_cat_shown = {index[m]["category"] for m in comp}
+check(set(cats.keys()) == by_cat_shown,
+      "layer one, the category rollup: every category carrying a module that COMPUTED has a "
+      "rollup, and no other category does",
+      f"{sorted(cats)} vs {sorted(by_cat_shown)}")
 check(len(by_cat_shown) > len(voting_cats),
-      "and categories with no voting module still show their modules on the ledger, which is "
-      "the visibility the owner decision keeps", f"{len(by_cat_shown)} shown, "
-                                                 f"{len(voting_cats)} rolled up")
+      "and the rollup now reaches categories no sourced-band module sits in, which is the "
+      "change Run 65 made and the reason this check was re-pointed",
+      f"{len(by_cat_shown)} rolled up, {len(voting_cats)} carrying a sourced-band module")
+# RULE 4, AND IT IS WHAT KEEPS RUN 4'S FINDING LEGIBLE AFTER THE WIDENING: a category names the
+# module that set it, so a reader can still see whether a status rests on a sourced band or on
+# an unsourced one, which is the whole subject of this suite.
+check(all(cats[c].get("status_set_by") for c in cats if cats[c].get("status")),
+      "and every category carrying a status names the module that set it, so a status resting "
+      "on an unsourced band is still identifiable as such",
+      str({c: cats[c].get("status_set_by") for c in sorted(cats)}))
 # Layer (b): generated recommendation text and courses of action.
 #
 # RUN 7 MOVED WHAT THIS CHECK CAN LOOK AT, AND THE EXCLUSION IT PROTECTS IS UNCHANGED. This run
