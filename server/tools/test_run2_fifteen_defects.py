@@ -1202,7 +1202,11 @@ try:
             status_moves += 1
         if b_k != a_k:
             conflict_moves += 1
-        conflict_pairs.append((a_k, b_k))
+        # `_k` renders a WITHHELD coefficient in words, not as a number. Only a pair in which
+        # both rules actually published a coefficient is comparable, so only those are collected;
+        # a pair where one side withheld is not a smaller conflict, it is no conflict at all.
+        if isinstance(a_k, (int, float)) and isinstance(b_k, (int, float)):
+            conflict_pairs.append((a_k, b_k))
         print(f"     {p}    | {b_s} -> {a_s}   | {b_k} -> {a_k}")
         check(a_s == stored_row.get("project_status"),
               f"period {p}: the recomputed 'after' equals what the real path actually stored",

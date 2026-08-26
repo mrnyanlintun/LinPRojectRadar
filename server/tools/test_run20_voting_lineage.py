@@ -351,9 +351,23 @@ check("and the sourced-band pair is still inside that set rather than replaced b
       "widening added voters and removed none",
       set(registry.CORE_VOTING_MODULES) <= set(_rich["voting_module_ids"]),
       str(sorted(_rich["voting_module_ids"])))
-check("and the seats in the whole category rollup number exactly two, so no computed module "
-      "outside the voting pair contributed a status to any category that votes",
-      _voting_seats == 2, f"{_voting_seats} seats")
+# RE-POINTED BY RUN 67 ONTO THE RICH FIXTURE, WHERE THE RULE ACTUALLY BITES. This asserted that
+# the seats in the whole category rollup number exactly two, and it was read off the MINIMAL
+# fixture, on which only the two sourced-band modules compute at all. It therefore stayed green
+# through Run 65's change while describing the rule Run 65 overrode -- a check that cannot fail
+# is worse than no check, so it is moved to the fixture that can move it. On the rich fixture the
+# rollup must hold a seat for EVERY module that computed, in that module's own category, and no
+# seat for anything that did not.
+_rich_seats = sum(c["module_count"] for c in _rich["category_statuses"].values())
+check("and the seats in the whole category rollup number exactly one per computed module, in "
+      "that module's own category: every module that produced a value votes, and nothing that "
+      "did not produce one holds a seat",
+      _rich_seats == len(_rich_ids), f"{_rich_seats} seats for {len(_rich_ids)} computed")
+_rich_index = registry.registry_index()
+check("and each category's seat count is exactly the number of modules that computed in it",
+      all(c["module_count"] == len([m for m in _rich_ids if _rich_index[m]["category"] == cat])
+          for cat, c in _rich["category_statuses"].items()),
+      str({cat: c["module_count"] for cat, c in _rich["category_statuses"].items()}))
 check("including the modules whose evidence relationship is quality, governance or decision "
       "output: each of those that computed on this run is on the ledger and none is a voter",
       all(mid not in res["voting_module_ids"] for mid in ("B2.1", "9.1", "9.4", "10.3")))
