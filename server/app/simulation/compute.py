@@ -90,13 +90,30 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # and reaches the gate as an ABSTAINED signal, rather than the gate re-deriving the answer the
     # module has already given. The preflight's own required-evidence rule stays live for any
     # caller that supplies a package and a field list, and the gate suite exercises it directly.
+    # ----------------------------------------------------------- RUN 65, EVERY MODULE VOTES
+    # A MODULE THAT PRODUCED A VALUE VOTES INTO ITS OWN CATEGORY. Before this run only the two
+    # CORE_VOTING_MODULES reached fusion, and both sit in Cost and EVM, so ten of the eleven
+    # categories could not carry a status no matter what computed beneath them: a project whose
+    # document signals held three computing modules still rendered grey. The rules of the
+    # rollup are unchanged -- worst status wins within a category, and the worst category wins
+    # the project -- what changed is which computed rows are allowed to reach them.
+    #
+    # A MODULE THAT DECLINED DOES NOT VOTE AND DOES NOT DRAG ITS CATEGORY DOWN. `by_category`
+    # receives COMPUTED rows only; an abstention is an absence of a reading, not an adverse
+    # one, so a category's status is the worst of the modules that actually spoke.
+    #
+    # CORE_VOTING_MODULES IS UNCHANGED and still names the two modules whose band boundaries a
+    # source specifies (Run 4). It keeps its second job here: the ABSTENTION loop below reports
+    # those two to the qualification gate whether they ran or not, which is what the gate and
+    # blocker B05 read. Widening that loop to all 101 would flood the gate record with 57
+    # abstentions that say only "this module needs evidence this project does not carry", so it
+    # stays narrow; the gate record for a vote is written by the computed loop, which now
+    # writes one for every module that voted.
     _abstained_voters = {r["module_id"] for r in run["abstained"]
                          if r["module_id"] in CORE_VOTING_MODULES}
     by_category: dict[str, list[QualifiedSignal]] = {}
     gate_reports: list[dict[str, Any]] = []
     for row in run["computed"]:
-        if row["module_id"] not in CORE_VOTING_MODULES:
-            continue
         pre = preflight(si, (), period_cutoff)
         qs = qualify(row["module_id"], row["status_color"], row.get("evidence_metric"),
                      pre, lineage=lineage_for(row["module_id"]),
@@ -119,11 +136,24 @@ def compute_project(si: dict, scenario_id: str, period: str,
             if any(v["category"] == cat for v in index.values()) else ""
         bodies = tuple(b["lineage_group"] for b in fused["lineage_bodies"]) if fused else ()
         category_bodies[cat] = bodies
+        # RUN 65, 2.4. THE CATEGORY RECORDS WHICH MODULE SET IT, so a status stays explainable
+        # once more than two modules can produce one. Derived from the fusion's own record --
+        # the member bands inside each lineage body, plus any unresolved signal that carried the
+        # band forward -- rather than re-deciding the worst band at this call site.
+        setters: list[str] = []
+        if fused and fused["status"]:
+            for b in fused["lineage_bodies"]:
+                setters += [m for m, band in zip(b["member_module_ids"], b["member_bands"])
+                            if band == fused["status"]]
+            if fused.get("unresolved_band") == fused["status"]:
+                setters += list(fused.get("unresolved_module_ids") or ())
+        setters = sorted(set(setters))
         category_statuses[cat] = {
             "status": fused["status"] if fused else None,
             "conflict": fused["conflict"] if fused else 0.0,
             "group": group,
             "module_count": len(signals),
+            "status_set_by": setters,
             "contributes_to_project_status": contributes_to_project_status(group),
             # The audit trail of the combination, so a reader of a stored row can see how many
             # bodies of evidence stood behind a band and whether they disagreed, rather than
@@ -151,8 +181,8 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # rollup is called or whether its conflict is estimable. See fusion.governed_status_semantics.
     semantics = governed_status_semantics(category_statuses,
                                           project["conflict"] if project else 0.0)
-    voting_module_ids = sorted(r["module_id"] for r in run["computed"]
-                               if r["module_id"] in CORE_VOTING_MODULES)
+    # RUN 65. THE MODULES THAT ACTUALLY VOTED, which is now every module that computed.
+    voting_module_ids = sorted(r["module_id"] for r in run["computed"])
 
     result = {
         "simulation_version": SIMULATION_VERSION,
