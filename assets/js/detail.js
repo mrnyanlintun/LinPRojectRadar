@@ -2084,7 +2084,7 @@
       (c.setBy || []).forEach((mid) => {
         const m = ev.modules.filter((x) => x.module_id === mid)[0];
         if (!m) return;
-        setterBits.push(mid + " in " + c.key + " reads " + (m.evidence_metric || "no figure stated")
+        setterBits.push(mid + " in " + c.key + ", reading " + (m.evidence_metric || "no figure stated")
                         + ", band " + (m.status_color || "none stated"));
       });
     });
@@ -2212,11 +2212,12 @@
   //: therefore name the figure behind it. Words that merely describe an action ("review",
   //: "verify", "confirm") are deliberately absent: an advisory step asserts nothing.
   const BRIEF_CONDITION_WORDS = [
-    "risk", "pressure", "drift", "over budget", "overrun", "behind", "slipping", "slippage",
-    "variance", "elevated", "high", "meaningful", "significant", "deteriorat", "adverse",
-    "tracking within", "tracking well", "on plan", "on budget", "healthy", "concern",
-    "exceeds", "below", "above", "underperform", "favourable", "favorable", "unfavourable",
-    "unfavorable", "worsen", "improv"
+    "meaningful risk", "significant risk", "elevated risk", "high risk", "risk is", "at risk",
+    "pressure", "drift", "over budget", "overrun", "is behind", "behind schedule", "slipping",
+    "slippage", "variance", "adverse", "deteriorat", "worsen", "improv", "tracking within",
+    "tracking well", "tracking as", "on plan", "on budget", "healthy", "concern",
+    "underperform", "favourable", "favorable", "unfavourable", "unfavorable",
+    "suggests", "indicates", "warrants", "points to"
   ];
 
   //: Words that make a sentence a claim ABOUT THE SCHEDULE, and about the cost. Check 3 refuses
@@ -2386,10 +2387,22 @@
     // THE POSTURE AGREES WITH ITS DRIVERS. If every stated driver reads green and the posture
     // is adverse, the recommendation must name what made it adverse.
     if (ev.postureKey === "red" || ev.postureKey === "amber") {
-      const banded = ev.drivers.filter((d) => d.status);
-      const allGreen = banded.length > 0
-        && banded.every((d) => statusKeyFromText(d.status) === "green");
+      // THE DRIVERS THE RECOMMENDATION STATES, read out of its own Key Drivers lines, not off
+      // the stored row. The order's words are "if every STATED driver reads green": a brief
+      // that shows the reader three green drivers beside an adverse posture is the defect,
+      // whatever the row happens to hold elsewhere.
+      const statedBands = [];
+      (parsed.drivers || []).forEach((line) => {
+        const m = String(line).match(/\(([^)]+)\)\s*$/);
+        if (!m) return;
+        const k = statusKeyFromText(m[1]);
+        if (k === "red" || k === "amber" || k === "green") statedBands.push(k);
+      });
+      const allGreen = statedBands.length > 0 && statedBands.every((k) => k === "green");
       if (allGreen) {
+        // WHAT WOULD MAKE THE POSTURE HONEST: a figure from a driver the row bands non-green,
+        // or the key of a category the row bands non-green. Named in the recommendation, or
+        // the posture is asserted with nothing behind it.
         const adverseFigs = [];
         ev.drivers.forEach((d) => {
           if (d.status && statusKeyFromText(d.status) !== "green") {
@@ -2402,15 +2415,13 @@
           .map((c) => c.key);
         const text = String(parsed.recommendation || "");
         const namesFigure = briefFiguresIn(text).some((f) => adverseFigs.indexOf(f) >= 0);
-        const namesCategory = adverseCats.some((k) => text.indexOf(k) >= 0)
-          || (parsed.pattern || []).join(" ").indexOf("categor") >= 0
-             && briefFiguresIn((parsed.pattern || []).join(" ")).length > 0;
+        const namesCategory = adverseCats.some((k) => text.indexOf(k) >= 0);
         if (!namesFigure && !namesCategory) {
           failures.push({
             check: "2. The posture agrees with its drivers",
             section: "Recommendation", sentence: text,
-            reason: "the posture is " + (ev.posture || "adverse") + " and every stated driver "
-                    + "reads green, and the recommendation names nothing that made it adverse"
+            reason: "the posture is " + (ev.posture || "adverse") + " and every driver it states "
+                    + "reads green, and it names nothing that made the posture adverse"
           });
         }
       }
@@ -2457,10 +2468,22 @@
 
   //: THE FIGURE'S DOCUMENT, from the row's own `signal_inputs.sources` map. Never guessed: a
   //: field with no source entry is reported as having none.
+  const BRIEF_DERIVED_FROM = { cpi: ["ev", "ac"], spi: ["ev", "pv"] };
+
   function briefFigureSource(ev, key) {
-    const s = ev.sources[key];
-    if (!s || !s.docType) return "no document type recorded";
-    return (window.DOC_TYPE_LABEL && DOC_TYPE_LABEL[s.docType]) || String(s.docType);
+    const label = (t) => (window.DOC_TYPE_LABEL && DOC_TYPE_LABEL[t]) || String(t);
+    const direct = ev.sources[key];
+    if (direct && direct.docType) return label(direct.docType);
+    // A DERIVED INDEX HAS NO SOURCE ENTRY OF ITS OWN, because no document states it: it is
+    // formed from figures that do. Name those documents rather than report none.
+    const parts = BRIEF_DERIVED_FROM[key] || [];
+    const types = [];
+    parts.forEach((f) => {
+      const src = ev.sources[f];
+      if (src && src.docType && types.indexOf(label(src.docType)) < 0) types.push(label(src.docType));
+    });
+    if (types.length) return types.join(" and ");
+    return "no document type recorded";
   }
 
   /* What a reader sees INSTEAD of a rejected recommendation: the reasoning's structured fields.
