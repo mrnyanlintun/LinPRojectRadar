@@ -116,7 +116,13 @@ def main() -> None:
     # would satisfy "the milestones hint is absent" while carrying a sentence that reads almost
     # identically. The two markers are therefore kept distinct ON PURPOSE, and this section
     # asserts the same present-only-when-requested property for the new field independently.
-    BASELINE_MARKER = "one object per PRINTED ROW of that table"
+    # RUN 69 MADE THIS MARKER DISTINCTIVE, AND THE REASON IS THE DEFECT IT CAUGHT. It read
+    # "one object per PRINTED ROW of that table" -- a phrase Run 69's own `resource_profile_json`
+    # hint uses too, because both describe the same shape. The absence check then FAILED for
+    # `resource_report`, correctly reporting that SOME table hint was present, while what it
+    # meant to assert is that the BASELINE hint was not. The marker is narrowed to a phrase only
+    # the baseline hint carries, and the two new table fields get the same treatment below.
+    BASELINE_MARKER = "time-phased baseline table"
 
     with_curve = [t for t in DOC_TYPES if "baseline_curve_json" in extraction_fields_for(t)]
     without_curve = [t for t in DOC_TYPES if "baseline_curve_json" not in extraction_fields_for(t)]
@@ -138,6 +144,43 @@ def main() -> None:
     # THE TWO MARKERS MUST NOT COLLIDE. If a later edit reworded either hint back onto the
     # other's phrase, both of the absence checks above would go quietly useless. This asserts the
     # separation directly rather than relying on it.
+    section("2c. RUN 69. resource_profile_json AND modifications_json, THE SAME DISCIPLINE")
+
+    # A HINT PRESENT ONLY WHERE ITS FIELD IS ASKED FOR. Each new table field gets the identical
+    # present/absent pair, on a marker phrase only that hint carries, so a future edit cannot
+    # grow every prompt by one table's worth of instructions without a check going red.
+    for field, marker in (("resource_profile_json", "resource histogram or resource-loading"),
+                          ("modifications_json", "contract modification or change register")):
+        with_f = [t for t in DOC_TYPES if field in extraction_fields_for(t)]
+        without_f = [t for t in DOC_TYPES if field not in extraction_fields_for(t)]
+        check(bool(with_f) and bool(without_f),
+              f"{field}: the vocabulary genuinely has both cases to test",
+              f"with={with_f} without-sample={without_f[:2]}")
+        for doc_type in with_f:
+            check(marker in build_prompt(doc_type, extraction_fields_for(doc_type)),
+                  f"{doc_type}: {field} is requested, so the shape hint IS present")
+        for doc_type in without_f:
+            check(marker not in build_prompt(doc_type, extraction_fields_for(doc_type)),
+                  f"{doc_type}: {field} is NOT requested, so the hint is ABSENT",
+                  "would silently grow every prompt if this leaked")
+
+    # RUN 69. THE MODIFICATION HINT MUST GO ON REFUSING TO READ A SIGNATURE AS AUTHORITY. That is
+    # `canonical_v6.modification_governance`'s own stated rule, and it has to survive in the
+    # prompt as well as in the reader, because a model that infers authority from a signature
+    # supplies the invented fact the reader would then have no way to detect.
+    co_prompt = build_prompt("change_order", extraction_fields_for("change_order"))
+    check("Do not infer that an official held authority because a document is signed" in co_prompt,
+          "the modification hint forbids inferring authority from a signature")
+    check("do not supply an authority reference the register does not print" in co_prompt,
+          "and forbids supplying an authority reference the register does not print")
+
+    # RUN 69. DEMAND AND AVAILABILITY MUST NOT BE SUBSTITUTED FOR ONE ANOTHER. They are the two
+    # sides of the load ratio A2.9 is defined on, and repeating one as the other would report a
+    # ratio of exactly 1.00 for every period.
+    rr_prompt = build_prompt("resource_report", extraction_fields_for("resource_report"))
+    check("never repeat a demand figure as an availability figure" in rr_prompt,
+          "the resource hint forbids substituting demand for availability")
+
     check(HINT_MARKER != BASELINE_MARKER, "the two table hints carry DISTINCT markers")
 
     # THE CURVE MUST NOT BE COMPLETED, EXTENDED OR CONVERTED. A baseline period the document does
