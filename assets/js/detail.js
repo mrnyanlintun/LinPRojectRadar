@@ -1110,6 +1110,10 @@
         ${/* T9. The focused globe. A NEW section rather than a replacement: project detail
              never had a map view. First in the order because where a project is is context for
              everything below it, and it collapses like every other section. */""}
+        ${/* RUN 76, section 6. THE CATEGORY SPECIFICATION PANEL, immediately above Location,
+             which is the owner's ruling and makes it the first section on the page. */""}
+        ${cs("d-catspecs", "Category Specifications", categoryPanelHtml(p), false,
+             projectCats().length + " categories")}
         ${cs("d-globe", "Location",
              `<div class="detail-globe" data-project-id="${esc(p.id)}"></div>
               <p class="detail-globe-note ws-note"></p>`,
@@ -1266,6 +1270,7 @@
 
     wireBack(root);
     wireDetailAdmin(root, p.id);
+    wireCategoryPanel(root, p);
     wireProvenanceTrace(root);
     // Initialise any section the session restored as open.
     Object.keys(lazyInits).forEach((secId) => {
@@ -2841,6 +2846,194 @@
         try { LinIngest.openDocumentControl(b.dataset.docControl); }
         catch (e) { console.warn("[detail] document control failed to open:", e && e.message); }
       }));
+  }
+
+
+  /* =====================================================================================
+     RUN 76. THE CATEGORY SPECIFICATION PANEL.
+
+     PLACEMENT IS THE OWNER'S RULING, section 6 of the Run 76 order: "a new panel on the project
+     detail page, immediately above Location. That is decided; do not place it elsewhere."
+     Location is `d-globe` and is currently the FIRST section, so this panel becomes the first.
+
+     WHAT IT SHOWS. The same eleven-category tree the signal ledger renders -- projectCats(),
+     which is LIN_CATEGORIES minus the portfolio-level entry. A "Call all" button above the list
+     and a "Call" button on each row.
+
+     FOUR STATES, AND THEY ARE NOT BLURRED (section 12.4 fails the run if they are):
+
+       computed     a value and its band
+       abstained    the evidence is not there; the module says which input it wants. NOT a
+                    failure -- it is the correct answer to a missing figure.
+       out_of_order the specification could have applied but the upstream categories have not
+                    run. Names them. A WARNING on the row, not a failure.
+       failed       the call errored or the answer was unusable. THE PLATFORM'S fault.
+
+     Each state carries its own `data-state` value, its own class and its own visible word, so a
+     reader -- and a browser assertion -- can tell them apart from the DOM alone.
+
+     THIS PANEL COMPUTES NOTHING. Section 7.5: the client renders and computes nothing. Every
+     figure, band, count and status below is read from the server's stored reading.
+     ===================================================================================== */
+
+  const SPEC_STATE_WORDS = {
+    computed: "Computed",
+    abstained: "Abstained",
+    out_of_order: "Out of order",
+    failed: "Failed"
+  };
+
+  function specStateChip(state, extra) {
+    const key = String(state || "");
+    const word = SPEC_STATE_WORDS[key] || "Not run";
+    return `<span class="dcat-state dcat-state-${esc(key || "notrun")}" `
+      + `data-state="${esc(key || "not_run")}">${esc(word)}</span>`
+      + (extra ? `<span class="dcat-extra">${esc(extra)}</span>` : "");
+  }
+
+  function specCountsHtml(counts) {
+    const c = counts || {};
+    return `<span class="dcat-counts">`
+      + `<span class="dcat-n" data-count="computed">${Number(c.computed || 0)} computed</span> · `
+      + `<span class="dcat-n" data-count="abstained">${Number(c.abstained || 0)} abstained</span> · `
+      + `<span class="dcat-n" data-count="out_of_order">${Number(c.out_of_order || 0)} out of order</span> · `
+      + `<span class="dcat-n" data-count="failed">${Number(c.failed || 0)} failed</span>`
+      + `</span>`;
+  }
+
+  function specModuleRowHtml(m) {
+    const st = String((m && m.state) || "");
+    if (st === "computed") {
+      const band = m.band ? `<span class="dcat-band" data-band="${esc(m.band)}">${esc(m.band)}</span>`
+                          : `<span class="dcat-band dcat-noband" data-band="none">no band</span>`;
+      return `<li class="dcat-mod" data-module="${esc(m.module_id)}" data-state="computed">`
+        + `<span class="dcat-mid">${esc(m.module_id)}</span>`
+        + `<span class="dcat-val">${esc(m.display != null ? m.display : String(m.value))}</span>`
+        + band + `</li>`;
+    }
+    return `<li class="dcat-mod" data-module="${esc(m && m.module_id)}" data-state="${esc(st)}">`
+      + `<span class="dcat-mid">${esc(m && m.module_id)}</span>`
+      + specStateChip(st)
+      + `<span class="dcat-reason">${esc((m && m.reason) || "")}</span></li>`;
+  }
+
+  function specCategoryRowHtml(cat, reading, specified) {
+    const key = cat.key;
+    const has = specified.indexOf(key) >= 0;
+    const state = reading ? reading.state : "";
+    const status = (reading && reading.status) || "";
+    let detail = "";
+    /* A STORED READING ALWAYS RENDERS. The "no specification" note is what a category with
+       nothing stored and no specification shows -- it must never hide a reading that exists. */
+    if (!reading && !has) {
+      detail = `<p class="dcat-note">No written specification yet. This category is still `
+        + `served by the Python module layer.</p>`;
+    } else if (!reading) {
+      detail = `<p class="dcat-note">Not called yet for this period.</p>`;
+    } else if (state === "out_of_order") {
+      detail = `<p class="dcat-note dcat-warn" data-state="out_of_order">${esc(reading.reason || "")}</p>`;
+    } else if (state === "failed") {
+      detail = `<p class="dcat-note dcat-fail" data-state="failed">${esc(reading.reason || "")}</p>`;
+    } else {
+      detail = `<ul class="dcat-mods">`
+        + (reading.modules || []).map(specModuleRowHtml).join("") + `</ul>`
+        + `<p class="dcat-served">Served by <strong>${esc(reading.servedBy || "unknown")}</strong>`
+        + (reading.modelId ? ` (${esc(reading.modelId)})` : "") + `</p>`;
+    }
+    return `<li class="dcat-row" data-category="${esc(key)}" `
+      + `data-state="${esc(state || (has ? "not_run" : "unspecified"))}">`
+      + `<div class="dcat-head">`
+      + `<button type="button" class="dcat-toggle" data-cat="${esc(key)}" aria-expanded="false">`
+      + `<span class="dcat-name">${esc(key)} · ${esc(cat.name)}</span></button>`
+      + `<span class="dcat-status" data-status="${esc(status || "none")}">${esc(status || "—")}</span>`
+      + (reading ? specStateChip(state) : "")
+      + (reading ? specCountsHtml(reading.counts) : `<span class="dcat-counts"></span>`)
+      + `<button type="button" class="dcat-call btn-small" data-cat="${esc(key)}"`
+      + (has ? "" : " disabled") + `>Call</button>`
+      + `</div>`
+      + `<div class="dcat-body" style="display:none">${detail}</div></li>`;
+  }
+
+  function categoryPanelHtml(p) {
+    const cats = projectCats();
+    return `<section class="panel detail-catspecs" aria-label="Category specifications"
+              data-project-id="${esc(p.id)}">
+        <div class="dcat-actions">
+          <button type="button" class="dcat-call-all btn-small">Call all</button>
+          <span class="dcat-hint">Applies each category's written specification to this
+            period's stored figures. Per category is for building and diagnosis; the
+            generate-for-every-period control is unchanged.</span>
+        </div>
+        <ul class="dcat-list">${cats.map((c) => specCategoryRowHtml(c, null, [])).join("")}</ul>
+        <p class="dcat-status-line" role="status"></p>
+      </section>`;
+  }
+
+  async function specCall(root, p, category) {
+    const line = root.querySelector(".dcat-status-line");
+    const tok = window.LinAuth ? LinAuth.getToken() : null;
+    if (line) line.textContent = category ? ("Calling " + category + "…") : "Calling all…";
+    const body = { action: "projectcategoryapply", id: p.id, session_token: tok };
+    if (category) body.category = category;
+    let resp;
+    try {
+      resp = await LinStore.postWithTimeout(body, 300000);
+    } catch (e) {
+      if (line) line.textContent = "The call did not complete: " + (e && e.message);
+      return;
+    }
+    if (!resp || resp.ok !== true) {
+      if (line) line.textContent = (resp && resp.error) || "The call did not complete.";
+      return;
+    }
+    if (line) {
+      line.textContent = "Served by " + (resp.servedBy || "unknown")
+        + ". " + (resp.readings || []).length + " category call(s) stored.";
+    }
+    await specRefresh(root, p);
+  }
+
+  async function specRefresh(root, p) {
+    const tok = window.LinAuth ? LinAuth.getToken() : null;
+    let resp;
+    try {
+      resp = await LinStore.postWithTimeout(
+        { action: "projectcategoryreadings", id: p.id, session_token: tok }, 30000);
+    } catch (e) { return; }
+    if (!resp || resp.ok !== true) return;
+    specPaint(root, resp.readings || {}, resp.specified || []);
+  }
+
+  /* Painted from the SERVER'S stored readings only. Nothing here derives a status, a band or a
+     count; each is read from the row the server wrote. */
+  function specPaint(root, readings, specified) {
+    const list = root.querySelector(".dcat-list");
+    if (!list) return;
+    const cats = projectCats();
+    list.innerHTML = cats.map((c) =>
+      specCategoryRowHtml(c, readings[c.key] || null, specified)).join("");
+  }
+
+  function wireCategoryPanel(root, p) {
+    const host = root.querySelector(".detail-catspecs");
+    if (!host) return;
+    host.addEventListener("click", function (ev) {
+      const toggle = ev.target.closest(".dcat-toggle");
+      if (toggle) {
+        const row = toggle.closest(".dcat-row");
+        const bodyEl = row && row.querySelector(".dcat-body");
+        if (bodyEl) {
+          const open = bodyEl.style.display !== "none";
+          bodyEl.style.display = open ? "none" : "";
+          toggle.setAttribute("aria-expanded", open ? "false" : "true");
+        }
+        return;
+      }
+      const call = ev.target.closest(".dcat-call");
+      if (call && !call.disabled) { specCall(root, p, call.getAttribute("data-cat")); return; }
+      if (ev.target.closest(".dcat-call-all")) { specCall(root, p, null); }
+    });
+    specRefresh(root, p);
   }
 
   function wireDetailAdmin(root, id) {

@@ -1046,3 +1046,44 @@ class ProjectNotice(Base):
             name="ck_project_notices_deadline_kind",
         ),
     )
+
+
+class SpecificationReading(Base):
+    """
+    RUN 76. What a written specification read, for one project, period and category.
+
+    Append-only, one row per press of a category button. A re-press writes a NEW row and sets
+    `superseded_by` on the previous live row for that (project, period, category); the old row
+    stays readable forever, for the same reason `computed_results` keeps its history.
+
+    `state` is one of the FOUR the Run 76 order forbids blurring: computed, abstained,
+    out_of_order, failed. It is stored as the word, so a reader of the raw table can tell an
+    absence of evidence from a platform fault without consulting any code.
+
+    `served_by` says what produced the reading -- "model" for a live call, "recorded" for a
+    fixture served where no API key is present. It is NOT NULL: a reading whose origin is
+    unknown is worse than no reading.
+    """
+
+    __tablename__ = "specification_readings"
+
+    reading_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    category_key: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=True)
+    counts: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    modules: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=True)
+    missing_upstream: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    served_by: Mapped[str] = mapped_column(Text, nullable=False)
+    model_id: Mapped[str] = mapped_column(Text, nullable=True)
+    specification_sha256: Mapped[str] = mapped_column(Text, nullable=True)
+    simulation_version: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    superseded_by: Mapped[str] = mapped_column(ULID, nullable=True)
