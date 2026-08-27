@@ -1,0 +1,7 @@
+{
+ "_what_this_is": "Run 76. The Cost and EVM figures the Run 76 order names for TST-007 period 1. TST-007 IS NOT IN THIS REPOSITORY'S dev.db -- it is the owner's deployment. These three figures are transcribed from the order itself so the arithmetic can be checked here.",
+ "bac": 18441300,
+ "ev": 2217200,
+ "ac": 2186400,
+ "cpi": 1.0140870837907061
+}

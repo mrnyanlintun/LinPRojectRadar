@@ -1,0 +1,455 @@
+"""
+Run 76. THE SPECIFICATION IS THE MODULE.
+
+WHAT THIS FILE IS. The call path that applies a WRITTEN SPECIFICATION to stored figures, per
+category. It replaces the hand-written Python module layer for any category that has a
+specification in `specifications/`; a category without one is untouched and still runs in Python.
+
+WHAT THIS FILE IS NOT, and the boundary is the owner's ruling at section 4 of the Run 76 order:
+
+  - It does NOT fuse. `fusion.worst_band` decides which status wins, in Python, here as before.
+    If a model decided which status wins, fusion could vary between runs on identical readings,
+    and that is the one place variance would be indefensible.
+  - It does NOT enforce the recommendation checks.
+  - It does NOT store. Storage is the caller's, so that a result is written by the same code that
+    writes every other result.
+
+THE FOUR STATES, and they are four because the order forbids blurring them (section 6, and
+section 12.4 fails the run if they are displayed as the same thing):
+
+  COMPUTED     a value and its band, or a value with `band_asserted` false where the
+               specification records the module as bandless.
+  ABSTAINED    the evidence is not there. The module states which input it wants. CORRECT
+               BEHAVIOUR, not a failure.
+  OUT_OF_ORDER the specification could have applied, but the category's upstream inputs have not
+               run. It names which upstream categories are missing. A WARNING, not a failure.
+  FAILED       the call errored, or the model returned something unusable, or the specification
+               could not be applied. THE PLATFORM'S FAULT, not the evidence's.
+
+THE TWO PASSES. Pass one is the seven categories that read stored figures; pass two is the four
+that read what pass one produced. A pass-one category that FAILS does not stop pass two -- but
+pass two is given the DIFFERENCE between a category that abstained and one that failed, in
+`upstream_report` below, or it would report a platform failure as an evidence gap.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import pathlib
+import urllib.error
+import urllib.request
+from typing import Any
+
+from .fusion import BAND_SEVERITY, worst_band
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+SPEC_DIR = REPO_ROOT / "specifications"
+
+# The four states. Strings, because they cross the API and reach the DOM, and a reader of a
+# stored row must be able to tell them apart without consulting this file.
+COMPUTED = "computed"
+ABSTAINED = "abstained"
+OUT_OF_ORDER = "out_of_order"
+FAILED = "failed"
+STATES = (COMPUTED, ABSTAINED, OUT_OF_ORDER, FAILED)
+
+#: Category key -> the specification file that defines it. A category absent from this mapping
+#: has NO specification and is still served by the Python module layer. Run 76 wrote one.
+CATEGORY_SPECIFICATIONS: dict[str, str] = {
+    "A1": "A1_cost_and_evm.md",
+}
+
+#: The eleven project-level categories, in the two passes the order names.
+#:
+#: HOW THE SPLIT WAS DERIVED, because the order names the categories by ordinal position rather
+#: than by key. The taxonomy holds TWELVE entries; D1 Portfolio Health is portfolio-level and is
+#: excluded from every project surface by `projectCats()` in detail.js, leaving ELEVEN, which is
+#: the number the order states. Ordinals 1 to 7 are the categories that read STORED FIGURES:
+#: A1 to A6 and C1 Data Integrity. Ordinals 8 to 11 are the four that read what those produced:
+#: B1 Signal Synthesis fuses statuses, B2 Evidence Combination asks how complete the evidence
+#: was, B3 Regulatory and B4 Decision Optimization act on a status already formed.
+PASS_ONE: tuple[str, ...] = ("A1", "A2", "A3", "A4", "A5", "A6", "C1")
+PASS_TWO: tuple[str, ...] = ("B1", "B2", "B3", "B4")
+ALL_CATEGORIES: tuple[str, ...] = PASS_ONE + PASS_TWO
+
+
+class SpecApplicationError(RuntimeError):
+    """The call could not be made, or its answer could not be read. Always state FAILED."""
+
+
+# --------------------------------------------------------------------------- specifications
+
+
+def specification_path(category_key: str) -> pathlib.Path | None:
+    name = CATEGORY_SPECIFICATIONS.get(category_key)
+    return (SPEC_DIR / name) if name else None
+
+
+def has_specification(category_key: str) -> bool:
+    p = specification_path(category_key)
+    return bool(p and p.is_file())
+
+
+def load_specification(category_key: str) -> str:
+    p = specification_path(category_key)
+    if p is None:
+        raise SpecApplicationError(
+            f"No specification is registered for category {category_key}, so it cannot be "
+            f"applied. This category is still served by the Python module layer.")
+    if not p.is_file():
+        raise SpecApplicationError(
+            f"The specification registered for category {category_key} is not on disk at "
+            f"{p}, so it cannot be applied.")
+    return p.read_text(encoding="utf-8")
+
+
+# --------------------------------------------------------------------------- the prompt
+
+
+PROMPT_PREAMBLE = """You are applying a written specification to a project's stored figures.
+
+The specification below defines every module in one category. Apply each module's stated method
+to the figures supplied, and report what each one reads.
+
+RULES, and they are not negotiable:
+
+1. Use ONLY the figures supplied. Never substitute, estimate or infer a figure that is absent.
+2. Where the specification states a formula, compute it at FULL PRECISION and derive the band
+   from the full-precision value. Round for display only, after the band is decided.
+3. Where the specification records a module as BANDLESS, report the value with "band": null and
+   "band_asserted": false. Do not invent a band.
+4. Where a module's abstention condition is met, report state "abstained" and quote the
+   specification's exact abstention words. Do not paraphrase them.
+5. Do not decide any category status or project status. That is not your work.
+
+Answer with JSON only, no prose around it, in exactly this shape:
+
+{"modules": [
+  {"module_id": "A1.7", "state": "computed", "value": 0.9981051867436896,
+   "display": "0.998", "band": "Green", "band_asserted": true,
+   "evidence_metric": "...", "reason": null},
+  {"module_id": "A1.3", "state": "abstained", "value": null, "display": null,
+   "band": null, "band_asserted": false, "evidence_metric": null,
+   "reason": "the exact abstention words from the specification"}
+]}
+
+"state" is one of "computed" or "abstained" only. You do not report "out_of_order" or "failed";
+those are decided by the platform, not by you.
+"""
+
+
+def build_prompt(category_key: str, spec_text: str, signal_inputs: dict,
+                 upstream_report: dict | None = None) -> str:
+    parts = [PROMPT_PREAMBLE,
+             f"\n=== SPECIFICATION FOR CATEGORY {category_key} ===\n",
+             spec_text,
+             "\n=== THE STORED FIGURES FOR THIS PROJECT AND PERIOD ===\n",
+             json.dumps(signal_inputs, sort_keys=True, indent=1, default=str)]
+    if upstream_report:
+        parts += [
+            "\n=== WHAT THE UPSTREAM CATEGORIES PRODUCED ===\n",
+            "Each entry says what happened to one upstream category. 'abstained' means the "
+            "evidence was not there, which is a real answer about the evidence. 'failed' means "
+            "the platform could not apply that category, which says NOTHING about the evidence "
+            "and must not be reported as an evidence gap.\n",
+            json.dumps(upstream_report, sort_keys=True, indent=1, default=str)]
+    return "".join(parts)
+
+
+# --------------------------------------------------------------------------- the clients
+
+
+ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_VERSION = "2023-06-01"
+SPEC_MODEL = "claude-sonnet-4-5"
+MAX_TOKENS = 8192
+REQUEST_TIMEOUT_S = 180
+
+
+class AnthropicSpecApplier:
+    """One HTTPS POST per category. The live path. Stateless, safe to share across threads."""
+
+    served_by = "model"
+
+    def __init__(self, api_key: str, model: str = SPEC_MODEL, url: str = ANTHROPIC_URL,
+                 temperature: float | None = 0.0) -> None:
+        self._api_key = api_key
+        self.model = model
+        self._url = url
+        self._temperature = temperature
+
+    @property
+    def model_id(self) -> str:
+        return self.model
+
+    def apply(self, category_key: str, prompt: str) -> str:
+        body: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": MAX_TOKENS,
+            "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+        }
+        if self._temperature is not None:
+            body["temperature"] = self._temperature
+        req = urllib.request.Request(
+            self._url, data=json.dumps(body).encode("utf-8"), method="POST",
+            headers={"content-type": "application/json",
+                     "x-api-key": self._api_key,
+                     "anthropic-version": ANTHROPIC_VERSION})
+        try:
+            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_S) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", "replace")[:400]
+            raise SpecApplicationError(f"the model API returned {exc.code}: {detail}") from None
+        except urllib.error.URLError as exc:
+            raise SpecApplicationError(f"the model API is unreachable: {exc.reason}") from None
+        if str(payload.get("stop_reason") or "") == "max_tokens":
+            raise SpecApplicationError(
+                f"the model ran out of output space ({MAX_TOKENS} tokens) before it finished "
+                "answering. Retrying will stop in the same place.")
+        blocks = payload.get("content") or []
+        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+
+
+class RecordedSpecApplier:
+    """
+    THE STUB, AND WHAT IT IS AND IS NOT.
+
+    There is no `ANTHROPIC_API_KEY` in the verification environment, so the live path above cannot
+    be exercised here. This serves RECORDED answers keyed by the sha256 of the prompt, exactly as
+    `extraction_client.StubExtractor` serves recorded extractions, and REFUSES anything it has not
+    been given.
+
+    IT IS NOT A MODEL AND IT IS NOT EVIDENCE ABOUT ONE. It is deterministic by construction, so
+    running the section-8 variance measurement against it measures THE HARNESS and returns zero
+    variance no matter what a model would do. Every result it serves is stamped
+    `served_by: "recorded"` so that no reader, and no report, can mistake one for a live reading.
+    """
+
+    served_by = "recorded"
+    model_id = "recorded-fixture"
+
+    def __init__(self, recorded: dict[str, str]) -> None:
+        self._recorded = dict(recorded or {})
+
+    @staticmethod
+    def key_for(prompt: str) -> str:
+        return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+
+    def apply(self, category_key: str, prompt: str) -> str:
+        key = self.key_for(prompt)
+        if key in self._recorded:
+            return self._recorded[key]
+        if category_key in self._recorded:
+            return self._recorded[category_key]
+        raise SpecApplicationError(
+            f"no recorded answer is held for category {category_key} on these figures "
+            f"(prompt sha256 {key[:16]}), and there is no model key in this environment to ask. "
+            f"Nothing is invented in its place.")
+
+
+def build_applier(recorded: dict[str, str] | None = None):
+    """Live applier if a key is set, otherwise the recorded one. Never both, never a guess."""
+    key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+    if key:
+        return AnthropicSpecApplier(key)
+    return RecordedSpecApplier(recorded or {})
+
+
+# --------------------------------------------------------------------------- reading the answer
+
+
+def parse_answer(text: str) -> list[dict]:
+    """The model's JSON, or SpecApplicationError. A fenced block is unwrapped first."""
+    raw = (text or "").strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1] if "\n" in raw else ""
+        if raw.rstrip().endswith("```"):
+            raw = raw.rstrip()[: -3]
+    start, end = raw.find("{"), raw.rfind("}")
+    if start < 0 or end <= start:
+        raise SpecApplicationError("the answer carried no JSON object")
+    try:
+        parsed = json.loads(raw[start:end + 1])
+    except ValueError as exc:
+        raise SpecApplicationError(f"the answer is not valid JSON: {exc}") from None
+    if not isinstance(parsed, dict) or not isinstance(parsed.get("modules"), list):
+        raise SpecApplicationError("the answer carried no 'modules' list")
+    return parsed["modules"]
+
+
+def normalise_module(row: Any) -> dict:
+    """One module's row, in the shape every surface downstream reads. Unusable rows FAIL."""
+    if not isinstance(row, dict):
+        raise SpecApplicationError("a module row was not an object")
+    module_id = str(row.get("module_id") or "").strip()
+    if not module_id:
+        raise SpecApplicationError("a module row carried no module_id")
+    state = str(row.get("state") or "").strip().lower()
+    if state not in (COMPUTED, ABSTAINED):
+        raise SpecApplicationError(
+            f"{module_id} reported state {state!r}; a specification may report only "
+            f"'computed' or 'abstained'")
+    band = row.get("band")
+    if band is not None:
+        band = str(band)
+        # A band the fusion rule cannot rank is not silently ranked. A1.2 legitimately emits
+        # lower case, so the comparison is on the capitalised form and the emitted spelling is
+        # preserved exactly as the specification records it.
+        if band.capitalize() not in BAND_SEVERITY:
+            raise SpecApplicationError(
+                f"{module_id} reported band {band!r}, which is not one of "
+                f"{sorted(BAND_SEVERITY)}")
+    if state == ABSTAINED and not str(row.get("reason") or "").strip():
+        raise SpecApplicationError(f"{module_id} abstained without stating what it wants")
+    return {
+        "module_id": module_id,
+        "state": state,
+        "value": row.get("value"),
+        "display": row.get("display"),
+        "band": band,
+        "band_asserted": bool(row.get("band_asserted")) and band is not None,
+        "evidence_metric": row.get("evidence_metric"),
+        "reason": row.get("reason"),
+    }
+
+
+# --------------------------------------------------------------------------- one category
+
+
+def apply_category(category_key: str, signal_inputs: dict, applier=None,
+                   upstream_report: dict | None = None,
+                   missing_upstream: list[str] | None = None) -> dict:
+    """
+    Apply one category's specification to one project-period's figures.
+
+    Returns a row carrying, always: the category, its four state counts, its fused status, and
+    the modules. NEVER RAISES: a failure is a FAILED row, because a category that blows up must
+    leave the other ten intact (order section 2, reason 1).
+    """
+    base: dict[str, Any] = {
+        "category": category_key,
+        "state": None, "status": None, "served_by": None, "model_id": None,
+        "modules": [],
+        "counts": {COMPUTED: 0, ABSTAINED: 0, OUT_OF_ORDER: 0, FAILED: 0},
+        "reason": None,
+        "missing_upstream": list(missing_upstream or []),
+    }
+
+    # OUT OF ORDER IS DECIDED BEFORE THE CALL, and it is not a failure. The specification could
+    # have applied; the upstream categories have not run. Pressing again after they have run
+    # should compute it.
+    if missing_upstream:
+        base["state"] = OUT_OF_ORDER
+        base["counts"][OUT_OF_ORDER] = 1
+        base["reason"] = (
+            "This category reads what the categories before it produced, and "
+            + ", ".join(sorted(missing_upstream))
+            + (" has not run yet." if len(missing_upstream) == 1 else " have not run yet.")
+            + " Run them and press this again.")
+        return base
+
+    try:
+        spec_text = load_specification(category_key)
+        applier = applier or build_applier()
+        prompt = build_prompt(category_key, spec_text, signal_inputs, upstream_report)
+        base["served_by"] = getattr(applier, "served_by", "unknown")
+        base["model_id"] = getattr(applier, "model_id", None)
+        answer = applier.apply(category_key, prompt)
+        rows = [normalise_module(r) for r in parse_answer(answer)]
+    except SpecApplicationError as exc:
+        base["state"] = FAILED
+        base["counts"][FAILED] = 1
+        base["reason"] = str(exc)
+        return base
+    except Exception as exc:  # noqa: BLE001 -- a category failure must not stop the others
+        base["state"] = FAILED
+        base["counts"][FAILED] = 1
+        base["reason"] = f"{type(exc).__name__}: {exc}"
+        return base
+
+    base["modules"] = rows
+    for r in rows:
+        base["counts"][r["state"]] += 1
+    base["state"] = COMPUTED if base["counts"][COMPUTED] else ABSTAINED
+    # FUSION IS PYTHON AND STAYS PYTHON. Only modules that actually spoke, and only bands the
+    # rule can rank: an abstention is an absence of a reading, not an adverse one.
+    bands = [str(r["band"]).capitalize() for r in rows
+             if r["state"] == COMPUTED and r["band"] is not None]
+    base["status"] = worst_band(bands) if bands else None
+    return base
+
+
+# --------------------------------------------------------------------------- the two passes
+
+
+def upstream_state_report(pass_one_rows: dict[str, dict]) -> dict:
+    """
+    What pass two is told about pass one, and the WHOLE POINT of it is that a category that
+    ABSTAINED and one that FAILED are distinguishable here. C8's job is to say how complete the
+    evidence was; handed a failure as an absence it would report a platform fault as an evidence
+    gap.
+    """
+    report: dict[str, dict] = {}
+    for key in PASS_ONE:
+        row = pass_one_rows.get(key)
+        if row is None:
+            report[key] = {"state": "not_run",
+                           "means": "this category was not called at all"}
+            continue
+        state = row.get("state")
+        report[key] = {
+            "state": state,
+            "status": row.get("status"),
+            "counts": row.get("counts"),
+            "means": {
+                COMPUTED: "this category read the evidence and produced findings",
+                ABSTAINED: ("the evidence for this category is not there. This IS a statement "
+                            "about the evidence."),
+                OUT_OF_ORDER: "this category is itself waiting on categories before it",
+                FAILED: ("the platform could not apply this category. This says NOTHING about "
+                         "the evidence and must not be counted as an evidence gap."),
+            }.get(state, "unknown"),
+        }
+    return report
+
+
+def run_two_pass(signal_inputs: dict, applier=None,
+                 categories: tuple[str, ...] | None = None) -> dict:
+    """
+    The full run. Pass one, fuse, pass two, fuse again.
+
+    The seven and the four are independent WITHIN a pass, so a caller may run each pass's
+    categories concurrently; this reference implementation runs them in order, which produces the
+    identical result because no pass-one category reads another pass-one category.
+    """
+    wanted = set(categories or ALL_CATEGORIES)
+    pass_one: dict[str, dict] = {}
+    for key in PASS_ONE:
+        if key in wanted and has_specification(key):
+            pass_one[key] = apply_category(key, signal_inputs, applier)
+
+    report = upstream_state_report(pass_one)
+    # A pass-one category that FAILED does not stop pass two. What stops a pass-two category is
+    # having NOTHING to read: no pass-one category produced a finding.
+    produced = [k for k, r in pass_one.items() if r.get("state") == COMPUTED]
+    missing = [] if produced else [k for k in PASS_ONE if has_specification(k)] or list(PASS_ONE)
+
+    pass_two: dict[str, dict] = {}
+    for key in PASS_TWO:
+        if key in wanted and has_specification(key):
+            pass_two[key] = apply_category(key, signal_inputs, applier,
+                                           upstream_report=report, missing_upstream=missing)
+
+    rows = {**pass_one, **pass_two}
+    # THE PROJECT STATUS. Worst category wins, and the pass-two categories vote too. Python.
+    cat_bands = [str(r["status"]) for r in rows.values() if r.get("status")]
+    return {
+        "categories": rows,
+        "upstream_report": report,
+        "project_status": worst_band(cat_bands) if cat_bands else None,
+        "served_by": next((r.get("served_by") for r in rows.values() if r.get("served_by")),
+                          None),
+    }
