@@ -508,7 +508,9 @@ def _decide_filing(doc_type: str, extraction: Any, filename: str,
             "needs_filing_review": review, "reference_kind": reference}
 
 
-def _persist_observations(session: Session, project: Project, period: int) -> int:
+def _persist_observations(session: Session, project: Project, period: int,
+                          refusals: dict[str, str] | None = None,
+                          stored_fields: dict[str, list[str]] | None = None) -> int:
     """
     0014. Project the period's stored extractions into the append-only observation store.
 
@@ -523,6 +525,18 @@ def _persist_observations(session: Session, project: Project, period: int) -> in
     the merge refused.
 
     Returns the number of rows inserted.
+
+    RUN 74. `refusals` and `stored_fields`, when passed, are FILLED IN, keyed by document_id:
+    `refusals` with the verbatim reason a document projected nothing, `stored_fields` with the
+    field names that actually reached the observation store for that document.
+
+    Before this run the `except` below was a bare `except Exception: continue`. EVERY refusal —
+    an out-of-range figure replayed from the content cache without re-validation, a field with
+    no kind declared in field_registry, anything at all — was swallowed here, the document
+    contributed no observation, and the upload still reported it as extracted and contributing.
+    That is the silent-drop path: a failure indistinguishable from a success. The exception is
+    still caught, because one refusing document must not sink the other twenty-six, but the
+    reason is now carried out to the caller instead of discarded.
     """
     rows = session.execute(
         select(Document, DocumentUpload.supersedes_document_id)
@@ -543,7 +557,11 @@ def _persist_observations(session: Session, project: Project, period: int) -> in
                 "filename": d.filename, "extraction": d.extraction or {},
                 "document_id": d.document_id, "supersedes": supersedes,
             })
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 — one document must not sink the batch
+            log.warning("observation projection refused for %s (%s): %s",
+                        d.filename, d.document_id, exc)
+            if refusals is not None:
+                refusals[d.document_id] = str(exc)
             continue
         for o in emitted:
             key = (d.document_id, o["field"], o["entity_key"] or "")
@@ -558,6 +576,11 @@ def _persist_observations(session: Session, project: Project, period: int) -> in
                 revision_of=o["revision_of"], source_doc_type=o["doc_type"],
             ))
             inserted += 1
+        if stored_fields is not None:
+            seen = stored_fields.setdefault(d.document_id, [])
+            for o in emitted:
+                if o["field"] not in seen:
+                    seen.append(o["field"])
     return inserted
 
 
@@ -2638,13 +2661,50 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     # the evidence arrives, so the store is current before any compute and the upload-status
     # surface can read the baseline and amendments from it.
     session.flush()
-    _persist_observations(session, project, period)
+    # RUN 74. The refusals and the per-document field lists come back rather than being
+    # discarded, because the response below has to be able to say what was STORED and not only
+    # what was extracted. See `_persist_observations` and the summary block at the end.
+    obs_refusals: dict[str, str] = {}
+    obs_stored: dict[str, list[str]] = {}
+    observations_written = _persist_observations(session, project, period,
+                                                 refusals=obs_refusals,
+                                                 stored_fields=obs_stored)
     # 0021. The same moment, for the same reason: the schedule is structured data the store
     # holds from the instant the evidence arrives, not something derived at compute time.
     _persist_schedule_activities(session, project, period)
     # 0024/0025. And the risk register and any notice, for the same reason again.
     _persist_project_risks(session, project, period)
     _persist_project_notices(session, project, period)
+
+    # RUN 74. WHAT EACH FILE ACTUALLY STORED, attached to the row the PM reads.
+    #
+    # Until this run the response asserted `status: "extracted"` and `contributes: true` on the
+    # strength of the model having returned SOMETHING, and said nothing whatever about whether a
+    # figure reached the observation store. An upload that stored nothing was reported in exactly
+    # the same words as one that stored everything, which is the defect the owner named: a
+    # success message that cannot fail. `fields_stored` is the field names read back out of the
+    # projection that just ran, and `storage_refusal` is the verbatim reason when a document that
+    # extracted cleanly nevertheless projected nothing.
+    for f, d in zip(files, decoded):
+        doc = stored.get(d["sha256"])
+        did = doc.document_id if doc is not None else None
+        fs = obs_stored.get(did) or []
+        f["document_id"] = did
+        f["fields_stored"] = list(fs)
+        f["fields_stored_count"] = len(fs)
+        f["storage_refusal"] = obs_refusals.get(did)
+        # An analytical document that was accepted and yet put nothing in the store is NOT a
+        # success, whatever the extractor reported. Saying so here is what makes the summary
+        # below capable of failing.
+        f["stored"] = bool(fs)
+        if f["status"] != "failed" and f.get("contributes") and not fs:
+            f["note"] = (f.get("note") or "") or (
+                "this document was read but no figure from it reached the observation store"
+                + (": " + obs_refusals[did] if obs_refusals.get(did) else
+                   "; no field it carries is one the analysis stores"))
+
+    stored_nothing = [f["filename"] for f in files
+                      if f["status"] != "failed" and f.get("contributes") and not f["stored"]]
 
     audit(session, "documents_uploaded", participant_id=caller.participant_id,
           project_id=project.legacy_id, period=period, files=len(decoded),
@@ -2669,9 +2729,22 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     if logged:
         fresh = dict(project.doc or {})
         for f in logged:
+            # RUN 74. `appliedFields` and `documentId` are recorded ON THE EVENT, from the
+            # projection that just ran.
+            #
+            # The Uploaded Documents panel could not previously say which DOCUMENT a figure came
+            # from. The event carried no field list, so the panel fell back to inverting
+            # `signal_inputs.sources` by doc TYPE — which meant two documents of the same type
+            # showed the same field list or both showed none, and, when no computed row existed
+            # yet, `sources` was absent and EVERY row rendered blank while the observation store
+            # held the figures. The attribution is per document here because `observations` is
+            # keyed per document; the panel now has the honest answer instead of a type-level
+            # approximation of it.
             fresh = _append_event(fresh, "signals_extracted",
                                   docType=f["doc_type"], fileName=f["filename"],
-                                  period=period, wasCached=f["was_cached"])
+                                  period=period, wasCached=f["was_cached"],
+                                  documentId=f.get("document_id"),
+                                  appliedFields=list(f.get("fields_stored") or []))
         project.doc = fresh
         project.record_version = (project.record_version or 0) + 1
 
@@ -2701,7 +2774,20 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             "filed": filed_count,
             "unmapped": len(unmapped),
             "date_mismatches": len(date_mismatches),
+            # RUN 74. THE FIGURES THAT REACHED STORAGE. `extracted` above counts model calls,
+            # not stored evidence, and reporting it alone is what let an upload that stored
+            # nothing read as a complete success. These three can all be zero on an upload
+            # whose every other count is healthy, which is the point of them.
+            "observations_written": observations_written,
+            "documents_that_stored_a_figure": sum(1 for f in files if f["stored"]),
+            "documents_that_stored_nothing": len(stored_nothing),
         },
+        # Named, not just counted: "3 documents stored nothing" is not actionable, "these three
+        # stored nothing" is.
+        "stored_nothing_filenames": stored_nothing,
+        # False when an analytical document was accepted and stored no figure. The caller must
+        # not read `ok` as "the evidence landed" — `ok` means the request was served.
+        "all_accepted_documents_stored": not stored_nothing,
         "date_mismatches": date_mismatches,
         "unmapped_filenames": unmapped,
         "extraction_seconds": elapsed,
