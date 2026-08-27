@@ -868,20 +868,51 @@
     });
     if (!worstCat) return null;
 
-    let worstMod = null, worstModStatus = null, worstModRank = 99, modTieCount = 0;
-    worstCat.modules.forEach((m) => {
-      const st = window.getModuleStatus ? window.getModuleStatus(m.method_class, project) : null;
-      if (!st || st === "NA") return;
-      const r = provRank(st);
-      if (r < worstModRank) { worstModRank = r; worstMod = m; worstModStatus = st; modTieCount = 1; }
-      else if (r === worstModRank) { modTieCount++; }
-    });
-    if (!worstMod) return null;
+    /* ------------------------------------------------------------------------------------
+       RUN 69, SECTION 7.1. THE DRIVING MODULE IS READ, NOT RANKED.
 
-    const simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
-    const simResult = simArr.find((r) => r && r.method_class === worstMod.method_class);
+       WHAT THIS BLOCK USED TO DO: it walked every module in the category, ranked their status
+       strings in the browser, and named the most adverse one as the driver of the category's
+       status. That is the client deciding something the server had already decided. The server
+       fuses each category from its VOTING modules and stores the answer AND ITS AUTHORS:
+       `category_statuses[key].status_set_by` is the list of module ids that actually set the
+       status. Run 44 patched the symptom here -- `modDrives` refuses to name a module better
+       than the severity it is offered as the driver of -- because the ranking could name a
+       module that had no part in setting the status at all. The ranking is now gone and the
+       stored list is read instead, so there is nothing left for that patch to catch.
+
+       WHERE THE STORED ROW CARRIES NO `status_set_by` (a row computed before it was written),
+       NO MODULE IS NAMED. The trace keeps its project and category hops and its document hop,
+       and the module hop is simply absent. A hop omitted is a true account; a hop filled by a
+       browser-side ranking is not. ------------------------------------------------------ */
+    const provRow = (window.LinResults && LinResults.rowFor(project)) || null;
+    const provCat = (provRow && provRow.category_statuses
+                     && provRow.category_statuses[worstCat.key]) || null;
+    const setBy = (provCat && Array.isArray(provCat.status_set_by)) ? provCat.status_set_by : [];
+    let worstMod = null, worstModStatus = null, modTieCount = setBy.length;
+    if (setBy.length) {
+      const driverId = setBy[0];
+      (worstCat.modules || []).forEach((m) => {
+        if (worstMod) return;
+        // The taxonomy row carries its own module id; `METHOD_TO_MODULE_ID` in taxonomy.js is
+        // built from exactly this field, so reading it here is the same lookup without a new
+        // export.
+        if (m.module_id === driverId) {
+          worstMod = m;
+          worstModStatus = window.getModuleStatus
+            ? window.getModuleStatus(m.method_class, project) : null;
+        }
+      });
+    }
+    // THE MODULE HOP IS OPTIONAL NOW. The category and document hops stand on their own, so a
+    // project whose stored row names no author still gets its trace.
+    const simResult = worstMod && window.getModuleResult
+      ? window.getModuleResult(worstMod.method_class, project) : null;
+    // THE SENTENCE IS THE ONE THE SERVER STORED. It was read off
+    // `project.simulationSignals.signal_array`, which a server-computed project does not carry
+    // at all, so this line was silently null on every stored-row project.
     const evidenceMetric = simResult ? (simResult.evidence_metric || null) : null;
-    const source = sourceForModule(project, worstMod);
+    const source = worstMod ? sourceForModule(project, worstMod) : null;
 
     // Every OTHER Red/Amber module across the whole project (not just the
     // worst category), for the "also elevated: …" list.
@@ -889,7 +920,7 @@
     projectCats().forEach((c) => {
       if (c.parked) return;
       (c.modules || []).forEach((m) => {
-        if (m.method_class === worstMod.method_class) return;
+        if (worstMod && m.method_class === worstMod.method_class) return;
         const st = window.getModuleStatus ? window.getModuleStatus(m.method_class, project) : null;
         if (!st || st === "NA") return;
         const n = normalizeStatus(st);
@@ -898,12 +929,10 @@
     });
     otherFlags.sort((a, b) => provRank(a.status) - provRank(b.status));
 
-    // RUN 44, SECTION 4.1 REQUIREMENT 3. The category status is the server's fusion of the
-    // category's VOTING modules; worstMod is drawn from every module in the category. Nothing
-    // required the two to agree, so this line could offer a Green module as the driver of an
-    // Amber category. A module better than the severity it would be offered as the driver of
-    // does not drive it and is not named as doing so.
-    const modDrives = provRank(worstModStatus) <= provRank(worstCatStatus);
+    // RUN 69. `modDrives` is now simply WHETHER THE SERVER NAMED A MODULE. Run 44's severity
+    // comparison guarded against a ranking that could offer a Green module as the driver of an
+    // Amber category; there is no ranking left to guard.
+    const modDrives = !!worstMod;
 
     return {
       projStatus, worstCat, worstCatStatus, catTieCount,
@@ -944,9 +973,12 @@
     rows.push(`<div class="det-prov-hop"><b>Project</b>: ${esc(t.projStatus)}</div>`);
     rows.push(`<div class="det-prov-hop"><b>${esc(t.worstCat.name)}</b>: ${esc(normalizeStatus(t.worstCatStatus) || t.worstCatStatus)}${t.catTieCount > 1 ? ` (tied with ${t.catTieCount - 1} other ${t.catTieCount - 1 === 1 ? "category" : "categories"} at this severity, shown first)` : ""}</div>`);
     if (!t.modDrives) {
-      rows.push(`<div class="det-prov-hop"><b>Modules</b>: no module in this category reads as adverse as the category status, so none is named as driving it. The most adverse of them is ${esc(t.worstMod.name)} at ${esc(normalizeStatus(t.worstModStatus) || t.worstModStatus)}.</div>`);
-    } else
-    rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.name)}</b>: ${esc(normalizeStatus(t.worstModStatus) || t.worstModStatus)}${t.modTieCount > 1 ? ` (tied with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} at this severity, shown first)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
+      // RUN 69. The server's stored row names no module as having set this category's status,
+      // so none is named. The browser does not pick one by ranking.
+      rows.push(`<div class="det-prov-hop"><b>Modules</b>: the stored result does not record which module set this category's status, so none is named as driving it.</div>`);
+    } else {
+      rows.push(`<div class="det-prov-hop"><b>${esc(t.worstMod.name)}</b>: ${esc(normalizeStatus(t.worstModStatus) || t.worstModStatus)}${t.modTieCount > 1 ? ` (with ${t.modTieCount - 1} other module${t.modTieCount - 1 === 1 ? "" : "s"} recorded as setting this status, shown first)` : ""}${t.evidenceMetric ? `<div class="kn-sub">${esc(t.evidenceMetric)}</div>` : ""}</div>`);
+    }
     if (t.source) {
       const docLabel = (window.LinSignals && LinSignals.DOC_TYPE_LABEL && LinSignals.DOC_TYPE_LABEL[t.source.docType]) || t.source.docType;
       const docDate = t.source.at ? (window.LinTZ ? LinTZ.format(t.source.at) : String(t.source.at).slice(0, 10)) : "date unknown";
@@ -1380,9 +1412,33 @@
     // Share with taxonomy.js so getModuleStatus / getCategoryStatus work everywhere.
     if (window.LinResults) LinResults.prime(id, resp.result);
 
-    // Graft missing fields onto storedResult so rowFor(p) returns the complete row.
-    // storedResult may not exist (project has no computed result yet) — guard each field.
-    if (p.storedResult) {
+    /* Graft missing fields onto storedResult so rowFor(p) returns the complete row.
+       storedResult may not exist (project has no computed result yet) — guard each field.
+
+       RUN 69, SECTION 7.3. THE GRAFT NOW REFUSES A DIFFERENT PERIOD'S ROW.
+
+       `resp.result` is the row for `period` -- the LATEST COMPUTED period, chosen by
+       `currentPeriod` above -- and `p.storedResult` is the list/get projection, which carries
+       its own `period` and need not be the same one. Nothing here compared them, so the served
+       row's module_results, signal_inputs, abstentions and source documents were copied onto a
+       projection stating a DIFFERENT period, and every `rowFor(p)` afterwards returned one row
+       claiming one period and carrying another's modules. That is exactly what Run 61 removed
+       from `rowFor` -- a caller asks for a period and receives that period or nothing, never a
+       substitute because another was more complete -- reappearing one layer up, at the graft.
+
+       The ROWS cache is primed above with the served row IN ITS OWN PERIOD'S SLOT either way,
+       so a page that wants the latest period can still ask for it by number through
+       `rowForPeriod`. What is refused here is the SILENT MIXING of two periods in one object. */
+    const graftPeriod = (resp.result && resp.result.period != null) ? Number(resp.result.period) : null;
+    const projectionPeriod = (p.storedResult && p.storedResult.period != null)
+      ? Number(p.storedResult.period) : null;
+    const periodsAgree = (graftPeriod === null || projectionPeriod === null)
+      ? true : graftPeriod === projectionPeriod;
+    if (p.storedResult && !periodsAgree) {
+      console.warn("[detail] served row is period " + graftPeriod + " and the projection states period "
+        + projectionPeriod + "; not grafting one period's result onto another's row");
+    }
+    if (p.storedResult && periodsAgree) {
       if (resp.result.module_results && !p.storedResult.module_results) {
         p.storedResult.module_results = resp.result.module_results;
       }
@@ -1423,7 +1479,7 @@
       if (resp.result.consistency_findings && !p.storedResult.consistency_findings) {
         p.storedResult.consistency_findings = resp.result.consistency_findings;
       }
-    } else {
+    } else if (!p.storedResult) {
       // a_get delivered no storedResult (a race, or the list projection had not attached it
       // yet) but the row exists. Attach it so every rowFor(p) on this page reads the complete
       // row directly, not only through the ROWS cache prime above.
@@ -1668,52 +1724,97 @@
     return groups;
   }
 
-  // The 3-6 specific computed values that most explain the overall status —
-  // actual numbers, never generic text. Each is { label, value, status }.
+  /* ============================================================
+     RUN 69, SECTION 6 AND SECTION 7.2. KEY DRIVERS, READ AND NOT DERIVED.
+     ============================================================
+     WHAT THIS FUNCTION USED TO DO, AND IT WAS THE DEFECT THE ORDER DESCRIBES: it took raw
+     figures out of the stored `signal_inputs` and MADE UP BOTH THE NUMBER AND THE COLOUR.
+
+       · "Contingency burned" was `(originalContingency - remainingContingency) / originalContingency`
+         computed here, and its status was `bp > 75 ? Red : bp > 50 ? Amber : Green` — bands
+         invented in the browser. The server computes that exact quantity in A3.2 Contingency
+         Burn Rate, stores `burn_rate_pct: 55` beside `normalized_burn: 1.1`, and stores
+         `status_color: null` WITH ITS REASON: "no source specifies a burn-against-progress
+         threshold". So on this platform's own fixture the browser printed an AMBER contingency
+         driver for a quantity the server had explicitly refused to band. That is precisely the
+         thirty-one bandless ladders being overridden by the client.
+       · "P80 EAC vs BAC" was `Math.round((mc.p80 / bac - 1) * 100)`, a percentage no module
+         computed and no row stores.
+       · CPI, SPI, CUSUM and document risk each carried a band invented from client-side
+         thresholds. On the same fixture the stored CPI of 0.952 rendered GREEN here while the
+         two modules that actually vote on cost, A1.7 TCPI and A1.8 VAC, both stored AMBER.
+
+     WHAT IT DOES NOW. Every row is a STORED module result: the figure comes from a field the
+     module stored, and the colour is that module's stored `status_color` — which is `null`
+     wherever the module asserted no band, and a null colour is rendered as no colour rather
+     than as Green. A quantity no module stored does not appear.
+
+     The four raw EVM scalars are still shown, because a stored figure read verbatim is exactly
+     what section 6 permits, but they now carry NO STATUS AT ALL: no module on this platform
+     bands CPI or SPI directly, so this file has none to read and invents none. ---------- */
+
+  //: label -> the module whose stored result supplies the figure and the colour, the field on
+  //: that result carrying the figure, and how to print it. Nothing here computes.
+  const BRIEF_DRIVERS = [
+    { label: "Contingency burned", method: "Contingency_Burn_Rate", field: "burn_rate_pct",
+      format: (v) => Math.round(v) + "%" },
+    { label: "Contingency against progress", method: "Contingency_Burn_Rate",
+      field: "normalized_burn", format: (v) => Number(v).toFixed(2) },
+    { label: "TCPI", method: "TCPI", field: "tcpi", format: (v) => Number(v).toFixed(3) },
+    { label: "Variance at completion", method: "VAC", field: "vac",
+      format: (v) => (v < 0 ? "-$" : "$") + Math.abs(Math.round(v)).toLocaleString("en-US") },
+    { label: "P80 EAC", method: "Monte_Carlo", field: "p80_eac",
+      format: (v) => "$" + Math.round(v).toLocaleString("en-US") },
+  ];
+
+  //: The raw stored scalars. Read verbatim off the row's own `signal_inputs`, printed with no
+  //: status, because this platform stores no band for any of them. A raw value that is null or
+  //: blank is ABSENT and is omitted -- `Number(null)` is 0 and finite, which is how an absent
+  //: document risk once rendered as "0.00 (Green)".
+  const BRIEF_SCALARS = [
+    { label: "CPI", key: "cpi", digits: 3 },
+    { label: "SPI", key: "spi", digits: 3 },
+    { label: "Document risk", key: "docRiskScore", digits: 2 },
+  ];
+
   function briefKeySignals(project) {
-    const s = (project && project.signals) || {};
-    // Server-computed projects carry no legacy p.signals / p.signalInputs blob: the figures the
-    // analytical layer read live in the STORED row's signal_inputs. Read from there first so the
-    // Key Drivers section shows the real CPI, SPI, BAC and document risk instead of the
-    // "No computed key signals" fallback. rowFor() returns the row primed by primeAndRefresh.
     const storedRow = (window.LinResults && LinResults.rowFor(project)) || null;
-    const storedSi = storedRow && storedRow.signal_inputs && typeof storedRow.signal_inputs === "object"
+    if (!storedRow) return [];
+    const si = (storedRow.signal_inputs && typeof storedRow.signal_inputs === "object")
       ? storedRow.signal_inputs : {};
-    const si = Object.assign({}, storedSi, (project && project.signalInputs) || {});
-    const evm = s.evm || {}, mc = s.mc || {};
     const out = [];
-    const bac = Number(evm.bac != null ? evm.bac : si.bac);
-    if (Number.isFinite(bac) && bac > 0 && Number.isFinite(Number(mc.p80))) {
-      const pct = Math.round((Number(mc.p80) / bac - 1) * 100);
-      out.push({ label: "P80 EAC vs BAC", value: (pct >= 0 ? "+" : "") + pct + "%", status: pct > 10 ? "Red" : pct > 5 ? "Amber" : "Green" });
-    }
-    const cpi = Number(evm.cpi != null ? evm.cpi : si.cpi);
-    if (Number.isFinite(cpi)) out.push({ label: "CPI", value: cpi.toFixed(3), status: cpi < 0.90 ? "Red" : cpi < 0.95 ? "Amber" : "Green" });
-    const spi = Number(evm.spi != null ? evm.spi : si.spi);
-    if (Number.isFinite(spi)) out.push({ label: "SPI", value: spi.toFixed(3), status: spi < 0.90 ? "Red" : spi < 0.95 ? "Amber" : "Green" });
-    if (s.cusum) out.push({ label: "Schedule drift (CUSUM)", value: s.cusum.breached ? "breach detected" : "in control", status: s.cusum.breached ? "Red" : "Green" });
-    const ctot = Number(si.contingencyTotal != null ? si.contingencyTotal : si.originalContingency);
-    const crem = Number(si.remainingContingency);
-    const cburn = Number.isFinite(Number(si.contingencyBurned)) ? Number(si.contingencyBurned)
-      : (Number.isFinite(ctot) && Number.isFinite(crem) ? ctot - crem : NaN);
-    const comp = Number(si.actualPctComplete != null ? si.actualPctComplete : si.pctComplete);
-    if (Number.isFinite(ctot) && ctot > 0 && Number.isFinite(cburn)) {
-      const bp = Math.round(cburn / ctot * 100);
-      out.push({ label: "Contingency burned", value: bp + "%" + (Number.isFinite(comp) ? " at " + Math.round(comp) + "% complete" : ""), status: bp > 75 ? "Red" : bp > 50 ? "Amber" : "Green" });
-    }
-    // RUN 44, SECTION 4.2. select_signal_inputs initialises every key to None, so a project with
-    // no document-risk observation carries docRiskScore PRESENT AND NULL. Number(null) is 0 and
-    // finite, so the absent score rendered as "0.00" with a Green status and was shipped into
-    // the Executive Brief as a key driver, while an undefined one (NaN) was correctly omitted.
-    // A genuine stored zero must still render as zero -- extraction_merge.py:1128 requires the
-    // zero to be stored and to stay distinguishable from an absence -- so the guard is on the
-    // RAW value being null/undefined/blank, never on the number being falsy.
-    const docRaw = (s.doc && s.doc.score != null) ? s.doc.score : si.docRiskScore;
-    const docScore = (docRaw == null || docRaw === "") ? NaN : Number(docRaw);
-    if (Number.isFinite(docScore)) {
-      out.push({ label: "Document risk", value: docScore.toFixed(2), status: docScore >= 0.70 ? "Red" : docScore >= 0.40 ? "Amber" : "Green" });
-    }
+
+    BRIEF_DRIVERS.forEach((d) => {
+      const res = window.getModuleResult ? window.getModuleResult(d.method, project) : null;
+      if (!res) return;
+      const raw = res[d.field];
+      if (raw == null || raw === "") return;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return;
+      out.push({
+        label: d.label,
+        value: d.format(n),
+        // THE MODULE'S OWN STORED BAND, AND NOTHING ELSE. `null` where the module asserted
+        // none, which the renderers below print as "no band stated" rather than as a colour.
+        status: res.status_color || null,
+      });
+    });
+
+    BRIEF_SCALARS.forEach((f) => {
+      const raw = si[f.key];
+      if (raw == null || raw === "") return;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return;
+      out.push({ label: f.label, value: n.toFixed(f.digits), status: null });
+    });
+
     return out.slice(0, 6);
+  }
+
+  //: How a driver reads when the server stored no band for it. A colour is never supplied in
+  //: its place, and the absence is stated in words rather than left to look like an omission.
+  function briefStatusWords(status) {
+    return status ? String(status) : "no band stated";
   }
 
   function buildBriefPrompt(project) {
@@ -1792,7 +1893,7 @@
       groupLine("CONDITIONAL / NO DATA", groups.Conditional)
     ].join("\n");
     const signalsText = keySignals.length
-      ? keySignals.map((k) => "- " + k.label + ": " + k.value + " (" + k.status + ")").join("\n")
+      ? keySignals.map((k) => "- " + k.label + ": " + k.value + " (" + briefStatusWords(k.status) + ")").join("\n")
       : "- (no computed key signals available yet)";
 
     return advisor +
@@ -2012,7 +2113,7 @@
 
     // ── Key Drivers: the actual computed signal values.
     const driverLines = keySignals.length
-      ? keySignals.map((k) => "- " + k.label + ": " + k.value + " (" + k.status + ")")
+      ? keySignals.map((k) => "- " + k.label + ": " + k.value + " (" + briefStatusWords(k.status) + ")")
       : ["- No computed key signals are available yet."];
 
     // ── Required Actions: advisory, named authority + horizon, never a command.

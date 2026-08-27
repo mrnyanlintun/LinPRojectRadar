@@ -177,17 +177,33 @@ out.briefAmberOverAmber = D.buildBriefPrompt(projectWithSnapshot('Amber',
   [{ name: 'TCPI', status: 'Green' }, { name: 'VAC', status: 'Amber' }])) || '';
 out.briefGreenOverGreens = D.buildBriefPrompt(projectWithSnapshot('Green', A1_MODULES)) || '';
 
-/* the provenance line, through the real getCategoryStatus / getModuleStatus resolvers */
-function provFor(catStatus, modStatuses) {
+/* the provenance line, through the real getCategoryStatus / getModuleStatus resolvers.
+
+   RUN 69 UPDATED THIS HARNESS, and the reason is recorded here rather than in a report. Run 44
+   pinned a browser-side RANKING: buildProvenanceTrace walked the category's modules, ordered
+   their status strings, and named the most adverse as the driver, with `modDrives` refusing to
+   name one that was better than the category. Run 69, section 7.1, removed the ranking: the
+   server stores `category_statuses[key].status_set_by`, the list of modules that ACTUALLY set
+   the status, and the trace reads it. So the harness now primes a stored row carrying that
+   list, and the checks below pin the stricter behaviour -- a module is named when and only when
+   the server named it. The old checks are not deleted; they are RESTATED against the answer
+   the server now supplies, which is what they were approximating. */
+function provFor(catStatus, modStatuses, statusSetBy) {
   const cats = [{ id: 'a1', key: 'A1', name: 'Cost and EVM Performance', level: 'project',
                   modules: Object.keys(modStatuses).map((mc, i) => (
                     { id: 'm' + i, module_id: 'A1.' + (i + 1), name: mc, method_class: mc })) }];
   const saveCats = w.LIN_CATEGORIES, saveGet = w.getCategoryStatus, saveMod = w.getModuleStatus;
+  const saveRes = w.LinResults, saveGmr = w.getModuleResult;
   w.LIN_CATEGORIES = cats;
   w.projectLevelCategories = () => cats;
   w.getCategoryStatus = () => catStatus;
   w.getModuleStatus = (mc) => modStatuses[mc] || null;
   w.getProjectFusion = () => ({ status: catStatus, stored: true });
+  w.LinResults = { rowFor: () => ({ period: 2, signal_inputs: {},
+    category_statuses: { A1: { status: catStatus,
+                               status_set_by: statusSetBy === undefined ? [] : statusSetBy } } }),
+                   hasResult: () => true };
+  w.getModuleResult = () => null;
   let r;
   try {
     r = { trace: D.buildProvenanceTrace({ id: 'PRJ-H', status: catStatus, signalInputs: {} }),
@@ -195,12 +211,22 @@ function provFor(catStatus, modStatuses) {
     r.panel = r.trace ? D.provenancePanelHtml(r.trace) : '';
   } finally {
     w.LIN_CATEGORIES = saveCats; w.getCategoryStatus = saveGet; w.getModuleStatus = saveMod;
+    w.LinResults = saveRes; w.getModuleResult = saveGmr;
   }
   return r;
 }
-out.provAmberOverGreens = provFor('Amber', { TCPI: 'Green', VAC: 'Green' });
-out.provAmberOverAmber = provFor('Amber', { TCPI: 'Green', VAC: 'Amber' });
-out.provAmberOverLowercase = provFor('Amber', { TCPI: 'Green', CUSUM: 'amber' });
+/* THE SERVER NAMED NO AUTHOR: no module may be named, whatever the browser could have ranked. */
+out.provAmberOverGreens = provFor('Amber', { TCPI: 'Green', VAC: 'Green' }, []);
+/* THE SERVER NAMED VAC (module id A1.2 in this harness's ordering): VAC is named. */
+out.provAmberOverAmber = provFor('Amber', { TCPI: 'Green', VAC: 'Amber' }, ['A1.2']);
+/* CASE IS STILL NOT IDENTITY: the author is matched on the stored MODULE ID, so a lowercase
+   status cannot cost a module its attribution -- the failure Run 44 found -- because the
+   status string is no longer what selects it. */
+out.provAmberOverLowercase = provFor('Amber', { TCPI: 'Green', CUSUM: 'amber' }, ['A1.2']);
+/* AND A RANKING WOULD HAVE PICKED THE OTHER ONE: the server names the GREEN module as the
+   author, and that is what is rendered. A browser ranking could never produce this, which is
+   what makes this check able to fail if the ranking is ever reinstated. */
+out.provServerNamesGreen = provFor('Amber', { TCPI: 'Green', VAC: 'Amber' }, ['A1.1']);
 
 /* ---- 4/5. the document-risk score ------------------------------------------------------ */
 function keySignalsFor(si, sig) {
@@ -218,8 +244,14 @@ out.docZero = docRow(keySignalsFor(Object.assign({}, BASE_SI, { docRiskScore: 0 
 out.docReal = docRow(keySignalsFor(Object.assign({}, BASE_SI, { docRiskScore: 0.46 })));
 out.docBlobNull = docRow(keySignalsFor(Object.assign({}, BASE_SI),
                                        { doc: { score: null, status: 'Green' } }));
+/* RUN 69 RETIRED `docBlobZero`, AND RETIRING IS NOT DELETING. It fed a genuine zero through the
+   LEGACY `project.signals.doc.score` blob, which `briefKeySignals` no longer consults: section 6
+   of the Run-69 order is that the client renders what the SERVER STORED, and that blob is
+   browser-side state, not a stored row. The fixture is kept here, unread, so the case it covered
+   is on the record; nothing asserts against it and it must not be wired back in.
 out.docBlobZero = docRow(keySignalsFor(Object.assign({}, BASE_SI, { docRiskScore: null }),
-                                       { doc: { score: 0, status: 'Green' } }));
+                                       { doc: { score: 0, status: 'Green' } })); */
+out.keySignalsAll = keySignalsFor(Object.assign({}, BASE_SI, { docRiskScore: 0.46 }));
 /* the brief prompt is the surface Phase J named: the key drivers shipped into it */
 out.briefPromptWithNullDoc =
   (D.buildBriefPrompt(projectWithSnapshot('Green', A1_MODULES)) || '');
@@ -418,23 +450,35 @@ check("(worst:" in JS["briefGreenOverGreens"],
 
 pa = JS["provAmberOverGreens"]
 check(pa["trace"] is not None and pa["trace"]["modDrives"] is False,
-      "the provenance trace marks the module as not driving when it is better than the "
-      "category", json.dumps(pa["trace"] and pa["trace"]["modDrives"]))
+      "RUN 69: the stored row names no module as setting this category's status, so the trace "
+      "names none -- it does not rank the category's modules and pick one",
+      json.dumps(pa["trace"] and pa["trace"]["modDrives"]))
 pa_line = (re.search(r'det-prov-line">(.*?)</span>', pa["line"], re.S)
            or re.match("()", "")).group(1)
 check("TCPI" not in pa_line and "VAC" not in pa_line,
       "so the rendered provenance one-liner names no module as the driver of an Amber it "
       "cannot be the driver of", pa_line[:200])
-check("no module in this category reads as adverse as the category status" in pa["panel"],
+check("does not record which module set this category's status" in pa["panel"],
       "and the expanded panel says why, rather than going silent", pa["panel"][:200])
 pb = JS["provAmberOverAmber"]
 check(pb["trace"]["modDrives"] is True and "VAC" in pb["line"],
-      "an Amber module under an Amber category IS named, so the guard is not a blanket "
-      "suppression", pb["line"][:200])
+      "the module the SERVER recorded as setting the status IS named, so reading the stored "
+      "list is not a blanket suppression", pb["line"][:200])
 pc = JS["provAmberOverLowercase"]
 check(pc["trace"]["modDrives"] is True and "CUSUM" in pc["line"],
-      "and a module whose adverse status is in the other casing is recognised as the driver",
+      "and a module whose stored status is in the other casing is still named, because the "
+      "author is matched on module id and never on the status string",
       pc["line"][:200])
+pd = JS["provServerNamesGreen"]
+# THE ONE-LINER, NOT THE WHOLE ELEMENT: `provenanceLineHtml` carries the expanded panel inside
+# its own markup, and that panel's "also elevated" list legitimately mentions every other
+# adverse module. What is asserted here is which module the LINE names as the driver.
+pd_line = (re.search(r'det-prov-line">(.*?)</span>', pd["line"], re.S)
+           or re.match("()", "")).group(1)
+check(pd["trace"]["modDrives"] is True and "TCPI" in pd_line and "VAC" not in pd_line,
+      "RUN 69, THE CHECK THAT PROVES THE RANKING IS GONE: where the server records the GREEN "
+      "module as the author of an Amber category, that module is named -- a severity ranking "
+      "would have named the Amber one instead", pd_line[:200])
 
 head("4. SECTION 4.2 -- AN ABSENT DOCUMENT-RISK SCORE RENDERS AS ABSENT (section 5 item 4)")
 
@@ -448,25 +492,39 @@ check(JS["docAbsentBlank"] is None,
       "and a blank string produces none: Number('') is 0 and finite, the same trap as null",
       json.dumps(JS["docAbsentBlank"]))
 check(JS["docBlobNull"] is None,
-      "a legacy signals blob carrying doc.score null produces none either -- the fallback to "
-      "the stored value must not resurrect the zero", json.dumps(JS["docBlobNull"]))
+      "a legacy signals blob carrying doc.score null produces none either. RUN 69 makes this "
+      "stricter rather than weaker: the legacy blob is no longer read at all, so it cannot "
+      "resurrect a zero by any route", json.dumps(JS["docBlobNull"]))
 check("Document risk" not in JS["briefPromptWithNullDoc"],
       "and the Executive Brief prompt, which is the surface Phase J named, carries no Document "
       "risk key driver when the score is absent")
 
-head("5. SECTION 4.2 -- A GENUINE STORED ZERO STILL RENDERS AS ZERO (section 5 item 5)")
+head("5. SECTION 4.2 -- A GENUINE STORED ZERO STILL RENDERS AS ZERO (section 5 item 5),\n"
+     "   AND RUN 69: IT CARRIES NO BROWSER-INVENTED BAND")
 
+# RUN 69 RESTATED THESE THREE CHECKS AND THE REASON IS RECORDED HERE. Run 44 pinned the VALUE
+# and the STATUS: "0.00 (Green)", "0.46 (Amber)". The value half was right and is kept
+# unchanged. The status half pinned a band `briefKeySignals` INVENTED from client-side
+# thresholds (>= 0.70 Red, >= 0.40 Amber) over a raw stored index. Run 69, section 7.2, removed
+# every such derivation: a figure carries the STORED module's own `status_color` or no band at
+# all, and the four raw EVM scalars carry none because no module on this platform bands them.
+# So the checks now pin `status is None` -- and pinning None is not a weakening, it is the
+# stricter statement: a band may not appear unless the server stored one.
 z = JS["docZero"]
-check(z is not None and z["value"] == "0.00" and z["status"] == "Green",
-      "a stored docRiskScore of 0 renders 0.00 with a Green status: the absence guard tests the "
-      "RAW value, never the number's truthiness", json.dumps(z))
-zb = JS["docBlobZero"]
-check(zb is not None and zb["value"] == "0.00",
-      "and a legacy blob's genuine 0 renders 0.00 as well", json.dumps(zb))
+check(z is not None and z["value"] == "0.00" and z["status"] is None,
+      "a stored docRiskScore of 0 renders 0.00 and NO band: the absence guard still tests the "
+      "RAW value rather than the number's truthiness, and the browser invents no colour for it",
+      json.dumps(z))
 r = JS["docReal"]
-check(r is not None and r["value"] == "0.46" and r["status"] == "Amber",
-      "a real score is unaffected: 0.46 renders 0.46, Amber by the module's own 0.40 band",
+check(r is not None and r["value"] == "0.46" and r["status"] is None,
+      "a real score is unaffected in its VALUE and carries no browser-derived band either: "
+      "0.46 renders 0.46, and the 0.40 threshold that used to colour it lived in the browser",
       json.dumps(r))
+check(all((row.get("status") is None) for row in (JS["keySignalsAll"] or [])
+          if row.get("label") in ("CPI", "SPI", "Document risk")),
+      "RUN 69: no raw stored scalar on the Key Drivers list carries a band, because this "
+      "platform stores none for any of them", json.dumps(JS["keySignalsAll"]))
+
 
 head("6. SECTION 4.3 -- CPI AND SPI ARE LABELLED COMPUTED (section 5 item 6)")
 

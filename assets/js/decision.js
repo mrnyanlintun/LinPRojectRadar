@@ -62,21 +62,43 @@ function signalStatuses(project) {
    match the comparisons classifyConflict / countStatus make. A class with no stored basis stays
    null — an abstaining signal class, never a fabricated "green". */
 function storedSignalStatuses(project) {
+  /* RUN 69, SECTION 7.2. THE FOUR SIGNAL-CLASS BANDS ARE READ, NOT DERIVED.
+
+     WHAT THIS FUNCTION USED TO DO: `evm` was `deriveStatusFromMetrics(si.cpi, si.spi, null)`
+     and `doc` was `deriveStatusFromMetrics(null, null, si.docRiskScore)` -- RAG thresholds
+     applied IN THE BROWSER to raw stored indices, producing a band no module computed and no
+     row stores. On this platform's own fixture a stored CPI of 0.952 came out GREEN here while
+     A1.7 TCPI and A1.8 VAC, the two modules that actually vote on cost, both stored AMBER, and
+     the conflict classification below then compared an invented band against real ones.
+
+     `mc` and `cusum` were already read off stored module rows through `getModuleStatus`. All
+     four now are. A class with no stored band stays null -- an abstaining class, never a
+     fabricated one -- which is what `classifyConflict` and `countStatus` already expect. */
   const row = (typeof window !== "undefined" && window.LinResults && window.LinResults.rowFor)
     ? window.LinResults.rowFor(project) : null;
   if (!row) return null;
-  const si = row.signal_inputs || {};
-  const lower = (band) => band ? String(band).toLowerCase() : null;
   const modBand = (methodClass) => {
     const st = (typeof window !== "undefined" && window.getModuleStatus)
       ? window.getModuleStatus(methodClass, project) : null;
     const norm = normalizeStatusLabel(st);
     return norm ? norm.toLowerCase() : null;
   };
-  const evm = (si.cpi != null || si.spi != null)
-    ? lower(deriveStatusFromMetrics(si.cpi, si.spi, null)) : null;
-  const doc = (si.docRiskScore != null)
-    ? lower(deriveStatusFromMetrics(null, null, si.docRiskScore)) : null;
+  /* THE COST-AND-SCHEDULE CLASS IS THE STORED BAND OF THE MODULES THAT VOTE ON IT. Where the
+     two disagree the more adverse STORED band stands for the class; that is a choice between
+     two values the server computed, not a band manufactured from an index. Where neither
+     stored one, the class is null. */
+  const RANK = { green: 0, yellow: 1, amber: 2, "red-review": 3, red: 4, complete: -1 };
+  const worstOfStored = (classes) => {
+    let best = null;
+    classes.forEach((c) => {
+      const b = modBand(c);
+      if (!b) return;
+      if (best === null || (RANK[b] != null && RANK[best] != null && RANK[b] > RANK[best])) best = b;
+    });
+    return best;
+  };
+  const evm = worstOfStored(["TCPI", "VAC"]);
+  const doc = modBand("Doc_Risk");
   const mc = modBand("Monte_Carlo");
   const cusum = modBand("CUSUM");
   if (evm == null && doc == null && mc == null && cusum == null) return null;
@@ -118,6 +140,11 @@ function normalizeStatusLabel(status) {
    as 0–1 scores — so out-of-range values are ignored). Returns null
    when there are no EVM metrics — i.e. genuinely awaiting ingest.
    ------------------------------------------------------------ */
+/* RUN 69. RETIRED, NOT DELETED. Nothing on a served page calls this any more: both call sites
+   (`storedSignalStatuses` and `slimStatusLabel`) now read the band the server stored. It stays
+   here, unreferenced, because tests.html pins its arithmetic and because deleting a check is
+   forbidden; retiring one means it stops running and the reason is recorded, which is this
+   comment. DO NOT WIRE IT BACK INTO A RENDER PATH: a band it returns is one no module computed. */
 function deriveStatusFromMetrics(cpi, spi, docRisk) {
   let worst = -1;                 // 0 Green, 1 Amber, 2 Red
   const bump = (n) => { if (n > worst) worst = n; };
@@ -132,11 +159,22 @@ function deriveStatusFromMetrics(cpi, spi, docRisk) {
   return worst < 0 ? null : ["Green", "Amber", "Red"][worst];
 }
 function slimStatusLabel(p) {
+  /* RUN 69, SECTION 7.2. THE SLIM LIST'S BAND IS READ, NOT DERIVED.
+
+     The second arm used to be `deriveStatusFromMetrics(p.cpi, p.spi, docRisk)` -- RAG
+     thresholds applied in the browser to whatever indices the slim projection happened to
+     carry, producing a portfolio-list colour for a project whose stored result says something
+     else, or has no status at all. The slim projection DOES carry the server's answer: the
+     list/get projection attaches `storedResult` with `project_status` on it, and `p.status` is
+     the persisted label. Both are read; neither is computed.
+
+     A project the server has given no status is now "not yet analysed" on the list, which is
+     what it is. A colour is never supplied in place of an absent one. */
   if (!p) return null;
-  const norm = normalizeStatusLabel(p.status);   // real 5-state label if provided
+  const norm = normalizeStatusLabel(p.status);   // the persisted 5-state label, where there is one
   if (norm) return norm;
-  const dr = (p.docRisk != null ? p.docRisk : p.docRiskScore);
-  return deriveStatusFromMetrics(p.cpi, p.spi, dr);
+  const stored = p.storedResult || null;
+  return stored ? normalizeStatusLabel(stored.project_status) : null;
 }
 
 /* ------------------------------------------------------------
