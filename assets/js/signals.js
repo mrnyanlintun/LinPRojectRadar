@@ -1822,9 +1822,30 @@
     </td></tr>`;
   }
 
+  // RUN 70, FIX 4, SECTION 8. THE COMPLETENESS SENTENCE IS REMOVED, AND WHY.
+  //
+  // What stood here was `All required values present. Nothing outstanding.` It rendered
+  // whenever this list was empty, and on a project computed by the server the list is ALWAYS
+  // empty: `missing` is read from `entry.missing`, which is only ever populated from an
+  // extract or overwrite response, and the extraction endpoint returns no `missing` key at
+  // all (`grep -n '"missing"' server/app/documents.py` finds nothing). So the sentence
+  // rendered unconditionally, for every project, forever, beside a panel that could be
+  // reporting sixty modules with no current result. It checked nothing.
+  //
+  // IT WAS NOT FIXED, BECAUSE THE POPULATION IT RANGED OVER DOES NOT EXIST. To say that all
+  // REQUIRED values are present, the platform would have to hold a register of which values
+  // are required. It holds none. That is not an inference: C1.1 Missing Data Index is a
+  // module in service and it abstains on every project with the words "Awaiting the
+  // required-input contract for the module or use being assessed. This measure is named for
+  // a method that cannot be carried out without it, so no reading is reported and no other
+  // figure is used in its place." The completeness claim was the same claim C1.1 refuses to
+  // make, made without the evidence C1.1 says is needed.
+  //
+  // So the claim goes and the platform's actual position is stated in its place. An empty
+  // list is not a finding of completeness; it is the absence of a finding.
   function missingHtml(missing) {
     if (!missing || !missing.length) {
-      return `<p class="kn-sub ds-missing-clear">All required values present. Nothing outstanding.</p>`;
+      return `<p class="kn-sub ds-missing-clear">This platform holds no register of which values a project is required to state, so it cannot say whether anything is outstanding. Nothing is claimed here either way.</p>`;
     }
     const items = missing.map((m) => {
       if (typeof m === "string") return `<li class="ds-missing-row">${esc(m)}</li>`;

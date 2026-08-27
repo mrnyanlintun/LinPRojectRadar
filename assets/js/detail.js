@@ -2031,120 +2031,126 @@
       `</div>`;
   }
 
-  // Scripted fallback when the chat endpoint fails. Same pattern as Ask Lin's
-  // catch block in assistant.js — show something useful instead of an error.
-  // Only mentions signals that are actually present and accurate; the action
-  // is keyed to the concerns themselves so it can never contradict them
-  // (the previous version produced "Routine monitoring is appropriate" next
-  // to "sustained drift detected").
+  /* RUN 70, FIX 4. THE SCRIPTED BRIEF IS REBUILT ON THE STORED FIGURES.
+
+     WHAT IT WAS. It read `project.signals`, a legacy blob that is EMPTY on every project this
+     server computes, so its `concerns` list was always empty and its prose was chosen from a
+     status alone: "The evidence suggests meaningful risk that may warrant a closer look this
+     cycle." That sentence asserted a condition about the project and named no figure, which is
+     the defect fix 4 exists to close.
+
+     WHAT IT IS NOW. Every sentence it asserts is built FROM a stored figure and prints that
+     figure, so it passes the same gate that would reject it. It states, in order: the posture
+     and the category and module that set it; the cost position AND the schedule position,
+     whichever of them set the posture; the band each figure crossed; the document type each
+     figure came from; and what the platform could not compute this period. If nothing computed
+     it says so rather than producing a posture from an empty tree.
+
+     NOTHING HERE INVENTS A VALUE. Every number printed is read off the stored row, and where
+     the row holds nothing the sentence says the platform did not compute it. */
   function scriptedBrief(project) {
-    const s = (project && project.signals) || {};
-    const d = s.decision || {};
-    const conflict = d.conflict || "";
+    const ev = briefEvidence(project);
 
-    const concerns = [];
-    if (s.evm) {
-      const cpi = Number(s.evm.cpi);
-      if (Number.isFinite(cpi)) {
-        if (cpi < 0.90) concerns.push("cost is over budget");
-        else if (cpi < 0.95) concerns.push("cost is slightly over budget");
-      }
-      const spi = Number(s.evm.spi);
-      if (Number.isFinite(spi)) {
-        if (spi < 0.90) concerns.push("the schedule is behind");
-        else if (spi < 0.95) concerns.push("the schedule is slipping");
-      }
-    }
-    if (s.cusum && s.cusum.breached) concerns.push("the trend monitor has detected sustained drift");
-    if (s.doc) {
-      const ds = Number(s.doc.score);
-      if (Number.isFinite(ds) && ds >= 0.70) concerns.push("document risk is high");
-      else if (Number.isFinite(ds) && ds >= 0.40) concerns.push("document risk is elevated");
+    // NOTHING COMPUTED: say so, and produce no posture from an empty tree.
+    if (!ev.row || !ev.modules.length) {
+      return [
+        "### Recommendation",
+        "NO DATA \u00b7 no course is recommended this period.",
+        "No module produced a figure for this period, so this platform states no posture and no "
+          + "cost or schedule position.",
+        "### Signal Pattern",
+        "No category has computed data yet.",
+        "### Key Drivers",
+        "- No computed key signals are available yet.",
+        "### Required Actions",
+        "- Upload the period's documents so the analysis has something to read"
+      ].join("\n");
     }
 
-    // Resolve state. If decision.js doesn't tell us, infer from the concerns
-    // so the lead line never reads "in an unknown state" when there are real
-    // concerns on the package.
-    let state = resolveBriefState(project);
-    if (!state) {
-      if (concerns.length >= 2) state = "Red-review";
-      else if (concerns.length === 1) state = "Amber";
-      else state = "Green";
-    }
-
-    const stKey = String(state).toLowerCase().replace("-review", "");
-
-    // Group categories by status and pull the actual computed key signals.
-    const groups = briefCategoryGroups(project);
-    const keySignals = briefKeySignals(project);
-
-    // ── Recommendation (lead): status + one action clause + an evidence line.
-    const actionClause = stKey === "red" ? "bring the controls lead into a focused review this cycle"
-      : stKey === "amber" ? "review the cost and schedule trend with the controls lead this cycle"
-      : stKey === "yellow" ? "keep a light watch on the early-warning variance"
-      : stKey === "complete" ? "begin closeout reconciliation when convenient"
-      : "maintain routine monitoring";
-    const evidenceLine = stKey === "red"
-        ? "The evidence suggests significant cost and schedule pressure that warrants a focused look before the next reporting cycle closes."
+    const posture = ev.posture ? String(ev.posture) : "NO POSTURE";
+    const stKey = ev.postureKey;
+    const actionClause = stKey === "red"
+        ? "bring the controls lead into a focused review this cycle."
       : stKey === "amber"
-        ? "The evidence suggests meaningful risk that may warrant a closer look this cycle."
-      : stKey === "yellow"
-        ? "The evidence suggests early-warning variance worth monitoring."
-      : stKey === "complete"
-        ? "The evidence suggests the tracked measures are reading as complete."
-        : "The evidence suggests the project is tracking within expected ranges.";
-    const recommendation = String(state).toUpperCase() + " · " + actionClause + "\n" + evidenceLine;
+        ? "review the cost and schedule trend with the controls lead this cycle."
+      : stKey === "green"
+        ? "maintain routine monitoring this cycle."
+        : "no course follows from the bands this period.";
 
-    // ── Signal Pattern: one ● line per non-empty status group.
-    const phraseFor = {
-      Red: "the evidence points to significant pressure concentrated in these areas",
-      Amber: "the analysis indicates meaningful risk worth a closer look",
-      Green: "the signals are consistent with these areas tracking well",
-      Conditional: "these areas are awaiting data or are conditional on further inputs"
-    };
-    const patternLines = [];
-    [["Red", "RED"], ["Amber", "AMBER"], ["Green", "GREEN"], ["Conditional", "CONDITIONAL / NO DATA"]].forEach((g) => {
-      const arr = groups[g[0]];
-      if (!arr.length) return;
-      patternLines.push("● " + g[1] + " (" + arr.length + " categor" + (arr.length === 1 ? "y" : "ies") + "): " +
-        arr.join(", ") + ". " + phraseFor[g[0]] + ".");
+    // 1. THE POSTURE, AND THE CATEGORY AND MODULE THAT SET IT, with each setter's own figure.
+    const setters = ev.categories.filter((c) => c.status && (c.setBy || []).length);
+    const setterBits = [];
+    setters.forEach((c) => {
+      (c.setBy || []).forEach((mid) => {
+        const m = ev.modules.filter((x) => x.module_id === mid)[0];
+        if (!m) return;
+        setterBits.push(mid + " in " + c.key + " reads " + (m.evidence_metric || "no figure stated")
+                        + ", band " + (m.status_color || "none stated"));
+      });
     });
-    const patternBlock = patternLines.length ? patternLines.join("\n") : "No category has computed data yet.";
+    const postureSentence = setterBits.length
+      ? "The posture is " + posture + ", set by " + setterBits.join("; ") + "."
+      : "The posture is " + posture + ", and the stored result records no module as having set it.";
 
-    // ── Key Drivers: the actual computed signal values.
+    // 2. THE COST AND THE SCHEDULE POSITION, WHETHER OR NOT EITHER SET THE POSTURE. A
+    //    recommendation that omits cost because schedule was worse is the failure this fix
+    //    exists to prevent, so both lines are always printed.
+    const positionSentence = (label, key) => {
+      const v = ev.signalInputs[key];
+      if (v == null || v === "") return label + " was not computed this period.";
+      return label + " is " + v + ", read from the " + briefFigureSource(ev, key) + ".";
+    };
+    const costLine = positionSentence("The cost performance index", "cpi");
+    const schedLine = positionSentence("The schedule performance index", "spi");
+
+    // 5. WHAT THE PLATFORM COULD NOT COMPUTE THIS PERIOD.
+    const darkCats = ev.categories.filter((c) => !c.status).map((c) => c.key);
+    const censusBits = [ev.modules.length + " modules produced a figure this period"];
+    if (ev.abstainedCount != null) censusBits.push(ev.abstainedCount + " produced none");
+    if (darkCats.length) censusBits.push(darkCats.length + " categories carry no status ("
+                                        + darkCats.join(", ") + ")");
+    const censusLine = censusBits.join(", ") + ".";
+
+    const recommendation = posture.toUpperCase() + " \u00b7 " + actionClause + "\n"
+      + postureSentence + "\n" + costLine + "\n" + schedLine + "\n" + censusLine;
+
+    // THE SIGNAL PATTERN CARRIES A COUNT AND THE CATEGORY KEYS AND NOTHING ELSE. The editorial
+    // phrase that used to close each line ("the analysis indicates meaningful risk worth a
+    // closer look") asserted a condition and named no figure; it is gone rather than reworded.
+    const byBand = { RED: [], AMBER: [], GREEN: [], "NO BAND": [] };
+    ev.categories.forEach((c) => {
+      const k = c.status ? statusKeyFromText(c.status) : "none";
+      const bucket = k === "red" ? "RED" : k === "amber" ? "AMBER" : k === "green" ? "GREEN" : "NO BAND";
+      byBand[bucket].push(c.key);
+    });
+    const patternLines = [];
+    Object.keys(byBand).forEach((b) => {
+      const arr = byBand[b];
+      if (!arr.length) return;
+      patternLines.push("\u25cf " + b + " (" + arr.length + " categor"
+        + (arr.length === 1 ? "y" : "ies") + "): " + arr.join(", ") + ".");
+    });
+    const patternBlock = patternLines.length ? patternLines.join("\n")
+                                             : "No category has computed data yet.";
+
+    // 3 AND 4. THE BAND EACH FIGURE CROSSED, AND THE DOCUMENT IT CAME FROM.
+    const keySignals = briefKeySignals(project);
     const driverLines = keySignals.length
       ? keySignals.map((k) => "- " + k.label + ": " + k.value + " (" + briefStatusWords(k.status) + ")")
       : ["- No computed key signals are available yet."];
+    BRIEF_SCALARS.forEach((f) => {
+      if (ev.signalInputs[f.key] == null) return;
+      driverLines.push("- " + f.label + " came from the " + briefFigureSource(ev, f.key) + ".");
+    });
 
-    // ── Required Actions: advisory, named authority + horizon, never a command.
-    let actions;
-    if (stKey === "red") {
-      actions = [
-        "The program director may wish to bring the controls lead into a focused review before the next reporting cycle closes",
-        "It may be helpful to validate the cost and schedule baseline against the latest pay application",
-        "The data supports a closer look at the most pressured areas together with the project team"
-      ];
-    } else if (stKey === "amber") {
-      actions = [
-        "Consider reviewing the cost and schedule trend with the controls lead before the next reporting cycle closes",
-        "It may be worth verifying the earned-value figures against the latest pay application"
-      ];
-    } else if (stKey === "yellow") {
-      actions = [
-        "Consider a brief check-in to monitor the early-warning variance over the coming cycle",
-        "It may be helpful to confirm the latest earned-value inputs are current"
-      ];
-    } else if (stKey === "complete") {
-      actions = [
-        "Consider initiating closeout documentation when convenient",
-        "It may be helpful to reconcile the final cost and schedule figures"
-      ];
-    } else {
-      actions = [
-        "The signals are within expected ranges; routine monitoring appears sufficient this cycle",
-        "No escalation appears warranted based on the current evidence"
-      ];
-    }
+    // ADVISORY, NAMED AUTHORITY AND HORIZON, NEVER A COMMAND, AND NEVER A CONDITION CLAIM: an
+    // action says what someone might do, so it asserts nothing that would need a figure.
+    const actions = stKey === "red" || stKey === "amber"
+      ? ["The program director may wish to bring the controls lead into a review before the next "
+         + "reporting cycle closes",
+         "It may be helpful to reconcile the earned-value figures against the latest pay application"]
+      : ["Routine monitoring appears sufficient this cycle",
+         "It may be helpful to confirm the latest earned-value inputs are current"];
 
     return [
       "### Recommendation", recommendation,
@@ -2180,7 +2186,348 @@
     return `<div class="eb-foot">${esc(parts.join(" · "))}</div>`;
   }
 
-  function briefBodyHtml(state, brief, errMsg) {
+
+  /* =========================================================================================
+     RUN 70, FIX 4. THREE CHECKS, IN CODE, RUN BEFORE ANYTHING RENDERS.
+
+     THE DEFECT. The Executive Brief printed "The evidence suggests meaningful risk that may
+     warrant a closer look this cycle." beside three key drivers that all read green, and named
+     no figure supporting the concern. Two paths produce that text -- the chat endpoint, and
+     `scriptedBrief` when it fails -- and NOTHING obliged either of them to use the evidence it
+     was given. The prompt asked politely; a prompt is not a check.
+
+     WHERE THE GATE SITS, AND WHY HERE. `briefBodyHtml`'s "ready" branch is the single point at
+     which any brief text, from either path, becomes HTML. Gating here gates both, once, and a
+     third path added later cannot route around it without going through this function.
+
+     WHAT HAPPENS ON FAILURE. The recommendation is REJECTED, the failure is recorded on the
+     project and in the console, and the reader is shown the reasoning's structured fields
+     instead: the posture and what set it, the cost and the schedule position whichever set it,
+     the band each figure crossed, the document type each figure came from, and what the
+     platform could not compute this period. That is a worse experience than a fluent paragraph
+     and an honest one. No substitute sentence is synthesised to keep the panel looking full.
+     ========================================================================================= */
+
+  //: A sentence containing one of these ASSERTS A CONDITION about the project, and must
+  //: therefore name the figure behind it. Words that merely describe an action ("review",
+  //: "verify", "confirm") are deliberately absent: an advisory step asserts nothing.
+  const BRIEF_CONDITION_WORDS = [
+    "risk", "pressure", "drift", "over budget", "overrun", "behind", "slipping", "slippage",
+    "variance", "elevated", "high", "meaningful", "significant", "deteriorat", "adverse",
+    "tracking within", "tracking well", "on plan", "on budget", "healthy", "concern",
+    "exceeds", "below", "above", "underperform", "favourable", "favorable", "unfavourable",
+    "unfavorable", "worsen", "improv"
+  ];
+
+  //: Words that make a sentence a claim ABOUT THE SCHEDULE, and about the cost. Check 3 refuses
+  //: either kind of claim when no module and no stored scalar produced a figure of that kind.
+  const BRIEF_SCHEDULE_WORDS = ["schedule", "spi", "milestone", "float", "slip", "behind",
+                                "late", "duration", "critical path", "earned schedule"];
+  const BRIEF_COST_WORDS = ["cost", "cpi", "budget", "eac", "tcpi", "vac", "contingency",
+                            "spend", "overrun", "dollar", "$"];
+
+  //: The category prefixes whose modules produce a schedule figure and a cost figure. Read from
+  //: the stored row's own module ids, so a module that abstained cannot supply one.
+  const BRIEF_SCHEDULE_CATS = ["A2"];
+  const BRIEF_COST_CATS = ["A1", "A3"];
+
+  //: A figure as it is compared: digits only, sign kept, separators and units dropped.
+  function briefNormFigure(t) {
+    const m = String(t == null ? "" : t).replace(/[,$\s\u00a0]/g, "").match(/-?\d+(?:\.\d+)?/);
+    return m ? String(Number(m[0])) : null;
+  }
+
+  //: Every figure a sentence names.
+  function briefFiguresIn(text) {
+    const out = [];
+    (String(text || "").match(/-?\$?\d[\d,]*(?:\.\d+)?/g) || []).forEach((raw) => {
+      const n = briefNormFigure(raw);
+      if (n !== null) out.push(n);
+    });
+    return out;
+  }
+
+  /* Everything the three checks judge against, read from the STORED ROW and nowhere else.
+     Nothing here is derived, defaulted or inferred: a quantity the row does not hold is absent,
+     and absence is what Check 3 tests for. */
+  function briefEvidence(project) {
+    const row = (window.LinResults && LinResults.rowFor(project)) || null;
+    const si = (row && row.signal_inputs && typeof row.signal_inputs === "object")
+      ? row.signal_inputs : {};
+    const sources = (si.sources && typeof si.sources === "object") ? si.sources : {};
+    const mods = (row && Array.isArray(row.module_results)) ? row.module_results : [];
+    const cats = (row && row.category_statuses && typeof row.category_statuses === "object")
+      ? row.category_statuses : {};
+
+    const drivers = briefKeySignals(project);
+
+    // THE FIGURES THE PLATFORM ACTUALLY HOLDS. A claim may name one of these and nothing else.
+    const allowed = Object.create(null);
+    const add = (v, why) => {
+      const n = briefNormFigure(v);
+      if (n !== null && !(n in allowed)) allowed[n] = why;
+    };
+    drivers.forEach((d) => add(d.value, d.label));
+    BRIEF_SCALARS.forEach((f) => { if (si[f.key] != null) add(si[f.key], f.label); });
+    mods.forEach((m) => {
+      Object.keys(m).forEach((k) => {
+        const v = m[k];
+        if (typeof v === "number" && Number.isFinite(v)) {
+          add(v, m.module_id + " " + k);
+          add(Math.round(v), m.module_id + " " + k);
+          add(Number(v).toFixed(2), m.module_id + " " + k);
+          add(Number(v).toFixed(3), m.module_id + " " + k);
+          add(Math.abs(v), m.module_id + " " + k + " (magnitude)");
+          add(Math.abs(Math.round(v)), m.module_id + " " + k + " (magnitude)");
+        }
+      });
+    });
+    Object.keys(si).forEach((k) => {
+      const v = si[k];
+      if (typeof v === "number" && Number.isFinite(v)) add(v, k);
+    });
+    // The Signal Pattern prints a COUNT of categories per band. That count is a stored fact
+    // about this row, so it is admissible, and it is added from the row rather than assumed.
+    const bandCount = { red: 0, amber: 0, green: 0, none: 0 };
+    const catList = [];
+    Object.keys(cats).forEach((k) => {
+      const c = cats[k] || {};
+      const st = c.status ? String(c.status) : null;
+      catList.push({ key: k, status: st, setBy: c.status_set_by || [] });
+      const b = st ? statusKeyFromText(st) : "none";
+      if (bandCount[b] != null) bandCount[b] += 1; else bandCount.none += 1;
+    });
+    Object.keys(bandCount).forEach((b) => add(bandCount[b], b + " category count"));
+    // THE CENSUS IS A STORED FACT ABOUT THIS ROW: how many modules produced a figure, how many
+    // did not, and how many categories carry a status. A recommendation may cite these because
+    // the row holds them; it may not cite a count of anything the row does not hold.
+    add(mods.length, "modules holding a result");
+    add(catList.length, "categories on the row");
+    add(catList.filter(function (c) { return !c.status; }).length, "categories with no status");
+    if (row && Array.isArray(row.abstained)) add(row.abstained.length, "modules that abstained");
+
+    const has = (prefixes, keys) =>
+      mods.some((m) => prefixes.some((p) => String(m.module_id || "").indexOf(p + ".") === 0)) ||
+      keys.some((k) => si[k] != null);
+
+    return {
+      row: row,
+      signalInputs: si,
+      sources: sources,
+      modules: mods,
+      categories: catList,
+      drivers: drivers,
+      allowedFigures: allowed,
+      // THE STORED ROW'S OWN PROJECT STATUS IS THE FALLBACK, not a default: `resolveBriefState`
+      // reads `project.signals`, a legacy blob that is empty on every server-computed project.
+      posture: resolveBriefState(project) || (row ? (row.project_status || null) : null),
+      postureKey: statusKeyFromText(
+        resolveBriefState(project) || (row ? (row.project_status || "") : "")),
+      costComputed: has(BRIEF_COST_CATS, ["cpi", "ev", "ac", "bac"]),
+      scheduleComputed: has(BRIEF_SCHEDULE_CATS, ["spi"]),
+      abstainedCount: (row && Array.isArray(row.abstained)) ? row.abstained.length : null
+    };
+  }
+
+  //: The brief split into the sentences a check can be applied to, each carrying the section it
+  //: came from so a rejection can say where.
+  function briefClaimSentences(parsed) {
+    const out = [];
+    const push = (section, block) => {
+      String(block || "").split(/(?<=[.!?])\s+|\n+/).forEach((raw) => {
+        const t = raw.trim();
+        if (t) out.push({ section: section, text: t });
+      });
+    };
+    push("Recommendation", parsed.recommendation);
+    (parsed.pattern || []).forEach((l) => push("Signal Pattern", l));
+    (parsed.drivers || []).forEach((l) => push("Key Drivers", l));
+    (parsed.actions || []).forEach((l) => push("Required Actions", l));
+    return out;
+  }
+
+  function briefHasAny(text, words) {
+    const t = String(text || "").toLowerCase();
+    return words.some((w) => t.indexOf(w) >= 0);
+  }
+
+  /* THE GATE. Returns {ok: true} or {ok: false, failures: [{check, section, sentence, reason}]}.
+     A recommendation failing ANY of the three is rejected. */
+  function briefGate(parsed, ev) {
+    const failures = [];
+    const sentences = briefClaimSentences(parsed);
+
+    // ---------------------------------------------------------------- CHECK 1
+    // EVERY CLAIM NAMES THE FIGURE BEHIND IT. A sentence asserting a condition with no figure
+    // attached does not render; nor does one naming a figure the stored result does not hold.
+    sentences.forEach((s) => {
+      if (!briefHasAny(s.text, BRIEF_CONDITION_WORDS)) return;
+      const figs = briefFiguresIn(s.text);
+      if (!figs.length) {
+        failures.push({
+          check: "1. Every claim names the figure behind it",
+          section: s.section, sentence: s.text,
+          reason: "asserts a condition about this project and names no figure"
+        });
+        return;
+      }
+      const grounded = figs.filter((f) => f in ev.allowedFigures);
+      if (!grounded.length) {
+        failures.push({
+          check: "1. Every claim names the figure behind it",
+          section: s.section, sentence: s.text,
+          reason: "names " + figs.join(", ") + ", and the stored result for this period holds "
+                  + "no such figure"
+        });
+      }
+    });
+
+    // ---------------------------------------------------------------- CHECK 2
+    // THE POSTURE AGREES WITH ITS DRIVERS. If every stated driver reads green and the posture
+    // is adverse, the recommendation must name what made it adverse.
+    if (ev.postureKey === "red" || ev.postureKey === "amber") {
+      const banded = ev.drivers.filter((d) => d.status);
+      const allGreen = banded.length > 0
+        && banded.every((d) => statusKeyFromText(d.status) === "green");
+      if (allGreen) {
+        const adverseFigs = [];
+        ev.drivers.forEach((d) => {
+          if (d.status && statusKeyFromText(d.status) !== "green") {
+            const n = briefNormFigure(d.value);
+            if (n !== null) adverseFigs.push(n);
+          }
+        });
+        const adverseCats = ev.categories
+          .filter((c) => c.status && statusKeyFromText(c.status) !== "green")
+          .map((c) => c.key);
+        const text = String(parsed.recommendation || "");
+        const namesFigure = briefFiguresIn(text).some((f) => adverseFigs.indexOf(f) >= 0);
+        const namesCategory = adverseCats.some((k) => text.indexOf(k) >= 0)
+          || (parsed.pattern || []).join(" ").indexOf("categor") >= 0
+             && briefFiguresIn((parsed.pattern || []).join(" ")).length > 0;
+        if (!namesFigure && !namesCategory) {
+          failures.push({
+            check: "2. The posture agrees with its drivers",
+            section: "Recommendation", sentence: text,
+            reason: "the posture is " + (ev.posture || "adverse") + " and every stated driver "
+                    + "reads green, and the recommendation names nothing that made it adverse"
+          });
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------- CHECK 3
+    // NOTHING IS ASSERTED THAT NO MODULE COMPUTED.
+    sentences.forEach((s) => {
+      if (!briefHasAny(s.text, BRIEF_CONDITION_WORDS)) return;
+      if (briefHasAny(s.text, BRIEF_SCHEDULE_WORDS) && !ev.scheduleComputed) {
+        failures.push({
+          check: "3. Nothing is asserted that no module computed",
+          section: s.section, sentence: s.text,
+          reason: "makes a claim about the schedule, and no schedule module produced a value "
+                  + "this period"
+        });
+      }
+      if (briefHasAny(s.text, BRIEF_COST_WORDS) && !ev.costComputed) {
+        failures.push({
+          check: "3. Nothing is asserted that no module computed",
+          section: s.section, sentence: s.text,
+          reason: "makes a claim about cost, and no cost module produced a value this period"
+        });
+      }
+    });
+
+    return failures.length ? { ok: false, failures: failures } : { ok: true, failures: [] };
+  }
+
+  //: The rejection is RECORDED, not only rendered. It rides the project object so the console,
+  //: the regenerate path and anything reading the page afterwards can see what was refused.
+  function recordBriefRejection(project, gate, brief) {
+    const rec = {
+      at: new Date().toISOString(),
+      source: (brief && brief.source) || "chat",
+      failures: gate.failures
+    };
+    try { project.executiveBriefRejection = rec; } catch (e) { /* frozen object */ }
+    try {
+      console.warn("[brief] REJECTED for " + (project && project.id) + ":", gate.failures);
+    } catch (e) { /* no console */ }
+    return rec;
+  }
+
+  //: THE FIGURE'S DOCUMENT, from the row's own `signal_inputs.sources` map. Never guessed: a
+  //: field with no source entry is reported as having none.
+  function briefFigureSource(ev, key) {
+    const s = ev.sources[key];
+    if (!s || !s.docType) return "no document type recorded";
+    return (window.DOC_TYPE_LABEL && DOC_TYPE_LABEL[s.docType]) || String(s.docType);
+  }
+
+  /* What a reader sees INSTEAD of a rejected recommendation: the reasoning's structured fields.
+     Section 9 of the order in five blocks -- the posture and what set it; the cost and the
+     schedule position whether or not either set it; the band each figure crossed; the document
+     each figure came from; and what the platform could not compute this period. */
+  function briefRejectionHtml(ev, failures) {
+    const li = (x) => `<li>${x}</li>`;
+    const setters = ev.categories.filter((c) => c.status && (c.setBy || []).length);
+    const postureLine = ev.posture
+      ? `<p class="eb-rec"><span class="eb-rec-status status-${esc(ev.postureKey)}">${esc(String(ev.posture))}</span> `
+        + (setters.length
+            ? esc("set by " + setters.map((c) => c.key + " (" + c.setBy.join(", ") + ")").join("; "))
+            : esc("no category recorded which modules set it"))
+        + `</p>`
+      : `<p class="eb-rec">No posture was computed for this period.</p>`;
+
+    const positionRow = (label, key) => {
+      const v = ev.signalInputs[key];
+      if (v == null || v === "") {
+        return li(esc(label + ": not computed this period"));
+      }
+      return li(esc(label + ": " + v + " (from " + briefFigureSource(ev, key) + ")"));
+    };
+    // BOTH POSITIONS, ALWAYS. A recommendation that omits cost because schedule was worse is
+    // the failure this gate exists to prevent, so both are printed whichever set the posture.
+    const positions = positionRow("Cost position (cost performance index)", "cpi")
+                    + positionRow("Schedule position (schedule performance index)", "spi");
+
+    const bandRows = ev.modules.length
+      ? ev.modules.map((m) => li(
+          esc(String(m.module_id) + ": " + (m.evidence_metric || "no figure stated") + " — "
+              + (m.status_color ? "band " + m.status_color : "no band stated"))
+        )).join("")
+      : li(esc("No module produced a figure this period."));
+
+    const notComputed = [];
+    if (ev.abstainedCount != null) {
+      notComputed.push(li(esc(ev.abstainedCount + " modules produced no figure this period.")));
+    }
+    const dark = ev.categories.filter((c) => !c.status).map((c) => c.key);
+    if (dark.length) {
+      notComputed.push(li(esc("Categories carrying no status: " + dark.join(", ") + ".")));
+    }
+    if (!notComputed.length) notComputed.push(li(esc("Nothing was recorded as uncomputed.")));
+
+    const failRows = failures.map((f) => li(
+      `<strong>${esc(f.check)}</strong> — ${esc(f.section)}: ${esc(f.reason)}.`
+      + (f.sentence ? ` <em>${esc("“" + f.sentence + "”")}</em>` : "")
+    )).join("");
+
+    const sec = (head, inner) =>
+      `<div class="eb-section"><p class="eb-sec-head">${esc(head)}</p>${inner}</div>`;
+
+    return `<div class="eb-body eb-structured eb-rejected">`
+      + `<p class="eb-flag eb-flag-review">The generated recommendation was rejected before it `
+      + `rendered, because it did not meet the checks below. What the analysis actually holds is `
+      + `printed in its place.</p>`
+      + sec("Why it was rejected", `<ul class="eb-actions">${failRows}</ul>`)
+      + sec("Posture", postureLine)
+      + sec("Cost and schedule position", `<ul class="eb-drivers">${positions}</ul>`)
+      + sec("Every figure and the band it crossed", `<ul class="eb-drivers">${bandRows}</ul>`)
+      + sec("What could not be computed this period", `<ul class="eb-actions">${notComputed.join("")}</ul>`)
+      + `</div>`;
+  }
+
+  function briefBodyHtml(state, brief, errMsg, project) {
     if (state === "loading") {
       return `<div class="eb-body eb-loading" aria-live="polite">
         <span class="eb-shimmer"></span>
@@ -2198,6 +2545,20 @@
     const text = (brief && brief.text) ? brief.text : "";
     const parsed = parseBrief(text);
     if (parsed && (parsed.recommendation || parsed.pattern.length || parsed.drivers.length || parsed.actions.length)) {
+      // RUN 70, FIX 4. THE GATE. Both brief paths -- the chat endpoint and the scripted
+      // fallback -- arrive here, and neither renders until the three checks pass. A failure is
+      // recorded and the reasoning's structured fields are shown in place of the prose.
+      if (project) {
+        let ev = null;
+        try { ev = briefEvidence(project); } catch (e) { ev = null; }
+        if (ev) {
+          const gate = briefGate(parsed, ev);
+          if (!gate.ok) {
+            recordBriefRejection(project, gate, brief);
+            return briefRejectionHtml(ev, gate.failures);
+          }
+        }
+      }
       return briefSectionsHtml(parsed);
     }
     return `<div class="eb-body">${esc(text)}</div>`;
@@ -2281,7 +2642,7 @@
       </div>
       ${flags}
       ${consistency}
-      ${briefBodyHtml(state, cached)}
+      ${briefBodyHtml(state, cached, null, project)}
       ${cached ? briefFooter(cached) : ""}
     </section>`;
   }
@@ -2293,7 +2654,7 @@
     if (old) old.remove();
     const oldFoot = panel.querySelector(".eb-foot");
     if (oldFoot) oldFoot.remove();
-    panel.insertAdjacentHTML("beforeend", briefBodyHtml(state, brief, errMsg));
+    panel.insertAdjacentHTML("beforeend", briefBodyHtml(state, brief, errMsg, project));
     if (state === "ready" && brief) panel.insertAdjacentHTML("beforeend", briefFooter(brief));
     if (project) {
       const accent = briefAccentClass(project);
