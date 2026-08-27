@@ -395,60 +395,17 @@
     return `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${r.toFixed(1)} ${r.toFixed(1)} 0 ${large} 1 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
   }
 
-  // T6 charts-from-stored: this panel used to gate on `hasSignals(project)` — the
-  // legacy client-side p.signals blob — and tally counts from `project.simulationSignals`,
-  // a client-only field the server never writes (see REPORT_2026-08-02_stages-7-8-audit.md
-  // D7.1/D7.2 and NAMING_AUTHORITY.md section 5: "Computation is server-side"). Neither
-  // field is ever populated by a server-computed project, so this panel's render gate was
-  // permanently closed even though the canvas draw code beneath it (wireSignalSphere,
-  // buildModuleAxes) already reads every module's status from the stored row via
-  // getModuleStatus(). Gate and tally now both read the stored result, matching the
-  // pattern ensembleHtml/wireEnsembleScatter already established below.
-  function signalWebHtml(project) {
-    if (!window.LIN_CATEGORIES) return "";
-    if (!(window.LinResults && LinResults.hasResult(project))) return "";
-    const cur = currentSnapshot(project);
-    const totalModules = projectModuleCount();
-    const counts = { Red: 0, Amber: 0, Yellow: 0, Green: 0, Complete: 0 };
-    let activeCount = 0;
-    projectCats().forEach((cat) => {
-      cat.modules.forEach((m) => {
-        const active = !(cat.parked || m.active === false);
-        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
-        const norm = active ? normalizeStatus(status) : null;
-        if (norm && counts[norm] != null) { counts[norm]++; activeCount++; }
-      });
-    });
-    return `<section class="panel signal-web-panel sphere3d-panel">
-      <div class="sw-head">
-        <div>
-          <p class="eyebrow">Signal Sphere: ${esc(periodTitle(cur && cur.period))}</p>
-          <p class="kn-sub sw-vs">${totalModules}-module sphere · ${activeCount} active · drag to rotate · scroll to zoom</p>
-        </div>
-        <div class="sw-legend" aria-label="Signal sphere legend">
-          <span><i class="sw-complete"></i>Complete</span>
-          <span><i class="sw-green"></i>Green</span>
-          <span><i class="sw-yellow"></i>Yellow</span>
-          <span><i class="sw-amber"></i>Amber</span>
-          <span><i class="sw-red"></i>Red</span>
-          <span><i class="sw-none"></i>No data</span>
-          <span><i class="sw-na"></i>Not relevant</span>
-        </div>
-      </div>
-      <div class="chart3d-controls">
-        <button class="chart3d-btn active" data-sphere-view="free">Free rotate</button>
-        <button class="chart3d-btn" data-sphere-view="top">Top</button>
-        <button class="chart3d-btn" data-sphere-view="cost">Cost cluster</button>
-        <button class="chart3d-btn" data-sphere-view="evidence">Evidence cluster</button>
-        <button class="chart3d-btn" data-sphere-view="gov">Governance</button>
-      </div>
-      <div class="chart3d-wrap">
-        <canvas class="sphere3d-canvas"></canvas>
-        <div class="chart3d-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:10;background:var(--surface-2,#131d33);border:1px solid var(--line,#26344f);border-radius:8px;padding:8px 12px;font-size:11px;white-space:nowrap"></div>
-      </div>
-      <p class="sw-footnote">${totalModules} modules · ${counts.Red} Red · ${counts.Amber} Amber · ${counts.Green} Green</p>
-    </section>`;
-  }
+  // RUN 74. THE SIGNAL SPHERE IS REMOVED, by owner ruling for this run.
+  //
+  // `signalWebHtml` built the whole of the "Signal Web" section -- the eyebrow, the
+  // module tally, the five view buttons, the rotating canvas and the footnote -- so the
+  // section WAS the sphere and removing the sphere removes the section. Nothing else on
+  // the page is touched: the nine remaining sections keep their ids, their order and their
+  // sessionStorage open/closed state, and d-ledger now follows d-decision directly.
+  //
+  // The dead `.sw-*` and `.sphere3d-*` CSS is deliberately LEFT IN PLACE. `.sw-legend` and
+  // `.sw-legend i` are shared with `.sw-history-pill`, and editing that block would be a
+  // restyle of something other than the sphere.
 
   /* ============================================================
      Ensemble analysis panel — three views of the 101-computation output:
@@ -740,6 +697,14 @@
     const src = e.appliedFields != null ? e.appliedFields
               : e.applied != null ? e.applied
               : (e.fields != null ? e.fields : e.field);
+    // RUN 74. AN EVENT THAT CARRIES A documentId IS AUTHORITATIVE FOR ITS OWN DOCUMENT.
+    // The server writes `appliedFields` from the observation store at upload, per document, so
+    // for such an event the array IS the answer — including when it is empty, which means this
+    // document stored no figure. Falling through to the doc-TYPE ledger below would then paint
+    // a sibling document's fields onto a row that stored nothing, which is the reverse of the
+    // defect this run was sent to fix. Events written before this run carry no documentId and
+    // keep the old fallback.
+    if (e.documentId && Array.isArray(src)) return src.filter(Boolean);
     if (Array.isArray(src) && src.length) return src.filter(Boolean);
     if (src != null && src !== "" && !Array.isArray(src)) return [src];
     const key = String(e.docType || "").toLowerCase();
@@ -1153,7 +1118,6 @@
         ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} in service`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="Governance decision (project detail)"></section>`, false, pillBadge(overallState))}
-        ${cs("d-web", "Signal Web", signalWebHtml(p), false, totalModulesForBadge + " in service")}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-docsignals", "Documents and Extracted Signals",
              uploadedDocsPanelHtml(p) +
@@ -1174,18 +1138,6 @@
       "d-neural": () => { if (typeof LinNeuralFlow !== "undefined") LinNeuralFlow.render(p, root.querySelector(".detail-neural-flow")); },
       // Brief renders (and possibly calls the chat endpoint) only when opened.
       "d-brief": () => { wireBrief(root, p); refreshBrief(root, p); },
-      // Signal Web / Signal Sphere. The panel HTML (its module tally and "N active"
-      // subtitle) is derived from getModuleStatus at build time; a_get delivers the
-      // project WITHOUT module_results, so at first render the tally reads zero. Rebuild
-      // the body from the current project each time this section runs, so once
-      // primeAndRefresh grafts module_results and re-runs this section the counts,
-      // subtitle and footnote all re-derive from the complete row (an abstaining module
-      // still contributes no coloured value — signalWebHtml reads the same stored row).
-      "d-web": () => {
-        const body = document.getElementById("body-d-web");
-        if (body) body.innerHTML = signalWebHtml(p);
-        wireSignalWeb(root, id); wireSignalSphere(root, p);
-      },
       // Ensemble Analysis. Same story: ensembleHtml returns "" until a stored row with
       // module_results is present, so the section is empty at first render and fills in
       // when primeAndRefresh re-runs it against the grafted row.
@@ -1540,7 +1492,7 @@
     // Re-run any sections already open — they rendered before module_results arrived. d-brief and
     // d-decision are included because their key-signal and signal-breakdown sections also read
     // the stored row (they were reading the absent legacy blob before).
-    const REFRESH_SECTIONS = ["d-ledger", "d-projnet", "d-web", "d-ensemble", "d-docsignals",
+    const REFRESH_SECTIONS = ["d-ledger", "d-projnet", "d-ensemble", "d-docsignals",
                               "d-brief", "d-decision"];
     REFRESH_SECTIONS.forEach((secId) => {
       if (!lazyInits || typeof lazyInits[secId] !== "function") return;
@@ -2911,166 +2863,11 @@
       }));
   }
 
-  function wireSignalSphere(root, project) {
-  const SC = window.LIN_STATUS_COLORS;   // central palette (radar.css --status-*)
-    const canvas = root.querySelector(".sphere3d-canvas");
-    if (!canvas || !window.LIN_CATEGORIES) return;
-    const wrap = canvas.parentElement;
-    const dpr = window.devicePixelRatio || 1;
-    function resize() {
-      const w = wrap.clientWidth || 800;
-      canvas.width = w * dpr;
-      canvas.height = 480 * dpr;
-      canvas.style.width = w + "px";
-      canvas.style.height = "480px";
-    }
-    resize();
-    const ctx = canvas.getContext("2d");
-    const DOT = { Complete: SC.Complete, Green: SC.Green, Yellow: SC.Yellow, Amber: SC.Amber, Red: SC.Red, none: SC.None };
-    const SR = { Complete: 1.0, Green: 0.85, Yellow: 0.65, Amber: 0.40, Red: 0.15 };
-    const R = 160;
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-
-    const sectorNA = "N/A, not applicable to " +
-      ((window.normalizeSector ? normalizeSector(project.sector) : (project.sector || "hybrid"))
-        .replace(/^./, (c) => c.toUpperCase())) + "-sector projects";
-    const moduleList = [];
-    projectCats().forEach((cat) => {
-      cat.modules.forEach((m) => {
-        const active = !(cat.parked || cat.conditional || m.active === false);
-        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
-        const na = status === "NA"; // sector abstention — dim dot, explanatory tooltip
-        const norm = active && !na ? normalizeStatus(status) : null;
-        const evidence = active && !na ? moduleEvidence(m, project) : null;
-        moduleList.push({ cat, module: m, status: norm, na, evidence, catColor: cat.color });
-      });
-    });
-
-    const pts = moduleList.map((ml, i) => {
-      const yUnit = 1 - (i / (moduleList.length - 1)) * 2;
-      const r = Math.sqrt(Math.max(0, 1 - yUnit * yUnit));
-      const theta = goldenAngle * i;
-      const rad = ml.status ? (SR[ml.status] || 0.05) : 0.05;
-      return { bx: r * Math.cos(theta) * rad, by: yUnit * rad, bz: r * Math.sin(theta) * rad,
-               sx: r * Math.cos(theta), sy: yUnit, sz: r * Math.sin(theta), ml, i };
-    });
-
-    const catLabels = projectCats().map((cat) => {
-      let sx = 0, sy = 0, sz = 0, n = 0;
-      pts.forEach((pt) => { if (pt.ml.cat.id === cat.id) { sx += pt.sx; sy += pt.sy; sz += pt.sz; n++; } });
-      if (!n) return null;
-      const len = Math.sqrt((sx/n)*(sx/n) + (sy/n)*(sy/n) + (sz/n)*(sz/n)) || 1;
-      return { label: cat.name.split(" ").slice(0, 3).join(" "), color: cat.color,
-               bx: sx/n/len*1.22, by: sy/n/len*1.22, bz: sz/n/len*1.22 };
-    }).filter(Boolean);
-
-    var rotX = 0.3, rotY = 0, zoom = 1;
-    var autoRotate = true, dragging = false, lastX = 0, lastY = 0;
-    var hoverIdx = -1, projectedPts = [];
-
-    function rxf(p, a) { return { x: p.x, y: p.y*Math.cos(a)-p.z*Math.sin(a), z: p.y*Math.sin(a)+p.z*Math.cos(a) }; }
-    function ryf(p, a) { return { x: p.x*Math.cos(a)+p.z*Math.sin(a), y: p.y, z: -p.x*Math.sin(a)+p.z*Math.cos(a) }; }
-    function proj(p) {
-      const CW = canvas.width/dpr, CH = canvas.height/dpr;
-      const fov = 400*zoom, z = p.z+fov, scale = fov/Math.max(z,1);
-      return { x: CW/2+p.x*scale, y: CH/2+p.y*scale, scale };
-    }
-
-    function draw() {
-      const W = canvas.width, H = canvas.height;
-      ctx.clearRect(0,0,W,H);
-      ctx.save(); ctx.scale(dpr,dpr);
-      const CW = W/dpr, CH = H/dpr;
-      const grad = ctx.createRadialGradient(CW/2,CH/2,0,CW/2,CH/2,R*1.5);
-      grad.addColorStop(0,"rgba(15,23,42,0.3)"); grad.addColorStop(1,"transparent");
-      ctx.fillStyle=grad; ctx.fillRect(0,0,CW,CH);
-
-      for (let ring=1;ring<=5;ring++) {
-        const a=(ring/6)*Math.PI, ringR=Math.sin(a)*R, ringY=-Math.cos(a)*R;
-        ctx.beginPath();
-        for (let s=0;s<=60;s++) {
-          const ang=(s/60)*Math.PI*2;
-          const pr=rxf(ryf({x:ringR*Math.cos(ang),y:ringY,z:ringR*Math.sin(ang)},rotY),rotX);
-          const pp=proj(pr); s===0?ctx.moveTo(pp.x,pp.y):ctx.lineTo(pp.x,pp.y);
-        }
-        ctx.strokeStyle="rgba(38,52,79,0.4)"; ctx.lineWidth=0.5; ctx.stroke();
-      }
-
-      projectedPts = pts.map((pt) => {
-        const pr=rxf(ryf({x:pt.bx*R,y:pt.by*R,z:pt.bz*R},rotY),rotX);
-        const pp=proj(pr); return {pt,pp,pz:pr.z};
-      }).sort((a,b)=>a.pz-b.pz);
-
-      projectedPts.forEach((s) => {
-        if (!s.pt.ml.status) return;
-        const col=DOT[s.pt.ml.status]||DOT.none;
-        ctx.beginPath(); ctx.moveTo(CW/2,CH/2); ctx.lineTo(s.pp.x,s.pp.y);
-        ctx.strokeStyle=col+"20"; ctx.lineWidth=0.7; ctx.stroke();
-      });
-
-      projectedPts.forEach((s) => {
-        const ml=s.pt.ml, col=ml.status?(DOT[ml.status]||DOT.none):DOT.none;
-        const dotR=ml.status?Math.max(2,4*s.pp.scale):Math.max(1,2*s.pp.scale);
-        const isHover=s.pt.i===hoverIdx;
-        ctx.beginPath(); ctx.arc(s.pp.x,s.pp.y,isHover?dotR*1.6:dotR,0,Math.PI*2);
-        ctx.fillStyle=col; ctx.globalAlpha=ml.status?0.9:0.28; ctx.fill();
-        if (isHover) { ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.globalAlpha=0.5; ctx.stroke(); }
-        ctx.globalAlpha=1;
-      });
-
-      catLabels.forEach((l) => {
-        const pr=rxf(ryf({x:l.bx*R,y:l.by*R,z:l.bz*R},rotY),rotX);
-        if (pr.z<-40) return;
-        const pp=proj(pr);
-        ctx.font="9px SFMono-Regular,ui-monospace,monospace";
-        ctx.fillStyle=l.color; ctx.globalAlpha=0.75; ctx.fillText(l.label,pp.x,pp.y); ctx.globalAlpha=1;
-      });
-
-      ctx.beginPath(); ctx.arc(CW/2,CH/2,4,0,Math.PI*2);
-      ctx.fillStyle="#e9a23b"; ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
-      ctx.restore();
-    }
-
-    function animate() { if(autoRotate&&!dragging) rotY+=0.003; draw(); requestAnimationFrame(animate); }
-
-    canvas.addEventListener("mousedown",(e)=>{dragging=true;lastX=e.clientX;lastY=e.clientY;});
-    window.addEventListener("mouseup",()=>{if(dragging){dragging=false;autoRotate=true;}});
-    canvas.addEventListener("mousemove",(e)=>{
-      if(dragging){rotY+=(e.clientX-lastX)*0.006;rotX+=(e.clientY-lastY)*0.006;lastX=e.clientX;lastY=e.clientY;return;}
-      const rect=canvas.getBoundingClientRect(), mx=e.clientX-rect.left, my=e.clientY-rect.top;
-      let hit=-1;
-      for(let k=projectedPts.length-1;k>=0;k--){
-        const s=projectedPts[k], dotR=s.pt.ml.status?Math.max(2,4*s.pp.scale):Math.max(1,2*s.pp.scale);
-        const dx=s.pp.x-mx, dy=s.pp.y-my;
-        if(dx*dx+dy*dy<(dotR*1.6+4)*(dotR*1.6+4)){hit=s.pt.i;break;}
-      }
-      hoverIdx=hit;
-      const tt=root.querySelector(".chart3d-tooltip");
-      if(tt){
-        if(hit>=0){
-          const ml=pts[hit].ml, col=DOT[ml.status]||DOT.none;
-          tt.style.display="block"; tt.style.left=(e.clientX-rect.left+14)+"px"; tt.style.top=(e.clientY-rect.top-10)+"px";
-          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(ml.module.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(ml.status||(ml.na?sectorNA:"No data"))}</div>${ml.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(ml.evidence)}</div>`:""}`;
-        } else { tt.style.display="none"; }
-      }
-    });
-    canvas.addEventListener("mouseleave",()=>{hoverIdx=-1;const tt=root.querySelector(".chart3d-tooltip");if(tt)tt.style.display="none";});
-    canvas.addEventListener("wheel",(e)=>{e.preventDefault();zoom=Math.max(0.5,Math.min(3,zoom-e.deltaY*0.001));},{passive:false});
-
-    root.querySelectorAll("[data-sphere-view]").forEach((btn)=>{
-      btn.addEventListener("click",()=>{
-        root.querySelectorAll("[data-sphere-view]").forEach((b)=>b.classList.remove("active"));
-        btn.classList.add("active");
-        const v=btn.dataset.sphereView;
-        if(v==="free"){autoRotate=true;}
-        else if(v==="top"){autoRotate=false;rotX=Math.PI/2;rotY=0;}
-        else if(v==="cost"){autoRotate=false;rotX=0.3;rotY=0.5;}
-        else if(v==="evidence"){autoRotate=false;rotX=0.3;rotY=-1.2;}
-        else if(v==="gov"){autoRotate=false;rotX=0.3;rotY=2.0;}
-      });
-    });
-    animate();
-  }
+  // RUN 74. `wireSignalSphere` is removed with the panel it drew: the canvas, the drag and
+  // wheel handlers and the five `[data-sphere-view]` buttons no longer exist in the DOM.
+  // `wireSignalWeb` just above is NOT removed -- it wires `[data-history-period]`, which is
+  // not the sphere, and which this page has not rendered for some time. Removing it would
+  // be removing something other than the sphere.
 
   function wireEnsembleScatter(root, project) {
   const SC = window.LIN_STATUS_COLORS;   // central palette (radar.css --status-*)
