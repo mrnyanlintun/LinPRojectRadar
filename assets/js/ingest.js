@@ -846,8 +846,212 @@
     });
   }
 
+  /* ---------- RUN 71. DOCUMENT CONTROL — withdraw documents from a period ----------
+
+     WHY IT LIVES IN ingest.js AND NOT IN detail.js. It needs `confirmDestructive()`, which is
+     module-private here, and it is a document-lifecycle action beside the upload modal it
+     undoes. Run 57 settled the same question the same way: build where the private helpers
+     already are rather than newly export them. detail.js carries the BUTTON and calls
+     `LinIngest.openDocumentControl(id)` — exactly the shape `.detail-upload` already uses to
+     reach `LinIngest.openUploadModal(id)`.
+
+     NO SECOND RECOMPUTE CONTROL. §2 item 5 asks for a recalculate button that recomputes the
+     project on demand. The detail page already carries one — "Generate signals for every
+     period" (`.detail-compute-all` -> `projectcomputeall` -> `projectcompute` per period),
+     which recomputes SERVER-SIDE from the period's live document set and reports what moved.
+     That is what item 5 describes, so this dialog does NOT add a recompute button. It NAMES
+     that control in its own words and leaves the press to the owner, which is also ruling 3:
+     archiving stages the withdrawal, recalculating applies it.
+
+     WHAT IT SHOWS. A period dropdown listing only the periods that HOLD DOCUMENTS, the chosen
+     period's live documents each with a checkbox and the fields it is currently supplying, the
+     documents already archived for that period, and the archive record read back out of the
+     audit trail. All four come from ONE read (`projectdocumentcontrol`), which writes nothing.
+
+     THE CONFIRMATION IS `confirmDestructive`, the application's existing primitive, for the
+     reason Run 56 wrote down: `window.confirm` returns false in this container, so an action
+     behind it is an action nobody can take. The sentence it shows names the COUNT and the
+     PERIOD, and the SAME STRING is sent to the server and recorded in the audit row, so the
+     record can answer "what did the confirmation say" with the text the person actually read.
+     Cancelling is the modal's own x, Escape or backdrop; there is no onClose path to the
+     action, so dismissing cannot archive anything. */
+  function openDocumentControl(id) {
+    if (!(window.LinUI && LinUI.openModal && window.LinStore && LinStore.postWithTimeout)) return;
+    LinUI.openModal({
+      title: "Document control — " + id,
+      wide: true,
+      mount: (body) => {
+        body.innerHTML =
+          '<div class="app-modal-scroll dc-doccontrol">' +
+            '<p class="kn-sub dc-dc-intro">Withdraw documents from a reporting period. ' +
+            'Archiving keeps the document and its bytes and removes its extracted fields from ' +
+            "this project's live document set. The stored figures do not change until you " +
+            'press <strong>Generate signals for every period</strong> on this page.</p>' +
+            '<label class="rationale-label">Reporting period' +
+              '<select class="ig-input dc-dc-period"><option value="">Loading…</option></select>' +
+            '</label>' +
+            '<div class="dc-dc-list"></div>' +
+            '<div class="dc-actions">' +
+              '<button type="button" class="btn small danger dc-dc-archive" disabled>' +
+                'Archive selected documents</button>' +
+            '</div>' +
+            '<p class="dc-dc-msg kn-sub" aria-live="polite"></p>' +
+            '<div class="dc-dc-record"></div>' +
+          '</div>';
+        const sel = body.querySelector(".dc-dc-period");
+        const list = body.querySelector(".dc-dc-list");
+        const go = body.querySelector(".dc-dc-archive");
+        const msg = body.querySelector(".dc-dc-msg");
+        const rec = body.querySelector(".dc-dc-record");
+        let state = { periods: [], record: [] };
+
+        function ticked() {
+          return Array.from(list.querySelectorAll(".dc-dc-tick:checked"))
+                      .map((c) => c.dataset.docId);
+        }
+        function syncButton() {
+          const n = ticked().length;
+          go.disabled = n === 0;
+          go.textContent = n === 0 ? "Archive selected documents"
+                                   : "Archive " + n + " document" + (n === 1 ? "" : "s");
+        }
+        function current() {
+          const p = Number(sel.value);
+          return state.periods.filter((x) => Number(x.period) === p)[0] || null;
+        }
+        function paintList() {
+          const per = current();
+          if (!per) { list.innerHTML = '<p class="kn-sub">No period selected.</p>'; syncButton(); return; }
+          const live = per.documents || [];
+          const arch = per.archived || [];
+          list.innerHTML =
+            '<p class="kn-sub dc-dc-count">' + live.length + ' live document' +
+              (live.length === 1 ? "" : "s") + " in period " + per.period + ".</p>" +
+            (live.length
+              ? '<ul class="dc-dc-docs">' + live.map((d) =>
+                  '<li><label><input type="checkbox" class="dc-dc-tick" data-doc-id="' +
+                  esc(d.document_id) + '" /> <span class="mod-mono">' + esc(d.filename) +
+                  '</span> <span class="kn-sub">' + esc(d.doc_type) + '</span></label>' +
+                  '<span class="kn-sub dc-dc-fields">' +
+                  (d.fields && d.fields.length
+                    ? "supplies: " + d.fields.map(esc).join(", ")
+                    : "supplies no extracted field") + "</span></li>").join("") + "</ul>"
+              : "") +
+            (arch.length
+              ? '<p class="kn-sub dc-dc-archived-head">Already archived in period ' + per.period +
+                " (kept, and readable):</p><ul class=\"dc-dc-archived\">" + arch.map((d) =>
+                  '<li><span class="mod-mono">' + esc(d.filename) + "</span> " +
+                  '<span class="kn-sub">archived ' + esc(d.archived_at || "") + " by " +
+                  esc(d.archived_by || "") + "</span></li>").join("") + "</ul>"
+              : "");
+          list.querySelectorAll(".dc-dc-tick").forEach((c) =>
+            c.addEventListener("change", syncButton));
+          syncButton();
+        }
+        function paintRecord() {
+          const entries = state.record || [];
+          rec.innerHTML =
+            '<p class="kn-sub dc-dc-record-head">Archive record — ' + entries.length +
+              " entr" + (entries.length === 1 ? "y" : "ies") + " for " + esc(id) + ".</p>" +
+            (entries.length
+              ? '<ul class="dc-dc-record-list">' + entries.map((e) =>
+                  "<li><span class=\"kn-sub\">" + esc(e.server_ts || e.archived_at || "") +
+                  " · period " + esc(String(e.period)) + " · " + esc(String(e.document_count)) +
+                  " document(s) · by " + esc(e.archived_by || "") + "</span><br />" +
+                  "<span class=\"kn-sub\">fields withdrawn: " +
+                  ((e.fields_withdrawn && e.fields_withdrawn.length)
+                    ? e.fields_withdrawn.map(esc).join(", ") : "none") + "</span><br />" +
+                  "<span class=\"kn-sub\">confirmation: " + esc(e.confirmation || "") +
+                  "</span></li>").join("") + "</ul>"
+              : "");
+        }
+        async function load(keepPeriod) {
+          let resp;
+          try {
+            resp = await LinStore.postWithTimeout({ action: "projectdocumentcontrol", id: id });
+          } catch (e) {
+            msg.textContent = "Could not read this project's documents: " +
+                              ((e && e.message) || "the server is not reachable") + ".";
+            return;
+          }
+          if (!resp || resp.ok !== true) {
+            msg.textContent = (resp && resp.error) || "Could not read this project's documents.";
+            return;
+          }
+          state = { periods: resp.periods || [], record: resp.record || [] };
+          const want = keepPeriod != null ? String(keepPeriod)
+                                          : (state.periods.length
+                                             ? String(state.periods[state.periods.length - 1].period)
+                                             : "");
+          sel.innerHTML = state.periods.length
+            ? state.periods.map((p) =>
+                '<option value="' + esc(String(p.period)) + '">Period ' + esc(String(p.period)) +
+                " — " + (p.documents || []).length + " live, " +
+                (p.archived || []).length + " archived</option>").join("")
+            : '<option value="">This project holds no documents</option>';
+          if (want) sel.value = want;
+          paintList();
+          paintRecord();
+        }
+
+        sel.addEventListener("change", () => { msg.textContent = ""; paintList(); });
+        go.addEventListener("click", () => {
+          const per = current();
+          const ids = ticked();
+          if (!per || !ids.length) return;
+          // THE SENTENCE THE PERSON READS IS THE SENTENCE THAT IS RECORDED. Built once, shown
+          // in the confirmation, and sent verbatim as `confirmation`.
+          const sentence = "Archive " + ids.length + " document" + (ids.length === 1 ? "" : "s") +
+            " from reporting period " + per.period + " of " + id +
+            ". The document" + (ids.length === 1 ? "" : "s") + " and " +
+            (ids.length === 1 ? "its" : "their") + " bytes are kept and stay readable. " +
+            "The extracted fields are withdrawn from this project's live document set. " +
+            "The stored figures do not change until you generate signals for every period. " +
+            "No other document is touched.";
+          confirmDestructive({
+            title: "Archive " + ids.length + " document" + (ids.length === 1 ? "" : "s") +
+                   " from period " + per.period,
+            detail: sentence,
+            confirmLabel: "Archive " + ids.length + " document" + (ids.length === 1 ? "" : "s"),
+            onConfirm: async () => {
+              go.disabled = true;
+              msg.textContent = "Archiving…";
+              let resp;
+              try {
+                resp = await LinStore.postWithTimeout({
+                  action: "projectdocumentarchive", id: id, period: per.period,
+                  document_ids: ids, confirmation: sentence });
+              } catch (e) {
+                resp = { ok: false, error: (e && e.message) || "the request did not complete" };
+              }
+              if (!resp || resp.ok !== true) {
+                msg.textContent = (resp && resp.error) || "Could not archive.";
+                syncButton();
+                return;
+              }
+              logEvent("ARCHIVED " + resp.archived.length + " document(s) from period " +
+                       per.period + " of " + id + ".");
+              const fields = [];
+              (resp.archived || []).forEach((a) =>
+                (a.fields_withdrawn || []).forEach((f) => {
+                  if (fields.indexOf(f) === -1) fields.push(f);
+                }));
+              msg.textContent = "Archived " + resp.archived.length + " document(s) from period " +
+                per.period + ". Fields withdrawn: " +
+                (fields.length ? fields.join(", ") : "none") +
+                ". The stored figures have not moved yet — press “Generate signals for " +
+                "every period” on this page to recalculate.";
+              await load(per.period);
+            }
+          });
+        });
+        load(null);
+      }
+    });
+  }
+
   // Phase 2 seam kept for API compatibility; store.js already hydrates.
   function mergeUserProjects() {}
 
-  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, openCreateModal, openUploadModal, openArchivedModal, openActivityModal, renderScopedIngest, populateSignals, INGEST_RULES };
+  window.LinIngest = { mergeUserProjects, renderPortfolioAdmin, openInlineManage, openCreateModal, openUploadModal, openDocumentControl, openArchivedModal, openActivityModal, renderScopedIngest, populateSignals, INGEST_RULES };
 })();

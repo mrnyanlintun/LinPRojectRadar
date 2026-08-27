@@ -615,6 +615,25 @@ class DocumentUpload(Base):
     # that derivation and because bounding selection by a stated date would silently drop the
     # observations of a document this column exists to FLAG. See migration 0023.
     period_end: Mapped[date] = mapped_column(Date, nullable=True)
+    # 0027. WITHDRAWN FROM THIS PROJECT'S LIVE FIGURES, and from nothing else.
+    #
+    # It lives here and not on `documents` for exactly the reason `supersedes_document_id` and
+    # `folder_path` do: `documents` is content-addressed and shared, so the same bytes can be
+    # live evidence in one project and withdrawn in another. Archival is a statement about a
+    # (project, period, document), not about the bytes.
+    #
+    # NOTHING IS DESTROYED. `documents.content` is untouched and `/documents/{id}/content`
+    # keeps serving it. The mark removes the document from the period's LIVE set
+    # (`documents._period_documents`), which is the single place supersession is already
+    # excluded from computation, so no module can hold a value from an archived document and no
+    # other document's observations are touched — both by construction rather than by sweep.
+    #
+    # NULL means live. Non-NULL names the moment the withdrawal was staged; it does NOT mean the
+    # figures have moved, because archiving stages and recomputing applies. `archived_by` is the
+    # participant id from the session, never from a request body. Both are NULL on every
+    # pre-0027 row, which is the truthful state for an upload nobody ever archived.
+    archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    archived_by: Mapped[str] = mapped_column(Text, nullable=True)
 
 
 class ComputedResult(Base):

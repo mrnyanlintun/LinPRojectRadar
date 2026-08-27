@@ -84,6 +84,7 @@ from .research_membership import (
     require_member,
 )
 from .research_models import (
+    AuditEvent,
     ComputedResult, Decision, Document, DocumentUpload, Observation, ProjectNotice,
     ProjectRisk,
     ScheduleActivity,
@@ -347,6 +348,25 @@ def _superseded_document_ids(session: Session, project: Project, period: int) ->
     return {r for r in rows if r}
 
 
+def _archived_document_ids(session: Session, project: Project, period: int) -> set[str]:
+    """
+    The documents WITHDRAWN from this project's period by the document control.
+
+    Scoped to (project, period) for the same reason `_superseded_document_ids` is: `documents`
+    is shared content-addressed storage, so the same bytes may be live evidence in another
+    project or in another period of this one. The mark is read here and nowhere else decides
+    membership of the live set.
+    """
+    rows = session.scalars(
+        select(DocumentUpload.document_id).where(
+            DocumentUpload.project_id == project.id,
+            DocumentUpload.period == period,
+            DocumentUpload.archived_at.is_not(None),
+        )
+    ).all()
+    return {r for r in rows if r}
+
+
 def _period_documents(session: Session, project: Project, period: int) -> list[dict]:
     """
     The period's LIVE document SET, in the shape `assemble_signal_inputs` expects.
@@ -370,6 +390,16 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
     decision that referenced them reproducible.
     """
     superseded = _superseded_document_ids(session, project, period)
+    # 0027. ARCHIVED DOCUMENTS ARE EXCLUDED HERE, beside superseded ones and for the same
+    # written reason: `assemble_signal_inputs` is pure and knows nothing of projects or
+    # periods, and archival is a per-(project, period) fact. Excluding at this one seam is what
+    # makes the two rules of the document control structural rather than swept for — no module
+    # can hold a value that came only from an archived document, because the observations were
+    # never emitted; and no other document's fields are touched, because nothing else is
+    # filtered. `_identity_observations_before` reuses this helper per earlier period, so an
+    # archived contract stops being carried forward too. The rows stay readable through
+    # `a_projectuploadstatus`, exactly as superseded rows do.
+    archived = _archived_document_ids(session, project, period)
     rows = session.execute(
         select(Document, DocumentUpload.supersedes_document_id)
         .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
@@ -378,7 +408,7 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
     seen: set[str] = set()
     out: list[dict] = []
     for d, supersedes in rows:
-        if d.document_id in superseded:
+        if d.document_id in superseded or d.document_id in archived:
             continue
         if d.sha256 in seen:
             continue
@@ -2827,7 +2857,8 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
     upload_rows = session.execute(
         select(Document.sha256, Document.document_id, DocumentUpload.uploaded_at,
               DocumentUpload.was_cached, Document.filename, Document.doc_type,
-              DocumentUpload.supersedes_document_id)
+              DocumentUpload.supersedes_document_id,
+              DocumentUpload.archived_at, DocumentUpload.archived_by)
         .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
         .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
     ).all()
@@ -2862,6 +2893,25 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
          "superseded_by_document_id": replaced_by.get(r[1])}
         for r in upload_rows if r[1] in superseded_ids
     ]
+
+    # 0027. ARCHIVED DOCUMENTS ARE STILL READABLE, on the same argument 0013 made for
+    # superseded ones and written into `document_uploads.archived_at`: the document control
+    # withdraws evidence from the live figures, it does not destroy it. `contributes` is false
+    # because they no longer reach assembly; `document_id` is carried so the reader can fetch
+    # the retained bytes from `/documents/{document_id}/content`, which is the proof that
+    # archiving kept them. This list is what the document control dialog reads to show the
+    # archive back.
+    archived_ids = _archived_document_ids(session, project, period)
+    archived_docs = [
+        {"document_id": r[1], "filename": r[4], "doc_type": r[5] or UNMAPPED,
+         "contributes": False,
+         "uploaded_at": r[2].isoformat() if r[2] else None,
+         "was_cached": r[3],
+         "archived_at": r[7].isoformat() if r[7] else None,
+         "archived_by": r[8]}
+        for r in upload_rows if r[1] in archived_ids
+    ]
+    archived_docs.sort(key=lambda a: (a["archived_at"] or "", a["filename"]))
 
     have = {d["doc_type"] for d in documents}
 
@@ -2955,6 +3005,9 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
         # Replaced versions, kept readable and kept out of computation. Empty on every period
         # where nothing has been superseded, which is the ordinary case.
         "superseded": superseded,
+        # 0027. Withdrawn by the document control, kept out of computation and kept readable.
+        # Empty on every period where nothing has been archived, which is the ordinary case.
+        "archived": archived_docs,
         # 0014. The original contract baseline and the executed amendments layered on it.
         # `original` survives every change order; `amendments` lists each executed change
         # order's revised figures. Empty objects/lists when no contract or no COs exist.
@@ -3470,6 +3523,242 @@ def a_projectperiods(session: Session, payload: dict, secret: str, ttl: int) -> 
     }
 
 
+def a_projectdocumentarchive(session: Session, payload: dict, secret: str,
+                             ttl: int) -> dict[str, Any]:
+    """
+    PM only. THE DOCUMENT CONTROL: withdraw a named set of documents from one reporting period.
+
+    WHAT THIS DOES AND DOES NOT DO. It marks `document_uploads.archived_at/archived_by` for the
+    (project, period, document) rows named, and writes ONE append-only `documents_archived`
+    audit row naming what was archived, from which period, when, by whom, which fields each
+    document was withdrawing, and the exact confirmation sentence the person was shown.
+
+    IT DOES NOT RECOMPUTE. Archiving STAGES the withdrawal; recalculating applies it. The live
+    `computed_results` row is left exactly as it stands, which is why the response reports
+    `recomputed: false` and names the control that applies it. A separate press of "Generate
+    signals for every period" (`projectcomputeall` -> `projectcompute`) finds the period stale —
+    `_period_is_stale` compares the stored result's (document_id, sha256) set against the
+    period's CURRENT live set from `_period_documents`, and the archived rows have just left
+    that set — so it recomputes rather than skipping. Nothing here has to tell it to.
+
+    NOTHING IS DESTROYED. `documents.content` is untouched, `/documents/{id}/content` keeps
+    serving the bytes, and `a_projectuploadstatus` lists the archived rows under `archived`.
+
+    ONLY THE NAMED DOCUMENTS. Every id is checked against a live upload row in THIS project and
+    THIS period before anything is written, and the whole request is refused if any one of them
+    fails. A partially-applied withdrawal would leave the audit row describing something other
+    than what happened.
+
+    THE FIELDS WITHDRAWN are read by running `emit_observations` over the document exactly as
+    `_compute_and_store` does, so what the record names is what computation would actually have
+    lost — not a guess assembled from `doc_type`.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectdocumentarchive")
+    if problem:
+        return problem
+    problem = _refuse_unless_pm(session, caller, member, project, "projectdocumentarchive")
+    if problem:
+        return problem
+    # THE PERIOD IS THE ONE THE PERSON PICKED, and this deliberately does NOT go through
+    # `_resolve_period`. That helper derives the period from the research assignment and
+    # IGNORES the payload, which is right for an UPLOAD — a participant must not write new
+    # evidence into a period they have not reached — and wrong here. This action withdraws
+    # evidence that is ALREADY in a stated period, the owner's specification is a dropdown from
+    # which the person chooses that period, and an earlier period is exactly the case the
+    # control exists for. Nothing new can be reached by choosing a period: every named document
+    # is checked against an existing upload row in THIS project and THAT period below, so the
+    # only thing the number selects is which of the project's own rows may be marked.
+    period = _period_number(payload.get("period"))
+    if period is None or period < 1:
+        return err("choose the reporting period the documents were uploaded to")
+
+    raw_ids = payload.get("document_ids")
+    if not isinstance(raw_ids, list) or not raw_ids:
+        return err("name at least one document to archive")
+    wanted = [str(x) for x in raw_ids if str(x or "").strip()]
+    if not wanted:
+        return err("name at least one document to archive")
+    if len(set(wanted)) != len(wanted):
+        return err("the same document was named more than once")
+
+    confirmation = str(payload.get("confirmation") or "").strip()
+    if not confirmation:
+        # RULING 4 of the order: the confirmation is RECORDED. A request that carries no
+        # confirmation sentence cannot produce an audit row that answers "what did the
+        # confirmation say", so it is refused rather than audited with a blank.
+        return err("the confirmation shown to the person must be supplied and recorded")
+
+    rows = session.scalars(
+        select(DocumentUpload).where(
+            DocumentUpload.project_id == project.id,
+            DocumentUpload.period == period,
+            DocumentUpload.document_id.in_(wanted),
+        )
+    ).all()
+    by_id = {r.document_id: r for r in rows}
+    missing = [d for d in wanted if d not in by_id]
+    if missing:
+        return err(f"{len(missing)} document(s) are not uploaded to period {period} of this "
+                   f"project and were not archived")
+    already = [d for d in wanted if by_id[d].archived_at is not None]
+    if already:
+        return err(f"{len(already)} document(s) are already archived; nothing was changed")
+
+    # The fields each named document is withdrawing, read the way computation reads them.
+    live_before = {d["document_id"]: d for d in _period_documents(session, project, period)}
+    now = datetime.now(timezone.utc)
+    withdrawn: list[dict] = []
+    for doc_id in wanted:
+        row = by_id[doc_id]
+        entry = live_before.get(doc_id)
+        fields: list[str] = []
+        if entry is not None:
+            fields = sorted({str(o.get("field")) for o in emit_observations(entry)
+                             if o.get("field")})
+        doc = session.get(Document, doc_id)
+        withdrawn.append({
+            "document_id": doc_id,
+            "filename": doc.filename if doc else None,
+            "sha256": doc.sha256 if doc else None,
+            "doc_type": (doc.doc_type if doc else None) or UNMAPPED,
+            # Empty where the document was not in the live set to begin with (superseded), or
+            # where it contributes no mapped observation. Stated, never inferred.
+            "fields_withdrawn": fields,
+            "was_live": entry is not None,
+        })
+        row.archived_at = now
+        row.archived_by = caller.participant_id
+
+    result = _live_result(session, project, period)
+    audit(session, "documents_archived", participant_id=caller.participant_id,
+          project_id=project.legacy_id, period=period,
+          archived_by=caller.participant_id,
+          archived_at=now.isoformat(),
+          document_count=len(withdrawn),
+          documents=withdrawn,
+          fields_withdrawn=sorted({f for w in withdrawn for f in w["fields_withdrawn"]}),
+          confirmation=confirmation,
+          live_result_id=result.result_id if result else None,
+          recomputed=False,
+          note=("the withdrawal is staged; the live figures do not change until the project "
+                "is recalculated"))
+    session.commit()
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "period": period,
+        "archived": withdrawn,
+        "archived_at": now.isoformat(),
+        "archived_by": caller.participant_id,
+        "confirmation": confirmation,
+        "recomputed": False,
+        "note": ("Archived. The extracted fields are withdrawn from this period's live "
+                 "document set. The stored figures do not change until you recalculate."),
+        "server_time": now_iso(),
+    }
+
+
+def a_projectdocumentcontrol(session: Session, payload: dict, secret: str,
+                             ttl: int) -> dict[str, Any]:
+    """
+    Any active member. READS ONLY. Everything the document control dialog shows, in one call.
+
+    THREE THINGS, and no fourth:
+      1. `periods` — every reporting period this project holds uploads for, each with its LIVE
+         documents (the ones the dialog offers to archive, with the fields each one is
+         currently supplying) and the ones already archived.
+      2. `record` — the append-only `documents_archived` audit rows for this project, newest
+         first. This is how the archive record is read back.
+
+    IT DOES NOT GO THROUGH `_resolve_period`, for the reason written at
+    `a_projectdocumentarchive`: that helper derives one period from the research assignment and
+    ignores the payload, which would leave the owner's period dropdown with exactly one usable
+    entry. This lists them all and writes nothing, so nothing is reachable that the project does
+    not already hold.
+
+    The audit rows are filtered in Python on the JSON metadata rather than in SQL because
+    `event_metadata` is a portable JSON column and this platform runs on both SQLite (dev) and
+    Postgres; a JSON path predicate would be one more thing that behaves differently between
+    them. The `event_type` filter does the real narrowing.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectdocumentcontrol")
+    if problem:
+        return problem
+
+    upload_rows = session.execute(
+        select(DocumentUpload.period, DocumentUpload.document_id, DocumentUpload.uploaded_at,
+               DocumentUpload.archived_at, DocumentUpload.archived_by,
+               Document.filename, Document.doc_type)
+        .join(Document, Document.document_id == DocumentUpload.document_id)
+        .where(DocumentUpload.project_id == project.id)
+    ).all()
+    meta = {r[1]: r for r in upload_rows}
+    periods_held = sorted({int(r[0]) for r in upload_rows if r[0] is not None})
+
+    periods: list[dict] = []
+    for p in periods_held:
+        live = _period_documents(session, project, p)
+        documents = []
+        for d in live:
+            row = meta.get(d["document_id"])
+            documents.append({
+                "document_id": d["document_id"],
+                "filename": d["filename"],
+                "doc_type": d["doc_type"],
+                "contributes": is_mapped(d["doc_type"]),
+                "uploaded_at": (row[2].isoformat() if row and row[2] else None),
+                # What computation would lose if this one were archived — read by running the
+                # same emitter `_compute_and_store` runs, not guessed from the doc_type.
+                "fields": sorted({str(o.get("field")) for o in emit_observations(d)
+                                  if o.get("field")}),
+            })
+        documents.sort(key=lambda x: (x["filename"] or "", x["document_id"]))
+        archived = [
+            {"document_id": r[1], "filename": r[5], "doc_type": r[6] or UNMAPPED,
+             "archived_at": r[3].isoformat() if r[3] else None, "archived_by": r[4]}
+            for r in upload_rows
+            if int(r[0] or 0) == p and r[3] is not None
+        ]
+        archived.sort(key=lambda x: (x["archived_at"] or "", x["filename"] or ""))
+        periods.append({"period": p, "documents": documents, "archived": archived})
+
+    rows = session.scalars(
+        select(AuditEvent).where(AuditEvent.event_type == "documents_archived")
+        .order_by(AuditEvent.server_ts.desc())
+    ).all()
+    record = []
+    for r in rows:
+        m = r.event_metadata or {}
+        if str(m.get("project_id")) != str(project.legacy_id):
+            continue
+        record.append({
+            "event_id": r.event_id,
+            "server_ts": r.server_ts.isoformat() if r.server_ts else None,
+            "participant_id": r.participant_id,
+            "period": m.get("period"),
+            "archived_at": m.get("archived_at"),
+            "archived_by": m.get("archived_by"),
+            "document_count": m.get("document_count"),
+            "documents": m.get("documents"),
+            "fields_withdrawn": m.get("fields_withdrawn"),
+            "confirmation": m.get("confirmation"),
+        })
+
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "periods": periods,
+        "record": record,
+        "server_time": now_iso(),
+    }
+
+
 DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectupload": a_projectupload,
     # The calendar picker's read-only preview: a date in, the period it names out. Same rule the
@@ -3488,4 +3777,12 @@ DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectcomputeall": a_projectcomputeall,
     "projectresults": a_projectresults,
     "adminrecompute": a_adminrecompute,
+    # RUN 71. The document control: withdraw named documents of one period from the live
+    # figures, retaining the bytes and recording the withdrawal. Does NOT recompute — that is
+    # "Generate signals for every period" (projectcomputeall), pressed separately.
+    "projectdocumentarchive": a_projectdocumentarchive,
+    # RUN 71. What the document control dialog reads: the periods that hold documents, each
+    # period's live and archived documents, and the archive record read back out of the
+    # append-only audit table. READ ONLY.
+    "projectdocumentcontrol": a_projectdocumentcontrol,
 }

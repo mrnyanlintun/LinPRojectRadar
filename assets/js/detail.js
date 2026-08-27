@@ -1091,6 +1091,24 @@
                 from it, and the platform has already lost one action that way. The button
                 reports what it did instead of asking permission first. */""}
            <button class="btn small detail-compute-all" data-compute-all="${esc(p.id)}">Generate signals for every period</button>
+           ${/* RUN 71. DOCUMENT CONTROL. The owner's specified placement: a document control
+                button on the project detail page. It sits THIRD in this panel, after "Upload
+                documents" and "Generate signals for every period", which puts the three in
+                lifecycle order — put documents in, compute from them, withdraw one and compute
+                again.
+
+                NO SECOND RECOMPUTE CONTROL IS ADDED. §2 item 5's "recalculate button" is
+                `.detail-compute-all`, immediately above: it calls `projectcomputeall`, which
+                runs `projectcompute` per period against the period's CURRENT live document set
+                and reports which periods recomputed and why. Archiving removes a document from
+                that set, so `_period_is_stale` finds the period stale and it recomputes rather
+                than skipping. Adding a second server-side recompute here would be the third
+                duplicate-control pair this platform has had to resolve.
+
+                The dialog is built by LinIngest.openDocumentControl(id) — the same shape
+                `.detail-upload` uses to reach LinIngest.openUploadModal(id) — because it needs
+                ingest.js's module-private confirmDestructive(). See wireDocumentControl(). */""}
+           <button class="btn small detail-doc-control" data-doc-control="${esc(p.id)}">Document control</button>
            ${/* RUN 57, PHASE A. `.detail-reset` ("Clear stored signals for this project") AND ITS
                 aria-live SPAN ARE REMOVED. It and `.pe-reset` in the admin panel below were two
                 controls on this one page that both cleared stored signals, and Run 56 measured
@@ -2775,6 +2793,7 @@
         if (window.LinIngest && LinIngest.openUploadModal) LinIngest.openUploadModal(b.dataset.upload);
       }));
     wireComputeAll(root);
+    wireDocumentControl(root);
   }
 
   /* Generate signals for every period the project holds documents for.
@@ -2857,6 +2876,21 @@
      LinIngest may not be loaded on a surface that renders detail without ingest.js (the
      render-only test harness is one), so this degrades to leaving the host empty rather than
      throwing and taking the rest of the page's wiring down with it. */
+  /* RUN 71. The document control button opens ingest.js's dialog for THIS project.
+     ------------------------------------------------------------------------------
+     Same shape as `.detail-upload`: the project id is render()'s own `p.id`, carried on the
+     button and read back here, so the dialog acts on the project being viewed and no other.
+     Degrades to doing nothing where ingest.js is not loaded (the render-only harness), rather
+     than throwing and taking the rest of this page's wiring down with it. */
+  function wireDocumentControl(root) {
+    root.querySelectorAll("[data-doc-control]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (!(window.LinIngest && typeof LinIngest.openDocumentControl === "function")) return;
+        try { LinIngest.openDocumentControl(b.dataset.docControl); }
+        catch (e) { console.warn("[detail] document control failed to open:", e && e.message); }
+      }));
+  }
+
   function wireDetailAdmin(root, id) {
     const host = root.querySelector(".detail-admin-host");
     if (!host) return;
