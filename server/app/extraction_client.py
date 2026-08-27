@@ -264,6 +264,27 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "authority because a document is signed, and do not supply an authority reference the "
         "register does not print; return an empty array only if the document has no such table."
     ) if "modifications_json" in fields else ""
+    # RUN 72. THE SCALE OF A RATIO FIELD, NAMED, because the general sentence below is false
+    # of it. "Percentages as numbers 0-100" is correct for every 0..100 quantity in the
+    # vocabulary and WRONG for a compliance rate, which the numeric contract bounds at 1.0. A
+    # real Environmental Compliance Report printing "Environmental compliance rate 1.000" was
+    # refused whole because extraction returned 100 for it: under the instructions as they
+    # stood, 100 was the compliant answer to a document that states 1.000. The guard did its
+    # job -- the instruction was the defect. The field list comes from
+    # `extraction_merge.ratio_scaled_extraction_keys()`, which reads the same
+    # `BOUNDED_MAX_SI_FIELDS` table the refusal reads, so the prompt and the range check can
+    # never disagree about which fields are shares.
+    from .extraction_merge import ratio_scaled_extraction_keys
+
+    _ratio = [k for k in ratio_scaled_extraction_keys() if k in fields]
+    ratio_hint = (
+        " " + ", ".join(_ratio) + (" is" if len(_ratio) == 1 else " are") +
+        " a SHARE between 0 and 1 inclusive, not a percentage: return the figure exactly as the "
+        "document prints it (a document stating 1.000 gives 1.000, and one stating 0.94 gives "
+        "0.94), and never multiply it by one hundred. If the document prints only the counts "
+        "behind such a share and never the share itself, return null -- do not divide one count "
+        "by the other. "
+    ) if _ratio else ""
     return (
         "You are a precise construction project-controls data extractor. Read this ONE document "
         f"(type: {doc_type}) and return ONLY these fields as clean JSON: "
@@ -281,7 +302,10 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "
         "Numbers as plain numbers (no currency symbols, no thousands separators). "
-        "Percentages as numbers 0-100. Dates as YYYY-MM-DD. "
+        "Return every number on the scale the document prints it on: never convert a ratio "
+        "into a percentage or a percentage into a ratio, never rescale, and never restate a "
+        "figure in different units from the ones the document uses. "
+        "Percentages as numbers 0-100. Dates as YYYY-MM-DD. " + ratio_hint +
         "document_risk_score, if requested, is a number between 0 and 1 inclusive, where 0 is "
         "no concern and 1 is severe concern; never a count and never a percentage. "
         "Return JSON only, no markdown, no commentary."

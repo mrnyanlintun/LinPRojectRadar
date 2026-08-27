@@ -87,6 +87,7 @@ __all__ = [
     "MalformedNumericError",
     "NumericRangeError",
     "SIGNAL_INPUT_KEYS",
+    "ratio_scaled_extraction_keys",
     "validate_doc_risk_score",
     "validate_numeric_fields",
     "validate_signal_value",
@@ -138,6 +139,33 @@ _KEY_ORDER: tuple[str, ...] = (
 
 #: Public, stable view of the signalInputs key order (excluding "sources"/"cpi"/"spi").
 SIGNAL_INPUT_KEYS: tuple[str, ...] = _KEY_ORDER
+
+
+# --------------------------------------------------------------------------- ratio-scaled keys
+#
+# RUN 72. THE EXTRACTION KEYS WHOSE QUANTITY IS A SHARE OF ONE, NOT A PERCENTAGE OF A HUNDRED.
+#
+# WHY THIS EXISTS. `build_prompt` tells the model "Percentages as numbers 0-100." and says
+# nothing else about scale. That sentence is true of `actualPctComplete`, `qualityAuditScore`
+# and every other 0..100 quantity in the vocabulary, and it is FALSE of a compliance rate, which
+# `BOUNDED_MAX_SI_FIELDS` bounds at 1.0. A document printing "Environmental compliance rate
+# 1.000" therefore gives the model an instruction under which 100 is the compliant answer, and
+# the numeric contract then refuses the whole document for exceeding its own bound. The document
+# was right, the guard was right, and the instruction was wrong.
+#
+# WHY IT IS DERIVED AND NOT WRITTEN OUT. The bound is already declared once, per field, in
+# `field_registry.BOUNDED_MAX_SI_FIELDS`, and the raw-key-to-field mapping is already declared
+# once in `_NUMERIC_EMISSIONS`. A hand-written list of ratio fields in the prompt would be a
+# second authority for the same fact, which is how a range statement drifts away from the range
+# check that enforces it. Adding a field bounded at 1.0 to the registry now changes the prompt
+# with it, and no one has to remember.
+def ratio_scaled_extraction_keys() -> tuple[str, ...]:
+    from .field_registry import BOUNDED_MAX_SI_FIELDS
+
+    ratio_fields = {f for f, upper in BOUNDED_MAX_SI_FIELDS.items() if upper == 1.0}
+    keys = {raw for pairs in _NUMERIC_EMISSIONS.values()
+            for raw, field in pairs if field in ratio_fields}
+    return tuple(sorted(keys))
 
 
 # --------------------------------------------------------------------------- primitives
