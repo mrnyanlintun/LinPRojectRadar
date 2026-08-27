@@ -1066,14 +1066,73 @@ def _computed_periods(session: Session, project: Project) -> list[int]:
     here, because `superseded_by` is not null and the row is no longer the live one. The list
     is therefore whatever the database holds -- it may have gaps, it may start above 1, and it
     is not bounded by any assumed maximum. A project may run to sixty periods.
+
+    RUN 75, THE OWNER'S RULING: A ROW EXISTING IS NOT THE SAME AS A RESULT EXISTING.
+
+    Run 48's rule was "the latest period for which computed results exist", and it was read as
+    "a live row is present". It is too weak. The owner uploaded 27 documents to period 1 of one
+    project, computed it to an Amber status over 8 modules, and every surface showed nothing:
+    a live row also stood for period 2, which had never held a document, carrying no status and
+    no module results. The page opened on the latest period holding a row, found nothing in it,
+    and drew nothing -- while a complete period 1 sat one row below.
+
+    So the predicate is now what the caller actually needs: the row must HOLD A RESULT. That is
+    `module_results` being non-empty, which is the same measure the owner counted by and the one
+    every surface reads -- the ledger, the brief, the charts and the category rollup all resolve
+    through module results, and a row with none of them has nothing any of them can show.
+    `project_status` is deliberately NOT part of the test: a period whose modules all abstained
+    legitimately carries no rolled-up status and still has abstention reasons to show.
+
+    This is the second half of the fix and it is the half that does not depend on the first.
+    Compute no longer writes such a row (see `_period_holds_evidence`), but this function is
+    what makes the page robust to one arriving by ANY other path -- a hand-written row, a
+    partial restore, a migration -- which is the failure that cost the owner several runs.
     """
-    rows = session.scalars(
-        select(ComputedResult.period).where(
+    rows = session.execute(
+        select(ComputedResult.period, ComputedResult.module_results).where(
             ComputedResult.project_id == project.id,
             ComputedResult.superseded_by.is_(None),
         ).order_by(ComputedResult.period)
     ).all()
-    return sorted({int(p) for p in rows if p is not None})
+    return sorted({int(p) for p, modules in rows if p is not None and (modules or [])})
+
+
+def _withdraw_live_result(session: Session, existing: ComputedResult) -> str:
+    """
+    Mark a live result superseded WITHOUT writing a replacement, and return the id used.
+
+    RUN 75. A period whose documents have all been withdrawn has no evidence, and a result
+    derived from no evidence is not a result. The row cannot be edited and must not be deleted
+    -- `computed_results` is append-only and a submitted decision that references this row must
+    still resolve years from now -- so it is superseded, which migration 0009 permits on a
+    referenced row and nothing else does.
+
+    `superseded_by` carries a FRESH IDENTIFIER THAT NO ROW BEARS, because nothing replaced this
+    result: its evidence was withdrawn. That is not new machinery; it is exactly the seam
+    `writes.py`'s signals reset already uses and states, at :417-421. Every surface filters on
+    `superseded_by IS NULL`, so this one write moves all of them at once and the period stops
+    being offered as computed.
+    """
+    marker = new_ulid()
+    existing.superseded_by = marker
+    session.flush()
+    return marker
+
+
+def _period_holds_evidence(session: Session, project: Project, period: int) -> bool:
+    """
+    Does this period hold any document that computation would actually read?
+
+    RUN 75, THE OWNER'S RULING: "A period with no documents must not produce a computed row."
+
+    THE LIVE SET, NOT THE UPLOAD TABLE. `_period_documents` is the one function computation
+    itself consumes, and it already excludes superseded and ARCHIVED documents. Asking it -- and
+    not `DocumentUpload` -- is what makes one predicate cover both directions of the same shape:
+    a period that never held a document, and a period whose documents have since been withdrawn
+    through the document control. Both are periods with no evidence, and neither may stand as a
+    computed result.
+    """
+    return bool(_period_documents(session, project, period))
 
 
 def _latest_computed_period(session: Session, project: Project) -> int | None:
@@ -3141,6 +3200,48 @@ def a_projectcompute(session: Session, payload: dict, secret: str, ttl: int) -> 
         return problem
 
     existing = _live_result(session, project, period)
+
+    # RUN 75, RULING 1: "Compute over a period that holds no documents produces nothing. Not an
+    # empty row, not a null status. Nothing."
+    #
+    # `_resolve_period` above accepts a period NUMBER from the caller for an operational
+    # project, and the period picker offers the periods the project holds PLUS THE NEXT ONE, so
+    # pressing compute on that next period reached here with a period holding no document at
+    # all. Nothing checked. `_compute_and_store` ran over an empty document set and wrote a live
+    # row with no status and no module results -- and because that row was live, it became the
+    # project's latest computed period and the detail page opened on it and showed nothing.
+    #
+    # THE SAME PREDICATE COVERS THE OTHER DIRECTION. `_period_holds_evidence` asks the LIVE
+    # document set, so a period whose documents have all been archived through the document
+    # control is equally without evidence. There the answer is not a refusal -- a result is
+    # standing that no longer has anything behind it -- so the standing row is WITHDRAWN and no
+    # replacement is written, and the project falls back to the latest period that still holds
+    # something.
+    if not _period_holds_evidence(session, project, period):
+        if existing is None:
+            return err(f"period {period} holds no documents, so there is nothing to compute. "
+                       f"Upload this period's documents first.")
+        withdrawn_id = _withdraw_live_result(session, existing)
+        audit(session, "period_result_withdrawn", participant_id=caller.participant_id,
+              project_id=project.legacy_id, period=period,
+              superseded_result_id=existing.result_id, superseded_by=withdrawn_id,
+              reason="every document in this period has been withdrawn, so the result it was "
+                     "derived from no longer has evidence behind it",
+              via="projectcompute")
+        session.commit()
+        return {
+            "ok": True,
+            "project_id": project.legacy_id,
+            "period": period,
+            "recomputed": False,
+            "withdrawn": True,
+            "superseded_result_id": existing.result_id,
+            "documents": 0,
+            "note": f"period {period} no longer holds any document, so its result has been "
+                    f"withdrawn rather than recomputed. Nothing was written in its place.",
+            "server_time": now_iso(),
+        }
+
     if existing is not None:
         stale, stale_reason = _period_is_stale(session, project, period, existing)
         if not stale:
@@ -3276,6 +3377,32 @@ def a_projectcomputeall(session: Session, payload: dict, secret: str,
     earlier_recomputed = False
     for period in periods:
         existing = _live_result(session, project, period)
+        # RUN 75, RULING 1, applied on this path too. `periods` above is read from
+        # `DocumentUpload`, which still carries a row for a period whose documents have all been
+        # ARCHIVED -- so this loop could reach `_compute_and_store` with an empty live document
+        # set and write exactly the row the ruling forbids. `_period_holds_evidence` asks the
+        # live set instead. No evidence, no row: a standing result is withdrawn, and a period
+        # that never had one is skipped.
+        if not _period_holds_evidence(session, project, period):
+            if existing is None:
+                outcomes.append({"period": period, "computed": False, "skipped": True,
+                                 "note": "this period holds no documents, so nothing was "
+                                         "computed for it"})
+                continue
+            withdrawn_id = _withdraw_live_result(session, existing)
+            audit(session, "period_result_withdrawn", participant_id=caller.participant_id,
+                  project_id=project.legacy_id, period=period,
+                  superseded_result_id=existing.result_id, superseded_by=withdrawn_id,
+                  reason="every document in this period has been withdrawn, so the result it "
+                         "was derived from no longer has evidence behind it",
+                  via="projectcomputeall")
+            outcomes.append({"period": period, "computed": False, "skipped": False,
+                             "withdrawn": True,
+                             "superseded_result_id": existing.result_id,
+                             "note": "this period no longer holds any document, so its result "
+                                     "was withdrawn and nothing was written in its place"})
+            earlier_recomputed = True
+            continue
         if existing is not None:
             stale, stale_reason = _period_is_stale(session, project, period, existing)
             if not stale and not earlier_recomputed:
@@ -3465,6 +3592,24 @@ def a_adminrecompute(session: Session, payload: dict, secret: str, ttl: int) -> 
     old = _live_result(session, project, period)
     if old is None:
         return err(f"no computed result to recompute for period {period}")
+
+    # RUN 75, RULING 1, applied on the admin path too, so no route can leave an evidence-free
+    # row live. Recomputing a period whose documents have all been withdrawn would write a row
+    # with no status and no module results; the standing row is withdrawn instead and nothing is
+    # written in its place.
+    if not _period_holds_evidence(session, project, period):
+        withdrawn_id = _withdraw_live_result(session, old)
+        audit(session, "period_result_withdrawn", participant_id=caller.participant_id,
+              project_id=project.legacy_id, period=period, reason=reason,
+              superseded_result_id=old.result_id, superseded_by=withdrawn_id,
+              via="adminrecompute")
+        session.commit()
+        return {"ok": True, "project_id": project.legacy_id, "period": period,
+                "recomputed": False, "withdrawn": True, "reason": reason,
+                "superseded_result_id": old.result_id,
+                "note": f"period {period} holds no documents, so its result was withdrawn "
+                        f"rather than recomputed. Nothing was written in its place.",
+                "server_time": now_iso()}
 
     # Mint the new id first, then mark the old row superseded, and only then insert. See the
     # note in `_compute_and_store`: the partial unique index allows exactly one live row per

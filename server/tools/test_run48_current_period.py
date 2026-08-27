@@ -42,7 +42,7 @@ import sys
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import func, select  # noqa: E402
 
 import app.main as main  # noqa: E402
 from app.documents import set_extractor_override  # noqa: E402
@@ -149,12 +149,32 @@ def period_end(period: int) -> str:
 
 
 def extraction(period: int) -> dict:
-    """A monthly report stating enough for the period to compute to a banded result."""
+    """
+    A monthly report stating enough for the period to compute to a banded result.
+
+    RUN 75, A PREMISE FAULT IN THIS FIXTURE, FOUND BY THE RUN 75 CHANGE AND CORRECTED HERE.
+
+    Three of the five figures were named `earned_value_to_date`, `actual_cost_to_date` and
+    `planned_value_to_date`. THE MONTHLY REPORT'S EXTRACTION CONTRACT ASKS FOR NONE OF THEM:
+    `extraction_fields_for("monthly_report")` requests `earned_value`, `actual_cost` and
+    `planned_value` (`extraction_fields.py`), so every one of those three was dropped at the
+    door, no observation was stored for them, and every project this file built computed to a
+    live row carrying ZERO module results.
+
+    The docstring said "enough to compute to a banded result" and it was not true. The
+    assertions above it -- highest-number-not-assumed, contiguity-not-assumed, no-maximum,
+    supersession -- were therefore all being made over rows with nothing in them, which is
+    EXACTLY the shape Run 75 was sent to fix: a row existing taken for a result existing. The
+    pin passed 56/56 because `_computed_periods` also could not tell the two apart.
+
+    Only the three names are corrected. No assertion is added, removed or relaxed, and every
+    check above still asks the same question -- it now asks it of rows that really hold results.
+    """
     return {
         "budget_at_completion": BAC,
-        "earned_value_to_date": 100_000 * period,
-        "actual_cost_to_date": 105_000 * period,
-        "planned_value_to_date": 102_000 * period,
+        "earned_value": 100_000 * period,
+        "actual_cost": 105_000 * period,
+        "planned_value": 102_000 * period,
         "report_date": period_end(period),
         "document_date": period_end(period),
     }
@@ -514,6 +534,70 @@ try:
     check(len(registry_index()) == 101, f"101 in the registry, not {len(registry_index())}")
     check(sorted(CORE_VOTING_MODULES) == ["A1.7", "A1.8"],
           "the voting count is exactly 2, A1.7 and A1.8", str(sorted(CORE_VOTING_MODULES)))
+
+    print()
+    print("=" * 78)
+    print("10. RUN 75: A ROW EXISTING IS NOT THE SAME AS A RESULT EXISTING")
+    print("=" * 78)
+    # APPENDED, NEVER INSERTED. Section 10 is new and sections 1-9 above are untouched, so the
+    # positional ladder this file is is extended rather than rewritten.
+    #
+    # WHAT THIS ADDS TO RUN 48'S RULING. Run 48 established WHERE the list comes from -- the
+    # result table, never the document table and never a generated range -- and every check
+    # above still asserts that. Run 75 establishes WHAT COUNTS AS BEING ON IT. The owner's
+    # project carried a complete period 1 and a live period 2 holding no status and no module
+    # results, and the page opened on period 2 and drew nothing. Compute no longer writes such a
+    # row, and this section pins the OTHER half: a row inserted by any path that is not compute
+    # must not be selected either.
+    from app.research_models import ComputedResult as _CR, new_ulid as _ulid  # noqa: E402
+
+    _before = periods_view(FOUR)
+    check(_before["latest_computed_period"] == 4 and _before["computed_periods"] == [1, 2, 3, 4],
+          "PRJ-R48-FOUR opens on 4 before an empty row is planted", str(_before))
+
+    with Session() as _s:
+        _proj = _s.scalar(select(Project).where(Project.legacy_id == FOUR))
+        _live4 = _s.scalar(select(_CR).where(_CR.project_id == _proj.id, _CR.period == 4,
+                                             _CR.superseded_by.is_(None)))
+        _s.add(_CR(result_id=_ulid(), project_id=_proj.id, period=9,
+                   signal_inputs={}, module_results=[], category_statuses={},
+                   project_status=None, portfolio_snapshot=None,
+                   simulation_version=_live4.simulation_version, seed=_live4.seed,
+                   period_cutoff=_live4.period_cutoff, source_documents=[], abstained=None))
+        _s.commit()
+
+    # NON-VACUITY. The row really is there and really is live: if the insert had not landed, or
+    # if it were superseded, the checks below would pass for the wrong reason.
+    with Session() as _s:
+        _proj = _s.scalar(select(Project).where(Project.legacy_id == FOUR))
+        _planted = _s.scalar(select(_CR).where(_CR.project_id == _proj.id, _CR.period == 9))
+        check(_planted is not None and _planted.superseded_by is None
+              and not (_planted.module_results or []),
+              "the empty row for period 9 is LIVE in the table, so the checks below are not "
+              "vacuous",
+              f"present={_planted is not None} "
+              f"live={_planted is not None and _planted.superseded_by is None} "
+              f"modules={len(_planted.module_results or []) if _planted else None}")
+
+    _after = periods_view(FOUR)
+    check(_after["latest_computed_period"] == 4,
+          "AND THE PAGE STILL OPENS ON 4: a live row holding no module results is not a result, "
+          "so it does not become the latest computed period",
+          str(_after["latest_computed_period"]))
+    check(_after["computed_periods"] == [1, 2, 3, 4],
+          "and period 9 is not listed as computed at all",
+          str(_after["computed_periods"]))
+
+    # AND THE COMPUTE HALF: a period holding no document produces nothing, not an empty row.
+    _c9 = post({"action": "projectcompute", "session_token": pm, "id": TWO, "period": 7})
+    check(_c9.get("ok") is False and "no documents" in str(_c9.get("error", "")),
+          "compute over a period holding no documents is REFUSED, so no empty row is written",
+          str(_c9)[:200])
+    with Session() as _s:
+        _proj = _s.scalar(select(Project).where(Project.legacy_id == TWO))
+        _n7 = _s.scalar(select(func.count()).select_from(_CR)
+                        .where(_CR.project_id == _proj.id, _CR.period == 7))
+        check(_n7 == 0, "and no row of any kind exists for that period afterwards", str(_n7))
 
 except BaseException as _exc:                                  # noqa: BLE001
     # A CRASH IS NOT A PASS. Without this arm the `finally` below called sys.exit and swallowed

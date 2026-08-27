@@ -118,6 +118,24 @@ def live_statuses(session: Session, projects: list) -> dict[str, dict[str, Any]]
             ComputedResult.superseded_by.is_(None),
         ).order_by(ComputedResult.period)
     ).all()
+    # RUN 75, THE OWNER'S RULING: A ROW EXISTING IS NOT THE SAME AS A RESULT EXISTING.
+    #
+    # This is the THIRD place that reads "the project's latest live period", after
+    # `_computed_periods` and the detail page, and it is the one the list, the portfolio and
+    # `storedResult` resolve through. A live row holding NO MODULE RESULTS won the "latest
+    # period" contest here exactly as it did there: the owner's project carried a complete
+    # period 1 and an evidence-free period 2, and every list read the period 2 row -- no status,
+    # so `with_stored_status` left the legacy document's empty one and the surface said
+    # "awaiting analysis" for a project that had been computed to Amber over 8 modules.
+    #
+    # Worse than the label: `storedResult` STATES A PERIOD, and detail.js's graft refuses a
+    # served row whose period differs from it (Run 69, section 7.3). So the empty period 2
+    # projection made the page reject the real period 1 row it had just fetched.
+    #
+    # The predicate is the same one `_computed_periods` uses and for the same reason: a row with
+    # no module results has nothing any surface can render. Filtering here, not in the
+    # projection below -- what is RETURNED is unchanged and still status only.
+    rows = [r for r in rows if (r.module_results or [])]
     # Ordered by period so that, for a project with several live periods, the LATEST period is
     # the one left in the map. That matches what a list is understood to be showing: where the
     # project stands now, not where it stood first.
