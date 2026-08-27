@@ -244,6 +244,26 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "cumulative figure from a periodic one or the other way round unless the document "
         "prints both columns; return an empty array only if the document has no such table."
     ) if "baseline_curve_json" in fields else ""
+    # RUN 69. THE THIRD AND FOURTH TABLE FIELDS. Same reason as the first two: a whole-table
+    # answer inside one JSON field is not something the general instructions describe, and
+    # without naming the shape the model returns null for a table that is plainly printed.
+    resource_hint = (
+        " resource_profile_json, if requested and the document contains a resource histogram or "
+        "resource-loading table (a period-by-period profile of resource demand against resource "
+        "availability), is a JSON array with one object per PRINTED ROW of that table, using the "
+        "table's own column headings as keys and its values as printed; return every row the "
+        "document prints and no others -- do not total, extend or interpolate the profile, and "
+        "never repeat a demand figure as an availability figure or the other way round; return "
+        "an empty array only if the document has no such table."
+    ) if "resource_profile_json" in fields else ""
+    modifications_hint = (
+        " modifications_json, if requested and the document contains a contract modification or "
+        "change register, is a JSON array with one object per PRINTED ROW of that register, "
+        "using the register's own column headings as keys and its values as printed; return "
+        "every row the document prints and no others. Do not infer that an official held "
+        "authority because a document is signed, and do not supply an authority reference the "
+        "register does not print; return an empty array only if the document has no such table."
+    ) if "modifications_json" in fields else ""
     return (
         "You are a precise construction project-controls data extractor. Read this ONE document "
         f"(type: {doc_type}) and return ONLY these fields as clean JSON: "
@@ -256,7 +276,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

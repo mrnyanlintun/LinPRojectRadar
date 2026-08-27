@@ -166,7 +166,21 @@ UI_ONLY_DOC_TYPES: tuple[str, ...] = (
 # subcontractor_observations, analogous_project_type, submitted_date, response_date, source). That
 # is legacy drift, faithfully preserved: the per-type prompt asked for them regardless.
 _EXTRACTION_FIELDS: dict[str, list[str]] = {
-    "contract_value": ["original_contract_sum", "project_start_date", "project_end_date"],
+    # RUN 69. WHAT THE CONTRACT STATES ABOUT ITS OWN REGULATORY REGIME.
+    #
+    # B3.2 FAR/Agency EVMS Applicability abstained on "governed acquisition, agency and clause
+    # applicability evidence". `canonical_v6.evms_applicability` states that NOTHING in it reads
+    # BAC, CPI, SPI, EV or AC and that applicability "is a question about the acquisition, the
+    # agency, the agency procedure and the contract clause, and it is answered from that evidence
+    # or not at all". Each field below is printed on the face of a contract or award document
+    # under its own label; none is inferred from a performance figure, and where the document
+    # states none of them the structure is not assembled at all.
+    "contract_value": [
+        "original_contract_sum", "project_start_date", "project_end_date",
+        "federal_acquisition", "contracting_agency", "acquisition_designation",
+        "major_acquisition", "agency_procedure_requires_evms", "evms_clause_id", "award_date",
+        "acquisition_id",
+    ],
     "schedule_of_values": ["completed_to_date", "scheduled_value_total", "period_to_date"],
     "pay_application": [
         "amount_paid_to_date", "percent_complete_verified", "original_contract_sum",
@@ -203,9 +217,17 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "consumed_float", "activities_planned", "activities_constrained", "lookahead_weeks",
         "milestones_json",
     ],
+    # RUN 69. THE MODIFICATION REGISTER, WHICH IS A TABLE AND NOT A COUNT.
+    #
+    # B3.5 Contract Modification Governance asks whether an AUTHORIZED official executed each
+    # modification, whether the unilateral/bilateral distinction is honoured, and whether the
+    # governing written instrument exists. `canonical_v6.modification_governance` states that
+    # "signature existence is never authority" and that a change COUNT is a different measure
+    # (A4.6 owns it). `change_order_count` is that count and answers none of those questions.
+    # A modification register prints one row per modification carrying exactly what is asked.
     "change_order": [
         "revised_contract_sum", "revised_completion_date", "change_order_date",
-        "change_order_count", "baseline_contract_sum",
+        "change_order_count", "baseline_contract_sum", "modifications_json",
     ],
     "monthly_report": [
         "earned_value", "actual_cost", "planned_value", "actual_percent_complete",
@@ -272,13 +294,40 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "lookahead_schedule": [
         "activities_planned", "activities_constrained", "constraint_rate", "lookahead_weeks",
     ],
+    # RUN 69. THE RESOURCE HISTOGRAM AND THE PRODUCTION BASIS, both off the same document type.
+    #
+    # A2.9 Resource Loading abstained on "a time phased resource profile: for each period and
+    # each kind of resource, the amount of work demanded and the amount available". Four
+    # project-total scalars are not that profile, and `canonical_v3.resource_loading` says so in
+    # its own words. A resource-loaded report PRINTS the histogram, so `resource_profile_json`
+    # asks for it as a table on the `baseline_curve_json` precedent, and `resource_plan_version`
+    # is the provenance `_provenance` refuses to default.
+    #
+    # A3.3 Labor Productivity abstained because hours over hours is not productivity: it needs an
+    # output basis. `quantity_installed_to_date`, `quantity_planned_to_date` and `quantity_unit`
+    # are the three figures a production or quantities report states on its face beside the hours
+    # already extracted, and `quantity_source` is that record's provenance. None is derived; each
+    # is a printed cell. Where the document states less than all of them, no record is assembled
+    # and the module goes on abstaining.
     "resource_report": [
         "planned_labor_hours", "actual_labor_hours", "planned_equipment_days",
-        "actual_equipment_days",
+        "actual_equipment_days", "resource_profile_json", "resource_plan_version",
+        "quantity_installed_to_date", "quantity_planned_to_date", "quantity_unit",
+        "quantity_source",
     ],
+    # RUN 69. THE ALLOCATION BASE THE OVERHEAD IS ABSORBED OVER.
+    #
+    # A3.5 Overhead Absorption has had `indirect_cost_plan` and `indirect_cost_actual` all along
+    # and still refused, because `canonical_v3.overhead_absorption` states that "indirect actual
+    # over indirect plan with no allocation base is not overhead absorption and is computed
+    # nowhere here". The base is not a missing calculation, it is a missing FACT, and a cost
+    # report carrying an overhead schedule prints it: the base named, and the planned and actual
+    # amount of it.
     "cost_report": [
         "indirect_cost_plan", "indirect_cost_actual", "material_cost_baseline",
-        "material_cost_current", "report_date",
+        "material_cost_current", "report_date", "overhead_allocation_base",
+        "planned_allocation_base_quantity", "actual_allocation_base_quantity",
+        "overhead_driver_source",
     ],
     "past_performance_report": [
         "overall_rating", "schedule_rating", "cost_rating", "quality_rating", "source",

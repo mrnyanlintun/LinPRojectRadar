@@ -1437,6 +1437,151 @@ def _baseline_structures(session: Session, project: Project, period: int, docume
     return out
 
 
+# ------------------------------------------------------- RUN 69, FOUR MORE DOCUMENT STRUCTURES
+#
+# THE SAME FINDING RUN 68 MADE, APPLIED FOUR MORE TIMES: the module did not lack a calculation,
+# it lacked a FACT its own document prints, and the platform was asking that document only for
+# scalars. Each of the four below names its structure in its own abstention sentence.
+#
+#   A2.9 Resource Loading      "a time phased resource profile: for each period and each kind of
+#                               resource, the amount of work demanded and the amount available"
+#   A3.3 Labor Productivity    "a record of production: the quantity of work installed, the
+#                               quantity planned, and the labour hours each of those took"
+#   A3.5 Overhead Absorption   "an overhead allocation base: the planned and actual overhead and
+#                               the planned and actual amount of the base it is absorbed over"
+#   B3.5 Modification Governance  "a governed contract modification register"
+#
+# and B3.2 EVMS Applicability, whose evidence is what a contract states about its own regime.
+#
+# WHAT IS READ OFF THE DOCUMENT: every figure and every name. WHAT IS READ OFF THE PLATFORM:
+# nothing at all -- unlike the Run-68 curves, none of these structures needs a cross-period
+# series, so each is a pure function of one period's own extractions.
+#
+# WHAT IS REFUSED: `canonical_v3._provenance` and `canonical_v6` both refuse to default a source,
+# so where a document states the figures but not where they came from the structure is NOT
+# assembled and the module goes on abstaining. That is the correct outcome and not a gap.
+#
+# DOCUMENT PATH ONLY, for the same reason the Category-9 record and the Run-68 curves are: a
+# training period's signal inputs are projected from a deterministic state, and no document was
+# uploaded to it.
+def _run69_structures(session: Session, project: Project, period: int,
+                      documents: list[dict]) -> dict:
+    """
+    The Run-69 governed structures this period's documents support. See above.
+
+    ONE EXCEPTION TO "THIS PERIOD'S DOCUMENTS", AND IT IS RUN 45'S OWN RULE. What a contract
+    states about its own regulatory regime -- the agency, the acquisition, the clause -- is a
+    fact about the PROJECT, not about a reporting period, and Run 45 established exactly this:
+    "a contract uploaded at period 1 was invisible from period 2 on". So the contract documents
+    at or before the period being computed are read for B3.2, latest period first, and the other
+    three structures stay strictly period-scoped because a resource histogram, an overhead
+    schedule and a modification register each describe one reporting period.
+    """
+    from .contract_modifications import read_modification_register
+    from .resource_tables import (
+        overhead_allocation_base, production_output_record, read_resource_profile,
+    )
+
+    out: dict = {}
+    for d in documents:
+        ex = d.get("extraction")
+        if not isinstance(ex, dict):
+            continue
+        doc_type = d.get("doc_type")
+
+        if doc_type == "resource_report":
+            # A2.9. ONE DOCUMENT SUPPLIES THE PROFILE, the longest of them, on the same
+            # deterministic rule `_baseline_structures` states: stitching two resource reports'
+            # rows together would produce a histogram neither of them printed.
+            buckets = read_resource_profile(ex.get("resource_profile_json"))
+            version = str(ex.get("resource_plan_version") or "").strip()
+            if buckets and version:
+                existing = out.get("resourceProfile")
+                if existing is None or len(buckets) > len(existing["buckets"]):
+                    out["resourceProfile"] = {
+                        "buckets": buckets,
+                        "resource_plan_version": version,
+                        "assembled_by": "document extraction",
+                        "source_document_type": "resource_report",
+                    }
+            # A3.3. The two hours figures are the ones this same document type already states.
+            record = production_output_record(
+                ex, planned_hours=ex.get("planned_labor_hours"),
+                actual_hours=ex.get("actual_labor_hours"))
+            if record is not None:
+                out.setdefault("productionOutputRecord", record)
+
+        elif doc_type == "cost_report":
+            base = overhead_allocation_base(ex)
+            if base is not None:
+                out.setdefault("overheadAllocationBase", base)
+
+        elif doc_type == "change_order":
+            mods = read_modification_register(ex.get("modifications_json"))
+            if mods:
+                existing = out.get("contractModificationRegister")
+                if existing is None or len(mods) > len(existing["modifications"]):
+                    out["contractModificationRegister"] = {
+                        "modifications": mods,
+                        "evidence_id": "contract-modification-register",
+                        "source_type": "contract modification register uploaded for this period",
+                        "provenance": "read from the register printed by the change-order "
+                                      "document uploaded for this period",
+                        "assembled_by": "document extraction",
+                        "source_document_type": "change_order",
+                    }
+
+    contracts: list[dict] = [d for d in documents if d.get("doc_type") == "contract_value"]
+    if not contracts:
+        earlier = session.scalars(
+            select(DocumentUpload.period)
+            .where(DocumentUpload.project_id == project.id, DocumentUpload.period < period)
+            .distinct()
+        ).all()
+        for p in sorted({int(x) for x in earlier if x is not None}, reverse=True):
+            contracts = [d for d in _period_documents(session, project, p)
+                         if d.get("doc_type") == "contract_value"]
+            if contracts:
+                break
+    for d in contracts:
+        ex = d.get("extraction")
+        if isinstance(ex, dict):
+            # B3.2. EVERY KEY IS OMITTED WHERE THE CONTRACT DID NOT STATE IT, and the canonical
+            # function's own precedence then reaches INSUFFICIENT_EVIDENCE rather than a
+            # determination. A missing designation is not a determination of non-applicability.
+            evidence: dict = {}
+            federal = ex.get("federal_acquisition")
+            if isinstance(federal, bool):
+                evidence["federal_context"] = federal
+            elif isinstance(federal, str) and federal.strip().lower() in ("yes", "no",
+                                                                          "true", "false"):
+                evidence["federal_context"] = federal.strip().lower() in ("yes", "true")
+            procedure = ex.get("agency_procedure_requires_evms")
+            if isinstance(procedure, bool):
+                evidence["agency_procedure_requires_evms"] = procedure
+            major = ex.get("major_acquisition")
+            if isinstance(major, bool):
+                evidence["major_acquisition"] = major
+            for key, field in (("agency", "contracting_agency"),
+                               ("acquisition_designation", "acquisition_designation"),
+                               ("clause_id", "evms_clause_id"),
+                               ("award_date", "award_date"),
+                               ("acquisition_id", "acquisition_id")):
+                value = str(ex.get(field) or "").strip()
+                if value:
+                    evidence[key] = value
+            if evidence:
+                evidence.update({
+                    "evidence_id": "contract-regulatory-evidence",
+                    "source_type": "contract or award document uploaded for this project",
+                    "evidence_source": "the contract document uploaded for this project",
+                    "assembled_by": "document extraction",
+                    "source_document_type": "contract_value",
+                })
+                out.setdefault("evmsApplicabilityEvidence", evidence)
+    return out
+
+
 # ------------------------------------------------------------------- RUN 67, THE CATEGORY-9 GAP
 #
 # WHAT WAS FOUND, AND IT IS NOT WHAT THE PREVIOUS RUN CONCLUDED. Run 66 measured seventeen
@@ -1607,6 +1752,11 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # `setdefault`, so a structure a project supplied through the governed intake is never
     # displaced -- the same precedence rule `project_data.py` states, applied here.
     for _key, _structure in _baseline_structures(session, project, period, documents, si).items():
+        si.setdefault(_key, _structure)
+
+    # RUN 69. Four more governed structures, same precedence rule: a structure supplied through
+    # the governed intake is never displaced by one assembled from a document.
+    for _key, _structure in _run69_structures(session, project, period, documents).items():
         si.setdefault(_key, _structure)
 
     result = run_and_store(session, project, period, si, cutoff,
