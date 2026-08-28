@@ -728,6 +728,20 @@ class Observation(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
+    # 0029. THE ARCHIVE MARK. NULL means live. Non-NULL means the document control withdrew the
+    # document this observation was projected from, and names WHEN (the archive action's own
+    # timestamp, copied so the two records cannot disagree), BY WHOM, and BY WHICH ARCHIVE
+    # ACTION -- the `documents_archived` audit row's event_id, so the question is answerable
+    # from the observation alone.
+    #
+    # THE ROW IS NOT DELETED AND IS NOT REWRITTEN AS TO ITS VALUE. This store is the audit
+    # record; a withdrawn observation stays readable, stating that it was withdrawn. Selection
+    # is what excludes it, exactly as it is for superseded rows.
+    withdrawn_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True)
+    withdrawn_by: Mapped[str] = mapped_column(Text, nullable=True)
+    withdrawn_by_event_id: Mapped[str] = mapped_column(Text, nullable=True)
+
     __table_args__ = (
         CheckConstraint("kind IN ('SNAPSHOT','EVENT','DELTA','PERMANENT')",
                         name="ck_observations_kind"),

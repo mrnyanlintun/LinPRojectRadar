@@ -56,7 +56,7 @@ import time
 from datetime import date, datetime, timezone
 from typing import Any, Callable
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update as sa_update
 from sqlalchemy.orm import Session
 
 from .extraction_client import build_extractor, extract_many
@@ -1188,6 +1188,31 @@ def _period_is_stale(session: Session, project: Project, period: int,
     current_docs = _period_documents(session, project, period)
     current_fp = _document_fingerprint(current_docs)
     stored_fp = _result_fingerprint(result)
+
+    # RUN 78. A SECOND STALENESS CONDITION, and it is why Run 67's fix never reached a
+    # deployment that had already computed.
+    #
+    # Comparing document sets answers "have the inputs changed" and CANNOT answer "has what
+    # this platform derives from those inputs changed". Run 67 began writing the period's
+    # Category-9 assessment onto `signal_inputs`; a result computed before that code shipped
+    # carries the same documents it always did, so it was NOT stale, so
+    # `projectcomputeall` SKIPPED it, so the key never appeared -- and every module behind the
+    # qualification boundary went on refusing with "carries no Category-9 assessment", which is
+    # exactly what the boundary produces when the key is absent (measured: 16 of 16 gated
+    # modules in service refuse on an otherwise identical signal_inputs with the key removed,
+    # and 0 of 16 with it present).
+    #
+    # NARROW ON PURPOSE. This does not compare code versions or hash the derivation -- either
+    # would recompute every period on every deploy. It asks one question with one honest
+    # answer: this period holds live documents, so `_compute_and_store` WOULD write the
+    # assessment, and the stored row does not have it. That can only be true of a row computed
+    # by older code, and recomputing is precisely the repair.
+    if current_docs and isinstance(result.signal_inputs, dict) \
+            and "evidenceQualification" not in result.signal_inputs:
+        return True, ("this result was computed before the period's Category-9 evidence "
+                      "assessment was recorded, so every measure requiring qualified evidence "
+                      "refused on it")
+
     if stored_fp is None:
         return False, "no source_documents record on the stored result; left untouched"
     if current_fp == stored_fp:
@@ -3065,10 +3090,20 @@ def a_projectuploadstatus(session: Session, payload: dict, secret: str,
     # executed change order is an amendment layered on it. Read from the observation store,
     # across all periods up to this one, because the baseline is a fact about the project,
     # not about one period's uploads.
+    #
+    # RUN 78. `withdrawn_at IS NULL`. This query is the one LIVE surface in this repository that
+    # reads the observation store directly, and until this run it read it UNFILTERED: an
+    # archived contract award still supplied "the original contract baseline" on the documents
+    # panel, and an archived change order still appeared in the amendments list, after the
+    # document control had withdrawn both and after a recompute had correctly removed them from
+    # every module. The computation path was clean; this reader was not. Filtering on the 0029
+    # mark rather than re-deriving archived ids per period is deliberate -- the mark is scoped
+    # to (project, period, document) already, and this query deliberately spans periods.
     baseline_rows = session.scalars(
         select(Observation).where(
             Observation.project_id == project.id,
             Observation.period <= period,
+            Observation.withdrawn_at.is_(None),
             Observation.source_doc_type.in_(("contract_value", "change_order")),
         )
     ).all()
@@ -3864,18 +3899,55 @@ def a_projectdocumentarchive(session: Session, payload: dict, secret: str,
         row.archived_by = caller.participant_id
 
     result = _live_result(session, project, period)
-    audit(session, "documents_archived", participant_id=caller.participant_id,
-          project_id=project.legacy_id, period=period,
-          archived_by=caller.participant_id,
-          archived_at=now.isoformat(),
-          document_count=len(withdrawn),
-          documents=withdrawn,
-          fields_withdrawn=sorted({f for w in withdrawn for f in w["fields_withdrawn"]}),
-          confirmation=confirmation,
-          live_result_id=result.result_id if result else None,
-          recomputed=False,
-          note=("the withdrawal is staged; the live figures do not change until the project "
-                "is recalculated"))
+
+    # RUN 78. THE AUDIT ROW IS BUILT HERE RATHER THAN THROUGH `audit`, for one reason: the
+    # observations this action withdraws must name WHICH archive action withdrew them, and
+    # `audit` does not hand back the event it appended. Nothing else about the row differs --
+    # same event_type, same metadata, same append-only table, same server-side timestamp.
+    archive_event = AuditEvent(
+        participant_id=caller.participant_id,
+        event_type="documents_archived",
+        event_metadata={
+            "project_id": project.legacy_id, "period": period,
+            "archived_by": caller.participant_id,
+            "archived_at": now.isoformat(),
+            "document_count": len(withdrawn),
+            "documents": withdrawn,
+            "fields_withdrawn": sorted({f for w in withdrawn for f in w["fields_withdrawn"]}),
+            "confirmation": confirmation,
+            "live_result_id": result.result_id if result else None,
+            "recomputed": False,
+            "note": ("the withdrawal is staged; the live figures do not change until the "
+                     "project is recalculated"),
+        },
+    )
+    session.add(archive_event)
+    session.flush()
+
+    # RUN 78. THE OBSERVATION STORE IS TOLD, AND NOTHING IS DELETED.
+    #
+    # `observations` is append-only and `_persist_observations` projects every upload in the
+    # period, archived ones included -- correct for an audit store, and the reason the
+    # computation path's exclusion at `_period_documents` was never enough to make the TABLE
+    # truthful. The rows for the documents just archived are MARKED withdrawn, in place, with
+    # the archive's own timestamp, the participant who ran it, and the id of the audit row
+    # above. Their values are untouched and they stay readable, which is what section 3 of the
+    # order requires and what makes "was this figure withdrawn, and by which action" answerable
+    # without a join.
+    #
+    # SCOPED TO (project, period, document), the same scope the archive mark itself has: the
+    # same bytes may be live evidence in another project or another period of this one.
+    marked = session.execute(
+        sa_update(Observation)
+        .where(Observation.project_id == project.id,
+               Observation.period == period,
+               Observation.document_id.in_(wanted),
+               Observation.withdrawn_at.is_(None))
+        .values(withdrawn_at=now, withdrawn_by=caller.participant_id,
+                withdrawn_by_event_id=archive_event.event_id)
+    ).rowcount
+    archive_event.event_metadata = dict(archive_event.event_metadata or {},
+                                        observations_withdrawn=marked)
     session.commit()
     return {
         "ok": True,
