@@ -130,35 +130,58 @@ def main() -> None:
                                     "dataBase64": b64(blob(t))} for t in tags]})
 
     # ============================================================ 1. the extraction boundary
-    print("\n1. Entry point one: extract_many refuses the whole document, before any row")
+    #
+    # RUN 80, OWNER RULING (order section 3, item 3). THIS SECTION ASSERTED THE OPPOSITE OF
+    # WHAT IT NOW ASSERTS, and the change is a ruling and not a repair.
+    #
+    # WHAT IT ASSERTED, verbatim in its own headings: "extract_many refuses the whole document,
+    # before any row"; "a document with earned_value 'TBD' is refused, not stored with a zero";
+    # "no Document row exists for the refused file"; "a refusal writes no observation row for
+    # the document". Every one of those was true, was deliberate, and was proved here.
+    #
+    # WHY IT CHANGED. That behaviour discarded a whole document over one field, and the owner
+    # met it on his own D26: a CPARS evaluation states "Satisfactory", the platform could not
+    # read a word as a number, and every other figure in the document went with it. He ruled:
+    # "A document must not be discarded whole because one field fails ... a field that cannot be
+    # read is absent, and the rest of the document still contributes."
+    #
+    # WHAT IS STILL PROVED HERE, because it is the protection that mattered: the unreadable
+    # field is NOT stored, NOT coerced to zero, and NOT substituted -- it is absent, and absence
+    # has always meant abstention. And an out-of-range figure (section 4 below) still refuses the
+    # whole document, untouched, under Run 14's ruling.
+    print("\n1. Entry point one: the unreadable FIELD is absent; the document still contributes")
     up = upload("tbd", "clean")
     by_name = {f["filename"]: f for f in up["files"]}
     tbd, clean = by_name["tbd.pdf"], by_name["clean.pdf"]
-    check(tbd.get("status") == "failed",
-          "a document with earned_value 'TBD' is refused, not stored with a zero",
-          str(tbd)[:120])
-    err_text = str(tbd.get("error") or "")
-    check("earned_value" in err_text, "the refusal names the FIELD", err_text[:100])
-    check("tbd.pdf" in err_text, "the refusal names the FILE", err_text[:100])
+    check(tbd.get("status") == "extracted",
+          "a document with earned_value 'TBD' is no longer discarded whole",
+          str(tbd)[:160])
+    err_text = " ".join(tbd.get("unreadable_fields") or [])
+    check("earned_value" in err_text, "the notice names the FIELD", err_text[:120])
+    check("tbd.pdf" in err_text, "the notice names the FILE", err_text[:120])
     check("TBD" in err_text and "cannot be read as a number" in err_text,
-          "the refusal states the value and a reason the uploader can act on", err_text[:120])
-    check("Nothing was stored" in err_text, "and says what happened to the document", "")
-    check("—" not in err_text, "no em dash (house rule)", "")
+          "the notice states the value and a reason the uploader can act on", err_text[:160])
+    check("treated as absent" in err_text and "still contributes" in err_text,
+          "and says what happened: the field is absent, the document still contributes",
+          err_text[:200])
+    check("\u2014" not in err_text, "no em dash (house rule)", "")
     check(clean.get("status") == "extracted" and clean.get("contributes") is True,
-          "the clean document in the SAME batch is stored — whole-document, not whole-batch",
+          "the clean document in the SAME batch is stored, exactly as before",
           str({k: clean.get(k) for k in ('status', 'contributes')}))
     with Session() as s:
         stored = s.scalar(select(Document).where(Document.sha256 == sha(blob("tbd"))))
-        check(stored is None, "no Document row exists for the refused file", "")
+        check(stored is not None, "a Document row now EXISTS for the document", "")
         proj = s.scalar(select(Project).where(Project.legacy_id == PROJ))
-        obs_docs = {o.document_id for o in s.scalars(
-            select(Observation).where(Observation.project_id == proj.id)).all()}
+        obs = s.scalars(select(Observation).where(Observation.project_id == proj.id)).all()
+        obs_docs = {o.document_id for o in obs}
         clean_row = s.scalar(select(Document).where(Document.sha256 == sha(blob("clean"))))
         check(clean_row is not None and clean_row.document_id in obs_docs,
               "the clean document projected observation rows", "")
-        # nothing from the refused document can be in the store, since it has no row at all
-        check(len(obs_docs) >= 1 and stored is None,
-              "a refusal writes no observation row for the document", "")
+        # THE PROTECTION THAT SURVIVES THE RULING, and the check that proves it: no observation
+        # anywhere carries the unreadable field. Not as zero, not as the string, not at all.
+        check(not [o for o in obs
+                   if o.document_id == stored.document_id and o.field == "ev"],
+              "no observation carries the field that could not be read, in any form", "")
 
     print("\n2. Legitimate values that merely look unusual are accepted")
     up2 = upload("fancy", "float")
@@ -198,32 +221,44 @@ def main() -> None:
           "while a negative total_float was accepted above — the signed set is deliberate", "")
     up5 = upload("nafld")
     f5 = up5["files"][0]
-    check(f5["status"] == "failed" and "document_risk_score" in str(f5.get("error")),
-          "document_risk_score 'N/A' is refused as malformed — the coerced 0.0 is dead",
-          str(f5.get("error"))[:100])
+    # RUN 80, SAME OWNER RULING. "N/A" was reachable only through `validate_numeric_fields`, so
+    # it is now a FIELD-LEVEL absence rather than a document-level refusal. WHAT THE CHECK WAS
+    # PROTECTING IS UNCHANGED AND IS STILL PROVED HERE: the legacy `_num_or_null` quirk coerces
+    # "N/A" to 0.0, which reads as the BEST risk band, and nothing downstream could trace that
+    # Green back to a bad input. It does not happen -- the field is absent, not zero.
+    check(f5["status"] == "extracted"
+          and "document_risk_score" in " ".join(f5.get("unreadable_fields") or []),
+          "document_risk_score 'N/A' is reported unreadable and the document still stores",
+          str(f5)[:160])
+    with Session() as s:
+        _row = s.scalar(select(Document).where(Document.sha256 == sha(blob("nafld"))))
+        _drs = [o for o in s.scalars(select(Observation).where(
+            Observation.document_id == _row.document_id)).all() if o.field == "docRiskScore"]
+        check(_drs == [],
+              "and NO docRiskScore observation exists for it: the coerced 0.0 is still dead",
+              str([(o.field, o.value) for o in _drs]))
 
-    print("\n5. Entry point two: the merge/store backstop refuses stored rows all-or-nothing")
+    print("\n5. Entry point two: the merge/store backstop drops the FIELD, keeps the document")
+    #
+    # RUN 80, THE SAME OWNER RULING, at the second entry point. These three checks asserted
+    # "emit_observations raises, naming the field", "assemble_signal_inputs refuses the same
+    # way" and "a refused document emits nothing at all, never a partial set". The third of
+    # those was the all-or-nothing invariant by name, and it is the one the owner overrode.
+    # What replaces it is the half that still has to hold: the unreadable field is emitted
+    # NOWHERE, in NO form, and the readable field beside it survives.
     bad = {"sha256": "b" * 64, "doc_type": "monthly_report", "filename": "legacy.pdf",
            "extraction": {"earned_value": "TBD", "actual_cost": 100}}
-    raised = False
-    try:
-        emit_observations(bad)
-    except MalformedNumericError as exc:
-        raised = "earned_value" in str(exc)
-    check(raised is True, "emit_observations raises, naming the field", "")
-    raised = False
-    try:
-        assemble_signal_inputs([bad])
-    except MalformedNumericError:
-        raised = True
-    check(raised, "assemble_signal_inputs refuses the same way", "")
-    # all-or-nothing: the document's OTHER, valid field must not have been emitted either
-    try:
-        emit_observations(bad)
-        partial = ["reached"]
-    except MalformedNumericError:
-        partial = []
-    check(partial == [], "a refused document emits nothing at all, never a partial set", "")
+    emitted = {o["field"]: o["value"] for o in emit_observations(bad)}
+    check("ev" not in emitted,
+          "the unreadable field is emitted nowhere, not as zero and not as the string",
+          str(emitted))
+    check(emitted.get("ac") == 100,
+          "the readable field in the same document IS emitted: the rest still contributes",
+          str(emitted))
+    si_bad = assemble_signal_inputs([bad])
+    check(si_bad.get("ev") is None and si_bad.get("ac") == 100,
+          "assemble_signal_inputs agrees: unreadable absent, readable present",
+          str({k: si_bad.get(k) for k in ("ev", "ac")}))
 
     print("\n6. Entry point three: overwritesignal")
     def ows(field, value):

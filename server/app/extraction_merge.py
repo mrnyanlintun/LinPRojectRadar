@@ -88,6 +88,10 @@ __all__ = [
     "NumericRangeError",
     "SIGNAL_INPUT_KEYS",
     "ratio_scaled_extraction_keys",
+    "CPARS_RATING_SCALE",
+    "ORDINAL_WORD_SCALES",
+    "ordinal_scale_prompt_lines",
+    "read_ordinal_word",
     "validate_doc_risk_score",
     "validate_numeric_fields",
     "validate_signal_value",
@@ -309,6 +313,72 @@ class NumericRangeError(ValueError):
     """A numeric extraction field parses, but sits outside the field's permitted range."""
 
 
+# --------------------------------------------------------------- ordinal word scales
+#
+# RUN 80, FIX TWO. CPARS PRINTS WORDS AND THE PLATFORM REQUIRED NUMBERS.
+#
+# A past performance evaluation (CPARS) states its ratings as adjectives, not as figures. The
+# four rating keys are declared numeric in `_NUMERIC_EMISSIONS` because A6.4
+# (`run_contractor_performance`, models_doc.py) reads them as numbers on a five-point scale and
+# refuses anything outside 0..5. So the document arrived stating exactly what it is required by
+# regulation to state, and the platform could not read a word of it.
+#
+# OWNER RULING (Run 80 order, section 3): accept the word ratings, under the standard CPARS
+# scale. The mapping is stated ONCE, here, and is also printed for a human in
+# `specifications/A6_delivery_quality.md`, which is generated from THIS dictionary by
+# `ordinal_scale_prompt_lines` rather than transcribed beside it.
+#
+# NOTHING IS INVENTED BEYOND THE FIVE NAMED WORDS. The scale is the published CPARS scale and
+# the five adjectives are its five levels, mapped onto the five-point scale A6.4 already
+# enforces. A word that is NOT one of the five is NOT coerced: `read_ordinal_word` hands it back
+# untouched, `_parse_numeric` calls it malformed, and the field is dropped as unreadable with a
+# sentence saying the rating was not recognised. Guessing at "Above Average" would be inventing
+# a level the evaluation does not have, which is precisely what standing rule 4 forbids.
+CPARS_RATING_SCALE: dict[str, float] = {
+    "exceptional": 5.0,
+    "very good": 4.0,
+    "satisfactory": 3.0,
+    "marginal": 2.0,
+    "unsatisfactory": 1.0,
+}
+
+# Which extraction keys are read on which word scale. Keyed by the RAW extraction key, so the
+# validation boundary and the emission boundary both consult the same map with the same key --
+# they are the two call sites of `read_ordinal_word` and there is no third.
+ORDINAL_WORD_SCALES: dict[str, dict[str, float]] = {
+    "overall_rating": CPARS_RATING_SCALE,
+    "schedule_rating": CPARS_RATING_SCALE,
+    "cost_rating": CPARS_RATING_SCALE,
+    "quality_rating": CPARS_RATING_SCALE,
+}
+
+
+def read_ordinal_word(src_key: str, v: Any) -> Any:
+    """
+    The value with a recognised rating word replaced by its number; otherwise `v` unchanged.
+
+    Unchanged is the important half. A word outside the scale leaves here exactly as it
+    arrived, so the numeric contract sees it, calls it unreadable, and the field is recorded
+    as not recognised rather than quietly turned into a figure.
+    """
+    scale = ORDINAL_WORD_SCALES.get(src_key)
+    if scale is None or not isinstance(v, str):
+        return v
+    return scale.get(" ".join(v.strip().lower().split()), v)
+
+
+def ordinal_scale_prompt_lines() -> tuple[str, ...]:
+    """One human-readable line per word scale, derived from the mapping itself. Used to state
+    the scale in the specification prose so the two cannot drift."""
+    out: list[str] = []
+    for key in sorted(ORDINAL_WORD_SCALES):
+        scale = ORDINAL_WORD_SCALES[key]
+        pairs = ", ".join(f"{w.title()} = {_fmt_num(n)}"
+                          for w, n in sorted(scale.items(), key=lambda kv: -kv[1]))
+        out.append(f"{key}: {pairs}")
+    return tuple(out)
+
+
 def _parse_numeric(v: Any) -> tuple[str, float | int | None]:
     """('absent' | 'ok' | 'malformed', value). The single numeric-reading rule."""
     if v is None or v == "":
@@ -344,7 +414,9 @@ def _parse_numeric(v: Any) -> tuple[str, float | int | None]:
 
 def _coerce_numeric(v: Any) -> float | int | None:
     """Emission-side coercion: the parsed value, or None for absent. Malformed is None too,
-    but is unreachable at emission because `validate_numeric_fields` refuses first."""
+    and that is now REACHABLE and is the mechanism: since Run 80 an unreadable field is
+    reported by `validate_numeric_fields` rather than refusing the document, and this None is
+    what makes it absent instead of stored."""
     status, n = _parse_numeric(v)
     return n if status == "ok" else None
 
@@ -362,6 +434,17 @@ _EXTRA_NUMERIC_KEYS: dict[str, tuple[tuple[str, str | None], ...]] = {
     "subcontractor_report": (("compliance_score", "subcontractorComplianceScore"),
                              ("on_time_deliveries", None),
                              ("scheduled_deliveries", None)),
+    # RUN 80, FIX THREE. The numeric figures of the three A3 structures. They are NOT in
+    # `_NUMERIC_EMISSIONS` because none of them is a signal-input field: each is read straight
+    # off the extraction by an assembler in `documents.py` into a governed structure. They are
+    # declared HERE so the numeric contract still sees them -- a negative index level or a
+    # negative adjustment factor is refused at the boundary rather than reaching a structure --
+    # which is exactly what `_EXTRA_NUMERIC_KEYS` exists for.
+    "historical_data": (("analogous_adjustment_factor", None),
+                        ("cost_index_base_value", None),
+                        ("cost_index_current_value", None),
+                        ("cost_index_cost_exposure", None),
+                        ("reference_class_governed_percentile", None)),
 }
 
 
@@ -406,32 +489,68 @@ def _fmt_num(n: float | int) -> str:
 
 
 def validate_numeric_fields(doc_type: str, extraction: Any, *,
-                            filename: str | None = None) -> None:
+                            filename: str | None = None) -> list[dict]:
     """
-    Refuse a document whose extraction carries a malformed or out-of-range numeric value.
-    Returns None, or raises MalformedNumericError / NumericRangeError.
+    Check every numeric field this document type declares. Returns the list of fields that
+    could not be read (possibly empty); raises NumericRangeError for a value that reads as a
+    number but sits outside the field's permitted range.
 
-    Called at EVERY entry point, before anything from the document is stored or emitted, so
-    the refusal is whole-document by construction: no observation row, no Document row, no
-    partial write. Absent values (None, "") pass — a missing observation means abstention,
-    which is the standing default and is not changed here.
+    RUN 80, FIX TWO, ITEM 3. WHAT CHANGED AND WHAT DID NOT.
+
+    This function used to raise MalformedNumericError for an unreadable field, and its contract
+    said so in these words: "Called at EVERY entry point, before anything from the document is
+    stored or emitted, so the refusal is whole-document by construction: no observation row, no
+    Document row, no partial write." That was a deliberate design ruling and it is the ruling
+    the owner has overridden (Run 80 order, section 3, item 3): "A document must not be
+    discarded whole because one field fails ... a field that cannot be read is absent, and the
+    rest of the document still contributes."
+
+    So UNREADABLE is now FIELD-LEVEL. The field is reported here and is never emitted --
+    `_coerce_numeric` already returns None for a value `_parse_numeric` calls malformed, so the
+    field is absent at the emission boundary exactly as an omitted field is, and absence has
+    always meant abstention. No coerced zero can appear: nothing is substituted anywhere on
+    this path.
+
+    OUT OF RANGE STILL REFUSES THE WHOLE DOCUMENT, and deliberately. Run 14's ruling is about a
+    value that IS a number and is wrong -- ten thousand per cent complete, a negative count --
+    where "the repair would be in the reassuring direction, which is the one nothing downstream
+    can trace". A readable but impossible figure is evidence that the document or the reading of
+    it is wrong in a way that is not confined to one field. The owner ruled on the field that
+    "cannot be read"; he did not rule on the field that reads as an impossible number, and this
+    run does not decide that for him.
+
+    Absent values (None, "") pass, unchanged.
     """
     doc_type = canonical_doc_type(str(doc_type or ""))
     ex = extraction if isinstance(extraction, dict) else {}
+    unreadable: list[dict] = []
     for src, si_field in _numeric_keys_for(doc_type):
-        raw = ex.get(src)
+        raw = read_ordinal_word(src, ex.get(src))
         status, n = _parse_numeric(raw)
         if status == "absent":
             continue
         if status == "malformed":
             where = f" in {filename}" if filename else ""
-            raise MalformedNumericError(
-                f"{src}{where} is {raw!r}, which cannot be read as a number. Nothing was "
-                f"stored for this document and no figures from it were used. If the document "
-                f"does not state this value, the extraction should leave it blank rather "
-                f"than write {raw!r}; re-run the extraction, or correct the document."
-            )
+            if src in ORDINAL_WORD_SCALES:
+                # THE UNRECOGNISED RATING. Said in its own words, because "cannot be read as a
+                # number" would be misleading about a field that is not supposed to be a number.
+                words = ", ".join(w.title() for w, _ in
+                                  sorted(ORDINAL_WORD_SCALES[src].items(), key=lambda kv: -kv[1]))
+                reason = (f"{src}{where} is {ex.get(src)!r}, which is not a rating on the scale "
+                          f"this evaluation uses ({words}). The rating was not recognised, so "
+                          f"this field is treated as absent and no figure is used in its place. "
+                          f"The rest of the document still contributes.")
+            else:
+                reason = (f"{src}{where} is {raw!r}, which cannot be read as a number. This "
+                          f"field is treated as absent and no figure is used in its place; the "
+                          f"rest of the document still contributes. If the document does not "
+                          f"state this value, the extraction should leave it blank rather than "
+                          f"write {raw!r}.")
+            unreadable.append({"field": src, "si_field": si_field,
+                               "value": ex.get(src), "reason": reason})
+            continue
         _range_check(si_field, n, src, filename)
+    return unreadable
 
 
 def validate_signal_value(field: str, value: Any) -> None:
@@ -778,7 +897,12 @@ def emit_observations(doc: dict) -> list[dict]:
             emit("docRiskScore", risk)
 
     for src, field in _NUMERIC_EMISSIONS.get(doc_type, ()):
-        v = _coerce_numeric(ex.get(src))
+        # RUN 80. `read_ordinal_word` is the SECOND and LAST call site of the word scale; the
+        # first is `validate_numeric_fields`. Both consult the same map with the same raw key,
+        # so a rating this boundary would emit is exactly a rating that boundary accepted, and
+        # a word neither of them recognises is malformed at both -- `_coerce_numeric` returns
+        # None for it, so the field is simply not emitted.
+        v = _coerce_numeric(read_ordinal_word(src, ex.get(src)))
         if v is not None:
             emit(field, v)
     for src, field in _DATESTR_EMISSIONS.get(doc_type, ()):

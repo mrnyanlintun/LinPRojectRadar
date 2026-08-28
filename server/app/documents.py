@@ -1717,6 +1717,184 @@ def _run69_structures(session: Session, project: Project, period: int,
                     "source_document_type": "contract_value",
                 })
                 out.setdefault("evmsApplicabilityEvidence", evidence)
+
+    # ----------------------------------------------------- RUN 80, THE THREE A3 STRUCTURES
+    #
+    # A3.1, A3.7 and A3.9 each abstained on a structure their documents were carrying. See the
+    # note beside `historical_data` in `extraction_fields._EXTRACTION_FIELDS` for what broke and
+    # where. This is the assembler half; the extraction half is that note and the shape hint in
+    # `extraction_client.build_prompt`.
+    #
+    # ALL OR NOTHING, PER STRUCTURE. `canonical_v3._provenance` refuses a structure whose source
+    # is blank, and it is right to: "a blank source silently reads as an unsourced number". So a
+    # structure is assembled only where the document states EVERY part of it, and where it does
+    # not, the key is absent, the module abstains on its own guard, and the sentence it prints
+    # names what is missing. Nothing here defaults, substitutes or derives a provenance field.
+    for d in documents:
+        ex = d.get("extraction")
+        if not isinstance(ex, dict) or d.get("doc_type") != "historical_data":
+            continue
+        for key, structure in _run80_a3_structures(ex).items():
+            out.setdefault(key, structure)
+    return out
+
+
+def _text(ex: dict, key: str) -> str:
+    return " ".join(str(ex.get(key) or "").split()).strip()
+
+
+def _pos(ex: dict, key: str) -> float | None:
+    """A stated figure above zero, or None. Never a default and never a zero standing in for an
+    absent number: every consumer of these three structures refuses a non-positive figure."""
+    from .extraction_merge import _coerce_numeric
+    v = _coerce_numeric(ex.get(key))
+    return float(v) if isinstance(v, (int, float)) and float(v) > 0 else None
+
+
+def _run80_a3_structures(ex: dict) -> dict:
+    """The A3.1 / A3.7 / A3.9 structures this ONE historical-data document supports."""
+    out: dict = {}
+
+    # ---- A3.7 analogEstimate. The analogue is identified BY NAME, which is the whole of what
+    # Run 20 recorded the old proxy as lacking: "no analog selection, no comparability criteria
+    # and no adaptation factors". `analog_cost` is the analogue's FINAL cost -- what it actually
+    # came to -- because that is the figure an adaptation factor is applied to; its award value
+    # is a different number and is not used here.
+    name = _text(ex, "analogous_project_name")
+    cost = _pos(ex, "similar_project_final_cost")
+    factor = _pos(ex, "analogous_adjustment_factor")
+    source = _text(ex, "analogous_source")
+    criteria = _text(ex, "analogous_comparability_basis")
+    normalization = _text(ex, "analogous_normalization_basis")
+    if name and cost and factor and source and criteria and normalization:
+        out["analogEstimate"] = {
+            "analog_project_id": name,
+            "analog_cost": cost,
+            "source": source,
+            "comparability_criteria": criteria,
+            "normalization": normalization,
+            # ONE FACTOR, NAMED BY THE DOCUMENT'S OWN WORD FOR IT. The document states one
+            # adjustment factor; it is carried as one adaptation factor and not decomposed into
+            # factors the document does not print.
+            "adaptation_factors": [{"factor_name": "stated adjustment factor",
+                                    "factor_value": factor}],
+            "assembled_by": "document extraction",
+            "source_document_type": "historical_data",
+        }
+
+    # ---- A3.9 externalCostIndex. Nine stated parts, no defaults. A published index that does
+    # not say which geography or which cost scope it covers is the wrong index applied
+    # confidently, so absence refuses here rather than being filled in.
+    index = {k: _text(ex, f"cost_index_{k}") for k in
+             ("name", "authority", "geography", "scope", "base_period",
+              "observation_period", "vintage")}
+    base_value = _pos(ex, "cost_index_base_value")
+    current_value = _pos(ex, "cost_index_current_value")
+    if all(index.values()) and base_value and current_value:
+        out["externalCostIndex"] = {
+            "index_name": index["name"], "authority": index["authority"],
+            "geography": index["geography"], "scope": index["scope"],
+            "base_period": index["base_period"],
+            "observation_period": index["observation_period"],
+            "vintage": index["vintage"],
+            "base_index_value": base_value, "current_index_value": current_value,
+            "assembled_by": "document extraction",
+            "source_document_type": "historical_data",
+        }
+        # THE COST EXPOSURE THE INDEX IS APPLIED TO, where the document names it. It is NOT part
+        # of the index's provenance and `inflation_adjustment` does not refuse the structure
+        # without it -- the MODULE refuses, in its own words ("does not say which cost exposure
+        # it is to be applied to"), which is the more precise sentence. It is not defaulted to
+        # the budget at completion: which part of the cost an index escalates is a judgement the
+        # document has to make, and applying a building-materials index to the whole contract
+        # sum would be that judgement made silently by this platform.
+        _exposure = _pos(ex, "cost_index_cost_exposure")
+        if _exposure:
+            out["externalCostIndex"]["cost_exposure"] = _exposure
+
+    # ---- A3.1 referenceClassPopulation, from the printed table.
+    members = _reference_class_members(ex.get("reference_class_json"))
+    meta = {k: _text(ex, f"reference_class_{k}") for k in
+            ("inclusion_criteria", "exclusion_criteria", "outcome_definition",
+             "normalization", "vintage")}
+    if len(members) >= 3 and all(meta.values()):
+        out["referenceClassPopulation"] = {
+            "members": members,
+            "inclusion_criteria": meta["inclusion_criteria"],
+            "exclusion_criteria": meta["exclusion_criteria"],
+            "outcome_definition": meta["outcome_definition"],
+            "normalization": meta["normalization"],
+            "data_vintage": meta["vintage"],
+            "assembled_by": "document extraction",
+            "source_document_type": "historical_data",
+        }
+        # WHICH PERCENTILE GOVERNS, stated by the document and never chosen here. The module
+        # refuses without it and it is right to: an uplift read at the median and an uplift read
+        # at the eightieth percentile are different forecasts, and picking one for the owner
+        # would be this platform asserting a risk appetite nobody set.
+        _pct = _pos(ex, "reference_class_governed_percentile")
+        if _pct:
+            # A percentile stated as 80 is the same instruction as one stated as 0.80.
+            out["referenceClassPopulation"]["governed_percentile"] = (
+                _pct / 100.0 if _pct > 1.0 else _pct)
+    return out
+
+
+# THE COLUMN HEADINGS A REFERENCE-CLASS TABLE PRINTS. The rows arrive keyed by the TABLE'S OWN
+# headings (that is what the shape hint asks for), so the headings are resolved here, once,
+# rather than the model being asked to rename the document's columns -- the same decision
+# `risk_register.map_headings` and `schedule_activities` already make for their tables.
+_RC_ID_HEADINGS = ("project", "project name", "project id", "reference project",
+                   "name", "id", "reference", "comparable project")
+_RC_AWARD_HEADINGS = ("award", "award value", "awarded", "award amount", "original value",
+                      "budget", "baseline", "original contract sum", "contract award")
+_RC_FINAL_HEADINGS = ("final", "final value", "final cost", "actual", "actual cost",
+                      "outturn", "final contract sum", "completion cost")
+_RC_OVERRUN_HEADINGS = ("overrun", "proportional overrun", "cost overrun", "overrun ratio",
+                        "overrun fraction")
+
+
+def _reference_class_members(raw) -> list[dict]:
+    """
+    The reference class's rows, or [] where the table supports none.
+
+    THE OVERRUN IS DERIVED HERE, IN CODE, and never asked of the model: the shape hint forbids
+    the model computing one. Where the table prints award and final values, the proportional
+    overrun is (final - award) / award, which is the outcome definition
+    `canonical_v3.reference_class_forecast` reads. Where the table prints the overrun itself as
+    a share, it is read as printed. A row supporting neither is DROPPED rather than defaulted --
+    a project counted at zero overrun is a project claimed to have finished on budget.
+    """
+    import re as _re
+    from .extraction_merge import _coerce_numeric
+
+    if not isinstance(raw, list):
+        return []
+
+    def pick(row: dict, headings) -> object:
+        norm = {" ".join(_re.sub(r"[^a-z0-9]+", " ", str(k).lower()).split()): v
+                for k, v in row.items()}
+        for h in headings:
+            if h in norm:
+                return norm[h]
+        return None
+
+    out: list[dict] = []
+    for row in raw:
+        if not isinstance(row, dict):
+            continue
+        pid = " ".join(str(pick(row, _RC_ID_HEADINGS) or "").split()).strip()
+        if not pid:
+            continue
+        overrun = _coerce_numeric(pick(row, _RC_OVERRUN_HEADINGS))
+        if overrun is None:
+            award = _coerce_numeric(pick(row, _RC_AWARD_HEADINGS))
+            final = _coerce_numeric(pick(row, _RC_FINAL_HEADINGS))
+            if award is None or final is None or float(award) <= 0:
+                continue
+            overrun = (float(final) - float(award)) / float(award)
+        out.append({"reference_project_id": pid,
+                    "proportional_overrun": float(overrun)})
     return out
 
 
@@ -2735,6 +2913,13 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             "needs_filing_review": filing["needs_filing_review"],
             "classification_confidence": doc.classification_confidence,
             "note": note,
+            # RUN 80, FIX TWO. The fields this document stated but that could not be read --
+            # an unrecognised CPARS rating word, a "TBD" where a figure belongs. The document
+            # is STORED and everything else in it contributes; these fields are absent, and
+            # the PM is told which and why rather than being left to wonder why one measure
+            # abstained. Empty for every document that read cleanly.
+            "unreadable_fields": [u.get("reason") for u in
+                                  (by_hash.get(d["sha256"], {}).get("unreadable") or [])],
             # 0023. The document's own date disagrees with the reporting period it was filed
             # to. Reported, never acted on: the document is stored in the period the person
             # stated, because a document produced late can legitimately belong to an earlier

@@ -264,6 +264,23 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "authority because a document is signed, and do not supply an authority reference the "
         "register does not print; return an empty array only if the document has no such table."
     ) if "modifications_json" in fields else ""
+    # RUN 80. THE FIFTH TABLE FIELD, and the same reason as the four before it. A reference
+    # class is a population of COMPLETED projects with what each was awarded and what each
+    # finished at; that is a table, and without naming the shape the model returns null for a
+    # table the document plainly prints. The forbidden operations are named for this table
+    # specifically: it must not add a project the document does not list, and it must not
+    # compute an overrun the document does not print -- `documents.py` derives the proportional
+    # overrun from the two figures the document DOES print, in code that can be read.
+    reference_class_hint = (
+        " reference_class_json, if requested and the document contains a table of completed "
+        "comparable projects (a reference class, a comparable-project population, a historical "
+        "benchmark set), is a JSON array with one object per PRINTED ROW of that table, using "
+        "the table's own column headings as keys and its values as printed; return every row "
+        "the document prints and no others. Do not add a project the document does not list, "
+        "do not carry a project over from your own knowledge, and do not compute an overrun, a "
+        "mean, a median or a percentile -- return only the cells printed; return an empty array "
+        "only if the document has no such table."
+    ) if "reference_class_json" in fields else ""
     # RUN 72. THE SCALE OF A RATIO FIELD, NAMED, because the general sentence below is false
     # of it. "Percentages as numbers 0-100" is correct for every 0..100 quantity in the
     # vocabulary and WRONG for a compliance rate, which the numeric contract bounds at 1.0. A
@@ -274,7 +291,24 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
     # `extraction_merge.ratio_scaled_extraction_keys()`, which reads the same
     # `BOUNDED_MAX_SI_FIELDS` table the refusal reads, so the prompt and the range check can
     # never disagree about which fields are shares.
-    from .extraction_merge import ratio_scaled_extraction_keys
+    from .extraction_merge import ratio_scaled_extraction_keys, ORDINAL_WORD_SCALES
+
+    # RUN 80, FIX TWO. THE RATING WORDS, ASKED FOR AS WORDS. A CPARS evaluation prints
+    # "Satisfactory", not 3. Asking the model for a number here would make it do the mapping,
+    # which is exactly the invention this platform refuses; it is told to return the word the
+    # document prints, and `read_ordinal_word` -- one declared table, two call sites -- does the
+    # mapping in Python where it can be read and checked. The permitted words are LISTED FROM
+    # THAT TABLE, so the prompt cannot name a level the mapping does not hold.
+    _ordinal = [k for k in sorted(ORDINAL_WORD_SCALES) if k in fields]
+    _words = sorted({w for k in _ordinal for w in ORDINAL_WORD_SCALES[k]},
+                    key=lambda w: -ORDINAL_WORD_SCALES[_ordinal[0]][w]) if _ordinal else []
+    ordinal_hint = (
+        " " + ", ".join(_ordinal) + (" is" if len(_ordinal) == 1 else " are") +
+        " stated as a RATING WORD, not a number. Return the word exactly as the document "
+        "prints it (" + ", ".join(w.title() for w in _words) + "). Do not convert a rating "
+        "word into a number and do not substitute a word the document does not use; if the "
+        "document states no rating for one of these, return null for it. "
+    ) if _ordinal else ""
 
     _ratio = [k for k in ratio_scaled_extraction_keys() if k in fields]
     ratio_hint = (
@@ -297,7 +331,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "
@@ -305,7 +339,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "Return every number on the scale the document prints it on: never convert a ratio "
         "into a percentage or a percentage into a ratio, never rescale, and never restate a "
         "figure in different units from the ones the document uses. "
-        "Percentages as numbers 0-100. Dates as YYYY-MM-DD. " + ratio_hint +
+        "Percentages as numbers 0-100. Dates as YYYY-MM-DD. " + ratio_hint + ordinal_hint +
         "document_risk_score, if requested, is a number between 0 and 1 inclusive, where 0 is "
         "no concern and 1 is severe concern; never a count and never a percentage. "
         "Return JSON only, no markdown, no commentary."
@@ -687,22 +721,30 @@ def extract_many(extractor, jobs: list[dict],
             # dialog, so the reason reaches the uploader through machinery that exists.
             validate_doc_risk_score((extraction or {}).get("document_risk_score"),
                                     filename=job.get("filename") or None)
-            # D2, same boundary, same reasoning. A numeric field that is present but not
-            # readable as a number ("TBD" for earned value), or readable but out of contract
-            # (a negative count), refuses the WHOLE document here — before the caller writes
-            # a Document row — so nothing is half-stored and no observation row can carry a
-            # coerced zero. The per-file {ok: False, error} shape delivers the field name and
-            # the reason to the uploader through the existing extraction-failure dialog.
-            validate_numeric_fields(doc_type, extraction,
-                                    filename=job.get("filename") or None)
+            # D2, same boundary. A value readable as a number but OUT OF CONTRACT (a negative
+            # count, ten thousand per cent complete) still refuses the WHOLE document here —
+            # before the caller writes a Document row — so nothing is half-stored and no
+            # observation row can carry a coerced zero. The per-file {ok: False, error} shape
+            # delivers the field name and the reason to the uploader through the existing
+            # extraction-failure dialog.
+            #
+            # RUN 80, FIX TWO, ITEM 3. A field that cannot be READ no longer refuses the
+            # document. `validate_numeric_fields` returns those fields instead of raising; they
+            # are carried on the result as `unreadable`, reach the PM as a per-file notice, and
+            # are absent from the emission because `_coerce_numeric` gives None for them. This
+            # is the owner's ruling of Run 80 section 3 item 3, overriding the whole-document
+            # refusal that stood here since D2. See `validate_numeric_fields` for what it costs.
+            unreadable = validate_numeric_fields(doc_type, extraction,
+                                                 filename=job.get("filename") or None)
             return {"sha256": job["sha256"], "ok": True, "doc_type": doc_type,
                     "extraction": extraction, "error": None,
+                    "unreadable": unreadable,
                     "confidence": confidence,
                     "elapsed_s": round(time.monotonic() - started, 3)}
         except Exception as exc:  # noqa: BLE001 — one document must not sink the batch
             log.warning("extraction failed for %s: %s", job.get("filename"), exc)
             return {"sha256": job["sha256"], "ok": False, "doc_type": None,
-                    "extraction": None, "error": str(exc), "confidence": None,
+                    "extraction": None, "error": str(exc), "unreadable": [], "confidence": None,
                     "elapsed_s": round(time.monotonic() - started, 3)}
 
     with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="extract") as pool:

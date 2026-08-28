@@ -344,9 +344,53 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "past_performance_report": [
         "overall_rating", "schedule_rating", "cost_rating", "quality_rating", "source",
     ],
+    # RUN 80, FIX THREE. THREE MEASURES ASKED FOR NOTHING AND SO RECEIVED NOTHING.
+    #
+    # A3.1 Reference Class Forecasting, A3.7 Analogous Estimating and A3.9 Inflation Adjustment
+    # each require a governed structure (`canonical_v3`), and the owner's historical-data and
+    # past-performance documents STATE what those structures need. Nothing asked for it. The
+    # five keys above are the whole of what this document type was ever asked, and none of them
+    # is an analogue's NAME, an adaptation FACTOR, a reference CLASS, or an external INDEX -- so
+    # every one of the three abstained on a structure the document was carrying on its face.
+    #
+    # WHAT EACH NEW KEY IS FOR, and which refusal in `canonical_v3` it answers:
+    #
+    #   A3.7 `analogous_estimate`. `analog_project_id` -> `analogous_project_name`;
+    #        `analog_cost` -> the analogue's FINAL cost, already asked for; the adaptation
+    #        factors -> `analogous_adjustment_factor`; and `_provenance` refuses without
+    #        `source`, `comparability_criteria` and `normalization`, which are
+    #        `analogous_source`, `analogous_comparability_basis` and
+    #        `analogous_normalization_basis`. Every one is a sentence or a figure a historical
+    #        comparison document prints; none is derived and none is defaulted.
+    #
+    #   A3.9 `external_cost_index`. `_provenance` refuses without index_name, authority,
+    #        geography, scope, base_period, observation_period and vintage, and the reading
+    #        needs the two index LEVELS. All nine are asked for by name. A document that names
+    #        the series and its two levels but not its geography or scope yields NO structure
+    #        and the module goes on abstaining -- correctly, because an index applied outside
+    #        the geography it was published for is the wrong index.
+    #
+    #   A3.1 `reference_class_forecast`. A reference class is a TABLE of completed projects, so
+    #        it follows `milestones_json` / `baseline_curve_json` / `modifications_json`
+    #        exactly: one field carrying one object per printed row, shape named in
+    #        `extraction_client.build_prompt`, assembled in `documents.py`. The five provenance
+    #        fields it refuses without are asked for beside it.
     "historical_data": [
         "analogous_overrun_pct", "analogous_project_type", "completion_year",
         "similar_project_bac", "similar_project_final_cost",
+        # A3.7
+        "analogous_project_name", "analogous_adjustment_factor", "analogous_source",
+        "analogous_comparability_basis", "analogous_normalization_basis",
+        # A3.9
+        "cost_index_name", "cost_index_authority", "cost_index_geography", "cost_index_scope",
+        "cost_index_base_period", "cost_index_base_value",
+        "cost_index_observation_period", "cost_index_current_value", "cost_index_vintage",
+        "cost_index_cost_exposure",
+        # A3.1
+        "reference_class_json", "reference_class_inclusion_criteria",
+        "reference_class_exclusion_criteria", "reference_class_outcome_definition",
+        "reference_class_normalization", "reference_class_vintage",
+        "reference_class_governed_percentile",
     ],
     "rfi_log": [
         "rfi_total", "rfi_open", "rfi_answered", "rfi_overdue", "avg_response_days",
