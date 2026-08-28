@@ -139,6 +139,27 @@ _KEY_ORDER: tuple[str, ...] = (
     "qualityDeficienciesNoted", "itemsInspected", "itemsFailed", "criticalDeficiencyCount",
     "rfiOpen", "rfiOverdue", "rfiAvgResponseDays", "rfiOldestOpenDays",
     "rfaTotal", "rfaApproved", "rfaRejected", "rfaResubmit", "rfaOpen", "rfaAvgReviewDays",
+    # RUN 81. `oshaRecordableIncidents` was the ONE field in the whole registry that carried a
+    # declared kind (field_registry SNAPSHOT), was emitted by a real branch of
+    # `emit_observations` (Run 31 added it precisely so the count would stop being discarded)
+    # and was STORED as observations -- and was then dropped again here, because
+    # `select_signal_inputs` iterates `_KEY_ORDER` and this key was never added to it. The
+    # observations existed in the database and never reached a module.
+    #
+    # WHAT IT COST, established by executing A6.2's assembly rather than reading it.
+    # `models_cat89` reads `si.get("oshaRecordableIncidents")` as the NUMERATOR of the OSHA
+    # identity (recordable cases * 200,000 / employee hours worked) and its own docstring
+    # asserts "the corpus carries `oshaRecordableIncidents` (Run 31 stopped discarding it)".
+    # It did not. The key resolved to None on every project ever computed, so
+    # `recordable_cases` never appeared on the A6.2 structure, the canonical module could
+    # never compute the identity from the two defining quantities, and the module was left
+    # with the document-STATED rate that the same docstring says must never be used as the
+    # incidence rate. Run 31's repair was undone by an omission one line long.
+    #
+    # APPENDED, NOT INSERTED. `select_signal_inputs` builds `signalInputs` in this order and
+    # the comment at the assembly says the simulation layer iterates insertion order; adding
+    # the key at the end leaves every existing key in the position it has always held.
+    "oshaRecordableIncidents",
 )
 
 #: Public, stable view of the signalInputs key order (excluding "sources"/"cpi"/"spi").
