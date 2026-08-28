@@ -201,7 +201,7 @@
     });
 
     await refreshProjects();
-    renderPortfolio();
+    // RUN 79, PART C. `renderPortfolio()` was called here and is removed with the card it drew.
   }
 
   function switchPanel(name) {
@@ -346,7 +346,7 @@
     window.LIN_PM_META = meta;
     if (window.LinApp && LinApp.buildFallbackList) LinApp.buildFallbackList();
     populateProjectPickers();
-    renderPortfolio();
+    // RUN 79, PART C. `renderPortfolio()` was called here and is removed with the card it drew.
   }
 
   function populateProjectPickers() {
@@ -975,132 +975,27 @@
 
   /* ============================================================
      Part 5 — portfolio view
+     ============================================================
+
+     RUN 79, PART C, ITEM 1, AN OWNER RULING, NOT RE-LITIGATED HERE.
+
+     `renderPortfolio()` DREW THE "Portfolio health" CARD AND IS REMOVED WITH IT. Group D is
+     retired -- `portfolio_health.live_portfolio_modules()` returns the empty tuple, verified by
+     execution -- so every project's `portfolio_snapshot` came back as a retired snapshot and
+     the card rendered one sentence saying no portfolio-level reading is produced. The deep-dive
+     flyout went earlier; this was the last surviving piece.
+
+     REMOVED WITH IT, because nothing else called them: `PORTFOLIO_KEY_NAMES`,
+     `moduleNameForPortfolioKey()` and `portfolioReading()`, which existed only to name and word
+     the rows of that card. `MODULE_NAMES`' own D1 entry is NOT touched -- it is the taxonomy's
+     label for a retired category, read elsewhere, and removing it would be removing something
+     the owner did not name.
+
+     THE PER-PROJECT LOADER IS GONE TOO, and that is the only behavioural change beyond the
+     card: it was the thing that called `projectperiods` + `projectresults` for every project the
+     caller is PM of and primed each row into `LinResults`. Nothing on the portfolio page needed
+     that priming -- the project list and its statuses come from `a_list`'s own projection -- and
+     Run 79 part A moved every status on that projection onto the specification readings anyway.
      ============================================================ */
 
-  async function renderPortfolio() {
-    var listEl = $("ws-portfolio-list");
-    var mine = STATE.projects.filter(function (p) { return p.project_role === "PM"; });
-    if (!mine.length) {
-      listEl.innerHTML = '<p class="ws-empty">You are not the PM of any project yet.</p>';
-      return;
-    }
-    listEl.innerHTML = '<p class="ws-note">Loading…</p>';
-    var rows = await Promise.all(mine.map(async function (p) {
-      /* RUN 61, THE OWNER'S RULING. THIS LOADER ASKS FOR THE LATEST COMPUTED PERIOD — SHAPE 2 —
-         AND IS TOLD WHICH ONE IT GOT.
-
-         It used to send `period: p.period || 1`, the last surviving copy of the period-1
-         fallback Run 48 removed from `detail.js:1267`. It was worse than a fallback. `p.period`
-         is `workspaceprojects`'s own field, and the server derives that from
-         `_resolve_period(session, project, {})` with an EMPTY payload: for a project outside the
-         research chain that function returns the literal 1 every time (`documents.py`
-         `_resolve_period`, the `supplied is None` / no-date arm). So `|| 1` never even fired —
-         this call asked for period 1 on every operational project, whatever period it held.
-
-         That is the row that reached `ROWS` before the detail page rendered, and it is why the
-         provenance line named a Green module as the driver of a status a Red module set. The
-         same derivation the detail page uses since Run 48 is used here: `projectperiods`
-         returns `latest_computed_period`, read from the result table by the server. A project
-         with no computed result in any period returns null; nothing is fetched for it and it
-         reports as uncomputed exactly as it did before. Nothing guesses, and no period is
-         substituted for another. */
-      var per = await call("projectperiods", { id: p.project_id });
-      var latest = (per && per.ok === true) ? per.latest_computed_period : null;
-      if (latest === null || latest === undefined) return { project: p, resp: null, period: null };
-      var resp = await call("projectresults", { id: p.project_id, period: latest });
-      // Same reason as the detail panel: this is the loader that already has the row, so it is
-      // the one that shares it. The portfolio radar reads statuses through taxonomy.js and
-      // never fetches anything of its own. The row is primed into ITS OWN period's slot, so it
-      // cannot be handed to a reader holding a different period.
-      if (resp && resp.ok === true && window.LinResults) LinResults.prime(p.project_id, resp.result);
-      return { project: p, resp: resp, period: latest };
-    }));
-    // Portfolio Health is a property of the whole portfolio, not of each project:
-    // when the portfolio is too small (or the snapshot is otherwise unavailable),
-    // every project returns the SAME insufficient-data reason. Say it once for the
-    // portfolio rather than repeating it per project. Only projects that actually
-    // carry a computed snapshot get their own card.
-    var computed = [];
-    var portfolioNote = null;
-    rows.forEach(function (row) {
-      var p = row.project, resp = row.resp;
-      if (!resp || resp.ok !== true) {
-        if (!portfolioNote) portfolioNote = "Portfolio Health has not been computed yet.";
-        return;
-      }
-      var snap = resp.result.portfolio_snapshot;
-      if (!snap || snap.insufficient_data) {
-        if (!portfolioNote) {
-          portfolioNote = (snap && snap.message) ? snap.message :
-            "Portfolio Health has not been computed for this portfolio.";
-        }
-        return;
-      }
-      computed.push({ project: p, snap: snap });
-    });
-
-    var html = "";
-    if (portfolioNote) {
-      html += '<p class="ws-note">' + esc(portfolioNote) + "</p>";
-    }
-    html += computed.map(function (row) {
-      var p = row.project, snap = row.snap;
-      var results = snap.results || {};
-      // RUN 33. PORTFOLIO HEALTH CARRIES NO STATUS COLOUR. Every one of the five bands the v20
-      // snapshot carried was uncalibrated -- the PH.2 percentile cut points, the PH.3 slope
-      // magnitudes, the PH.4 matched-cluster ladder, the PH.5 composite ladder and the PH.1
-      // ladder hung off a synthetic laboratory threshold -- and a coloured dot is read as a
-      // project condition whatever the caption beside it says. The reading is now stated in
-      // words, with its cohort, and the dot is gone rather than recoloured.
-      var rowsHtml = Object.keys(results).sort().map(function (key) {
-        var m = results[key] || {};
-        return '<div class="ws-module">' +
-          '<span class="ws-mname">' + esc(moduleNameForPortfolioKey(key)) + "</span>" +
-          '<span class="ws-note">' + esc(portfolioReading(m)) + "</span></div>";
-      }).join("");
-      var cohort = snap.cohort || {};
-      var limitation = "";
-      if (cohort.cohort_size !== undefined && cohort.cohort_size < 10) {
-        limitation = '<div class="ws-note">Small-sample limitation: fewer than ten projects in ' +
-          'this cohort. Exploratory programme context only; no predictive validity is claimed.' +
-          "</div>";
-      }
-      return '<div class="ws-card"><strong>' + esc(p.name || "Untitled project") + "</strong>" +
-        '<div class="ws-note">Portfolio Health is programme context. It is inform-only and ' +
-        'non-voting, it does not alter Project Status, and it is never a sole trigger.</div>' +
-        '<div class="ws-note">cohort ' + esc(cohort.cohort_id || "(none)") +
-        " \u2022 period " + esc(cohort.period || "(none)") +
-        " \u2022 feature schema " + esc(cohort.feature_schema_version || "(none)") +
-        " \u2022 model " + esc(cohort.model_version || "(none)") +
-        " \u2022 " + esc(cohort.cohort_size === undefined ? 0 : cohort.cohort_size) +
-        " project(s)</div>" + limitation + rowsHtml + "</div>";
-    }).join("");
-
-    listEl.innerHTML = html || '<p class="ws-empty">You are not the PM of any project yet.</p>';
-  }
-
-  // The stored portfolio_snapshot keys results by an internal cat8_N_* name, not a module id
-  // in MODULE_NAMES (D1.1..D1.5 map differently) — translate the handful of keys directly.
-  var PORTFOLIO_KEY_NAMES = {
-    cat8_1_isolation_forest: "Isolation Forest",
-    cat8_2_portfolio_outlier: "Portfolio Outlier Detection",
-    cat8_3_trajectory_classifier: "Signal Trajectory Classifier",
-    cat8_4_cross_project_pattern: "Cross-project Pattern Detector",
-    cat8_5_anomaly_score: "Anomaly Score"
-  };
-  function moduleNameForPortfolioKey(key) { return PORTFOLIO_KEY_NAMES[key] || key; }
-
-  // The reading itself, in words. An abstention states its reason; PH.5 states that its scalar
-  // is blocked for want of governed weights rather than showing a number that does not exist.
-  function portfolioReading(m) {
-    if (m.abstained) { return "No reading. " + (m.abstention_reason || ""); }
-    var projects = m.projects || {};
-    var ids = Object.keys(projects).sort();
-    if (m.module_id === "D1.5") {
-      return "Profile of " + ids.length + " project(s); composite score withheld (" +
-        (m.disposition || "") + "): governed weights do not yet exist.";
-    }
-    return "Computed for " + ids.length + " project(s) in this cohort. Exploratory comparison; " +
-      "not a project condition.";
-  }
 })();

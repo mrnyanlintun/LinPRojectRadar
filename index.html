@@ -566,9 +566,8 @@
         <ul id="project-list" aria-labelledby="list-heading"></ul>
       </div>
 
-      <!-- Portfolio Health is portfolio-scale. It is read from each project's own
-           stored result in the "Portfolio health" card below (renderPortfolio in
-           workspace.js), not drawn as a section on the stage here. -->
+      <!-- Portfolio Health is not drawn here and is no longer drawn anywhere: Group D is
+           retired and the card that used to read it was removed at Run 79, part C. -->
     </section>
 
     <!-- Admin is launched from the stage toolbar: New Project + Upload open
@@ -597,12 +596,16 @@
            columns (PM role, current period, computed state) it carried. Those
            columns are now merged onto the single stage list (buildFallbackList in
            app.js), so there is one project list, not two. -->
-      <div class="ws-card">
-        <h3 style="margin-top:0;">Portfolio health</h3>
-        <p class="ws-note">Portfolio Health for each project you are PM of, read from that
-          project's own stored result.</p>
-        <div id="ws-portfolio-list"></div>
-      </div>
+      <!-- RUN 79, PART C, ITEM 1, AND IT IS AN OWNER RULING. The "Portfolio health" card is
+           REMOVED. Group D was retired: `portfolio_health.live_portfolio_modules()` returns the
+           empty tuple (verified by execution at Run 79), the deep-dive flyout went earlier, and
+           this card was the last surviving piece -- it rendered a sentence saying no
+           portfolio-level reading is produced. Nothing replaces it: a card whose only content is
+           that it has no content is not information. `renderPortfolio()` in workspace.js is
+           removed with it, along with its two call sites and its two naming helpers.
+
+           NOTHING ELSE ON THIS PAGE MOVES. The card above and the card below keep their order
+           and their markup. -->
     </div>
 
     </section><!-- /page portfolio -->

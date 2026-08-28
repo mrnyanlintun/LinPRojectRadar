@@ -413,57 +413,19 @@
        2) ensemble distribution bar (count per status + trend line)
        3) consensus stacked bar (single proportional bar)
      ============================================================ */
-  const ENSEMBLE_STATES = ["Complete", "Green", "Yellow", "Amber", "Red"];
+  /* RUN 79, PART C, ITEM 2, AN OWNER RULING. ENSEMBLE ANALYSIS IS REMOVED.
+     `ensembleHtml()`, `ensembleTally()` and `ENSEMBLE_STATES` stood here and are gone with the
+     section. Nothing else called them: the tally fed the panel and the panel's collapse badge,
+     and both are removed. `wireEnsembleScatter()` and `ensembleEstimatedCount()` are removed
+     at their own sites below for the same reason.
 
-  function ensembleTally(project) {
-    const counts = { Complete: 0, Green: 0, Yellow: 0, Amber: 0, Red: 0, none: 0 };
-    const rows = [];
-    let idx = 0;
-    projectCats().forEach((cat) => {
-      cat.modules.forEach((m) => {
-        idx += 1;
-        const active = !(cat.parked || m.active === false);
-        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
-        const norm = active ? normalizeStatus(status) : null;
-        const bucket = norm && counts[norm] != null ? norm : "none";
-        counts[bucket] += 1;
-        rows.push({ index: idx, module_id: m.module_id, name: m.name, color: cat.color, bucket });
-      });
-    });
-    return { counts, rows };
-  }
+     THE CSS IS DELIBERATELY LEFT IN PLACE, on Run 74's precedent when the Signal Web sphere
+     came out: `.chart3d-btn`, `.chart3d-wrap` and the panel rules are not provably unique to
+     this section, and removing a shared rule to tidy up is how a removal restyles something the
+     owner did not ask to change. Dead CSS renders nothing.
 
-  // T12b. Gated on hasSignals(project) — the legacy client-side p.signals blob — though
-  // ensembleTally() below reads every module's status through getModuleStatus(), which is the
-  // stored row. A project analysed server-side with no legacy blob had this whole section
-  // silently return "" and vanish, even though the module ensemble it draws was fully available.
-  function ensembleHtml(project) {
-    if (!window.LIN_CATEGORIES) return "";
-    if (!(window.LinResults && LinResults.hasResult(project))) return "";
-    const { counts } = ensembleTally(project);
-    const activeTotal = ["Complete","Green","Yellow","Amber","Red"].reduce((n, k) => n + counts[k], 0);
-    if (!activeTotal) return "";
-    const totalModules = projectModuleCount();
-    return `<section class="panel ens-panel scatter3d-panel" aria-label="Ensemble analysis">
-      <div class="sw-head">
-        <div>
-          <p class="eyebrow">Ensemble Scatter · ${activeTotal} active modules (${totalModules} total)</p>
-          <p class="kn-sub sw-vs">${totalModules} modules in 3D · X = category · Y = status severity · drag to rotate</p>
-        </div>
-      </div>
-      <div class="chart3d-controls">
-        <button class="chart3d-btn" data-scatter-view="free">Free rotate</button>
-        <button class="chart3d-btn active" data-scatter-view="front">Front</button>
-        <button class="chart3d-btn" data-scatter-view="side">Side</button>
-        <button class="chart3d-btn" data-scatter-view="top">Top</button>
-      </div>
-      <div class="chart3d-wrap">
-        <canvas class="scatter3d-canvas"></canvas>
-        <div class="scatter3d-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:10;background:var(--surface-2,#131d33);border:1px solid var(--line,#26344f);border-radius:8px;padding:8px 12px;font-size:11px;white-space:nowrap"></div>
-      </div>
-      <div class="scatter-legend"></div>
-    </section>`;
-  }
+     NOTHING ELSE MOVES. Every other section keeps its id, its order and its sessionStorage
+     open/closed key, so a saved open state survives this removal. */
 
   /* ============================================================
      Period Comparison — read-only longitudinal view over the
@@ -1016,9 +978,8 @@
     let overallState = null;
     try { const c = currentSnapshot(p); overallState = (c && c.governance && c.governance.state) || resolveBriefState(p); }
     catch (e) { try { overallState = resolveBriefState(p); } catch (e2) {} }
-    const simArr = (p.simulationSignals && p.simulationSignals.signal_array) || [];
-    const ensActive = simArr.filter((r) => r && r.status_color && normalizeStatus(r.status_color)).length;
-    const ensEst = simArr.filter((r) => r && /\b(estimated|derived|assumed)\b/i.test(String(r.evidence_metric || ""))).length;
+    // RUN 79, PART C. `simArr`, `ensActive` and `ensEst` computed the Ensemble Analysis
+    // collapse badge and are removed with the section. They had no other reader.
     const uploadCount = (typeof uploadedDocEvents === "function") ? uploadedDocEvents(p).length : 0;
     const inputFieldCount = Object.keys(p.signalInputs || {})
       .filter((k) => k !== "sources" && p.signalInputs[k] != null && p.signalInputs[k] !== "").length;
@@ -1127,7 +1088,9 @@
              uploadedDocsPanelHtml(p) +
              `<section class="panel detail-signals" aria-label="Extracted signals detail"></section>`,
              false, `${uploadCount} doc${uploadCount === 1 ? "" : "s"} · ${inputFieldCount} field${inputFieldCount === 1 ? "" : "s"}`)}
-        ${cs("d-ensemble", "Ensemble Analysis", ensembleHtml(p), false, `${ensActive} active · ${ensEst} est.`)}
+        ${/* RUN 79, PART C, ITEM 2. The `d-ensemble` Ensemble Analysis section stood here,
+             between `d-docsignals` and `d-periods`, and is removed on the owner's ruling.
+             The two sections either side keep their ids and their adjacency. */""}
         ${cs("d-periods", "Period Comparison", periodComparisonHtml(p), false,
              storedHistory(p).length >= 2 ? `${storedHistory(p).length} periods` : "")}`;
 
@@ -1142,14 +1105,7 @@
       "d-neural": () => { if (typeof LinNeuralFlow !== "undefined") LinNeuralFlow.render(p, root.querySelector(".detail-neural-flow")); },
       // Brief renders (and possibly calls the chat endpoint) only when opened.
       "d-brief": () => { wireBrief(root, p); refreshBrief(root, p); },
-      // Ensemble Analysis. Same story: ensembleHtml returns "" until a stored row with
-      // module_results is present, so the section is empty at first render and fills in
-      // when primeAndRefresh re-runs it against the grafted row.
-      "d-ensemble": () => {
-        const body = document.getElementById("body-d-ensemble");
-        if (body) body.innerHTML = ensembleHtml(p);
-        wireEnsembleScatter(root, p);
-      },
+      // RUN 79, PART C. The `d-ensemble` lazy initialiser is removed with its section.
       // Period Comparison is fully static HTML (table + inline SVG sparklines)
       // already rendered above — no post-expand work, but kept in lazyInits
       // to follow the same render-on-first-expand idiom as every other section.
@@ -1497,7 +1453,9 @@
     // Re-run any sections already open — they rendered before module_results arrived. d-brief and
     // d-decision are included because their key-signal and signal-breakdown sections also read
     // the stored row (they were reading the absent legacy blob before).
-    const REFRESH_SECTIONS = ["d-ledger", "d-projnet", "d-ensemble", "d-docsignals",
+    // RUN 79, PART C. "d-ensemble" was in this list and is removed with its section. The other
+    // five are untouched and still re-run when they are open.
+    const REFRESH_SECTIONS = ["d-ledger", "d-projnet", "d-docsignals",
                               "d-brief", "d-decision"];
     REFRESH_SECTIONS.forEach((secId) => {
       if (!lazyInits || typeof lazyInits[secId] !== "function") return;
@@ -1557,13 +1515,7 @@
       const badge = sec && sec.querySelector(".collapse-badge");
       if (badge) badge.innerHTML = html;
     };
-    try {
-      const tally = ensembleTally(project);
-      const active = ["Complete", "Green", "Yellow", "Amber", "Red"]
-        .reduce((n, k) => n + (tally.counts[k] || 0), 0);
-      const est = ensembleEstimatedCount(project);
-      setBadge("d-ensemble", `${active} active · ${est} est.`);
-    } catch (e) { /* non-fatal: badge stays as first-render text */ }
+    // RUN 79, PART C. The `d-ensemble` badge refresh is removed with its section.
     try {
       const uploadCount = (typeof uploadedDocEvents === "function") ? uploadedDocEvents(project).length : 0;
       const fieldCount = storedInputFieldCount(project);
@@ -1586,14 +1538,8 @@
   function storedInputFieldCount(project) {
     return storedInputFields(project).length;
   }
-  /* Count of computed modules whose stored evidence metric is an estimate rather than a direct
-     reading. Read from the stored module_results (the same rows the Ensemble panel plots), so
-     an abstaining module — which has no row — is never counted. */
-  function ensembleEstimatedCount(project) {
-    const row = (window.LinResults && LinResults.rowFor(project)) || null;
-    const mods = row && Array.isArray(row.module_results) ? row.module_results : [];
-    return mods.filter((m) => m && /\b(estimated|derived|assumed)\b/i.test(String(m.evidence_metric || ""))).length;
-  }
+  /* RUN 79, PART C. `ensembleEstimatedCount()` counted for the Ensemble Analysis badge only
+     and is removed with it. */
 
   /* ============================================================
      Executive brief — Lin-generated 4-6 sentence summary of the
@@ -3062,205 +3008,10 @@
   // not the sphere, and which this page has not rendered for some time. Removing it would
   // be removing something other than the sphere.
 
-  function wireEnsembleScatter(root, project) {
-  const SC = window.LIN_STATUS_COLORS;   // central palette (radar.css --status-*)
-    const canvas = root.querySelector(".scatter3d-canvas");
-    if (!canvas || !window.LIN_CATEGORIES) return;
-    // T12b. Same correction as ensembleHtml just above: this scatter is built entirely from
-    // getModuleStatus() a few lines down, which is the stored row, not from p.signals.
-    if (!(window.LinResults && LinResults.hasResult(project))) return;
-    const wrap = canvas.parentElement;
-    const dpr = window.devicePixelRatio || 1;
-    function resize() {
-      const w = wrap.clientWidth || 800;
-      canvas.width = w * dpr;
-      canvas.height = 420 * dpr;
-      canvas.style.width = w + "px";
-      canvas.style.height = "420px";
-    }
-    resize();
-    const ctx = canvas.getContext("2d");
-    const DOT = { Complete: SC.Complete, Green: SC.Green, Yellow: SC.Yellow, Amber: SC.Amber, Red: SC.Red, none: SC.None };
-    const SY = { Complete: -120, Green: -80, Yellow: -30, Amber: 40, Red: 100, none: 0 };
-    const GRID_Y = 120;
-
-    const scatterData = [];
-    // Centre the category columns on the X axis whatever the category count.
-    const CAT_MID = (projectCats().length - 1) / 2;
-    let idx = 0;
-    projectCats().forEach((cat, catIdx) => {
-      cat.modules.forEach((m) => {
-        idx++;
-        const active = !(cat.parked || m.active === false);
-        const status = active && window.getModuleStatus ? getModuleStatus(m.method_class, project) : null;
-        const norm = active ? normalizeStatus(status) : null;
-        const bucket = norm || "none";
-        const evidence = active ? moduleEvidence(m, project) : null;
-        const statusKey = bucket === "none" ? "none" : bucket;
-        const zSpread = ((idx*13+7)%60) - 30;
-        const xJitter = ((idx*7+3)%40) - 20;
-        scatterData.push({
-          x: (catIdx-CAT_MID)*55 + xJitter,
-          y: SY[statusKey] + (((idx*11)%20) - 10),
-          z: zSpread,
-          module_id: m.module_id, name: m.name, bucket, evidence, color: cat.color, catId: cat.id, catIdx
-        });
-      });
-    });
-
-    const counts = { Red:0, Amber:0, Yellow:0, Green:0, Complete:0 };
-    scatterData.forEach((d)=>{ if(d.bucket!=="none"&&counts[d.bucket]!=null) counts[d.bucket]++; });
-    const activeTotal = Object.values(counts).reduce((n,v)=>n+v,0);
-    if (!activeTotal) return;
-
-    var rotX=0.05, rotY=0.0, autoRotate=false, dragging=false, lastX=0, lastY=0;
-    var hoverIdx=-1, projectedPts=[];
-    const filteredCats=new Set();
-
-    function rxf(p,a){return{x:p.x,y:p.y*Math.cos(a)-p.z*Math.sin(a),z:p.y*Math.sin(a)+p.z*Math.cos(a)};}
-    function ryf(p,a){return{x:p.x*Math.cos(a)+p.z*Math.sin(a),y:p.y,z:-p.x*Math.sin(a)+p.z*Math.cos(a)};}
-    function proj(p){
-      const CW=canvas.width/dpr, CH=canvas.height/dpr, cx=CW/2, cy=CH/2+30, fov=500;
-      const z=p.z+fov, scale=fov/Math.max(z,1);
-      return{x:cx+p.x*scale,y:cy+p.y*scale,scale};
-    }
-
-    function draw() {
-      const W=canvas.width, H=canvas.height;
-      ctx.clearRect(0,0,W,H); ctx.save(); ctx.scale(dpr,dpr);
-      const CW=W/dpr, CH=H/dpr;
-
-      for(let gx=-6;gx<=6;gx++){
-        const p1=rxf(ryf({x:gx*55,y:GRID_Y,z:-180},rotY),rotX);
-        const p2=rxf(ryf({x:gx*55,y:GRID_Y,z:180},rotY),rotX);
-        const pp1=proj(p1),pp2=proj(p2);
-        ctx.beginPath();ctx.moveTo(pp1.x,pp1.y);ctx.lineTo(pp2.x,pp2.y);
-        ctx.strokeStyle="rgba(38,52,79,0.5)";ctx.lineWidth=0.5;ctx.stroke();
-      }
-      for(let gz=-3;gz<=3;gz++){
-        const p3=rxf(ryf({x:-330,y:GRID_Y,z:gz*60},rotY),rotX);
-        const p4=rxf(ryf({x:330,y:GRID_Y,z:gz*60},rotY),rotX);
-        const pp3=proj(p3),pp4=proj(p4);
-        ctx.beginPath();ctx.moveTo(pp3.x,pp3.y);ctx.lineTo(pp4.x,pp4.y);
-        ctx.strokeStyle="rgba(38,52,79,0.5)";ctx.lineWidth=0.5;ctx.stroke();
-      }
-
-      // X axis labels — 10px, category name (group letter), category color, centered
-      projectCats().forEach((cat,i)=>{
-        const p=rxf(ryf({x:(i-CAT_MID)*55,y:GRID_Y+14,z:0},rotY),rotX), pp=proj(p);
-        ctx.font="10px SFMono-Regular,ui-monospace,monospace";
-        ctx.fillStyle=cat.color||"#64748b";
-        ctx.globalAlpha=filteredCats.size===0||filteredCats.has(cat.id)?0.9:0.25;
-        ctx.textAlign="center";
-        ctx.fillText((cat.group||"")+"·"+cat.name.split(" ")[0],pp.x,pp.y);
-        ctx.textAlign="left";ctx.globalAlpha=1;
-      });
-
-      projectedPts=scatterData.map((d,i)=>{
-        const pr=rxf(ryf(d,rotY),rotX), pp=proj(pr); return{d,pp,pz:pr.z,i};
-      }).sort((a,b)=>a.pz-b.pz);
-
-      projectedPts.forEach((s)=>{
-        const d=s.d;
-        const catFocused=filteredCats.size===0||filteredCats.has(d.catId);
-        // Fix 5: dot = status color, stem = category color
-        const dotCol=DOT[d.bucket]||DOT.none;
-        const stemCol=d.color||"#4ea0ff";
-        const dotR=Math.max(2.5,5*s.pp.scale), isHover=s.i===hoverIdx;
-        const shadow=rxf(ryf({x:d.x,y:GRID_Y,z:d.z},rotY),rotX), sp=proj(shadow);
-        ctx.beginPath();ctx.arc(sp.x,sp.y,dotR*0.6,0,Math.PI*2);
-        ctx.fillStyle="rgba(0,0,0,0.25)";ctx.globalAlpha=catFocused?1:0.1;ctx.fill();
-        ctx.beginPath();ctx.moveTo(s.pp.x,s.pp.y);ctx.lineTo(sp.x,sp.y);
-        ctx.strokeStyle=stemCol+"55";ctx.lineWidth=0.7;ctx.globalAlpha=catFocused?0.9:0.08;ctx.stroke();
-        const r=isHover?dotR*1.4:dotR;
-        ctx.beginPath();ctx.arc(s.pp.x,s.pp.y,r,0,Math.PI*2);
-        if(d.bucket!=="none"){
-          const g=ctx.createRadialGradient(s.pp.x-r*0.3,s.pp.y-r*0.3,0,s.pp.x,s.pp.y,r);
-          g.addColorStop(0,dotCol);g.addColorStop(1,dotCol+"80");ctx.fillStyle=g;ctx.globalAlpha=catFocused?0.9:0.08;
-        } else {ctx.fillStyle=DOT.none;ctx.globalAlpha=catFocused?0.2:0.04;}
-        ctx.fill();ctx.globalAlpha=1;
-      });
-
-      ctx.font="10px SFMono-Regular,ui-monospace,monospace";ctx.fillStyle="#64748b";
-      ctx.fillText(scatterData.length+"-MODULE ENSEMBLE SCATTER",14,22);
-      ctx.font="12px -apple-system,sans-serif";ctx.fillStyle="#9fb0cc";
-      ctx.fillText(activeTotal+" active · "+counts.Red+" Red · "+counts.Amber+" Amber · "+counts.Green+" Green",14,40);
-
-      // Fix 2: Y axis status labels as screen-space overlay — drawn last, anchored to left
-      [{label:"Complete",y:SY.Complete,color:SC.Complete},{label:"Green",y:SY.Green,color:SC.Green},
-       {label:"Yellow",y:SY.Yellow,color:SC.Yellow},{label:"Amber",y:SY.Amber,color:SC.Amber},
-       {label:"Red",y:SY.Red,color:SC.Red}
-      ].forEach((lb)=>{
-        const pp=proj(rxf(ryf({x:-320,y:lb.y,z:0},rotY),rotX));
-        ctx.font="10px SFMono-Regular,ui-monospace,monospace";
-        ctx.fillStyle=lb.color;ctx.globalAlpha=0.85;
-        ctx.textAlign="right";
-        ctx.fillText(lb.label,pp.x-6,pp.y+4);
-        ctx.beginPath();ctx.moveTo(pp.x,pp.y);ctx.lineTo(pp.x+20,pp.y);
-        ctx.strokeStyle=lb.color+"33";ctx.lineWidth=0.5;ctx.stroke();
-        ctx.textAlign="left";ctx.globalAlpha=1;
-      });
-      ctx.restore();
-    }
-
-    function animate(){if(autoRotate&&!dragging) rotY+=0.002;draw();requestAnimationFrame(animate);}
-
-    canvas.addEventListener("mousedown",(e)=>{dragging=true;autoRotate=false;lastX=e.clientX;lastY=e.clientY;});
-    window.addEventListener("mouseup",()=>{if(dragging) dragging=false;});
-    canvas.addEventListener("mousemove",(e)=>{
-      if(dragging){rotY+=(e.clientX-lastX)*0.005;rotX+=(e.clientY-lastY)*0.005;lastX=e.clientX;lastY=e.clientY;return;}
-      const rect=canvas.getBoundingClientRect(), mx=e.clientX-rect.left, my=e.clientY-rect.top;
-      let hit=-1;
-      for(let k=projectedPts.length-1;k>=0;k--){
-        const s=projectedPts[k], dotR=Math.max(2.5,5*s.pp.scale);
-        const dx=s.pp.x-mx, dy=s.pp.y-my;
-        if(dx*dx+dy*dy<(dotR*1.4+5)*(dotR*1.4+5)){hit=s.i;break;}
-      }
-      hoverIdx=hit;
-      const tt=root.querySelector(".scatter3d-tooltip");
-      if(tt){
-        if(hit>=0){
-          const d=scatterData[hit], col=DOT[d.bucket]||DOT.none;
-          tt.style.display="block";tt.style.left=(e.clientX-rect.left+14)+"px";tt.style.top=(e.clientY-rect.top-10)+"px";
-          tt.innerHTML=`<div style="font-family:var(--font-mono,monospace);font-size:10px;color:#e9a23b;margin-bottom:3px">${esc(d.name)}</div><div style="font-size:12px;font-weight:600;color:${esc(col)}">${esc(d.bucket==="none"?"No data":d.bucket)}</div>${d.evidence?`<div style="font-size:11px;color:#9fb0cc;margin-top:2px">${esc(d.evidence)}</div>`:""}`;
-        } else {tt.style.display="none";}
-      }
-    });
-    canvas.addEventListener("mouseleave",()=>{hoverIdx=-1;const tt=root.querySelector(".scatter3d-tooltip");if(tt)tt.style.display="none";});
-
-    root.querySelectorAll("[data-scatter-view]").forEach((btn)=>{
-      btn.addEventListener("click",()=>{
-        root.querySelectorAll("[data-scatter-view]").forEach((b)=>b.classList.remove("active"));
-        btn.classList.add("active");
-        const v=btn.dataset.scatterView;
-        if(v==="free"){autoRotate=true;}
-        else if(v==="front"){autoRotate=false;rotY=0.0;rotX=0.05;}
-        else if(v==="side"){autoRotate=false;rotY=Math.PI/2;rotX=0.1;}
-        else if(v==="top"){autoRotate=false;rotX=Math.PI/2;rotY=0;}
-      });
-    });
-    // Fix 3: category legend pills
-    const legendEl=root.querySelector(".scatter-legend");
-    if(legendEl){
-      projectCats().forEach((cat,ci)=>{
-        const pill=document.createElement("span");
-        pill.className="scatter-legend-pill";
-        pill.dataset.cat=cat.id;
-        pill.style.borderColor=(cat.color||"#4ea0ff")+"55";
-        pill.innerHTML=`<span class="slp-dot" style="background:${esc(cat.color||'#4ea0ff')}"></span><span class="slp-label">${esc(cat.name)}</span>`;
-        pill.title=cat.name||"";
-        pill.addEventListener("click",()=>{
-          if(filteredCats.has(cat.id)){filteredCats.delete(cat.id);pill.classList.remove("active");}
-          else{filteredCats.add(cat.id);pill.classList.add("active");}
-          legendEl.querySelectorAll(".scatter-legend-pill").forEach((p)=>{
-            p.classList.toggle("dimmed",filteredCats.size>0&&!filteredCats.has(p.dataset.cat));
-          });
-        });
-        legendEl.appendChild(pill);
-      });
-    }
-    animate();
-  }
+  /* RUN 79, PART C. `wireEnsembleScatter()` drew and drove the Ensemble Analysis 3D scatter
+     -- its canvas, its four view buttons, its tooltip and its category legend -- and is
+     removed whole with the section. It had exactly one caller, the `d-ensemble` lazy
+     initialiser, which is removed above. */
 
   // teardown is exported so app.js can release the context when the detail page is left,
   // rather than waiting for the next render that may never come.
