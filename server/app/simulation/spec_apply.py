@@ -150,13 +150,46 @@ those are decided by the platform, not by you.
 """
 
 
+#: Run 84. Fields carried in EVERY call regardless of whether the category's specification
+#: names them. `evidenceQualification` gates sixteen modules across A6, B1, B2, B3 and B4
+#: (measured in the Run 83 scan: 16/16 refuse when it is absent); carrying it everywhere is
+#: cheap and removes the one dependency the name-derived scope could miss.
+ALWAYS_CARRIED: tuple[str, ...] = ("evidenceQualification",)
+
+
+def scope_signal_inputs(spec_text: str, signal_inputs: dict) -> dict:
+    """
+    Run 84. THE FIGURES A CALL CARRIES ARE THE FIGURES ITS SPECIFICATION NAMES.
+
+    Before this, every category call serialized the ENTIRE signal_inputs dict -- one hundred
+    plus fields and the full `sources` provenance block -- into every prompt, when a category
+    reads a handful. The scope is DERIVED from the specification text at call time, never
+    hand-maintained: a top-level field is carried when the specification names it in backticks
+    (Run 77 wrote every input, governed path and corpus-assembled path name that way), plus
+    ALWAYS_CARRIED. No specification names `sources`, so provenance is not carried.
+
+    A field the specification names that the store does not hold is simply absent from the
+    scoped dict, exactly as it was absent from the full dict: the specification's own contract
+    is abstention on absence, and the prompt states the scoping so absence is never read as
+    withholding.
+    """
+    if not isinstance(signal_inputs, dict):
+        return signal_inputs
+    return {k: v for k, v in signal_inputs.items()
+            if k in ALWAYS_CARRIED or f"`{k}`" in spec_text}
+
+
 def build_prompt(category_key: str, spec_text: str, signal_inputs: dict,
                  upstream_report: dict | None = None) -> str:
+    scoped = scope_signal_inputs(spec_text, signal_inputs)
     parts = [PROMPT_PREAMBLE,
              f"\n=== SPECIFICATION FOR CATEGORY {category_key} ===\n",
              spec_text,
              "\n=== THE STORED FIGURES FOR THIS PROJECT AND PERIOD ===\n",
-             json.dumps(signal_inputs, sort_keys=True, indent=1, default=str)]
+             "Only the stored fields this category's specification names are supplied. "
+             "A field the specification names that does not appear here is not held by the "
+             "store for this project and period; the module that wants it abstains.\n",
+             json.dumps(scoped, sort_keys=True, indent=1, default=str)]
     if upstream_report:
         parts += [
             "\n=== WHAT THE UPSTREAM CATEGORIES PRODUCED ===\n",
