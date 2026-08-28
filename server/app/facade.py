@@ -139,15 +139,38 @@ def live_statuses(session: Session, projects: list) -> dict[str, dict[str, Any]]
     # Ordered by period so that, for a project with several live periods, the LATEST period is
     # the one left in the map. That matches what a list is understood to be showing: where the
     # project stands now, not where it stood first.
-    return {
-        r.project_id: {
+    # RUN 79. THE STATUS ON THIS PROJECTION IS THE SPECIFICATION READINGS' STATUS.
+    #
+    # This projection is what `a_list`, `a_listslim` and `a_get` attach as `storedResult`, so
+    # it is the portfolio list row, the status legend and the project header line. Before this
+    # run it published `r.project_status` and `r.category_statuses` -- the retired Python
+    # module layer's answer out of `computed_results` -- while the category panel two clicks
+    # away published the specification layer's. Same project, same session, two answers, which
+    # is the exact defect the docstring above records this function being written to remove.
+    #
+    # `r` STILL DECIDES WHICH PERIOD, for the reason the Run 75 note above gives: a period the
+    # project has no evidence row for is not a period any surface can render. What `r` no
+    # longer decides is WHAT THE STATUS IS.
+    #
+    # NO FALLBACK. A project whose categories have never been called gets `project_status`
+    # None and an empty `category_statuses`, and `with_stored_status` then leaves the legacy
+    # document's empty status, so the list says the project is awaiting analysis. That is the
+    # order's rule at section 2: the surface renders the stored reading or it renders nothing.
+    # It must NOT render the Python layer's older figure.
+    from . import spec_projection
+
+    projections = spec_projection.projections(
+        session, [(r.project_id, r.period) for r in rows])
+    out: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        proj = projections[r.project_id]
+        out[r.project_id] = {
             "result_id": r.result_id,
             "period": r.period,
-            "project_status": r.project_status,
-            "category_statuses": r.category_statuses,
+            "project_status": proj["project_status"],
+            "category_statuses": proj["category_statuses"],
         }
-        for r in rows
-    }
+    return out
 
 
 def with_stored_status(doc: dict, stored: dict | None) -> dict[str, Any]:

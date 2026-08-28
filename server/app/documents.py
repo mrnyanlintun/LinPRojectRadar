@@ -93,6 +93,7 @@ from .research_models import (
 from .document_evidence import document_evidence
 from .evm_consistency import consistency_findings
 from .recommendation_basis import recommendation_basis
+from . import spec_projection
 from .risk_exposure import register_exposure
 from .risk_register import risk_rows_from_document
 from .schedule_activities import read_activity_table, select_for_display
@@ -2326,30 +2327,50 @@ def _redact_module_actions(modules) -> list:
 
 
 def _result_view(row: ComputedResult, *, include_recommendation: bool,
-                 package=None, project_legacy_id: str | None = None) -> dict:
+                 package=None, project_legacy_id: str | None = None,
+                 spec: dict | None = None) -> dict:
     """
     The stored result as returned to a member.
 
     The recommendation package is spliced in ONLY when `recommendation_visible` says so, and
     when it says no, action-bearing MODULE fields are redacted too — see `_ACTION_KEYS`.
+
+    RUN 79. `spec` IS THE SPECIFICATION READING PROJECTION AND IT IS THE SOURCE.
+    When it is supplied -- `a_projectresults` always supplies it -- `module_results`,
+    `abstained`, `category_statuses` and `project_status` are taken from
+    `spec_projection.projection()`, built from `specification_readings` alone, and the values
+    on `row` are NOT consulted for them. There is no fallback: where the specification layer
+    has no reading for a category the fields are empty and the page says the category has not
+    been called, rather than showing a figure from the retired Python layer.
+
+    `row` IS STILL READ, for `signal_inputs`, the period, the provenance columns and the
+    derivations below that are Python and stay Python -- the evidence qualification, the
+    recommendation basis, the EVM consistency check and the reveal-gate redaction. Those are
+    the recommendation checks and the freeze architecture, which the order's section 6 puts out
+    of scope. `computed_results` is history for the three fields above and remains the record
+    of what the Python layer produced; nothing here deletes or writes it.
     """
+    _spec_modules = spec["module_results"] if spec is not None else row.module_results
+    _spec_abstained = spec["abstained"] if spec is not None else row.abstained
+    _spec_cats = spec["category_statuses"] if spec is not None else row.category_statuses
+    _spec_status = spec["project_status"] if spec is not None else row.project_status
     view = {
         "result_id": row.result_id,
         "period": row.period,
         "signal_inputs": row.signal_inputs,
-        "module_results": (row.module_results if include_recommendation
-                           else _redact_module_actions(row.module_results)),
+        "module_results": (_spec_modules if include_recommendation
+                           else _redact_module_actions(_spec_modules)),
         # 0020. Which modules abstained on this row and why, verbatim (module_id + reason, never
         # an action field, so nothing here is gated by `recommendation_visible`). NULL on rows
         # computed before the column existed.
-        "abstained": row.abstained,
-        "category_statuses": row.category_statuses,
-        "project_status": row.project_status,
+        "abstained": _spec_abstained,
+        "category_statuses": _spec_cats,
+        "project_status": _spec_status,
         # RUN 11, GATES 5 AND 6. Derived at read time from the category statuses this row already
         # holds, by the same function the compute path uses. No column is added, so a row stored
         # before this run answers exactly as one stored after it, and migrations 0020 through
         # 0025 stay where they are.
-        **governed_status_semantics(row.category_statuses),
+        **governed_status_semantics(_spec_cats),
         # RUN 12, GATE 2. The evidence qualification, derived at read time from what this row
         # already holds, by the same function the compute path uses. Metadata only: it carries
         # no score, casts no vote and cannot change `project_status`, which is read from the
@@ -3561,8 +3582,11 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
           reveal_gated=gated,
           recommendation_visible=visible)
     session.commit()
+    # RUN 79. THE READINGS ARE THE SOURCE. Built for the period this row states, so the
+    # projection and the row can never describe two different periods.
     view = _result_view(row, include_recommendation=visible, package=package,
-                        project_legacy_id=project.legacy_id)
+                        project_legacy_id=project.legacy_id,
+                        spec=spec_projection.projection(session, project.id, row.period))
 
     # WHAT THE PERIOD'S DOCUMENTS ESTABLISH, read at display time and not frozen into the row.
     # Read from the period's LIVE documents (superseded revisions already excluded), so a
