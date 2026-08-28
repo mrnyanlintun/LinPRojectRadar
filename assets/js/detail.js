@@ -2913,10 +2913,24 @@
      checks read the attribute rather than the words. Changing the key would rename the server's
      vocabulary from the client, which is a different and much larger change than the one the
      owner asked for. The words are what he objected to; the words are what moved. */
-  function specCountsHtml(counts, produced, total) {
+  /* RUN 83, SECTION 4. THE HEADLINE COUNT STAYS IN THE ROW; THE BREAKDOWN MOVES BEHIND THE
+     EXPANSION.
+
+     WHAT WAS WRONG. Run 82 added the produced-out-of figure as the FIRST item of this cell and
+     did not remove the four-part breakdown it was meant to lead. Five figures rendered on one
+     collapsed row -- "0 of 7 produced a status · 0 with a reading · 7 nothing to report · 0 out
+     of order · 0 failed" -- the cell overflowed its grid track, the row wrapped, and the Process
+     button was pushed off the end of its own row.
+
+     WHAT CHANGED, AND ONLY THIS. `specCountsHtml` no longer emits the produced-out-of figure
+     (the collapsed row now calls `specProducedHtml` directly), and the row no longer calls
+     `specCountsHtml` at all: the breakdown is emitted into `.dcat-body`, where the per-module
+     detail already lives and where the person has already asked for more. Every `data-count`
+     key, every word and every number is unchanged -- the SAME markup, at a different place in
+     the document. No control was added, moved or removed; the Process button is untouched. */
+  function specCountsHtml(counts) {
     const c = counts || {};
     return `<span class="dcat-counts">`
-      + specProducedHtml(produced, total) + ` · `
       + `<span class="dcat-n" data-count="computed">${Number(c.computed || 0)} with a reading</span> · `
       + `<span class="dcat-n" data-count="abstained">${Number(c.abstained || 0)} nothing to report</span> · `
       + `<span class="dcat-n" data-count="out_of_order">${Number(c.out_of_order || 0)} out of order</span> · `
@@ -2981,16 +2995,17 @@
          with no reading at all: "0 of 7 produced a status" is precisely the fact the owner is
          asking the panel to admit, and hiding it on the untouched rows would hide it where it
          matters most. */
-      + specCountsHtml(reading && reading.counts,
-                       (reading && reading.counts && reading.counts.computed) || 0,
-                       ((cat && cat.modules) || []).length)
+      + specProducedHtml((reading && reading.counts && reading.counts.computed) || 0,
+                         ((cat && cat.modules) || []).length)
       /* RUN 81, FAULT 5. RELABELLED, NOT REPLACED. Same button, same class, same data-cat,
          same handler, same disabled rule: only the word changes. "Call" is what the code does;
          "Process" is what the person is asking for. */
       + `<button type="button" class="dcat-call btn-small" data-cat="${esc(key)}"`
       + (has ? "" : " disabled") + `>Process</button>`
       + `</div>`
-      + `<div class="dcat-body" style="display:none">${detail}</div></li>`;
+      + `<div class="dcat-body" style="display:none">`
+      + `<p class="dcat-breakdown">` + specCountsHtml(reading && reading.counts) + `</p>`
+      + `${detail}</div></li>`;
   }
 
   /* RUN 82, PART A1. THE HEADLINE, AND WHY IT LEADS.
