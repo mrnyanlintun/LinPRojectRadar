@@ -202,6 +202,15 @@ WRITER_TIERS: dict[str, dict[str, int]] = {
     # schedule_update revises what time_phased_schedule established.
     "totalFloat": {"schedule_update": 0, "time_phased_schedule": 1},
     "consumedFloat": {"schedule_update": 0, "time_phased_schedule": 1},
+    # RUN 78. Two writers of the contingency pair, so the precedence is declared rather than
+    # left at DEFAULT_TIER for both -- which would be same field, same tier, and on documents
+    # of one period the same as-of, i.e. the unresolved material conflict
+    # `_evidence_qualification` records and the qualification boundary refuses on. The cost
+    # report is the document that ACCOUNTS for contingency (original, drawn this period, drawn
+    # to date, remaining); a pay application carries the balance as a summary line beside the
+    # payment it is certifying. The accounting document wins; the summary line is the fallback.
+    "originalContingency": {"cost_report": 0, "pay_application": 1},
+    "remainingContingency": {"cost_report": 0, "pay_application": 1},
     "activitiesPlanned": {"schedule_update": 0, "lookahead_schedule": 1},
     "activitiesConstrained": {"schedule_update": 0, "lookahead_schedule": 1},
     "lookaheadWeeks": {"schedule_update": 0, "lookahead_schedule": 1},

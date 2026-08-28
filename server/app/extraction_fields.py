@@ -323,11 +323,23 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     # nowhere here". The base is not a missing calculation, it is a missing FACT, and a cost
     # report carrying an overhead schedule prints it: the base named, and the planned and actual
     # amount of it.
+    # RUN 78. THE CONTINGENCY PAIR, ASKED OF THE DOCUMENT THAT PRINTS IT.
+    #
+    # `original_contingency` and `remaining_contingency` have been declared in ALL_FIELDS and
+    # mapped by the merge since the pair was introduced, but they were REQUESTED FROM
+    # `pay_application` ONLY. A cost report states them plainly -- an original contingency, an
+    # amount drawn this period, an amount drawn to date, and a remaining balance -- and was
+    # never asked, so A3.2 Contingency Burn Rate abstained saying the amounts had not been
+    # reported for the period while the document on the page stated them. Nothing about the
+    # module changed; the prompt was not asking. The precedence between the two writers is
+    # declared in `field_registry.WRITER_TIERS`, because two writers of one field at the same
+    # tier is exactly the unresolved material conflict the Category-9 assessment records.
     "cost_report": [
         "indirect_cost_plan", "indirect_cost_actual", "material_cost_baseline",
         "material_cost_current", "report_date", "overhead_allocation_base",
         "planned_allocation_base_quantity", "actual_allocation_base_quantity",
         "overhead_driver_source",
+        "original_contingency", "remaining_contingency",
     ],
     "past_performance_report": [
         "overall_rating", "schedule_rating", "cost_rating", "quality_rating", "source",

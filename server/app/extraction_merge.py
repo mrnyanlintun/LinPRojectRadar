@@ -652,6 +652,10 @@ _NUMERIC_EMISSIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("indirect_cost_plan", "indirectCostPlan"), ("indirect_cost_actual", "indirectCostActual"),
         ("material_cost_baseline", "materialCostBaseline"),
         ("material_cost_current", "materialCostCurrent"),
+        # RUN 78. The cost report is the document that accounts for contingency; see the note
+        # beside `cost_report` in `extraction_fields._EXTRACTION_FIELDS`.
+        ("original_contingency", "originalContingency"),
+        ("remaining_contingency", "remainingContingency"),
     ),
     "past_performance_report": (
         ("overall_rating", "overallRating"), ("schedule_rating", "scheduleRating"),
