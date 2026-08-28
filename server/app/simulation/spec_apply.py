@@ -64,7 +64,11 @@ CATEGORY_SPECIFICATIONS: dict[str, str] = {
     "A4": "A4_document_derived_signals.md",
     "A5": "A5_system_dynamics.md",
     "A6": "A6_delivery_quality.md",
+    "B1": "B1_signal_synthesis.md",
+    "B2": "B2_evidence_combination.md",
     "B3": "B3_regulatory_authority.md",
+    "B4": "B4_decision_optimisation.md",
+    "C1": "C1_data_integrity.md",
 }
 
 #: The eleven project-level categories, in the two passes the order names.
