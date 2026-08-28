@@ -142,7 +142,7 @@ def main() -> None:
         AnthropicExtractor, ExtractionError, StubExtractor, build_extractor,
     )
     from app.research_identity import hash_access_token
-    from app.research_models import Document, Participant
+    from app.research_models import Document, Observation, Participant
     from app.models import Project
     import os
 
@@ -373,7 +373,15 @@ def main() -> None:
               str(r3.get("was_cached")))
 
         # ------------------------------------------------------------ 6. the guard
-        section("6. A MALFORMED NUMERIC REFUSES THROUGH THE DOCX PATH, NAMING THE FIELD")
+        # RUN 80, OWNER RULING (order section 3, item 3). This section asserted that the docx
+        # path REFUSED the whole document for one unreadable field: "the upload is REFUSED" and
+        # "NOTHING WAS STORED for the refused document". The owner overrode that -- "a field
+        # that cannot be read is absent, and the rest of the document still contributes" -- and
+        # these checks now assert what replaces it, on the same document, through the same path.
+        # The half that still has to hold is asserted here as it is at every other entry point:
+        # the unreadable field reaches the stored extraction nowhere, and the readable figure
+        # beside it survives.
+        section("6. AN UNREADABLE NUMERIC IS ABSENT THROUGH THE DOCX PATH, NAMING THE FIELD")
 
         bad_docx = _docx([_p("Pay application. Completed to date: TBD.")])
         bad_sha = hashlib.sha256(bad_docx).hexdigest()
@@ -384,14 +392,27 @@ def main() -> None:
         bad = post({"action": "extractsignals", "session_token": pm, "id": PROJ, "docType": "auto",
                     "fileName": "bad_pay_app.docx", "mimeType": "",
                     "dataBase64": base64.b64encode(bad_docx).decode("ascii")})
-        check(not bad.get("ok"), "the upload is REFUSED", str(bad)[:120])
-        msg = str(bad.get("error") or "")
+        check(bool(bad.get("ok")), "the upload is ACCEPTED and the document contributes",
+              str(bad)[:160])
+        msg = " ".join(bad.get("unreadable_fields") or [])
         check("completed_to_date" in msg,
-              "and the refusal NAMES THE FIELD", msg[:140])
-        check("TBD" in msg, "and quotes the value that caused it", msg[:140])
+              "and the notice NAMES THE FIELD", msg[:160])
+        check("TBD" in msg, "and quotes the value that caused it", msg[:160])
         with Session() as s:
             left = s.scalars(select(Document).where(Document.sha256 == bad_sha)).first()
-            check(left is None, "NOTHING WAS STORED for the refused document")
+            # THE DOCUMENT ROW IS STORED, and its `extraction` blob is the model's OWN answer,
+            # kept verbatim as the record of what was read -- 'TBD' included. What must not
+            # happen is that the unreadable value becomes a FIGURE, and that is asserted on the
+            # observation store, which is what every measure actually reads.
+            check(left is not None, "the document IS stored rather than discarded whole",
+                  str(left)[:80])
+            _obs = [o for o in s.scalars(select(Observation).where(
+                Observation.document_id == left.document_id)).all()]
+            check(not [o for o in _obs if o.field == "completedToDate"]
+                  and any(o.field == "bac" and o.value == 4600000.0 for o in _obs),
+                  "no observation carries the unreadable field; the readable figure beside it "
+                  "IS stored",
+                  str([(o.field, o.value) for o in _obs])[:200])
     finally:
         set_extractor_override(None)
 

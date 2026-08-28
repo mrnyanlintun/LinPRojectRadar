@@ -3193,6 +3193,12 @@ def a_extractsignals(session: Session, payload: dict, secret: str, ttl: int) -> 
         "period": resp.get("period"),
         "docType": first.get("doc_type"),
         "applied": applied,
+        # RUN 80. The fields this document stated that could not be read. Carried onto the
+        # legacy single-document response for the same reason it is carried onto the upload
+        # response: the document is stored and contributes, and the person who uploaded it is
+        # told which of its figures were not taken and why, rather than being left to infer it
+        # from a measure that abstained. Empty for a document that read cleanly.
+        "unreadable_fields": first.get("unreadable_fields") or [],
         "signalInputs": signal_inputs,
         "contributes": first.get("contributes"),
         "folder_path": first.get("folder_path"),
