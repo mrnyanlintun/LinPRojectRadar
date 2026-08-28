@@ -92,7 +92,7 @@ evidence sentence is of the form *"Of the options compared, the order is A then 
 compares the alternatives that were supplied against the criteria that were supplied, and says
 nothing about any alternative that was not.
 
-**Abstention.**
+**Nothing to report.**
 1. `decisionAlternatives` absent: `"Awaiting an explicit decision problem: the alternatives being
    compared, the criteria they are compared on, and which way each criterion is better. This
    measure is named for a method that cannot be carried out without it, so no reading is reported

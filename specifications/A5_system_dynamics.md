@@ -55,7 +55,7 @@ evidence, not here.
 rework starts somewhere else. It is a property of the *topology*, so it identifies structural
 fragility that no schedule or cost figure would show.
 
-**Abstention.** The two sentences above, with `W` = *"a dependency matrix for the design: the parts
+**Nothing to report.** The two sentences above, with `W` = *"a dependency matrix for the design: the parts
 of the design, which of them depend on which others and how strongly, and the rework the
 propagation starts from"*.
 
@@ -98,7 +98,7 @@ the response by 1.68 per cent, at this base point. **Ranking currently bad varia
 sensitivity**: the model must perturb the input and recompute the response, which is what makes
 this a statement about the model's structure rather than about the project's present condition.
 
-**Abstention.** The two sentences above, with `W` = *"a sensitivity model: a named response
+**Nothing to report.** The two sentences above, with `W` = *"a sensitivity model: a named response
 function, the state it is evaluated at, and the inputs to be moved with the range each is moved
 across"*.
 
@@ -134,7 +134,7 @@ minimum and maximum across them.
 world. **No state is recommended over any other**, and the module's own evidence sentence says so:
 *"No state is recommended over any other, because choosing between them is a different question."*
 
-**Abstention.** The two sentences above, with `W` = *"a scenario set: named scenarios, each stating
+**Nothing to report.** The two sentences above, with `W` = *"a scenario set: named scenarios, each stating
 every input it changes together, the reasoning behind it, and the response model they are all
 evaluated through"*.
 
@@ -174,7 +174,7 @@ the stock balanced.
 feedback loop: the project is generating work faster than it clears it, and the rework share says
 how much of that is self-inflicted.
 
-**Abstention.** The two sentences above, with `W` = *"a system dynamics rework model: the stock of
+**Nothing to report.** The two sentences above, with `W` = *"a system dynamics rework model: the stock of
 work in the backlog, the work arriving and completed each step, and the share of completed work
 that returns as rework"*.
 
@@ -212,7 +212,7 @@ Oracle from the source: with `lambda = 2` and `mu = 3`, `rho = 2/3`, `L = 2`, `W
 `rho` approaches 1, so a queue at 0.95 of capacity is a qualitatively different place from one at
 0.7, and no linear reading of "95 per cent busy" conveys that.
 
-**Abstention.** The two sentences above, with `W` = *"a queue model: the rate work arrives at, the
+**Nothing to report.** The two sentences above, with `W` = *"a queue model: the rate work arrives at, the
 rate it is served at, how many servers there are and the order they take work in"*.
 
 **The instability rule, and it is a refusal.** **If `lambda >= mu`, do not emit a reassuring
@@ -252,7 +252,7 @@ order that produced them.
 actually delivered against what was asked for. The backorder is the finding; the rules are the
 explanation.
 
-**Abstention.** The two sentences above, with `W` = *"an agent based supply chain model: the
+**Nothing to report.** The two sentences above, with `W` = *"an agent based supply chain model: the
 agents, the state each starts in, the rule each follows, who they are connected to, and the steps
 the model runs over"*.
 
@@ -294,7 +294,7 @@ wait is 0.5**. The module reports the mean wait, the clock end, every entity and
 queueing formula it comes from a specific arrival pattern rather than from a steady state, so it
 answers what happened to *these* entities in *this* order.
 
-**Abstention.** The two sentences above, with `W` = *"a discrete event model: the entities and when
+**Nothing to report.** The two sentences above, with `W` = *"a discrete event model: the entities and when
 they arrive, the resources that serve them, how long service takes, and the order simultaneous
 events are taken in"*.
 

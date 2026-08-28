@@ -42,9 +42,9 @@ visible in the result and **votes nowhere**.
 **3. Missing evidence never defaults Green.** An abstaining signal casts no vote, carries no
 weight, and cannot occupy a position among the worst.
 
-## The shared abstention sentence
+## The shared nothing-to-report sentence
 
-Where no governed signals were supplied at all, B1.2, B1.3 and B1.4 abstain in these words:
+Where no governed signals were supplied at all, B1.2, B1.3 and B1.4 report nothing, in these words:
 
 > `"No governed signals were supplied for this project, so there is nothing to synthesise and no
 > reading is reported."`
@@ -54,7 +54,7 @@ this project is not in a form this measure can read, so no synthesis is carried 
 `"A governed signal was supplied without an identity, so it cannot be told apart from another and
 no synthesis is carried out."`
 
-**Every abstention in this category carries the platform's own disclosed qualification state,
+**Every nothing-to-report sentence in this category carries the platform's own disclosed qualification state,
 `"unqualified"`, on `signal_qualification`.** These modules consume raw signals: the Category 9
 eligibility gate that would qualify a versioned signal package before evidence combination and
 governance read it **is not implemented**, and nothing gates these inputs on evidence quality. A
@@ -145,7 +145,7 @@ decision layer to decide *which action and whose authority*, which is a differen
 see both and is never shown one while believing it is the other. `evidence_complete` and
 `signal_bands` travel with them.
 
-**Abstention.** `signals` absent, or `signals.cusum` absent:
+**Nothing to report.** `signals` absent, or `signals.cusum` absent:
 `"Insufficient data: upload required documents"`.
 
 ---
@@ -177,7 +177,7 @@ different signal counts. The classes are the four severity classes in order.
 weight, and the normalised weights and their provenance travel with the reading so a reader can see
 whose judgment produced them.
 
-**Abstention.**
+**Nothing to report.**
 1. No governed signals: the shared sentence above.
 2. Every governed signal abstained: `"every governed signal for this project abstained, so there
    is nothing to weigh and no vote is reported"`.
@@ -223,7 +223,7 @@ names the `tied_classes`.
 over a single voter is that voter, which is not a majority rule and is not reported as one. **A tie
 is a conflict and is reported as one**, not resolved.
 
-**Abstention.**
+**Nothing to report.**
 1. No governed signals: the shared sentence above.
 2. Every governed signal abstained: `"every governed signal for this project abstained, so no
    majority is reported and no state is assumed in place of one"`.
@@ -262,7 +262,7 @@ of the registered signal array, so registering more modules diluted the adverse 
 identical adverse evidence read Red beside three signals and Yellow beside sixty-three. **The
 statistic above has no denominator that grows with the array.**
 
-**Abstention.**
+**Nothing to report.**
 1. No governed signals: the shared sentence above.
 2. Fewer than two independent signals spoke: `"fewer than two independent signals spoke for this
    project, so the worst two cannot be taken and no reading is reported"`.

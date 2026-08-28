@@ -79,7 +79,7 @@ than noisily, and names the period at which the accumulated departure first exce
 project's own variability explains. A clean run says any departure so far is inside that
 variability. It is a monitor of drift, not a forecast.
 
-**Abstention.**
+**Nothing to report.**
 - If `spi` is absent: `"Insufficient data: upload required documents"`.
 - If `spiHistory` is not a list, or holds fewer than two readings:
   `"Awaiting history (2 periods needed)"`.
@@ -127,7 +127,7 @@ the project's observed performance have been combined, with an interval stating 
 remaining uncertainty is. It is only as good as the prior's stated source; that source travels
 with the reading and must be shown with it.
 
-**Abstention.**
+**Nothing to report.**
 - If `bayesianEacModel` is absent: `"Awaiting a stated prior for the cost at completion, with its
   source, and a stated observation model with the uncertainty of the observation. This measure is
   named for a method that cannot be carried out without it, so no reading is reported and no
@@ -173,7 +173,7 @@ to what the latest single reading happened to be. The final gain says how much w
 placed on that latest reading: a high gain means the reading dominated, a low gain means the prior
 state did.
 
-**Abstention.** If `kalmanStateSpaceModel` is absent: `"Awaiting a state space model for the
+**Nothing to report.** If `kalmanStateSpaceModel` is absent: `"Awaiting a state space model for the
 schedule index: a starting estimate, its uncertainty, the process and measurement variances, and
 the readings taken. This measure is named for a method that cannot be carried out without it, so
 no reading is reported and no other figure is used in its place."` If present but not a mapping,
@@ -212,7 +212,7 @@ its own history. The order `(p,d,q)`, the AICc and the residual diagnostics are 
 not decoration: a forecast from a model whose residuals fail Ljung-Box is a forecast whose
 uncertainty is understated.
 
-**Abstention.**
+**Nothing to report.**
 - No history at all: `"Awaiting a cost performance history"`.
 - Fewer than eight readings, or an identification that fails stationarity or invertibility: the
   sentence `identify_arima` raises for that condition.
@@ -249,7 +249,7 @@ value curve.
 expressed in periods is the honest statement of how far behind or ahead the project is, and unlike
 the cost-denominated schedule variance it does not collapse to zero at the end of the project.
 
-**Abstention.**
+**Nothing to report.**
 - `timePhasedBaseline` absent: `"Awaiting a time phased baseline: the cumulative value of work
   planned to be complete at the end of each period. This measure is named for a method that cannot
   be carried out without it, so no reading is reported and no other figure is used in its place."`
@@ -331,7 +331,7 @@ the project must beat its own plan for the rest of the work, but by an amount a 
 index has been observed to move. Red: the required improvement is larger than that study observed
 a cumulative index to make, so the budget is not recoverable by efficiency alone.
 
-**Abstention. Six conditions, each with the exact words it declines in.**
+**Nothing to report. Six conditions, each with the exact words it reports in.**
 
 1. Any of `bac`, `ev`, `ac` absent: `"Insufficient data: upload required documents"`.
 2. `bac <= 0`, or not a number: `"No cost efficiency is measurable for the remaining work: the
@@ -431,7 +431,7 @@ Amber: a forecast overrun, but one within the range a cumulative cost index has 
 recover. Red: a forecast overrun that would require the cumulative index to improve by more than
 the source observed it ever to move, so it should be treated as an overrun that will be realised.
 
-**Abstention.**
+**Nothing to report.**
 1. `bac` or `cpi` absent: `"Insufficient data: upload required documents"`.
 2. `cpi <= 0`: `"Awaiting a cost performance index above zero: the forecast at completion is the
    budget divided by that index, which cannot be formed here"`. A zero index produces infinity
@@ -471,7 +471,7 @@ approved profile planned; below 1, less. It says nothing on its own about whethe
 done — that is what A1.7 and A1.8 are for. Read together with earned value it distinguishes
 "spending fast on work that is getting done" from "spending fast on work that is not".
 
-**Abstention.**
+**Nothing to report.**
 - `ac` absent: `"Insufficient data: the actual cost has not been reported for this period."`
 - `expenditureBaseline` absent: `"Awaiting an approved time phased expenditure baseline: the
   amount planned to be spent by the end of each period. This measure is named for a method that
@@ -519,7 +519,7 @@ this period's raw index, because a short record on one project is a noisy estima
 how much of the answer is this project and how much is the class; the member count and the data
 vintage say how much the class itself is worth.
 
-**Abstention.**
+**Nothing to report.**
 - `cpiReferenceClass` absent: `"Awaiting a governed reference population of comparable projects
   with the cost performance they achieved, and the weight to place on this project's own reading.
   This measure is named for a method that cannot be carried out without it, so no reading is
@@ -565,7 +565,7 @@ estimate is higher — the management forecast may be optimistic. The divergence
 percentage, is the figure a governance board would act on; the two lineages beside it are what make
 the divergence mean anything.
 
-**Abstention.**
+**Nothing to report.**
 - `independentEacPair` absent: `"Awaiting two separately prepared forecasts of the cost at
   completion, one from the project management team and one prepared independently of it. This
   measure is named for a method that cannot be carried out without it, so no reading is reported

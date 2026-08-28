@@ -60,7 +60,7 @@ earlier admits a positive answer from a rule nobody can date:
 The module's own logic is reached **only at step 6**, so no module can obtain a positive result
 from a superseded rule or from absent evidence.
 
-## The two shared declines
+## The two shared nothing-to-report sentences
 
 - **Structure absent**, from `canonical_v6.v6_structure`, writing `W` for the module's plain-words
   structure description: `"Awaiting W. This measure is named for a method that cannot be carried
@@ -141,7 +141,7 @@ to rest under the authority matrix this project declared — approved, blocked, 
 party who never responds. It is a statement about the process, not about the project's cost or
 schedule.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed agent,
    authority-matrix and interaction structure"*.
 2. Evidence not qualified for `governance_authorization` — which for this module requires **a
@@ -209,7 +209,7 @@ applicability states, with its reason and its conformance sentence.
 **Interpretation.** Applicability is a question about the **acquisition, the agency, the agency
 procedure and the contract clause**, and it is answered from that evidence or not at all.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"governed acquisition,
    agency and clause applicability evidence"*.
 2. Evidence not qualified for `regulatory_applicability`: the qualification sentence above.
@@ -254,7 +254,7 @@ conformance as a whole.
 time. A register of three rules all satisfied is three rules satisfied; it is not a compliant
 project.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a configured A-11 rule
    register"*.
 2. Evidence not qualified for `regulatory_conformance`: the qualification sentence above.
@@ -304,7 +304,7 @@ fraction are reported as they stand.
 satisfied state; anything else is not satisfied. Note that the delay figure is reported even where
 the answer is not satisfied, so a reader can see whether the report was a day late or a month late.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed EVMS
    reporting record"*.
 2. Evidence not qualified for `regulatory_conformance`: the qualification sentence above.
@@ -366,7 +366,7 @@ each in the closed disposition vocabulary with its own conformance sentence.
 under which it was executed — not whether the modification was a good idea and not how much it
 cost.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed contract
    modification register"*.
 2. Evidence not qualified for `governance_authority_check` — which for this module requires **a

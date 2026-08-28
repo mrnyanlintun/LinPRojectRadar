@@ -11,7 +11,7 @@ The Run-31 contract's section 53 forbids inventing a status threshold for any of
 
 **No band may be attached to any module in this category.**
 
-## The three ways a module here declines, and the exact words
+## The three ways a module here has nothing to report, and the exact words
 
 **1. The structure is absent and the corpus cannot build it.** `canonical_v6.v6_structure` raises,
 and the route first asks `_assemble` whether the project's own extracted evidence supports the
@@ -111,7 +111,7 @@ ninety per cent compliant and is not ten per cent compliant; **it is ten of ten 
 outstanding, and the reader needs both numbers.** Critical exceptions are **noncompensatory**: one
 critical exception is returned in its own list and cannot disappear inside a 99 per cent aggregate.
 
-**Abstention and the not-estimable disposition.**
+**Nothing to report, and the not-estimable disposition.**
 1. No governed register and no audit evidence to assemble: the structure-absent sentences, with
    `W` = *"a governed quality requirement register"*.
 2. Evidence not qualified for `requirement_conformance`: the qualification sentence above.
@@ -164,7 +164,7 @@ is comparable between projects of different size, and a raw case count is not. *
 alone never produces a favourable system claim** — `system_claim` is always `None`; the rate is a
 rate.
 
-**Abstention and the two lagging dispositions.**
+**Nothing to report, and the two lagging dispositions.**
 1. No governed record and nothing to assemble: the structure-absent sentences, with `W` = *"a
    governed safety exposure and leading-indicator record"*.
 2. Evidence not qualified for `safety_measurement`: the qualification sentence above.
@@ -224,7 +224,7 @@ applicability is never assumed and the function has no branch that could hard-co
 in a named jurisdiction. Without those three, a compliance percentage is a number about nothing,
 which is why the module refuses to form one rather than reporting the figure the document asserts.
 
-**Abstention and the two non-estimable dispositions.**
+**Nothing to report, and the two non-estimable dispositions.**
 1. No governed register and nothing to assemble: the structure-absent sentences, with `W` = *"a
    governed environmental permit and requirement register"*.
 2. Evidence not qualified for `environmental_conformance`: the qualification sentence above.
@@ -275,7 +275,7 @@ internal signal is the project's own opinion of its contractor. They look alike 
 entirely different things, which is why this module derives the label from the source system and
 the assessment id rather than accepting one.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the structure-absent sentences, with `W` = *"a governed
    contractor assessment record"*.
 2. Evidence not qualified for `official_assessment_ingestion`: the qualification sentence above.

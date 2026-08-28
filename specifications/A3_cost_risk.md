@@ -60,7 +60,7 @@ comparable finished projects is allowed to speak. A large uplift is not a statem
 project is badly run; it is a statement that projects of this class systematically overran, and
 that the inside view has no standing to claim exemption without argument.
 
-**Abstention.**
+**Nothing to report.**
 1. `referenceClassPopulation` absent or not a mapping: the two sentences above, with `W` = *"a
    reference class of completed comparable projects, with the criteria that put them in it and
    the overrun each of them finished with"*.
@@ -106,7 +106,7 @@ burn compares that against how much of the work is done: a figure above 1 says t
 being consumed faster than the project is being built, which is the condition that ends with no
 reserve and work remaining. Neither figure carries a colour and neither should be read as one.
 
-**Abstention.**
+**Nothing to report.**
 1. Either contingency figure absent: `"Insufficient data: the original and remaining contingency
    amounts are needed, and at least one of them has not been reported for this period."`
 2. `actualPctComplete` **present** and not a finite number: `"Insufficient data: the reported
@@ -122,7 +122,7 @@ reserve and work remaining. Neither figure carries a colour and neither should b
 
 **One property a reader must be told.** An absent progress figure and an impossible one are
 handled differently on purpose. Absent, the consumed fraction is still published and the
-normalized burn is withheld. Impossible — reported, but outside the range a percentage can
+no normalized burn is reported. Impossible — reported, but outside the range a percentage can
 occupy — refuses the whole reading, because treating a wrong number as a missing one is how a
 reading error becomes invisible.
 
@@ -158,7 +158,7 @@ installed quantity but the planned hours scaled by a reported progress percentag
 assumed. It is the earliest cost signal a project has, because it moves before the cost report
 does, and it is stated in the unit the work is actually counted in.
 
-**Abstention.** The two `require_v3_structure` sentences, with `W` = *"a record of production: the
+**Nothing to report.** The two `require_v3_structure` sentences, with `W` = *"a record of production: the
 quantity of work installed, the quantity planned, and the labour hours each of those took"*.
 
 ---
@@ -192,7 +192,7 @@ base is carrying than the plan assumed. Under-absorption on a shrinking base is 
 problem from overhead overspend on a steady one, and reporting the rate rather than the total is
 what keeps the two distinguishable.
 
-**Abstention.** The two `require_v3_structure` sentences, with `W` = *"an overhead allocation
+**Nothing to report.** The two `require_v3_structure` sentences, with `W` = *"an overhead allocation
 base: the planned and actual overhead and the planned and actual amount of the base it is absorbed
 over"*.
 
@@ -228,7 +228,7 @@ contract states that a deterministic CPI uplift **is not** CRA P80.
 given the risks it has declared and the probabilities it has put on them. It is a statement about
 the declared risk register and no better than that register is.
 
-**Abstention.** The two `require_v3_structure` sentences, with `W` = *"a cost risk model: the base
+**Nothing to report.** The two `require_v3_structure` sentences, with `W` = *"a cost risk model: the base
 cost components, the risk events that could occur, how likely each is and what it would cost"*.
 
 **One property a reader must be told, and it bears on reproducibility.** This module **draws
@@ -268,7 +268,7 @@ is not canonical analogous estimating. **`analogousOverrunPct` is not read here.
 traceable to a named project and to the stated reasons that project is comparable. Its whole value
 is in the traceability; the number alone is worth nothing.
 
-**Abstention.** The two `require_v3_structure` sentences, with `W` = *"an identified analogous
+**Nothing to report.** The two `require_v3_structure` sentences, with `W` = *"an identified analogous
 project with its cost, why it is comparable, and the factors that adapt it to this project"*. The
 structure is also refused where it carries no identified project, no cost, or no adaptation
 factors, in the words `canonical_v3` raises for that field.
@@ -305,7 +305,7 @@ external inflation index and that **no external market index may be fabricated o
 period and the period being adjusted to, on the authority of the named series. Applied to the
 stated exposure, it says how much of a cost movement was the market rather than the project.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a named external price
    index with its authority, geography, base period and the period being adjusted to"*.
 2. `cost_exposure` absent from the structure: `"The price index provided does not say which cost

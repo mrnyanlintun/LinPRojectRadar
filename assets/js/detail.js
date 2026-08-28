@@ -2822,16 +2822,57 @@
      figure, band, count and status below is read from the server's stored reading.
      ===================================================================================== */
 
+  /* RUN 81. THE STATE VOCABULARY, ON THE OWNER'S RULING OF THIS RUN.
+     "A module reports what its evidence supports. It is not deciding anything, so it cannot
+     abstain. It says what it has. If it is not relevant, it was never called."
+
+     THIS IS A RENAME AND NOTHING ELSE. Every state the server stores keeps its own row, its
+     own `data-state` marker and its own CSS class; not one is merged into another and not one
+     word here is derived from anything the client worked out for itself. The server's
+     vocabulary (`spec_readings.reading_payload`) is untouched -- only what the person reads is.
+
+       computed     -> "Has a reading"     the module reported a value, and its band is shown
+       abstained    -> "Nothing to report" the evidence is not there. NOT "abstained": the
+                                           explanation under the row already says what is
+                                           being waited for, and the label must not claim the
+                                           module declined to answer.
+       out_of_order -> "Out of order"      unchanged. This is a real fifth distinction (the
+                                           category's inputs have not run yet) and merging it
+                                           into either neighbour would lose it.
+       failed       -> "Failed"            unchanged. The platform owes an answer here.
+       (no reading) -> "Not called yet"    the fifth on-screen distinction Run 79 established.
+
+     THE OWNER'S THIRD STATE, "Not relevant -- does not apply to this project type", HAS NO
+     SERVER COUNTERPART AND IS DELIBERATELY NOT MANUFACTURED HERE. No specification reading
+     carries a sector-applicability mark, so a "Not relevant" label rendered from this client
+     would be a claim the server never stored. The order forbids implying a value the server
+     did not store, so the state is reported to the owner as unavailable rather than invented. */
   const SPEC_STATE_WORDS = {
-    computed: "Computed",
-    abstained: "Abstained",
+    computed: "Has a reading",
+    abstained: "Nothing to report",
     out_of_order: "Out of order",
-    failed: "Failed"
+    failed: "Failed",
+    /* The two no-reading rows, which Run 79 established are genuinely different from each
+       other and from an empty reading: one category has a written specification and has not
+       been processed yet, the other has no written specification at all. */
+    not_run: "Not called yet",
+    unspecified: "No specification"
+  };
+
+  /* What the status cell says when the server stored NO band. An em dash is a typographic
+     shrug; each of these is a fact about the stored row and none of them implies a reading. */
+  const SPEC_NO_STATUS_WORDS = {
+    computed: "No band",
+    abstained: "No band \u2014 nothing to report",
+    out_of_order: "No band \u2014 out of order",
+    failed: "No band \u2014 failed",
+    not_run: "No band",
+    unspecified: "No band"
   };
 
   function specStateChip(state, extra) {
     const key = String(state || "");
-    const word = SPEC_STATE_WORDS[key] || "Not run";
+    const word = SPEC_STATE_WORDS[key] || "Not called yet";
     return `<span class="dcat-state dcat-state-${esc(key || "notrun")}" `
       + `data-state="${esc(key || "not_run")}">${esc(word)}</span>`
       + (extra ? `<span class="dcat-extra">${esc(extra)}</span>` : "");
@@ -2868,6 +2909,8 @@
     const has = specified.indexOf(key) >= 0;
     const state = reading ? reading.state : "";
     const status = (reading && reading.status) || "";
+    const rowState = state || (has ? "not_run" : "unspecified");
+    const noStatusWord = SPEC_NO_STATUS_WORDS[rowState] || "No band";
     let detail = "";
     /* A STORED READING ALWAYS RENDERS. The "no specification" note is what a category with
        nothing stored and no specification shows -- it must never hide a reading that exists. */
@@ -2887,15 +2930,23 @@
         + (reading.modelId ? ` (${esc(reading.modelId)})` : "") + `</p>`;
     }
     return `<li class="dcat-row" data-category="${esc(key)}" `
-      + `data-state="${esc(state || (has ? "not_run" : "unspecified"))}">`
+      + `data-state="${esc(rowState)}">`
       + `<div class="dcat-head">`
       + `<button type="button" class="dcat-toggle" data-cat="${esc(key)}" aria-expanded="false">`
       + `<span class="dcat-name">${esc(key)} · ${esc(cat.name)}</span></button>`
-      + `<span class="dcat-status" data-status="${esc(status || "none")}">${esc(status || "—")}</span>`
-      + (reading ? specStateChip(state) : "")
+      /* RUN 81, FAULT 2. The status cell said "—" wherever the server stored no band, which
+         is the same mark a missing value gets everywhere else on the site and told the person
+         nothing. It now says WHICH of the states left it without a band, which is a fact off
+         the stored row. `data-status` is unchanged, so nothing reading the marker moves. */
+      + `<span class="dcat-status" data-status="${esc(status || "none")}">`
+      + esc(status || noStatusWord) + `</span>`
+      + specStateChip(rowState)
       + (reading ? specCountsHtml(reading.counts) : `<span class="dcat-counts"></span>`)
+      /* RUN 81, FAULT 5. RELABELLED, NOT REPLACED. Same button, same class, same data-cat,
+         same handler, same disabled rule: only the word changes. "Call" is what the code does;
+         "Process" is what the person is asking for. */
       + `<button type="button" class="dcat-call btn-small" data-cat="${esc(key)}"`
-      + (has ? "" : " disabled") + `>Call</button>`
+      + (has ? "" : " disabled") + `>Process</button>`
       + `</div>`
       + `<div class="dcat-body" style="display:none">${detail}</div></li>`;
   }
@@ -2905,7 +2956,7 @@
     return `<section class="panel detail-catspecs" aria-label="Category specifications"
               data-project-id="${esc(p.id)}">
         <div class="dcat-actions">
-          <button type="button" class="dcat-call-all btn-small">Call all</button>
+          <button type="button" class="dcat-call-all btn-small">Process all</button>
           <span class="dcat-hint">Applies each category's written specification to this
             period's stored figures. Per category is for building and diagnosis; the
             generate-for-every-period control is unchanged.</span>

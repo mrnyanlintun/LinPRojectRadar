@@ -3,8 +3,8 @@
 Run 76. Each file in this directory is the written specification for one category of modules.
 A specification states, for one module: its identity, its required inputs by the exact field
 names in `signal_inputs`, its method, its bands and where each threshold came from, what the
-reading means, and the conditions under which it declines together with the exact words it
-declines in.
+reading means, and the conditions under which it has nothing to report, together with the exact words it
+reports in.
 
 These specifications are DERIVED, not composed. Every formula, every threshold, every citation
 and every sentence of refusal below is transcribed from the module's own Python source in

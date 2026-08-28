@@ -67,7 +67,7 @@ It is not this platform's opinion about which fields matter.
 **A tiny missing fraction cannot compensate for a missing critical field**: `critical_missing` is
 returned alongside and is treated noncompensatorily.
 
-**Abstention and the one non-measured disposition.**
+**Nothing to report, and the one non-measured disposition.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"the required-input
    contract for the module or use being assessed"*.
 2. `required_fields` absent, not a list, or empty: `"Awaiting the required-input contract for the
@@ -106,7 +106,7 @@ is a named state, not a colour, and must never be emitted as `band`.
 the period being assessed. The status names which of the four situations obtains and the age in
 days is reported beside it.
 
-**Abstention and the two non-measured statuses.**
+**Nothing to report, and the two non-measured statuses.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed evidence
    date and freshness rule"*.
 2. `freshness_rule` absent or not a mapping: `"Awaiting the governed freshness rule for this source
@@ -158,7 +158,7 @@ module.
 component evidence is still reported, and that is the point: a structural assessment of where the
 evidence came from and whether anyone verified it remains useful without a fabricated scalar.
 
-**Abstention and the one non-numeric disposition.**
+**Nothing to report, and the one non-numeric disposition.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed source
    provenance record"*.
 2. A rubric supplied without a score mapping, a version or a basis — **abstain**: `"A reliability
@@ -207,7 +207,7 @@ The elements assessed are the real research and governance objects: the signal p
 judgment ledger, the authority, the response, the override/defer/escalation record, the method
 version, the evidence, and the event and timestamp linkage.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed audit chain
    record"*.
 2. `audit_schema` absent or not a mapping: `"Awaiting the versioned audit schema that says which
@@ -246,7 +246,7 @@ A component that is absent goes to `missing_domains`; one that is present but un
 fields are all missing is not usable merely because a filename exists. A package can be 100 per
 cent present and materially incomplete, and this module is what makes that visible.
 
-**Abstention and the one non-measured disposition.**
+**Nothing to report, and the one non-measured disposition.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed information
    package definition"*.
 2. `components` absent, empty or unreadable: `"Awaiting the applicable required information
@@ -301,7 +301,7 @@ arithmetic in the function that could do it.
 different revision contexts are `NOT_COMPARABLE` — **not inconsistent**. Two documents describing
 different months do not contradict one another.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed
    cross-document fact set"*.
 2. `facts` absent, empty or unreadable: `"Awaiting a governed cross-document fact set. No entries
@@ -341,7 +341,7 @@ Per expected period, the status is exactly one of `MISSING` (no report matched),
 arrived when they were owed. A project can have perfect coverage and a nil on-time rate, and the
 two readings are kept separate so that condition is visible.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed reporting
    cadence record and report history"*.
 2. `expected_periods` absent, empty or unreadable: `"Awaiting the governed reporting schedule. No

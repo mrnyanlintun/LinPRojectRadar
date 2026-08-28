@@ -40,7 +40,7 @@ module in this category has a band and neither may be given one.**
    be inventing the alternatives. Inventing the parameters is forbidden and **inventing the
    alternatives themselves would be worse.**
 
-## The shared abstention sentences
+## The shared nothing-to-report sentences
 
 From `canonical_v7.v7_structure`, writing `W` for the module's plain-words structure description:
 
@@ -125,7 +125,7 @@ variables actually survive its declared constraints — and, for each that does 
 constraint killed it. The infeasible set with its violations is usually the more useful half:
 it names the binding constraint.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed
    constraint-satisfaction problem: variables, their domains, and the constraints over them"*.
 2. No variables: `"Awaiting a governed constraint-satisfaction problem: variables, their domains,
@@ -186,7 +186,7 @@ rule to this same matrix is a different module's work, and a human authorises th
 the declared units and the declared orientation. It is the material for a decision; it is not the
 decision.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed
    action-by-scenario matrix: the actions being compared, the scenarios they are compared under,
    and an outcome for every pair"*.

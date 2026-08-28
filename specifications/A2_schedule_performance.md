@@ -61,7 +61,7 @@ whether it is late. An activity critical in 40 per cent of trials is a real expo
 single deterministic pass would not show it on the critical path at all. **Criticality is measured
 here, not ranked.**
 
-**Abstention.** The two sentences above, with `W` = *"the project's activity network: the
+**Nothing to report.** The two sentences above, with `W` = *"the project's activity network: the
 activities, the logic between them, and a duration for each"*. **`spi` and `bac` may not be used to
 reconstruct topology** and are not read here.
 
@@ -106,7 +106,7 @@ slopes say whether that buffer is closing because of the crew ahead or the crew 
 distinction the module could not make before Run 28, when only actual rates were read and a crew
 running at half its planned rate was indistinguishable from one running exactly to plan.
 
-**Abstention.** The two sentences above, with `W` = *"a line of balance: locations in sequence, the
+**Nothing to report.** The two sentences above, with `W` = *"a line of balance: locations in sequence, the
 crews working them, and a production rate and start for each line of work"*.
 
 ---
@@ -149,7 +149,7 @@ sentence, with `band: null` and `band_asserted: false`.
 protection faster than it is earning it. The zone says where that sits relative to two lines the
 project's own policy drew, one of which is definitional and one of which is a choice.
 
-**Abstention.** The two sentences above, with `W` = *"a critical chain with its activities and a
+**Nothing to report.** The two sentences above, with `W` = *"a critical chain with its activities and a
 sized project buffer"*.
 
 ---
@@ -181,7 +181,7 @@ makes a rebaseline visible â€” before Run 28 the module reported the drift alone
 by name, and a rebaseline erased the slip because no original commitment was retained. **The
 original commitment history may not be erased after a rebaseline.**
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a milestone forecast
    history: each milestone's committed date and the date it was forecast for in each reporting
    period since"*.
@@ -222,7 +222,7 @@ calibration.
 what can be started. Before Run 28 the module read two bare counts and reported `C/P`, the
 complement of the quantity the contract asks for, with no inventory behind the counts to audit.
 
-**Abstention.**
+**Nothing to report.**
 1. Structure absent or not a mapping: the two sentences above, with `W` = *"a look ahead schedule:
    the window it covers, the activities planned in it, and whether each one still carries an open
    constraint"*.
@@ -256,7 +256,7 @@ says. Before Run 28 the module reported `actualLaborHours / plannedLaborHours` â
 whole project, with no time bucket, no resource type and **no capacity anywhere in it**, capacity
 being the denominator the index is defined on. **Neither of those two fields is read here.**
 
-**Abstention.** The two sentences above, with `W` = *"a time phased resource profile: for each
+**Nothing to report.** The two sentences above, with `W` = *"a time phased resource profile: for each
 period and each kind of resource, the amount of work demanded and the amount available"*.
 
 ---

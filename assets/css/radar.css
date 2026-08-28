@@ -4627,3 +4627,161 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
    RUN 25, OWNER-DIRECTED, 2026-08-14. The detail page section navigator rail and its
    numbered controls were removed entirely, desktop and mobile alike, on the owner's
    instruction. */
+
+/* =================================================================================================
+   RUN 81. THE CATEGORY SPECIFICATIONS PANEL.
+
+   The panel had NO stylesheet at all. It rendered as an unstyled `<ul>` of eleven bullets whose
+   status, state chip, four counts and button were adjacent inline spans with no whitespace
+   between them, so the owner's daily render read
+
+       A1 · Cost and EVM Performance GreenComputed2 computed · 8 abstained · 0 out of order · 0 failed Call
+
+   -- a status, a state and a count run together, and the button trailing the sentence.
+
+   EVERY RULE BELOW IS SCOPED UNDER `.detail-catspecs`. Nothing here edits a shared class. The
+   ledger, the executive brief, the decision card and document control share `.panel`,
+   `.btn-small` and `.ws-note` with this panel and are explicitly out of scope for this run, so
+   the scoping is the mechanism that keeps them untouched rather than a convention.
+
+   THIS IS APPEARANCE ONLY. No selector adds, removes, hides or disables a control; no rule
+   depends on a value; `display:none` appears only on `.dcat-body`, which the existing toggle
+   already sets inline and still owns.
+   ============================================================================================== */
+.detail-catspecs .dcat-actions {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  margin: 0 0 12px; padding: 0 0 12px; border-bottom: 1px solid var(--line);
+}
+.detail-catspecs .dcat-hint {
+  flex: 1 1 32ch; min-width: 0;
+  font-size: 12px; line-height: 1.55; color: var(--muted); max-width: 78ch;
+}
+
+/* FAULT 4: rows, not bullets. The `<ul>`/`<li>` markup is KEPT -- the row is addressed as
+   `.dcat-row` by the panel's own wiring and by the browser checks, and retagging it would be a
+   structural change in a run whose remit is appearance. The list marker is removed and the row
+   is laid out as a row instead. */
+.detail-catspecs .dcat-list { list-style: none; margin: 0; padding: 0; }
+.detail-catspecs .dcat-row {
+  list-style: none;
+  border: 1px solid var(--line); border-radius: var(--radius-sm, 6px);
+  background: var(--surface-soft); margin: 0 0 6px; overflow: hidden;
+}
+.detail-catspecs .dcat-row:last-child { margin-bottom: 0; }
+
+/* FAULTS 1 AND 3: a grid, so the cells cannot collide and the buttons land in one column.
+   Name | status | state | counts | button. The button track is fixed and LAST, which is what
+   puts every Process control on the same left edge. */
+.detail-catspecs .dcat-head {
+  display: grid;
+  grid-template-columns: minmax(14ch, 1.6fr) minmax(9ch, auto) minmax(11ch, auto) minmax(0, 1.1fr) 8.5rem;
+  align-items: center; gap: 10px 16px; padding: 9px 12px;
+}
+.detail-catspecs .dcat-toggle {
+  justify-self: start; text-align: left; min-width: 0;
+  background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font: inherit;
+}
+.detail-catspecs .dcat-name {
+  display: block; font-weight: 600; font-size: 13px; color: var(--heading, var(--text));
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.detail-catspecs .dcat-toggle:hover .dcat-name { text-decoration: underline; }
+
+/* FAULT 2: the status cell always carries words now (the client supplies "No band …" where the
+   server stored no band), so this cell is never a bare em dash. Colour is applied ONLY from the
+   band the server stored -- a row with no band gets the muted treatment and can never be
+   mistaken for a computed one. */
+.detail-catspecs .dcat-status {
+  justify-self: start; font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px; letter-spacing: .04em; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid var(--line-strong); color: var(--muted); background: transparent;
+  white-space: nowrap;
+}
+.detail-catspecs .dcat-status[data-status="Green"]  { color: var(--clear-green); border-color: color-mix(in srgb, var(--clear-green) 50%, transparent); background: color-mix(in srgb, var(--clear-green) 12%, transparent); }
+.detail-catspecs .dcat-status[data-status="Yellow"] { color: var(--yellow);      border-color: color-mix(in srgb, var(--yellow) 50%, transparent);      background: color-mix(in srgb, var(--yellow) 12%, transparent); }
+.detail-catspecs .dcat-status[data-status="Amber"]  { color: var(--radar-amber); border-color: color-mix(in srgb, var(--radar-amber) 50%, transparent); background: color-mix(in srgb, var(--radar-amber) 12%, transparent); }
+.detail-catspecs .dcat-status[data-status="Red"]    { color: var(--alarm-red);   border-color: color-mix(in srgb, var(--alarm-red) 50%, transparent);   background: color-mix(in srgb, var(--alarm-red) 12%, transparent); }
+/* A row with NO stored band is muted and italic. Requirement: a row must never look computed
+   when it is not. */
+.detail-catspecs .dcat-status[data-status="none"] {
+  font-style: italic; letter-spacing: 0; border-style: dashed; opacity: .85;
+}
+
+/* THE FIVE STATES, EACH VISUALLY ITS OWN. They are not merged and they are not made to look
+   alike: "Failed" is the one the platform owes an answer for and it is the only chip that is
+   filled. */
+.detail-catspecs .dcat-state {
+  justify-self: start; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  padding: 2px 9px; border-radius: 999px; white-space: nowrap;
+  border: 1px solid var(--line-strong); color: var(--muted); background: transparent;
+}
+.detail-catspecs .dcat-state-computed     { color: var(--clear-green); border-color: color-mix(in srgb, var(--clear-green) 55%, transparent); }
+.detail-catspecs .dcat-state-abstained    { color: var(--muted); border-style: dashed; }
+.detail-catspecs .dcat-state-out_of_order { color: var(--radar-amber); border-color: color-mix(in srgb, var(--radar-amber) 55%, transparent); }
+.detail-catspecs .dcat-state-failed       { color: #fff; background: var(--alarm-red); border-color: var(--alarm-red); }
+.detail-catspecs .dcat-state-not_run,
+.detail-catspecs .dcat-state-unspecified  { color: var(--faint, var(--muted)); border-style: dotted; }
+
+.detail-catspecs .dcat-counts {
+  display: flex; flex-wrap: wrap; gap: 4px 10px; min-width: 0;
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; color: var(--muted);
+}
+.detail-catspecs .dcat-n { white-space: nowrap; }
+.detail-catspecs .dcat-n[data-count="failed"] { color: var(--alarm-red); font-weight: 600; }
+
+/* FAULT 3: the control sits in its own final track, right-aligned, one width for all eleven. */
+.detail-catspecs .dcat-call { justify-self: end; width: 100%; text-align: center; }
+.detail-catspecs .dcat-call[disabled] { opacity: .45; cursor: not-allowed; }
+
+.detail-catspecs .dcat-body { padding: 0 12px 10px; border-top: 1px solid var(--line); }
+.detail-catspecs .dcat-mods { list-style: none; margin: 8px 0 0; padding: 0; }
+.detail-catspecs .dcat-mod {
+  display: grid; grid-template-columns: 5.5rem minmax(7ch, auto) minmax(0, 1fr);
+  align-items: baseline; gap: 4px 14px;
+  padding: 6px 0; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+.detail-catspecs .dcat-mod:first-child { border-top: 0; }
+.detail-catspecs .dcat-mid {
+  font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; color: var(--muted);
+}
+.detail-catspecs .dcat-val { font-weight: 600; font-size: 13px; }
+.detail-catspecs .dcat-band {
+  justify-self: start; font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px;
+  padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted);
+}
+.detail-catspecs .dcat-band[data-band="Green"]  { color: var(--clear-green); border-color: color-mix(in srgb, var(--clear-green) 50%, transparent); }
+.detail-catspecs .dcat-band[data-band="Yellow"] { color: var(--yellow);      border-color: color-mix(in srgb, var(--yellow) 50%, transparent); }
+.detail-catspecs .dcat-band[data-band="Amber"]  { color: var(--radar-amber); border-color: color-mix(in srgb, var(--radar-amber) 50%, transparent); }
+.detail-catspecs .dcat-band[data-band="Red"]    { color: var(--alarm-red);   border-color: color-mix(in srgb, var(--alarm-red) 50%, transparent); }
+.detail-catspecs .dcat-band[data-band="none"]   { font-style: italic; border-style: dashed; }
+
+/* THE EXPLANATION TEXT. The owner's ruling: it names which document to fix and it is the most
+   useful thing on the page. NOT shortened, NOT truncated, NOT clamped to a line count, NOT
+   collapsed behind a control. It is given a full measure and a readable leading and it wraps.
+   There is deliberately no `-webkit-line-clamp`, no `max-height` and no `text-overflow` here. */
+.detail-catspecs .dcat-reason {
+  grid-column: 2 / -1; font-size: 12px; line-height: 1.6; color: var(--muted);
+  max-width: 88ch; white-space: normal; overflow: visible;
+}
+.detail-catspecs .dcat-mod[data-state="computed"] .dcat-reason { grid-column: auto; }
+.detail-catspecs .dcat-note {
+  margin: 8px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); max-width: 88ch;
+}
+.detail-catspecs .dcat-note.dcat-warn { color: var(--radar-amber); }
+.detail-catspecs .dcat-note.dcat-fail { color: var(--alarm-red); }
+.detail-catspecs .dcat-served { margin: 10px 0 0; font-size: 11px; color: var(--faint, var(--muted)); }
+.detail-catspecs .dcat-status-line { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+@media (max-width: 860px) {
+  .detail-catspecs .dcat-head {
+    grid-template-columns: minmax(0, 1fr) 8.5rem;
+    grid-auto-flow: row dense; row-gap: 6px;
+  }
+  .detail-catspecs .dcat-toggle { grid-column: 1; grid-row: 1; }
+  .detail-catspecs .dcat-call { grid-column: 2; grid-row: 1; }
+  .detail-catspecs .dcat-status,
+  .detail-catspecs .dcat-state,
+  .detail-catspecs .dcat-counts { grid-column: 1 / -1; }
+  .detail-catspecs .dcat-mod { grid-template-columns: minmax(0, 1fr); }
+  .detail-catspecs .dcat-reason { grid-column: 1; }
+}

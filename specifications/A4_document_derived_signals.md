@@ -110,7 +110,7 @@ which is evidence about the clarity of the issued documents rather than about co
 share says the questions are not being answered, which is the condition that turns into a claim.
 The two are separate readings and the worse one is shown.
 
-**Abstention.**
+**Nothing to report.**
 1. `rfiEventLog` present but unreadable: the two `require_v4_structure` sentences above, with
    `W` = *"a register of requests for information as events, each with its own identity and the
    dates it was raised and answered, and the span of time the register covers"*.
@@ -172,7 +172,7 @@ found none. The boundaries are unchanged and uncited, and **this module does not
 the specification on first presentation, which costs review cycles and float. It says nothing
 about cost performance and must not be read as though it did.
 
-**Abstention.**
+**Nothing to report.**
 1. `submittalDecisionRegister` present but unreadable: the two `require_v4_structure` sentences,
    with `W` = *"a submittal decision register: each submittal, each revision of it, and the
    decision recorded against it on the project's own disposition list"*.
@@ -212,7 +212,7 @@ denominator the size of an audit. That quantity is gone and its ladder went with
 was actually looked at. It rises when quality falls and it also rises when inspection improves, so
 it is read against the exposure it names, never alone.
 
-**Abstention.** The two `require_v4_structure` sentences, with `W` = *"a nonconformance record
+**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a nonconformance record
 with the exposure it is measured against: the nonconformances raised, and the inspections, hours
 or value they arose from"*.
 
@@ -243,7 +243,7 @@ current quantity is not the one that ladder was drawn over.
 the contract's own allowance and the float that protected the work — not the number of bad days.
 A project can lose ten weather days and carry a direct path effect of zero.
 
-**Abstention.** The two `require_v4_structure` sentences, with `W` = *"a weather impact record:
+**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a weather impact record:
 the weather events, the activities they stopped, the time actually lost, the allowance in the
 contract calendar, and the float on the path"*.
 
@@ -275,7 +275,7 @@ how much of the contract those changes represent. A project with many small chan
 one enormous change are different conditions and this module reports them as two figures so they
 stay different.
 
-**Abstention.** The two `require_v4_structure` sentences, with `W` = *"a change event register
+**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a change event register
 with the exposure it is measured over: each change, its type, cause and value, and the span of
 time or contract value it arose against"*.
 
@@ -304,7 +304,7 @@ evidence. **None of those three fields is read here.**
 the process the project itself declared. It is a position, not a score, and it is comparable only
 against the same process.
 
-**Abstention.** The two `require_v4_structure` sentences, with `W` = *"a claim and dispute
+**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a claim and dispute
 register: the project's own governed escalation process and the stage each issue has reached on
 it, with the dates it reached them"*.
 
@@ -337,7 +337,7 @@ with the standard note.
 declared; the lowest score and the firm named against it are the actionable half, because the
 project manages firms, not averages.
 
-**Abstention.** The two `require_v4_structure` sentences, with `W` = *"a subcontractor performance
+**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a subcontractor performance
 assessment: each firm, the criteria it was rated against, the rating on each, who assessed it and
 the weights that were applied"*.
 
@@ -373,7 +373,7 @@ slack, and which the supplied contract states is not this method.
 project has to act on. A negative figure means that item is already forecast to arrive after the
 work needs it.
 
-**Abstention.** The two `require_v4_structure` sentences, with `W` = *"an item level procurement
+**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"an item level procurement
 register: for each item, the date it is required on site, the date it is forecast to arrive, and
 the activity it feeds"*.
 
@@ -406,7 +406,7 @@ unit of the specification. It is the upstream cause of much of what A4.2 measure
 request velocity, and the two are reported separately so the causal reading stays available rather
 than being asserted.
 
-**Abstention.** The two `require_v4_structure` sentences, with `W` = *"a specification conflict
+**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a specification conflict
 register: each identified conflict, the two places in the specification that disagree, whether it
 has been confirmed, and the exposure the conflicts are counted over"*.
 
