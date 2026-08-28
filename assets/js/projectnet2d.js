@@ -236,14 +236,35 @@
     sys.planets.forEach(function (p) {
       var mr = p.radius + 16 + Math.min(16, p.total * 1.1);
       p.moons.forEach(function (m, i) {
-        var a = (i / Math.max(1, p.moons.length)) * Math.PI * 2 + (p.key.charCodeAt(1) || 0) * 0.3;
-        m.pos = { x: p.pos.x + Math.cos(a) * mr,
-                  y: p.pos.y + Math.sin(a) * mr * 0.34 - 4,
-                  z: p.pos.z + Math.sin(a) * mr * 0.86 };
+        /* RUN 83, PART C. THE ORBIT IS STORED, NOT THE POINT. Run 82 froze each moon at one
+           angle; the owner asked for orbital motion. `orbit` carries the ring radius, the
+           moon's phase on that ring, and its angular rate. `orbitAt(t)` is the only thing that
+           turns those into a position, and it is called once per moon per frame.
+
+           THE RATE ENCODES NOTHING. It is a function of the planet's roster size alone -- a
+           bigger family turns slower, so a crowded ring stays readable -- and never of a band,
+           a state or a value. Speed must not be mistaken for a reading. */
+        m.orbit = {
+          r: mr,
+          phase: (i / Math.max(1, p.moons.length)) * Math.PI * 2
+                 + (p.key.charCodeAt(1) || 0) * 0.3,
+          rate: 0.34 / Math.max(1, Math.sqrt(p.total || 1))
+        };
+        m.pos = orbitAt(p, m, 0);
       });
     });
     sys.healthPos = { x: 0, y: 0, z: 0 };
     return sys;
+  }
+
+  /* ONE MOON'S POSITION AT TIME `t` SECONDS. The ring is tilted out of the planet's own plane
+     (0.34 in y, 0.86 in z) exactly as Run 82 placed it, so the far half of the orbit passes
+     visibly behind the planet and the count can still be read. Only the angle moves. */
+  function orbitAt(p, m, t) {
+    var a = m.orbit.phase + t * m.orbit.rate;
+    return { x: p.pos.x + Math.cos(a) * m.orbit.r,
+             y: p.pos.y + Math.sin(a) * m.orbit.r * 0.34 - 4,
+             z: p.pos.z + Math.sin(a) * m.orbit.r * 0.86 };
   }
 
   /* ------------------------------------------------------------------------- the drawing --- */
@@ -318,8 +339,18 @@
       return project3d(rX(rY(p, ry), rx), fov, size.w / 2, size.h / 2, zoom);
     }
 
+    /* THE CLOCK. `orbitT` is seconds of orbital time, advanced by the animation loop and by
+       nothing else. A drag, a wheel or a resize redraws at the SAME `orbitT`, so interacting
+       with the chart never jumps the moons. */
+    var orbitT = 0;
+
     function draw() {
       if (!size.w) resize();
+      /* Re-place every moon for this instant. Sixty-three cosines and sines per frame; this is
+         the whole cost of the animation and it is measured in the report. */
+      sys.planets.forEach(function (p) {
+        p.moons.forEach(function (m) { m.pos = orbitAt(p, m, orbitT); });
+      });
       var scene = { bodies: [], edges: [] };
       ctx.clearRect(0, 0, size.w, size.h);
 
@@ -473,6 +504,7 @@
     function onUp() { dragging = false; canvas.style.cursor = "grab"; }
     function onResize() { resize(); draw(); }
     function cleanup() {
+      if (raf) { window.cancelAnimationFrame(raf); raf = 0; }
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("resize", onResize);
@@ -493,6 +525,55 @@
     /* One re-measure after layout settles, so a canvas mounted inside a section that was
        display:none when this ran is not left drawn at the wrong size. */
     setTimeout(function () { resize(); draw(); }, 60);
+
+    /* ------------------------------------------------------------------- THE ANIMATION ---
+       ORBITAL MOTION, AND THE THREE THINGS THAT STOP IT.
+
+       1. `prefers-reduced-motion: reduce`. The chart renders once, complete, and never moves.
+          Every figure and every state is still drawn; the order's constraint 4 says reduce the
+          animation rather than the information, and a person who has asked their operating
+          system for stillness has asked for exactly that reduction.
+       2. The canvas leaving the document. The detail page re-renders on every period change;
+          a loop left running against a detached canvas is a leak.
+       3. The tab being hidden. `requestAnimationFrame` already throttles there, but the frame
+          budget check below would otherwise read a throttled frame as a slow one.
+
+       THE FRAME BUDGET, AND WHAT IT DEGRADES TO. If the mean frame time over a rolling window
+       exceeds 24ms -- roughly 40fps -- the loop drops to redrawing every OTHER frame, and if it
+       is still over budget after that, every fourth. The information never changes: the same
+       eleven planets, the same sixty-three moons, the same edges, the same note. Only the
+       number of redraws falls. That is the order's constraint 4 followed literally.
+
+       NOTHING HERE COMPUTES. `orbitT` moves an angle. No band, no state, no value and no edge
+       is a function of it. */
+    var reduce = false;
+    try {
+      reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    } catch (e) { reduce = false; }
+    container.setAttribute("data-animated", reduce ? "reduced" : "orbiting");
+
+    var raf = 0, prev = 0, frames = 0, acc = 0, skip = 1, phase = 0;
+    function loop(ts) {
+      if (!document.body.contains(canvas)) { cleanup(); return; }
+      raf = window.requestAnimationFrame(loop);
+      if (!prev) { prev = ts; return; }
+      var dt = ts - prev; prev = ts;
+      if (dt > 250) return;                       /* tab was hidden; not a slow frame */
+      orbitT += dt / 1000;
+      phase = (phase + 1) % skip;
+      if (phase !== 0) return;
+      draw();
+      acc += dt; frames++;
+      if (frames >= 45) {
+        var mean = acc / frames;
+        if (mean > 24 && skip < 4) skip *= 2;
+        else if (mean < 12 && skip > 1) skip /= 2;
+        container.setAttribute("data-frame-ms", String(Math.round(mean * 10) / 10));
+        container.setAttribute("data-frame-skip", String(skip));
+        acc = 0; frames = 0;
+      }
+    }
+    if (!reduce) raf = window.requestAnimationFrame(loop);
   }
 
   window.LinProjectNet2D = {
