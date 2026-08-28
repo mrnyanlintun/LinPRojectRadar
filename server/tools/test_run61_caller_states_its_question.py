@@ -109,10 +109,37 @@ check("primeAndRefresh gives the provenance line its second pass",
       "would stand exactly as it did before Run 61")
 
 # ---------------------------------------------------------------- the portfolio loader
-check("the portfolio loader asks for the latest computed period",
-      'call("projectperiods", { id: p.project_id })' in WS
-      and 'call("projectresults", { id: p.project_id, period: latest })' in WS,
-      "workspace.js renderPortfolio no longer derives the period from projectperiods")
+#
+# RETIRED AT RUN 80, BY OWNER RULING (Run 80 order, section 5). NOT DELETED: the check and what
+# it proved are recorded here in full, and it is not executed.
+#
+# THE CHECK, VERBATIM AS IT STOOD:
+#
+#     check("the portfolio loader asks for the latest computed period",
+#           'call("projectperiods", { id: p.project_id })' in WS
+#           and 'call("projectresults", { id: p.project_id, period: latest })' in WS,
+#           "workspace.js renderPortfolio no longer derives the period from projectperiods")
+#
+# WHAT IT PROVED. Run 61's defect was a caller that ASSUMED period one and then reported
+# whatever came back as the project's current state. This check pinned the repair: the portfolio
+# loader had to ask `projectperiods` which period was last computed and then ask
+# `projectresults` for THAT period. It was a real guard over a real defect and it was green from
+# Run 61 to Run 78.
+#
+# WHY IT IS RETIRED. Run 79, under the owner's Part C ruling, removed the Portfolio Health card
+# and with it `renderPortfolio` -- the loader this check pinned. Run 79 left the check RED
+# rather than editing a check to make a removal pass, which was the right call and is the reason
+# there is a ruling to apply here at all. Its subject no longer exists in the tree, so the check
+# can no longer fail for the reason it was written to detect; it can only fail because the code
+# it names is gone. A check left red is a signal turned into noise, and the owner has ruled it
+# retired.
+#
+# WHAT IS NOT CLAIMED. Retiring this does not re-establish the behaviour it guarded anywhere
+# else. Nothing in this repository now asserts that a portfolio-level caller derives its period
+# rather than assuming period one, BECAUSE THERE IS NO SUCH CALLER. Should a portfolio surface
+# be built again, this guard is the one to restore, and it is left here in full so that it can
+# be. The detail-page half of Run 61's rule -- the caller stating its question, and the harness
+# rule below -- is untouched and still executes.
 
 # ---------------------------------------------------------------- THE VERIFICATION RULE
 # OWNER RULING, RUN 61 SECTION 5: a browser verification must drive the page the way a user does.
