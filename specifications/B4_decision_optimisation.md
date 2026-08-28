@@ -49,9 +49,48 @@ From `canonical_v7.v7_structure`, writing `W` for the module's plain-words struc
 - **Present but not a mapping:** `"The information provided for this project in place of W is not
   in a form this measure can read, so no reading is taken from it."`
 
-Every abstention here carries the decision-structure reason code
+Every abstention from the runner itself carries the decision-structure reason code
 `canonical_decision_structure_absent`, not the generic structure code, because every module in this
-category is a decision method by definition.
+category is a decision method by definition. A refusal by the qualification boundary above carries
+`evidence_not_qualified_for_use` instead, and the two must not be conflated.
+
+**The runner does not repeat the qualification gate.** It does not need to: the boundary above
+already wraps every entry in the dispatch table, and gating again inside the runner would put a
+second copy of the rule in the tree, where two copies drift.
+
+## The qualification boundary, and it fires BEFORE anything below
+
+Every module in this category is wrapped, **in the dispatch table itself**, by
+`qualification_boundary.install`. After that call there is no entry in `registry.VALIDATED` for a
+gated module that reaches its runner without the boundary first, and `registry.run_module` looks
+the runner up there — **so a consumer cannot route around it by hand-building a signal package.**
+
+The boundary reads the project's declared Category-9 assessment from `signal_inputs` under the key
+**`evidenceQualification`**, and asks it for this category's declared use: **`decision_optimization`**.
+
+**Absence fails closed.** A package carrying no Category-9 assessment is UNASSESSED, and UNASSESSED
+is ineligible. Nothing is inferred, nothing is imputed, and the consumer does not execute first and
+get stamped afterwards. The refusals, in their exact words and in the order they are reached:
+
+1. **No governed qualification requirement declared for the route** — a configuration failure:
+   `"No governed qualification requirement is declared for this route, so it is not executed. An
+   undeclared route is a configuration failure and is blocked rather than allowed through."`
+2. **`evidenceQualification` absent** — the case a project with no declared assessment reaches:
+   `"The evidence offered to this measure carries no Category-9 assessment, so it is unassessed and
+   not eligible for this use. No reading is produced and no figure is used in its place."`
+3. **Declared but not eligible for this use:** `"The evidence supplied for this measure has not been
+   qualified for this use, so it is not read and no figure is produced in its place. "` followed by
+   the qualification reasons, joined with `"; "`.
+
+Every one of those carries the reason code `evidence_not_qualified_for_use` and is stamped
+`QUALIFICATION_BOUNDARY_V18`, so a reader of the ledger can tell **a refusal by the gate** from **a
+module's own abstention**.
+
+**This is the abstention a project with no declared Category-9 assessment will actually see for
+every module in this category, and it is reached before any input named below is looked at.** The
+per-module abstentions specified further down are what the module says once the boundary has been
+passed.
+
 
 ---
 
