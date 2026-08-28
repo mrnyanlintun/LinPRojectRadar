@@ -59,6 +59,10 @@ STATES = (COMPUTED, ABSTAINED, OUT_OF_ORDER, FAILED)
 #: has NO specification and is still served by the Python module layer. Run 76 wrote one.
 CATEGORY_SPECIFICATIONS: dict[str, str] = {
     "A1": "A1_cost_and_evm.md",
+    "A2": "A2_schedule_performance.md",
+    "A3": "A3_cost_risk.md",
+    "A4": "A4_document_derived_signals.md",
+    "A6": "A6_delivery_quality.md",
 }
 
 #: The eleven project-level categories, in the two passes the order names.
