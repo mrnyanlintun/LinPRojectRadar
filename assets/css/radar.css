@@ -4648,6 +4648,38 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
    depends on a value; `display:none` appears only on `.dcat-body`, which the existing toggle
    already sets inline and still owns.
    ============================================================================================== */
+/* =================================================================================================
+   RUN 82, PART A. THE HEADLINE, AND THE PRODUCED-OUT-OF FIGURE ON EACH ROW.
+
+   Scoped under `.detail-catspecs` exactly as Run 81's block is, so nothing shared moves. These
+   rules ADD appearance for two new spans; not one existing selector is edited, and the five-track
+   `.dcat-head` grid Run 81 built is untouched -- the per-row figure lives inside the existing
+   counts cell rather than in a sixth column.
+
+   NO RULE HERE HIDES, DISABLES OR ADDS A CONTROL. `display` appears only as flex/inline.
+   ============================================================================================== */
+.detail-catspecs .dcat-headline {
+  margin: 0 0 12px; padding: 0 0 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px; line-height: 1.6; color: var(--text);
+}
+/* The figure itself is the largest thing in the panel, because it is the thing the owner ruled
+   must be read first. */
+.detail-catspecs .dcat-headline-figure {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 22px; font-weight: 700; letter-spacing: -.01em;
+  color: var(--heading, var(--text));
+}
+.detail-catspecs .dcat-headline-words { font-weight: 600; }
+.detail-catspecs .dcat-headline-rest { color: var(--muted); }
+
+/* THE PER-ROW FIGURE. First item of the counts cell, so it reads before the breakdown. It is
+   given weight and the site's foreground colour while the four state counts stay muted, which is
+   what makes the headline figure the one the eye lands on rather than "0 failed". */
+.detail-catspecs .dcat-produced {
+  white-space: nowrap; font-weight: 700; color: var(--heading, var(--text));
+}
+
 .detail-catspecs .dcat-actions {
   display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
   margin: 0 0 12px; padding: 0 0 12px; border-bottom: 1px solid var(--line);
@@ -4770,7 +4802,11 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 .detail-catspecs .dcat-note.dcat-warn { color: var(--radar-amber); }
 .detail-catspecs .dcat-note.dcat-fail { color: var(--alarm-red); }
 .detail-catspecs .dcat-served { margin: 10px 0 0; font-size: 11px; color: var(--faint, var(--muted)); }
-.detail-catspecs .dcat-status-line { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+/* RUN 82, PART A3. The margin flipped from below to above, because the element moved from
+   below the eleven rows to directly under the Process all control. `:empty` keeps it from
+   pushing the rows down on a page nobody has pressed yet. */
+.detail-catspecs .dcat-status-line { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+.detail-catspecs .dcat-status-line:empty { margin: 0; }
 
 @media (max-width: 860px) {
   .detail-catspecs .dcat-head {

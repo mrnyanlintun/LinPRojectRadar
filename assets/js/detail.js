@@ -2878,11 +2878,47 @@
       + (extra ? `<span class="dcat-extra">${esc(extra)}</span>` : "");
   }
 
-  function specCountsHtml(counts) {
+  /* RUN 82, PART A1. HOW MANY MODULES IN THIS CATEGORY PRODUCED A STATUS, OUT OF HOW MANY
+     SHOULD HAVE.
+
+     WHERE THE DENOMINATOR COMES FROM, and it is not invented and not hardcoded here. It is the
+     length of the category's module list in `LIN_CATEGORIES`, which `build_client_taxonomy.py`
+     GENERATES from `server/app/simulation/registry.py`. Measured this run: the per-category
+     roster is A1 10, A2 6, A3 7, A4 10, A5 7, A6 4, B1 4, B2 1, B3 5, B4 2, C1 7 -- 63 -- which
+     is `service_index()` exactly. The client is therefore reading a server authority, not
+     counting something it decided for itself.
+
+     WHERE THE NUMERATOR COMES FROM. `counts.computed` on the STORED reading. Nothing here
+     derives a state, a band or a value; a category that has not been called has no reading and
+     produces zero, which is the truth about it.
+
+     WHY IT IS INSIDE THE COUNTS CELL AND NOT A NEW COLUMN. The row is a five-track grid and
+     Run 81's column layout is correct under the standing ruling; a sixth track would restyle
+     it. The figure is the FIRST item of the counts cell, so it reads before the breakdown
+     exactly as the order requires, and the grid is untouched. */
+  function specProducedHtml(produced, total) {
+    const n = Number(produced || 0), N = Number(total || 0);
+    return `<span class="dcat-produced" data-produced="${n}" data-of="${N}">`
+      + `${n} of ${N} produced a status</span>`;
+  }
+
+  /* RUN 82, PART A2. THE COUNT LINE NOW SAYS WHAT THE STATE LABELS SAY.
+
+     Run 81 corrected the state chips -- `abstained` renders as "Nothing to report" -- and left
+     this line reading "7 abstained". A module does not abstain; it has nothing to report. Only
+     the VISIBLE WORDS change.
+
+     `data-count="abstained"` IS DELIBERATELY UNCHANGED. It is the server's state name and the
+     machine-readable key: `radar.css:4730` selects on `[data-count="failed"]`, and the browser
+     checks read the attribute rather than the words. Changing the key would rename the server's
+     vocabulary from the client, which is a different and much larger change than the one the
+     owner asked for. The words are what he objected to; the words are what moved. */
+  function specCountsHtml(counts, produced, total) {
     const c = counts || {};
     return `<span class="dcat-counts">`
-      + `<span class="dcat-n" data-count="computed">${Number(c.computed || 0)} computed</span> · `
-      + `<span class="dcat-n" data-count="abstained">${Number(c.abstained || 0)} abstained</span> · `
+      + specProducedHtml(produced, total) + ` · `
+      + `<span class="dcat-n" data-count="computed">${Number(c.computed || 0)} with a reading</span> · `
+      + `<span class="dcat-n" data-count="abstained">${Number(c.abstained || 0)} nothing to report</span> · `
       + `<span class="dcat-n" data-count="out_of_order">${Number(c.out_of_order || 0)} out of order</span> · `
       + `<span class="dcat-n" data-count="failed">${Number(c.failed || 0)} failed</span>`
       + `</span>`;
@@ -2941,7 +2977,13 @@
       + `<span class="dcat-status" data-status="${esc(status || "none")}">`
       + esc(status || noStatusWord) + `</span>`
       + specStateChip(rowState)
-      + (reading ? specCountsHtml(reading.counts) : `<span class="dcat-counts"></span>`)
+      /* RUN 82, PART A1. The produced-out-of figure renders on EVERY row, including the ones
+         with no reading at all: "0 of 7 produced a status" is precisely the fact the owner is
+         asking the panel to admit, and hiding it on the untouched rows would hide it where it
+         matters most. */
+      + specCountsHtml(reading && reading.counts,
+                       (reading && reading.counts && reading.counts.computed) || 0,
+                       ((cat && cat.modules) || []).length)
       /* RUN 81, FAULT 5. RELABELLED, NOT REPLACED. Same button, same class, same data-cat,
          same handler, same disabled rule: only the word changes. "Call" is what the code does;
          "Process" is what the person is asking for. */
@@ -2951,25 +2993,55 @@
       + `<div class="dcat-body" style="display:none">${detail}</div></li>`;
   }
 
+  /* RUN 82, PART A1. THE HEADLINE, AND WHY IT LEADS.
+
+     THE OWNER'S RULING, and it is the whole of Part A: a panel reporting "0 failed" on every
+     row while fifty-seven of sixty-three modules produce nothing is the platform grading itself
+     on its own terms. The platform's distinction between a module that lacks evidence and a
+     module the platform broke is real and it is kept -- the four states are still four states,
+     still four different markers, still four different colours. It is simply not what the page
+     leads with any more.
+
+     The figure is a COUNT OF STORED ROWS: how many modules the server recorded a reading for,
+     over how many modules are in service. It asserts nothing about any module and fills no gap.
+     A project with nothing called reads "0 of 63 produced a status", which is true. */
+  function specHeadlineHtml(produced, total, called, cats) {
+    const n = Number(produced || 0), N = Number(total || 0);
+    const silent = Math.max(0, N - n);
+    return `<p class="dcat-headline" data-produced="${n}" data-of="${N}" data-called="${Number(called || 0)}">`
+      + `<span class="dcat-headline-figure">${n} of ${N}</span> `
+      + `<span class="dcat-headline-words">modules produced a status for this period.</span> `
+      + `<span class="dcat-headline-rest">${silent} did not. `
+      + `${Number(called || 0)} of ${Number(cats || 0)} categories have been processed.</span></p>`;
+  }
+
   function categoryPanelHtml(p) {
     const cats = projectCats();
+    const total = projectModuleCount();
     return `<section class="panel detail-catspecs" aria-label="Category specifications"
               data-project-id="${esc(p.id)}">
+        ${specHeadlineHtml(0, total, 0, cats.length)}
         <div class="dcat-actions">
           <button type="button" class="dcat-call-all btn-small">Process all</button>
           <span class="dcat-hint">Applies each category's written specification to this
             period's stored figures. Per category is for building and diagnosis; the
             generate-for-every-period control is unchanged.</span>
         </div>
-        <ul class="dcat-list">${cats.map((c) => specCategoryRowHtml(c, null, [])).join("")}</ul>
+        <!-- RUN 82, PART A3. THE PROGRESS LINE MOVED HERE, from below the eleven rows.
+             It is the SAME element: same tag, same class, same role=status live region,
+             same and only writer, specCall(). Nothing was added and nothing removed; it now
+             sits where the person who just pressed Process all is looking. -->
         <p class="dcat-status-line" role="status"></p>
+        <ul class="dcat-list">${cats.map((c) => specCategoryRowHtml(c, null, [])).join("")}</ul>
       </section>`;
   }
 
   async function specCall(root, p, category) {
     const line = root.querySelector(".dcat-status-line");
     const tok = window.LinAuth ? LinAuth.getToken() : null;
-    if (line) line.textContent = category ? ("Calling " + category + "…") : "Calling all…";
+    /* RUN 82, PART A4. Run 81 relabelled the buttons to Process and Process all and left this
+       line saying "Calling". Two words for one action is what the owner is reading. */
+    if (line) line.textContent = category ? ("Processing " + category + "…") : "Processing all…";
     const body = { action: "projectcategoryapply", id: p.id, session_token: tok };
     if (category) body.category = category;
     let resp;
@@ -3009,6 +3081,19 @@
     const cats = projectCats();
     list.innerHTML = cats.map((c) =>
       specCategoryRowHtml(c, readings[c.key] || null, specified)).join("");
+    /* RUN 82, PART A1. The headline is repainted from the same stored readings that painted the
+       rows, in the same pass, so the two can never disagree. Summed, not derived. */
+    const head = root.querySelector(".dcat-headline");
+    if (head) {
+      let produced = 0, called = 0;
+      cats.forEach((c) => {
+        const r = readings[c.key];
+        if (!r) return;
+        called += 1;
+        produced += Number((r.counts && r.counts.computed) || 0);
+      });
+      head.outerHTML = specHeadlineHtml(produced, projectModuleCount(), called, cats.length);
+    }
   }
 
   function wireCategoryPanel(root, p) {
