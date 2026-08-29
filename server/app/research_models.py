@@ -525,6 +525,13 @@ class Document(Base):
     # Model identifier AND version — "claude-opus" alone would not let a later reader tell which
     # weights produced a stored figure.
     extraction_model: Mapped[str] = mapped_column(Text, nullable=True)
+    # 0030. The sha256 of the exact extraction prompt (field list included) this row's stored
+    # extraction was produced under. The upload cache serves a known hash ONLY while this equals
+    # the current fingerprint for the stored doc_type; NULL or unequal means the extraction
+    # contract has grown since this row was extracted, and the bytes are re-extracted once and
+    # the row updated in place. NULL on every pre-0030 row, truthfully: the contract those rows
+    # were extracted under was not recorded.
+    extraction_contract: Mapped[str] = mapped_column(String(64), nullable=True)
     # 0016. The classifier's own confidence in `doc_type`, 0..1, or NULL.
     #
     # The classify prompt has always asked the model for `{"docType", "confidence"}`; until

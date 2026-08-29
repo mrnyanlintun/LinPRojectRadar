@@ -59,7 +59,7 @@ from typing import Any, Callable
 from sqlalchemy import func, select, update as sa_update
 from sqlalchemy.orm import Session
 
-from .extraction_client import build_extractor, extract_many
+from .extraction_client import build_extractor, extract_many, extraction_contract_fingerprint
 from .extraction_fields import UNMAPPED, is_mapped
 from .extraction_merge import (
     assembly_report, document_as_of, emit_observations, select_signal_inputs,
@@ -2752,13 +2752,27 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     #
     # The decision is filename-based and pure, so it is safe to make before any content is read;
     # that is the same property that let `_decide_filing` make it later.
+    # 0030. THE CACHE HAS TWO KEYS: the bytes, and the extraction contract. A stored extraction
+    # is served only while the fingerprint it was made under equals the CURRENT fingerprint for
+    # its stored type -- `extraction_contract_fingerprint` derives that from the same functions
+    # that build the real prompt. NULL (every pre-0030 row) or unequal means the contract has
+    # grown since the row was extracted, and the bytes are re-extracted once and the row updated
+    # in place, which keeps 0009's identity-by-construction: two PMs uploading identical bytes
+    # still read the SAME row. An upload with no contract change still costs no model call.
     jobs: list[dict] = []
     queued: set[str] = set()
+    stale: set[str] = set()
     for d in decoded:
         if d["reference"] is not None:
             continue
-        if d["sha256"] in existing or d["sha256"] in queued:
+        if d["sha256"] in queued:
             continue
+        held = existing.get(d["sha256"])
+        if held is not None:
+            current = extraction_contract_fingerprint(held.doc_type or "")
+            if held.extraction_contract == current:
+                continue
+            stale.add(d["sha256"])
         queued.add(d["sha256"])
         jobs.append({"sha256": d["sha256"], "content": d["raw"], "mime_type": d["mime_type"],
                      "filename": d["filename"], "doc_type": d["doc_type"]})
@@ -2783,6 +2797,20 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
         table = activity_table_from_document(d["raw"], d["mime_type"] or "", d["filename"])
         if table is not None:
             extraction["schedule_table"] = table.descriptor("reader")
+        # 0030. A STALE ROW IS REFRESHED IN PLACE, never duplicated: the sha256 is unique by
+        # construction and identity of the stimulus is the row, so the re-extraction replaces
+        # what the row says the document states. The filename stays as first uploaded, per the
+        # column's own rule; everything the model call produced is restamped, fingerprint
+        # included, so the next upload of these bytes is a cache hit again.
+        if r["sha256"] in stale:
+            held = existing[r["sha256"]]
+            held.doc_type = r["doc_type"]
+            held.extraction = extraction
+            held.extraction_model = model_id
+            held.classification_confidence = r.get("confidence")
+            held.extraction_contract = extraction_contract_fingerprint(r["doc_type"] or "")
+            held.extracted_at = func.now()
+            continue
         session.add(Document(
             sha256=r["sha256"],
             filename=d["filename"],
@@ -2792,6 +2820,8 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             doc_type=r["doc_type"],
             extraction=extraction,
             extraction_model=model_id,
+            # 0030. The contract this extraction was just made under. What the cache compares.
+            extraction_contract=extraction_contract_fingerprint(r["doc_type"] or ""),
             # 0016. The classifier's own confidence, which the platform used to discard. None
             # when the model's claim was not what decided the type; see extraction_client.
             classification_confidence=r.get("confidence"),
@@ -2851,7 +2881,9 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
                           "doc_type": None, "was_cached": False,
                           "contributes": False, "error": r.get("error")})
             continue
-        was_cached = d["sha256"] in existing
+        # 0030. A refreshed document PAID for a model call this upload, so it is not "cached":
+        # the PM is told it was re-read, and `document_uploads.was_cached` records the cost.
+        was_cached = d["sha256"] in existing and d["sha256"] not in stale
         if d["reference"] is not None:
             # Counted separately: it was neither extracted nor served from an extraction cache.
             filed_count += 1

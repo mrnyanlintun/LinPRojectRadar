@@ -346,6 +346,25 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
     )
 
 
+def extraction_contract_fingerprint(doc_type: str) -> str:
+    """
+    0030. The identity of the extraction contract for a document type: the sha256 of the exact
+    prompt `build_prompt` issues for it today, field list included.
+
+    This is the second cache key. The upload path stores it on `documents.extraction_contract`
+    beside the extraction it stamps, and serves a known sha256 from the cache ONLY while the
+    stored fingerprint equals the current one for the stored type. A contract change -- a field
+    added to `extraction_fields_for`, or a change to the prompt text itself -- changes this
+    value and invalidates every cached extraction made under the old contract, exactly once
+    each; an upload with no contract change is still served from the cache. Derived at call
+    time from the same functions that build the real prompt, so it cannot drift from what the
+    model is actually asked.
+    """
+    import hashlib
+    prompt = build_prompt(doc_type, extraction_fields_for(doc_type))
+    return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+
+
 def build_classify_prompt() -> str:
     """Port of `identifyOnly_` (.gs ~685), including its content-sniffing hints."""
     return (
