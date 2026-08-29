@@ -12,6 +12,19 @@
 > left them and were right to. Moving them rewrites history. This is the ONE addition Run 59
 > made to this file, at the top, which the file's own rule permits; nothing below it was edited.
 
+# 2026-08-29 - Run 86: A2.8 fed by the look-ahead document; A3.6 proven on a risk-register .docx; four architecture-vs-specification STOPs quoted. sim-2026.08-v42.
+
+**Report:** `REPORT_2026-08-29_run86_loop_to_goal.md`. The look-ahead extraction contract grew
+three fields (activity table, horizon, status date), `lookahead_table.py` reads the printed rows,
+`documents.py` assembles `lookAheadSchedule`, and the 0030 fingerprint invalidates every cached
+look-ahead extraction once — `test_run86_lookahead_and_risk_docx.py` 16/16, A2.8 computing 0.70
+and A3.6 computing a P80 from a synthetic .docx through the real routes. A6.2 measured computing
+2.22 recordables per 200,000 hours on stored rows. A6.1, A6.3, A6.4 and B1.2 are STOPs: their
+specifications (untouchable) define them on structures the backend architecture v2 supersedes;
+the exact texts are quoted in the report for the owner's ruling. The category panel measured in
+a real browser at 1280px and 1024px by `drive_run86_panel_widths.py`. No specification, no
+simulation file and no migration was touched; SIMULATION_VERSION unmoved.
+
 # 2026-08-25 - Run 59: NO MARKDOWN DOCUMENT CARRIES AUTHORITY. sim-2026.08-v39, og-participant-2026.08-v24, GATE 15/15.
 
 **Report:** `REPORT_2026-08-25_run59_no_markdown_authority.md`. Run 58's audit landed with it,
