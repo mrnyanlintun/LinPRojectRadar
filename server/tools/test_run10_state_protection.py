@@ -350,6 +350,16 @@ RUN59_NON_ANALYTICAL_SCOPE = {"server/app/research_export.py",
 RUN68_NON_ANALYTICAL_SCOPE = {"server/app/extraction_fields.py",
                               "server/app/extraction_client.py",
                               "server/app/baseline_curve.py"}
+# RESTATED BY RUN 85, ORIGINAL FINDINGS PRESERVED. Run 85 touches ONE file under server/app/
+# outside the scopes already named, and it is NAMED here rather than the rule being widened.
+# `research_models.py` gains a single nullable column declaration on `documents`
+# (`extraction_contract`, migration 0030): the fingerprint of the extraction contract a stored
+# extraction was made under, which the upload cache compares before serving a known sha256. It
+# declares storage and computes nothing; no module reads it, no figure moves through it. The
+# seam that reads it, `documents.py`, is already inside Run 11 Gate 6's named read path, and
+# `extraction_client.py` (where the fingerprint is derived from the real prompt builder) is
+# already named by Run 68.
+RUN85_NON_ANALYTICAL_SCOPE = {"server/app/research_models.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
@@ -357,6 +367,7 @@ check("this run changed only the analytical layer under the application, plus th
           or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE or d in RUN41_NON_ANALYTICAL_SCOPE
           or d in RUN43_NON_ANALYTICAL_SCOPE or d in RUN47_NON_ANALYTICAL_SCOPE
           or d in RUN59_NON_ANALYTICAL_SCOPE or d in RUN68_NON_ANALYTICAL_SCOPE
+          or d in RUN85_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning
