@@ -4818,6 +4818,22 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
    pushing the rows down on a page nobody has pressed yet. */
 .detail-catspecs .dcat-status-line { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
 .detail-catspecs .dcat-status-line:empty { margin: 0; }
+/* RUN 85, §3.2. While a specification call is in flight the line is bold, coloured and
+   pulsing — owner ruling: the person paying for the call must not have to hunt for whether it
+   is running. The class is added and removed by specCall() only; the pulse stands down under
+   prefers-reduced-motion, matching the site's precedent for the network animation. */
+.detail-catspecs .dcat-status-line.is-processing {
+  font-weight: 700;
+  color: var(--status-complete);
+  animation: dcat-processing-pulse 1.2s ease-in-out infinite;
+}
+@keyframes dcat-processing-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail-catspecs .dcat-status-line.is-processing { animation: none; }
+}
 
 @media (max-width: 860px) {
   .detail-catspecs .dcat-head {

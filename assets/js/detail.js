@@ -3056,16 +3056,28 @@
     const tok = window.LinAuth ? LinAuth.getToken() : null;
     /* RUN 82, PART A4. Run 81 relabelled the buttons to Process and Process all and left this
        line saying "Calling". Two words for one action is what the owner is reading. */
-    if (line) line.textContent = category ? ("Processing " + category + "…") : "Processing all…";
+    /* RUN 85, §3.2. THE LINE IS UNMISSABLE WHILE THE CALL IS IN FLIGHT. A call takes time and
+       costs money; the person paying for it should not have to hunt for whether it is running.
+       `is-processing` makes the SAME element bold, coloured and pulsing (CSS owns the pulse and
+       stands down under prefers-reduced-motion); it is removed on every completion path, so a
+       finished or failed call reverts to the quiet line. No element added, none removed. */
+    if (line) {
+      line.textContent = category ? ("Processing " + category + "…") : "Processing all…";
+      line.classList.add("is-processing");
+    }
     const body = { action: "projectcategoryapply", id: p.id, session_token: tok };
     if (category) body.category = category;
     let resp;
     try {
       resp = await LinStore.postWithTimeout(body, 300000);
     } catch (e) {
-      if (line) line.textContent = "The call did not complete: " + (e && e.message);
+      if (line) {
+        line.classList.remove("is-processing");
+        line.textContent = "The call did not complete: " + (e && e.message);
+      }
       return;
     }
+    if (line) line.classList.remove("is-processing");
     if (!resp || resp.ok !== true) {
       if (line) line.textContent = (resp && resp.error) || "The call did not complete.";
       return;
