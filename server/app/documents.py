@@ -1649,6 +1649,31 @@ def _run69_structures(session: Session, project: Project, period: int,
             if record is not None:
                 out.setdefault("productionOutputRecord", record)
 
+        elif doc_type == "lookahead_schedule":
+            # RUN 86, A2.8. The look-ahead ACTIVITY INVENTORY, where this period's look-ahead
+            # document printed one. `canonical_v3.look_ahead_ready_fraction` derives its counts
+            # from rows and refuses to default `horizon` or `status_date`, so the structure is
+            # assembled only where the document states all three: at least one activity row, the
+            # window, and the date it stands at. The rows are passed through as printed (see
+            # `lookahead_table` for what is refused there and why); a row the canonical function
+            # cannot accept makes the MODULE abstain in its own words, never this assembler
+            # repair it. Longest inventory wins between two look-aheads in one period, on the
+            # same deterministic rule `resourceProfile` states above.
+            from .lookahead_table import read_lookahead_activities
+            activities = read_lookahead_activities(ex.get("lookahead_activities_json"))
+            horizon = str(ex.get("lookahead_horizon") or "").strip()
+            status_date = str(ex.get("lookahead_status_date") or "").strip()
+            if activities and horizon and status_date:
+                existing = out.get("lookAheadSchedule")
+                if existing is None or len(activities) > len(existing["activities"]):
+                    out["lookAheadSchedule"] = {
+                        "activities": activities,
+                        "horizon": horizon,
+                        "status_date": status_date,
+                        "assembled_by": "document extraction",
+                        "source_document_type": "lookahead_schedule",
+                    }
+
         elif doc_type == "cost_report":
             base = overhead_allocation_base(ex)
             if base is not None:

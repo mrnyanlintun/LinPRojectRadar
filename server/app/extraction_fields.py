@@ -291,8 +291,21 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "procurement_log": [
         "long_lead_items_total", "on_schedule", "at_risk", "delayed", "report_date",
     ],
+    # RUN 86. THE LOOK-AHEAD ACTIVITY TABLE, ASKED FOR AS A TABLE.
+    #
+    # A2.8 Look-Ahead Schedule Health is defined on an INVENTORY: each planned activity with its
+    # own identity and its own constraint status, so the counts are derived from the rows rather
+    # than asserted as two numbers (`canonical_v3.look_ahead_ready_fraction` refuses a bare
+    # count). A look-ahead document PRINTS that inventory -- one row per planned activity, a
+    # constraint column saying OPEN or CLEARED, and the constraint kind where open -- so
+    # `lookahead_activities_json` asks for it on the `milestones_json` precedent: one object per
+    # printed row, keyed by the table's own column headings. `lookahead_horizon` and
+    # `lookahead_status_date` are the provenance the canonical function refuses to default: the
+    # window the document says it covers, and the date it stood at. Where the document states
+    # less than all of it, no structure is assembled and the module goes on abstaining.
     "lookahead_schedule": [
         "activities_planned", "activities_constrained", "constraint_rate", "lookahead_weeks",
+        "lookahead_activities_json", "lookahead_horizon", "lookahead_status_date",
     ],
     # RUN 69. THE RESOURCE HISTOGRAM AND THE PRODUCTION BASIS, both off the same document type.
     #

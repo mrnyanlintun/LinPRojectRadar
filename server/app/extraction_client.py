@@ -281,6 +281,22 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "mean, a median or a percentile -- return only the cells printed; return an empty array "
         "only if the document has no such table."
     ) if "reference_class_json" in fields else ""
+    # RUN 86. THE SIXTH TABLE FIELD, the look-ahead activity inventory, same reason as the five
+    # before it: A2.8 is defined on rows, not on a pair of counts, and without naming the shape
+    # the model returns null for a table the document plainly prints.
+    lookahead_hint = (
+        " lookahead_activities_json, if requested and the document contains a look-ahead "
+        "activity table (one row per planned activity in the look-ahead window), is a JSON "
+        "array with one object per PRINTED ROW of that table, using the table's own column "
+        "headings as keys and its values as printed; return every row the document prints and "
+        "no others. Do not add an activity the document does not list, do not decide for "
+        "yourself whether a constraint is open or cleared -- return the status word the row "
+        "prints -- and do not supply a constraint category a row does not print; return an "
+        "empty array only if the document has no such table. lookahead_horizon, if requested, "
+        "is the look-ahead window exactly as the document states it (for example '3 weeks'), "
+        "and lookahead_status_date is the date the look-ahead stands at, as YYYY-MM-DD; return "
+        "null for either the document does not state."
+    ) if "lookahead_activities_json" in fields else ""
     # RUN 72. THE SCALE OF A RATIO FIELD, NAMED, because the general sentence below is false
     # of it. "Percentages as numbers 0-100" is correct for every 0..100 quantity in the
     # vocabulary and WRONG for a compliance rate, which the numeric contract bounds at 1.0. A
@@ -331,7 +347,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "
