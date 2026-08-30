@@ -352,15 +352,137 @@ def _synthesis_lineage(out: dict) -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------------------------
+# RUN 89, GOAL ONE. WEIGHTED VOTING READS THE SIX PERFORMANCE CATEGORY POSTURES.
+#
+# WHAT WAS WRONG. Run 88 established that this module weighed the four assembled arms -- `evm`,
+# `mc`, `cusum`, `doc`. Two of the four trace to modules the owner has dropped: `mc` to the Monte
+# Carlo EAC forecast retired at Run 43, and `doc` to the Document Risk Score, whose specification
+# carries "STOPPED. Not specified." Half of what the retained synthesiser weighed came from
+# outside the retained roster.
+#
+# THE OWNER'S RULING, RUN 89 SECTION 2. Weighted Voting reads the SIX PERFORMANCE CATEGORY
+# POSTURES, not the arms. The weight set below is THE OWNER'S STATED AUTHORITY -- his decision,
+# recorded as such. It is NOT derived, NOT taken from any literature and NOT calibrated.
+#
+# DATA INTEGRITY (C1) IS NOT IN THIS PROFILE AND MUST NEVER BE ADDED TO IT. Integrity is a
+# precondition for using the criteria, not a criterion to trade against performance. The guard
+# below is executable, not a comment.
+#
+# THE ARMS ARE NOT DELETED. `arm_lineage.py`, `canonical_v5.governed_signals_from_project`,
+# `signal_package.py` and `models_evc.py` (which serves B2.2-B2.9, Evidence Combination) still
+# read them, and B1.3 and B1.4 still synthesise them. Only THIS module's input path changed.
+#
+# THE ORDERING PROBLEM, AND HOW IT IS ANSWERED. Category postures do not exist at module dispatch
+# -- they are the rollup of the modules that dispatch produces. So B1.2 is computed in a SECOND
+# PASS, after the rollup, by `weighted_category_vote` below, called from `compute.compute_project`.
+# It remains a module with a registry row, a method class and a specification; what moved is WHEN
+# in the run it is evaluated. A second-pass module is also structurally incapable of reaching the
+# category rollup that produced its own input, which is the same conclusion Run 87 reached by
+# admission and is why B1.2 stays in `spec_projection.COMPARISON_ONLY_MODULES` unchanged.
+# ---------------------------------------------------------------------------------------------
+
+#: The owner's weight profile, Run 89 section 2. HIS DECISION, NOT A DERIVED OR LITERATURE VALUE.
+#: Keyed by registry category key; the names are the owner's words for those categories.
+WEIGHTED_VOTING_CATEGORY_WEIGHTS: dict[str, float] = {
+    "A1": 0.25,   # Cost and EVM Performance
+    "A2": 0.25,   # Schedule
+    "A3": 0.15,   # Cost Risk
+    "A4": 0.10,   # Document Signals
+    "A6": 0.15,   # Delivery Quality
+    "A5": 0.10,   # Systems and Dynamics
+}
+
+#: Data Integrity is a precondition, never a criterion. Executable, so the profile cannot acquire
+#: it by an edit that forgets the rule.
+WEIGHTED_VOTING_EXCLUDED_CATEGORIES: frozenset[str] = frozenset({"C1"})
+
+WEIGHT_PROVENANCE = ("the owner's stated authority, Run 89 section 2: his decision, not a derived "
+                     "or literature value and not calibrated")
+
+
+def weighted_category_vote(category_statuses: dict) -> dict[str, Any]:
+    """
+    B1.2, second pass. Weigh the six performance category postures by the owner's profile.
+
+    THE RULE FOR A CATEGORY WITH NO POSTURE, and why it is this one rather than one of the other
+    two the order left open. `specifications/B1_signal_synthesis.md` shared rule 3 already states
+    it: "Missing evidence never defaults Green. An abstaining signal casts no vote, CARRIES NO
+    WEIGHT, and cannot occupy a position among the worst." Carrying no weight is not the same as
+    carrying weight toward zero. So an unassessed category is REMOVED FROM THE DENOMINATOR and the
+    remaining weights are RENORMALISED over the categories that actually carry a posture -- which
+    is also exactly what `canonical_v5.weighted_voting` already does over its eligible signals
+    ("normalised to sum to one over the eligible independent signals actually voting"). Treating
+    it as a zero would be scoring an absence, and dropping the term without renormalising would
+    make the class votes incomparable between projects. Neither is done, and no fourth rule is
+    invented.
+
+    WITH NO WEIGHTED CATEGORY ASSESSED AT ALL there is nothing to weigh, and the module abstains
+    with a reason about the postures. It does not report a state in place of one.
+    """
+    assert not (set(WEIGHTED_VOTING_CATEGORY_WEIGHTS) & WEIGHTED_VOTING_EXCLUDED_CATEGORIES), \
+        "Data Integrity is a precondition for using the criteria, not a criterion in them."
+    cats = category_statuses if isinstance(category_statuses, dict) else {}
+    present: dict[str, str] = {}
+    unassessed: list[str] = []
+    for key in WEIGHTED_VOTING_CATEGORY_WEIGHTS:
+        entry = cats.get(key)
+        band = normalise_status((entry or {}).get("status")) if isinstance(entry, dict) else None
+        if band:
+            present[key] = band
+        else:
+            unassessed.append(key)
+    if not present:
+        return {"estimable": False, "unassessed_categories": unassessed,
+                "reason": "none of the six weighted performance categories carries a posture, so "
+                          "there is nothing to weigh and no weighted vote is reported"}
+    total = sum(WEIGHTED_VOTING_CATEGORY_WEIGHTS[k] for k in present)
+    weights = {k: WEIGHTED_VOTING_CATEGORY_WEIGHTS[k] / total for k in present}
+    votes = {c: 0.0 for c in BAND_SEVERITY}
+    for key, band in present.items():
+        votes[band] = votes.get(band, 0.0) + weights[key]
+    best = max(votes.values())
+    winners = [c for c in sorted(BAND_SEVERITY, key=lambda x: BAND_SEVERITY[x]) if votes[c] == best]
+    return {
+        "estimable": True,
+        "votes": votes,
+        "normalised_weights": weights,
+        "assessed_categories": sorted(present),
+        "unassessed_categories": unassessed,
+        "renormalised": bool(unassessed),
+        "unique_winner": len(winners) == 1,
+        "winner": winners[0] if len(winners) == 1 else None,
+        "tied_classes": winners if len(winners) > 1 else [],
+        "tie_policy": "a tie between classes returns no winner; the choice between tied classes "
+                      "is a governance decision and is not made here",
+        "weight_provenance": WEIGHT_PROVENANCE,
+    }
+
+
+#: The dispatch-time abstention. Its reason is ABOUT THE POSTURES, per Run 89 section 2.1.
+WEIGHTED_VOTING_DEFERRED = (
+    "Weighted Voting reads the six performance category postures. Those postures are the rollup "
+    "of the modules this run dispatches, so they do not exist yet at module dispatch; this "
+    "module is evaluated in the second pass, after the category rollup.")
+
+
 def run_weighted_voting(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
-    from .canonical import StructureAbsent
-    from .canonical_v5 import SignalNotEligible, weighted_voting
-    try:
-        out = weighted_voting(_governed(si, period_cutoff), (si or {}).get("signalWeightPolicy"))
-    except (SignalNotEligible, StructureAbsent) as exc:
-        return dict(insufficient("Weighted_Voting"), abstention_reason=str(exc))
+    """
+    B1.2 at DISPATCH. Reads nothing and abstains, naming the postures as what it is waiting for.
+
+    The four-arm input path is gone: this function no longer calls `_governed`, no longer reads
+    `signalWeightPolicy`, and no longer reaches `canonical_v5.weighted_voting`. The reading is
+    produced by `weighted_category_vote` above, in `compute.compute_project`'s second pass.
+    """
+    return dict(insufficient("Weighted_Voting"), abstention_reason=WEIGHTED_VOTING_DEFERRED)
+
+
+def weighted_voting_result(category_statuses: dict) -> dict[str, Any]:
+    """The B1.2 module row for the second pass: a reading, or the abstention it states."""
+    out = weighted_category_vote(category_statuses)
     if not out.get("estimable"):
-        return dict(insufficient("Weighted_Voting"), abstention_reason=out.get("reason"))
+        return dict(insufficient("Weighted_Voting"), abstention_reason=out.get("reason"),
+                    unassessed_categories=out.get("unassessed_categories", []))
     return {
         "method_class": "Weighted_Voting",
         "status_color": out["winner"],
@@ -370,9 +492,17 @@ def run_weighted_voting(si: dict, rand: Callable[[], float], period_cutoff) -> d
         "tie_policy": out["tie_policy"],
         "normalised_weights": out["normalised_weights"],
         "weight_provenance": out["weight_provenance"],
-        "lineage": _synthesis_lineage(out),
+        "assessed_categories": out["assessed_categories"],
+        "unassessed_categories": out["unassessed_categories"],
+        "renormalised": out["renormalised"],
+        "lineage": {
+            "signal_qualification": SIGNAL_QUALIFICATION,
+            "synthesis_role": "comparison and sensitivity regime; not an independent project "
+                              "fact and not a voter",
+        },
         "evidence_metric": (
-            f"Weighted vote: {out['winner']}" if out["unique_winner"]
+            f"Weighted vote over {len(out['assessed_categories'])} of six performance "
+            f"categories: {out['winner']}" if out["unique_winner"]
             else "Weighted vote: no single state carries most of the weight"),
     }
 

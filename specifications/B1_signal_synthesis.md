@@ -7,11 +7,20 @@ Python before this specification is ever applied.
 
 ## What they synthesise, and what they deliberately do not
 
-Three of the four (B1.2, B1.3, B1.4) read the **four assembled arms** the signal package carries —
+Two of the four (B1.3, B1.4) read the **four assembled arms** the signal package carries —
 `evm` the cost and schedule indices, `mc` the cost forecast, `cusum` the performance trend, `doc`
 the document risk score — resolved through `canonical_v5.governed_signals_from_project`, each with
 its identity, state, period, source provenance, evidence-lineage body, qualification state and
 abstention reason.
+
+**B1.2 no longer reads the arms.** The owner ruled at Run 89 that Weighted Voting reads the **six
+performance category postures**, not the arms: two of the four arms trace to modules he has
+dropped — `mc` to the Monte Carlo EAC forecast retired at Run 43, and `doc` to the Document Risk
+Score, which carries `STOPPED. Not specified.` — so half of what the retained synthesiser weighed
+came from outside the retained roster. B1.2's inputs and rule are stated in its own section below.
+The arms are **not** deleted: B1.3, B1.4, `arm_lineage.py`,
+`canonical_v5.governed_signals_from_project`, `signal_package.py` and `models_evc.py` (which
+serves B2.2–B2.9, Evidence Combination) all still read them.
 
 **Every other module this run computed is deliberately excluded.** Those are not further evidence;
 they are further **transformations of these same four arms**, and a transformation retains the
@@ -44,7 +53,8 @@ weight, and cannot occupy a position among the worst.
 
 ## The shared nothing-to-report sentence
 
-Where no governed signals were supplied at all, B1.2, B1.3 and B1.4 report nothing, in these words:
+Where no governed signals were supplied at all, B1.3 and B1.4 report nothing, in these words
+(B1.2 no longer reads governed signals and states its own nothing-to-report sentence below):
 
 > `"No governed signals were supplied for this project, so there is nothing to synthesise and no
 > reading is reported."`
@@ -152,48 +162,69 @@ see both and is never shown one while believing it is the other. `evidence_compl
 
 ## B1.2 — Weighted Voting
 
-**Identity.** Live id `B1.2`. Method class `Weighted_Voting`. Class-weighted voting over the
-governed signals.
+**Identity.** Live id `B1.2`. Method class `Weighted_Voting`. Class-weighted voting over the **six
+performance category postures**.
 
-**Required inputs, by their exact `signal_inputs` field names.**
-`signals` — the assembled arms, read through `governed_signals_from_project`.
-`signalWeightPolicy` — a mapping carrying `weights` (a weight per signal id), `set_by` and
-`authority`. **Required. There is no default weight anywhere in this function**, so a project with
-no policy cannot be given one implicitly.
+**What it reads, and when.** The **category postures** produced by the category rollup — the same
+`category_statuses` every surface renders. It reads **no arm**, **no signal package** and **no
+`signalWeightPolicy`**. Because the postures are the rollup of the modules this run dispatches,
+they do not exist at module dispatch: B1.2 abstains at dispatch naming exactly that, and is
+evaluated in a **second pass** after the rollup, in `compute.compute_project`. It remains a module
+with a registry row, a method class and this specification; what moved is *when* in the run it is
+evaluated.
+
+**The weight profile. The owner's stated authority, Run 89 — his decision, not a derived value,
+not a literature value, and not calibrated.**
+
+| Category | Weight |
+|---|---|
+| Cost and EVM Performance (`A1`) | 0.25 |
+| Schedule (`A2`) | 0.25 |
+| Cost Risk (`A3`) | 0.15 |
+| Document Signals (`A4`) | 0.10 |
+| Delivery Quality (`A6`) | 0.15 |
+| Systems and Dynamics (`A5`) | 0.10 |
+
+Total 1.00. **Data Integrity (`C1`) is not in this profile and must never be added to it.**
+Integrity is a precondition for using the criteria, not a criterion to trade against performance.
 
 **Method.**
 ```
-Vote(c) = sum over voting signals i of  w_i * I(s_i = c)
+Vote(c) = sum over assessed categories k of  w_k * I(posture_k = c)
 winner  = argmax over c of Vote(c)
 ```
-Weights must be non-negative and are **normalised to sum to one over the eligible independent
-signals actually voting**, which is what makes class votes comparable between projects with
-different signal counts. The classes are the four severity classes in order.
+
+**A category with no posture carries no weight, and the remainder is renormalised.** This is the
+category's own shared rule 3 applied one level up — *"Missing evidence never defaults Green. An
+abstaining signal casts no vote, **carries no weight**, and cannot occupy a position among the
+worst."* Carrying no weight is not carrying weight toward zero. So an unassessed category is
+**removed from the denominator** and the weights of the categories that do carry a posture are
+renormalised to sum to one, which is also what the arm-based rule already did over its eligible
+signals. It is **not** scored as a zero, **not** treated as Green, and **not** dropped without
+renormalising — the first would score an absence and the last would make class votes incomparable
+between projects. The reading reports `assessed_categories`, `unassessed_categories` and
+`renormalised` so the reader can see which categories were in the denominator.
 
 **Bands.** The winner is emitted as `status_color`. Where there is no unique winner,
 `status_color` is `None` and `tied_classes` names the tied classes.
 
-**Interpretation.** The weighted vote says which state carries most of the authority-assigned
-weight, and the normalised weights and their provenance travel with the reading so a reader can see
-whose judgment produced them.
+**Comparison only. It cannot set a status.** B1.2 is in
+`spec_projection.COMPARISON_ONLY_MODULES`, so its band is never admitted to its category's rollup
+on the specification-reading path; and on the Python path it is evaluated *after* the rollup that
+produced its own input, so it is structurally incapable of reaching it. Conservative Dominance
+alone sets the official project status.
+
+**Interpretation.** The weighted vote says which state carries most of the owner's assigned weight
+across the performance categories, and the normalised weights and their provenance travel with the
+reading so a reader can see whose judgment produced them.
 
 **Nothing to report.**
-1. No governed signals: the shared sentence above.
-2. Every governed signal abstained: `"every governed signal for this project abstained, so there
-   is nothing to weigh and no vote is reported"`.
-3. `signalWeightPolicy` absent or not a mapping: `"Awaiting a weighting policy for this project's
-   governed signals. A weighted vote cannot be taken without stated weights, and none is
-   assumed."`
-4. The policy states no weights: `"The a weighting policy for the project's governed signals: a
-   weight for each signal, and the authority that set it provided for this project states no
-   weights, so no weighted vote is taken and no weight is assumed for any signal."`
-5. The policy omits a weight for a voting signal: the same sentence stem ending `"...does not
-   state a weight for every signal being voted on, so no weighted vote is taken and no weight is
-   assumed for the signals it omits."`
-6. A negative weight: the same stem ending `"...states a negative weight, which a vote is not
-   defined on, so no weighted vote is taken."`
-7. Every voting signal weighted zero: `"the weighting policy for this project gives every voting
-   signal no weight at all, so no winner is reported"`.
+1. At module dispatch, before the rollup: `"Weighted Voting reads the six performance category
+   postures. Those postures are the rollup of the modules this run dispatches, so they do not
+   exist yet at module dispatch; this module is evaluated in the second pass, after the category
+   rollup."`
+2. No weighted category carries a posture: `"none of the six weighted performance categories
+   carries a posture, so there is nothing to weigh and no weighted vote is reported"`.
 
 **The tie policy is declared, not resolved.** A tie between classes returns **no winner** and says
 so. Choosing a winner from a tie is a governance decision with a direction — the calmer class or

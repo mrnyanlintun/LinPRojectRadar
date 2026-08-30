@@ -20,6 +20,7 @@ from .qualification_gate import (
 )
 from .models import SIMULATION_VERSION
 from .qualification import build_qualification
+from .models_gov import weighted_voting_result as _weighted_voting_result
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
 
@@ -164,6 +165,36 @@ def compute_project(si: dict, scenario_id: str, period: str,
             "within_lineage_disagreement": bool(
                 fused and any(b["disagreement"] for b in fused["lineage_bodies"])),
         }
+
+    # ---------------------------------------------------------------- RUN 89, GOAL ONE, PASS TWO
+    # B1.2 WEIGHTED VOTING READS THE SIX PERFORMANCE CATEGORY POSTURES, so it can only be
+    # evaluated once those postures exist -- which is here, after the rollup and before the
+    # project fusion. `models_gov.run_weighted_voting` abstained at dispatch naming exactly this;
+    # its row is replaced now with the reading, or with the abstention the postures state.
+    #
+    # IT CANNOT REACH THE ROLLUP IT READS. `category_statuses` is already built above and is not
+    # rebuilt, so a B1.2 band computed here sets no category and reaches no project status. That
+    # is the same conclusion Run 87 reached by admission in `spec_projection`, here reached
+    # structurally by ordering. Nothing in the rollup or in worst-wins is altered.
+    _b12 = _weighted_voting_result(category_statuses)
+    _b12_row = None
+    for _bucket in ("computed", "abstained"):
+        for _i, _r in enumerate(run[_bucket]):
+            if _r.get("module_id") == "B1.2":
+                _b12_row = dict(_r)
+                run[_bucket].pop(_i)
+                break
+        if _b12_row is not None:
+            break
+    if _b12_row is not None:
+        _b12_row.update(_b12)
+        _b12_row["status_color"] = _b12.get("status_color")
+        _b12_row["abstention_reason"] = _b12.get("abstention_reason")
+        if _b12.get("status_color"):
+            _b12_row.pop("abstention_reason", None)
+            run["computed"].append(_b12_row)
+        else:
+            run["abstained"].append(_b12_row)
 
     # A category's fused status INHERITS the bodies of evidence behind it, so two categories that
     # rest on one body cannot corroborate each other at the project level either. With one voting
