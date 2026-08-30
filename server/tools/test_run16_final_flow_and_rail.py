@@ -55,9 +55,14 @@ def check(ok: bool, label: str, detail: str = "") -> None:
 for gone in ("' DOCUMENTS'", "' MODULES'", "' CATEGORIES'"):
     check(gone not in FLOW,
           f"the column header no longer builds the bare label {gone}", gone)
+# RUN 90 RE-POINTED THREE OF THESE SIX. The population both charts draw changed on the owner's
+# Run 90 ruling -- the six weighted performance categories -- so "REGISTERED PROJECT MODULES",
+# "REGISTERED CATEGORIES" and "ESTIMABLE NOW" no longer describe what is on screen. The checks
+# were turned RED against the Run 90 build first, then re-pointed at the shipped wording. The
+# thing being asserted is unchanged: the header is a truthful label, not a bare noun.
 for wanted in ("SUPPORTED DOCUMENT TYPES", "UPLOADED ON THIS PROJECT",
-               "REGISTERED PROJECT MODULES", "WITH A CURRENT RESULT",
-               "REGISTERED CATEGORIES", "ESTIMABLE NOW"):
+               "MODULES IN SERVICE", "WITH A CURRENT RESULT",
+               "WEIGHTED PERFORMANCE CATEGORIES", "CARRY A POSTURE"):
     check(wanted in FLOW, f"and carries the truthful label {wanted!r}")
 check("NOT ESTIMABLE" in FLOW and "'Not estimable'" in FLOW,
       "an unestimable project rollup is presented as not estimable, not as the word None")
@@ -148,7 +153,9 @@ for banned in ("—", " & "):
 # RUN 51, SECTION 6.1, the same correction at the badge: what the section draws is the roster
 # IN SERVICE, so the badge says so. It is still a roster count and not a tally of what ran,
 # which is what this check exists to assert.
-check('totalModulesForBadge} in service' in DETAIL,
+# RUN 90. Same re-pointing, same intent: the badge is still a ROSTER count -- the modules in
+# service in the six categories the chart draws -- and still not a tally of what ran.
+check('${chartModuleCount} modules drawn' in DETAIL,
       "the Signal Flow badge names a roster count rather than a tally of what ran")
 check('totalModulesForBadge + " modules"' not in DETAIL,
       "and the old wording is gone")

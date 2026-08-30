@@ -122,21 +122,30 @@ check(TAXONOMY.count("method_class: 'Doc_Risk_Cat4'") == 1,
 
 # NO COUNT IS TYPED INTO THE DIAGRAM. Every figure the headers and the summary state must be
 # read from the model the registry builds.
-check("MODULES.length + ' REGISTERED PROJECT MODULES'" in FLOW,
+# RUN 90 RE-POINTED THESE THREE, AND THE OTHER TWO BELOW. The owner's Run 90 ruling changed the
+# POPULATION both charts draw -- the six weighted performance categories, no retired module --
+# so the truthful header no longer says "registered project modules" or "registered categories".
+# The checks were turned RED against the Run 90 build first and are re-pointed at the shipped
+# wording, exactly as Run 26 re-pointed the guards it had turned red. WHAT THEY ASSERT IS
+# UNCHANGED and is the whole point of them: the figure is READ FROM THE BUILT MODEL and never
+# typed in. The literal-count guard below is untouched.
+check("MODULES.length + ' MODULES IN SERVICE'" in FLOW,
       "the module column header reads its figure from the built model")
-check("CATS.length + ' REGISTERED CATEGORIES'" in FLOW,
+check("CATS.length + ' WEIGHTED PERFORMANCE CATEGORIES'" in FLOW,
       "the category column header reads its figure from the built model")
 # RUN 51, SECTION 6.1. The two figures are still read from the built model; the WORD beside
 # them changed, because the model this file builds is the population IN SERVICE and calling it
 # "registered" named a different and larger population.
-check("MODULES.length +\n      ' project modules in service and ' + CATS.length +" in FLOW,
+check("MODULES.length +\n      ' modules in service in those six categories, and ' + CATS.length +" in FLOW,
       "and the summary sentence reads the same two figures, not a second pair of literals")
 check("registered project modules" not in FLOW,
       "and it no longer calls the population it draws the registered one, which it is not")
 check(not re.search(r"'\s*9[0-9] REGISTERED PROJECT MODULES", FLOW),
       "no literal project-module count is hardcoded into the diagram headers")
-check("projectModuleCount()" in DETAIL and "totalModulesForBadge = projectModuleCount()" in DETAIL,
-      "the detail page's section badges read the same project-level registry count")
+check("chartModuleCount = chartCats.reduce(" in DETAIL
+      and "chartCatCount + \" categories drawn\"" in DETAIL
+      and "${chartModuleCount} modules drawn" in DETAIL,
+      "the detail page's two chart badges count what those charts draw, derived not typed")
 # THE KNOWLEDGE PAGE'S FIGURE, which is the one that has disagreed before. It states the
 # WHOLE-TAXONOMY count and must reconcile to the registry, not to the project-level figure.
 # RUN 26 REWROTE THE SENTENCE, SO THE ORACLE IS THE REGISTRY, NOT THE SENTENCE.

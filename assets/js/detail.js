@@ -988,8 +988,16 @@
     // "11 categories" and "96 modules" beside a project that had computed nothing, which reads
     // as a tally of what ran. The figures are unchanged and still derived from the taxonomy
     // rather than typed in; the word beside them now says which kind of number they are.
-    const totalCats = projectCats().length;
-    const totalModulesForBadge = projectModuleCount();
+    /* RUN 90. THE TWO CHART BADGES COUNT WHAT THOSE TWO CHARTS ACTUALLY DRAW.
+       Both charts now render the six weighted performance categories only (owner's ruling,
+       Run 90 section 2), so a badge reading "11 in service" over a chart showing six, and
+       "60 in service" over a chart showing 42, states a population the reader cannot find.
+       Derived from the same accessor the charts use -- never a typed number. */
+    const chartCats = (typeof window.performanceCategories === "function")
+      ? window.performanceCategories()
+      : projectCats().filter((c) => c && c.group === "A");
+    const chartCatCount = chartCats.length;
+    const chartModuleCount = chartCats.reduce((n, c) => n + ((c && c.modules) || []).length, 0);
 
     root.innerHTML =
       `<div class="detail-head">
@@ -1079,8 +1087,8 @@
              `<div class="detail-globe" data-project-id="${esc(p.id)}"></div>
               <p class="detail-globe-note ws-note"></p>`,
              false, hasCoordsFor(p) ? "located" : "no location")}
-        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, totalCats + " in service")}
-        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${totalModulesForBadge} in service`)}
+        ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, chartCatCount + " categories drawn")}
+        ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${chartModuleCount} modules drawn`)}
         ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
         ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="Governance decision (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}

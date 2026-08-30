@@ -130,11 +130,30 @@
   // so byClass/getModuleStatus lookups actually hit). Portfolio Health is
   // portfolio-scale and excluded from this project-level diagram. Falls back
   // to the hardcoded arrays above only if LIN_CATEGORIES failed to load.
+  /* RUN 90, SECTION 4.3. THE SAME POPULATION RULE AS THE SIGNAL NETWORK: the six weighted
+     performance categories, and no retired module.
+
+     `window.performanceCategories()` (taxonomy.js) filters the GENERATED roster, which
+     `server/tools/build_client_taxonomy.py` writes from `registry.service_index()`. A module
+     retired by the `RETIRED ` note on its registry row is therefore already absent from
+     `cat.modules`, and this file never names one.
+
+     THE STALE FALLBACK IS GONE, and this is a real defect it closes rather than a tidy-up.
+     `FB_CATS`/`RAW_MODS` below were a hand-written roster of TEN legacy categories and 98
+     legacy module names -- "Cat 1 Quantitative EVM", "Monte Carlo EAC Forecast", "DSM
+     Propagation", "Rework Feedback", "Tornado Chart" -- written against the retired gapless
+     Cat 1-10 scheme and never updated through Run 43's or Run 89's retirements. It ran whenever
+     `LIN_CATEGORIES` failed to load, and it would have drawn retired modules and five
+     categories that Run 90 section 2 excludes. Section 11.5 fails the run for exactly that. It
+     is no longer reachable: with no roster there is no diagram to draw, and saying so is honest
+     where drawing a 2024 roster is not. The arrays are kept in the file, unreferenced, the way
+     this repository retires rather than deletes. */
   function buildModel() {
     var LC = window.LIN_CATEGORIES;
     if (LC && LC.length) {
-      var PLC = window.projectLevelCategories ? window.projectLevelCategories()
-        : LC.filter(function(c) { return !(c && c.level === 'portfolio'); });
+      var PLC = window.performanceCategories ? window.performanceCategories()
+        : LC.filter(function(c) { return c && c.group === 'A'
+                                  && !(c.level === 'portfolio' || c.portfolioLevel); });
       var cats = PLC.map(function(c, ci) {
         return { id: ci + 1, taxId: c.id, name: c.name, group: c.group,
                  groupName: c.groupName, count: (c.modules || []).length };
@@ -153,13 +172,8 @@
       });
       return { CATS: cats, MODULES: mods, catModIdxs: idxs, catIds: catIds };
     }
-    var fbIdxs = FB_CATS.map(function() { return []; });
-    var fbMods = RAW_MODS.map(function(row, i) {
-      var ci = row[0], modI = fbIdxs[ci].length;
-      fbIdxs[ci].push(i);
-      return { catI: ci, name: row[1], mc: row[2], module_id: (ci + 1) + '.' + (modI + 1) };
-    });
-    return { CATS: FB_CATS, MODULES: fbMods, catModIdxs: fbIdxs, catIds: null };
+    /* No roster loaded. Nothing is invented in its place. */
+    return { CATS: [], MODULES: [], catModIdxs: [], catIds: [] };
   }
 
   /* ─── RUN 26. THE WIRING IS DERIVED FROM THE ARCHITECTURE, NOT FROM POSITION ──
@@ -522,6 +536,16 @@
     var model = buildModel();
     var CATS = model.CATS, MODULES = model.MODULES, catModIdxs = model.catModIdxs, catIds = model.catIds;
 
+    /* No roster loaded means no diagram. See buildModel: nothing is invented in its place. */
+    if (!CATS.length || !MODULES.length) {
+      var em = document.createElement('p');
+      em.className = 'lnf-empty';
+      em.setAttribute('data-state', 'no-roster');
+      em.textContent = 'The module roster did not load, so this diagram is not drawn.';
+      container.appendChild(em);
+      return null;
+    }
+
     var simArr = (project.simulationSignals && project.simulationSignals.signal_array) || [];
     var byClass = {};
     simArr.forEach(function(r) { if (r && r.method_class) byClass[r.method_class] = r; });
@@ -731,31 +755,86 @@
     // Row pitch sized to the 11.5px module labels (13px pitch avoids collisions);
     // the SVG height grows with the pitch. The doc column sits further right so
     // its enlarged end-anchored labels never clip the left viewBox edge.
-    var W = 1280, PAD_TOP = 45;
-    var MOD_SPACE = 13, MOD_GAP = 15;
-    var totalModH = MODULES.length * MOD_SPACE + (CATS.length - 1) * MOD_GAP;
-    var H = Math.max(totalModH + PAD_TOP * 2, 920);
+    /* ═══ RUN 90, SECTION 4. CONVERGENCE, NOT COLUMNS. ═══════════════════════════════════
+       The owner asked for many streams resolving INWARD into one -- the reverse of the fan-out
+       reference. Run 26's four left-to-right columns were convergent in structure (27 document
+       types -> 42 modules in service -> 6 categories -> 1 status) but they read as a pipeline,
+       and the place a stream STOPS was invisible in them: a category with no posture still drew
+       a line all the way to the status node, dimmed to opacity 0.14 and nothing more.
 
-    var CX = { doc:268, mod:460, cat:760, prj:1090 };
+       THE LAYOUT IS NOW THREE CONCENTRIC RINGS ROUND ONE CENTRE. Documents outermost, the
+       modules they feed next, the six categories inside them, the project status at the middle.
+       Every edge runs inward. NOTHING IS ENCODED IN A RADIUS: all documents share one radius,
+       all modules share one, all six categories share one. A category's ANGULAR WEDGE is
+       proportional to its module count purely so its own modules fit beside it; the wedge is a
+       packing decision and the count it packs is printed in words in the tooltip and the
+       caption, not left to be read off an arc.
 
-    var DOC_SPACING = (H - PAD_TOP * 2) / (DOC_KEYS.length - 1);
-    function docY(i) { return PAD_TOP + i * DOC_SPACING; }
+       WHAT IS NOT DRAWN, AND IT IS THE POINT OF SECTION 4.2. A stream stops where its evidence
+       stops. A category carrying no posture does not reach the centre: its stream runs inward
+       from the category node and TERMINATES, short, with a visible blunt end and no arrowhead.
+       Drawing it arriving would assert a completeness the row does not have. ════════════════ */
+    var W = 1400, H = 1000, PAD_TOP = 45;
+    var CXC = W / 2, CYC = H / 2 + 8;
+    var R_CAT = 178, R_MOD = 300, R_DOC = 424;
+    /* The fraction of the way in that an unresolved stream is allowed to travel before it
+       stops. It must be visibly short of the status node's own radius. */
+    var STOP_SHORT = 0.45;
 
-    var modY = [];      // indexed by module flat index
-    var catStartYArr = [];
-    var y0 = (H - totalModH) / 2;
-    var yCur = y0;
+    function px(a, r) { return CXC + Math.cos(a) * r; }
+    function py(a, r) { return CYC + Math.sin(a) * r; }
+    /* Start at the top and go clockwise, so the first category reads where a reader looks. */
+    function ang(frac) { return -Math.PI / 2 + frac * Math.PI * 2; }
+    /* A label on the left half of the circle is end-anchored so it grows outward, not inward. */
+    function anchorFor(a) { return Math.cos(a) < -0.0001 ? 'end' : 'start'; }
+    function labelDX(a, d) { return Math.cos(a) < -0.0001 ? -d : d; }
+    /* AN INWARD ARC BETWEEN TWO RINGS, and this is the difference between a convergence and a
+       hairball. The first attempt put the control point at (cos of the outer angle, sin of the
+       inner angle), which is not a point on any circle: every edge swung across the middle of
+       the diagram and the six streams were invisible inside it. Measured in the browser at
+       1280px, and it is reported as iteration 1's failure rather than quietly corrected.
+
+       The control point now sits on the ANGULAR BISECTOR, taking the SHORT way round, at a
+       radius just outside the midpoint of the two rings. Every edge therefore stays inside its
+       own annulus, bows gently in the direction it travels, and reads as flowing inward. */
+    function arcPath(a1, r1, a2, r2) {
+      var d = a2 - a1;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      var am = a1 + d / 2, rm = (r1 + r2) / 2 * 1.04;
+      return 'M' + px(a1, r1) + ',' + py(a1, r1)
+           + ' Q' + px(am, rm) + ',' + py(am, rm)
+           + ' ' + px(a2, r2) + ',' + py(a2, r2);
+    }
+
+    /* ── DOCUMENTS: one full circle, evenly spaced. Radius and spacing encode nothing. ── */
+    var docA = DOC_KEYS.map(function(_, i) { return ang(i / DOC_KEYS.length); });
+    function docX(i) { return px(docA[i], R_DOC); }
+    function docY(i) { return py(docA[i], R_DOC); }
+
+    /* ── CATEGORIES AND THEIR MODULES: each category takes a wedge sized to hold its own
+          modules, and sits at the middle of it. ── */
+    var totalMods = MODULES.length || 1;
+    var modA = [];                 // indexed by module flat index
+    var catA = [];                 // indexed by category index
+    var acc = 0;
     CATS.forEach(function(cat, ci) {
-      catStartYArr.push(yCur);
-      catModIdxs[ci].forEach(function(mi, j) { modY[mi] = yCur + j * MOD_SPACE; });
-      yCur += cat.count * MOD_SPACE + MOD_GAP;
+      var n = catModIdxs[ci].length;
+      var start = acc / totalMods, end = (acc + n) / totalMods;
+      catA[ci] = ang((start + end) / 2);
+      catModIdxs[ci].forEach(function(mi, j) {
+        /* Inset half a slot at each end so neighbouring categories' modules do not touch. */
+        modA[mi] = ang(start + ((j + 0.5) / Math.max(1, n)) * (end - start));
+      });
+      acc += n;
     });
-
-    var catCY = CATS.map(function(_, ci) {
-      var mods = catModIdxs[ci];
-      return (modY[mods[0]] + modY[mods[mods.length-1]]) / 2;
-    });
-    var PRJ_Y = H / 2;
+    function modX(mi) { return px(modA[mi], R_MOD); }
+    function modY_(mi) { return py(modA[mi], R_MOD); }
+    var modY = MODULES.map(function(_, mi) { return modY_(mi); });
+    var modXs = MODULES.map(function(_, mi) { return modX(mi); });
+    var catCX = CATS.map(function(_, ci) { return px(catA[ci], R_CAT); });
+    var catCY = CATS.map(function(_, ci) { return py(catA[ci], R_CAT); });
+    var PRJ_X = CXC, PRJ_Y = CYC;
 
     // ── 5. Build SVG ─────────────────────────────────────────────────────────
     var svg = se('svg', { viewBox:'0 0 '+W+' '+H, width:'100%', height:H, xmlns:NS, style:'display:block' }, container);
@@ -802,18 +881,23 @@
       // project whose stored results were cleared and NOT recomputed, which therefore has no
       // current evidence but still holds its documents. Once a live row exists those documents
       // are what it was computed from, and the honest sentence is the project one.
-      [CX.doc, DOC_KEYS.length + ' SUPPORTED DOCUMENT TYPES',
+      [0, DOC_KEYS.length + ' SUPPORTED DOCUMENT TYPES',
                (!hasCurrentRow && retainedBeforeReset > 0)
                  ? ('0 CURRENT, ' + retainedBeforeReset + ' RETAINED')
                  : (uploadedDocCount + ' UPLOADED ON THIS PROJECT')],
-      [CX.mod, MODULES.length + ' REGISTERED PROJECT MODULES',
+      [1, MODULES.length + ' MODULES IN SERVICE',
                modWithResult + ' WITH A CURRENT RESULT'],
-      [CX.cat, CATS.length + ' REGISTERED CATEGORIES',
-               catEstimable + ' ESTIMABLE NOW'],
-      [CX.prj, (governedLabel || 'PROJECT STATUS').toUpperCase(),
-               prjEstimable ? 'CURRENT' : 'NOT ESTIMABLE'],
+      [2, CATS.length + ' WEIGHTED PERFORMANCE CATEGORIES',
+               catEstimable + ' CARRY A POSTURE'],
+      [3, (governedLabel || 'PROJECT STATUS').toUpperCase(),
+               prjEstimable ? 'CURRENT' : (String(prjStatus) === 'Indeterminate'
+                                            ? 'INDETERMINATE' : 'NOT ESTIMABLE')],
     ];
+    /* The four ring captions read across the top of the frame, left to right, outermost ring
+       first -- the order the evidence travels. */
+    var HDR_X = [200, 500, 820, 1160];
     HEADERS.forEach(function(row) {
+      row = [HDR_X[row[0]], row[1], row[2]];
       var t1 = se('text', { x:row[0], y:16, 'text-anchor':'middle', fill:'var(--faint, #4a5a7a)',
         'font-size':'11', 'font-weight':'700', 'letter-spacing':'0.08em',
         'font-family':'monospace', class:'lnf-halo lnf-hdr-arch' }, svg);
@@ -835,16 +919,40 @@
     // asserted a dependency the authority positively denies.
     var catPrjEls = catStatuses.map(function(cs, ci) {
       if (!rollsUpToStatus(ci)) return null;
-      var x1=CX.cat+9, y1=catCY[ci], x2=CX.prj-26, y2=PRJ_Y, mx=(x1+x2)/2;
-      var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
-        fill:'none', stroke:edgeStroke(cs), 'stroke-width':'1.5', opacity:'0.35',
-        'stroke-linecap':'round', 'marker-end':'url(#lnf-arr-'+cs+')',
+      /* RUN 90, SECTION 4.2. A STREAM STOPS WHERE ITS EVIDENCE STOPS.
+
+         `arrives` is the whole of it: a category that carries a posture reaches the status
+         node and is given an arrowhead there; a category that carries none runs inward from
+         its own node and ENDS, at 45% of the way, with a blunt cap, no arrowhead and no
+         onward path. Run 26 drew both cases arriving and separated them by opacity alone --
+         0.35 against 0.14 -- so a row with three of its four required categories unassessed
+         still drew four streams landing on a status the platform had refused to issue. That
+         is the same defect class as the completeness sentence Run 70 removed.
+
+         The terminus is also written into the DOM as `data-edge-terminates`, so a check reads
+         the shipped decision instead of measuring a stroke length. */
+      var arrives = isEstimable(cs);
+      var a = catA[ci];
+      var rStart = R_CAT - 11;
+      var rEnd = arrives ? 26 : R_CAT * (1 - STOP_SHORT);
+      var x1=px(a, rStart), y1=py(a, rStart), x2=px(a, rEnd), y2=py(a, rEnd);
+      var attrs = { d:'M'+x1+','+y1+' L'+x2+','+y2,
+        fill:'none', stroke:edgeStroke(cs), 'stroke-width':arrives ? '1.8' : '1.4',
+        opacity:arrives ? '0.55' : '0.30',
+        'stroke-linecap':arrives ? 'round' : 'butt',
         'data-edge-type':'CATEGORY -> PROJECT STATUS', 'data-edge-src':CATS[ci].name,
-        'data-edge-dst':'Project status' }, lineG);
-      // A category rollup path carries traffic only when the category has a current estimable
-      // result. Otherwise the relationship is configured and idle.
-      if (!isEstimable(cs)) p.setAttribute('opacity', '0.14');
-      flowAnim(p, 'lnf-flow-b', isEstimable(cs));
+        'data-edge-dst':arrives ? 'Project status' : 'stops short',
+        'data-edge-terminates':arrives ? 'at-centre' : 'short' };
+      if (arrives) attrs['marker-end'] = 'url(#lnf-arr-'+cs+')';
+      else attrs['stroke-dasharray'] = '5 5';
+      var p = se('path', attrs, lineG);
+      if (!arrives) {
+        /* The blunt end, drawn: a reader must be able to see WHERE it stopped, not merely
+           that something is faint. */
+        se('circle', { cx:x2, cy:y2, r:'2.6', fill:COL.None, opacity:'0.85',
+                       'data-kind':'stream-terminus', 'data-edge-src':CATS[ci].name }, lineG);
+      }
+      flowAnim(p, 'lnf-flow-b', arrives);
       return p;
     });
 
@@ -853,8 +961,8 @@
     // brighter Class A doc→module lines (keeps the rollup readable).
     var MODCAT_OP = '0.35';
     var modCatEls = MODULES.map(function(m, mi) {
-      var ci=m.catI, x1=CX.mod+4, y1=modY[mi], x2=CX.cat-9, y2=catCY[ci], mx=(x1+x2)/2;
-      var p = se('path', { d:'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2,
+      var ci=m.catI;
+      var p = se('path', { d:arcPath(modA[mi], R_MOD - 5, catA[ci], R_CAT + 10),
         fill:'none', stroke:edgeStroke(modInfos[mi].status, modInfos[mi].color),
         'stroke-width':'0.8', opacity:MODCAT_OP, 'stroke-linecap':'round',
         'data-edge-type':'MODULE -> CATEGORY', 'data-edge-src':m.name,
@@ -885,8 +993,7 @@
       // two modules of a category by registry order. `docToMods` is derived at build time from
       // the generated document-emission map and each module's own declared required inputs.
       docToMods[di].forEach(function(mi) {
-        var x1=CX.doc+5, y1=docY(di), x2=CX.mod-4, y2=modY[mi], mx=(x1+x2)/2;
-        var d = 'M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2;
+        var d = arcPath(docA[di], R_DOC - 6, modA[mi], R_MOD + 5);
         var edgeAttrs = { 'data-edge-type':'DOCUMENT -> MODULE', 'data-edge-src':key,
                           'data-edge-dst':MODULES[mi].name };
         var base = se('path', { d:d, class:'lnf-a-line', fill:'none',
@@ -951,7 +1058,7 @@
         var dst = catIndexOf(taxId);
         if (dst < 0) return;
         var cs = catStatuses[qualI];
-        var x1=CX.cat+9, y1=catCY[qualI], x2=CX.cat+9, y2=catCY[dst], xh=860 + k * 20;
+        var x1=catCX[qualI], y1=catCY[qualI], x2=catCX[dst], y2=catCY[dst], xh=CXC + k * 20;
         var line = se('path', {
           d:'M'+x1+','+y1+' C'+xh+','+y1+' '+xh+','+y2+' '+x2+','+y2,
           fill:'none', stroke:edgeStroke(cs), 'stroke-width':'1', opacity:'0.45',
@@ -981,8 +1088,9 @@
     // Category group micro-labels (dim, above each module group)
     CATS.forEach(function(cat, ci) {
       var firstMI = catModIdxs[ci][0];
+      if (firstMI == null) return;
       var t = se('text', {
-        x:CX.mod-6, y:modY[firstMI]-9,
+        x:modXs[firstMI], y:modY[firstMI]-11,
         fill:'var(--faint, #1e2c44)', 'font-size':'9', 'font-family':'monospace',
         'text-anchor':'end', 'font-weight':'700', class:'lnf-halo'
       }, nodeG);
@@ -1025,11 +1133,12 @@
         'data-status':projectIsEmpty ? 'None' : info.status };
       if (glow) circleAttrs.filter = glow;
       var dotShape = window.linStatusShape ? linStatusShape(info.status) : 'circle';
-      var circle = seShape(dotShape, CX.mod, modY[mi], 4, circleAttrs, g);
+      var circle = seShape(dotShape, modXs[mi], modY[mi], 4, circleAttrs, g);
       if (info.status === 'Red') circle.classList.add('lnf-red-pulse');
 
       var lbl = se('text', {
-        x:CX.mod+8, y:modY[mi],
+        x:modXs[mi] + labelDX(modA[mi], 8), y:modY[mi],
+        'text-anchor':anchorFor(modA[mi]),
         fill:live ? 'var(--muted, #5a7898)' : 'var(--faint, #1e2c44)',
         'font-size':'11.5', 'font-family':'monospace',
         'dominant-baseline':'middle', 'pointer-events':'none', class:'lnf-halo'
@@ -1037,7 +1146,7 @@
       if (!live) lbl.setAttribute('opacity','0.55');
       lbl.textContent = trunc(m.name, 26);
 
-      circle.style.transformOrigin = CX.mod + 'px ' + modY[mi] + 'px';
+      circle.style.transformOrigin = modXs[mi] + 'px ' + modY[mi] + 'px';
       g.addEventListener('mouseenter', (function(m, mi, info, circle) {
         return function(evt) {
           circle.style.transform = 'scale(1.5)';
@@ -1083,7 +1192,7 @@
       // verdict for it; a registered-but-silent category stays neutral.
       var catLive = isEstimable(cs);
       var glow = catLive ? 'url(#lnf-glow-'+cs+')' : null;
-      var x=CX.cat, y=catCY[ci];
+      var x=catCX[ci], y=catCY[ci];
       var g = se('g', { class:'lnf-nd', 'data-kind':'category', 'data-active':catLive ? 'true' : 'false' }, nodeG);
       var cAttrs = { fill:neutralOnEmpty(color, cs), opacity:catLive ? '0.88' : '0.28',
                      stroke:'none', 'data-active':catLive ? 'true' : 'false',
@@ -1094,11 +1203,11 @@
       circle.style.transformOrigin = x + 'px ' + y + 'px';
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
       // group letter + name label, nudged up so the role caption sits directly beneath
-      var t = se('text', { x:x+14, y:y-4, fill:'var(--muted, #6a8aaa)', 'font-size':'13', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
+      var t = se('text', { x:x+labelDX(catA[ci],14), y:y-4, 'text-anchor':anchorFor(catA[ci]), fill:'var(--muted, #6a8aaa)', 'font-size':'13', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
       t.textContent = (cat.group ? cat.group+' · ' : '') + cat.name;
       var role = CAT_ROLE[cat.id];
       if (role) {
-        var rt = se('text', { x:x+14, y:y+9, fill:'var(--faint, #6f7d90)', 'font-size':'9', 'font-style':'italic', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo lnf-cat-role' }, g);
+        var rt = se('text', { x:x+labelDX(catA[ci],14), y:y+9, 'text-anchor':anchorFor(catA[ci]), fill:'var(--faint, #6f7d90)', 'font-size':'9', 'font-style':'italic', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo lnf-cat-role' }, g);
         rt.textContent = role;
         var rtitle = se('title', {}, rt);
         rtitle.textContent = cat.name + ' · ' + role;
@@ -1128,24 +1237,32 @@
     // project, empty ones included.
     var prjGlow = prjEstimable ? 'url(#lnf-glow-'+prjStatus+')' : null;
     var prjG = se('g', { class:'lnf-nd', 'data-kind':'project', id:'lnf-prj', 'data-active':prjEstimable ? 'true' : 'false' }, nodeG);
-    var pcAttrs = { cx:CX.prj, cy:PRJ_Y, r:'22', fill:prjColor,
+    var pcAttrs = { cx:PRJ_X, cy:PRJ_Y, r:'22', fill:prjColor,
                     opacity:prjEstimable ? '0.92' : '0.26', stroke:'none',
                     'data-active':prjEstimable ? 'true' : 'false' };
     if (prjGlow) pcAttrs.filter = prjGlow;
     var prjCircle = se('circle', pcAttrs, prjG);
     if (prjStatus==='Red') prjCircle.classList.add('lnf-red-pulse');
     [['Project',-6],['Status',7]].forEach(function(pair) {
-      var t = se('text', { x:CX.prj, y:PRJ_Y+pair[1], fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700',
+      var t = se('text', { x:PRJ_X, y:PRJ_Y+pair[1], fill:'#e8f0ff', 'font-size':'10', 'font-weight':'700',
         'text-anchor':'middle', 'dominant-baseline':'middle', 'font-family':'monospace' }, prjG);
       t.textContent = pair[0];
     });
-    var prjStatusText = se('text', { x:CX.prj, y:PRJ_Y+38, fill:prjColor, 'font-size':'12', 'font-weight':'700',
+    var prjStatusText = se('text', { x:PRJ_X, y:PRJ_Y+38, fill:prjColor, 'font-size':'12', 'font-weight':'700',
       'text-anchor':'middle', 'font-family':'monospace', class:'lnf-halo' }, prjG);
     // RUN 16, WORKSTREAM A8. The node used to print the internal word "None" at a project with
     // no stored result, which reads as a verdict rather than as an absence of one. The governed
     // vocabulary is unchanged and no new status is invented: this renders the existing
     // no-data state in words a reader can act on.
-    prjStatusText.textContent = prjEstimable ? prjStatus : 'Not estimable';
+    /* RUN 90. THE CENTRE IS UNRESOLVED WHEN THE STATUS IS INDETERMINATE, and it says which
+       of the two unresolved things it is. `prjStatus` is `row.project_status`, read through
+       getProjectFusion and never recomputed here; Run 89 made `Indeterminate` a real stored
+       status, deliberately absent from the band vocabulary, so `colFor` already returns the
+       no-data colour for it and `isEstimable` is already false. What was missing is the WORD:
+       the node printed "Not estimable" over a row whose status the platform had positively
+       determined to be Indeterminate, which is a different fact from having no row at all. */
+    prjStatusText.textContent = prjEstimable ? prjStatus
+      : (String(prjStatus) === 'Indeterminate' ? 'Indeterminate' : 'Not estimable');
     var prjNodeLabel = governedLabel || 'Project Status';
     prjG.addEventListener('mouseenter', function(evt) {
       var line = prjEstimable
@@ -1176,7 +1293,7 @@
       var notApplicable = !uploaded && !projectIsEmpty && !!DOC_NOT_APPLICABLE[key];
       var color = uploaded ? COL.DocOn : (notApplicable ? COL.NotRelevant : COL.DocOff);
       var glow  = uploaded ? 'url(#lnf-glow-DocOn)' : null;
-      var x=CX.doc, y=docY(di);
+      var x=docX(di), y=docY(di);
       var g = se('g', { class:'lnf-nd', 'data-kind':'document', 'data-active':uploaded ? 'true' : 'false' }, nodeG);
       // A document row is ACTIVE only when this project has actually uploaded that type since
       // the reset boundary. "Not applicable to this corpus" is an editorial registry fact and
@@ -1191,9 +1308,9 @@
                                   : (notApplicable ? 'registered-not-active' : 'not-uploaded') };
       if (glow) dAttrs.filter = glow;
       seShape(notApplicable ? 'square' : 'circle', x, y, 5, dAttrs, g);
-      var t = se('text', { x:x-10, y:y,
+      var t = se('text', { x:x + labelDX(docA[di], 10), y:y,
         fill:uploaded?'var(--muted, #7a9ac0)':(notApplicable?COL.NotRelevant:'var(--faint, #253045)'),
-        'font-size':'13', 'font-family':'monospace', 'text-anchor':'end', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
+        'font-size':'13', 'font-family':'monospace', 'text-anchor':anchorFor(docA[di]), 'dominant-baseline':'middle', class:'lnf-halo' }, g);
       if (!uploaded) t.setAttribute('opacity','0.55');
       t.textContent = name;
 
@@ -1226,10 +1343,18 @@
     // builds, which is the population IN SERVICE. The word beside them said "registered",
     // which names a different and larger population, so the sentence read as though the
     // diagram drew the whole registry. Only the word moved; no count changed.
-    var archSentence = 'This diagram shows the analytical architecture in service: ' +
+    /* RUN 90. THE SENTENCE NAMES THE POPULATION THIS DIAGRAM ACTUALLY DRAWS. It said
+       "6 categories in service", which is false: eleven categories are in service and six are
+       drawn. The other five -- Data Integrity, Signal Synthesis, Evidence Combination,
+       Regulatory and Authority Thresholds, Decision Optimisation -- still run and still inform
+       the recommendation, and a reader who is not told that would read their absence as their
+       retirement. No count is invented: every figure is still the length of a list this file
+       built from the roster. */
+    var archSentence = 'This diagram shows the six weighted performance categories: ' +
       DOC_KEYS.length + ' supported document types, ' + MODULES.length +
-      ' project modules in service and ' + CATS.length + ' categories in service. ' +
-      'It is what the platform can do, not what this project has done.';
+      ' modules in service in those six categories, and ' + CATS.length + ' categories. ' +
+      'The platform\'s other categories still run and still inform the recommendation; they ' +
+      'are not drawn here. It is what the platform can do, not what this project has done.';
     var actSentence;
     // RUN 24. THE ONE PREDICATE. This is the condition that already decided the empty-project
     // sentence; it is now also what decides whether the architecture is drawn unasked. Both

@@ -20,8 +20,7 @@ of these structures.** The specification below states, per module, precisely wha
 for; collectively that is the answer to "what would it take to light this category".
 
 **All five in service are bandless**, as were the two retired. Each reports
-calibration-pending with the standard note verbatim: *"The
-method this measure is named for has been carried out and the figure is reported. No status colour
+calibration-pending with the standard note verbatim: *"The method this measure is named for has been carried out and the figure is reported. No status colour
 is offered with it, because no boundary for this quantity has been established from evidence, and a
 colour drawn from an unestablished boundary would read as a judgement nobody has made."*
 
@@ -29,8 +28,8 @@ colour drawn from an unestablished boundary would read as a judgement nobody has
 
 ## The abstention sentences all seven specified here share
 
-All seven specified here take their structure through `canonical_v4.require_v4_structure`. Writing `W` for the
-module's own plain-words description:
+All seven specified here take their structure through `canonical_v4.require_v4_structure`.
+Writing `W` for the module's own plain-words description:
 
 - **Absent:** `"Awaiting W. This measure is named for a method that cannot be carried out without
   it, so no reading is reported and no other figure is used in its place."`
@@ -331,7 +330,7 @@ above, as are the two retired at Run 89.
 Five governed structures for the modules in service, none of which any supported document type
 carries: `sensitivityModel`, `scenarioSet`, `queueModel`, `agentSupplyChainModel`,
 `desProcessModel`. (`dsmDependencyModel` and `systemDynamicsModel` were the structures A5.1 and
-A5.5 waited for; both modules were retired at Run 89 for waiting on them.) Every one of them is a **model of relationships**
-rather than a set of reported figures, and none can be extracted from a monthly report, a cost
+A5.5 waited for; both modules were retired at Run 89 for waiting on them.) Every one of them is
+a **model of relationships** rather than a set of reported figures, and none can be extracted from a monthly report, a cost
 report, a schedule export or a register. Lighting this category is a question of supplying models,
 not of improving extraction.

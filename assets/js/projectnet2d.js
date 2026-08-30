@@ -98,9 +98,24 @@
 (function () {
   "use strict";
 
-  /* THE REAL PASSES, taken from spec_apply.py. Not derived from the group letter. */
-  var PASS_ONE = ["A1", "A2", "A3", "A4", "A5", "A6", "C1"];
-  var PASS_TWO = ["B1", "B2", "B3", "B4"];
+  /* RUN 90. THE POPULATION IS THE SIX WEIGHTED PERFORMANCE CATEGORIES, AND NOTHING ELSE.
+
+     The owner's ruling, Run 90 section 2. Data Integrity, Signal Synthesis, Evidence Combination,
+     Regulatory and Authority Thresholds and Decision Optimisation all still run and still inform
+     the recommendation; none of them renders here. Retired modules do not appear at all -- not
+     dimmed, not greyed, not present-and-inactive.
+
+     BOTH POPULATIONS ARE THE REGISTRY'S, AT RUNTIME. `window.performanceCategories()` in
+     taxonomy.js filters the GENERATED roster; that roster is written by
+     `server/tools/build_client_taxonomy.py` from `registry.service_index()`, so a module carrying
+     the `RETIRED ` note on its registry row is already absent from `cat.modules` and this file
+     never has to know which they are. Nothing hand-maintained is consulted, which is how the
+     counts drifted before Run 89.
+
+     WHAT WENT WITH THE OTHER FIVE CATEGORIES. Run 82's pass-one -> pass-two dependency edges,
+     which existed only to draw a Group A / Group C category feeding a Group B one. No pass-two
+     category is drawn any more, so every such edge would have had a missing endpoint. They are
+     removed rather than left to draw nothing. */
 
   function colors() {
     var c = window.LIN_STATUS_COLORS || {};
@@ -137,11 +152,14 @@
 
   /* ------------------------------------------------------------------------- the model ----- */
   function projectCategories() {
-    var all = window.LIN_CATEGORIES || [];
-    if (window.projectLevelCategories) {
-      try { return window.projectLevelCategories() || []; } catch (e) { /* fall through */ }
+    if (window.performanceCategories) {
+      try { return window.performanceCategories() || []; } catch (e) { /* fall through */ }
     }
-    return all.filter(function (c) { return !(c && (c.level === "portfolio" || c.portfolioLevel)); });
+    /* The same rule, inline, if taxonomy.js did not load its accessors: group A, project level.
+       NOT a written-out list of six keys, so this arm cannot drift from the roster either. */
+    return (window.LIN_CATEGORIES || []).filter(function (c) {
+      return c && c.group === "A" && !(c.level === "portfolio" || c.portfolioLevel);
+    });
   }
   function storedRow(project) {
     try { return (window.LinResults && LinResults.rowFor(project)) || null; }
@@ -170,8 +188,17 @@
         if (na) return { id: m.module_id, name: m.name, state: "not_relevant", band: null, display: null, reason: null };
         if (byId[m.module_id]) {
           var r = byId[m.module_id];
-          return { id: m.module_id, name: m.name, state: "computed",
-                   band: r.band || r.status_color || null,
+          /* RUN 90, THE COMMON CASE AND THE ONE THAT WAS WRONG. A module that COMPUTED and
+             asserted NO BAND is the calibration-pending population -- 31 of them at Run 89 --
+             and it is not an error. `bandColor(null)` returns null, and the moon painter used
+             to fall back to `C.Complete`, so every one of them was drawn BLUE: a reading that
+             asserted nothing rendered as the Complete band. `computed_unbanded` is that state,
+             named, and it is drawn UNLIT. It stays distinguishable from `failed` and from
+             `abstained`, which is what section 3.3 asks for. */
+          var _band = r.band || r.status_color || null;
+          return { id: m.module_id, name: m.name,
+                   state: bandColor(_band) ? "computed" : "computed_unbanded",
+                   band: _band,
                    display: (r.display != null ? r.display : r.value),
                    reason: r.evidence_metric || r.narrative || null };
         }
@@ -183,7 +210,7 @@
       });
       return {
         key: cat.key, name: cat.name,
-        pass: PASS_ONE.indexOf(cat.key) >= 0 ? 1 : (PASS_TWO.indexOf(cat.key) >= 0 ? 2 : 0),
+        pass: 1,
         state: e ? (e.state || null) : "not_called",
         status: e ? (e.status || null) : null,
         contributes: !!(e && e.contributes_to_project_status),
@@ -202,12 +229,6 @@
          category -> health     only where the server stored a status AND its own projection row
                                 says the category votes. */
     var edges = [];
-    var producers = planets.filter(function (p) { return p.pass === 1 && p.status; });
-    planets.filter(function (p) { return p.pass === 2; }).forEach(function (dep) {
-      producers.forEach(function (up) {
-        edges.push({ from: up.key, to: dep.key, kind: "pass", band: up.status });
-      });
-    });
     planets.forEach(function (p) {
       if (p.status && p.contributes) edges.push({ from: p.key, to: "__health__", kind: "fuse", band: p.status });
     });
@@ -216,25 +237,44 @@
 
   /* --------------------------------------------------------------- positions in the system -- */
   function placeSystem(sys) {
-    var one = sys.planets.filter(function (p) { return p.pass === 1; });
-    var two = sys.planets.filter(function (p) { return p.pass === 2; });
-    var other = sys.planets.filter(function (p) { return p.pass === 0; });
-    var R1 = 300, R2 = 155;
-    function ring(list, R, tilt) {
-      list.forEach(function (p, i) {
-        var a = (i / Math.max(1, list.length)) * Math.PI * 2;
-        p.pos = { x: Math.cos(a) * R, y: Math.sin(a) * R * tilt, z: Math.sin(a) * R * 0.72 };
-        p.radius = 20 + Math.min(10, p.total * 0.9);
-      });
-    }
-    ring(one, R1, 0.42);
-    ring(two, R2, 0.42);
-    ring(other, R1 * 1.25, 0.42);
+    /* RUN 90, SECTION 3.4. ORBIT RADIUS CARRIES NO MEANING, AND NEITHER DOES ANYTHING ELSE
+       GEOMETRIC. The owner has ruled radius arbitrary: the orbits are spaced for legibility only.
+
+       WHAT WAS REMOVED, because it did encode something and therefore looked like it meant
+       something. Run 82 set `p.radius = 20 + min(10, p.total * 0.9)` -- planet SIZE was the
+       module count. It set the moon ring at `p.radius + 16 + min(16, p.total * 1.1)` -- orbit
+       RADIUS was the module count again. And it set `rate = 0.34 / sqrt(p.total)` -- orbital
+       SPEED was the module count a third time. All three are now constants. A reader can no
+       longer draw a wrong inference from a big planet, a wide orbit or a slow moon, because
+       every planet is the same size, every ring is the same width and every moon turns at the
+       same rate. The count is still stated, in words, under each planet and in the note.
+
+       THE SIX SIT ON ONE RING. There is no second ring, because there is no second population
+       left to put on it. */
+    /* THE THREE CONSTANTS. Sized in the browser at 1280px and 1024px, not guessed: at
+       RING = 260 with a 24-unit planet the six planets and their moon rings overlapped the sun
+       and each other, and the sun's own label was unreadable behind A1 and A4. Widening the
+       ring and shrinking the bodies separates them. This is a LEGIBILITY decision, which is the
+       only thing section 3.4 permits a radius to be chosen for. */
+    var PLANET_RADIUS = 17;      /* constant: size encodes nothing */
+    var RING = 430;              /* constant: radius encodes nothing */
+    sys.planets.forEach(function (p, i) {
+      var a = (i / Math.max(1, sys.planets.length)) * Math.PI * 2;
+      /* ITERATION 3, AND IT IS A LEGIBILITY FIX MEASURED IN THE BROWSER, NOT A GUESS.
+         With the ring lying deep in z (0.72 of R) the near half of it projected in FRONT of the
+         sun: at 1280px, A1 and A4 sat on top of the centre and the words PROJECT STATUS /
+         Indeterminate were unreadable behind them -- on the very state the order says to get
+         right first. The ring is now close to the screen plane, so it projects as a wide, flat
+         ellipse with the sun inside it and nothing in front of it. Radius is unchanged and
+         still constant; only the PLANE the ring lies in moved. */
+      p.pos = { x: Math.cos(a) * RING, y: Math.sin(a) * RING * 0.34, z: Math.sin(a) * RING * 0.16 };
+      p.radius = PLANET_RADIUS;
+    });
     /* THE MOONS. A ring around the planet, tilted out of the planet's own plane so the far side
        is visibly behind it and the count can be read. Nothing about the placement encodes a
        value; only colour and geometry do. */
     sys.planets.forEach(function (p) {
-      var mr = p.radius + 16 + Math.min(16, p.total * 1.1);
+      var mr = p.radius + 46;   /* constant: the moon ring is the same width on every planet */
       p.moons.forEach(function (m, i) {
         /* RUN 83, PART C. THE ORBIT IS STORED, NOT THE POINT. Run 82 froze each moon at one
            angle; the owner asked for orbital motion. `orbit` carries the ring radius, the
@@ -248,7 +288,7 @@
           r: mr,
           phase: (i / Math.max(1, p.moons.length)) * Math.PI * 2
                  + (p.key.charCodeAt(1) || 0) * 0.3,
-          rate: 0.34 / Math.max(1, Math.sqrt(p.total || 1))
+          rate: 0.22   /* constant: every moon turns at the same rate; speed encodes nothing */
         };
         m.pos = orbitAt(p, m, 0);
       });
@@ -285,11 +325,12 @@
     var row = storedRow(project);
     var sys = placeSystem(buildSystem(project, row));
 
-    var totalModules = 0, litModules = 0, dark = 0, na = 0, notCalled = 0;
+    var totalModules = 0, litModules = 0, unbanded = 0, dark = 0, na = 0, notCalled = 0;
     sys.planets.forEach(function (p) {
       totalModules += p.total; litModules += p.lit;
       p.moons.forEach(function (m) {
-        if (m.state === "abstained") dark++;
+        if (m.state === "computed_unbanded") unbanded++;
+        else if (m.state === "abstained") dark++;
         else if (m.state === "not_relevant") na++;
         else if (m.state === "not_called") notCalled++;
       });
@@ -300,8 +341,9 @@
     /* THE FIGURES IN WORDS, BESIDE THE PICTURE. The owner reads this on a phone; a drawing that
        states no figure is not a report. Nothing here is a control. */
     note.textContent =
-      litCats + " of " + sys.planets.length + " categories carry a status. "
-      + litModules + " of " + totalModules + " modules have a reading; "
+      litCats + " of " + sys.planets.length + " performance categories carry a posture. "
+      + litModules + " of " + totalModules + " modules in service assert a band; "
+      + unbanded + " computed without asserting one, "
       + dark + " have nothing to report, " + na + " are not relevant to this project, and "
       + notCalled + " have not been called. "
       + (failedCats.length
@@ -311,6 +353,7 @@
       + "Project health: " + (sys.health || "no status") + ".";
     container.setAttribute("data-modules", String(totalModules));
     container.setAttribute("data-modules-lit", String(litModules));
+    container.setAttribute("data-modules-unbanded", String(unbanded));
     container.setAttribute("data-modules-dark", String(dark));
     container.setAttribute("data-modules-na", String(na));
     container.setAttribute("data-modules-notcalled", String(notCalled));
@@ -378,21 +421,32 @@
                            x2: Math.round(pb.x), y2: Math.round(pb.y) });
       });
 
-      /* PROJECT HEALTH at the centre of the system. */
+      /* THE SUN: THE PROJECT STATUS, AND IT IS UNLIT WHEN THE PLATFORM CANNOT CERTIFY ONE.
+
+         Run 89 made INDETERMINATE a real status: any of the required core A1, A2, A3, A6
+         without a posture and the platform issues no band at all. `Indeterminate` is
+         deliberately absent from `fusion.BAND_SEVERITY`, so `bandColor()` returns null for it
+         by the same route it returns null for a missing status -- nothing here tests for the
+         word. On most current rows this is the state, so it is the one drawn first and
+         deliberately: A DARK CENTRE, with a corona only when a band was actually issued. */
       var hcol = bandColor(sys.health);
-      ctx.beginPath(); ctx.arc(hp.x, hp.y, 30 * hp.s * 1.6, 0, Math.PI * 2);
-      ctx.fillStyle = hcol || C.None; ctx.globalAlpha = hcol ? 0.9 : 0.55; ctx.fill();
+      var sunR = 26 * hp.s * 1.6;
+      if (hcol) {
+        var sgrd = ctx.createRadialGradient(hp.x, hp.y, 1, hp.x, hp.y, sunR * 2.6);
+        sgrd.addColorStop(0, hcol); sgrd.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.beginPath(); ctx.arc(hp.x, hp.y, sunR * 2.6, 0, Math.PI * 2);
+        ctx.fillStyle = sgrd; ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha = 1;
+      }
+      ctx.beginPath(); ctx.arc(hp.x, hp.y, sunR, 0, Math.PI * 2);
+      ctx.fillStyle = hcol || "#0d1526"; ctx.globalAlpha = hcol ? 0.95 : 1; ctx.fill();
       ctx.globalAlpha = 1;
       ctx.strokeStyle = hcol || "#3a4a66"; ctx.lineWidth = 2;
       if (!hcol) ctx.setLineDash([4, 4]);
       ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = "#e6edf9"; ctx.font = "600 12px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("PROJECT HEALTH", hp.x, hp.y - 4);
-      ctx.fillText(String(sys.health || "no status"), hp.x, hp.y + 12);
-      scene.bodies.push({ kind: "health", key: "__health__", state: sys.health ? "computed" : "not_called",
+      scene.bodies.push({ kind: "health", key: "__health__",
+                          state: hcol ? "lit" : "unlit",
                           status: sys.health || null, x: Math.round(hp.x), y: Math.round(hp.y),
-                          r: Math.round(30 * hp.s * 1.6) });
+                          r: Math.round(sunR) });
 
       /* BODIES, PAINTER'S ORDER: everything sorted back to front so the far side of a ring is
          drawn first and is genuinely behind. */
@@ -429,19 +483,34 @@
             ctx.fillStyle = col; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
             ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.stroke();
           } else {
-            /* A CATEGORY WITH NO STORED STATUS IS NOT COLOURED AND IS NOT FILLED IN. */
+            /* RUN 90, SECTION 3.2. A CATEGORY CARRYING NO POSTURE MUST NOT READ AS ANY BAND.
+               No fill of any band colour, no corona, and a dashed neutral rim in every case --
+               Run 82 dashed it only when the category had never been called, which left a
+               category that WAS called and produced no posture drawn with a solid rim that
+               read like a quiet fifth band. Both are the same fact to a reader: not assessed. */
             ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2);
-            ctx.fillStyle = C.None; ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha = 1;
+            ctx.fillStyle = "#111d31"; ctx.fill();
             ctx.strokeStyle = "#3a4a66"; ctx.lineWidth = 1.3;
-            ctx.setLineDash(p.state === "not_called" ? [4, 4] : []);
+            ctx.setLineDash([4, 4]);
             ctx.stroke(); ctx.setLineDash([]);
           }
           ctx.fillStyle = failed ? "#fff" : "#e6edf9";
           ctx.font = "700 11px system-ui, sans-serif"; ctx.textAlign = "center";
           ctx.fillText(p.key, q.x, q.y + 4);
           ctx.font = "9px system-ui, sans-serif"; ctx.fillStyle = "#93a3bf";
-          ctx.fillText(p.lit + " of " + p.total + " lit", q.x, q.y + r + 12);
-          scene.bodies.push({ kind: "planet", key: p.key, pass: p.pass,
+          ctx.fillText(p.lit + " of " + p.total + " banded", q.x, q.y + r + 12);
+          if (!col && !failed) {
+            ctx.fillStyle = "#7c8aa5";
+            ctx.fillText("not assessed", q.x, q.y + r + 23);
+          }
+          /* RUN 90. `baseR` and `orbitR` are the MODEL radii, before the perspective divide.
+             They are in the scene graph so a check can prove the constraint the order actually
+             states -- that size and orbit radius encode nothing -- from what was drawn. The
+             DRAWN radius legitimately differs body to body because a body further from the
+             camera is smaller; that is depth, and it is not a reading. A check that asserted
+             on the drawn radius would fail a correct chart, which is how this run first
+             mis-measured it. */
+          scene.bodies.push({ kind: "planet", key: p.key, pass: p.pass, baseR: p.radius,
                               state: failed ? "failed" : (p.status ? "computed" : (p.state || "not_called")),
                               status: p.status || null, lit: p.lit, total: p.total,
                               x: Math.round(q.x), y: Math.round(q.y), r: Math.round(r) });
@@ -457,6 +526,14 @@
             ctx.fillStyle = mc; ctx.fill();
             ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.6;
             ctx.stroke(); ctx.globalAlpha = 1;
+          } else if (m.state === "computed_unbanded") {
+            /* RUN 90. COMPUTED, AND ASSERTED NO BAND. Visible and UNLIT: a body with a rim, no
+               fill of any band colour and no halo, so it can never be read as Complete or as
+               any other band. It is drawn LARGER and with a brighter rim than an abstention,
+               because a figure was produced here and nothing was produced there. */
+            ctx.beginPath(); ctx.arc(mq.x, mq.y, mr, 0, Math.PI * 2);
+            ctx.fillStyle = "#16233a"; ctx.fill();
+            ctx.strokeStyle = "#b9c6dc"; ctx.lineWidth = 1.2; ctx.stroke();
           } else if (m.state === "abstained") {
             /* DARK, STILL IN ORBIT: a filled body with a solid rim. Present, silent. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr * 0.92, 0, Math.PI * 2);
@@ -474,10 +551,24 @@
             ctx.setLineDash([1, 2.2]); ctx.stroke(); ctx.setLineDash([]);
           }
           scene.bodies.push({ kind: "moon", key: m.id, category: d.p.key, state: m.state,
+                              orbitR: m.orbit.r, orbitRate: m.orbit.rate,
                               band: m.band || null, x: Math.round(mq.x), y: Math.round(mq.y),
                               r: Math.round(mr * 10) / 10 });
         }
       });
+
+      /* THE SUN'S WORDS ARE PAINTED LAST, OVER EVERYTHING. A planet in front of the centre
+         used to cover them. The reader must always be able to read the status, and on most
+         current rows that word is "Indeterminate". */
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(8,13,24,0.82)";
+      var lw = Math.max(ctx.measureText("PROJECT STATUS").width,
+                        ctx.measureText(String(sys.health || "no status")).width) + 16;
+      ctx.fillRect(hp.x - lw / 2, hp.y - 18, lw, 36);
+      ctx.fillStyle = "#e6edf9"; ctx.font = "600 12px system-ui, sans-serif";
+      ctx.fillText("PROJECT STATUS", hp.x, hp.y - 4);
+      ctx.fillStyle = hcol || "#93a3bf";
+      ctx.fillText(String(sys.health || "no status"), hp.x, hp.y + 12);
 
       ctx.textAlign = "left";
       LAST_SCENE = scene;
