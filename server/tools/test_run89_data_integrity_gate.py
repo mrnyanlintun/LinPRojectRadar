@@ -70,7 +70,15 @@ cats = sp.category_statuses(READINGS)
 check("C1 was called and has an entry", "C1" in cats, True)
 check("C1 does NOT contribute to project status", cats["C1"]["contributes_to_project_status"], False)
 check("A1 is unchanged by the injection", cats["A1"]["status"], "Green")
-check("PROJECT STATUS is A1's Green, not C1.5's Red", sp.project_status(cats), "Green")
+# The band worst-wins produced, which is the quantity C1.5 must not be able to move. The
+# PUBLISHED status on this fixture is "Indeterminate" -- Run 89 goal three's required-core gate,
+# because A2, A3 and A6 carry no posture here -- and that is asserted straight after, so both
+# facts are measured and neither hides the other.
+check("THE FUSED BAND is A1's Green, not C1.5's Red",
+      sp.project_status_basis(cats)["fused_band"], "Green")
+check("...and the PUBLISHED status is Indeterminate, because three required categories are "
+      "absent from this fixture -- C1.5 did not cause that either",
+      sp.project_status(cats), "Indeterminate")
 check("group predicate refuses group C", sim_compute.contributes_to_project_status("C"), False)
 
 print("\n3. THE SAME TEST GOES RED WITH THE EXCLUSION NEUTRALISED")
@@ -79,15 +87,15 @@ try:
     sp.contributes_to_project_status = lambda group: True
     cats_bad = sp.category_statuses(READINGS)
     check("NEUTRALISED: C1 now contributes", cats_bad["C1"]["contributes_to_project_status"], True)
-    check("NEUTRALISED: project status flips to C1.5's band -- this is the defect",
-          sp.project_status(cats_bad), "Red")
+    check("NEUTRALISED: the fused band flips to C1.5's band -- this is the defect",
+          sp.project_status_basis(cats_bad)["fused_band"], "Red")
     check("NEUTRALISED: A1 arithmetic STILL unchanged", cats_bad["A1"]["status"], "Green")
 finally:
     sp.contributes_to_project_status = _real
 
 print("\n4. RESTORED")
 cats_back = sp.category_statuses(READINGS)
-check("project status back to Green", sp.project_status(cats_back), "Green")
+check("fused band back to Green", sp.project_status_basis(cats_back)["fused_band"], "Green")
 check("C1 excluded again", cats_back["C1"]["contributes_to_project_status"], False)
 
 print("\n5. NOT ASSESSED IS A NULL STATUS, NEVER A GREEN")
@@ -97,7 +105,8 @@ _none = sp.category_statuses({"A2": _reading("A2", [_mod("A2.7", None)])})
 check("a called category whose modules assert no band carries a NULL status",
       _none["A2"]["status"], None)
 check("...and it is not Green", _none["A2"]["status"] == "Green", False)
-check("...and the project status over it alone is null", sp.project_status(_none), None)
+check("...and the fused band over it alone is null",
+      sp.project_status_basis(_none)["fused_band"], None)
 
 print("\n6. C1.5 IS NOT IN COMPARISON_ONLY_MODULES, AND DOES NOT NEED TO BE")
 check("COMPARISON_ONLY_MODULES is Run 87's set, unextended",

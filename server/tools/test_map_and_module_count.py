@@ -326,10 +326,10 @@ def main() -> None:
     check(tx["allCats"] > tx["projCats"],
           "the taxonomy genuinely has a portfolio-level category to exclude "
           "(so the checks below are not vacuous)", json.dumps(tx))
-    check(tx["projMods"] == 63, "a project has 63 modules", str(tx["projMods"]))
+    check(tx["projMods"] == 60, "a project has 60 modules", str(tx["projMods"]))
     check(tx["projCats"] == 11, "across 11 categories", str(tx["projCats"]))
-    check(tx["allMods"] == 63 and tx["allCats"] == 12,
-          "and the whole in-service taxonomy is 63 across 12, the retired modules appearing in "
+    check(tx["allMods"] == 60 and tx["allCats"] == 12,
+          "and the whole in-service taxonomy is 60 across 12, the retired modules appearing in "
           "no browser population", f"{tx['allMods']}/{tx['allCats']}")
     check(tx["d1Modules"] == 0,
           "Portfolio Health computes nowhere: its category container is retained and empty",

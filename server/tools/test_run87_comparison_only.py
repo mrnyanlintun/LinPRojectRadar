@@ -57,7 +57,22 @@ def _base() -> dict[str, SpecificationReading]:
 
 
 def _project(readings) -> str | None:
-    return sp.project_status(sp.category_statuses(readings))
+    """
+    THE BAND WORST-WINS PRODUCES over the admitted modules. That is what this suite is about.
+
+    RUN 89 UPDATED THIS, AND IT IS NOT A WEAKENING. Run 89 goal three added the required-core
+    gate on top of worst-wins, so `sp.project_status` now returns "Indeterminate" on these
+    fixtures -- which carry only A1 and B1 and therefore have three required categories with no
+    posture. That answers a DIFFERENT question (may an official status be issued) from the one
+    this suite asks (does a comparison-only module's band reach the project fusion). The
+    published-status gate has its own suite, `test_run89_required_core.py`, which proves the
+    arithmetic here is untouched across all 256 four-band combinations.
+
+    So this reads `fused_band`, the band worst-wins produced, straight off the same basis record
+    -- the exact quantity Run 87 fixed. Section 4's neutralise-and-go-red proof below still
+    flips it, so the suite is no more able to pass vacuously than it was.
+    """
+    return sp.project_status_basis(sp.category_statuses(readings))["fused_band"]
 
 
 def main() -> int:

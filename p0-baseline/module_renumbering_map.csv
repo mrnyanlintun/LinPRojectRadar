@@ -40,11 +40,11 @@ A4.7,Dispute Escalation Index,4.7,A,Project Health,A4,Document-Derived Condition
 A4.8,Subcontractor Performance,4.8,A,Project Health,A4,Document-Derived Condition Signals,
 A4.9,Procurement Lead Time Monitor,4.9,A,Project Health,A4,Document-Derived Condition Signals,
 A4.10,Specification Conflict Density,4.10,A,Project Health,A4,Document-Derived Condition Signals,
-A5.1,DSM Rework Propagation,5.1,A,Project Health,A5,System Dynamics & Complexity,absorbs former 3.2 DSM Rework Propagation (alias)
+A5.1,DSM Rework Propagation,5.1,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 89 as A5.1: the module is defined on a structure (the DSM rework matrix) prepared for a method rather than a thing a project document prints. Absorbs former 3.2 DSM Rework Propagation (alias).
 A5.2,Sensitivity Analysis,5.2,A,Project Health,A5,System Dynamics & Complexity,
 A5.3,Tornado Risk Ranking,5.3,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 43 as A5.3: reason 4 (duplicate primitive source).
 A5.4,Scenario Modeling,5.4,A,Project Health,A5,System Dynamics & Complexity,
-A5.5,Rework Feedback Loop,5.5,A,Project Health,A5,System Dynamics & Complexity,
+A5.5,Rework Feedback Loop,5.5,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 89 as A5.5: the module is defined on a structure (the rework feedback loop) prepared for a method rather than a thing a project document prints.
 A5.6,Queueing Theory Bottleneck,5.6,A,Project Health,A5,System Dynamics & Complexity,
 A5.7,Agent-Based Supply Chain,5.7,A,Project Health,A5,System Dynamics & Complexity,
 A5.8,Discrete Event Simulation,5.8,A,Project Health,A5,System Dynamics & Complexity,
@@ -84,7 +84,7 @@ B3.5,Contract Modification Governance Check,8.5,B,Recommendation & Governance,B3
 B4.1,Multi-Objective Optimization,10.1,B,Recommendation & Governance,B4,Decision Optimization,RETIRED Run 43 as B4.1: reason 2 (already disabled). also met reason 4.
 B4.2,Linear Programming,10.2,B,Recommendation & Governance,B4,Decision Optimization,RETIRED Run 43 as B4.2: reason 2 (already disabled).
 B4.3,Constraint Satisfaction Analysis,10.3,B,Recommendation & Governance,B4,Decision Optimization,
-B4.4,What-If Scenario Matrix,10.4,B,Recommendation & Governance,B4,Decision Optimization,
+B4.4,What-If Scenario Matrix,10.4,B,Recommendation & Governance,B4,Decision Optimization,RETIRED Run 89 as B4.4: the module is defined on a structure (the what-if scenario matrix) prepared for a method rather than a thing a project document prints.
 B4.5,Decision Sensitivity Matrix,10.5,B,Recommendation & Governance,B4,Decision Optimization,RETIRED Run 43 as B4.5: reason 2 (already disabled).
 B4.6,Pareto Frontier Analysis,10.6,B,Recommendation & Governance,B4,Decision Optimization,RETIRED Run 43 as B4.6: reason 2 (already disabled). also met reason 4.
 B4.7,Minimax Regret Decision Rule,10.7,B,Recommendation & Governance,B4,Decision Optimization,RETIRED Run 43 as B4.7: reason 4 (duplicate primitive source).

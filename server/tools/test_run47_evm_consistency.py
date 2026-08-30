@@ -463,7 +463,7 @@ try:
     print("10. THE STANDING POPULATION GUARANTEES, DERIVED (S8.12, S8.13)")
     print("=" * 78)
 
-    check(len(service_index()) == 63, f"63 modules in service, not {len(service_index())}")
+    check(len(service_index()) == 60, f"60 modules in service, not {len(service_index())}")
     check(len(registry_index()) == 101, f"101 in the registry, not {len(registry_index())}")
     check(sorted(CORE_VOTING_MODULES) == ["A1.7", "A1.8"],
           "the voting count is exactly 2, A1.7 and A1.8", str(sorted(CORE_VOTING_MODULES)))

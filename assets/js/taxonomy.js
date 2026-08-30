@@ -46,7 +46,7 @@
    made in the wrong copy passed every source check while the live page stayed broken;
    and the two had already drifted apart on their own, with nine modules carrying
    `disabled: true` in one and not the other. */
-window.LIN_TAXONOMY_COUNTS = { registered: 101, inService: 63, retired: 38, serverComputes: 62, supplied: 1 };
+window.LIN_TAXONOMY_COUNTS = { registered: 101, inService: 60, retired: 41, serverComputes: 59, supplied: 1 };
 window.LIN_CATEGORIES = [
   {
     id: 'a1', key: 'A1', name: 'Cost and EVM Performance',
@@ -119,10 +119,8 @@ window.LIN_CATEGORIES = [
     color: '#ff7ac6',
     description: 'System dynamics, feedback and complexity behavior.',
     modules: [
-      { id: 'a5_1', module_id: 'A5.1', name: 'DSM Rework Propagation', method_class: 'DSM_Rework_Cat5', active: true, required: ['cpi','spi'] },
       { id: 'a5_2', module_id: 'A5.2', name: 'Sensitivity Analysis', method_class: 'Sensitivity_Analysis', active: true, required: ['bac','ev','ac','pv','cpi','spi'] },
       { id: 'a5_4', module_id: 'A5.4', name: 'Scenario Modeling', method_class: 'Scenario_Modeling', active: true, required: ['bac','ev','ac','cpi','spi'] },
-      { id: 'a5_5', module_id: 'A5.5', name: 'Rework Feedback Loop', method_class: 'Rework_Feedback', active: true, required: ['cpi','rfiCount','changeOrderCount'] },
       { id: 'a5_6', module_id: 'A5.6', name: 'Queueing Theory Bottleneck', method_class: 'Queueing_Bottleneck', active: true, required: ['activitiesPlanned','activitiesConstrained'] },
       { id: 'a5_7', module_id: 'A5.7', name: 'Agent-Based Supply Chain', method_class: 'Agent_Supply_Chain', active: true, required: ['longLeadItemsTotal','longLeadAtRisk'] },
       { id: 'a5_8', module_id: 'A5.8', name: 'Discrete Event Simulation', method_class: 'Discrete_Event_Sim', active: true, required: ['spi','actualPctComplete','plannedPctComplete','cpi'] }
@@ -181,7 +179,6 @@ window.LIN_CATEGORIES = [
     description: 'Decision optimisation and trade-off analysis over the available courses of action.',
     modules: [
       { id: 'b4_3', module_id: 'B4.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
-      { id: 'b4_4', module_id: 'B4.4', name: 'What-If Scenario Matrix', method_class: 'WhatIf_Scenario_Matrix', active: true, required: ['bac','ev','ac','cpi','spi'] }
     ]
   },
   {
