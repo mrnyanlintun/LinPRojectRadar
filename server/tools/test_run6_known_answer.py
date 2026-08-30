@@ -1579,12 +1579,17 @@ _PKG_V = package(_FLAT_RED, _MC_RED, _CU_RED, array=_ARRAY,
 # TWO independent signals, both Red. The three array rows X1/X2/X3 are transformations of these
 # same arms and are no longer voted at all, which is the whole v15 change here.
 #
-# HAND, weighted voting: there is no governed weighting policy on this package, and the four
-# literal weights the v14 module carried had no authority behind them, so the module ABSTAINS
-# rather than weighing anything. This is the module's own recorded disposition made executable.
+# HAND, weighted voting. RE-POINTED BY RUN 89, AND IT IS THE SAME ASSERTION ONE STEP ALONG.
+# Until Run 89 this module weighed the four assembled arms and abstained without a governed
+# WEIGHTING POLICY. The owner ruled at Run 89 that it reads the six performance CATEGORY
+# POSTURES instead, and those do not exist at module dispatch, so at dispatch it now abstains
+# naming the postures. What this check has always protected is unchanged and is still asserted:
+# THE MODULE ABSTAINS AT DISPATCH RATHER THAN WEIGHING ANYTHING, and it invents no weight from
+# a literal. The reading itself is taken in the second pass and is proved in
+# `test_run89_required_core.py` and by the measured stored-row run recorded in Run 89's report.
 r = registry.run_module("B1.2", _PKG_V, NOOP, "2025-06-30")
-check(abstains(r) and "weighting policy" in str(r.get("abstention_reason", "")),
-      "weighted voting: abstains with no governed weighting policy, inventing no weight",
+check(abstains(r) and "category postures" in str(r.get("abstention_reason", "")),
+      "weighted voting: abstains at dispatch naming the postures, inventing no weight",
       str(r))
 
 # HAND, majority rules: two independent signals, both Red, so Red 2 of 2, and the two readings

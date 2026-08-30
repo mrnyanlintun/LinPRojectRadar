@@ -486,7 +486,12 @@ def weighted_voting_result(category_statuses: dict) -> dict[str, Any]:
     return {
         "method_class": "Weighted_Voting",
         "status_color": out["winner"],
-        "votes": out["votes"],
+        # NOT `votes`. RUN 89 MEASURED A REAL COLLISION: `registry.run_all` sets a BOOLEAN
+        # `votes` on every computed row -- "is this module one of the CORE_VOTING_MODULES" --
+        # and this module's class-weight distribution was landing on the same key, so a truthy
+        # dict made B1.2 read as a voter on the stored row. The distribution keeps its own name.
+        # (The collision was latent before this run only because B1.2 never computed.)
+        "class_votes": out["votes"],
         "unique_winner": out["unique_winner"],
         "tied_classes": out["tied_classes"],
         "tie_policy": out["tie_policy"],

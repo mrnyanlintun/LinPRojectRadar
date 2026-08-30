@@ -114,5 +114,30 @@ check("COMPARISON_ONLY_MODULES is Run 87's set, unextended",
 check("C1.5 is admitted to its OWN category rollup (it is a gate reading, not a project posture)",
       sp.admitted_to_category_rollup("C1.5"), True)
 
+print("\n7. THE EXCLUSION FROM THE WEIGHTED PROFILE IS EXECUTABLE, NOT A COMMENT")
+from app.simulation import models_gov as GOV
+check("C1 is not in the weight profile", "C1" in GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS, False)
+check("the profile is exactly the owner's six", sorted(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS),
+      ["A1", "A2", "A3", "A4", "A5", "A6"])
+check("...summing to 1.00", round(sum(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS.values()), 10), 1.0)
+check("a C1 posture is ignored by the weighted vote, not weighed",
+      GOV.weighted_category_vote({"A1": {"status": "Green"}, "C1": {"status": "Red"}})["winner"],
+      "Green")
+# AND THE GUARD FIRES. Adding Data Integrity to the profile raises rather than being weighed.
+_real_profile = dict(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS)
+_raised = None
+try:
+    GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS = {"C1": 1.0}
+    try:
+        GOV.weighted_category_vote({"C1": {"status": "Red"}})
+    except AssertionError as exc:
+        _raised = str(exc)
+finally:
+    GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS = _real_profile
+check("INJECTED: adding Data Integrity to the profile RAISES",
+      _raised, "Data Integrity is a precondition for using the criteria, not a criterion in them.")
+check("RESTORED: the profile is the owner's again",
+      sorted(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS), ["A1", "A2", "A3", "A4", "A5", "A6"])
+
 print("\n" + ("ALL PASS" if not FAILURES else f"{len(FAILURES)} FAILURES: {FAILURES}"))
 sys.exit(1 if FAILURES else 0)

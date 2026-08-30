@@ -130,28 +130,33 @@ fault(1, "Conservative Dominance averages away a Red", V5, "conservative_dominan
           [sig("a", "Green", "b1"), sig("b", "Green", "b2"), sig("c", "Red", "b3")])["state"],
       "Red")
 
-# 2 -------------------------------------------------------------- WV consumes raw KPIs
-fault(2, "Weighted Voting consumes raw cpi/spi rather than governed states",
+# 2 --------------------------------------------------- a synthesiser consumes raw KPIs
+# RE-POINTED BY RUN 89, AND THE PROPERTY GUARDED IS UNCHANGED: A SYNTHESISER MUST CONSUME
+# GOVERNED STATES, NOT RAW PROJECT INDICES. The owner ruled at Run 89 that B1.2 Weighted Voting
+# reads the six performance CATEGORY POSTURES instead of the four assembled arms, so it no
+# longer calls `_governed` at all and this injection site is unreachable FROM B1.2. B1.3
+# Majority Rules still synthesises the governed signals through exactly that call, so the fault
+# is aimed there. Fault 2b below then guards the same property on B1.2's NEW input path, so
+# nothing that was protected has stopped being protected.
+fault(2, "a governed synthesiser consumes raw cpi/spi rather than governed states",
       GOV, "_governed",
       lambda si, cutoff: [{"signal_id": "cpi", "status": "Green", "period": cutoff,
                            "lineage_body": "raw"},
                           {"signal_id": "spi", "status": "Green", "period": cutoff,
                            "lineage_body": "raw"}],
-      # THE PROBE NAMES WHICH SIGNALS WERE WEIGHED. A policy covering both the governed ids and
-      # the raw index names is supplied, so the module computes in BOTH directions and the
-      # difference is visible in what it voted on rather than hidden behind an abstention.
-      lambda: sorted(GOV.run_weighted_voting(
-          {"signals": {"mc": {"status": "red"}, "doc": {"status": "red"}},
-           "cpi": 1.0, "spi": 1.0,
-           "signalWeightPolicy": {"set_by": "t", "authority": "t",
-                                  "weights": {"evm": 1.0, "mc": 1.0, "cusum": 1.0, "doc": 1.0,
-                                              "cpi": 1.0, "spi": 1.0}}},
-          None, "2026-06-30").get("normalised_weights", {})),
-      # The forecast arm names BOTH the earned-value and the document body, so with only it and
-      # the document arm present the two are pairwise dependent and collapse to one reading --
-      # which is the pairwise non-transitive model doing its job, and is what makes ['mc'] the
-      # correct baseline here rather than ['doc', 'mc'].
-      ["mc"])
+      # THE PROBE NAMES WHICH SIGNALS WERE SYNTHESISED, so the difference is visible in what was
+      # counted rather than hidden behind an abstention.
+      # THE PROBE NAMES WHICH SIGNALS WERE SYNTHESISED, so the difference is visible in what
+      # was selected rather than hidden behind an abstention.
+      lambda: sorted(x["signal_id"] for x in GOV.run_worst_n_of_m(
+          {"signals": {"mc": {"status": "red"}, "doc": {"status": "red"},
+                       "cusum": {"status": "amber"}},
+           "cpi": 1.0, "spi": 1.0},
+          None, "2026-06-30").get("selected_signals", [])),
+      # The forecast arm names BOTH the earned-value and the document body, so the control-chart
+      # arm collapses into it as the same evidence read twice -- the pairwise non-transitive
+      # model doing its job, and what makes ['doc', 'mc'] the correct baseline here.
+      ["doc", "mc"])
 
 # 3 -------------------------------------------------------------- WV duplicate gains weight
 fault(3, "Weighted Voting same-lineage duplicate gains weight", V5, "independent_signals",

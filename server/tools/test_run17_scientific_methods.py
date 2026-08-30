@@ -729,13 +729,31 @@ def cat6() -> None:
     # ------------------------------------------------------------------ 6.2 Weighted Voting
     mid = "6.2"
     # RUN 30 v15. The four literal weights (1.5/1.0/0.6/1.5) had no authority behind them
-    # anywhere in the repository, so the module no longer weighs anything without a governed
-    # weighting policy. Its recorded disposition was already PARAMETER_PROVENANCE_BLOCKED.
+    # anywhere in the repository, so the module no longer weighs anything without stated
+    # authority. Its recorded disposition was already PARAMETER_PROVENANCE_BLOCKED.
+    # RE-POINTED BY RUN 89, AND THE PROPERTY IS UNCHANGED: THE MODULE WEIGHS NOTHING BY A
+    # LITERAL WITH NO AUTHORITY. The owner ruled at Run 89 that it reads the six performance
+    # CATEGORY POSTURES, under HIS OWN STATED weight profile, and those postures do not exist at
+    # module dispatch, so at dispatch it abstains naming them. Both halves are asserted here --
+    # the dispatch abstention, and that the weights it does carry are the owner's, declared with
+    # their provenance, rather than literals from this file.
     pkg = _pkg(mc="Green", cusum="Amber", doc="Red")
     out = run("B1.2", pkg)
-    check(mid, "parameter provenance: abstains rather than weigh by literals with no authority",
-          abstained(out) and "weighting policy" in str(out.get("abstention_reason", "")),
+    check(mid, "parameter provenance: abstains at dispatch, weighing nothing by a literal",
+          abstained(out) and "category postures" in str(out.get("abstention_reason", "")),
           str(out))
+    from app.simulation.models_gov import (WEIGHTED_VOTING_CATEGORY_WEIGHTS as _WVW,
+                                           weighted_voting_result as _wvr)
+    check(mid, "the weight profile is the owner's six performance categories, summing to 1.00",
+          sorted(_WVW) == ["A1", "A2", "A3", "A4", "A5", "A6"]
+          and abs(sum(_WVW.values()) - 1.0) < 1e-12, str(_WVW))
+    check(mid, "Data Integrity is not in the weight profile", "C1" not in _WVW, str(sorted(_WVW)))
+    _second = _wvr({"A1": {"status": "Green"}, "A2": {"status": "Green"},
+                    "A3": {"status": "Green"}, "A4": {"status": "Green"},
+                    "A5": {"status": "Green"}, "A6": {"status": "Red"}})
+    check(mid, "the second pass weighs the postures and declares the owner's authority",
+          _second["status_color"] == "Green"
+          and "owner's stated authority" in _second["weight_provenance"], str(_second))
     check(mid, "known-answer: the canonical weighted severity score on the specification's own "
                "example", abs(O.weighted_severity_score(["Green", "Amber", "Red"],
                                                         [0.5, 0.3, 0.2]) - 1.2) < 1e-12)

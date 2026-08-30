@@ -203,7 +203,10 @@ renormalised to sum to one, which is also what the arm-based rule already did ov
 signals. It is **not** scored as a zero, **not** treated as Green, and **not** dropped without
 renormalising — the first would score an absence and the last would make class votes incomparable
 between projects. The reading reports `assessed_categories`, `unassessed_categories` and
-`renormalised` so the reader can see which categories were in the denominator.
+`renormalised` so the reader can see which categories were in the denominator, and the class
+weight distribution on **`class_votes`** — deliberately not on `votes`, which
+`registry.run_all` already uses on every module row for the boolean *is this module one of the
+core voting modules*.
 
 **Bands.** The winner is emitted as `status_color`. Where there is no unique winner,
 `status_color` is `None` and `tied_classes` names the tied classes.
