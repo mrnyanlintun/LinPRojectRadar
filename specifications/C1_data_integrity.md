@@ -4,6 +4,48 @@ Seven modules: C1.1 through C1.7. These are **evidence qualification measures**.
 complete, how fresh, how traceable and how internally consistent the project's own evidence is —
 not how the project is performing.
 
+## The category's role: ELIGIBILITY, not performance
+
+**The owner's ruling, Run 89 section 3.** This category's role is **eligibility only**. It
+determines whether methods and categories have sufficient evidence to produce a posture. It
+produces **no project-health posture**. It enters **neither Conservative Dominance nor Weighted
+Voting**, and no reading in it can reach the official project status by any path.
+
+**Information Completeness Ratio (`C1.5`) is the eligibility gate the owner named.** Its registry
+note already says what it is for: *"authoring-time quality gate; not participant-facing; must not
+enter project status aggregation"*.
+
+**Three independent barriers keep this category out of the project status, and all three are
+executable.** Removing any one of them still leaves the other two:
+
+1. **The group predicate.** Every C1 module sits in registry group `C`, and
+   `compute.contributes_to_project_status` returns `False` for group `C`. The category can carry
+   an entry, be rendered, and still contribute nothing.
+2. **No band is ever asserted.** `models_cat89._route` sets `status_color = None`,
+   `band_asserted = False`, `category_9_metadata_only = True` and `voting_eligible = False` for
+   every module whose id begins `C1.`.
+3. **The severity rule has nothing to rank.** `fusion.worst_band` over no asserted band returns
+   `None`, not `Green`.
+
+`tools/test_run89_data_integrity_gate.py` proves this by injecting an adverse `C1.5` band on both
+status paths and measuring that nothing moves — and proves the check can fail by neutralising the
+group predicate and measuring the project status flip to the injected band.
+
+**What "sufficient evidence" produces, and what it does not.** A category with insufficient
+eligible evidence returns **not assessed** — a **null status** — never `Green`, `Amber` or `Red`.
+*Not assessed* and *never called* are **not the same thing in this tree, and they are not two
+states**: *never called* is a state (the client's `not_run`, "Not called yet", where no reading is
+stored at all), while *not assessed* is the **absence of a band on a reading that exists**, which
+occurs across `computed`, `abstained`, `out_of_order` and `failed` alike and renders as "No band".
+No new state is invented for either.
+
+**What this category does NOT compute.** There are **no per-category completeness percentages** in
+this category. `C1.5` computes one **package-level** ratio over the components of a governed
+information package; it has no notion of a performance category and produces no figure per
+category. Producing per-category completeness would require a structure that declares, per
+category, which components its methods require — no such structure exists in the tree, and none is
+invented here.
+
 **Three properties hold for every module in this category and none of them may be relaxed.**
 
 1. **Metadata only. No band. No vote.** Every result carries `category_9_metadata_only: true` and
