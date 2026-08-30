@@ -297,6 +297,39 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "and lookahead_status_date is the date the look-ahead stands at, as YYYY-MM-DD; return "
         "null for either the document does not state."
     ) if "lookahead_activities_json" in fields else ""
+    # RUN 87. THE TWO COMPLIANCE REGISTERS, named the same way and for the same reason: A6.1
+    # and A6.3 are defined on a POPULATION of requirements, and without naming the shape the
+    # model returns a summary for a table the document prints in full.
+    quality_register_hint = (
+        " quality_requirements_json, if requested and the document contains a requirement, "
+        "inspection-item, checklist or audit-findings table (one row per item assessed), is a "
+        "JSON array with one object per PRINTED ROW of that table, using the table's own column "
+        "headings as keys and its values as printed; return every row the document prints and "
+        "no others. Do not add an item the document does not list, do not decide for yourself "
+        "whether an item passed -- return the word the row prints -- and do not mark an item "
+        "assessed that the document leaves blank or marks pending; return an empty array only "
+        "if the document has no such table. quality_register_id, if requested, is the report's "
+        "or register's own identifier exactly as printed, and quality_register_period is the "
+        "period it covers as the document states it; return null for either the document does "
+        "not state."
+    ) if "quality_requirements_json" in fields else ""
+    environmental_hint = (
+        " environmental_jurisdiction, permitting_authority, permit_id, permit_version, "
+        "permit_site_id and operator_status, if requested, are stated on the face of an "
+        "environmental compliance or permit document: the jurisdiction the site sits in, the "
+        "authority that ISSUED the permit exactly as named (return the bare word EPA only where "
+        "the document names the U.S. Environmental Protection Agency as the issuing authority; "
+        "otherwise return the state, tribal, local or other authority as printed), the permit "
+        "number, its version or revision, the site identifier and the operator's status under "
+        "the permit. Do NOT infer any of them from the project's location, from the kind of "
+        "work, or from your own knowledge of who usually permits such work -- return null for "
+        "any the document does not state. environmental_requirements_json, if requested and the "
+        "document contains a permit-condition, observation or corrective-action table, is a "
+        "JSON array with one object per PRINTED ROW, using the table's own column headings as "
+        "keys and its values as printed; return the closure or status word each row prints and "
+        "do not close, open or resolve a row yourself; return an empty array only if the "
+        "document has no such table."
+    ) if "environmental_requirements_json" in fields else ""
     # RUN 72. THE SCALE OF A RATIO FIELD, NAMED, because the general sentence below is false
     # of it. "Percentages as numbers 0-100" is correct for every 0..100 quantity in the
     # vocabulary and WRONG for a compliance rate, which the numeric contract bounds at 1.0. A
@@ -347,7 +380,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + quality_register_hint + environmental_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

@@ -1602,6 +1602,14 @@ def _baseline_structures(session: Session, project: Project, period: int, docume
 # DOCUMENT PATH ONLY, for the same reason the Category-9 record and the Run-68 curves are: a
 # training period's signal inputs are projected from a deterministic state, and no document was
 # uploaded to it.
+def _text_or_none(value) -> str | None:
+    """RUN 87. A printed cell as a stripped string, or None where the document stated nothing."""
+    if value is None:
+        return None
+    out = " ".join(str(value).split()).strip()
+    return out or None
+
+
 def _run69_structures(session: Session, project: Project, period: int,
                       documents: list[dict]) -> dict:
     """
@@ -1648,6 +1656,56 @@ def _run69_structures(session: Session, project: Project, period: int,
                 actual_hours=ex.get("actual_labor_hours"))
             if record is not None:
                 out.setdefault("productionOutputRecord", record)
+
+        elif doc_type in ("inspection_report", "quality_audit_report"):
+            # RUN 87, A6.1. THE QUALITY REQUIREMENT REGISTER, from the document that prints it.
+            # `canonical_v6.quality_compliance` takes the GOVERNED path the moment the structure
+            # carries a `requirements` list, so nothing in `server/app/simulation/` changes: the
+            # corpus assembly that produced `recorded_audit_evidence` and NOT_ESTIMABLE is still
+            # there, still correct, and is simply no longer the only thing on offer. Longest
+            # register wins between two quality documents in one period, on the deterministic
+            # rule `resourceProfile` states above. Where the document printed no readable table,
+            # nothing is assembled and A6.1 goes on reaching NOT_ESTIMABLE, honestly.
+            from .compliance_register import read_requirement_rows
+            requirements = read_requirement_rows(ex.get("quality_requirements_json"))
+            if requirements:
+                existing = out.get("qualityRequirementRegister")
+                if existing is None or len(requirements) > len(existing["requirements"]):
+                    out["qualityRequirementRegister"] = {
+                        "requirements": requirements,
+                        "register_id": _text_or_none(ex.get("quality_register_id")),
+                        "register_version": _text_or_none(ex.get("quality_register_period")),
+                        "assembled_by": "document extraction",
+                        "source_document_type": doc_type,
+                    }
+
+        elif doc_type == "environmental_report":
+            # RUN 87, A6.3. APPLICABILITY FIRST, AND IT IS READ, NEVER ASSUMED.
+            # `canonical_v6.environmental_compliance` refuses to assess conformance without BOTH
+            # a jurisdiction and a permitting authority, and it has "no branch that could
+            # hard-code" EPA. Both are now asked of the document that states them. Where the
+            # document states neither, or only one, NOTHING IS ASSEMBLED HERE and the corpus
+            # path's APPLICABILITY_NOT_ESTABLISHED stands -- a half-established applicability is
+            # not an applicability, and supplying one half would be inventing the other.
+            from .compliance_register import read_requirement_rows
+            jurisdiction = _text_or_none(ex.get("environmental_jurisdiction"))
+            authority = _text_or_none(ex.get("permitting_authority"))
+            if jurisdiction and authority:
+                requirements = read_requirement_rows(
+                    ex.get("environmental_requirements_json"))
+                existing = out.get("environmentalRequirementRegister")
+                if existing is None or len(requirements) > len(existing["requirements"]):
+                    out["environmentalRequirementRegister"] = {
+                        "jurisdiction": jurisdiction,
+                        "permitting_authority": authority,
+                        "permit_id": _text_or_none(ex.get("permit_id")),
+                        "permit_version": _text_or_none(ex.get("permit_version")),
+                        "site_id": _text_or_none(ex.get("permit_site_id")),
+                        "operator_status": _text_or_none(ex.get("operator_status")),
+                        "requirements": requirements,
+                        "assembled_by": "document extraction",
+                        "source_document_type": "environmental_report",
+                    }
 
         elif doc_type == "lookahead_schedule":
             # RUN 86, A2.8. The look-ahead ACTIVITY INVENTORY, where this period's look-ahead

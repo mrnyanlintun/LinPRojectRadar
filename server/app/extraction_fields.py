@@ -265,9 +265,22 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "notice_contract_form", "notice_kind", "notice_references",
     ],
     "risk_register": ["document_risk_score", "document_date"],
+    # RUN 87. THE INSPECTION ITEM TABLE, ASKED FOR AS A TABLE.
+    #
+    # A6.1 Quality Compliance Index is "the share of the applicable quality requirements that
+    # were assessed and found satisfied", and section 13 of its specification "forbids
+    # substituting a summary for a denominator". `items_inspected` / `items_passed` /
+    # `items_failed` are exactly such summaries: they give a total, not a population with
+    # per-item applicability, assessment and outcome, and no critical exception can be told
+    # apart inside them. An inspection report PRINTS the population -- one row per inspection
+    # item, with whether it applied, whether it was checked and whether it passed -- so it is
+    # asked for on the `lookahead_activities_json` precedent. `quality_register_id` is the
+    # report's own identifier, carried onto the structure as `register_id`. Where the document
+    # states less than a readable table, no register is assembled and A6.1 goes on abstaining.
     "inspection_report": [
         "document_risk_score", "document_date", "items_inspected", "items_passed", "items_failed",
         "deficiency_count", "critical_deficiency_count",
+        "quality_requirements_json", "quality_register_id", "quality_register_period",
     ],
     "field_report": [
         "document_risk_score", "document_date", "weather_days_lost", "float_remaining",
@@ -278,11 +291,31 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "safety_report": [
         "osha_recordable_incidents", "total_manhours", "incident_rate", "report_period",
     ],
+    # RUN 87. THE SAME TABLE OFF THE QUALITY AUDIT REPORT, for the same reason: an audit score
+    # and a findings count are the summaries the specification names, and the audit's own
+    # findings/requirements schedule is the population it summarises.
     "quality_audit_report": [
         "total_findings", "critical_findings", "deficiency_count", "audit_score", "audit_date",
+        "quality_requirements_json", "quality_register_id", "quality_register_period",
     ],
+    # RUN 87. THE FACTS THAT ESTABLISH ENVIRONMENTAL APPLICABILITY, AND THE OBSERVATION TABLE.
+    #
+    # A6.3 reached APPLICABILITY_NOT_ESTABLISHED on every corpus project because the assembly
+    # "deliberately supplies no jurisdiction, no permitting authority and no permit id, because
+    # the corpus carries none". The corpus carries none because NOTHING EVER ASKED. A permit
+    # holder's environmental compliance report states the issuing authority, the jurisdiction
+    # and the permit number on its face, in words; `environmental_jurisdiction` and
+    # `permitting_authority` are the two the canonical function requires before it will assess
+    # conformance, and `permit_id`, `permit_version`, `permit_site_id` and `operator_status` are
+    # the identity it carries beside them. `environmental_requirements_json` is the
+    # permit-condition or observation schedule, and it is what carries closure: a row printing
+    # "Closed" is a satisfied condition, a row printing "Open" is an unsatisfied one, and a row
+    # printing neither is outstanding and enters no ratio (see `compliance_register`).
+    # Authority is READ, never assumed: only the exact word EPA reaches the EPA CGP rule.
     "environmental_report": [
         "permit_conditions_total", "violations", "compliance_rate", "report_date",
+        "environmental_jurisdiction", "permitting_authority", "permit_id", "permit_version",
+        "permit_site_id", "operator_status", "environmental_requirements_json",
     ],
     "ncr_log": ["ncr_issued", "ncr_closed", "ncr_open", "ncr_overdue", "report_period"],
     "subcontractor_report": [
