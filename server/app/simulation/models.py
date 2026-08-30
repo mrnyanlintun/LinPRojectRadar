@@ -762,12 +762,38 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # and five more modules compute because the period's Category-9 assessment is written for the
 # first time (Run 67). 101 registered, 63 in service, voting boundaries still sourced for exactly
 # A1.7 and A1.8. Results computed under sim-2026.08-v41 remain valid under that stamp.
-SIMULATION_VERSION = "sim-2026.08-v42"
+# -------------------------------------------------------------------------------------------
+# RUN 89 ADVANCES THE STAMP TO v43, AND THE BEHAVIOUR BEHIND IT HAS GENUINELY MOVED. Four
+# changes, all of them the owner's rulings, and each changes what a stored row says:
+#
+#   1. B1.2 WEIGHTED VOTING READS THE SIX PERFORMANCE CATEGORY POSTURES, not the four assembled
+#      arms. Two of those arms traced to modules the owner has dropped. The weight profile is
+#      HIS STATED AUTHORITY -- A1 0.25, A2 0.25, A3 0.15, A4 0.10, A6 0.15, A5 0.10 -- and Data
+#      Integrity is excluded from it by an executable guard. Because the postures do not exist
+#      at module dispatch, B1.2 abstains there and is evaluated in a SECOND PASS after the
+#      category rollup, which also makes it structurally incapable of reaching the rollup that
+#      produced its own input. Its class-weight distribution moved off the row key `votes`,
+#      which `registry.run_all` already uses for a boolean, onto `class_votes`.
+#   2. DATA INTEGRITY IS AN ELIGIBILITY GATE. The category's role is stated in its
+#      specification; nothing in the code moved, because three independent barriers already
+#      held it out of the project status and all three were measured.
+#   3. THE REQUIRED CORE. An OFFICIAL project status is issued only when A1, A2, A3 and A6 all
+#      carry a posture; otherwise it is INDETERMINATE, with the fused band recorded beside it.
+#      WORST-WINS IS UNTOUCHED -- measured identical across all 256 four-band combinations --
+#      and "Indeterminate" is deliberately not a band and is not in BAND_SEVERITY.
+#   4. THREE MODULES LEFT SERVICE by Run 43's own mechanism: A5.1 DSM Rework Propagation, A5.5
+#      Rework Feedback Loop and B4.4 What-If Scenario Matrix, each defined on a structure
+#      prepared for a method rather than on a thing a project document prints.
+#
+# THE POPULATION MOVED: 101 registered, 60 IN SERVICE (was 63), 41 retired (was 38), 59 the
+# server computes. Voting is still exactly A1.7 and A1.8. Results computed under sim-2026.08-v42
+# remain valid under that stamp.
+SIMULATION_VERSION = "sim-2026.08-v43"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v41"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v42"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -785,6 +811,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  "sim-2026.08-v38", "sim-2026.08-v39", "sim-2026.08-v40",
  "sim-2026.08-v41",
  "sim-2026.08-v42",
+ "sim-2026.08-v43",
 )
 
 
