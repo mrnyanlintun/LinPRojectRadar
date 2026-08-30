@@ -1988,6 +1988,127 @@
       ].join("\n");
     }
 
+    /* =====================================================================================
+       RUN 89, GOAL THREE. THE INDETERMINATE BRIEF.
+
+       INDETERMINATE IS NOT A BLANK SCREEN AND NOT A FAILURE STATE. When a required category
+       carries no posture the server issues Indeterminate, and this branch renders the full
+       brief the owner specified: the status and what it means, the reason and what is missing,
+       EVERY assessed category and its posture INCLUDING any that are Red, every supporting
+       category assessed or not, and a recommendation about EVIDENCE ACQUISITION, verification
+       and escalation -- never a fabricated health recommendation.
+
+       IT ESCALATES AN ASSESSED ADVERSE CONDITION RATHER THAN WAITING FOR THE STATUS. Any
+       category the row bands Red or Amber is named in the Recommendation, with the module that
+       set it and that module's own stated figure, so the reader is not asked to wait for an
+       official posture before acting on evidence the platform already holds.
+
+       THE THREE RUN 70 CHECKS ARE NOT WEAKENED AND ARE NOT ROUTED AROUND. This text goes
+       through `briefGate` exactly as every other brief does. It is written to PASS them: every
+       sentence that asserts a condition names a figure the stored row holds (the setter's own
+       `evidence_metric`), and the sentences about missing evidence assert no condition at all
+       because "could not be assessed" is a statement about the platform, not about the project.
+       ===================================================================================== */
+    const basis = ev.statusBasis;
+    if (basis && basis.official === false) {
+      const missing = basis.required_missing || [];
+      const detail = basis.required_missing_detail || [];
+      const catByKey = {};
+      ev.categories.forEach((c) => { catByKey[c.key] = c; });
+      /* The category's name, read from the taxonomy the whole page already reads. Falls back
+         to the key rather than to an invented label. */
+      const catName = (k) => {
+        const c = (window.LIN_CATEGORIES || []).filter((x) => x.key === k)[0];
+        return (c && c.name) || k;
+      };
+
+      // 1. THE STATUS.
+      const iRec = ["INDETERMINATE \u00b7 there is insufficient evidence for an official project "
+        + "posture this period, so none is issued."];
+
+      // 2. THE REASON, naming which required category could not be assessed and what is missing.
+      detail.forEach((d) => {
+        iRec.push(catName(d.category) + " (" + d.category + ") could not be assessed: "
+                  + (d.missing || "no reading was produced") + ".");
+      });
+      if (!detail.length && missing.length) {
+        iRec.push("These required categories could not be assessed: " + missing.join(", ") + ".");
+      }
+
+      // 5. ESCALATION OF ANY ASSESSED ADVERSE CONDITION, with the setter's own figure so the
+      //    sentence names the figure behind it and Check 1 is satisfied by evidence, not by
+      //    softening the words.
+      const adverse = ev.categories.filter((c) => c.status
+        && statusKeyFromText(c.status) !== "green");
+      adverse.forEach((c) => {
+        const bits = (c.setBy || []).map((mid) => {
+          const m = ev.modules.filter((x) => x.module_id === mid)[0];
+          return m ? (mid + " reading " + (m.evidence_metric || "no figure stated")) : mid;
+        });
+        iRec.push("Escalate now, without waiting for an official posture: " + c.key + " "
+          + catName(c.key) + " reads " + c.status
+          + (bits.length ? ", set by " + bits.join("; ") : "") + ".");
+      });
+      if (basis.fused_band) {
+        iRec.push("Worst-wins over the categories that did report would have produced "
+          + basis.fused_band + "; that band is recorded and is not issued as the official "
+          + "status, because the required categories are not all assessed.");
+      }
+
+      // 3 AND 4. EVERY ASSESSED CATEGORY AND ITS POSTURE; EVERY SUPPORTING CATEGORY.
+      const assessedLines = ev.categories.filter((c) => c.status)
+        .map((c) => "\u25cf " + c.key + " " + catName(c.key) + ": " + c.status + ".");
+      const notAssessedLines = ev.categories.filter((c) => !c.status)
+        .map((c) => "\u25cb " + c.key + " " + catName(c.key) + ": not assessed.");
+      (basis.required_categories || []).concat(basis.supporting_categories || [])
+        .forEach((k) => {
+          if (catByKey[k]) return;
+          notAssessedLines.push("\u25cb " + k + " " + catName(k) + ": never called this period.");
+        });
+      const supLines = (basis.supporting_categories || []).map((k) => {
+        const c = catByKey[k];
+        return "- " + k + " " + catName(k) + " (supporting): "
+          + (c && c.status ? c.status
+             : "not assessed. A supporting category that was not assessed never produces a Green.");
+      });
+      const reqLines = (basis.required_categories || []).map((k) => {
+        const c = catByKey[k];
+        return "- " + k + " " + catName(k) + " (required): "
+          + (c && c.status ? c.status : "not assessed.");
+      });
+
+      // 5. THE RECOMMENDATION: evidence acquisition, verification, escalation. Advisory, and
+      //    it asserts no project condition, so it needs no figure.
+      const iActions = [];
+      detail.forEach((d) => {
+        iActions.push("Acquire the evidence " + catName(d.category) + " (" + d.category
+          + ") needs, and re-run the period once it is on file");
+      });
+      iActions.push("Verify the figures already on file for the categories that did report, "
+        + "so the partial picture is at least trustworthy");
+      if (adverse.length) {
+        iActions.push("Escalate " + adverse.map((c) => c.key).join(", ")
+          + " to the controls lead now rather than waiting for an official posture");
+      }
+      /* THE CONCRETE COURSE THE PARTICIPANT ACTS ON. Named exactly as the decision card
+         presents it -- "How did you treat the recommendation?", whose vocabulary is
+         `research_decision.DISPOSITIONS` -- so this sentence names a control that exists.
+         `request_evidence` is called out because it is the disposition an Indeterminate
+         status is actually about. Nothing in decision-ui.js is changed by this run. */
+      iActions.push("Record how you treated this recommendation on the decision card - accept, "
+        + "accept with conditions, modify, reject, defer, request evidence, escalate or "
+        + "transfer authority - and request evidence is the disposition this status is about");
+
+      return [
+        "### Recommendation", iRec.join("\n"),
+        "### Signal Pattern",
+        (assessedLines.concat(notAssessedLines).join("\n")
+         || "No category has computed data yet."),
+        "### Key Drivers", reqLines.concat(supLines).join("\n"),
+        "### Required Actions", iActions.map((a) => "- " + a).join("\n")
+      ].join("\n");
+    }
+
     const posture = ev.posture ? String(ev.posture) : "NO POSTURE";
     const stKey = ev.postureKey;
     const actionClause = stKey === "red"
@@ -2247,7 +2368,13 @@
         resolveBriefState(project) || (row ? (row.project_status || "") : "")),
       costComputed: has(BRIEF_COST_CATS, ["cpi", "ev", "ac", "bac"]),
       scheduleComputed: has(BRIEF_SCHEDULE_CATS, ["spi"]),
-      abstainedCount: (row && Array.isArray(row.abstained)) ? row.abstained.length : null
+      abstainedCount: (row && Array.isArray(row.abstained)) ? row.abstained.length : null,
+      /* RUN 89, GOAL THREE. The server's required-core verdict, read from the stored row and
+         NEVER re-derived here. Absent on a row computed before Run 89, and absence means the
+         gate did not run rather than that the status is official. */
+      statusBasis: (row && row.project_status_basis
+                    && typeof row.project_status_basis === "object")
+                    ? row.project_status_basis : null
     };
   }
 
@@ -3190,5 +3317,10 @@
   // log, and neural_flow.js's over the slice since the last `signals_reset`. Two accounts of
   // one quantity is a defect whatever each says alone, so there is now ONE implementation and
   // the diagram calls it rather than keeping a copy.
-  window.LinDetail = { render, teardown, __resetMapForTest, uploadedDocEvents };
+  /* RUN 89. The brief pipeline is exported FOR MEASUREMENT ONLY, by the same `__...ForTest`
+     convention `__resetMapForTest` already established. Nothing in production calls it, and it
+     exports the REAL functions rather than copies, so a harness cannot measure a second
+     implementation of the three Run 70 checks. */
+  window.LinDetail = { render, teardown, __resetMapForTest, uploadedDocEvents,
+                       __briefForTest: { scriptedBrief, briefGate, briefEvidence, parseBrief } };
 })();

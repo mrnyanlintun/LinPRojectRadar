@@ -255,10 +255,101 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
     return out
 
 
+# ---------------------------------------------------------------------------------------------
+# RUN 89, GOAL THREE. THE REQUIRED CORE, AND INDETERMINATE.
+#
+# THE OWNER'S RULING, section 4. An OFFICIAL project status is issued only when all four of the
+# REQUIRED categories carry a posture. Document Signals (A4) and Systems and Dynamics (A5) are
+# SUPPORTING: they enrich the diagnosis and may be assessed or not without blocking the official
+# status, and THEY NEVER CREATE A GREEN MERELY BECAUSE NO DOCUMENTS WERE SUPPLIED. When any
+# required category is not assessed, the official status is INDETERMINATE.
+#
+# WORST-WINS IS NOT TOUCHED. `worst_band` is still the only severity rule in this file and its
+# arithmetic is not altered, not re-ordered and not consulted twice. The gate is a CONDITION
+# LAYERED ON TOP of the fused band: when all four required categories carry a posture, this
+# function returns EXACTLY what it returned before this run, byte for byte. That equality is
+# measured, not argued, in `tools/test_run89_required_core.py`.
+#
+# "INDETERMINATE" IS NOT A BAND. It is deliberately NOT added to `fusion.BAND_SEVERITY` and it
+# never enters `worst_band`, because it is not a severity and cannot be ranked against one. It is
+# the answer to a different question -- may an official status be issued at all -- and it is
+# produced only here, at the point where that question is asked.
+#
+# ONE DEFINITION, IMPORTED. The required and supporting sets live in `simulation/compute.py`
+# beside the Python rollup that also applies them, and are imported here rather than restated,
+# so the two status paths cannot drift about which categories are required. That is the failure
+# this programme has already found nine times.
+from .simulation.compute import (  # noqa: E402
+    _INDETERMINATE as INDETERMINATE,
+    _REQUIRED_CATEGORIES as REQUIRED_CATEGORIES,
+    _SUPPORTING_CATEGORIES as SUPPORTING_CATEGORIES,
+)
+
+
+def required_core_missing(cats: dict[str, dict[str, Any]]) -> list[str]:
+    """
+    The required categories that carry NO posture, in the owner's stated order.
+
+    NOT ASSESSED AND NEVER CALLED ARE BOTH MISSING HERE, and deliberately so: the question this
+    answers is whether a posture EXISTS, and a category with no entry and a category with an
+    entry carrying a null status are equally without one. They stay distinguishable everywhere
+    else -- a category never called has no entry at all, which is Run 79's proof 3 -- and the
+    reason string below names which of the two each missing category is.
+    """
+    return [k for k in REQUIRED_CATEGORIES if not (cats.get(k) or {}).get("status")]
+
+
+def project_status_basis(cats: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """
+    Why the project status is what it is: the fused band, the gate's verdict, and the reason.
+
+    Carried beside `project_status` so a surface can render the Indeterminate brief the owner
+    specified without re-deriving the gate, and so nothing has to infer WHY from the word alone.
+    """
+    missing = required_core_missing(cats)
+    fused = worst_band([c.get("status") for c in cats.values()
+                        if c.get("status") and c.get("contributes_to_project_status")])
+    detail = []
+    for key in missing:
+        entry = cats.get(key)
+        detail.append({
+            "category": key,
+            # The two are different facts about the same absence and both are reported.
+            "state": "never_called" if entry is None else (entry.get("state") or "not_assessed"),
+            "missing": "no specification reading was stored for this category this period"
+                       if entry is None else
+                       (entry.get("reason")
+                        or "the category was called and no module in it asserted a band"),
+        })
+    return {
+        "required_categories": list(REQUIRED_CATEGORIES),
+        "supporting_categories": list(SUPPORTING_CATEGORIES),
+        "required_assessed": [k for k in REQUIRED_CATEGORIES if k not in missing],
+        "required_missing": missing,
+        "required_missing_detail": detail,
+        "supporting_assessed": [k for k in SUPPORTING_CATEGORIES
+                                if (cats.get(k) or {}).get("status")],
+        "supporting_not_assessed": [k for k in SUPPORTING_CATEGORIES
+                                    if not (cats.get(k) or {}).get("status")],
+        # The band worst-wins produced over the contributing categories, WHETHER OR NOT the gate
+        # lets it be official. It is reported either way so an Indeterminate brief can still show
+        # every assessed category and any that are Red.
+        "fused_band": fused,
+        "official": not missing,
+        "status": INDETERMINATE if missing else fused,
+    }
+
+
 def project_status(cats: dict[str, dict[str, Any]]) -> str | None:
-    """The worst contributing category's band, or None. Same rule, one level up."""
-    return worst_band([c.get("status") for c in cats.values()
-                       if c.get("status") and c.get("contributes_to_project_status")])
+    """
+    The official project status.
+
+    When all four required categories carry a posture this is the worst contributing category's
+    band, or None -- the same rule, the same arithmetic, one level up, unchanged by this run.
+    When any required category carries none, it is INDETERMINATE, which is not a band and is not
+    ranked against one.
+    """
+    return project_status_basis(cats)["status"]
 
 
 def projection(session: Session, project_id: str, period: int) -> dict[str, Any]:
@@ -276,6 +367,7 @@ def projection(session: Session, project_id: str, period: int) -> dict[str, Any]
         "abstained": abstention_rows(readings),
         "category_statuses": cats,
         "project_status": project_status(cats),
+        "project_status_basis": project_status_basis(cats),
         "specification_categories_called": sorted(readings),
         "specification_reading_count": len(readings),
     }
@@ -312,6 +404,7 @@ def projections(session: Session, pairs: list[tuple[str, int]]) -> dict[str, dic
             "abstained": abstention_rows(readings),
             "category_statuses": cats,
             "project_status": project_status(cats),
+            "project_status_basis": project_status_basis(cats),
             "specification_categories_called": sorted(readings),
             "specification_reading_count": len(readings),
         }

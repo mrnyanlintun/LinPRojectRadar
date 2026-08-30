@@ -2615,6 +2615,14 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     _spec_abstained = spec["abstained"] if spec is not None else row.abstained
     _spec_cats = spec["category_statuses"] if spec is not None else row.category_statuses
     _spec_status = spec["project_status"] if spec is not None else row.project_status
+    # RUN 89, GOAL THREE. The required-core verdict rides beside the status, so the Indeterminate
+    # brief can render the reason without re-deriving the gate on the client. A row computed
+    # before Run 89 carries None here, and the client reads None as "the gate did not run".
+    # No stored field is invented for it: on a Python-layer row it is DERIVED from that row's
+    # own `category_statuses` by the same pure function, so a stored row and a fresh projection
+    # can never disagree about which required categories are missing.
+    _spec_basis = (spec.get("project_status_basis") if spec is not None
+                   else spec_projection.project_status_basis(_spec_cats or {}))
     view = {
         "result_id": row.result_id,
         "period": row.period,
@@ -2627,6 +2635,7 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         "abstained": _spec_abstained,
         "category_statuses": _spec_cats,
         "project_status": _spec_status,
+        "project_status_basis": _spec_basis,
         # RUN 11, GATES 5 AND 6. Derived at read time from the category statuses this row already
         # holds, by the same function the compute path uses. No column is added, so a row stored
         # before this run answers exactly as one stored after it, and migrations 0020 through

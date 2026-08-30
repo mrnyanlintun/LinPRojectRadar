@@ -21,6 +21,11 @@ from .qualification_gate import (
 from .models import SIMULATION_VERSION
 from .qualification import build_qualification
 from .models_gov import weighted_voting_result as _weighted_voting_result
+#: Run 89 goal three. The single definition; `spec_projection` imports these names so
+#: the two status paths cannot drift about which categories are required.
+_REQUIRED_CATEGORIES: tuple[str, ...] = ("A1", "A2", "A3", "A6")
+_SUPPORTING_CATEGORIES: tuple[str, ...] = ("A4", "A5")
+_INDETERMINATE = "Indeterminate"
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
 
@@ -206,6 +211,21 @@ def compute_project(si: dict, scenario_id: str, period: str,
               if c["status"] and c["contributes_to_project_status"]]
     project = fuse_signals(voting)
 
+    # ------------------------------------------------------- RUN 89, GOAL THREE, REQUIRED CORE
+    # THE OWNER'S RULING, section 4. An OFFICIAL status is issued only when all four required
+    # categories -- A1 Cost and EVM, A2 Schedule, A3 Cost Risk, A6 Delivery Quality -- carry a
+    # posture. A4 Document Signals and A5 Systems and Dynamics are SUPPORTING and never block it,
+    # and they never create a Green merely because no documents were supplied.
+    #
+    # WORST-WINS IS UNTOUCHED. `fuse_signals(voting)` above is not altered, not re-ordered and
+    # not consulted twice; `project["status"]` is exactly what it was. The gate is a condition
+    # LAYERED ON TOP, so when all four required categories are assessed the published status is
+    # byte-for-byte identical to the previous behaviour. INDETERMINATE is not a band, is not in
+    # `BAND_SEVERITY`, and never enters a severity comparison.
+    _required_missing = [k for k in _REQUIRED_CATEGORIES
+                         if not (category_statuses.get(k) or {}).get("status")]
+    _fused_band = project["status"] if project else None
+
     # ------------------------------------------------------------------ RUN 11, GATES 5 AND 6
     # Derived, not asserted, and derived by the same pure function the read path uses, so a
     # freshly computed response and a stored row read back can never disagree about what the
@@ -225,7 +245,34 @@ def compute_project(si: dict, scenario_id: str, period: str,
         "abstained": run["abstained"],
         "unported": run["unported"],
         "category_statuses": category_statuses,
-        "project_status": project["status"] if project else None,
+        "project_status": _INDETERMINATE if _required_missing else _fused_band,
+        # Why the status is what it is, so a surface can render the Indeterminate brief without
+        # re-deriving the gate. The fused band is reported EITHER WAY, so an Indeterminate brief
+        # can still show every assessed category and any that are Red.
+        "project_status_basis": {
+            "required_categories": list(_REQUIRED_CATEGORIES),
+            "supporting_categories": list(_SUPPORTING_CATEGORIES),
+            "required_assessed": [k for k in _REQUIRED_CATEGORIES
+                                  if k not in _required_missing],
+            "required_missing": _required_missing,
+            "required_missing_detail": [
+                {"category": k,
+                 "state": "never_called" if k not in category_statuses else "not_assessed",
+                 "missing": "no module in this category was run for this period"
+                            if k not in category_statuses else
+                            "the category was called and no module in it asserted a band"}
+                for k in _required_missing],
+            "supporting_assessed": [k for k in _SUPPORTING_CATEGORIES
+                                    if (category_statuses.get(k) or {}).get("status")],
+            "supporting_not_assessed": [k for k in _SUPPORTING_CATEGORIES
+                                        if not (category_statuses.get(k) or {}).get("status")],
+            "fused_band": _fused_band,
+            "official": not _required_missing,
+            "status": _INDETERMINATE if _required_missing else _fused_band,
+        },
+        # The band worst-wins produced, kept under its own name so nothing that needs the
+        # SEVERITY loses it to the gate. This is not a second project status.
+        "fused_band": _fused_band,
         # RUN 11, GATES 5 AND 6. project_conflict keeps its original name so every reader that
         # already looks for it keeps working, but it is None rather than 0.0 when the coefficient
         # cannot be estimated: a consumer that prints it now prints nothing instead of printing a
