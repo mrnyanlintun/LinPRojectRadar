@@ -1,8 +1,15 @@
 # Category B4 — Decision Optimisation
 
-**Two modules are in service: B4.3 Constraint Satisfaction Analysis and B4.4 What-If Scenario
-Matrix.** The category declares seven identities; five are not in service and are not specified
-here.
+**One module is in service: B4.3 Constraint Satisfaction Analysis.** The category declares seven
+identities; five have never been in service and are not specified here.
+
+**B4.4 What-If Scenario Matrix was retired at Run 89**, by the note its row carries in the registry
+(`p0-baseline/module_renumbering_map.csv`), for the reason that registry states: *the module is
+defined on a structure (the what-if scenario matrix) prepared for a method rather than a thing a
+project document prints.* Retirement is removal from service, not removal from existence: its
+identifier still resolves and its specification below is kept readable, marked retired at its head.
+It is absent from the category tree the interface renders (`assets/js/taxonomy.js`, whose B4 list
+holds `b4_3` alone) and it is not dispatched.
 
 ## The authority boundary, and it is the point of this category
 
@@ -148,7 +155,7 @@ domains, so there is nothing to assign.
 
 ---
 
-## B4.4 — What-If Scenario Matrix
+## B4.4 — What-If Scenario Matrix — RETIRED at Run 89, not in service
 
 **Identity.** Live id `B4.4`. Method class `WhatIf_Scenario_Matrix`. Candidate actions compared
 across scenarios.
@@ -204,4 +211,5 @@ decision.
 
 ## Stopped specifications
 
-None. Both modules in service in this category have unambiguous sources and are specified above.
+None. The one module in service in this category has unambiguous sources and is specified above,
+as is the module retired at Run 89.

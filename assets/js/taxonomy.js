@@ -178,7 +178,7 @@ window.LIN_CATEGORIES = [
     color: '#a78bfa',
     description: 'Decision optimisation and trade-off analysis over the available courses of action.',
     modules: [
-      { id: 'b4_3', module_id: 'B4.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] },
+      { id: 'b4_3', module_id: 'B4.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] }
     ]
   },
   {
@@ -310,6 +310,43 @@ window.contributesToProjectStatus = function (cat) {
 
 window.projectLevelCategories = function () {
   return LIN_CATEGORIES.filter(function (c) { return !window.isPortfolioLevelCategory(c); });
+};
+
+/* ---------------------------------------------------------------------------
+   RUN 90. THE SIX WEIGHTED PERFORMANCE CATEGORIES, AND THEY ARE THE ONLY THING
+   THE TWO CHARTS DRAW.
+
+   The owner's ruling, Run 90 section 2: only Cost and EVM Performance, Schedule,
+   Cost Risk, Document Signals, Delivery Quality and Systems and Dynamics render.
+   Everything else -- Data Integrity, Signal Synthesis, Evidence Combination,
+   Regulatory and Authority Thresholds, Decision Optimisation -- runs in the
+   background, informs the recommendation, and does not appear.
+
+   RESOLVED AGAINST THE TREE, NOT AGAINST THE ORDER'S NAMES. The order names them
+   loosely. The tree's own resolution is
+   `server/app/simulation/models_gov.py:WEIGHTED_VOTING_CATEGORY_WEIGHTS`, whose
+   key set is exactly A1 A2 A3 A4 A5 A6, with C1 held out by an executable assert
+   in `WEIGHTED_VOTING_EXCLUDED_CATEGORIES`. Those six are exactly the GROUP A
+   project-level categories in the generated block above, so this filter is
+   derived from the roster rather than written out as a list that could drift.
+   The length assert below is the executable form of "exactly six".
+
+   THE MODULE ROSTER IS THE REGISTRY'S. `modules` on each entry comes from the
+   GENERATED block, which `server/tools/build_client_taxonomy.py` writes from
+   `registry.service_index()` -- modules in service only. A module retired by the
+   `RETIRED ` note on its registry row is therefore already absent here, and the
+   charts cannot draw one. Nothing hand-maintained is consulted.
+   --------------------------------------------------------------------------- */
+window.performanceCategories = function () {
+  var six = window.projectLevelCategories().filter(function (c) {
+    return c && c.group === 'A';
+  });
+  if (six.length !== 6) {
+    /* Do not silently draw the wrong population. A caller gets what the roster
+       actually says and the console records that it is not six. */
+    try { console.warn('performanceCategories: expected 6, got ' + six.length); } catch (e) {}
+  }
+  return six;
 };
 
 /* ============================================================================
