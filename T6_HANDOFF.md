@@ -12,6 +12,33 @@
 > left them and were right to. Moving them rewrites history. This is the ONE addition Run 59
 > made to this file, at the top, which the file's own rule permits; nothing below it was edited.
 
+# 2026-08-30 - Run 87: comparison ensembles leave the category rollup; A6.1 and A6.3 fed by the populations their documents print. sim-2026.08-v42, no migration.
+
+**Report:** `REPORT_2026-08-30_run87.md`. The order named
+`simulation/compute.py:contributes_to_project_status` as the defect; it is GROUP-level, inside the
+untouchable directory, and correct as it stands. The real defect was that the Run 79 projection
+path had NO module-level admission rule at all: a COMPUTED B1.2 carrying Red set category B1 and
+flipped a measured project status Green -> Red. `spec_projection.COMPARISON_ONLY_MODULES` =
+{B1.2, B1.3, B1.4}, established from models_gov.py's "THE THREE COMPARISON ENSEMBLES" and the B1
+specification's transformations-not-independent-facts text; B1.1 is NOT in it because its
+specification says it does emit a band. "ADVISORY_ONLY"/"non-voting" establishes nothing narrower
+-- registry.activation_state returns it for 61 of 63 modules. `worst_band` still decides;
+admission changed, not the rule. `test_run87_comparison_only.py` 20/20 including a
+neutralise-and-go-red proof.
+
+`inspection_report`, `quality_audit_report` and `environmental_report` grew their extraction
+contracts (`quality_requirements_json`; the six environmental applicability facts and
+`environmental_requirements_json`); `compliance_register.py` reads the printed headings and
+`documents._run69_structures` assembles the two GOVERNED structures, so nothing in
+`server/app/simulation/` moved -- the governed path already outranks the corpus assembly. A6.1
+computes 0.75 and A6.3 computes 0.8 through the real route in
+`test_run87_compliance_registers.py` 33/33, extractor HARNESS (no API key). Exactly three of 27
+document-type fingerprints moved. A6.4 was MEASURED and NOT ruled on: it reads exactly one input,
+`contractorAssessmentRecord`, has no corpus path, and is a composite of nothing -- the order's
+"three legs" premise is false against the specification. No REPORT was committed for any of runs
+71 through 85. No specification, no simulation file and no migration touched; SIMULATION_VERSION
+unmoved.
+
 # 2026-08-29 - Run 86: A2.8 fed by the look-ahead document; A3.6 proven on a risk-register .docx; four architecture-vs-specification STOPs quoted. sim-2026.08-v42.
 
 **Report:** `REPORT_2026-08-29_run86_loop_to_goal.md`. The look-ahead extraction contract grew
