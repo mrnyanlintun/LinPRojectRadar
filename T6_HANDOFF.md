@@ -12,6 +12,40 @@
 > left them and were right to. Moving them rewrites history. This is the ONE addition Run 59
 > made to this file, at the top, which the file's own rule permits; nothing below it was edited.
 
+# 2026-08-30 - Run 89: the status architecture. Weighted Voting reads the six category postures; Data Integrity is an eligibility gate; Indeterminate is a real status; three structure-defined modules left service. sim-2026.08-v43, no migration, gate BLOCKED.
+
+**Report:** `REPORT_2026-08-30_run89_status_architecture.md`. Two standing guards were lifted by
+the owner: specifications are editable where named, and `server/app/simulation/` is in scope.
+
+B1.2 no longer reads the four assembled arms. It reads the six performance CATEGORY POSTURES
+under the owner's stated weight profile (A1 .25, A2 .25, A3 .15, A4 .10, A6 .15, A5 .10); Data
+Integrity is excluded by an executable assert. The postures do not exist at module dispatch, so
+B1.2 abstains there naming them and is evaluated in a SECOND PASS in `compute.compute_project`
+after the rollup -- which also makes it structurally unable to reach the rollup that produced its
+own input. An unassessed category CARRIES NO WEIGHT and the remainder is RENORMALISED, which is
+B1's own shared rule 3 one level up, not a fourth invented rule. A real collision was found and
+fixed: the class-weight distribution was landing on the row key `votes`, which `registry.run_all`
+uses for a boolean; it is now `class_votes`.
+
+The required core is A1, A2, A3, A6. Any of them without a posture makes the official status
+INDETERMINATE, on both status paths, with the fused band recorded beside it in
+`project_status_basis`. WORST-WINS IS UNTOUCHED: measured byte-identical across all 256 four-band
+combinations. "Indeterminate" is deliberately not in `BAND_SEVERITY`. The Indeterminate brief in
+`detail.js` PASSES the three Run 70 recommendation checks UNMODIFIED, measured by loading
+detail.js whole and calling its own `briefGate`.
+
+A5.1, A5.5 and B4.4 left service by RUN 43'S OWN MECHANISM -- the RETIRED note on the registry CSV
+row -- with no tombstone, refusal or new error class. 101 registered, 60 in service (was 63), 41
+retired, 59 computed. SECTION 5'S CLOSING PREMISE WAS FALSE: A5 keeps five modules and B4 keeps
+B4.3, so neither category empties and Run 51 does not trigger. SECTION 3'S "holds exactly this one
+module" was also false: C1 holds SEVEN in service; the other six are out of scope and were not
+touched.
+
+`SIMULATION_VERSION` = `sim-2026.08-v43`. The behaviour digest moved as section 0.4 authorises.
+The freeze gate RAN: 15 blockers, 4 BLOCKED (B01, B04, B11 standing; B15 the digest move),
+FINAL_FREEZE_BLOCKED. Committed to the branch, not merged.
+`V26_TO_V27_SEQUENCE_EXCEPTION` was NOT composed. No migration.
+
 # 2026-08-30 - Run 87: comparison ensembles leave the category rollup; A6.1 and A6.3 fed by the populations their documents print. sim-2026.08-v42, no migration.
 
 **Report:** `REPORT_2026-08-30_run87.md`. The order named
