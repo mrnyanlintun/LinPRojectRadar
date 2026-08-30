@@ -164,6 +164,53 @@ def abstention_rows(readings: dict[str, SpecificationReading]) -> list[dict[str,
     return out
 
 
+# ---------------------------------------------------------------------------------------------
+# RUN 87. WHICH MODULES ARE ADMITTED TO THE CATEGORY ROLLUP.
+#
+# THIS CHANGES ADMISSION, NOT THE DECISION RULE. `worst_band` still decides, here and in
+# `spec_apply.apply_category`; fusion stays parked and `server/app/simulation/` is untouched.
+# The only thing that changes is which computed module readings are handed to it.
+#
+# THE DEFECT THIS CLOSES. `compute.contributes_to_project_status` is a GROUP-level predicate and
+# is correctly True for group B: B1.1 Conservative Dominance is a decision rule over the four
+# assembled arms and legitimately carries a band. There was no MODULE-level admission rule
+# anywhere on this path, so a comparison ensemble's band set its category's status and reached
+# the project status through worst-wins.
+#
+# THE SET IS ESTABLISHED FROM THE TREE, NOT INVENTED. Two texts establish it:
+#
+#   `simulation/models_gov.py`, the header over the three runners:
+#       "RUN 30, v15. THE THREE COMPARISON ENSEMBLES NOW SYNTHESISE GOVERNED SIGNALS."
+#       "All three remain ADVISORY_ONLY and non-voting. Voting is exactly A1.7 and A1.8."
+#     The three runners under that header are run_weighted_voting (B1.2), run_majority_rules
+#     (B1.3) and run_worst_n_of_m (B1.4).
+#
+#   `specifications/B1_signal_synthesis.md`, on exactly B1.2-B1.4:
+#       "Three of the four (B1.2, B1.3, B1.4) read the four assembled arms the signal package
+#        carries"
+#       "Every other module this run computed is deliberately excluded. Those are not further
+#        evidence; they are further transformations of these same four arms, and a
+#        transformation retains the lineage of what produced it rather than becoming an
+#        independent project fact."
+#     A transformation of the arms is not an independent project fact, so it cannot be a voter
+#     over the arms' own categories either -- that is the specification's own duplicate-lineage
+#     rule applied one level up.
+#
+# B1.1 IS NOT IN THE SET AND IS NOT EXCLUDED. Its specification says "Unlike B1.2-B1.4 this
+# module reads the assembled mapping directly", and "This module does emit a band". It stays.
+#
+# THE SET IS NOT EXTENDED. "ADVISORY_ONLY" alone establishes nothing narrower: `registry.
+# activation_state` returns it for EVERY module not in CORE_VOTING_MODULES and not disabled, so
+# reading that string as "excluded from its category" would empty every category on the page.
+# The narrowing word in the tree is COMPARISON, and it names exactly these three.
+COMPARISON_ONLY_MODULES: frozenset[str] = frozenset({"B1.2", "B1.3", "B1.4"})
+
+
+def admitted_to_category_rollup(module_id: str | None) -> bool:
+    """Does this module's band set its category's status? Comparison ensembles do not."""
+    return module_id not in COMPARISON_ONLY_MODULES
+
+
 def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, dict[str, Any]]:
     """
     One entry per category THAT WAS CALLED. A category never called has no entry, and that is
@@ -182,8 +229,9 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
             continue
         mods = [m for m in (stored.modules or [])
                 if isinstance(m, dict) and m.get("state") == sa.COMPUTED]
-        bands = [(m.get("module_id"), _band(m.get("band"))) for m in mods]
-        # FUSION IS `worst_band`, not a rule written here.
+        bands = [(m.get("module_id"), _band(m.get("band"))) for m in mods
+                 if admitted_to_category_rollup(m.get("module_id"))]
+        # FUSION IS `worst_band`, not a rule written here. ADMISSION is decided above.
         fused = worst_band([b for _, b in bands if b])
         group = groups.get(key, "")
         out[key] = {
