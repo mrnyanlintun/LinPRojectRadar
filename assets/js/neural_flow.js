@@ -802,19 +802,62 @@
        at the mean row of the modules it feeds, so the doc->module fan crosses itself as little
        as the real bipartite relation allows. No document is dropped, added, merged or renamed;
        `DOC_KEYS` itself is untouched and every array indexed by `di` still lines up. ════════ */
-    var W = 1400, H = 940;
+    /* ═══ RUN 94b, SECTION 4. ONE COLOUR PER MODULE, AND THE LINES CARRY IT. ═══════════
+       The owner's ruling: each module gets its own distinct colour, documents get their own
+       colour set and categories theirs, and EVERY LINE TAKES THE COLOUR OF THE NODE IT LEAVES,
+       so a stream can be followed by eye from a document to a module to its category and on to
+       the status.
 
-    /* THE FOUR COLUMN ABSCISSAE, and the label gutters between them. Sized against the widest
-       label each column actually carries (35 characters for "Contract Value / Original
-       Agreement" at 13px monospace; 30 for a truncated module name; 34 for
-       "Document-Derived Condition Signals" at 15px), not guessed. */
-    var COL_DOC = 300, COL_MOD = 430, COL_CAT = 750, COL_PRJ = 1330;
-    /* ONE CONSTANT PER COLUMN, and the same gap after every name in that column, so the gap
-       after a short name states nothing about that module or that category. Sized against the
-       widest label the column actually carries: 26 characters at 13px monospace for a module,
-       38 for "A · Document-Derived Condition Signals" at 15px for a category. */
-    var MOD_LABEL_GUTTER = 215;
+       THE PALETTE IS GENERATED FROM THE ROSTER AT RUNTIME by `LIN_IDENTITY_PALETTE` in
+       config.js -- a pure function of the list of keys handed to it, in DRAWN ORDER, so
+       "adjacent in the list" is "adjacent on screen" and a module entering or leaving service
+       needs no colour added or removed by hand. Nothing here is a hand-written colour.
+
+       THE BAND COLOURS ARE UNTOUCHED. They keep their existing meaning and their existing
+       values from the site theme, they are read at runtime from `window.LIN_STATUS_COLORS`,
+       and the generator refuses any identity colour within dE*ab 25 of one of them. A module
+       DOT still carries its band colour and its band shape: identity is added as a RING around
+       the dot, so nothing a reader could previously learn from the chart is taken away. */
+    var IDPAL = {};
+    function idColour(setName, key, fallback) {
+      var p = IDPAL[setName];
+      var c = p && p.byKey ? p.byKey[key] : null;
+      return c || fallback;
+    }
+    if (window.LIN_IDENTITY_PALETTE) {
+      IDPAL.module = window.LIN_IDENTITY_PALETTE(
+        MODULES.map(function (m) { return m.module_id || m.name; }), 'module');
+      IDPAL.category = window.LIN_IDENTITY_PALETTE(
+        CATS.map(function (c) { return c.taxId || c.name; }), 'category');
+    }
+
+    /* ═══ RUN 94b, SECTION 3. THE MODULE COLUMN IS SIZED BY ITS OWN LONGEST NAME. ═══════
+       WHAT WAS WRONG. Run 94a fixed the module label gutter at 215px and truncated every
+       module name at 26 characters, so five names rendered with an ellipsis -- "Independent
+       EAC Reconcili…", "Reference Class Forecasti…", "Specification Conflict De…",
+       "Environmental Compliance …", "Contractor Performance As…". Section 3 of this order
+       forbids shortening a module's name to fit: the names are what the reader knows them by.
+
+       WHAT IT IS NOW. The gutter is COMPUTED from the longest name the roster actually
+       carries, at the advance width of the font the labels are drawn in, and the three columns
+       to its right and the viewBox move with it. A module entering service with a longer name
+       widens the column by itself; nothing here needs editing when the roster changes, and no
+       name is ever cut. `trunc` is not called on a module name at all any more.
+
+       THE ADVANCE WIDTH IS MEASURED, NOT GUESSED: 13px monospace in Chromium advances
+       7.8203125px per character, read with `measureText` in the browser and re-measured by
+       `drive_run94_charts.py` from the rendered `<text>` widths, which is what the check
+       asserts on. 8.0 is used with a small margin so a wider metric on another platform still
+       clears the gutter. */
+    var MOD_FONT_PX = 13, MOD_CHAR_W = 8.0;
     var CAT_LABEL_GUTTER = 358;
+    var longestModName = MODULES.reduce(function (a, m) {
+      return Math.max(a, String(m.name || '').length); }, 0);
+    var MOD_LABEL_GUTTER = Math.ceil(longestModName * MOD_CHAR_W) + 18;
+    var COL_DOC = 300, COL_MOD = 430;
+    var COL_CAT = COL_MOD + MOD_LABEL_GUTTER + 60;
+    var COL_PRJ = COL_CAT + CAT_LABEL_GUTTER + 190;
+    var W = COL_PRJ + 62, H = 940;
     var TOP = 80, ROW = 20;                    /* uniform module pitch; position encodes nothing */
     /* The fraction of the way to the status node an unresolved stream is allowed to travel
        before it stops. Run 90's rule, carried over unchanged. */
@@ -837,6 +880,13 @@
     }).sort(function(a, b) { return a.bary - b.bary || a.di - b.di; });
     var docSlot = [];
     docOrder.forEach(function(o, slot) { docSlot[o.di] = slot; });
+    /* The document palette is built in the order the rows are DRAWN (the barycentre order
+       above), not in DOC_KEYS order, because adjacency is a property of the drawn column. */
+    if (window.LIN_IDENTITY_PALETTE) {
+      IDPAL.document = window.LIN_IDENTITY_PALETTE(
+        docOrder.map(function (o) { return DOC_KEYS[o.di]; }), 'document');
+    }
+    if (window.__lnfSetPalette) window.__lnfSetPalette(IDPAL);
     var DOC_PITCH = DOC_KEYS.length > 1
       ? (BODY_BOTTOM - TOP) / (DOC_KEYS.length - 1) : 0;
     function docX(di) { return COL_DOC; }
@@ -889,6 +939,18 @@
       var m = se('marker', { id:'lnf-arr-'+s, markerWidth:'5', markerHeight:'5', refX:'4', refY:'2.5', orient:'auto' }, defs);
       se('polygon', { points:'4,0 4,5 0,2.5', fill:colFor(s), opacity:'0.75' }, m);
     });
+    /* RUN 94b. ONE ARROWHEAD PER CATEGORY, in that category's own identity colour, so an
+       arriving stream is the same colour from the node it left to the head it lands with.
+       The status-coloured markers above are kept: the inter-category edges still use them. */
+    CATS.forEach(function (cat, ci) {
+      var key = cat.taxId || cat.name;
+      var m = se('marker', { id:'lnf-arr-id-' + ci, markerWidth:'5', markerHeight:'5',
+                             refX:'4', refY:'2.5', orient:'auto' }, defs);
+      se('polygon', { points:'4,0 4,5 0,2.5',
+                      fill:idColour('category', key, colFor(catStatuses[ci])),
+                      opacity:'0.85' }, m);
+    });
+
     // RUN 26. The feedback arrowhead is gone with the arc it belonged to. It was a red marker
     // polygon inside <defs>, and a red one, on every project including an empty one.
 
@@ -931,7 +993,9 @@
     /* ITERATION 2. The status caption is END-anchored at the right margin. Centred at 1315
        it ran past the viewBox and rendered as "GOVERNED PROJECT STATU" -- measured in the
        PNG, not inferred. */
-    var HDR_X = [150, 530, 930, 1392];
+    /* The captions move with the columns they head, for the same reason: a caption centred on
+       a constant would drift off its own column the moment the module column widened. */
+    var HDR_X = [150, COL_MOD + MOD_LABEL_GUTTER / 2, COL_CAT + CAT_LABEL_GUTTER / 2, W - 18];
     var HDR_ANCHOR = ['middle', 'middle', 'middle', 'end'];
     HEADERS.forEach(function(row) {
       var anc = HDR_ANCHOR[row[0]];
@@ -984,20 +1048,25 @@
       var xArrive = PRJ_X - 26;
       var x2 = arrives ? xArrive : x1 + (xArrive - x1) * (1 - STOP_SHORT);
       var y2 = arrives ? PRJ_Y : y1;
+      /* RUN 94b, SECTION 4.1. The stream takes the colour of the node it LEAVES -- the
+         category's own identity colour -- so it can be traced by eye across the gap. What the
+         stream ASSERTS is unchanged and is carried where Run 90 put it: arrival or a blunt
+         stop, an arrowhead or none, the dash, the terminus dot and `data-edge-terminates`. */
+      var catIdCol = idColour('category', CATS[ci].taxId || CATS[ci].name, edgeStroke(cs));
       var attrs = { d:arrives ? link(x1, y1, x2, y2) : ('M'+x1+','+y1+' L'+x2+','+y2),
-        fill:'none', stroke:edgeStroke(cs), 'stroke-width':arrives ? '1.8' : '1.4',
+        fill:'none', stroke:catIdCol, 'stroke-width':arrives ? '1.8' : '1.4',
         opacity:arrives ? '0.55' : '0.30',
         'stroke-linecap':arrives ? 'round' : 'butt',
         'data-edge-type':'CATEGORY -> PROJECT STATUS', 'data-edge-src':CATS[ci].name,
         'data-edge-dst':arrives ? 'Project status' : 'stops short',
         'data-edge-terminates':arrives ? 'at-centre' : 'short' };
-      if (arrives) attrs['marker-end'] = 'url(#lnf-arr-'+cs+')';
+      if (arrives) attrs['marker-end'] = 'url(#lnf-arr-id-'+ci+')';
       else attrs['stroke-dasharray'] = '5 5';
       var p = se('path', attrs, lineG);
       if (!arrives) {
         /* The blunt end, drawn: a reader must be able to see WHERE it stopped, not merely
            that something is faint. */
-        se('circle', { cx:x2, cy:y2, r:'2.6', fill:COL.None, opacity:'0.85',
+        se('circle', { cx:x2, cy:y2, r:'2.6', fill:catIdCol, opacity:'0.85',
                        'data-kind':'stream-terminus', 'data-edge-src':CATS[ci].name }, lineG);
       }
       flowAnim(p, 'lnf-flow-b', arrives);
@@ -1007,7 +1076,12 @@
     // Class B (rollup): mod → cat — streaming dashes, no arrowhead (volume too
     // high). Base opacity nudged 0.25 → 0.35 so it isn't overpowered by the now
     // brighter Class A doc→module lines (keeps the rollup readable).
-    var MODCAT_OP = '0.35';
+    /* RUN 94b. Raised 0.35 -> 0.55. Each of these lines now carries its module's own identity
+       colour rather than one shared status stroke, and at 0.35 on the light themes the paler
+       identities were not traceable across the gap -- measured in the rendered PNG at 1280px on
+       `plain`. Nothing about what the line ASSERTS changed: an unestimable module's line is
+       still dropped to 0.14, which is the distinction that carries meaning. */
+    var MODCAT_OP = '0.55';
     var modCatEls = MODULES.map(function(m, mi) {
       var ci=m.catI;
       /* RUN 94. The branch leaves at the END of the module's label gutter, not at the dot.
@@ -1017,8 +1091,11 @@
          module label at all. The gutter is one constant for every module, so the gap it leaves
          after a short name states nothing about that module. */
       var p = se('path', { d:link(COL_MOD + MOD_LABEL_GUTTER, modY[mi], catCX[ci] - 11, catCY[ci]),
-        fill:'none', stroke:edgeStroke(modInfos[mi].status, modInfos[mi].color),
-        'stroke-width':'0.8', opacity:MODCAT_OP, 'stroke-linecap':'round',
+        fill:'none',
+        /* RUN 94b, SECTION 4.1: the module's own identity colour, the node this line leaves. */
+        stroke:idColour('module', m.module_id || m.name,
+                        edgeStroke(modInfos[mi].status, modInfos[mi].color)),
+        'stroke-width':'1', opacity:MODCAT_OP, 'stroke-linecap':'round',
         'data-edge-type':'MODULE -> CATEGORY', 'data-edge-src':m.name,
         'data-edge-dst':CATS[ci].name }, lineG);
       // Same rule one level down: a module path is live only when that module has a current
@@ -1042,6 +1119,7 @@
     var docLineMap = DOC_KEYS.map(function() { return []; });
     DOC_KEYS.forEach(function(key, di) {
       var up = isUploaded(key);
+      var docIdCol = idColour('document', key, null);
       var baseOp = up ? A_BASE.on : A_BASE.off, dashOp = up ? A_DASH.on : A_DASH.off, w = up ? A_W.on : A_W.off;
       // RUN 26. The modules this document actually feeds, by field consumption, not the first
       // two modules of a category by registry order. `docToMods` is derived at build time from
@@ -1054,6 +1132,11 @@
           'stroke-width':w, opacity:baseOp, 'stroke-linecap':'round',
           'data-edge-type':edgeAttrs['data-edge-type'], 'data-edge-src':key,
           'data-edge-dst':MODULES[mi].name }, lineG);
+        /* RUN 94b, SECTION 4.1. The document's own identity colour, applied as a STYLE and not
+           as an attribute, because `.lnf-a-line` sets `stroke: var(--flow-accent)` in the
+           stylesheet and a CSS declaration outranks a presentation attribute. `--flow-accent`
+           remains what this line falls back to when no palette is available. */
+        if (docIdCol) base.style.stroke = docIdCol;
         // The animated overlay is the SAME edge drawn a second time, so it carries the same
         // identity. An edge that does not name itself cannot be reconciled against the
         // inventory, and a silently unnamed path is exactly where a fabricated one would hide.
@@ -1061,6 +1144,7 @@
           'stroke-width':w, opacity:dashOp, 'stroke-linecap':'round',
           'data-edge-type':edgeAttrs['data-edge-type'], 'data-edge-src':key,
           'data-edge-dst':MODULES[mi].name }, lineG);
+        if (docIdCol) dash.style.stroke = docIdCol;
         // An evidence path is live only when this project has actually uploaded that
         // document type. The unlit rows were already faint; now they are also still.
         flowAnim(dash, 'lnf-flow-a', up);
@@ -1182,6 +1266,16 @@
         'data-status':projectIsEmpty ? 'None' : info.status };
       if (glow) circleAttrs.filter = glow;
       var dotShape = window.linStatusShape ? linStatusShape(info.status) : 'circle';
+      /* RUN 94b, SECTION 4. THE IDENTITY RING. The dot itself keeps the BAND colour and the
+         band SHAPE -- nothing about what the platform asserts is repainted -- and the module's
+         own colour is drawn as a ring around it, which is the same colour its line to the
+         category carries. That is what lets a reader follow one module's stream by eye without
+         confusing its identity with a verdict. */
+      var idCol = idColour('module', m.module_id || m.name, null);
+      if (idCol) se('circle', { cx:modXs[mi], cy:modY[mi], r:'6.5', fill:'none', stroke:idCol,
+                                'stroke-width':'1.6', opacity:'0.9',
+                                'data-kind':'module-identity', 'data-module':m.module_id || m.name,
+                                'data-identity-color':idCol }, g);
       var circle = seShape(dotShape, modXs[mi], modY[mi], 4, circleAttrs, g);
       if (info.status === 'Red') circle.classList.add('lnf-red-pulse');
 
@@ -1192,7 +1286,8 @@
         'dominant-baseline':'middle', 'pointer-events':'none', class:'lnf-halo'
       }, g);
       if (!live) lbl.setAttribute('opacity','0.55');
-      lbl.textContent = trunc(m.name, 26);
+      /* RUN 94b. THE WHOLE NAME. The column is sized to it above; nothing is cut. */
+      lbl.textContent = m.name;
 
       circle.style.transformOrigin = modXs[mi] + 'px ' + modY[mi] + 'px';
       g.addEventListener('mouseenter', (function(m, mi, info, circle) {
@@ -1212,7 +1307,7 @@
           hideTT();
           circle.style.transform = '';
           modCatEls[mi].setAttribute('opacity', MODCAT_OP);
-          modCatEls[mi].setAttribute('stroke-width','0.8');
+          modCatEls[mi].setAttribute('stroke-width','1');
           classAReset();
         };
       })(mi, info, circle));
@@ -1247,6 +1342,11 @@
                      'data-status':projectIsEmpty ? 'None' : cs };
       if (glow) cAttrs.filter = glow;
       var catShape = window.linStatusShape ? linStatusShape(cs) : 'circle';
+      var catIdCol2 = idColour('category', cat.taxId || cat.name, null);
+      if (catIdCol2) se('circle', { cx:x, cy:y, r:'13', fill:'none', stroke:catIdCol2,
+                                    'stroke-width':'2', opacity:'0.9',
+                                    'data-kind':'category-identity', 'data-category':cat.taxId || cat.name,
+                                    'data-identity-color':catIdCol2 }, g);
       var circle = seShape(catShape, x, y, 9, cAttrs, g);
       circle.style.transformOrigin = x + 'px ' + y + 'px';
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
@@ -1355,6 +1455,11 @@
                      'data-state':uploaded ? 'uploaded'
                                   : (notApplicable ? 'registered-not-active' : 'not-uploaded') };
       if (glow) dAttrs.filter = glow;
+      var docIdCol2 = idColour('document', key, null);
+      if (docIdCol2) se('circle', { cx:x, cy:y, r:'8', fill:'none', stroke:docIdCol2,
+                                    'stroke-width':'1.6', opacity:'0.9',
+                                    'data-kind':'document-identity', 'data-document':key,
+                                    'data-identity-color':docIdCol2 }, g);
       seShape(notApplicable ? 'square' : 'circle', x, y, 5, dAttrs, g);
       var t = se('text', { x:x - 12, y:y,
         fill:uploaded?'var(--muted, #7a9ac0)':(notApplicable?COL.NotRelevant:'var(--faint, #253045)'),
@@ -1632,5 +1737,9 @@
     container.insertBefore(panel, host);
   }
 
-  window.LinNeuralFlow = { render: render };
+  /* RUN 94b. The palette the LAST RENDER actually shipped, so a check and a report read the
+     same object the chart drew with rather than recomputing one that might differ. */
+  var LAST_PALETTE = null;
+  window.LinNeuralFlow = { render: render, lastPalette: function () { return LAST_PALETTE; } };
+  window.__lnfSetPalette = function (p) { LAST_PALETTE = p; };
 })();

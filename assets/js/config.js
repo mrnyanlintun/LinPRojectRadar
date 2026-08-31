@@ -221,3 +221,185 @@ window.LIN_AUTHORIZED_EMAIL = "mrnyanlintun@gmail.com";
              text: "No map position. Add a site address to place this project." };
   };
 })();
+
+/* ============================================================
+   RUN 94b. IDENTITY COLOURS, GENERATED FROM THE ROSTER AT RUNTIME.
+   ------------------------------------------------------------
+   The owner's ruling (Run 94b order, section 4): EVERY MODULE GETS ITS OWN
+   COLOUR, documents get their own colour set and categories theirs, and every
+   line takes the colour of the node it leaves so a stream can be traced by eye
+   from a module to its category and on to the status.
+
+   NOTHING HERE IS HAND-WRITTEN PER MODULE. The palette is a pure function of
+   the list of keys handed in, so a module entering or leaving service needs no
+   colour added or removed by hand -- which is section 4.4 of the order.
+
+   HOW ADJACENT COLOURS ARE KEPT APART. Hue advances by the GOLDEN ANGLE
+   (137.50776 deg) per position, so two colours drawn in adjacent rows are
+   always about 137 degrees apart in hue -- the maximum any equidistributed
+   sequence can guarantee -- and lightness and saturation cycle on periods of 3
+   and 4 underneath it, so hue is never the only thing separating a pair.
+
+   BAND COLOURS ARE NOT NEGOTIABLE (section 4.3). The status band colours keep
+   their existing meaning and their existing values from the site theme; they
+   are read at call time from window.LIN_STATUS_COLORS, which config.js derives
+   from the --status-* vars and refreshes on a theme change. Any generated
+   identity colour that lands within BAND_MIN_DE of a band colour is ROTATED
+   until it does not; the band colour never moves.
+
+   THE COLOUR DIFFERENCE MEASURE IS CIE76 (dE*ab): the plain Euclidean distance
+   in CIE L*a*b* under D65. It is stated rather than implied, and it is the same
+   function the charts and the drivers measure with, so a reported number and a
+   shipped decision cannot come from two different formulas.
+   ============================================================ */
+(function () {
+  var GOLDEN = 137.50776405003785;
+  var BAND_MIN_DE = 25;      /* see below */
+  var SET_MIN_DE = 18;       /* two colours in one set are never nearer than this if it can be helped */      /* an identity colour nearer than this to a band colour is moved */
+
+  function hex2rgb(h) {
+    h = String(h || "").trim();
+    if (h.charAt(0) === "#") h = h.slice(1);
+    if (h.length === 3) h = h.charAt(0)+h.charAt(0)+h.charAt(1)+h.charAt(1)+h.charAt(2)+h.charAt(2);
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  }
+  function rgb2hex(r, g, b) {
+    function c(v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v<16?"0":"")+v.toString(16); }
+    return "#" + c(r) + c(g) + c(b);
+  }
+  function hsl2rgb(h, s, l) {
+    h = ((h % 360) + 360) % 360 / 360; s = s / 100; l = l / 100;
+    function f(p, q, t) {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    }
+    if (s === 0) return [l*255, l*255, l*255];
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    return [f(p,q,h+1/3)*255, f(p,q,h)*255, f(p,q,h-1/3)*255];
+  }
+  function rgb2lab(rgb) {
+    var v = rgb.map(function (u) {
+      u = u / 255;
+      return u > 0.04045 ? Math.pow((u + 0.055) / 1.055, 2.4) : u / 12.92;
+    });
+    var X = (v[0]*0.4124564 + v[1]*0.3575761 + v[2]*0.1804375) / 0.95047;
+    var Y = (v[0]*0.2126729 + v[1]*0.7151522 + v[2]*0.0721750) / 1.00000;
+    var Z = (v[0]*0.0193339 + v[1]*0.1191920 + v[2]*0.9503041) / 1.08883;
+    function f(t) { return t > 0.008856 ? Math.pow(t, 1/3) : (7.787 * t) + 16/116; }
+    var fx = f(X), fy = f(Y), fz = f(Z);
+    return [116*fy - 16, 500*(fx - fy), 200*(fy - fz)];
+  }
+
+  /* CIE76 dE*ab. Named in the code so a report cannot claim a formula the
+     shipped palette did not use. */
+  window.LIN_LAB = function (hex) {
+    var rgb = hex2rgb(hex);
+    return rgb ? rgb2lab(rgb) : null;
+  };
+  window.LIN_COLOR_DELTA_E = function (a, b) {
+    var la = window.LIN_LAB(a), lb = window.LIN_LAB(b);
+    if (!la || !lb) return null;
+    var d0 = la[0]-lb[0], d1 = la[1]-lb[1], d2 = la[2]-lb[2];
+    return Math.sqrt(d0*d0 + d1*d1 + d2*d2);
+  };
+
+  /* The three colour SETS. Each is a different lightness/saturation regime, so a
+     document colour, a module colour and a category colour are told apart by more
+     than their hue: documents sit light and soft, modules mid and strong,
+     categories deep and strong. `off` starts each set at a different point on the
+     hue circle so the three sets do not simply repeat one another. */
+  var SETS = {
+    module:   { off:  0, L: [46, 60, 53, 67], S: [78, 62, 90] },
+    document: { off: 47, L: [70, 76, 64],     S: [42, 55, 34]  },
+    category: { off: 91, L: [38, 46, 32],     S: [72, 88, 60]  }
+  };
+
+  function bandColors() {
+    var m = window.LIN_STATUS_COLORS || {};
+    var out = [];
+    Object.keys(m).forEach(function (k) {
+      var rgbOk = hex2rgb(m[k]);
+      if (rgbOk) out.push({ name: k, hex: m[k] });
+    });
+    return out;
+  }
+
+  /* keys: an ARRAY OF IDENTIFIERS, in the order they will be drawn. The palette is
+     positional, so "adjacent in this array" is "adjacent on screen", which is the
+     thing section 4.2 asks to be measured. Returns { byKey, list, bands, minAdjacentDeltaE,
+     minBandDeltaE, formula }. */
+  window.LIN_IDENTITY_PALETTE = function (keys, setName) {
+    var set = SETS[setName] || SETS.module;
+    var bands = bandColors();
+    var list = [], byKey = {};
+    /* GREEDY, WITH TWO CONSTRAINTS, and it is deterministic: the same roster in the
+       same order always yields the same palette.
+         1. no identity colour within BAND_MIN_DE of a band colour  (section 4.3);
+         2. no identity colour within SET_MIN_DE of one already assigned, so "its own
+            colour" means its own across the whole set and not merely against its
+            neighbour  (section 4, first sentence).
+       The golden-angle hue is the FIRST candidate at every position, so when both
+       constraints are already satisfied -- the usual case -- the sequence is exactly
+       the equidistributed one and adjacency stays maximally separated. When they are
+       not, the position walks its hue and lightness and keeps the candidate with the
+       LARGEST minimum distance it found, which is the honest fallback: it never
+       silently ships a duplicate, and the achieved minimum is reported below. */
+    (keys || []).forEach(function (key, i) {
+      var L0 = set.L[i % set.L.length];
+      var S0 = set.S[i % set.S.length];
+      var best = null, bestScore = -1;
+      for (var attempt = 0; attempt < 64 && bestScore < SET_MIN_DE; attempt++) {
+        var h = set.off + i * GOLDEN + attempt * 23.7;
+        var L = L0 + ((attempt % 3) - 1) * 7;
+        var S = Math.max(28, Math.min(96, S0 + ((attempt % 5) - 2) * 6));
+        var rgb = hsl2rgb(h, S, L);
+        var cand = rgb2hex(rgb[0], rgb[1], rgb[2]);
+        var bandOk = true, nearestBand = Infinity;
+        for (var b = 0; b < bands.length; b++) {
+          var db = window.LIN_COLOR_DELTA_E(cand, bands[b].hex);
+          if (db < nearestBand) nearestBand = db;
+        }
+        if (nearestBand < BAND_MIN_DE) bandOk = false;
+        var nearestOwn = Infinity;
+        for (var q = 0; q < list.length; q++) {
+          var dq = window.LIN_COLOR_DELTA_E(cand, list[q].hex);
+          if (dq < nearestOwn) nearestOwn = dq;
+        }
+        /* A band collision is disqualifying, not merely costly: section 4.3 is absolute.
+           It is expressed as a large negative score so a band-colliding candidate can
+           only ever win when NO candidate cleared the bands, which is itself reported. */
+        var score = (bandOk ? 0 : -1000) + Math.min(nearestOwn, 1000);
+        if (score > bestScore) { bestScore = score; best = cand; }
+      }
+      byKey[key] = best;
+      list.push({ key: key, hex: best });
+    });
+    /* The two measurements the order requires, computed by the palette itself so the
+       number a report prints is the number the chart shipped. */
+    var minAdj = null, minAdjPair = null;
+    for (var i2 = 1; i2 < list.length; i2++) {
+      var d = window.LIN_COLOR_DELTA_E(list[i2-1].hex, list[i2].hex);
+      if (d !== null && (minAdj === null || d < minAdj)) { minAdj = d; minAdjPair = [list[i2-1].key, list[i2].key]; }
+    }
+    var minBand = null, minBandPair = null;
+    list.forEach(function (o) {
+      bands.forEach(function (b) {
+        var d = window.LIN_COLOR_DELTA_E(o.hex, b.hex);
+        if (d !== null && (minBand === null || d < minBand)) { minBand = d; minBandPair = [o.key, b.name]; }
+      });
+    });
+    var minAny = null, minAnyPair = null;
+    for (var a1 = 0; a1 < list.length; a1++) for (var a2 = a1+1; a2 < list.length; a2++) {
+      var dd = window.LIN_COLOR_DELTA_E(list[a1].hex, list[a2].hex);
+      if (dd !== null && (minAny === null || dd < minAny)) { minAny = dd; minAnyPair = [list[a1].key, list[a2].key]; }
+    }
+    return { byKey: byKey, list: list, bands: bands, formula: "CIE76 dE*ab (CIE L*a*b*, D65)",
+             minAnyDeltaE: minAny, minAnyPair: minAnyPair, setMinRequired: SET_MIN_DE,
+             minAdjacentDeltaE: minAdj, minAdjacentPair: minAdjPair,
+             minBandDeltaE: minBand, minBandPair: minBandPair, bandMinRequired: BAND_MIN_DE };
+  };
+})();

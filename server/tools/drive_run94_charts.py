@@ -298,6 +298,82 @@ FLOW = r"""() => {
     box: { w: Math.round(box.width), h: Math.round(box.height) } };
 }"""
 
+# ---- RUN 94b. THE THREE MEASUREMENTS THIS RUN IS JUDGED ON, all read from what was DRAWN:
+# ---- (1) every module label rendered in full, no ellipsis, inside its own column;
+# ---- (2) the identity colours actually painted on the drawn rings, in DRAWN ROW ORDER, and
+# ----     the smallest CIE76 dE*ab between any two adjacent ones and between any one and a
+# ----     band colour read from the live theme;
+# ---- (3) the module names drawn, so a retired name can be caught by its TEXT and not by a grep.
+IDENT = r"""() => {
+  const host = document.querySelector('.detail-neural-flow');
+  const svg = host ? host.querySelector('svg') : null;
+  if (!svg) return { present:false };
+  const groups = Array.from(svg.querySelectorAll('g[data-kind="module"]'));
+  const rows = groups.map(g => {
+    const t = g.querySelector('text');
+    const ring = g.querySelector('[data-kind="module-identity"]');
+    const r = t ? t.getBoundingClientRect() : null;
+    return { text: t ? (t.textContent||'') : null,
+             id: ring ? ring.getAttribute('data-module') : null,
+             color: ring ? ring.getAttribute('data-identity-color') : null,
+             x: r ? r.x : null, right: r ? r.x + r.width : null, w: r ? r.width : null,
+             y: r ? r.y : null };
+  });
+  rows.sort((a,b) => (a.y||0) - (b.y||0));
+  const cats = Array.from(svg.querySelectorAll('[data-kind="category-identity"]'))
+    .map(e => ({ id: e.getAttribute('data-category'), color: e.getAttribute('data-identity-color') }));
+  const docs = Array.from(svg.querySelectorAll('[data-kind="document-identity"]'))
+    .map(e => ({ id: e.getAttribute('data-document'), color: e.getAttribute('data-identity-color') }));
+  // The leftmost rendered CATEGORY label, in the same client coordinates, so "the module
+  // column fits its text" is a comparison of two measured boxes and not of two constants.
+  let catLeft = Infinity;
+  Array.from(svg.querySelectorAll('g[data-kind="category"] text')).forEach(t => {
+    const r = t.getBoundingClientRect(); if (r.width > 0) catLeft = Math.min(catLeft, r.x);
+  });
+  const dE = window.LIN_COLOR_DELTA_E;
+  function minAdj(list) {
+    let m = null, pair = null;
+    for (let i=1;i<list.length;i++) {
+      const d = dE(list[i-1].color, list[i].color);
+      if (d !== null && (m === null || d < m)) { m = d; pair = [list[i-1].id, list[i].id]; }
+    }
+    return { min: m, pair };
+  }
+  function minAny(list) {
+    let m = null, pair = null;
+    for (let i=0;i<list.length;i++) for (let j=i+1;j<list.length;j++) {
+      const d = dE(list[i].color, list[j].color);
+      if (d !== null && (m === null || d < m)) { m = d; pair = [list[i].id, list[j].id]; }
+    }
+    return { min: m, pair };
+  }
+  const bandNames = Object.keys(window.LIN_STATUS_COLORS || {});
+  const bands = bandNames.map(k => ({ id: k, color: window.LIN_STATUS_COLORS[k] }));
+  function minBand(list) {
+    let m = null, pair = null;
+    list.forEach(o => bands.forEach(b => {
+      const d = dE(o.color, b.color);
+      if (d !== null && (m === null || d < m)) { m = d; pair = [o.id, b.id]; }
+    }));
+    return { min: m, pair };
+  }
+  const withColor = rows.filter(r => r.color);
+  return { present:true,
+    n: rows.length,
+    truncated: rows.filter(r => r.text && r.text.indexOf('\u2026') >= 0).map(r => r.text),
+    names: rows.map(r => r.text),
+    colored: withColor.length,
+    maxLabelRight: Math.max(...rows.filter(r=>r.right!=null).map(r => r.right)),
+    catLabelLeft: (catLeft === Infinity ? null : catLeft),
+    moduleAdj: minAdj(withColor), moduleAny: minAny(withColor), moduleBand: minBand(withColor),
+    catAdj: minAdj(cats), catBand: minBand(cats),
+    docAdj: minAdj(docs), docBand: minBand(docs),
+    bands: bands,
+    formula: (window.LinNeuralFlow && window.LinNeuralFlow.lastPalette && window.LinNeuralFlow.lastPalette()
+              && window.LinNeuralFlow.lastPalette().module)
+              ? window.LinNeuralFlow.lastPalette().module.formula : null };
+}"""
+
 NET = r"""async () => {
   const host = document.querySelector('.detail-projnet2d');
   const cv = host ? host.querySelector('canvas.projnet2d-canvas') : null;
@@ -391,6 +467,28 @@ with sync_playwright() as pw:
                 drawn = set(m["name"] for m in F["mods"] if m["name"])
                 say(f"  RETIRED MODULE LABELS DRAWN: {sorted(n for n in drawn if n in RETNAMES)} (must be empty)")
 
+            I = pg.evaluate(IDENT); dump(f"ident_{VW}_{TH}", I)
+            if I.get("present"):
+                say(f"  MODULE LABELS DRAWN: {I['n']}  with an identity ring: {I['colored']}")
+                say(f"  TRUNCATED LABELS (must be empty): {I['truncated']}")
+                say(f"  longest module label right edge={I['maxLabelRight']:.1f}px  "
+                    f"category label left edge={I['catLabelLeft']}  "
+                    f"fits={'YES' if I['catLabelLeft'] and I['maxLabelRight'] < I['catLabelLeft'] else 'NO'}")
+                say(f"  COLOUR FORMULA: {I['formula']}")
+                for nm, k in (("module", "moduleAdj"), ("category", "catAdj"), ("document", "docAdj")):
+                    o = I[k]
+                    say(f"  smallest dE between ADJACENT {nm} colours: "
+                        f"{'n/a' if o['min'] is None else round(o['min'],2)}  {o['pair']}")
+                say(f"  smallest dE between ANY TWO module colours: "
+                    f"{round(I['moduleAny']['min'],2) if I['moduleAny']['min'] is not None else 'n/a'} "
+                    f"{I['moduleAny']['pair']}")
+                for nm, k in (("module", "moduleBand"), ("category", "catBand"), ("document", "docBand")):
+                    o = I[k]
+                    say(f"  smallest dE between a {nm} colour and a BAND colour: "
+                        f"{'n/a' if o['min'] is None else round(o['min'],2)}  {o['pair']}")
+                say(f"  band colours read from the live theme: "
+                    f"{ {b['id']: b['color'] for b in I['bands']} }")
+
             SHOT = r"""() => { const c=document.querySelector('canvas.projnet2d-canvas');
                     return c ? c.toDataURL('image/png') : null; }"""
             try:
@@ -422,6 +520,9 @@ with sync_playwright() as pw:
                 say(f"  planet states: {[(p['key'],p['state'],p['status']) for p in planets]}")
                 say(f"  moon states: {st}")
                 say(f"  RETIRED MOONS DRAWN: {sorted(set(m['key'] for m in moons) & {'A5.1','A5.5','B4.4'})} (must be empty)")
+                say(f"  MOONS CARRYING AN IDENTITY COLOUR: "
+                    f"{sum(1 for m in moons if m.get('identityColor'))} of {len(moons)}; "
+                    f"distinct rim colours drawn: {len(set(m.get('identityColor') for m in moons))}")
                 say(f"  attrs: {N['attrs']}")
                 say(f"  note: {N['note']}")
         say(f"  PAGE ERRORS: {errs}")

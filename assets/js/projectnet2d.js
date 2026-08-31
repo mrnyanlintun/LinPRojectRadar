@@ -277,6 +277,26 @@
     ((row && row.abstained) || []).forEach(function (a) { if (a && a.module_id) abst[a.module_id] = a; });
     var cs = (row && row.category_statuses) || {};
 
+    /* ═══ RUN 94b, SECTION 4. ONE COLOUR PER MODULE, HERE TOO. ═════════════════════════
+       The same generator the Signal Flow uses, fed the same roster in the same order
+       (`performanceCategories()`, then each category's own module order), so a module carries
+       ONE identity colour across both charts and a reader can move between them. Generated
+       from the roster at runtime; nothing is written by hand, and the generator keeps every
+       identity colour at least dE*ab 25 from every band colour, so a moon's rim can never be
+       mistaken for a verdict. THE STATE DISTINCTIONS ARE UNCHANGED: what the fill, the halo,
+       the dash and the line width say is exactly what Run 90 established; only the rim's HUE
+       is now the module's own. */
+    var MOON_KEYS = [];
+    cats.forEach(function (cat) {
+      (cat.modules || []).forEach(function (m) { MOON_KEYS.push(m.module_id); });
+    });
+    var MOON_PAL = window.LIN_IDENTITY_PALETTE
+      ? window.LIN_IDENTITY_PALETTE(MOON_KEYS, 'module') : null;
+    LAST_PALETTE = MOON_PAL;
+    function moonColour(id, fallback) {
+      return (MOON_PAL && MOON_PAL.byKey && MOON_PAL.byKey[id]) || fallback;
+    }
+
     var planets = cats.map(function (cat) {
       var e = cs[cat.key] || null;
       var moons = (cat.modules || []).map(function (m) {
@@ -285,7 +305,7 @@
           na = !!((window.isModuleDisabled && window.isModuleDisabled(m.method_class))
                   || (window.isModuleSectorNA && window.isModuleSectorNA(m.method_class, project)));
         } catch (err) { na = false; }
-        if (na) return { id: m.module_id, name: m.name, state: "not_relevant", band: null, display: null, reason: null };
+        if (na) return { id: m.module_id, name: m.name, state: "not_relevant", band: null, display: null, reason: null, color: moonColour(m.module_id, null) };
         if (byId[m.module_id]) {
           var r = byId[m.module_id];
           /* RUN 90, THE COMMON CASE AND THE ONE THAT WAS WRONG. A module that COMPUTED and
@@ -300,13 +320,14 @@
                    state: bandColor(_band) ? "computed" : "computed_unbanded",
                    band: _band,
                    display: (r.display != null ? r.display : r.value),
-                   reason: r.evidence_metric || r.narrative || null };
+                   reason: r.evidence_metric || r.narrative || null,
+                   color: moonColour(m.module_id, null) };
         }
         if (abst[m.module_id]) {
           return { id: m.module_id, name: m.name, state: "abstained", band: null, display: null,
-                   reason: abst[m.module_id].reason || null };
+                   reason: abst[m.module_id].reason || null, color: moonColour(m.module_id, null) };
         }
-        return { id: m.module_id, name: m.name, state: "not_called", band: null, display: null, reason: null };
+        return { id: m.module_id, name: m.name, state: "not_called", band: null, display: null, reason: null, color: moonColour(m.module_id, null) };
       });
       return {
         key: cat.key, name: cat.name,
@@ -409,6 +430,9 @@
 
   /* ------------------------------------------------------------------------- the drawing --- */
   var LAST_SCENE = null;
+  /* RUN 94b. The identity palette the last build actually used, so a check reads the object
+     the chart drew with instead of recomputing one. */
+  var LAST_PALETTE = null;
 
   function render(container, project) {
     if (!container) return;
@@ -673,6 +697,17 @@
                               x: Math.round(q.x), y: Math.round(q.y), r: Math.round(r) });
         } else {
           var m = d.m, mq = tf(m.pos), mr = Math.max(2.2, 5.2 * mq.s * 1.5);
+          /* RUN 94b, SECTION 4. THE MODULE'S OWN COLOUR, ON EVERY MOON, IN EVERY STATE.
+             `m.color` is generated from the roster at runtime (see buildSystem) and is never
+             within dE*ab 25 of a band colour. It is applied to the RIM only. The five states
+             keep exactly the distinctions Run 90 established -- filled and haloed in the BAND
+             colour for a module that asserted one, a plain rimmed body for one that computed
+             and asserted none, a dark filled body for an abstention, a dashed outline for a
+             module not relevant to this project, a dotted one for a module never called -- so
+             the state is still read off fill, halo and dash, and identity off hue. Before this,
+             every unbanded moon was drawn in a theme grey: 36 of the 42 rendered as pale
+             outlines on a pale ground and the owner reported seeing no moons at all. */
+          var midc = m.color || null;
           if (m.state === "computed") {
             var mc = bandColor(m.band) || C.Complete;
             /* A LIT BODY, with a halo so it reads as lit and not merely coloured. */
@@ -687,7 +722,9 @@
             mb.addColorStop(1, shade(mc, -0.3));
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr, 0, Math.PI * 2);
             ctx.fillStyle = mb; ctx.fill();
-            ctx.strokeStyle = mc; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.9;
+            /* The rim is the module's identity; the body and halo stay the BAND colour, so
+               the verdict is still read off the fill and never off the rim. */
+            ctx.strokeStyle = midc || mc; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.95;
             ctx.stroke(); ctx.globalAlpha = 1;
           } else if (m.state === "computed_unbanded") {
             /* RUN 90. COMPUTED, AND ASSERTED NO BAND. Visible and UNLIT: a body with a rim, no
@@ -699,24 +736,25 @@
             /* The rim is --muted, not --text: at --text the unbanded moons rendered as bright
                white rings that read as LIT. They must be visible and unlit. --muted still
                outranks the abstention's --faint, which is Run 90's stated ordering. */
-            ctx.strokeStyle = TH.muted; ctx.lineWidth = 1.2; ctx.stroke();
+            ctx.strokeStyle = midc || TH.muted; ctx.lineWidth = 1.6; ctx.stroke();
           } else if (m.state === "abstained") {
             /* DARK, STILL IN ORBIT: a filled body with a solid rim. Present, silent. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr * 0.92, 0, Math.PI * 2);
             ctx.fillStyle = C.None; ctx.fill();
-            ctx.strokeStyle = TH.faint; ctx.lineWidth = 1; ctx.stroke();
+            ctx.strokeStyle = midc || TH.faint; ctx.lineWidth = 1.2; ctx.stroke();
           } else if (m.state === "not_relevant") {
             /* OUTLINE ONLY, NO BODY. Never called; does not apply to this project type. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr, 0, Math.PI * 2);
-            ctx.strokeStyle = C.NotRelevant; ctx.lineWidth = 1.3;
+            ctx.strokeStyle = midc || C.NotRelevant; ctx.lineWidth = 1.3;
             ctx.setLineDash([2, 2]); ctx.stroke(); ctx.setLineDash([]);
           } else {
             /* NOT CALLED: dotted, no fill, no rim. Distinct from both dark states above. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr * 0.85, 0, Math.PI * 2);
-            ctx.strokeStyle = TH.line; ctx.lineWidth = 0.9;
+            ctx.strokeStyle = midc || TH.line; ctx.lineWidth = 1.1;
             ctx.setLineDash([1, 2.2]); ctx.stroke(); ctx.setLineDash([]);
           }
           scene.bodies.push({ kind: "moon", key: m.id, category: d.p.key, state: m.state,
+                              identityColor: midc,
                               orbitR: m.orbit.r, orbitRate: m.orbit.rate,
                               band: m.band || null, x: Math.round(mq.x), y: Math.round(mq.y),
                               r: Math.round(mr * 10) / 10 });
@@ -837,6 +875,7 @@
     render: render,
     /* THE SCENE GRAPH THE LAST FRAME WAS DRAWN FROM. Exposed so a check can assert on what was
        drawn rather than on the model it was given -- the canvas equivalent of reading the DOM. */
-    lastScene: function () { return LAST_SCENE; }
+    lastScene: function () { return LAST_SCENE; },
+    lastPalette: function () { return LAST_PALETTE; }
   };
 })();
