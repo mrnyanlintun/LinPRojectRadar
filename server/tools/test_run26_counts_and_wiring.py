@@ -106,18 +106,38 @@ check("self-test: the identity check can distinguish an unequal pair",
 check("the server's validated project set is 95", len(VALIDATED) == 95, str(len(VALIDATED)))
 check("and its validated portfolio set is 5", len(PORTFOLIO_VALIDATED) == 5,
       str(len(PORTFOLIO_VALIDATED)))
+# RUN 95 CLOSED THE ONE-SUPPLIED GAP BY RETIRING THE MODULE THAT MADE IT.
+#
+# A4.1 Document Risk Score was the only module the registry held IN SERVICE that no runner
+# implemented -- it did not compute and it did not abstain, it RAISED -- and that single module
+# was the whole of the "95 computed plus 1 supplied" arithmetic these four checks asserted.
+# Run 95 retired it on the owner's instruction. `unported_modules()` derives from
+# `service_index()`, so the set emptied with no edit to the function.
+#
+# THE IDENTITY IS STILL ASSERTED, over the population that is actually in service rather than
+# over the whole registry, and it is still an EXACT equality that a module without a runner
+# would break. The registry's own 101 and its group D five are unchanged and still checked
+# above; what changed is that the difference between "declared" and "computable" is now
+# entirely accounted for by RETIREMENT rather than partly by an unimplemented module.
 unported = R.unported_modules()
-check("exactly one registered module is not ported to the analytical server",
-      len(unported) == 1, str(unported))
-check("and it is the document risk value the extraction model supplies, which is the WHOLE "
-      "of the difference between 96 registered project modules and the 95 the server computes",
-      unported == ["A4.1"] and index["A4.1"]["module_name"] == "Document Risk Score",
-      str(unported))
-check("so 95 computed plus 1 supplied is exactly the 96 registered project modules",
-      len(VALIDATED) + len(unported) == project_registered)
-check("and 100 server-computed plus 1 supplied is exactly the 101 registered modules, which "
-      "is the population the knowledge page's computation count names",
-      len(VALIDATED) + len(PORTFOLIO_VALIDATED) + len(unported) == registered_total)
+check("no registered module in service is unported to the analytical server any more",
+      unported == [], str(unported))
+check("and A4.1 Document Risk Score, which was the only one, left by RETIREMENT rather than "
+      "by acquiring a runner -- its identifier still resolves and it is still not in VALIDATED",
+      ("A4.1" in R.retired_modules() and "A4.1" in index
+       and index["A4.1"]["module_name"] == "Document Risk Score"
+       and "A4.1" not in VALIDATED),
+      str(sorted(R.retired_modules())[:3]))
+_svc = R.service_index()
+_svc_project = [m for m in _svc if index[m]["group"] != "D"]
+check("so the modules in service at project level are exactly the ones the server computes, "
+      "with nothing supplied and nothing unimplemented",
+      sorted(_svc_project) == sorted(set(VALIDATED) & set(_svc)),
+      f"{len(_svc_project)} in service / {len(set(VALIDATED) & set(_svc))} computable")
+check("and the registry's declared total is still the roster in service plus the retired, so "
+      "retirement removed modules from service and not from the registry",
+      len(_svc) + len(R.retired_modules()) == registered_total,
+      f"{len(_svc)} + {len(R.retired_modules())} vs {registered_total}")
 
 # ============================================================ 2. audit-derived populations
 section("2. THE SCIENTIFIC-AUDIT POPULATION, DERIVED FROM THE COMMITTED AUDIT ARTIFACT")
@@ -194,9 +214,29 @@ check("the taxonomy carries exactly the in-service module ids, so the browser an
       sorted(tax_ids) == sorted(_service),
       f"{len(tax_ids)} taxonomy ids / {len(_service)} in service")
 tax_cats = re.findall(r"key: '([A-D][0-9]+)',\n?\s*name:", TAXONOMY)
-check("and twelve categories, eleven of them project level",
-      len(re.findall(r"^  \{$", TAXONOMY, re.M)) == 12,
-      str(len(re.findall(r"^  \{$", TAXONOMY, re.M))))
+# RUN 95. THE NUMBER OF CATEGORIES IS NOT WRITTEN HERE ANY MORE. It said twelve; Run 95 retired
+# every module of A5 System Dynamics & Complexity and `build_client_taxonomy.py` now declines to
+# emit a group A category holding nothing, so it is eleven. Retyping it would only defer the same
+# edit to the next retirement. The oracle is the SERVER registry, read independently of the
+# client file being scanned: the categories still holding a module in service, plus the
+# portfolio-level container D1, which has been emitted empty since Run 43 retired all five of
+# its modules and which Run 95 deliberately left alone by scoping its drop rule to group A.
+_svc_cats = {index[m]["category"] for m in R.service_index()}
+_pf_cats = {r["category"] for r in index.values() if r["group"] == "D"}
+_expect_cats = sorted(_svc_cats | _pf_cats)
+_expect_proj = sorted(_svc_cats - _pf_cats)
+check("the taxonomy's categories are exactly those the registry still holds a module in "
+      "service for, plus the empty portfolio-level container",
+      sorted(set(tax_cats)) == _expect_cats,
+      f"taxonomy {sorted(set(tax_cats))} vs registry {_expect_cats}")
+_blocks = len(re.findall(r"^  \{$", TAXONOMY, re.M))
+check("and the category blocks in the file count the same, so none is declared twice or lost",
+      _blocks == len(_expect_cats), f"{_blocks} blocks vs {len(_expect_cats)}")
+check("A5 Systems and Dynamics is in neither, holding no module in service after Run 95",
+      "A5" not in _svc_cats and "A5" not in set(tax_cats))
+check("and the project-level categories are the eleven-minus-portfolio set",
+      sorted(c for c in set(tax_cats) if c not in _pf_cats) == _expect_proj,
+      f"{sorted(c for c in set(tax_cats) if c not in _pf_cats)} vs {_expect_proj}")
 
 # ============================================================ 4. the generated wiring source
 section("4. THE DIAGRAM'S DOCUMENT-EMISSION MAP IS GENERATED, NOT HAND-MAINTAINED")

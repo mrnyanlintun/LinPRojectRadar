@@ -1,6 +1,6 @@
 fault,name,result,detail
 1,Conservative Dominance averages away a Red,RED_THEN_GREEN,baseline='Red' injected='Yellow' restored='Red' injection_applied=True
-2,Weighted Voting consumes raw cpi/spi rather than governed states,RED_THEN_GREEN,baseline=['mc'] injected=['cpi'] restored=['mc'] injection_applied=True
+2,a governed synthesiser consumes raw cpi/spi rather than governed states,RED_THEN_GREEN,"baseline=['doc', 'mc'] injected=[] restored=['doc', 'mc'] injection_applied=True"
 3,Weighted Voting same-lineage duplicate gains weight,RED_THEN_GREEN,baseline=0.25 injected=0.4 restored=0.25 injection_applied=True
 4,Majority Rules unknown label becomes Green,RED_THEN_GREEN,baseline='crash' injected='ok' restored='crash' injection_applied=True
 5,Majority Rules same-lineage duplicate gains a vote,RED_THEN_GREEN,baseline=1 injected=2 restored=1 injection_applied=True

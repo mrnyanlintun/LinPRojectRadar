@@ -117,8 +117,17 @@ check("C1.5 is admitted to its OWN category rollup (it is a gate reading, not a 
 print("\n7. THE EXCLUSION FROM THE WEIGHTED PROFILE IS EXECUTABLE, NOT A COMMENT")
 from app.simulation import models_gov as GOV
 check("C1 is not in the weight profile", "C1" in GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS, False)
-check("the profile is exactly the owner's six", sorted(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS),
-      ["A1", "A2", "A3", "A4", "A5", "A6"])
+# RUN 95, SECTION 3. The owner restated his profile over FIVE categories at 0.28/0.28/0.17/
+# 0.11/0.16. A5 Systems and Dynamics is gone: Run 95 retired every module it held. The weights
+# are asserted by VALUE as well as by key set, because the profile is the owner's stated
+# authority and a silent drift in a number is exactly what this check exists to catch.
+check("the profile is exactly the owner's five, Run 95 section 3",
+      sorted(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS), ["A1", "A2", "A3", "A4", "A6"])
+check("...at the owner's stated weights", dict(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS),
+      {"A1": 0.28, "A2": 0.28, "A3": 0.17, "A4": 0.11, "A6": 0.16})
+check("A5 is not in the profile", "A5" in GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS, False)
+check("the provenance names the owner, not a literature value",
+      "owner's stated authority" in GOV.WEIGHT_PROVENANCE, True)
 check("...summing to 1.00", round(sum(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS.values()), 10), 1.0)
 check("a C1 posture is ignored by the weighted vote, not weighed",
       GOV.weighted_category_vote({"A1": {"status": "Green"}, "C1": {"status": "Red"}})["winner"],
@@ -137,7 +146,7 @@ finally:
 check("INJECTED: adding Data Integrity to the profile RAISES",
       _raised, "Data Integrity is a precondition for using the criteria, not a criterion in them.")
 check("RESTORED: the profile is the owner's again",
-      sorted(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS), ["A1", "A2", "A3", "A4", "A5", "A6"])
+      sorted(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS), ["A1", "A2", "A3", "A4", "A6"])
 
 print("\n" + ("ALL PASS" if not FAILURES else f"{len(FAILURES)} FAILURES: {FAILURES}"))
 sys.exit(1 if FAILURES else 0)

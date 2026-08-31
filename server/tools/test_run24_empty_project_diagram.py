@@ -99,8 +99,23 @@ _SERVICE = _REG.service_index()
 _REGISTRY = _REG.registry_index()
 _SVC_PROJECT = [m for m in _SERVICE if _REGISTRY[m]["group"] != "D"]
 _SVC_PORTFOLIO = [m for m in _SERVICE if _REGISTRY[m]["group"] == "D"]
-_AUTH_CATS = len({r["category"] for r in _REGISTRY.values()})
-_AUTH_PROJ_CATS = len({r["category"] for r in _REGISTRY.values() if r["group"] != "D"})
+# RUN 95. THE CATEGORY ORACLE IS THE ROSTER IN SERVICE, NOT THE WHOLE REGISTRY.
+# These two lines counted categories over `registry_index()` -- every category the CSV declares,
+# retired modules included -- while the module figures beside them counted `service_index()`.
+# That mismatch was invisible only because no category had ever emptied. Run 95 retired every
+# module of A5 System Dynamics & Complexity, `build_client_taxonomy.py` now declines to emit a
+# GROUP A category holding nothing, and the two halves of this check disagreed by exactly one.
+# Counting categories the same way the modules beside them are counted is the fix.
+#
+# D1 PORTFOLIO HEALTH IS THE ONE DECLARED EXCEPTION AND IS ADDED BACK BY NAME OF ITS GROUP, not
+# by its key. All five of its modules were retired at Run 43 and it has shipped as an empty
+# portfolio-level container ever since; Run 95 scoped the new drop rule to group A so that this
+# container was not swept away with A5. It therefore appears in the browser taxonomy with no
+# module in service, and the oracle has to say so rather than the check being loosened.
+_SVC_CATS = {_REGISTRY[m]["category"] for m in _SERVICE}
+_PORTFOLIO_CONTAINERS = {r["category"] for r in _REGISTRY.values() if r["group"] == "D"}
+_AUTH_CATS = len(_SVC_CATS | _PORTFOLIO_CONTAINERS)
+_AUTH_PROJ_CATS = len({c for c in _SVC_CATS if c not in _PORTFOLIO_CONTAINERS})
 check((ALL_CATS, ALL_MODS, PROJ_CATS, PROJ_MODS)
       == (_AUTH_CATS, len(_SERVICE), _AUTH_PROJ_CATS, len(_SVC_PROJECT)),
       f"the taxonomy the browser reads holds {len(_SVC_PROJECT)} project-level modules in "
@@ -115,10 +130,22 @@ check(len(_REGISTRY) == 101 and len(_SERVICE) + len(_REG.retired_modules()) == l
       "and the REGISTRY still holds 101, which the roster in service plus the retired reconcile "
       "to exactly, so retirement removed modules from service and not from the registry",
       f"{len(_SERVICE)} + {len(_REG.retired_modules())} vs {len(_REGISTRY)}")
-# The one registry entry the extraction model SUPPLIES rather than the analytical server
-# computing. This is what makes the project-level figure "95 computed plus 1 supplied".
-check(TAXONOMY.count("method_class: 'Doc_Risk_Cat4'") == 1,
-      "exactly one project-level registry entry is the supplied document risk value")
+# RUN 95 RETIRED THE ONLY SUPPLIED ENTRY, so the figure is now "every module in service is
+# computed, none supplied". A4.1 Document Risk Score was the single registry entry the
+# extraction model SUPPLIED rather than the analytical server computing -- and it was also the
+# only module in service with no runner at all, which is why it raised instead of computing or
+# abstaining. It is retired, so it is absent from the browser taxonomy and the count is zero.
+#
+# The check is kept and inverted rather than deleted, and the reason it can be trusted is that
+# the SERVER is asked the same question independently just below: `supplied` in
+# `LIN_TAXONOMY_COUNTS` is generated as `in_service - computes`, and it is zero for the same
+# reason. A supplied identity reappearing in the client taxonomy would still fail this.
+check(TAXONOMY.count("method_class: 'Doc_Risk_Cat4'") == 0,
+      "no project-level registry entry is a supplied value any more: A4.1 Document Risk Score "
+      "was the only one and Run 95 retired it")
+check(len(_SERVICE) == len([m for m in _SERVICE if m in _REG.VALIDATED
+                            or m in _REG.PORTFOLIO_VALIDATED]),
+      "and the server agrees: every module in service has a runner, none is supplied")
 
 # NO COUNT IS TYPED INTO THE DIAGRAM. Every figure the headers and the summary state must be
 # read from the model the registry builds.
@@ -370,10 +397,22 @@ for name, old, new, expect in MUTATIONS:
           f"expected {expect!r} among {bad}")
 
 # The count guard, proved discriminating against a really-changed taxonomy.
+# RUN 95 RE-ANCHORED THIS INJECTION. It spliced ahead of A4.1 Document Risk Score, which Run 95
+# retired and which is therefore no longer in the taxonomy at all -- the replace matched nothing
+# and the injection silently stopped injecting, which is the exact vacuity this suite exists to
+# prevent. The anchor is now taken from the taxonomy AT RUNTIME rather than typed, so no future
+# retirement can quietly disarm it again. The "INJECTION TOOK EFFECT" check below is what proves
+# the re-anchoring worked.
+# The injected module must be counted by `registry_counts()`, which keys a module to its
+# category by the `<catid>_<n>` id prefix. So the injected id is built FROM THE ANCHOR'S OWN
+# prefix rather than typed: whatever category the anchor sits in, the injection lands in it.
+_anchor = re.search(r"\{ id: '([a-z]\d+)_\d+', module_id: '[A-C]\d\.\d+',", TAXONOMY)
+check(_anchor is not None,
+      "an anchor for the injection exists in the shipped taxonomy (guards the check below)")
 _tax_mut = TAXONOMY.replace(
-    "{ id: 'a4_1', module_id: 'A4.1', name: 'Document Risk Score'",
-    "{ id: 'a4_99', module_id: 'A4.99', name: 'Injected Module'\n      },\n"
-    "      { id: 'a4_1', module_id: 'A4.1', name: 'Document Risk Score'", 1)
+    _anchor.group(0),
+    "{ id: '%s_99', module_id: 'Z9.99', name: 'Injected Module'\n      },\n      "
+    % _anchor.group(1) + _anchor.group(0), 1) if _anchor else TAXONOMY
 check(_tax_mut != TAXONOMY, "INJECTION TOOK EFFECT: an extra module added to the taxonomy copy")
 _saved = TAXONOMY
 try:

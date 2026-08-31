@@ -384,26 +384,34 @@ def _synthesis_lineage(out: dict) -> dict[str, Any]:
 
 #: The owner's weight profile, Run 89 section 2. HIS DECISION, NOT A DERIVED OR LITERATURE VALUE.
 #: Keyed by registry category key; the names are the owner's words for those categories.
+#: RUN 95, SECTION 3. THE OWNER'S REVISED PROFILE, OVER FIVE CATEGORIES. This is HIS DECISION and
+#: HIS STATED AUTHORITY -- it is not derived, not taken from the literature and not calibrated.
+#: A5 Systems and Dynamics is GONE: Run 95 retired every module it held, so it holds none in
+#: service, and an empty category has nothing to weigh rather than a weight of nothing. Its 0.10
+#: was not spread by any rule this file could defend; the owner restated the whole profile.
 WEIGHTED_VOTING_CATEGORY_WEIGHTS: dict[str, float] = {
-    "A1": 0.25,   # Cost and EVM Performance
-    "A2": 0.25,   # Schedule
-    "A3": 0.15,   # Cost Risk
-    "A4": 0.10,   # Document Signals
-    "A6": 0.15,   # Delivery Quality
-    "A5": 0.10,   # Systems and Dynamics
+    "A1": 0.28,   # Cost and EVM Performance
+    "A2": 0.28,   # Schedule
+    "A3": 0.17,   # Cost Risk
+    "A4": 0.11,   # Document Signals
+    "A6": 0.16,   # Delivery Quality
 }
+
+#: Executable, so the profile cannot lose its normalisation to an edit that forgets to check.
+assert abs(sum(WEIGHTED_VOTING_CATEGORY_WEIGHTS.values()) - 1.0) < 1e-9, \
+    "the owner's weight profile must sum to one"
 
 #: Data Integrity is a precondition, never a criterion. Executable, so the profile cannot acquire
 #: it by an edit that forgets the rule.
 WEIGHTED_VOTING_EXCLUDED_CATEGORIES: frozenset[str] = frozenset({"C1"})
 
-WEIGHT_PROVENANCE = ("the owner's stated authority, Run 89 section 2: his decision, not a derived "
+WEIGHT_PROVENANCE = ("the owner's stated authority, Run 95 section 3: his decision, not a derived "
                      "or literature value and not calibrated")
 
 
 def weighted_category_vote(category_statuses: dict) -> dict[str, Any]:
     """
-    B1.2, second pass. Weigh the six performance category postures by the owner's profile.
+    B1.2, second pass. Weigh the five performance category postures by the owner's profile.
 
     THE RULE FOR A CATEGORY WITH NO POSTURE, and why it is this one rather than one of the other
     two the order left open. `specifications/B1_signal_synthesis.md` shared rule 3 already states
@@ -434,7 +442,7 @@ def weighted_category_vote(category_statuses: dict) -> dict[str, Any]:
             unassessed.append(key)
     if not present:
         return {"estimable": False, "unassessed_categories": unassessed,
-                "reason": "none of the six weighted performance categories carries a posture, so "
+                "reason": "none of the five weighted performance categories carries a posture, so "
                           "there is nothing to weigh and no weighted vote is reported"}
     total = sum(WEIGHTED_VOTING_CATEGORY_WEIGHTS[k] for k in present)
     weights = {k: WEIGHTED_VOTING_CATEGORY_WEIGHTS[k] / total for k in present}

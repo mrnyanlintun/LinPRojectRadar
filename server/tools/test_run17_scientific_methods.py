@@ -744,13 +744,18 @@ def cat6() -> None:
           str(out))
     from app.simulation.models_gov import (WEIGHTED_VOTING_CATEGORY_WEIGHTS as _WVW,
                                            weighted_voting_result as _wvr)
-    check(mid, "the weight profile is the owner's six performance categories, summing to 1.00",
-          sorted(_WVW) == ["A1", "A2", "A3", "A4", "A5", "A6"]
+    # RUN 95. FIVE, NOT SIX. The owner restated his profile over the five weighted performance
+    # categories at 0.28/0.28/0.17/0.11/0.16; A5 Systems and Dynamics holds no module in service
+    # after Run 95's retirements and is not a category of this platform. The property under test
+    # is unchanged -- the module weighs nothing by a literal without authority, and what it does
+    # weigh is the owner's declared profile summing to one.
+    check(mid, "the weight profile is the owner's five performance categories, summing to 1.00",
+          sorted(_WVW) == ["A1", "A2", "A3", "A4", "A6"]
           and abs(sum(_WVW.values()) - 1.0) < 1e-12, str(_WVW))
     check(mid, "Data Integrity is not in the weight profile", "C1" not in _WVW, str(sorted(_WVW)))
     _second = _wvr({"A1": {"status": "Green"}, "A2": {"status": "Green"},
                     "A3": {"status": "Green"}, "A4": {"status": "Green"},
-                    "A5": {"status": "Green"}, "A6": {"status": "Red"}})
+                    "A6": {"status": "Red"}})
     check(mid, "the second pass weighs the postures and declares the owner's authority",
           _second["status_color"] == "Green"
           and "owner's stated authority" in _second["weight_provenance"], str(_second))

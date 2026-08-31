@@ -23,8 +23,23 @@ from .qualification import build_qualification
 from .models_gov import weighted_voting_result as _weighted_voting_result
 #: Run 89 goal three. The single definition; `spec_projection` imports these names so
 #: the two status paths cannot drift about which categories are required.
-_REQUIRED_CATEGORIES: tuple[str, ...] = ("A1", "A2", "A3", "A6")
-_SUPPORTING_CATEGORIES: tuple[str, ...] = ("A4", "A5")
+#:
+#: RUN 95, THE OWNER'S RULING, SECTION 3.2. THE REQUIRED CORE IS ALL FIVE, AND IT SUPERSEDES
+#: RUN 89'S CORE OF FOUR. A4 Document Signals moves from supporting to required: an official
+#: project status is issued only when every one of the five weighted performance categories
+#: carries a posture, and if any one does not the status is Indeterminate.
+#:
+#: A5 Systems and Dynamics IS NOT LISTED HERE AND IS NOT A CATEGORY OF THIS PLATFORM ANY MORE.
+#: Run 95 retired every module it held, so it holds none in service; an empty category has
+#: nothing to report rather than failing to report. It is gone from the required core, from the
+#: weighted profile in `models_gov.py` and from both charts.
+_REQUIRED_CATEGORIES: tuple[str, ...] = ("A1", "A2", "A3", "A4", "A6")
+#: EMPTY, AND DELIBERATELY KEPT RATHER THAN DELETED. Every weighted performance category is now
+#: required, so there is no supporting tier left to hold anything. The name and the two
+#: `supporting_*` keys it feeds are kept because `documents._result_view`, `spec_projection` and
+#: the client all read them, and a key that vanishes reads as a missing field rather than as an
+#: empty tier. They publish `[]` and that is the true answer: no category is supporting.
+_SUPPORTING_CATEGORIES: tuple[str, ...] = ()
 _INDETERMINATE = "Indeterminate"
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
@@ -212,10 +227,10 @@ def compute_project(si: dict, scenario_id: str, period: str,
     project = fuse_signals(voting)
 
     # ------------------------------------------------------- RUN 89, GOAL THREE, REQUIRED CORE
-    # THE OWNER'S RULING, section 4. An OFFICIAL status is issued only when all four required
-    # categories -- A1 Cost and EVM, A2 Schedule, A3 Cost Risk, A6 Delivery Quality -- carry a
-    # posture. A4 Document Signals and A5 Systems and Dynamics are SUPPORTING and never block it,
-    # and they never create a Green merely because no documents were supplied.
+    # THE OWNER'S RULING, RUN 95 SECTION 3.2, SUPERSEDING RUN 89's. An OFFICIAL status is issued
+    # only when all FIVE required categories -- A1 Cost and EVM, A2 Schedule, A3 Cost Risk,
+    # A4 Document Signals, A6 Delivery Quality -- carry a posture. There is no supporting tier
+    # any more, and no category can create a Green merely because no documents were supplied.
     #
     # WORST-WINS IS UNTOUCHED. `fuse_signals(voting)` above is not altered, not re-ordered and
     # not consulted twice; `project["status"]` is exactly what it was. The gate is a condition

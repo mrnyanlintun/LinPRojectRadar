@@ -258,15 +258,17 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
 # ---------------------------------------------------------------------------------------------
 # RUN 89, GOAL THREE. THE REQUIRED CORE, AND INDETERMINATE.
 #
-# THE OWNER'S RULING, section 4. An OFFICIAL project status is issued only when all four of the
-# REQUIRED categories carry a posture. Document Signals (A4) and Systems and Dynamics (A5) are
-# SUPPORTING: they enrich the diagnosis and may be assessed or not without blocking the official
-# status, and THEY NEVER CREATE A GREEN MERELY BECAUSE NO DOCUMENTS WERE SUPPLIED. When any
-# required category is not assessed, the official status is INDETERMINATE.
+# RUN 95, SECTION 3.2, SUPERSEDES RUN 89's CORE OF FOUR. An OFFICIAL project status is issued
+# only when ALL FIVE weighted performance categories -- A1, A2, A3, A4, A6 -- carry a posture.
+# A4 Document Signals is now REQUIRED, not supporting. A5 Systems and Dynamics holds no module
+# in service after Run 95's retirements and is not a category of this platform any more. There
+# is NO SUPPORTING TIER LEFT: `SUPPORTING_CATEGORIES` is empty and the `supporting_*` keys
+# publish `[]`, which is the true answer rather than a dead key. When any required category is
+# not assessed, the official status is INDETERMINATE.
 #
 # WORST-WINS IS NOT TOUCHED. `worst_band` is still the only severity rule in this file and its
 # arithmetic is not altered, not re-ordered and not consulted twice. The gate is a CONDITION
-# LAYERED ON TOP of the fused band: when all four required categories carry a posture, this
+# LAYERED ON TOP of the fused band: when all five required categories carry a posture, this
 # function returns EXACTLY what it returned before this run, byte for byte. That equality is
 # measured, not argued, in `tools/test_run89_required_core.py`.
 #

@@ -4,14 +4,21 @@ Run 89, goal three: THE REQUIRED CORE, AND INDETERMINATE.
 
 What is proved, by measurement:
 
-  (1) WORST-WINS IS UNCHANGED where all four required categories are assessed. The published
+  (1) WORST-WINS IS UNCHANGED where all five required categories are assessed. The published
       status is measured against `fusion.worst_band` computed independently over the same
       contributing categories -- the arithmetic, not a restatement of it -- and they are equal
       for every band and for a Red/Amber/Green mix.
   (2) INDETERMINATE is issued, on both status paths, exactly when a required category carries
       no posture, and the fused band is still recorded beside it rather than discarded.
-  (3) A SUPPORTING CATEGORY NEVER BLOCKS AND NEVER CREATES A GREEN. A4 and A5 absent leaves an
-      official status; A4 and A5 absent never turns a missing required category into a Green.
+  (3) THERE IS NO SUPPORTING TIER ANY MORE, and its absence is asserted rather than assumed.
+      RUN 95 SECTION 3.2 SUPERSEDED RUN 89 HERE: the required core is all five weighted
+      performance categories, A4 Document Signals moved from supporting to required, and A5
+      Systems and Dynamics holds no module in service and is not a category of this platform.
+      What Run 89 checked -- that A4 and A5 absent still leaves an official status -- is now
+      FALSE BY THE OWNER'S RULING, so it is not asserted; the check is REPLACED by the fact
+      that took its place, which is that A4 absent BLOCKS, and by the check that a missing
+      category still never becomes a Green. That last half is the part that mattered and it
+      is kept intact.
   (4) INDETERMINATE IS NOT A BAND. It is not in `BAND_SEVERITY` and `worst_band` never returns
       it and never ranks it.
   (5) THE CHECK CAN FAIL. The required set is neutralised to empty and the same row then
@@ -56,10 +63,15 @@ def _cats(**bands) -> dict:
     return sp.category_statuses({k: _reading(k, [_mod(f"{k}.1", v)]) for k, v in bands.items()})
 
 
-print("1. WORST-WINS IS UNCHANGED WHEN ALL FOUR REQUIRED CATEGORIES ARE ASSESSED")
+print("1. WORST-WINS IS UNCHANGED WHEN ALL FIVE REQUIRED CATEGORIES ARE ASSESSED")
+# THE POPULATION IS THE REQUIRED SET ITSELF, NOT A TYPED LIST OF NAMES. Run 89 wrote four names
+# and `repeat=4`; Run 95 made the core five. Reading `sp.REQUIRED_CATEGORIES` here means the
+# exhaustive sweep follows the architecture instead of restating it, and the count it prints is
+# measured (4 bands ** 5 categories == 1024) rather than written down.
+_REQ = list(sp.REQUIRED_CATEGORIES)
 _n = 0
-for combo in itertools.product(["Green", "Yellow", "Amber", "Red"], repeat=4):
-    cats = _cats(A1=combo[0], A2=combo[1], A3=combo[2], A6=combo[3])
+for combo in itertools.product(["Green", "Yellow", "Amber", "Red"], repeat=len(_REQ)):
+    cats = _cats(**dict(zip(_REQ, combo)))
     # The arithmetic, computed here independently of the gate, exactly as it was before Run 89.
     independent = worst_band([c["status"] for c in cats.values()
                               if c["status"] and c["contributes_to_project_status"]])
@@ -67,17 +79,24 @@ for combo in itertools.product(["Green", "Yellow", "Amber", "Red"], repeat=4):
         FAILURES.append(f"arithmetic moved for {combo}")
         print(f"  [FAIL] {combo}: gate {sp.project_status(cats)!r} != worst_band {independent!r}")
     _n += 1
-print(f"  [{'PASS' if not FAILURES else 'FAIL'}] all {_n} four-band combinations publish exactly "
-      f"worst_band, unchanged")
+print(f"  [{'PASS' if not FAILURES else 'FAIL'}] all {_n} band combinations over the "
+      f"{len(_REQ)} required categories publish exactly worst_band, unchanged")
+check("the sweep was exhaustive over the required core, not a sample",
+      _n, 4 ** len(sp.REQUIRED_CATEGORIES))
+check("the required core is the owner's five, Run 95 section 3.2",
+      list(sp.REQUIRED_CATEGORIES), ["A1", "A2", "A3", "A4", "A6"])
 
-print("\n  ...and with the two SUPPORTING categories also assessed, and adverse:")
-cats = _cats(A1="Green", A2="Green", A3="Green", A6="Green", A4="Red", A5="Red")
-check("supporting categories still enter worst-wins (they always did)",
+print("\n  ...and an adverse required category still wins:")
+cats = _cats(A1="Green", A2="Green", A3="Green", A6="Green", A4="Red")
+check("A4 is required now and its Red still enters worst-wins",
       sp.project_status(cats), "Red")
 check("...and the status is OFFICIAL", sp.project_status_basis(cats)["official"], True)
 
 print("\n2. INDETERMINATE WHEN A REQUIRED CATEGORY CARRIES NO POSTURE")
-cats = _cats(A1="Red", A2="Green", A3="Green")          # A6 never called
+# A4 IS SUPPLIED HERE BECAUSE RUN 95 MADE IT REQUIRED. The fact under test is what happens when
+# ONE required category is missing, so every other required category must carry a posture or the
+# check would be measuring two absences at once.
+cats = _cats(A1="Red", A2="Green", A3="Green", A4="Green")   # A6 never called
 b = sp.project_status_basis(cats)
 check("status", sp.project_status(cats), "Indeterminate")
 check("official", b["official"], False)
@@ -87,12 +106,14 @@ check("its state is never_called (no reading stored at all)",
 check("THE FUSED BAND IS STILL RECORDED, not discarded", b["fused_band"], "Red")
 check("every assessed category is still visible with its posture",
       sorted((k, v["status"]) for k, v in cats.items() if v["status"]),
-      [("A1", "Red"), ("A2", "Green"), ("A3", "Green")])
+      [("A1", "Red"), ("A2", "Green"), ("A3", "Green"), ("A4", "Green")])
 
 print("\n  ...and a required category CALLED but carrying no band is equally missing:")
 cats2 = sp.category_statuses({
     "A1": _reading("A1", [_mod("A1.7", "Green")]), "A2": _reading("A2", [_mod("A2.7", "Green")]),
-    "A3": _reading("A3", [_mod("A3.2", "Green")]), "A6": _reading("A6", [_mod("A6.1", None)])})
+    "A3": _reading("A3", [_mod("A3.2", "Green")]),
+    "A4": _reading("A4", [_mod("A4.2", "Green")]),   # required since Run 95; supplied so that
+    "A6": _reading("A6", [_mod("A6.1", None)])})     # A6 is the only category missing a posture
 b2 = sp.project_status_basis(cats2)
 check("status", sp.project_status(cats2), "Indeterminate")
 check("A6 is missing", b2["required_missing"], ["A6"])
@@ -100,13 +121,21 @@ check("its state is the reading's own state, NOT never_called",
       b2["required_missing_detail"][0]["state"], "computed")
 check("A6 is NOT Green", cats2["A6"]["status"], None)
 
-print("\n3. A SUPPORTING CATEGORY NEVER BLOCKS, AND NEVER CREATES A GREEN")
-cats = _cats(A1="Green", A2="Green", A3="Green", A6="Green")   # A4 and A5 never called
+print("\n3. THERE IS NO SUPPORTING TIER, AND A MISSING CATEGORY NEVER BECOMES A GREEN")
+cats = _cats(A1="Green", A2="Green", A3="Green", A6="Green")   # A4 never called
 b = sp.project_status_basis(cats)
-check("A4 and A5 absent does NOT block the official status", b["official"], True)
-check("status is the fused Green", sp.project_status(cats), "Green")
-check("A4 and A5 are reported as not assessed", b["supporting_not_assessed"], ["A4", "A5"])
-cats = _cats(A1="Green", A2="Green", A3="Green")               # A6 missing, A4/A5 missing too
+check("A4 absent DOES block the official status now -- Run 95 made it required",
+      b["official"], False)
+check("...and the status is Indeterminate, not the fused Green",
+      sp.project_status(cats), "Indeterminate")
+check("...while the fused Green is still recorded beside it", b["fused_band"], "Green")
+check("the supporting tier is empty", list(sp.SUPPORTING_CATEGORIES), [])
+check("so supporting_assessed publishes [] rather than vanishing",
+      b["supporting_assessed"], [])
+check("and supporting_not_assessed publishes [] too", b["supporting_not_assessed"], [])
+check("A5 is in neither tier -- it is not a category of this platform",
+      "A5" in sp.REQUIRED_CATEGORIES or "A5" in sp.SUPPORTING_CATEGORIES, False)
+cats = _cats(A1="Green", A2="Green", A3="Green")               # A6 and A4 missing
 check("no documents supplied does NOT produce a Green for a missing required category",
       sp.project_status(cats), "Indeterminate")
 

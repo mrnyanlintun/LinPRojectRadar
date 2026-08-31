@@ -116,6 +116,42 @@ def build() -> str:
         counts,
         START,
     ]
+    # RUN 95. A CATEGORY THAT HOLDS NO MODULE IN SERVICE IS NOT EMITTED AT ALL.
+    #
+    # The owner's ruling, Run 95 section 3: "An empty category is not a category that failed to
+    # report -- there is nothing in it to report." Before this run the generator emitted every
+    # category the authority declares whatever its module list came to, so a category all of
+    # whose modules had been retired would have shipped as a named, coloured entry with an empty
+    # `modules: []` -- drawn on both charts, counted among the performance categories, and
+    # saying nothing. That is exactly what "nothing that carries no meaning may look as though it
+    # does" forbids.
+    #
+    # DERIVED, NOT LISTED. There is no category name written here. A category is emitted if and
+    # only if at least one of its authority modules is in `service_index()`. Retiring the last
+    # module of a category removes the category, and reinstating one in the registry CSV brings
+    # it back, with no edit to this generator and none to either client artifact. This is the
+    # SAME rule as the module filter twelve lines below, one level up.
+    #
+    # SCOPED TO GROUP A, AND THE SCOPE IS A CORRECTION MADE INSIDE RUN 95 AFTER MEASURING.
+    # The first form of this filter applied to EVERY category and removed TWO, not one: it also
+    # removed D1 Portfolio Health, whose five modules were all retired at RUN 43 and which has
+    # shipped as a declared, empty, portfolio-level category ever since without anyone treating
+    # that as a defect. `test_map_and_module_count.py` depends on its presence -- it checks that
+    # "the taxonomy genuinely has a portfolio-level category to exclude", which is what stops the
+    # project-level filters below it from being vacuous -- so removing it would have made a real
+    # check assert nothing. The tree's own precedent for an empty PORTFOLIO-LEVEL category is
+    # that it stays, and this run does not overturn a precedent it was not asked to touch.
+    #
+    # The owner's ruling is about the performance categories the two charts and the project
+    # status draw, and those are exactly the GROUP A project-level ones. `group` is a field on
+    # the authority row, so the scope is derived here too: still no category name is written.
+    #
+    # So exactly ONE category is removed, and that is measured rather than assumed: A5 System
+    # Dynamics & Complexity, which lost its last five modules in service at Run 95. Every other
+    # group A category still holds at least one.
+    authority = [c for c in authority
+                 if c["group"] != "A"
+                 or any(m["module_id"] in names for m in c["modules"])]
     for ci, cat in enumerate(authority):
         lines.append("  {")
         lines.append("    id: %s, key: %s, name: %s," % (js(cat["id"]), js(cat["key"]),

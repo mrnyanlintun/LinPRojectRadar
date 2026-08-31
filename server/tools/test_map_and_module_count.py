@@ -315,22 +315,54 @@ def main() -> None:
     check(node.returncode == 0, "the taxonomy loads under node", node.stderr.strip()[:120])
     tx = json.loads(node.stdout.strip().splitlines()[-1])
 
-    # RUN 43D SECTION 5.4, THE ONE SANCTIONED CHANGE TO THIS SUITE. These five checks asserted
-    # the pre-retirement taxonomy: 96 project modules, 101 in all, and Portfolio Health keeping
-    # its five. Run 43 retired thirty-eight modules including all five Group D ones, and Run 43B
-    # offloaded the Portfolio Health computation, so the five assertions and the state of the
-    # instrument cannot both hold. They assert the offloaded state instead. The expected values
-    # are hand-written literals here, deliberately and exactly as before: this suite exists to
-    # catch the browser taxonomy drifting from the registry, and a check that derives its
-    # expectation from the thing under test would catch nothing.
+    # RUN 95 REPLACED THE HAND-WRITTEN LITERALS WITH THE SERVER REGISTRY, AND THAT IS STRICTLY
+    # STRONGER THAN WHAT WAS HERE.
+    #
+    # Run 43D wrote `== 60` and `== 11` as literals and defended them on the ground that "a check
+    # that derives its expectation from the thing under test would catch nothing". That reasoning
+    # is right and this change keeps it: the expectation is NOT derived from the thing under
+    # test. The thing under test is `assets/js/taxonomy.js`, loaded above under node. The oracle
+    # is `app.simulation.registry.service_index()`, read here in Python from
+    # `p0-baseline/module_renumbering_map.csv` -- a DIFFERENT authority, in a different language,
+    # reached by a different path. A drift between the browser taxonomy and the registry is
+    # exactly what still fails this, which is the whole purpose of the suite.
+    #
+    # What the literals also did was rot. They said 96, then 60, and each retirement since has
+    # had to come here and retype them; Run 95 retired fifteen more and they would have said 45.
+    # The owner's Run 95 order forbids writing a target module count as a literal anywhere, and
+    # a literal in a check is still a literal. Nothing is loosened: an equality against an
+    # independently-read authority is the same assertion with a truthful right-hand side.
+    import importlib
+    _reg = importlib.import_module("app.simulation.registry")
+    _svc = _reg.service_index()
+    _reg_mods = len(_svc)
+    _reg_cats = len({v["category"] for v in _svc.values()})
     check(tx["allCats"] > tx["projCats"],
           "the taxonomy genuinely has a portfolio-level category to exclude "
           "(so the checks below are not vacuous)", json.dumps(tx))
-    check(tx["projMods"] == 60, "a project has 60 modules", str(tx["projMods"]))
-    check(tx["projCats"] == 11, "across 11 categories", str(tx["projCats"]))
-    check(tx["allMods"] == 60 and tx["allCats"] == 12,
-          "and the whole in-service taxonomy is 60 across 12, the retired modules appearing in "
-          "no browser population", f"{tx['allMods']}/{tx['allCats']}")
+    check(tx["projMods"] == _reg_mods,
+          "the browser's project population is exactly the registry's modules in service",
+          f"browser {tx['projMods']} / registry {_reg_mods}")
+    check(tx["allMods"] == _reg_mods,
+          "and so is the whole browser taxonomy -- no retired module reaches any population",
+          f"browser {tx['allMods']} / registry {_reg_mods}")
+    check(tx["projCats"] == _reg_cats,
+          "the browser's project categories are exactly the categories the registry still "
+          "holds a module in service for",
+          f"browser {tx['projCats']} / registry {_reg_cats} "
+          f"({sorted({v['category'] for v in _svc.values()})})")
+    # AND THE PORTFOLIO CONTAINER IS THE ONE DECLARED EXCEPTION, STATED RATHER THAN IMPLIED.
+    # D1 Portfolio Health holds NO module in service -- all five were retired at Run 43 -- and it
+    # is nevertheless still emitted, which is why allCats is one more than projCats above. Run 95
+    # made `build_client_taxonomy.py` drop a category that holds nothing, and scoped that rule to
+    # GROUP A precisely so this long-standing portfolio-level container was not swept away with
+    # A5. That scope is asserted here rather than left as a comment.
+    check(tx["allCats"] == _reg_cats + 1,
+          "exactly one category is emitted with no module in service, and it is the "
+          "portfolio-level container",
+          f"browser {tx['allCats']} / registry {_reg_cats} + D1")
+    check("A5" not in {v["category"] for v in _svc.values()},
+          "A5 Systems and Dynamics holds no module in service after Run 95")
     check(tx["d1Modules"] == 0,
           "Portfolio Health computes nowhere: its category container is retained and empty",
           str(tx["d1Modules"]))
@@ -338,8 +370,6 @@ def main() -> None:
     # empty d1 list on its own is also what a taxonomy that simply lost the rows would look like.
     # This asserts the registry's own account of them: each resolves, each is marked retired, and
     # each carries the reason it was retired with.
-    import importlib
-    _reg = importlib.import_module("app.simulation.registry")
     _d1 = ["D1.1", "D1.2", "D1.3", "D1.4", "D1.5"]
     _retired = _reg.retired_modules()
     check(all(m in _reg.registry_index() for m in _d1),

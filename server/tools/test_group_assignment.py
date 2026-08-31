@@ -36,7 +36,7 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 from app.simulation.models import VALIDATED          # noqa: E402
 from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
-from app.simulation.registry import unported_modules  # noqa: E402
+from app.simulation.registry import retired_modules, unported_modules  # noqa: E402
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACT = REPO_ROOT / "GROUP_ASSIGNMENT.md"
@@ -204,9 +204,26 @@ def main() -> int:
           f"{EXCLUDED_ID} is not counted in any group")
 
     print("\n-- the genuinely unported set --")
-    check(unported_modules() == [EXCLUDED_ID],
-          f"unported_modules() reports exactly {EXCLUDED_ID} "
+    # RUN 95 EMPTIED IT, AND THAT IS THE POINT OF THE CHANGE RATHER THAN A REGRESSION.
+    # A4.1 Document Risk Score was the ONLY module the registry declared in service and no
+    # runner implemented: it neither computed nor abstained, it RAISED, which the A4
+    # specification recorded as a standing contradiction. Run 95 retired it on the owner's
+    # instruction, and `unported_modules()` derives from `service_index()`, so retiring the
+    # last unported module empties the set by itself with no edit anywhere. The platform now
+    # has no module in service that it cannot run.
+    #
+    # The check is not deleted and not weakened. It still asserts an EXACT set, so a module
+    # appearing in service without a runner would still fail it; what changed is which exact
+    # set is true. The two facts that made A4.1 special are asserted separately just below and
+    # still hold, so the retirement is measured rather than assumed.
+    check(unported_modules() == [],
+          f"unported_modules() is now EMPTY -- every module in service has a runner "
           f"(found: {unported_modules()})")
+    check(EXCLUDED_ID in retired_modules(),
+          f"{EXCLUDED_ID} left the unported set by RETIREMENT, not by acquiring a runner "
+          f"(retired: {EXCLUDED_ID in retired_modules()})")
+    check(EXCLUDED_ID not in reg,
+          f"{EXCLUDED_ID} still has no runner, which is why it was retired rather than fixed")
     # Asked a second way, from the CSV and the two registries rather than from the function, so a
     # fault inside unported_modules() cannot make both agree. The check above is the contract; this
     # one is the independent witness that the contract is true of the data.

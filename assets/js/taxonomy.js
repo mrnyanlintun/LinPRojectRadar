@@ -46,7 +46,7 @@
    made in the wrong copy passed every source check while the live page stayed broken;
    and the two had already drifted apart on their own, with nine modules carrying
    `disabled: true` in one and not the other. */
-window.LIN_TAXONOMY_COUNTS = { registered: 101, inService: 60, retired: 41, serverComputes: 59, supplied: 1 };
+window.LIN_TAXONOMY_COUNTS = { registered: 101, inService: 45, retired: 56, serverComputes: 45, supplied: 0 };
 window.LIN_CATEGORIES = [
   {
     id: 'a1', key: 'A1', name: 'Cost and EVM Performance',
@@ -55,14 +55,11 @@ window.LIN_CATEGORIES = [
     description: 'Cost and schedule performance indices derived from verified pay applications and schedules.',
     modules: [
       { id: 'a1_2', module_id: 'A1.2', name: 'CUSUM Anomaly Monitor', method_class: 'CUSUM', active: true, required: ['spi'] },
-      { id: 'a1_3', module_id: 'A1.3', name: 'Bayesian EAC', method_class: 'Bayesian_EAC', active: true, required: ['bac','ev','ac','cpi'] },
-      { id: 'a1_4', module_id: 'A1.4', name: 'Kalman Filter SPI Smoother', method_class: 'Kalman_Filter', active: true, required: ['spi','spiHistory'] },
       { id: 'a1_5', module_id: 'A1.5', name: 'ARIMA CPI Forecast', method_class: 'ARIMA_Forecast', active: true, required: ['cpiHistory'] },
       { id: 'a1_6', module_id: 'A1.6', name: 'Earned Schedule', method_class: 'Earned_Schedule', active: true, required: ['ev','pv','bac','actualPctComplete','plannedPctComplete'] },
       { id: 'a1_7', module_id: 'A1.7', name: 'TCPI', method_class: 'TCPI', active: true, required: ['bac','ev','ac'] },
       { id: 'a1_8', module_id: 'A1.8', name: 'Variance at Completion', method_class: 'VAC', active: true, required: ['bac','cpi'] },
       { id: 'a1_9', module_id: 'A1.9', name: 'Budget Execution Rate', method_class: 'Budget_Execution_Rate', active: true, required: ['ac','bac','actualPctComplete'] },
-      { id: 'a1_10', module_id: 'A1.10', name: 'CPI Shrinkage Forecast', method_class: 'CPI_Shrinkage_Forecast', active: true, required: ['cpi','cpiHistory'] },
       { id: 'a1_11', module_id: 'A1.11', name: 'Independent EAC Reconciliation Index', method_class: 'Independent_EAC_Reconciliation', active: true, required: ['bac','cpi','ev','ac'] }
     ]
   },
@@ -73,8 +70,6 @@ window.LIN_CATEGORIES = [
     description: 'Schedule simulation and critical-path behavior.',
     modules: [
       { id: 'a2_1', module_id: 'A2.1', name: 'PERT Network Criticality', method_class: 'PERT_Network_Criticality', active: true, required: ['spi','bac'] },
-      { id: 'a2_2', module_id: 'A2.2', name: 'Line of Balance', method_class: 'Line_of_Balance_Velocity', active: true, required: ['spi','actualPctComplete','plannedPctComplete'] },
-      { id: 'a2_3', module_id: 'A2.3', name: 'CCPM Buffer Health', method_class: 'CCPM_Buffer_Health', active: true, required: ['actualPctComplete','plannedPctComplete'] },
       { id: 'a2_7', module_id: 'A2.7', name: 'Milestone Trend Analysis', method_class: 'Milestone_Trend', active: true, required: ['milestoneHistory'] },
       { id: 'a2_8', module_id: 'A2.8', name: 'Look-Ahead Schedule Health', method_class: 'Lookahead_Health', active: true, required: ['activitiesPlanned','activitiesConstrained'] },
       { id: 'a2_9', module_id: 'A2.9', name: 'Resource Loading Index', method_class: 'Resource_Loading', active: true, required: ['plannedLaborHours','actualLaborHours'] }
@@ -86,13 +81,10 @@ window.LIN_CATEGORIES = [
     color: '#22c1a4',
     description: 'Cost risk, contingency and parametric cost behavior.',
     modules: [
-      { id: 'a3_1', module_id: 'A3.1', name: 'Reference Class Forecasting', method_class: 'Reference_Class_Forecasting', active: true, required: ['bac','cpi'] },
       { id: 'a3_2', module_id: 'A3.2', name: 'Contingency Burn Rate', method_class: 'Contingency_Burn_Rate', active: true, required: ['originalContingency','remainingContingency','actualPctComplete'] },
       { id: 'a3_3', module_id: 'A3.3', name: 'Labor Productivity Index', method_class: 'Labor_Productivity', active: true, required: ['plannedLaborHours','actualLaborHours','actualPctComplete'] },
       { id: 'a3_5', module_id: 'A3.5', name: 'Overhead Absorption Rate', method_class: 'Overhead_Absorption', active: true, required: ['indirectCostPlan','indirectCostActual'] },
-      { id: 'a3_6', module_id: 'A3.6', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] },
-      { id: 'a3_7', module_id: 'A3.7', name: 'Analogous Estimating Ratio', method_class: 'Analogous_Estimating', active: true, required: ['analogousOverrunPct','bac'] },
-      { id: 'a3_9', module_id: 'A3.9', name: 'Inflation Adjustment Index', method_class: 'Inflation_Adjustment', active: true, required: ['materialCostBaseline','materialCostCurrent'] }
+      { id: 'a3_6', module_id: 'A3.6', name: 'Cost Risk Analysis P80', method_class: 'Cost_Risk_Analysis', active: true, required: ['bac','cpi','ac','ev'] }
     ]
   },
   {
@@ -101,7 +93,6 @@ window.LIN_CATEGORIES = [
     color: '#f0a020',
     description: 'Condition signals derived from project documents: RFIs, submittals, change orders and disputes.',
     modules: [
-      { id: 'a4_1', module_id: 'A4.1', name: 'Document Risk Score', method_class: 'Doc_Risk_Cat4', active: true, required: ['docRiskScore'] },
       { id: 'a4_2', module_id: 'A4.2', name: 'RFI Velocity', method_class: 'RFI_Velocity', active: true, required: ['rfiCount','rfiPeriodDays'] },
       { id: 'a4_3', module_id: 'A4.3', name: 'Submittal Rejection Rate', method_class: 'Submittal_Rejection', active: true, required: ['submittalsTotal','submittalsRejected'] },
       { id: 'a4_4', module_id: 'A4.4', name: 'NCR Rate', method_class: 'NCR_Rate', active: true, required: ['ncrIssued','ncrClosed','ncrOpen'], sectors: ['construction','hybrid'] },
@@ -109,21 +100,7 @@ window.LIN_CATEGORIES = [
       { id: 'a4_6', module_id: 'A4.6', name: 'Change Order Frequency', method_class: 'CO_Frequency', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] },
       { id: 'a4_7', module_id: 'A4.7', name: 'Dispute Escalation Index', method_class: 'Dispute_Escalation', active: true, required: ['docRiskScore','rfiCount','changeOrderCount'] },
       { id: 'a4_8', module_id: 'A4.8', name: 'Subcontractor Performance', method_class: 'Subcontractor_Performance', active: true, required: ['subcontractorComplianceScore'], sectors: ['construction','hybrid'] },
-      { id: 'a4_9', module_id: 'A4.9', name: 'Procurement Lead Time Monitor', method_class: 'Procurement_Lead_Time', active: true, required: ['longLeadItemsTotal','longLeadAtRisk','longLeadDelayed'], sectors: ['construction','hybrid'] },
-      { id: 'a4_10', module_id: 'A4.10', name: 'Specification Conflict Density', method_class: 'Spec_Conflict_Density', active: true, required: ['docRiskScore','rfiCount'] }
-    ]
-  },
-  {
-    id: 'a5', key: 'A5', name: 'System Dynamics and Complexity',
-    group: 'A', groupName: 'Project Health',
-    color: '#ff7ac6',
-    description: 'System dynamics, feedback and complexity behavior.',
-    modules: [
-      { id: 'a5_2', module_id: 'A5.2', name: 'Sensitivity Analysis', method_class: 'Sensitivity_Analysis', active: true, required: ['bac','ev','ac','pv','cpi','spi'] },
-      { id: 'a5_4', module_id: 'A5.4', name: 'Scenario Modeling', method_class: 'Scenario_Modeling', active: true, required: ['bac','ev','ac','cpi','spi'] },
-      { id: 'a5_6', module_id: 'A5.6', name: 'Queueing Theory Bottleneck', method_class: 'Queueing_Bottleneck', active: true, required: ['activitiesPlanned','activitiesConstrained'] },
-      { id: 'a5_7', module_id: 'A5.7', name: 'Agent-Based Supply Chain', method_class: 'Agent_Supply_Chain', active: true, required: ['longLeadItemsTotal','longLeadAtRisk'] },
-      { id: 'a5_8', module_id: 'A5.8', name: 'Discrete Event Simulation', method_class: 'Discrete_Event_Sim', active: true, required: ['spi','actualPctComplete','plannedPctComplete','cpi'] }
+      { id: 'a4_9', module_id: 'A4.9', name: 'Procurement Lead Time Monitor', method_class: 'Procurement_Lead_Time', active: true, required: ['longLeadItemsTotal','longLeadAtRisk','longLeadDelayed'], sectors: ['construction','hybrid'] }
     ]
   },
   {
@@ -313,11 +290,14 @@ window.projectLevelCategories = function () {
 };
 
 /* ---------------------------------------------------------------------------
-   RUN 90. THE SIX WEIGHTED PERFORMANCE CATEGORIES, AND THEY ARE THE ONLY THING
-   THE TWO CHARTS DRAW.
+   RUN 90, AMENDED BY RUN 95. THE WEIGHTED PERFORMANCE CATEGORIES, AND THEY ARE
+   THE ONLY THING THE TWO CHARTS DRAW. THERE ARE FIVE OF THEM SINCE RUN 95.
 
    The owner's ruling, Run 90 section 2: only Cost and EVM Performance, Schedule,
-   Cost Risk, Document Signals, Delivery Quality and Systems and Dynamics render.
+   Cost Risk, Document Signals and Delivery Quality render. Run 95 retired every
+   module Systems and Dynamics held, so it holds none in service and is not a
+   category of this platform any more -- it is absent from the generated roster
+   above, from the weighted profile, and from both charts.
    Everything else -- Data Integrity, Signal Synthesis, Evidence Combination,
    Regulatory and Authority Thresholds, Decision Optimisation -- runs in the
    background, informs the recommendation, and does not appear.
@@ -325,11 +305,11 @@ window.projectLevelCategories = function () {
    RESOLVED AGAINST THE TREE, NOT AGAINST THE ORDER'S NAMES. The order names them
    loosely. The tree's own resolution is
    `server/app/simulation/models_gov.py:WEIGHTED_VOTING_CATEGORY_WEIGHTS`, whose
-   key set is exactly A1 A2 A3 A4 A5 A6, with C1 held out by an executable assert
-   in `WEIGHTED_VOTING_EXCLUDED_CATEGORIES`. Those six are exactly the GROUP A
-   project-level categories in the generated block above, so this filter is
-   derived from the roster rather than written out as a list that could drift.
-   The length assert below is the executable form of "exactly six".
+   key set is exactly A1 A2 A3 A4 A6 since Run 95, with C1 held out by an
+   executable assert in `WEIGHTED_VOTING_EXCLUDED_CATEGORIES`. Those five are
+   exactly the GROUP A project-level categories in the generated block above, so
+   this filter is derived from the roster rather than written out as a list that
+   could drift.
 
    THE MODULE ROSTER IS THE REGISTRY'S. `modules` on each entry comes from the
    GENERATED block, which `server/tools/build_client_taxonomy.py` writes from
@@ -338,15 +318,35 @@ window.projectLevelCategories = function () {
    charts cannot draw one. Nothing hand-maintained is consulted.
    --------------------------------------------------------------------------- */
 window.performanceCategories = function () {
-  var six = window.projectLevelCategories().filter(function (c) {
+  var cats = window.projectLevelCategories().filter(function (c) {
     return c && c.group === 'A';
   });
-  if (six.length !== 6) {
-    /* Do not silently draw the wrong population. A caller gets what the roster
-       actually says and the console records that it is not six. */
-    try { console.warn('performanceCategories: expected 6, got ' + six.length); } catch (e) {}
+  /* RUN 95. THE COUNT IS NO LONGER SIX AND NO NUMBER IS WRITTEN HERE.
+
+     Run 90 wrote `!== 6` and Run 95 retired every module of A5 System Dynamics
+     & Complexity, so the roster now yields FIVE. The literal was not changed
+     from 6 to 5 and the guard was not deleted, because either would repeat the
+     failure it was written against: a stated number that drifts from the
+     computed one. What the guard actually needs to catch is a category being
+     DRAWN WITH NOTHING IN IT -- the owner's ruling that "an empty category is
+     not a category that failed to report, there is nothing in it to report".
+     That is checkable without knowing how many there should be.
+
+     `build_client_taxonomy.py` already declines to emit such a category, so
+     this should never fire; it is the client-side half of the same rule, kept
+     so a hand-edited or stale artifact cannot put an empty planet on a chart.
+     Whatever passes it is returned; nothing is filtered silently. */
+  var empty = cats.filter(function (c) {
+    return !(c.modules && c.modules.length);
+  });
+  if (empty.length) {
+    try {
+      console.warn('performanceCategories: ' + empty.length
+        + ' category(ies) carry no module in service and must not be drawn: '
+        + empty.map(function (c) { return c.key; }).join(', '));
+    } catch (e) {}
   }
-  return six;
+  return cats.filter(function (c) { return c.modules && c.modules.length; });
 };
 
 /* ============================================================================
