@@ -102,9 +102,28 @@ check("(4) shows every supporting category, assessed or not",
 check("(4b) a supporting category not assessed says so and produces NO Green",
       /A5[^\n]*\(supporting\): not assessed\. A supporting category that was not assessed never produces a Green\./
         .test(text), true);
-check("(5) escalates the assessed adverse conditions rather than waiting for the status",
-      /Escalate now, without waiting for an official posture: A1/.test(text)
-      && /Escalate now, without waiting for an official posture: A4/.test(text), true);
+// RUN 92. ASSERTION (5) UPDATED, NOT DELETED. It previously pinned the literal
+// "Escalate now, without waiting for an official posture: A1" -- the imperative LEADING and its
+// grounds trailing. The owner ruled at Run 92 that a recommendation states its reason before it
+// issues its instruction, so the escalation moved into the "What follows" sentence and the
+// category reading now leads. THE ASSERTION IS STRICTER AFTER THIS CHANGE, NOT WEAKER: it still
+// requires the escalation to be present for BOTH adverse categories, and it additionally
+// requires the ORDERING -- the reading and what it reaches must both precede the imperative.
+// Deleting it would leave a check that cannot fail, which is what it exists to prevent.
+function escalationOrderedFor(k) {
+  const reading = text.indexOf(k + " " );
+  const grounds = text.indexOf("What that reaches: " + k);
+  const order = text.indexOf("What follows: Escalate now, without waiting for an official "
+    + "posture. Treat this as a category-level finding on " + k);
+  // All three present, and the imperative last.
+  return reading >= 0 && grounds >= 0 && order >= 0 && grounds < order && reading < grounds;
+}
+check("(5) escalates the assessed adverse conditions rather than waiting for the status, with "
+      + "the instruction AFTER the grounds rather than before them",
+      escalationOrderedFor("A1") && escalationOrderedFor("A4"), true);
+check("(5-order) the leading imperative form is gone: no category reading is introduced by the "
+      + "escalation instead of stating itself first",
+      /Escalate now, without waiting for an official posture: A/.test(text), false);
 check("(5b) the recommendation is about evidence acquisition and verification",
       /Acquire the evidence/.test(text) && /Verify the figures already on file/.test(text), true);
 check("(5c) no fabricated health recommendation: no routine-monitoring or review-the-trend line",

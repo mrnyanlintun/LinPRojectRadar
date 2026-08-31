@@ -2114,7 +2114,14 @@
         });
         const isRequired = reqKeys.indexOf(c.key) >= 0;
         const isSupporting = supKeys.indexOf(c.key) >= 0;
-        iRec.push("Escalate now, without waiting for an official posture: " + c.key + " "
+        // RUN 92. THE REASON PRECEDES THE IMPERATIVE. This sentence led with "Escalate
+        // now, without waiting for an official posture:" and stated its grounds after it.
+        // The owner ruled at Run 92 that a recommendation states its reason before it
+        // issues its instruction, so the READING is stated here and the ESCALATION moved
+        // to the "What follows" sentence below, after what the reading does and does not
+        // reach. The instruction itself is UNCHANGED in force and its literal wording is
+        // preserved; only its position moved.
+        iRec.push(c.key + " " 
           + catName(c.key) + " reads " + c.status
           + (bits.length ? ", set by " + bits.join("; ") : "") + ".");
         // WHAT IT REACHES, AND WHAT IT DOES NOT. Stated from the basis the server published,
@@ -2132,7 +2139,8 @@
             + "What it does not reach: a project status now, because " + missing.join(", ")
             + " are still unassessed.");
         }
-        iRec.push("What follows: treat this as a category-level finding on " + c.key
+        iRec.push("What follows: Escalate now, without waiting for an official posture. "
+          + "Treat this as a category-level finding on " + c.key
           + " and act on it at that level; it is not evidence of a project-level condition, and "
           + "the absence of a project status is not evidence that there is none.");
       });
