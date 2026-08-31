@@ -79,7 +79,9 @@ def main() -> int:
     print("Run 87 goal one -- comparison-only modules and the category rollup")
 
     print("\n1. THE SET ESTABLISHED FROM THE TREE")
-    check("comparison-only set", sorted(sp.COMPARISON_ONLY_MODULES), ["B1.2", "B1.3", "B1.4"])
+    # RUN 98: trimmed to {B1.2}; B1.3 and B1.4 left the registry at Run 97 and no longer
+    # resolve, so naming them here asserted nothing about any module in service.
+    check("comparison-only set", sorted(sp.COMPARISON_ONLY_MODULES), ["B1.2"])
     check("B1.1 is admitted", sp.admitted_to_category_rollup("B1.1"), True)
     check("A1.7 is admitted", sp.admitted_to_category_rollup("A1.7"), True)
     check("B1.2 is not admitted", sp.admitted_to_category_rollup("B1.2"), False)
@@ -121,7 +123,7 @@ def main() -> int:
 
     print("\n5. RESTORED")
     check("project status back to unchanged", _project(inj), "Green")
-    check("set restored", sorted(sp.COMPARISON_ONLY_MODULES), ["B1.2", "B1.3", "B1.4"])
+    check("set restored", sorted(sp.COMPARISON_ONLY_MODULES), ["B1.2"])
 
     print("\n6. B1.1 IS NOT EXCLUDED -- its band still sets its category")
     b11 = _base()

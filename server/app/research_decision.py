@@ -451,8 +451,56 @@ def a_researchreveal(session: Session, payload: dict, secret: str, ttl: int) -> 
 # duplication: the action is what to do about the project, the disposition is what the
 # participant did with the recommendation. "I escalated, but that is not what the system advised"
 # is a distinguishable and analytically important answer.
+#
+# RUN 98. THE NINTH VALUE, AND WHY THE OTHER EIGHT ARE UNTOUCHED.
+#
+# The owner's ruling for Run 98 is that everything must record, even agreement, and that a
+# fifth disposition -- "record no action within current authority" -- is a real answer a
+# participant can give and must be distinguishable from "I judged and declined". No value in
+# the eight above says that: `defer` postpones, `reject` refuses, `accept` agrees, and none of
+# them states that the participant's own position holds no action to take.
+#
+# So the list is RECONCILED, NOT OVERWRITTEN. Nothing was removed, renamed or re-meant: all
+# eight T4 values are still valid, still validated by `a_researchdecision` below, and every
+# stored row keeps exactly the meaning it was written with. One value is APPENDED.
+#
+# THE STRING NAMES NO AUTHORITY, deliberately. "within current authority" is the participant's
+# statement about their own position. The platform records the answer; it does not model, hold
+# or assert who has what. There is no authority table behind this value and none is implied.
+#
+# The column is `Text`, nullable, and carries no constraint or enum, so appending a value needs
+# no migration and none was added.
 DISPOSITIONS = ("accept", "accept_with_conditions", "modify", "reject", "defer",
-                "request_evidence", "escalate", "transfer_authority")
+                "request_evidence", "escalate", "transfer_authority",
+                "no_action_within_current_authority")
+
+# RUN 98. THE FIVE THE GOVERNANCE DECISION CARD OFFERS, code and participant-facing label.
+#
+# This is a SUBSET of DISPOSITIONS, asserted below, so the card and the research decision form
+# can never drift onto two different vocabularies. Four of the five reuse a value that already
+# existed; the fifth is the one appended above.
+#
+# TWO RECONCILIATIONS ARE IMPERFECT AND ARE RECORDED HERE RATHER THAN PAPERED OVER:
+#
+#   "Defer pending evidence" -> `defer`. The tree holds TWO candidate values, `defer` and
+#   `request_evidence`, and they are not the same thing: one postpones, the other asks. The
+#   card's option states both at once. `defer` is stored because the recorded fact is that the
+#   decision was postponed; `request_evidence` is left in DISPOSITIONS, unaltered, for the
+#   research decision form which offers the two separately. Whether the card should offer them
+#   separately too is NOT decided here.
+#
+#   "Override finding" -> `reject`. `reject` is the closest existing value and it is NOT
+#   identical: overriding a finding is substituting one's own judgment for it, which is not the
+#   same act as refusing it. No new value was invented for this. It is reported for a ruling.
+PROJECT_DECISION_DISPOSITIONS = (
+    ("accept", "Accept finding"),
+    ("modify", "Modify finding"),
+    ("defer", "Defer pending evidence"),
+    ("reject", "Override finding"),
+    ("no_action_within_current_authority", "Record no action within current authority"),
+)
+assert all(code in DISPOSITIONS for code, _ in PROJECT_DECISION_DISPOSITIONS), \
+    "the card's dispositions must be a subset of DISPOSITIONS"
 
 # THE ACTION VOCABULARY, AND WHY IT IS OFFERED BUT NOT ENFORCED.
 #

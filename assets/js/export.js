@@ -79,29 +79,19 @@
       ["Report Period:", snapshot.period || ""],
       ["Generated:",     snapshot.computed_at || ""],
       [""],
+      // RUN 98. Authority / Recommended Action / Documentation Required are removed from the
+      // exported report. They came from `deriveDecision`, which no longer composes them: the
+      // platform states a finding and issues no action, no remedy and no authority, and an
+      // export that carried them made the claim the card had already stopped making.
       ["GOVERNANCE DECISION"],
       ["State:",                  gov.state || ""],
-      ["Authority:",              gov.authority || ""],
-      ["Recommended Action:",     gov.action || ""],
-      ["Documentation Required:", gov.documentation || ""],
       ["Fairness Gate:",          gov.fairness_gate ? "Required" : "Not required"],
       [""]
     ];
 
-    // Signal-traced action plan (deterministic rules, decision.js)
-    if (typeof deriveActionPlan === "function") {
-      try {
-        const plan = deriveActionPlan(project) || [];
-        if (plan.length) {
-          summaryRows.push(["SIGNAL-TRACED ACTION PLAN"]);
-          summaryRows.push(["Trigger", "What", "Who", "How", "When", "Inform"]);
-          plan.forEach((r) => {
-            summaryRows.push([r.trigger, r.what, r.who, r.how, r.when, r.inform]);
-          });
-          summaryRows.push([""]);
-        }
-      } catch (e) { /* plan derivation must never block the export */ }
-    }
+    // RUN 98. The SIGNAL-TRACED ACTION PLAN block is removed from the export. It printed the
+    // Trigger / What / Who / How / When / Inform rows -- an assigned actor, a prescribed
+    // method and a deadline -- into the workbook. `deriveActionPlan` no longer exists.
 
     summaryRows.push(
       ["SIGNAL INPUTS"],

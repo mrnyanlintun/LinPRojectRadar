@@ -1433,6 +1433,17 @@
       if (resp.result.decision_brief && !p.storedResult.decision_brief) {
         p.storedResult.decision_brief = resp.result.decision_brief;
       }
+      // THE NINTH FIELD, RUN 98, AND IT IS THE SAME DEFECT AS THE EIGHTH, ONE RUN LATER.
+      // `decision_dispositions` -- the five the Governance Decision card offers, served from
+      // `research_decision.PROJECT_DECISION_DISPOSITIONS` through `_result_view` -- is NOT on
+      // the list projection. `rowFor` prefers `storedResult`, so the card's renderer found no
+      // list and rendered its "no disposition list, so no decision can be recorded" fallback.
+      // MEASURED in a real browser at 1280px before this graft: the server served all five on
+      // the row while `select.disposition` did not exist in the DOM at all. Same graft, same
+      // guarded shape, same reason as the eight fields above.
+      if (resp.result.decision_dispositions && !p.storedResult.decision_dispositions) {
+        p.storedResult.decision_dispositions = resp.result.decision_dispositions;
+      }
     } else if (!p.storedResult) {
       // a_get delivered no storedResult (a race, or the list projection had not attached it
       // yet) but the row exists. Attach it so every rowFor(p) on this page reads the complete
@@ -1452,6 +1463,28 @@
     // Same reason the badges above are recomputed, and the same scope: it replaces text inside
     // a panel that already exists and touches no control.
     refreshBriefConsistency(p);
+
+    // RUN 98. THE GOVERNANCE DECISION CARD GETS THE SAME SECOND PASS.
+    //
+    // MEASURED at 1024px on the owner's own route, before this run: the card rendered with NO
+    // decision brief at all -- just its heading, its state badge and the courses-of-action
+    // block -- while the served row carried all nine composed blocks. The card is a LAZY
+    // section: `runLazyInit` draws it once, and at that width the section was already open at
+    // render() time, so it drew from the row that had not arrived yet and was never drawn
+    // again. At 1280px the section was closed, was opened after the fetch returned, and drew
+    // correctly -- which is why one width looked right and the other did not.
+    //
+    // Same class, same treatment and same scope as the badges and the brief above: if the
+    // panel exists and is open, redraw it from the now-complete row. Nothing is supplied to
+    // the renderer; it reads `rowFor(p)` exactly as it does on a click.
+    try {
+      const decisionBody = document.getElementById("body-d-decision");
+      const decisionHost = document.querySelector(".detail-decision");
+      if (decisionHost && decisionBody && decisionBody.style.display !== "none"
+          && window.LinApp && LinApp.renderDecisionCard) {
+        LinApp.renderDecisionCard(p, decisionHost);
+      }
+    } catch (e) { /* a second pass must never break the first */ }
 
     // RUN 61, SECTION 4.4. THE PROVENANCE LINE GETS THE SAME SECOND PASS EVERY OTHER PANEL HAS.
     //

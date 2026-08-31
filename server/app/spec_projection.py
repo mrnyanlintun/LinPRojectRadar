@@ -203,7 +203,13 @@ def abstention_rows(readings: dict[str, SpecificationReading]) -> list[dict[str,
 # activation_state` returns it for EVERY module not in CORE_VOTING_MODULES and not disabled, so
 # reading that string as "excluded from its category" would empty every category on the page.
 # The narrowing word in the tree is COMPARISON, and it names exactly these three.
-COMPARISON_ONLY_MODULES: frozenset[str] = frozenset({"B1.2", "B1.3", "B1.4"})
+#
+# RUN 98. TRIMMED TO {B1.2}. B1.3 and B1.4 were removed from the registry at Run 97 and no
+# longer resolve to anything: the roster is thirty modules and neither id is among them. A set
+# naming two identifiers that do not exist cannot exclude them from a rollup they can never
+# reach, and it made the set unreadable as a statement about the platform in service. B1.2 is
+# unchanged and the RULE is unchanged -- what it names is now only what exists.
+COMPARISON_ONLY_MODULES: frozenset[str] = frozenset({"B1.2"})
 
 
 def admitted_to_category_rollup(module_id: str | None) -> bool:

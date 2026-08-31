@@ -302,194 +302,39 @@ function deriveDecision(project) {
   const escalate = healthState === "Red" || healthState === "Red-review";
   const fairnessGateRequired = escalate && project.fairnessSensitive === true;
 
-  let action, authority, documentation;
-
-  if (healthState === "Complete") {
-    action = "Project complete: proceed to close-out and any liability-period monitoring";
-    authority = "Project manager / Controls lead";
-    documentation = "Close-out record; monitor through the defects-liability period where applicable";
-  } else if (healthState === "Green") {
-    action = "Routine monitoring";
-    authority = "Project manager / Controls lead";
-    documentation = "Monthly signal log entry";
-  } else if (escalate) {
-    action = fairnessGateRequired
-      ? "Request contractor explanation and recovery-plan review; fairness gate required before any formal action"
-      : "Recovery-plan review and management escalation";
-    authority = fairnessGateRequired
-      ? "Program director / PMO with contract-administration awareness"
-      : "Program director / PMO lead";
-    documentation =
-      "Full signal package, assigned owner, rationale, response timeframe, audit record";
-  } else {
-    // Yellow / Amber early-warning sub-cases keyed to the conflict type
-    if (conflictType === "Forecast ahead of status") {
-      action = "Investigate forecast assumptions and mitigation options";
-    } else if (conflictType === "Anomaly without narrative") {
-      action = "Controls review: request explanation for unexplained trend drift";
-    } else if (conflictType === "Leading document risk") {
-      action = "Early-warning review; verify document evidence; update risk register";
-    } else {
-      action = "Early-warning review; update risk register; set follow-up date";
-    }
-    authority = "Project manager + Project controls lead";
-    documentation = "Risk-register update, rationale, follow-up date";
-  }
-
-  return { healthState, conflictType, action, authority, documentation, fairnessGateRequired };
+  // RUN 98. `action`, `authority` and `documentation` ARE GONE.
+  //
+  // They were not on the card any more -- Run 97 removed the "Recommended action" block -- but
+  // they were still composed here and still copied verbatim into the exported audit JSON and
+  // the XLSX by `buildAuditRecord` and `export.js`. What they carried: "Recovery-plan review
+  // and management escalation", "Program director / PMO lead", "Full signal package, assigned
+  // owner, rationale, response timeframe, audit record". That is a prescribed remedy, an
+  // assigned authority and a required documentation list. An action plan absent from the card
+  // but present in the exported record is the same claim in a different place.
+  //
+  // `healthState`, `conflictType` and `fairnessGateRequired` are UNCHANGED: the first two are
+  // read by the card's state badge and by the charts, and the third is left as the boolean it
+  // was so nothing downstream that reads it changes shape.
+  return { healthState, conflictType, fairnessGateRequired };
 }
 
 /* ------------------------------------------------------------
-   4b. Signal-traced action plan
+   4b. RUN 98. THE SIGNAL-TRACED ACTION PLAN IS GONE.
    ------------------------------------------------------------
-   Deterministic what/who/how/when/inform rules per category.
-   Every row is traced to the exact category (or module) that
-   triggered it — never free text, never model output. A reviewer
-   can read: "this row exists because Cat 3 Cost is Amber."
+   `CATEGORY_ACTIONS` and `deriveActionPlan` are removed. They produced rows with the columns
+   Trigger / What / Who / How / When / Inform -- an assigned actor, a prescribed method, a
+   deadline and a notification list. The card's premise is that the platform states a finding
+   and never issues an action, and the footer's "recommendation only" did not change what the
+   table said.
+
+   MEASURED BEFORE REMOVAL: `deriveActionPlan` already returned an empty list on every real
+   project and had since Run 90 -- `CATEGORY_ACTIONS` was keyed cat1..cat11 while
+   `LIN_CATEGORIES` ids are a1..d1, so its lookup never matched, and `getProjectFusion` has not
+   returned `redFlags` since taxonomy.js replaced categories.js. The rendered card carried no
+   action plan on the owner's own route at this head. The rules were still in the file, still
+   reachable by any caller, and still copied into the exported audit JSON and the XLSX through
+   `buildAuditRecord` and `export.js`; all three call sites are removed with them.
    ------------------------------------------------------------ */
-const CATEGORY_ACTIONS = {
-  cat1: {
-    what: "Investigate cost/schedule variance drivers",
-    who: "Project Controls Lead",
-    how: "Reconcile EV/AC/PV against pay applications and schedule updates; verify data date alignment; identify top 3 variance work packages",
-    when: { Yellow: "Next monthly cycle", Amber: "Within 10 business days", Red: "Within 48 business hours" },
-    inform: "Project Manager; Program Manager if Red"
-  },
-  cat2: {
-    what: "Adjust schedule and recover float",
-    who: "Scheduler + Project Manager",
-    how: "Re-sequence near-critical activities; verify look-ahead constraints are being cleared; evaluate compression options (crash/fast-track) with cost trade-off",
-    when: { Yellow: "Next schedule update", Amber: "Within 2 weekly cycles", Red: "Immediate recovery-schedule workshop" },
-    inform: "Owner's representative; affected trade contractors"
-  },
-  cat3: {
-    what: "Control budget and contingency burn",
-    who: "Cost Engineer + Project Controls Lead",
-    how: "Freeze non-essential commitments; review contingency drawdown vs % complete; re-forecast EAC using current productivity; validate pending change orders",
-    when: { Yellow: "Next cost report", Amber: "Within 10 business days", Red: "Within 48 business hours" },
-    inform: "Project Manager; Finance/PMO if Red"
-  },
-  cat4: {
-    what: "Resolve open RFIs, submittals, and technical issues",
-    who: "Design Manager + Document Controller",
-    how: "Prioritize overdue RFIs by schedule impact; expedite rejected submittal resubmissions; escalate unresolved technical conflicts to the design team; update risk register",
-    when: { Yellow: "Within 2 weeks", Amber: "Within 1 week", Red: "Daily standup until cleared" },
-    inform: "Architect/Engineer of record; affected subcontractors"
-  },
-  cat5: {
-    what: "Break rework and cascade loops",
-    who: "Project Manager + Design Manager",
-    how: "Identify the propagation source (design change, rework feedback); contain scope of affected work packages; sequence corrective work to avoid re-triggering",
-    when: { Yellow: "Next coordination meeting", Amber: "Within 1 week", Red: "Immediate containment review" },
-    inform: "All affected discipline leads"
-  },
-  cat6: {
-    what: "Reconcile disagreeing signal classes",
-    who: "Project Controls Lead",
-    how: "Review which synthesis rules disagree (conservative vs weighted); verify underlying data quality before acting on the composite",
-    when: { any: "Before next governance decision" },
-    inform: "Project Manager"
-  },
-  cat7: {
-    what: "Investigate evidence conflict before acting",
-    who: "Project Controls Lead + Reviewer",
-    how: "Check the conflict coefficient K; identify which evidence methods dissent and why; do not record a decision until conflict is explained",
-    when: { any: "Before next governance decision" },
-    inform: "Named decision reviewer"
-  },
-  cat8: {
-    what: "Review portfolio anomaly signals",
-    who: "PMO Analyst",
-    how: "Compare this project's trajectory against portfolio peers; verify anomaly is real (not data artifact); document explanation or corrective plan",
-    when: { Yellow: "Next portfolio review", Amber: "Within 2 weeks", Red: "Within 1 week" },
-    inform: "Program Manager"
-  },
-  cat9: {
-    what: "Address compliance threshold breaches",
-    who: "Project Manager + Contract Administrator",
-    how: "Identify which gate breached (EVM threshold, safety, quality, environmental); execute the prescribed regulatory response; document corrective action",
-    when: { Yellow: "Next reporting cycle", Amber: "Within 5 business days", Red: "Immediate; regulatory clock may be running" },
-    inform: "Contracting Officer / Executive as required by the gate"
-  },
-  cat10: {
-    what: "Fix data quality before trusting signals",
-    who: "Document Controller + Project Controls Lead",
-    how: "Locate missing/stale fields flagged by the integrity modules; re-upload or correct source documents; re-run signals after correction",
-    when: { any: "Before acting on any other signal" },
-    inform: "Project Manager"
-  },
-  cat11: {
-    what: "Re-evaluate decision trade-offs",
-    who: "Project Manager",
-    how: "Review the optimization ranking against current constraints; confirm the recommended option still dominates under updated signals",
-    when: { any: "Next decision point" },
-    inform: "PMO"
-  }
-};
-
-function deriveActionPlan(project) {
-  const rows = [];
-  const cats = (typeof window !== "undefined" && window.LIN_CATEGORIES) || [];
-  const triggeredCatKeys = {};
-
-  // 1. One row per Yellow/Amber/Red category (DST-fused status)
-  cats.forEach((c) => {
-    let st = null;
-    try {
-      if (window.getCategoryStatus) st = window.getCategoryStatus(c.id, project);
-    } catch (e) {}
-    const sev = normalizeStatusLabel(st);
-    if (sev !== "Yellow" && sev !== "Amber" && sev !== "Red") return;
-    const a = CATEGORY_ACTIONS[c.id];
-    if (!a) return;
-    triggeredCatKeys[c.key] = true;
-    rows.push({
-      trigger: c.name + ": " + sev,
-      severity: sev,
-      what: a.what,
-      who: a.who,
-      how: a.how,
-      when: a.when[sev] || a.when.any || "Next reporting cycle",
-      inform: a.inform
-    });
-  });
-
-  // 2. Module-level watch rows: Red modules whose category didn't emit a row
-  let fusion = null;
-  try {
-    if (typeof window !== "undefined" && window.getProjectFusion) fusion = window.getProjectFusion(project);
-  } catch (e) {}
-  ((fusion && fusion.redFlags) || []).forEach((f) => {
-    if (triggeredCatKeys[f.category]) return;
-    const cat = cats.find((c) => c.key === f.category);
-    const a = cat ? CATEGORY_ACTIONS[cat.id] : null;
-    rows.push({
-      trigger: f.module + ": Red",
-      severity: "Red",
-      what: "Investigate red module signal",
-      who: a ? a.who : "Project Controls Lead",
-      how: "Open the module evidence metric; verify inputs; explain or escalate",
-      when: "Within 5 business days",
-      inform: a ? a.inform : "Project Manager"
-    });
-  });
-
-  // 3. NO ALL-CLEAR FALLBACK. An empty plan means nothing was established, not that everything
-  //    is fine, and those must not render the same.
-  //
-  //    There used to be a "All categories Green / Routine monitoring" row here for the empty
-  //    case. Both branches above are unreachable today — CATEGORY_ACTIONS is keyed cat1..cat11
-  //    while LIN_CATEGORIES ids are a1..d1, so its lookup never matches, and getProjectFusion
-  //    has not returned redFlags since taxonomy.js replaced categories.js — so that row was the
-  //    ONLY output this function ever produced. It printed "All categories Green" beside a Red
-  //    badge on the same card, from a different source than the badge reads.
-  //
-  //    Returning nothing makes actionPlanHtml render nothing, which is the same abstain-by-
-  //    absence contract the project-level modules keep: a module with no evidence is absent from
-  //    module_results rather than present with a reassuring value. Restoring an all-clear here
-  //    would restore the contradiction.
-  return rows;
-}
 
 /* ------------------------------------------------------------
    5. Audit-record assembly
@@ -503,18 +348,17 @@ function buildAuditRecord(project, decision, reviewerInput) {
     project_name: project.name,
     reporting_period: project.reportingPeriod,
     signal_package: project.signals,
+    // RUN 98. `recommended_action`, `authority`, `documentation_required` and `action_plan`
+    // are removed from the exported record for the reason written at `deriveDecision`: the
+    // platform states a finding, and an action recommendation in the export is the same claim
+    // the card no longer makes.
     derived_decision: {
       health_state: decision.healthState,
       conflict_type: decision.conflictType,
-      recommended_action: decision.action,
-      authority: decision.authority,
-      documentation_required: decision.documentation,
-      fairness_gate_required: decision.fairnessGateRequired,
-      action_plan: deriveActionPlan(project)
+      fairness_gate_required: decision.fairnessGateRequired
     },
     human_review: {
       rationale: reviewerInput.rationale,
-      fairness_gate_acknowledged: reviewerInput.fairnessAcknowledged === true,
       recorded_at: reviewerInput.recordedAt
     }
   };

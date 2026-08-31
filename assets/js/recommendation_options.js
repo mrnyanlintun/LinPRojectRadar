@@ -228,8 +228,20 @@
     // declaration would leave it undefined here and the gate would never fire.
     var docEv = (result && result.document_evidence) || null;
     var exp = exposure(mods, si, docEv);
-    var gov = mods.ABM_Governance;
-    var authority = (gov && gov.authority) ? String(gov.authority) : null;
+    // RUN 98, GOAL ONE. THE NAMED AUTHORITY IS GONE FROM THIS CARD.
+    //
+    // This read `mods.ABM_Governance.authority` and, where it resolved, printed "It moves the
+    // decision to <authority>" and "once it is a matter for review, <authority> holds it, not
+    // you" onto the Governance Decision card. That is the platform naming who holds what, which
+    // is exactly what it must not do.
+    //
+    // MEASURED: `ABM_Governance` is not a method class of any module in service --
+    // `registry.VALIDATED` holds thirty entries and none of them is it -- so `authority` has
+    // resolved to null on every project since the roster was cut, and the only branch that
+    // could run was the one below stating the absence. The dead naming branch is removed; the
+    // statement of absence is kept, because "the platform holds no record of this" is a true
+    // thing to say and inventing one is not.
+    var authority = null;
 
     var keys = Object.keys(scores).filter(function (k) { return isNum(scores[k]); });
 

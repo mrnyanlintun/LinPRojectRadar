@@ -72,7 +72,6 @@
   const CENTER_Y = SCOPE_H / 2;      // 230 — circle always centered in its band
 
   let selectedId = null;
-  const decisionLog = [];
 
   /* ---------- small helpers ---------- */
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -1397,37 +1396,6 @@
   /* ---------- decision card ----------
      Renders into any container (portfolio side panel or Project Detail),
      so all controls are class-scoped to the container — no duplicate ids. */
-  /* Signal-traced action plan table — every row is a deterministic PCEIF rule
-     traced to the exact category/module that triggered it (decision.js). */
-  function actionPlanHtml(p) {
-    if (typeof deriveActionPlan !== "function") return "";
-    let rows = [];
-    try { rows = deriveActionPlan(p) || []; } catch (e) { return ""; }
-    if (!rows.length) return "";
-    const hex = (typeof PCEIF_STATUS_HEX !== "undefined" && PCEIF_STATUS_HEX) || {};
-    const body = rows.map((r) => {
-      const c = hex[r.severity] || "#c8d4e8";
-      return `<tr>
-        <td class="ap-trigger" style="color:${esc(c)}">${esc(r.trigger)}</td>
-        <td>${esc(r.what)}</td>
-        <td>${esc(r.who)}</td>
-        <td>${esc(r.how)}</td>
-        <td>${esc(r.when)}</td>
-        <td>${esc(r.inform)}</td>
-      </tr>`;
-    }).join("");
-    return `<div class="dc-action-plan">
-        <h3 class="ap-title">Signal-Traced Action Plan</h3>
-        <div style="overflow-x:auto">
-        <table class="ap-table">
-          <thead><tr><th>Trigger</th><th>What</th><th>Who</th><th>How</th><th>When</th><th>Inform</th></tr></thead>
-          <tbody>${body}</tbody>
-        </table>
-        </div>
-        <p class="dc-note">Actions are deterministic governance rules traced to signal categories: recommendation only; a named human reviewer records the decision.</p>
-      </div>`;
-  }
-
   // T12b. Same fault, same fix as renderLedger above: the gate asked hasSignals(p) for the
   // legacy blob, but deriveDecision -> deriveHealthState reads the stored row through
   // getProjectFusion, and deriveDecision -> classifyConflict is now defensive against a missing
@@ -1462,13 +1430,30 @@
     const optionsHtml = (window.LinRecOptions && LinRecOptions.htmlForProject)
       ? LinRecOptions.htmlForProject(p) : "";
 
-    const fairnessBlock = d.fairnessGateRequired
-      ? `<label class="fairness-gate">
-           <input type="checkbox" class="fairness-check" />
-           <span>Contractor response opportunity will be provided before any formal action.
-           Required before this decision can be recorded.</span>
+    // RUN 98, GOAL TWO. THE FIVE DISPOSITIONS, SERVED FROM PYTHON, NOT WRITTEN HERE.
+    //
+    // `decision_dispositions` arrives on the served result from `documents._result_view`, which
+    // reads `research_decision.PROJECT_DECISION_DISPOSITIONS`. The browser cannot offer a value
+    // the server would refuse, and there is no list of dispositions written in this file to
+    // drift out of step with the one the server validates against.
+    //
+    // EVERY ONE OF THEM RECORDS. There is no default selection and no branch that discards an
+    // answer: "Accept finding" is written through the same route, into the same append-only
+    // audit row, as every other. Recording is blocked only until a disposition is chosen and a
+    // rationale is entered -- the rationale rule the card already had, unchanged for accept
+    // because no ruling has been made on it.
+    const dispositions = (row && Array.isArray(row.decision_dispositions))
+      ? row.decision_dispositions : [];
+    const dispositionBlock = dispositions.length
+      ? `<label class="disposition-label">Decision recorded
+           <select class="disposition">
+             <option value="" selected>Choose a disposition</option>
+             ${dispositions.map((o) =>
+               `<option value="${esc(o.code)}">${esc(o.label)}</option>`).join("")}
+           </select>
          </label>`
-      : "";
+      : `<p class="disposition-absent">The served result carries no disposition list, so no
+         decision can be recorded on this screen. Nothing is assumed in its place.</p>`;
 
     root.innerHTML =
       `<div class="dc-head">
@@ -1480,15 +1465,15 @@
        </div>
        ${briefHtml}
        ${optionsHtml}
-       ${actionPlanHtml(p)}
-       ${fairnessBlock}
-       <label class="rationale-label">Reviewer rationale <span class="req">(required, min 20 characters)</span>
-       <textarea class="rationale" placeholder="State why this action is taken, deferred, or overridden. Recorded to the audit log."></textarea></label>
+       ${dispositionBlock}
+       <label class="rationale-label">Reviewer rationale <span class="req">(min 20 characters)</span>
+       <textarea class="rationale" placeholder="The reasoning behind the disposition recorded here. Entered by the reviewer and kept with the audit record."></textarea></label>
        <div class="dc-actions">
          <button class="btn primary record-btn" disabled>Record decision</button>
          <button class="btn export-btn">Export audit JSON</button>
          <button class="btn export-xlsx-btn">Export Report (XLSX)</button>
        </div>
+       <p class="dc-record-note"></p>
        <p class="dc-note">The platform states a finding and a question. A named human reviewer records the decision; nothing here triggers any action on its own.</p>`;
 
     wireDecisionControls(p, d, root);
@@ -1497,37 +1482,76 @@
   function wireDecisionControls(p, d, root) {
     const rationale = $(".rationale", root);
     const recordBtn = $(".record-btn", root);
-    const fairnessCheck = $(".fairness-check", root); // may be null
+    const disposition = $(".disposition", root);   // null when the server sent no list
+    const note = $(".dc-record-note", root);
 
     const evaluate = () => {
       const longEnough = rationale.value.trim().length >= 20;
-      const fairnessOk = !d.fairnessGateRequired || (fairnessCheck && fairnessCheck.checked);
-      recordBtn.disabled = !(longEnough && fairnessOk);
+      const chosen = !!(disposition && disposition.value);
+      recordBtn.disabled = !(longEnough && chosen);
     };
 
     rationale.addEventListener("input", evaluate);
-    if (fairnessCheck) fairnessCheck.addEventListener("change", evaluate);
+    if (disposition) disposition.addEventListener("change", evaluate);
+    evaluate();
 
-    recordBtn.addEventListener("click", () => {
-      const entry = {
-        project: p.id,
-        state: d.healthState,
-        action: d.action,
-        rationale: rationale.value.trim(),
-        fairnessAcknowledged: d.fairnessGateRequired ? fairnessCheck.checked : null,
-        recordedAt: new Date().toISOString()
-      };
-      decisionLog.unshift(entry);
-      renderDecisionLog();
+    // RUN 98, GOAL TWO. THE BUTTON WRITES THROUGH THE REAL ROUTE AND THEN READS IT BACK.
+    //
+    // What this replaced: the button pushed an object onto an in-browser array
+    // (`decisionLog`) and rendered it. Nothing left the tab. A decision "recorded" that way was
+    // gone on reload and appeared in no audit record at all, which is the opposite of the
+    // owner's ruling that everything must record.
+    //
+    // Now: `projectdecisionrecord` appends ONE audit row server-side, and the line under the
+    // button is filled from `projectdecisions` -- the READ-BACK, not the write's own answer.
+    recordBtn.addEventListener("click", async () => {
+      if (!disposition || !disposition.value) return;
+      recordBtn.disabled = true;
+      const tok = window.LinAuth ? LinAuth.getToken() : null;
+      const row2 = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(p) : null;
+      let resp;
+      try {
+        resp = await LinStore.postWithTimeout({
+          action: "projectdecisionrecord", id: p.id, session_token: tok,
+          disposition: disposition.value,
+          period: row2 ? row2.period : null,
+          rationale: rationale.value.trim()
+        }, 60000);
+      } catch (e) {
+        if (note) note.textContent = "The decision was not recorded: " + (e && e.message);
+        evaluate();
+        return;
+      }
+      if (!resp || resp.ok !== true) {
+        if (note) note.textContent = "The decision was not recorded: "
+          + ((resp && resp.error) || "the route did not answer.");
+        evaluate();
+        return;
+      }
+      // READ BACK. The line below states what the audit record HOLDS, not what was sent.
+      let back;
+      try {
+        back = await LinStore.postWithTimeout(
+          {action: "projectdecisions", id: p.id, session_token: tok}, 60000);
+      } catch (e) { back = null; }
+      const rows = (back && back.ok && Array.isArray(back.decisions)) ? back.decisions : [];
+      const mine = rows.find((r) => r.event_id === resp.event_id);
+      if (note) {
+        note.textContent = mine
+          ? ("Recorded in the audit record: " + mine.disposition
+             + " · period " + (mine.period === null ? "not stated" : mine.period)
+             + " · posture " + (mine.posture || "not issued")
+             + " · " + mine.recorded_at)
+          : "The write returned ok but the audit record does not read it back.";
+      }
       rationale.value = "";
-      if (fairnessCheck) fairnessCheck.checked = false;
+      disposition.value = "";
       evaluate();
     });
 
     $(".export-btn", root).addEventListener("click", () => {
       const reviewerInput = {
         rationale: rationale.value.trim() || "(not recorded at export time)",
-        fairnessAcknowledged: fairnessCheck ? fairnessCheck.checked : null,
         recordedAt: new Date().toISOString()
       };
       const record = buildAuditRecord(p, d, reviewerInput);
@@ -1561,23 +1585,11 @@
     });
   }
 
-  function renderDecisionLog() {
-    const wrap = $("#decision-log");
-    if (!wrap) return;   // decision log lives off the portfolio page now
-    if (!decisionLog.length) {
-      wrap.innerHTML = `<p class="log-empty">No decisions recorded this session.</p>`;
-      return;
-    }
-    wrap.innerHTML =
-      `<p class="eyebrow">Decision log (this session)</p>` +
-      decisionLog.map((e) => `
-        <div class="log-entry">
-          <div class="log-top"><span class="log-proj">${esc(e.project)}</span><span class="log-state state-${esc(e.state.toLowerCase().replace("-review",""))}">${esc(e.state)}</span></div>
-          <div class="log-action">${esc(e.action)}</div>
-          <div class="log-rationale">“${esc(e.rationale)}”</div>
-          <div class="log-time">${esc(LinTZ.format(e.recordedAt))}${e.fairnessAcknowledged ? " · fairness gate acknowledged" : ""}</div>
-        </div>`).join("");
-  }
+  // RUN 98. `renderDecisionLog` IS GONE, and with it the in-browser `decisionLog` array.
+  // It rendered a session-only list that nothing writes any more (the Record decision button
+  // now writes an append-only audit row through `projectdecisionrecord`), into a
+  // `#decision-log` element that exists in no HTML file in this repository. It printed
+  // `e.action` -- the removed action recommendation -- for every entry. Nothing calls it.
 
   /* ---------- selection orchestration ---------- */
   function selectProject(id) {
@@ -1706,7 +1718,7 @@
     const tick = () => { node.textContent = LinTZ.clock(); };
     tick();
     setInterval(tick, 1000);
-    document.addEventListener("lin:tz-changed", () => { tick(); renderDecisionLog(); });
+    document.addEventListener("lin:tz-changed", () => { tick(); });
   }
 
   function wireTzSelect() {
@@ -2800,7 +2812,6 @@
       if (emailEl && window.LinAuth && LinAuth.getEmail) emailEl.textContent = LinAuth.getEmail() || "";
     } catch (e) { /* non-fatal */ }
     showPage("portfolio");
-    renderDecisionLog();
 
     // T6. The folded surfaces boot here, after auth has settled, rather than from their own
     // DOMContentLoaded handlers — those would have raced the login screen and rendered a

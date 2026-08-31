@@ -1342,11 +1342,26 @@ var HEADERS = [
          category carries. That is what lets a reader follow one module's stream by eye without
          confusing its identity with a verdict. */
       var idCol = idColour('module', m.module_id || m.name, null);
-      if (idCol) se('circle', { cx:modXs[mi], cy:modY[mi], r:'6.5', fill:'none', stroke:idCol,
-                                'stroke-width':'1.6', opacity:'0.9',
-                                'data-kind':'module-identity', 'data-module':m.module_id || m.name,
-                                'data-identity-color':idCol }, g);
-      var circle = seShape(dotShape, modXs[mi], modY[mi], 4, circleAttrs, g);
+      /* RUN 98, GOAL THREE. TWO CONNECTION POINTS ON ONE NODE, NOT TWO STATES.
+         The incoming branch from this module's documents lands on the LEFT dot at COL_MOD; the
+         outgoing branch to its category leaves from the RIGHT dot at COL_MOD +
+         MOD_LABEL_GUTTER, which is exactly where `modCatEls` above already starts that path.
+         Before this run only the left dot was drawn, so the outgoing line began in empty space.
+         THE TWO DOTS ARE IDENTICAL: same shape, same radius, same fill, same opacity, same
+         identity ring, same stroke width. Nothing about either encodes a state that the other
+         does not -- `data-port` names which end of the node it is and asserts nothing else. */
+      function modulePort(px, port) {
+        if (idCol) se('circle', { cx:px, cy:modY[mi], r:'6.5', fill:'none', stroke:idCol,
+                                  'stroke-width':'1.6', opacity:'0.9',
+                                  'data-kind':'module-identity', 'data-module':m.module_id || m.name,
+                                  'data-port':port,
+                                  'data-identity-color':idCol }, g);
+        var a = {}; for (var k in circleAttrs) a[k] = circleAttrs[k];
+        a['data-port'] = port;
+        return seShape(dotShape, px, modY[mi], 4, a, g);
+      }
+      var circle = modulePort(modXs[mi], 'in');
+      modulePort(COL_MOD + MOD_LABEL_GUTTER, 'out');
       if (info.status === 'Red') circle.classList.add('lnf-red-pulse');
 
       var lbl = se('text', {
@@ -1419,11 +1434,25 @@ var HEADERS = [
       if (glow) cAttrs.filter = glow;
       var catShape = window.linStatusShape ? linStatusShape(cs) : 'circle';
       var catIdCol2 = idColour('category', cat.taxId || cat.name, null);
-      if (catIdCol2) se('circle', { cx:x, cy:y, r:'13', fill:'none', stroke:catIdCol2,
-                                    'stroke-width':'2', opacity:'0.9',
-                                    'data-kind':'category-identity', 'data-category':cat.taxId || cat.name,
-                                    'data-identity-color':catIdCol2 }, g);
-      var circle = seShape(catShape, x, y, 9, cAttrs, g);
+      /* RUN 98, GOAL THREE. The same two connection points, one level up. The incoming branches
+         from this category's modules land on the LEFT dot at COL_CAT; the outgoing edge to the
+         project status leaves from the RIGHT dot at COL_CAT + CAT_LABEL_GUTTER, which is where
+         the category -> status stream already starts. IDENTICAL DOTS: same shape, radius, fill,
+         opacity and identity ring. HOW THAT EDGE TERMINATES IS NOT TOUCHED -- the arrowhead,
+         the blunt dashed stop, `data-edge-terminates` and the 0.55 / 0.30 pair are all drawn
+         above and nothing here goes near them. */
+      function categoryPort(px, port) {
+        if (catIdCol2) se('circle', { cx:px, cy:y, r:'13', fill:'none', stroke:catIdCol2,
+                                      'stroke-width':'2', opacity:'0.9',
+                                      'data-kind':'category-identity', 'data-category':cat.taxId || cat.name,
+                                      'data-port':port,
+                                      'data-identity-color':catIdCol2 }, g);
+        var a = {}; for (var k in cAttrs) a[k] = cAttrs[k];
+        a['data-port'] = port;
+        return seShape(catShape, px, y, 9, a, g);
+      }
+      var circle = categoryPort(x, 'in');
+      categoryPort(COL_CAT + CAT_LABEL_GUTTER, 'out');
       circle.style.transformOrigin = x + 'px ' + y + 'px';
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
       // group letter + name label, nudged up so the role caption sits directly beneath

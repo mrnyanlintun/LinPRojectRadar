@@ -2654,6 +2654,15 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         },
         source_documents=row.source_documents,
     )
+    # RUN 98, GOAL TWO. THE DISPOSITIONS THE CARD OFFERS, SERVED FROM PYTHON.
+    #
+    # One source of truth. `research_decision.PROJECT_DECISION_DISPOSITIONS` is a subset of
+    # `DISPOSITIONS` (asserted there), and the card renders whatever arrives here, so the
+    # browser cannot offer a value the server would refuse. Read only; derives nothing.
+    from .research_decision import PROJECT_DECISION_DISPOSITIONS
+    view["decision_dispositions"] = [{"code": c, "label": lbl}
+                                     for c, lbl in PROJECT_DECISION_DISPOSITIONS]
+
     if include_recommendation and package is not None:
         view["recommendation"] = {
             "package_id": package.package_id,
@@ -4370,6 +4379,136 @@ def a_projectdocumentcontrol(session: Session, payload: dict, secret: str,
     }
 
 
+def a_projectdecisionrecord(session: Session, payload: dict, secret: str,
+                            ttl: int) -> dict[str, Any]:
+    """
+    RUN 98, GOAL TWO. Any active member. Records ONE decision taken on the Governance Decision
+    card, into the append-only `audit_events` table, and nothing else.
+
+    EVERY DISPOSITION RECORDS, INCLUDING AGREEMENT. There is no silent default here and no
+    branch that discards an answer: `accept` is written exactly the way `reject` is. The row
+    carries the disposition, the server's own timestamp, the period the decision was recorded
+    for, the posture it was recorded against, and the rationale.
+
+    IT WRITES NO STORED FIGURE. `computed_results`, `specification_readings`, `observations`
+    and the project document are untouched. The only write is one append-only audit row, which
+    is why no migration was needed: `audit_events.metadata` is a JSON column that already
+    exists and `disposition` is carried inside it rather than as a new column.
+
+    THE PLATFORM NAMES NO AUTHORITY. `no_action_within_current_authority` is the participant's
+    own statement about their own position. Nothing here resolves, validates or stores who
+    holds what.
+
+    RATIONALE IS NOT REQUIRED BY THIS ROUTE FOR ANY DISPOSITION, accept included. That is the
+    behaviour the tree had before this run and it is left exactly as it was; whether accept
+    should require one has not been ruled on and is not decided here.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectdecisionrecord")
+    if problem:
+        return problem
+
+    from .research_decision import PROJECT_DECISION_DISPOSITIONS
+
+    allowed = [c for c, _ in PROJECT_DECISION_DISPOSITIONS]
+    disposition = str(payload.get("disposition") or "").strip()
+    if disposition not in allowed:
+        return err("disposition must be one of: " + ", ".join(allowed))
+
+    period = payload.get("period")
+    try:
+        period = int(period) if period is not None else None
+    except (TypeError, ValueError):
+        return err("period must be a whole number")
+
+    rationale = payload.get("rationale")
+    rationale = str(rationale).strip() if rationale is not None else None
+
+    # The posture the decision was recorded AGAINST, read from the stored row for that period
+    # rather than accepted from the client, so the audit row cannot claim a posture the
+    # platform never issued.
+    result = _live_result(session, project, period) if period is not None else None
+    posture = None
+    if result is not None:
+        posture = getattr(result, "project_status", None)
+
+    event = AuditEvent(
+        participant_id=caller.participant_id,
+        event_type="project_decision_recorded",
+        event_metadata={
+            "project_id": project.legacy_id,
+            "period": period,
+            "disposition": disposition,
+            "posture": posture,
+            "rationale": rationale,
+            "recorded_by": caller.participant_id,
+        },
+    )
+    session.add(event)
+    session.flush()
+    recorded_at = event.server_ts
+    session.commit()
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "event_id": event.event_id,
+        "disposition": disposition,
+        "period": period,
+        "posture": posture,
+        "rationale": rationale,
+        "recorded_at": recorded_at.isoformat() if recorded_at else None,
+        "server_time": now_iso(),
+    }
+
+
+def a_projectdecisions(session: Session, payload: dict, secret: str,
+                       ttl: int) -> dict[str, Any]:
+    """
+    RUN 98, GOAL TWO. Any active member. READS ONLY. The decisions recorded on this project,
+    read back out of the append-only audit table, newest first.
+
+    This is the read-back path: a decision is proven recorded by being READ OUT OF THE AUDIT
+    ROW, never by the write having returned ok.
+
+    Filtered in Python on the JSON metadata for the reason written at
+    `a_projectdocumentcontrol`: `event_metadata` is a portable JSON column and this platform
+    runs on both SQLite and Postgres.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectdecisions")
+    if problem:
+        return problem
+
+    rows = session.scalars(
+        select(AuditEvent).where(AuditEvent.event_type == "project_decision_recorded")
+        .order_by(AuditEvent.server_ts.desc())
+    ).all()
+    decisions = []
+    for r in rows:
+        m = r.event_metadata or {}
+        if m.get("project_id") != project.legacy_id:
+            continue
+        decisions.append({
+            "event_id": r.event_id,
+            "recorded_at": r.server_ts.isoformat() if r.server_ts else None,
+            "period": m.get("period"),
+            "disposition": m.get("disposition"),
+            "posture": m.get("posture"),
+            "rationale": m.get("rationale"),
+            "recorded_by": m.get("recorded_by"),
+        })
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "decisions": decisions,
+        "server_time": now_iso(),
+    }
+
+
 DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectupload": a_projectupload,
     # The calendar picker's read-only preview: a date in, the period it names out. Same rule the
@@ -4396,4 +4535,8 @@ DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     # period's live and archived documents, and the archive record read back out of the
     # append-only audit table. READ ONLY.
     "projectdocumentcontrol": a_projectdocumentcontrol,
+    # RUN 98, GOAL TWO. The Governance Decision card's own two routes: one append-only write of
+    # a recorded disposition, and the read-back that proves it landed.
+    "projectdecisionrecord": a_projectdecisionrecord,
+    "projectdecisions": a_projectdecisions,
 }
