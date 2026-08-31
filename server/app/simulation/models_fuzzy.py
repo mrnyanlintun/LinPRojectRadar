@@ -494,15 +494,5 @@ def run_hypersoft_sets(si: dict, rand: Callable[[], float], period_cutoff) -> di
 
 
 FUZZY_EXTENSIONS: dict[str, tuple[str, Callable]] = {
-    "B2.10": ("Pythagorean_Fuzzy", run_pythagorean_fuzzy),
-    "B2.11": ("Picture_Fuzzy", run_picture_fuzzy),
-    "B2.12": ("Hesitant_Fuzzy", run_hesitant_fuzzy),
-    "B2.13": ("Type2_Fuzzy", run_type2_fuzzy),
-    "B2.14": ("Maximum_Entropy", run_maximum_entropy),
-    "B2.15": ("Possibility_Theory", run_possibility_theory),
-    "B2.16": ("Spherical_Fuzzy", run_spherical_fuzzy),
-    "B2.17": ("Fermatean_Fuzzy", run_fermatean_fuzzy),
     "B2.18": ("MARCOS", run_marcos),
-    "B2.19": ("CRITIC_TOPSIS", run_critic_topsis),
-    "B2.20": ("Hypersoft_Sets", run_hypersoft_sets),
 }

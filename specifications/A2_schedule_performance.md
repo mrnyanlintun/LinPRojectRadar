@@ -76,9 +76,7 @@ sample and must not be presented as the same figure.
 
 ---
 
-## A2.2 — Line of Balance — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A2_schedule_performance.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
-## A2.3 — CCPM Buffer Health — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A2_schedule_performance.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ## A2.7 — Milestone Trend Analysis
 

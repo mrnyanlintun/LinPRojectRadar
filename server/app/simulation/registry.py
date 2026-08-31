@@ -378,30 +378,52 @@ def proxy_label(new_id: str, canonical_name: str) -> str | None:
 #: `load_registry()`, because to such a consumer `RETIRED` looked like a module identifier and
 #: appeared five times over for the five Group D rows.
 #:
-#: Both are dissolved by keeping the identifier and marking the row. `new_id` is restored to the
+#: RUN 96 SUPERSEDED THAT RULING, ON THE OWNER'S ORDER: RETIRED NOW MEANS REMOVED. The owner's
+#: ruling at Run 96 is that a retired row whose only purpose is to make an old identifier resolve
+#: earns nothing, because no participant data exists and nothing depends on the resolution. The
+#: fifty-one rows retired at Runs 43, 89 and 95 outside Group D were DELETED FROM THE CSV, with
+#: their dispatch entries, their specifications and the specification archive. Their identifiers
+#: no longer resolve, and that is intended: `registry_index()` now answers 50, not 101.
+#:
+#: WHAT RUN 43D'S FAILURE MODE TEACHES IS STILL OBSERVED. Run 43's mistake was not deleting the
+#: modules; it was writing the literal `RETIRED` into `new_id`, which left rows in the file that
+#: looked like modules to any consumer not going through `load_registry()`. Run 96 removed the
+#: ROWS, so there is nothing left to misread. The `RETIRED ` note mechanism BELOW IS KEPT and is
+#: still the path a future retirement takes: five Group D rows still carry it (see the stop
+#: recorded in the Run 96 report), so it is neither dead code nor a mechanism without a user.
+#:
+#: Both problems Run 43B measured are dissolved by keeping the identifier and marking the row. `new_id` is restored to the
 #: identifier the module has always had; the `notes` column carries the RETIRED marking and the
 #: retirement reason Run 43 assigned, which is the form Run 43 already wrote and the form
 #: `MODULE_RETIREMENT_DECISIONS.md` records. The registry therefore still RESOLVES all 101, so no
-#: reference to a retired module raises, while `modules_in_service()` derives the 63 that are in
+#: reference to a retired module raises, while `modules_in_service()` derives those that are in
 #: service and every enumerating path goes through it. There is no second list to drift.
 RETIRED_NOTE_PREFIX = "RETIRED "
 
 
-def _retired_reason(row: dict[str, str]) -> str | None:
+def _retired_reason(row: dict[str, str] | str) -> str | None:
     """
     The retirement reason a row carries, or None if the module is in service.
 
     Derived from the row itself. There is deliberately no set of retired identifiers written out
     anywhere in this file: the CSV is the single authority for which modules exist and which of
     them are in service, exactly as it is the authority for the 101.
+        RUN 96 MADE IT ACCEPT A MODULE ID AS WELL AS A ROW. Run 91 found this raising
+    `AttributeError: 'str' object has no attribute 'get'` when called with an identifier, Run 95
+    found it again, and both times the caller's reading of the name was the reasonable one: a
+    function called `_retired_reason(mid)` looks like it takes a module id. It now takes either,
+    and a string is resolved through the registry index. An unknown id is not retired, so it
+    returns None rather than raising -- the same answer it gives for a module in service.
     """
+    if isinstance(row, str):
+        row = registry_index().get(row) or {}
     note = (row.get("notes") or "").strip()
     return note if note.startswith(RETIRED_NOTE_PREFIX) else None
 
 
 def load_registry() -> list[dict[str, str]]:
     """
-    Every module the registry declares, in file order: 101 rows, retired ones included.
+    Every module the registry declares, in file order, retired ones included.
 
     The two rows filtered here are NOT retirements. They are pre-existing alias rows that carry
     the literal `RETIRED` in `new_id` because they have no identifier of their own -- Document
@@ -433,7 +455,7 @@ def registry_index() -> dict[str, dict[str, str]]:
 
 
 def modules_in_service() -> list[str]:
-    """The 63 modules in service: everything the registry declares, less everything retired."""
+    """The modules in service: everything the registry declares, less everything retired."""
     return sorted(set(registry_index()) - set(retired_modules()))
 
 

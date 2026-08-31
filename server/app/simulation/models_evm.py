@@ -668,14 +668,11 @@ def run_independent_eac_reconciliation(si: dict, rand: Callable[[], float],
 
 
 A1_EXTENSIONS: dict[str, tuple[str, Callable]] = {
-    "A1.3": ("Bayesian_EAC", run_bayesian_eac),
-    "A1.4": ("Kalman_Filter", run_kalman_filter),
     "A1.5": ("ARIMA_Forecast", run_arima_forecast),
     "A1.6": ("Earned_Schedule", run_earned_schedule),
     "A1.7": ("TCPI", run_tcpi),
     "A1.8": ("VAC", run_vac),
     "A1.9": ("Budget_Execution_Rate", run_budget_execution),
     # RUN 28. The two approved Category 1 to 3 renames, and no others.
-    "A1.10": ("CPI_Shrinkage_Forecast", run_cpi_shrinkage),
     "A1.11": ("Independent_EAC_Reconciliation", run_independent_eac_reconciliation),
 }

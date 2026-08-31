@@ -929,23 +929,14 @@ def run_inflation_adjustment(si: dict, rand: Callable[[], float],
 
 
 A2_EXTENSIONS: dict[str, tuple[str, Callable]] = {
-    "A2.4": ("Schedule_Compression", run_schedule_compression),
-    "A2.5": ("Float_Consumption", run_float_consumption),
-    "A2.6": ("SCurve_Deviation", run_scurve_deviation),
     "A2.7": ("Milestone_Trend", run_milestone_trend),
     "A2.8": ("Lookahead_Health", run_lookahead_health),
     "A2.9": ("Resource_Loading", run_resource_loading),
-    "A2.10": ("Schedule_Risk_Analysis", run_schedule_risk),
-    "A2.11": ("Critical_Path_Index", run_critical_path_index),
 }
 
 A3_EXTENSIONS: dict[str, tuple[str, Callable]] = {
     "A3.2": ("Contingency_Burn_Rate", run_contingency_burn),
     "A3.3": ("Labor_Productivity", run_labor_productivity),
-    "A3.4": ("Material_Cost_Variance", run_material_cost_variance),
     "A3.5": ("Overhead_Absorption", run_overhead_absorption),
     "A3.6": ("Cost_Risk_Analysis", run_cost_risk),
-    "A3.7": ("Analogous_Estimating", run_analogous_estimating),
-    "A3.8": ("Parametric_Cost", run_parametric_cost),
-    "A3.9": ("Inflation_Adjustment", run_inflation_adjustment),
 }

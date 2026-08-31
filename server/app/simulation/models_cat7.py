@@ -413,50 +413,5 @@ def _r_critic(out: dict) -> tuple[str, dict]:
 # =================================================================================================
 
 CAT7_CANONICAL: dict[str, tuple[str, Callable]] = {
-    "B2.1": ("DST_Evidence_Combination",
-             _route("B2.1", "DST_Evidence_Combination", "dempster_shafer", "_r_dst")),
-    "B2.2": ("Rough_Sets_Classification",
-             _route("B2.2", "Rough_Sets_Classification", "rough_approximations", "_r_rough")),
-    "B2.3": ("Neutrosophic_Logic",
-             _route("B2.3", "Neutrosophic_Logic", "neutrosophic", "_r_neutrosophic")),
-    "B2.4": ("Interval_Fuzzy_Sets",
-             _route("B2.4", "Interval_Fuzzy_Sets", "interval_fuzzy", "_r_interval")),
-    "B2.5": ("Z_Numbers", _route("B2.5", "Z_Numbers", "z_number", "_r_z")),
-    "B2.6": ("PLTS", _route("B2.6", "PLTS", "plts", "_r_plts")),
-    "B2.7": ("Plithogenic_Sets",
-             _refuse("B2.7", "Plithogenic_Sets", DISPOSITION_DISABLED,
-                     "Plithogenic Sets is disabled for operational use: it is held as research "
-                     "only and produces no reading for any project. A complete set of assessed "
-                     "degrees does not change that, because the way they would be combined has "
-                     "not been settled.")),
-    "B2.8": ("Belief_Rule_Base",
-             _route("B2.8", "Belief_Rule_Base", "belief_rule_base", "_r_brb")),
-    "B2.9": ("Quantum_Probability",
-             _refuse("B2.9", "Quantum_Probability", DISPOSITION_ARCHIVED,
-                     "Quantum Probability is archived and disabled for operational use: it is "
-                     "kept as part of the research record and produces no reading for any "
-                     "project. Restoring it would require evidence this platform does not "
-                     "hold.")),
-    "B2.10": ("Pythagorean_Fuzzy",
-              _route("B2.10", "Pythagorean_Fuzzy", "pythagorean_fuzzy", "_r_pythagorean")),
-    "B2.11": ("Picture_Fuzzy",
-              _route("B2.11", "Picture_Fuzzy", "picture_fuzzy", "_r_picture")),
-    "B2.12": ("Hesitant_Fuzzy",
-              _route("B2.12", "Hesitant_Fuzzy", "hesitant_fuzzy", "_r_hesitant")),
-    "B2.13": ("Type2_Fuzzy", _route("B2.13", "Type2_Fuzzy", "type2_fuzzy", "_r_type2")),
-    "B2.14": ("Maximum_Entropy",
-              _route("B2.14", "Maximum_Entropy", "maximum_entropy", "_r_maxent")),
-    "B2.15": ("Possibility_Theory",
-              _route("B2.15", "Possibility_Theory", "possibility", "_r_possibility")),
-    "B2.16": ("Spherical_Fuzzy",
-              _route("B2.16", "Spherical_Fuzzy", "spherical_fuzzy", "_r_spherical")),
-    "B2.17": ("Fermatean_Fuzzy",
-              _route("B2.17", "Fermatean_Fuzzy", "fermatean_fuzzy", "_r_fermatean")),
     "B2.18": ("MARCOS", _route("B2.18", "MARCOS", "marcos", "_r_marcos")),
-    "B2.19": ("CRITIC_TOPSIS", _route("B2.19", "CRITIC_TOPSIS", "critic_topsis", "_r_critic")),
-    "B2.20": ("Hypersoft_Sets",
-              _refuse("B2.20", "Hypersoft_Sets", DISPOSITION_DISABLED,
-                      "Hypersoft Sets is disabled for operational use: it is held as research "
-                      "only and produces no reading for any project. A complete set of "
-                      "attribute combinations does not change that.")),
 }

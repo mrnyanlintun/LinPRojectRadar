@@ -795,8 +795,9 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #   1. FIFTEEN MODULES LEFT SERVICE by Run 43's own mechanism, the `RETIRED ` note on the
 #      registry CSV row: A1.3, A1.4, A1.10, A2.2, A2.3, A3.1, A3.7, A3.9, A4.1, A4.10, A5.2,
 #      A5.4, A5.6, A5.7 and A5.8. Their identifiers still resolve and `retired_modules()` still
-#      lists them; their specifications are archived verbatim under `specifications/archive/`
-#      with a pointer line left in place. Fewer modules compute, so category rollups that read
+#      lists them; their specifications were archived verbatim under `specifications/archive/`
+#      with a pointer line left in place. RUN 96 SUPERSEDED THIS: the rows, the pointer lines and
+#      the archive were all deleted, so those identifiers no longer resolve. Fewer modules compute, so category rollups that read
 #      them produce different postures, which is why this is a new stamp.
 #   2. A5 SYSTEMS AND DYNAMICS IS GONE. It held exactly the five A5 modules above, so it now
 #      holds none in service. The owner's ruling is that an empty category has nothing to
@@ -1377,13 +1378,8 @@ def run_cusum_module(si, rand, period_cutoff):
 
 
 VALIDATED: dict[str, tuple[str, Callable[[dict, Callable[[], float], object], dict]]] = {
-    "A1.1": ("Monte_Carlo", run_monte_carlo_module),
     "A1.2": ("CUSUM", run_cusum_module),
     "A2.1": ("PERT_Network_Criticality", run_pert),
-    "A2.2": ("Line_of_Balance_Velocity", run_lob),
-    "A2.3": ("CCPM_Buffer_Health", run_ccpm),
-    "A3.1": ("Reference_Class_Forecasting", run_rcf),
-    "A5.1": ("DSM_Rework_Cat5", run_dsm),
 }
 
 

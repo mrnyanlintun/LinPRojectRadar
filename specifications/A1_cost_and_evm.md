@@ -102,9 +102,7 @@ variability. It is a monitor of drift, not a forecast.
 
 ---
 
-## A1.3 — Bayesian EAC — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A1_cost_and_evm.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
-## A1.4 — Kalman Filter SPI Smoother — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A1_cost_and_evm.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ## A1.5 — ARIMA CPI Forecast
 
@@ -410,7 +408,6 @@ contract names this in terms.
 
 ---
 
-## A1.10 — CPI Shrinkage Forecast — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A1_cost_and_evm.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ## A1.11 — Independent EAC Reconciliation Index
 

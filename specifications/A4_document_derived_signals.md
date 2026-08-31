@@ -379,9 +379,7 @@ the activity it feeds"*.
 
 ---
 
-## A4.10 — Specification Conflict Density — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A4_document_derived_signals.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ## Stopped specifications
 
-### A4.1 — Document Risk Score — RETIRED at Run 95, not in service. Its stopped-specification note is archived verbatim at `specifications/archive/A4_document_derived_signals.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 

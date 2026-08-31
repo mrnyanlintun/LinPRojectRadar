@@ -155,7 +155,6 @@ domains, so there is nothing to assign.
 
 ---
 
-## B4.4 — What-If Scenario Matrix — RETIRED at Run 89, not in service. Its specification is archived verbatim at `specifications/archive/B4_decision_optimisation.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ---
 

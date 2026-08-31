@@ -63,7 +63,6 @@ CATEGORY_SPECIFICATIONS: dict[str, str] = {
     "A2": "A2_schedule_performance.md",
     "A3": "A3_cost_risk.md",
     "A4": "A4_document_derived_signals.md",
-    "A5": "A5_system_dynamics.md",
     "A6": "A6_delivery_quality.md",
     "B1": "B1_signal_synthesis.md",
     "B2": "B2_evidence_combination.md",
@@ -72,7 +71,12 @@ CATEGORY_SPECIFICATIONS: dict[str, str] = {
     "C1": "C1_data_integrity.md",
 }
 
-#: The eleven project-level categories, in the two passes the order names.
+#: The ten project-level categories, in the two passes the order names.
+#:
+#: RUN 96 REMOVED A5 SYSTEMS AND DYNAMICS FROM PASS ONE. Run 95 emptied the category and Run 96
+#: removed its eight retired rows from the registry, so A5 no longer exists as a category at
+#: all: dispatching it could only ever have produced a slot with nothing in it. Its
+#: specification file went with the rows.
 #:
 #: HOW THE SPLIT WAS DERIVED, because the order names the categories by ordinal position rather
 #: than by key. The taxonomy holds TWELVE entries; D1 Portfolio Health is portfolio-level and is
@@ -81,7 +85,7 @@ CATEGORY_SPECIFICATIONS: dict[str, str] = {
 #: A1 to A6 and C1 Data Integrity. Ordinals 8 to 11 are the four that read what those produced:
 #: B1 Signal Synthesis fuses statuses, B2 Evidence Combination asks how complete the evidence
 #: was, B3 Regulatory and B4 Decision Optimization act on a status already formed.
-PASS_ONE: tuple[str, ...] = ("A1", "A2", "A3", "A4", "A5", "A6", "C1")
+PASS_ONE: tuple[str, ...] = ("A1", "A2", "A3", "A4", "A6", "C1")
 PASS_TWO: tuple[str, ...] = ("B1", "B2", "B3", "B4")
 ALL_CATEGORIES: tuple[str, ...] = PASS_ONE + PASS_TWO
 

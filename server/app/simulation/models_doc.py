@@ -1338,17 +1338,9 @@ A4_EXTENSIONS: dict[str, tuple[str, Callable]] = {
     "A4.7": ("Dispute_Escalation", run_dispute_escalation),
     "A4.8": ("Subcontractor_Performance", run_subcontractor_performance),
     "A4.9": ("Procurement_Lead_Time", run_procurement_lead_time),
-    "A4.10": ("Spec_Conflict_Density", run_spec_conflict_density),
 }
 
 A5_EXTENSIONS: dict[str, tuple[str, Callable]] = {
-    "A5.2": ("Sensitivity_Analysis", run_sensitivity_analysis),
-    "A5.3": ("Tornado_Diagram", run_tornado_diagram),
-    "A5.4": ("Scenario_Modeling", run_scenario_modeling),
-    "A5.5": ("Rework_Feedback", run_rework_feedback),
-    "A5.6": ("Queueing_Bottleneck", run_queueing_bottleneck),
-    "A5.7": ("Agent_Supply_Chain", run_agent_supply_chain),
-    "A5.8": ("Discrete_Event_Sim", run_discrete_event_sim),
 }
 
 A6_EXTENSIONS: dict[str, tuple[str, Callable]] = {

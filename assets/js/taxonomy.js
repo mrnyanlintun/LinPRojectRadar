@@ -46,7 +46,7 @@
    made in the wrong copy passed every source check while the live page stayed broken;
    and the two had already drifted apart on their own, with nine modules carrying
    `disabled: true` in one and not the other. */
-window.LIN_TAXONOMY_COUNTS = { registered: 101, inService: 45, retired: 56, serverComputes: 45, supplied: 0 };
+window.LIN_TAXONOMY_COUNTS = { registered: 50, inService: 45, retired: 5, serverComputes: 45, supplied: 0 };
 window.LIN_CATEGORIES = [
   {
     id: 'a1', key: 'A1', name: 'Cost and EVM Performance',

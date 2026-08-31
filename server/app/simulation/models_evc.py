@@ -792,12 +792,4 @@ def run_quantum_probability(si: dict, rand: Callable[[], float],
 
 
 EVC_EXTENSIONS: dict[str, tuple[str, Callable]] = {
-    "B2.2": ("Rough_Sets_Classification", run_rough_sets),
-    "B2.3": ("Neutrosophic_Logic", run_neutrosophic),
-    "B2.4": ("Interval_Fuzzy_Sets", run_interval_fuzzy),
-    "B2.5": ("Z_Numbers", run_z_numbers),
-    "B2.6": ("PLTS", run_plts),
-    "B2.7": ("Plithogenic_Sets", run_plithogenic),
-    "B2.8": ("Belief_Rule_Base", run_brb),
-    "B2.9": ("Quantum_Probability", run_quantum_probability),
 }

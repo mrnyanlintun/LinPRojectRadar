@@ -29,7 +29,6 @@ its structure, given per module below:
 
 ---
 
-## A3.1 — Reference Class Forecasting — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A3_cost_risk.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ## A3.2 — Contingency Burn Rate
 
@@ -200,9 +199,7 @@ seed record.
 
 ---
 
-## A3.7 — Analogous Estimating Ratio — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A3_cost_risk.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
-## A3.9 — Inflation Adjustment Index — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A3_cost_risk.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ## Stopped specifications
 
