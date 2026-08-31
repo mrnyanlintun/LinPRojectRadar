@@ -788,12 +788,40 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # THE POPULATION MOVED: 101 registered, 60 IN SERVICE (was 63), 41 retired (was 38), 59 the
 # server computes. Voting is still exactly A1.7 and A1.8. Results computed under sim-2026.08-v42
 # remain valid under that stamp.
-SIMULATION_VERSION = "sim-2026.08-v43"
+# -------------------------------------------------------------------------------------------
+# RUN 95 ADVANCES THE STAMP TO v44, AND THE BEHAVIOUR BEHIND IT HAS GENUINELY MOVED. Three
+# changes, all of them the owner's rulings, and each changes what a stored row says:
+#
+#   1. FIFTEEN MODULES LEFT SERVICE by Run 43's own mechanism, the `RETIRED ` note on the
+#      registry CSV row: A1.3, A1.4, A1.10, A2.2, A2.3, A3.1, A3.7, A3.9, A4.1, A4.10, A5.2,
+#      A5.4, A5.6, A5.7 and A5.8. Their identifiers still resolve and `retired_modules()` still
+#      lists them; their specifications are archived verbatim under `specifications/archive/`
+#      with a pointer line left in place. Fewer modules compute, so category rollups that read
+#      them produce different postures, which is why this is a new stamp.
+#   2. A5 SYSTEMS AND DYNAMICS IS GONE. It held exactly the five A5 modules above, so it now
+#      holds none in service. The owner's ruling is that an empty category has nothing to
+#      report rather than failing to report: it is removed from the weighted profile, from the
+#      required core, and from both charts.
+#   3. THE REQUIRED CORE IS ALL FIVE remaining weighted performance categories -- A1, A2, A3,
+#      A4, A6 -- superseding Run 89's core of four; A4 Document Signals moved from supporting to
+#      required, and there is no supporting tier left. The weight profile is the owner's RESTATED
+#      STATED AUTHORITY: A1 0.28, A2 0.28, A3 0.17, A4 0.11, A6 0.16, summing to one under a new
+#      executable assert, with Data Integrity still excluded by the existing one. WORST-WINS IS
+#      UNTOUCHED -- measured identical across all 1024 five-band combinations -- and
+#      "Indeterminate" is still deliberately not a band.
+#
+# THE POPULATION MOVED AGAIN: 101 registered, 45 IN SERVICE (was 60), 56 retired (was 41), 45
+# the server computes (was 59), and NOTHING is supplied any more (was 1) -- A4.1 Document Risk
+# Score was the last module in service with no runner, and retiring it emptied
+# `unported_modules()`. The five weighted performance categories hold 27 between them. Voting is
+# still exactly A1.7 and A1.8. Results computed under sim-2026.08-v43 remain valid under that
+# stamp.
+SIMULATION_VERSION = "sim-2026.08-v44"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v42"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v43"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -812,6 +840,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  "sim-2026.08-v41",
  "sim-2026.08-v42",
  "sim-2026.08-v43",
+ "sim-2026.08-v44",
 )
 
 

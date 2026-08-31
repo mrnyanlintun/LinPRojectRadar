@@ -28,6 +28,7 @@ from app.extraction_fields import extraction_fields_for  # noqa: E402
 from app.models import Project                         # noqa: E402
 from app.research_identity import hash_access_token    # noqa: E402
 from app.research_models import Participant, SpecificationReading  # noqa: E402
+from app.simulation import registry as _REG95                       # noqa: E402
 
 client = TestClient(main.app, raise_server_exceptions=False)
 Session = main.SessionFactory
@@ -519,7 +520,30 @@ with sync_playwright() as pw:
                 say(f"  moon orbital rates (speed encodes nothing): {sorted(set(round(m['orbitRate'],4) for m in moons))}")
                 say(f"  planet states: {[(p['key'],p['state'],p['status']) for p in planets]}")
                 say(f"  moon states: {st}")
-                say(f"  RETIRED MOONS DRAWN: {sorted(set(m['key'] for m in moons) & {'A5.1','A5.5','B4.4'})} (must be empty)")
+                # RUN 95. THE RETIRED SET IS READ FROM THE REGISTRY, NOT TYPED.
+                # It said {'A5.1','A5.5','B4.4'} -- Run 89's three. Run 95 retired fifteen more
+                # and a typed set would have gone on passing while drawing every one of them,
+                # which is precisely the vacuity this driver exists to defeat. The oracle is
+                # `registry.retired_modules()`, and the assertion is over DRAWN moon keys.
+                _RETIRED = set(_REG95.retired_modules())
+                say(f"  RETIRED MODULES THE REGISTRY DECLARES: {len(_RETIRED)}")
+                say(f"  RETIRED MOONS DRAWN: {sorted(set(m['key'] for m in moons) & _RETIRED)} (must be empty)")
+                # RUN 95, SECTION 4.1. EVERY PLANET CARRIES ITS CATEGORY'S NAME, read back from
+                # the scene graph's own record of the text that was drawn -- not from the source
+                # file, and not from the taxonomy the chart was given.
+                _labels = sc.get("labels") or []
+                say(f"  PLANET NAME LABELS DRAWN: {len(_labels)} for {len(planets)} planets")
+                for _l in _labels:
+                    say(f"    PLANET {_l['key']:4s} labelled {_l['lines']!r}"
+                        f"  (name={_l['name']!r})")
+                _unlabelled = [p['key'] for p in planets
+                               if not any(l['key'] == p['key'] and l['name'] for l in _labels)]
+                say(f"  PLANETS WITH NO NAME LABEL (must be empty): {_unlabelled}")
+                _joined = {l['key']: " ".join(l['lines']) for l in _labels}
+                say(f"  LABEL TEXT EQUALS THE CATEGORY NAME (must be empty if all agree): "
+                    f"{[k for k, v in _joined.items() if v != dict((l['key'], l['name']) for l in _labels)[k]]}")
+                say(f"  'Systems' OR 'Dynamics' DRAWN ANYWHERE ON THIS CHART (must be empty): "
+                    f"{[k for k, v in _joined.items() if 'Systems' in v or 'Dynamics' in v]}")
                 say(f"  MOONS CARRYING AN IDENTITY COLOUR: "
                     f"{sum(1 for m in moons if m.get('identityColor'))} of {len(moons)}; "
                     f"distinct rim colours drawn: {len(set(m.get('identityColor') for m in moons))}")

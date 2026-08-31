@@ -521,7 +521,35 @@
       sys.planets.forEach(function (p) {
         p.moons.forEach(function (m) { m.pos = orbitAt(p, m, orbitT); });
       });
-      var scene = { bodies: [], edges: [] };
+      /* RUN 95. `labels` is the drawn category-name label for each planet, recorded in the
+         scene graph exactly as `bodies` and `edges` are, so a check can assert on the TEXT A
+         READER ACTUALLY SEES rather than on the presence of a string in the source file.
+         "the file does not contain A5.2" is worth nothing; "no planet was labelled Systems
+         and Dynamics" is the real assertion. */
+      /* Break a label on spaces to at most `maxLines` lines that each measure under `maxW`,
+         measured with the real font through `measureText` rather than by counting characters.
+         The last line keeps whatever remains: a name is never cut, because a cut category name
+         is one the reader still cannot resolve. */
+      function wrapLabel(ctx2, text, font, maxW, maxLines) {
+        var prev = ctx2.font;
+        ctx2.font = font;
+        var words = String(text).split(/\s+/).filter(Boolean);
+        var lines = [];
+        var cur = "";
+        for (var i = 0; i < words.length; i++) {
+          var trial = cur ? cur + " " + words[i] : words[i];
+          if (cur && ctx2.measureText(trial).width > maxW && lines.length < maxLines - 1) {
+            lines.push(cur); cur = words[i];
+          } else {
+            cur = trial;
+          }
+        }
+        if (cur) lines.push(cur);
+        ctx2.font = prev;
+        return lines.length ? lines : [String(text)];
+      }
+
+      var scene = { bodies: [], edges: [], labels: [] };
       ctx.clearRect(0, 0, size.w, size.h);
 
       /* ═══ RUN 94, SECTION 4.2. THE FIELD THE SYSTEM SITS IN. ═══════════════════════════
@@ -675,15 +703,49 @@
             ctx.setLineDash([4, 4]);
             ctx.stroke(); ctx.setLineDash([]);
           }
+          /* RUN 95, SECTION 4.1. EVERY PLANET CARRIES ITS CATEGORY'S NAME.
+             The owner: "Nobody reads A3 and knows it means Cost Risk." Before this run the
+             only label a planet had was its key, drawn inside the disc, and a reader had to
+             already know the taxonomy to read the chart at all.
+
+             THE NAME IS DRAWN BELOW THE PLANET, NOT INSIDE IT, and that is a layout decision
+             rather than a compromise. A planet's MODEL radius is 17px and the same for every
+             body -- one value, so that nothing is encoded in size -- and "Cost & EVM
+             Performance" cannot be set inside 34px at a legible size at any weight. Shrinking
+             the type until it fits would make the label unreadable, and growing the disc would
+             start encoding something in a radius that must encode nothing. The space beneath
+             the body is free, is already used for the banded count, and is where the reader's
+             eye goes next.
+
+             IT WRAPS RATHER THAN TRUNCATING. `wrapLabel` breaks on spaces to at most two
+             lines against a real `measureText` width, so a long name is set on two lines
+             instead of being cut with an ellipsis. A truncated category name is a name the
+             reader still cannot resolve, which is the defect this fixes. The key stays inside
+             the disc, small: it is the identifier, it is what the ledger and the exports use,
+             and dropping it would break the reader's path between the surfaces.
+
+             The count and the not-assessed line move down by the height the name occupies, so
+             nothing overlaps at either rendered width. */
           ctx.fillStyle = failed ? inkFor("red") : (col ? inkFor(p.status) : TH.text);
-          ctx.font = "700 11px system-ui, sans-serif"; ctx.textAlign = "center";
-          ctx.fillText(p.key, q.x, q.y + 4);
+          ctx.font = "700 10px system-ui, sans-serif"; ctx.textAlign = "center";
+          ctx.fillText(p.key, q.x, q.y + 3.5);
+
+          var nameLines = wrapLabel(ctx, String(p.name || p.key),
+                                    "700 11px system-ui, sans-serif", 132, 2);
+          ctx.font = "700 11px system-ui, sans-serif";
+          ctx.fillStyle = failed ? inkFor("red") : (col ? inkFor(p.status) : TH.text);
+          var ny = q.y + r + 13;
+          nameLines.forEach(function (ln, li) { ctx.fillText(ln, q.x, ny + li * 12); });
+          var below = ny + nameLines.length * 12;
+
           ctx.font = "9px system-ui, sans-serif"; ctx.fillStyle = TH.muted;
-          ctx.fillText(p.lit + " of " + p.total + " banded", q.x, q.y + r + 12);
+          ctx.fillText(p.lit + " of " + p.total + " banded", q.x, below);
           if (!col && !failed) {
             ctx.fillStyle = TH.faint;
-            ctx.fillText("not assessed", q.x, q.y + r + 23);
+            ctx.fillText("not assessed", q.x, below + 11);
           }
+          scene.labels.push({ key: p.key, name: String(p.name || ""),
+                              lines: nameLines.slice(), x: q.x, y: ny });
           /* RUN 90. `baseR` and `orbitR` are the MODEL radii, before the perspective divide.
              They are in the scene graph so a check can prove the constraint the order actually
              states -- that size and orbit radius encode nothing -- from what was drawn. The
