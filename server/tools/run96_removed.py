@@ -1,6 +1,6 @@
 """
-THE FIFTY-SIX MODULES REMOVED FROM THIS REGISTRY, STATED BY NAME: RUN 96'S FIFTY-ONE AND
-RUN 97'S FIVE.
+THE SEVENTY-ONE MODULES REMOVED FROM THIS REGISTRY, STATED BY NAME: RUN 96'S FIFTY-ONE AND
+RUN 97'S TWENTY.
 
 WHY THIS LIST IS WRITTEN OUT WHEN EVERY OTHER POPULATION IN THIS INSTRUMENT IS DERIVED.
 
@@ -48,7 +48,32 @@ REMOVED_AT_RUN96: tuple[str, ...] = (
 #: THIS IS ALSO WHY THE LIST IS WRITTEN OUT. After Run 97 the registry holds NO retired module
 #: at all, so `registry.retired_modules()` returns an empty mapping and every check that took
 #: it as an oracle became one that cannot fail. These five names, here, are the oracle instead.
-REMOVED_AT_RUN97: tuple[str, ...] = ("D1.1", "D1.2", "D1.3", "D1.4", "D1.5")
+REMOVED_AT_RUN97: tuple[str, ...] = (
+    # D1 Portfolio Health -- the five retired rows and the category, from goal one.
+    "D1.1", "D1.2", "D1.3", "D1.4", "D1.5",
+    # THE ADDENDUM: everything in service outside the five weighted performance categories,
+    # less the three the owner named by function. B1.1 Conservative Dominance sets the official
+    # status; B1.2 Weighted Voting is the comparison-only diagnostic the weight profile drives;
+    # C1.5 Information Completeness Ratio is the Data Integrity eligibility gate. Those three
+    # STAY. Everything below went, with its category where the category emptied.
+    "B1.3", "B1.4",                                   # B1 Signal Synthesis (B1.1, B1.2 stay)
+    "B2.18",                                          # B2 Evidence Combination -- category gone
+    "B3.1", "B3.2", "B3.3", "B3.4", "B3.5",           # B3 Regulatory -- category gone
+    "B4.3",                                           # B4 Decision Optimisation -- category gone
+    "C1.1", "C1.2", "C1.3", "C1.4", "C1.6", "C1.7",   # C1 Data Integrity (C1.5 stays)
+)
+
+#: The categories removed with them. A category holding no module in service is not a category.
+REMOVED_CATEGORIES_AT_RUN97: tuple[str, ...] = ("B2", "B3", "B4", "D1")
+
+#: The three retained outside the five weighted performance categories, and the reason each is.
+#: Written here so a reader of the removal roster can see what the boundary was.
+RETAINED_OUTSIDE_THE_WEIGHTED: dict[str, str] = {
+    "B1.1": "Conservative Dominance -- the rule that sets the official project status",
+    "B1.2": "Weighted Voting -- comparison-only, in spec_projection.COMPARISON_ONLY_MODULES",
+    "C1.5": "Information Completeness Ratio -- the Data Integrity eligibility gate; C1 is in "
+            "models_gov.WEIGHTED_VOTING_EXCLUDED_CATEGORIES and does not reach the status",
+}
 
 #: Everything this registry has removed, from either run. Callers that only care that an
 #: identifier is gone read this.
@@ -71,13 +96,24 @@ def assert_removed(check, registry) -> None:
     back97 = sorted(m for m in REMOVED_AT_RUN97 if m in idx)
     check("and every Group D row Run 97 removed is absent from the registry too",
           not back97, f"BACK IN THE REGISTRY: {back97}" if back97 else "")
-    check("the Run 97 removal roster is the five it records", len(REMOVED_AT_RUN97) == 5,
+    check("the Run 97 removal roster is the twenty it records -- D1's five and the addendum's "
+          "fifteen -- not silently shortened",
+          len(REMOVED_AT_RUN97) == 20 and len(set(REMOVED_AT_RUN97)) == 20,
           str(len(REMOVED_AT_RUN97)))
+    # AND THE THREE RETAINED ONES ARE STILL THERE. Asserting only absences would pass on an
+    # empty registry; this is the half that fails if the removal took one too many.
+    gone = sorted(m for m in RETAINED_OUTSIDE_THE_WEIGHTED if m not in idx)
+    check("and the three modules retained outside the five weighted categories all resolve: "
+          + ", ".join(f"{m} ({why.split(' -- ')[0]})"
+                      for m, why in RETAINED_OUTSIDE_THE_WEIGHTED.items()),
+          not gone, f"MISSING: {gone}" if gone else "")
     # AND THE CATEGORY ITSELF. A registry that held a D1 module would have a D1 category; a
     # registry that holds a D1 CATEGORY with no module would still be D1 surviving. Both are
     # asserted, because only checking the modules lets the container come back empty.
     cats = {row.get("category") for row in idx.values()}
-    check("no D1 category is declared in the registry", "D1" not in cats, str(sorted(cats)))
+    back_cats = sorted(c for c in REMOVED_CATEGORIES_AT_RUN97 if c in cats)
+    check("none of the removed categories is declared in the registry: "
+          + ", ".join(REMOVED_CATEGORIES_AT_RUN97), not back_cats, str(sorted(cats)))
     # THE CONSEQUENCE OF ALL OF THE ABOVE, STATED SO THAT NO OTHER CHECK MAY TAKE THE RETIRED
     # SET AS AN ORACLE WITHOUT NOTICING IT IS EMPTY.
     check("the registry holds no retired module at all, which is why this file exists",
