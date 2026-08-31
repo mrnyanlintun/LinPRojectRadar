@@ -97,3 +97,209 @@ read here.**
 
 ---
 
+## A5.2 — Sensitivity Analysis — RETIRED at Run 95, not in service
+
+**Identity.** Live id `A5.2`. Method class `Sensitivity_Analysis`. A declared response recomputed
+with each declared input moved.
+
+**Required inputs.** `sensitivityModel` — a mapping, and the only input read. It must carry a
+**named response function**, its version, the **base state** it is evaluated at, and the inputs to
+be moved with the range each is moved across.
+
+**Method.** For each declared input `Xi`, perturb it from the base point by its declared fraction
+and **recompute the response**:
+```
+S_i = (dY / Y) / (dXi / Xi)
+```
+Oracle from the source: with `Y = x1^2 + x2` at `x1 = 2, x2 = 1` the response is 5; raising `x1` by
+ten per cent gives 5.84, so the normalised sensitivity is `(0.84/5) / (0.2/2) = 1.68`. The reported
+headline is the input with the largest absolute normalised sensitivity, ties broken by input
+identifier.
+
+**The method scope is declared and must be repeated.** This is a **local, one-at-a-time**
+sensitivity. The result carries `method_scope` and the evidence sentence states in words *"This is
+a local one at a time sensitivity and is not a global one."* A specification applying this module
+repeats that and never describes the result as global.
+
+**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending.
+
+**Interpretation.** A normalised sensitivity of 1.68 says a one per cent move in that input moves
+the response by 1.68 per cent, at this base point. **Ranking currently bad variables is not
+sensitivity**: the model must perturb the input and recompute the response, which is what makes
+this a statement about the model's structure rather than about the project's present condition.
+
+**Nothing to report.** The two sentences above, with `W` = *"a sensitivity model: a named response
+function, the state it is evaluated at, and the inputs to be moved with the range each is moved
+across"*.
+
+**What it is waiting for, stated plainly.** A declared response function with a declared base state
+and declared input ranges. Before Run 29 this module perturbed `cpi` by 0.05 either way and
+recomputed `bac / cpi` — a genuine elasticity, but of one hard-coded response to one hard-coded
+input, with no way for a project to name the inputs it wanted moved. **None of `cpi`, `spi` or
+`docRiskScore` is read here.**
+
+---
+
+## A5.4 — Scenario Modeling — RETIRED at Run 95, not in service
+
+**Identity.** Live id `A5.4`. Method class `Scenario_Modeling`. Named, internally coherent
+multi-variable states, each evaluated through one governed response model.
+
+**Required inputs.** `scenarioSet` — a mapping, and the only input read. It must carry, per
+scenario, an identity and version, a **rationale**, every input it changes **jointly**, and the
+consistency constraints; and for the set as a whole, one governed response model and its version.
+
+**Method.**
+```
+X(s) = { x1(s), ..., xp(s) }        the scenario's jointly changed inputs
+Y(s) = f( X(s) )                    evaluated through the governed response model
+```
+Oracle from the source: with `Y = 2*x1 + x2`, the three states BASE (2, 1), ADVERSE (3, 2) and
+RECOVERY (1.5, 1) give 5, 8 and 4 exactly. The module reports every scenario's response and the
+minimum and maximum across them.
+
+**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending.
+
+**Interpretation.** The reading is the range the response takes across coherent states of the
+world. **No state is recommended over any other**, and the module's own evidence sentence says so:
+*"No state is recommended over any other, because choosing between them is a different question."*
+
+**Nothing to report.** The two sentences above, with `W` = *"a scenario set: named scenarios, each stating
+every input it changes together, the reasoning behind it, and the response model they are all
+evaluated through"*.
+
+**One property a reader must be told.** **This is not a decision method.** The question here is
+*what happens under this condition*, not *which intervention to choose*; the latter belongs to B4.
+Before Run 29 this module read an actions-by-scenarios payoff matrix and returned a recommended
+action and its expected cost — a decision output that the module's own contract names as the
+confusion to avoid. The decision structure is no longer this module's defining structure and the
+recommendation is no longer its output. **A specification applying this module must not recommend
+a scenario.**
+
+---
+
+## A5.6 — Queueing Theory Bottleneck — RETIRED at Run 95, not in service
+
+**Identity.** Live id `A5.6`. Method class `Queueing_Bottleneck`. A genuine queue model: an arrival
+rate, a service rate, servers and a discipline.
+
+**Required inputs.** `queueModel` — a mapping, and the only input read. It must carry the rate work
+arrives at, the rate it is served at, how many servers there are and the order they take work in.
+
+**Method.**
+```
+rho = lambda / mu
+L   = rho / (1 - rho)
+W   = 1 / (mu - lambda)
+Lq  = rho^2 / (1 - rho)
+Wq  = rho / (mu - lambda)
+```
+Oracle from the source: with `lambda = 2` and `mu = 3`, `rho = 2/3`, `L = 2`, `W = 1`, `Lq = 4/3`,
+`Wq = 2/3`, and Little's Law holds. Where several queues are supplied the module reports the
+**busiest** as the bottleneck, with every queue's figures beside it and a declared `stability`.
+
+**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending.
+
+**Interpretation.** Utilisation approaching 1 is the finding: queueing time rises without bound as
+`rho` approaches 1, so a queue at 0.95 of capacity is a qualitatively different place from one at
+0.7, and no linear reading of "95 per cent busy" conveys that.
+
+**Nothing to report.** The two sentences above, with `W` = *"a queue model: the rate work arrives at, the
+rate it is served at, how many servers there are and the order they take work in"*.
+
+**The instability rule, and it is a refusal.** **If `lambda >= mu`, do not emit a reassuring
+steady-state result.** There is no steady state to report and a colour would imply there is. Before
+Run 29 an unstable queue was banded Red; it is now refused. A specification applying this module
+must not compute `L`, `W`, `Lq` or `Wq` on an unstable queue, and must not present the algebraic
+values those formulas would produce.
+
+**What it is waiting for, stated plainly.** An arrival process and a service process.
+`ActivitiesConstrained / ActivitiesPlanned` is not queueing theory. A **queue observation log** —
+entities, a horizon and measured waiting times — is also not enough: that yields a measured
+occupancy, with no arrival process, no service process and no stability condition in it.
+
+---
+
+## A5.7 — Agent-Based Supply Chain — RETIRED at Run 95, not in service
+
+**Identity.** Live id `A5.7`. Method class `Agent_Supply_Chain`. Agents, states, behaviour rules,
+interaction rules, an environment and time — **actually stepped**.
+
+**Required inputs.** `agentSupplyChainModel` — a mapping, and the only input read. It must carry
+the agents, the state each starts in, the rule each follows, who they are connected to, and the
+steps the model runs over. All six elements are required: a true agent-based model needs agents,
+states, behaviour rules, interaction rules, an environment and time.
+
+**Method — a simulation.** The agents are stepped in a declared `step_order` over the declared
+number of time steps, each following its declared rule. The minimum deterministic laboratory model
+the contract states is: a supplier that ships one unit when it has stock and a request is pending;
+a carrier that collects a shipped unit and delivers it after a declared travel delay; and a project
+with demand, received quantity and backorder. The module reports the demand, the quantity received
+and the quantity backordered at the end of the run, with the agents, rules, environment and step
+order that produced them.
+
+**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending.
+
+**Interpretation.** The reading says what the supply chain, following its own declared rules,
+actually delivered against what was asked for. The backorder is the finding; the rules are the
+explanation.
+
+**Nothing to report.** The two sentences above, with `W` = *"an agent based supply chain model: the
+agents, the state each starts in, the rule each follows, who they are connected to, and the steps
+the model runs over"*.
+
+**What it is waiting for, stated plainly.** Executable rules. A long-lead at-risk ratio is not an
+agent-based model. Before Run 29 this module read a supplied state history and counted how many
+agents were in a state other than normal at the last step: the decision rules were required to be
+**named** but were never **executed**, so the states came out exactly as they were typed in. **That
+is a table read, not a simulation.**
+
+**One property a reader must be told, and it bears on reproducibility.** The model may be declared
+stochastic. Where it is, the result carries `stochastic: true`, the `seed` and the number of
+`replications`, and the evidence sentence gains the clause *"The run is stochastic and was repeated
+N times from seed S."* The module is nonetheless **absent from `models.STOCHASTIC`**, which names
+only `{"A1.1", "A1.2", "A2.1"}`, so a stochastic run here does not receive the result set's seed
+record; the seed travels on the reading instead. **A specification applying this module cannot
+reproduce a stochastic run and must report the platform's figures, not a re-simulation.**
+
+---
+
+## A5.8 — Discrete Event Simulation — RETIRED at Run 95, not in service
+
+**Identity.** Live id `A5.8`. Method class `Discrete_Event_Sim`. A real discrete event simulation:
+entities, events, a clock, resources, queues and routing.
+
+**Required inputs.** `desProcessModel` — a mapping, and the only input read. It must carry the
+entities and when they arrive, the resources that serve them, how long service takes, and the order
+simultaneous events are taken in.
+
+**Method — a simulation with an explicit event-order policy.** Entities are advanced through the
+resource according to the declared queue discipline, with a declared `event_order_policy` for
+simultaneous events and a declared `termination_condition`. Oracle from the source: with one
+server, job A arriving at 0 with a service of 2 and job B arriving at 1 with a service of 2 — A
+starts at 0 and ends at 2 having waited 0; B starts at 2 and ends at 4 having waited 1; **the mean
+wait is 0.5**. The module reports the mean wait, the clock end, every entity and every event.
+
+**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending.
+
+**Interpretation.** The mean wait is time the work spent existing but not being worked on. Unlike a
+queueing formula it comes from a specific arrival pattern rather than from a steady state, so it
+answers what happened to *these* entities in *this* order.
+
+**Nothing to report.** The two sentences above, with `W` = *"a discrete event model: the entities and when
+they arrive, the resources that serve them, how long service takes, and the order simultaneous
+events are taken in"*.
+
+**What it is waiting for, stated plainly.** An event stream. **A progress or schedule index
+algebraic index is not DES.** Before Run 29 this module formed an interruption term from the
+progress shortfall and the schedule index shortfall and reported the reciprocal of one plus it as a
+throughput index; Run 27 proved it a function of the schedule index and the progress ratio alone.
+There is no entity, no event, no clock, no resource and no queue in that, and **none of its inputs
+is read here.**
+
+**One property a reader must be told.** As with A5.7, the model may be declared stochastic, the
+seed and replication count travel on the reading, and the module is absent from `models.STOCHASTIC`.
+The same reproducibility caution applies.
+
+---
+

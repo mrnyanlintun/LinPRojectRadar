@@ -379,54 +379,9 @@ the activity it feeds"*.
 
 ---
 
-## A4.10 — Specification Conflict Density
-
-**Identity.** Live id `A4.10`. Method class `Spec_Conflict_Density`. Verified specification
-conflicts per unit of declared specification exposure.
-
-**Required inputs.** `specificationConflictRegister` — a mapping, and the only input read.
-
-**Method.** `canonical_v4.specification_conflict_density`:
-```
-conflict_density        = verified conflicts / exposure quantity
-conflicts_per_thousand  = conflict_density * 1000
-```
-Five verified conflicts over two hundred and fifty requirements reads 0.02 conflicts a
-requirement, or twenty per thousand. The exposure must be explicit and is reported with its unit.
-Each conflict retains the two places in the specification that disagree. **Candidate conflicts
-that have not been confirmed are reported separately and are not counted in the density.**
-
-**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending
-with the standard note. What it replaced was `docRiskScore * rfiCount / sqrt(rfiCount)`, capped at
-one and banded — the expression the supplied contract names as not being this method. **Neither
-`docRiskScore` nor `rfiCount` is read here.**
-
-**Interpretation.** The density says how internally contradictory the issued specification is per
-unit of the specification. It is the upstream cause of much of what A4.2 measures downstream as
-request velocity, and the two are reported separately so the causal reading stays available rather
-than being asserted.
-
-**Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a specification conflict
-register: each identified conflict, the two places in the specification that disagree, whether it
-has been confirmed, and the exposure the conflicts are counted over"*.
-
----
+## A4.10 — Specification Conflict Density — RETIRED at Run 95, not in service. Its specification is archived verbatim at `specifications/archive/A4_document_derived_signals.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ## Stopped specifications
 
-### A4.1 — Document Risk Score. STOPPED. Not specified.
+### A4.1 — Document Risk Score — RETIRED at Run 95, not in service. Its stopped-specification note is archived verbatim at `specifications/archive/A4_document_derived_signals.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
-A4.1 is **in service** — `registry.service_index()` contains it — and is **not implemented**:
-`registry.unported_modules()` returns exactly `['A4.1']`, and `registry.run_module("A4.1", ...)`
-raises `MissingModuleError` with the words *"A4.1 (Document Risk Score) has not been ported and
-validated against the JavaScript implementation; this server refuses to compute it"*.
-
-`canonical_v4` declares a structure key for it — `documentRiskEvidence` — and plain words for that
-structure, so the intent to implement it is recorded. **No runner exists.** There is therefore no
-source from which to derive a method, and writing one would be inventing a method this module
-never had, which section 3.1 of this run's order forbids.
-
-**The contradiction, stated:** a module that is in service must either compute or abstain, and
-A4.1 does neither — it raises. Nothing in this run changes that; a specification cannot be
-written for it until a runner exists, and applying a specification to it now would make the model
-produce a reading the platform itself refuses to produce.

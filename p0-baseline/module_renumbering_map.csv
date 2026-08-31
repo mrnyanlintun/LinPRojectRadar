@@ -1,18 +1,18 @@
 new_id,module_name,old_id,group,group_name,category,category_name,notes
 A1.1,Monte Carlo EAC Forecast,1.1,A,Project Health,A1,Cost & EVM Performance,RETIRED Run 43 as A1.1: reason 2 (already disabled).
 A1.2,CUSUM Anomaly Monitor,1.2,A,Project Health,A1,Cost & EVM Performance,
-A1.3,Bayesian EAC,1.4,A,Project Health,A1,Cost & EVM Performance,
-A1.4,Kalman Filter SPI Smoother,1.5,A,Project Health,A1,Cost & EVM Performance,
+A1.3,Bayesian EAC,1.4,A,Project Health,A1,Cost & EVM Performance,RETIRED Run 95 as A1.3: the owner removed it from the retained roster at Run 89.
+A1.4,Kalman Filter SPI Smoother,1.5,A,Project Health,A1,Cost & EVM Performance,RETIRED Run 95 as A1.4: the owner removed it from the retained roster at Run 89.
 A1.5,ARIMA CPI Forecast,1.6,A,Project Health,A1,Cost & EVM Performance,
 A1.6,Earned Schedule,1.7,A,Project Health,A1,Cost & EVM Performance,
 A1.7,TCPI,1.8,A,Project Health,A1,Cost & EVM Performance,
 A1.8,Variance at Completion,1.9,A,Project Health,A1,Cost & EVM Performance,
 A1.9,Budget Execution Rate,1.10,A,Project Health,A1,Cost & EVM Performance,
-A1.10,CPI Shrinkage Forecast,1.11,A,Project Health,A1,Cost & EVM Performance,
+A1.10,CPI Shrinkage Forecast,1.11,A,Project Health,A1,Cost & EVM Performance,RETIRED Run 95 as A1.10: the owner removed it from the retained roster at Run 89.
 A1.11,Independent EAC Reconciliation Index,1.12,A,Project Health,A1,Cost & EVM Performance,
 A2.1,PERT Network Criticality,2.1,A,Project Health,A2,Schedule Performance,
-A2.2,Line of Balance,2.2,A,Project Health,A2,Schedule Performance,
-A2.3,CCPM Buffer Health,2.3,A,Project Health,A2,Schedule Performance,
+A2.2,Line of Balance,2.2,A,Project Health,A2,Schedule Performance,RETIRED Run 95 as A2.2: no project document states the input this module requires.
+A2.3,CCPM Buffer Health,2.3,A,Project Health,A2,Schedule Performance,RETIRED Run 95 as A2.3: no project document states the input this module requires.
 A2.4,Schedule Compression Index,2.4,A,Project Health,A2,Schedule Performance,RETIRED Run 43 as A2.4: reason 4 (duplicate primitive source).
 A2.5,Float Consumption Rate,2.5,A,Project Health,A2,Schedule Performance,RETIRED Run 43 as A2.5: reason 4 (duplicate primitive source).
 A2.6,S-Curve Deviation,2.6,A,Project Health,A2,Schedule Performance,RETIRED Run 43 as A2.6: reason 4 (duplicate primitive source).
@@ -21,16 +21,16 @@ A2.8,Look-Ahead Schedule Health,2.8,A,Project Health,A2,Schedule Performance,
 A2.9,Resource Loading Index,2.9,A,Project Health,A2,Schedule Performance,
 A2.10,Schedule Risk Analysis P80,2.10,A,Project Health,A2,Schedule Performance,RETIRED Run 43 as A2.10: reason 4 (duplicate primitive source).
 A2.11,Critical Path Index,2.11,A,Project Health,A2,Schedule Performance,RETIRED Run 43 as A2.11: reason 4 (duplicate primitive source).
-A3.1,Reference Class Forecasting,3.1,A,Project Health,A3,Cost Risk,
+A3.1,Reference Class Forecasting,3.1,A,Project Health,A3,Cost Risk,RETIRED Run 95 as A3.1: the owner removed it from the retained roster at Run 89.
 A3.2,Contingency Burn Rate,3.3,A,Project Health,A3,Cost Risk,
 A3.3,Labor Productivity Index,3.4,A,Project Health,A3,Cost Risk,
 A3.4,Material Cost Variance,3.5,A,Project Health,A3,Cost Risk,RETIRED Run 43 as A3.4: reason 2 (already disabled).
 A3.5,Overhead Absorption Rate,3.6,A,Project Health,A3,Cost Risk,
 A3.6,Cost Risk Analysis P80,3.7,A,Project Health,A3,Cost Risk,
-A3.7,Analogous Estimating Ratio,3.8,A,Project Health,A3,Cost Risk,
+A3.7,Analogous Estimating Ratio,3.8,A,Project Health,A3,Cost Risk,RETIRED Run 95 as A3.7: the owner removed it from the retained roster at Run 89.
 A3.8,Parametric Cost Index,3.9,A,Project Health,A3,Cost Risk,RETIRED Run 43 as A3.8: reason 2 (already disabled).
-A3.9,Inflation Adjustment Index,3.10,A,Project Health,A3,Cost Risk,
-A4.1,Document Risk Score,4.1,A,Project Health,A4,Document-Derived Condition Signals,absorbs former 1.3 Document Risk Extraction (alias)
+A3.9,Inflation Adjustment Index,3.10,A,Project Health,A3,Cost Risk,RETIRED Run 95 as A3.9: the owner removed it from the retained roster at Run 89.
+A4.1,Document Risk Score,4.1,A,Project Health,A4,Document-Derived Condition Signals,RETIRED Run 95 as A4.1: the owner removed it from the retained roster at Run 89. absorbs former 1.3 Document Risk Extraction (alias)
 A4.2,RFI Velocity,4.2,A,Project Health,A4,Document-Derived Condition Signals,
 A4.3,Submittal Rejection Rate,4.3,A,Project Health,A4,Document-Derived Condition Signals,
 A4.4,NCR Rate,4.4,A,Project Health,A4,Document-Derived Condition Signals,
@@ -39,15 +39,15 @@ A4.6,Change Order Frequency,4.6,A,Project Health,A4,Document-Derived Condition S
 A4.7,Dispute Escalation Index,4.7,A,Project Health,A4,Document-Derived Condition Signals,
 A4.8,Subcontractor Performance,4.8,A,Project Health,A4,Document-Derived Condition Signals,
 A4.9,Procurement Lead Time Monitor,4.9,A,Project Health,A4,Document-Derived Condition Signals,
-A4.10,Specification Conflict Density,4.10,A,Project Health,A4,Document-Derived Condition Signals,
+A4.10,Specification Conflict Density,4.10,A,Project Health,A4,Document-Derived Condition Signals,RETIRED Run 95 as A4.10: the owner removed it from the retained roster at Run 89.
 A5.1,DSM Rework Propagation,5.1,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 89 as A5.1: the module is defined on a structure (the DSM rework matrix) prepared for a method rather than a thing a project document prints. Absorbs former 3.2 DSM Rework Propagation (alias).
-A5.2,Sensitivity Analysis,5.2,A,Project Health,A5,System Dynamics & Complexity,
+A5.2,Sensitivity Analysis,5.2,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 95 as A5.2: no project document states the input this module requires.
 A5.3,Tornado Risk Ranking,5.3,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 43 as A5.3: reason 4 (duplicate primitive source).
-A5.4,Scenario Modeling,5.4,A,Project Health,A5,System Dynamics & Complexity,
+A5.4,Scenario Modeling,5.4,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 95 as A5.4: no project document states the input this module requires.
 A5.5,Rework Feedback Loop,5.5,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 89 as A5.5: the module is defined on a structure (the rework feedback loop) prepared for a method rather than a thing a project document prints.
-A5.6,Queueing Theory Bottleneck,5.6,A,Project Health,A5,System Dynamics & Complexity,
-A5.7,Agent-Based Supply Chain,5.7,A,Project Health,A5,System Dynamics & Complexity,
-A5.8,Discrete Event Simulation,5.8,A,Project Health,A5,System Dynamics & Complexity,
+A5.6,Queueing Theory Bottleneck,5.6,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 95 as A5.6: no project document states the input this module requires.
+A5.7,Agent-Based Supply Chain,5.7,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 95 as A5.7: no project document states the input this module requires.
+A5.8,Discrete Event Simulation,5.8,A,Project Health,A5,System Dynamics & Complexity,RETIRED Run 95 as A5.8: no project document states the input this module requires.
 A6.1,Quality Compliance Index,8.6,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
 A6.2,Safety Performance Index,8.7,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
 A6.3,Environmental Compliance Rate,8.8,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
