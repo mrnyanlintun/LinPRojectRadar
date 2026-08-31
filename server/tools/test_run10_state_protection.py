@@ -360,6 +360,30 @@ RUN68_NON_ANALYTICAL_SCOPE = {"server/app/extraction_fields.py",
 # `extraction_client.py` (where the fingerprint is derived from the real prompt builder) is
 # already named by Run 68.
 RUN85_NON_ANALYTICAL_SCOPE = {"server/app/research_models.py"}
+# RESTATED BY RUN 93, ORIGINAL FINDINGS PRESERVED. Run 93 made the model that serves the
+# platform a SETTING rather than a constant. That is not an analytical change -- no
+# specification, no module, no band and no figure moves through it -- but it necessarily touches
+# the files that CALL a model, and those are outside the simulation package by construction. The
+# five are named rather than the rule being widened to "server/app/":
+#
+#   ai_provider.py        the new boundary itself: which provider, which endpoint, which
+#                         authentication header, which request and response shape, and how a
+#                         refusal is surfaced. It computes nothing.
+#   spec_readings.py      stores the reading; gains the `provider` field beside `model_id`.
+#   training_narration.py the third model call site, which narrates and decides nothing.
+#   facade.py             reports which provider each call site is configured for, presence
+#                         only, on the health payload. A read, and no key value.
+#   settings.py           a comment correction: it claimed nothing on this service makes a
+#                         provider call, which stopped being true before this run.
+#
+# `documents.py`, `extraction_client.py` and `research_models.py` are already named by Run 11
+# Gate 6, Run 68 and Run 85 respectively, and are touched for the same storage reason Run 85
+# names: a nullable column declaration recording which provider produced a stored figure.
+RUN93_NON_ANALYTICAL_SCOPE = {"server/app/ai_provider.py",
+                              "server/app/spec_readings.py",
+                              "server/app/training_narration.py",
+                              "server/app/facade.py",
+                              "server/app/settings.py"}
 check("this run changed only the analytical layer under the application, plus the read path "
       "Run 11 Gate 6 names",
       all(d.startswith("server/app/simulation/") or d in RUN11_NON_ANALYTICAL_SCOPE
@@ -367,7 +391,7 @@ check("this run changed only the analytical layer under the application, plus th
           or d in RUN28_CLOSURE_NON_ANALYTICAL_SCOPE or d in RUN41_NON_ANALYTICAL_SCOPE
           or d in RUN43_NON_ANALYTICAL_SCOPE or d in RUN47_NON_ANALYTICAL_SCOPE
           or d in RUN59_NON_ANALYTICAL_SCOPE or d in RUN68_NON_ANALYTICAL_SCOPE
-          or d in RUN85_NON_ANALYTICAL_SCOPE
+          or d in RUN85_NON_ANALYTICAL_SCOPE or d in RUN93_NON_ANALYTICAL_SCOPE
           for d in diff_names if d.startswith("server/app/")))
 
 # ---------------------------------------------------------------- GATE 10: versioning
