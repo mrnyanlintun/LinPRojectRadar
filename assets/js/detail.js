@@ -1418,6 +1418,20 @@
       if (resp.result.consistency_findings && !p.storedResult.consistency_findings) {
         p.storedResult.consistency_findings = resp.result.consistency_findings;
       }
+      // THE SIXTH FIELD, RUN 91, AND IT MADE RUN 89'S ENTIRE INDETERMINATE BRIEF DEAD CODE.
+      // `project_status_basis` -- the required-core verdict, carrying `required_missing` and
+      // `required_missing_detail` -- is on the served result (documents.py `_result_view`) and
+      // is NOT on the list projection. `rowFor` prefers `storedResult`, so `ev.statusBasis` was
+      // null on every detail page, the `basis.official === false` branch in `scriptedBrief`
+      // never ran, and the GENERIC branch rendered instead: that is why the brief said "The
+      // posture is Indeterminate, set by A1.7 ..." -- naming the three modules that DID report --
+      // and never mentioned Cost Risk or Delivery Quality, the categories whose absence caused
+      // the status. MEASURED in a real browser at 1280px and 1024px before this graft:
+      // `row.project_status_basis` null on the client while the server served the full object.
+      // Same graft, same guarded shape, same reason as the five fields above.
+      if (resp.result.project_status_basis && !p.storedResult.project_status_basis) {
+        p.storedResult.project_status_basis = resp.result.project_status_basis;
+      }
     } else if (!p.storedResult) {
       // a_get delivered no storedResult (a race, or the list projection had not attached it
       // yet) but the row exists. Attach it so every rowFor(p) on this page reads the complete
@@ -1957,7 +1971,31 @@
       section("Signal Pattern", patItems ? `<ul class="eb-pattern">${patItems}</ul>` : "") +
       section("Key Drivers", driverItems ? `<ul class="eb-drivers">${driverItems}</ul>` : "") +
       section("Required Actions", actionItems ? `<ul class="eb-actions">${actionItems}</ul>` : "") +
+      briefDecisionRouteHtml() +
       `</div>`;
+  }
+
+  /* RUN 91, SECTION 3.5. THE ROUTE FROM THE END OF THE BRIEF TO THE DECISION CARD.
+
+     MEASURED BEFORE THIS: the brief's rendered text never used the word decision, and its only
+     controls were its own collapse header and Regenerate. The Governance Decision section sits
+     on the same page and a participant who read to the end of the brief had nothing to follow.
+
+     WHAT THIS IS AND WHAT IT IS NOT. It is a route to a section that exists on this page --
+     `#section-d-decision`, whose heading reads GOVERNANCE DECISION. IT PROMISES NOTHING ABOUT
+     WHAT IS INSIDE IT. That restraint is deliberate: `recommendation_options.js` returns
+     `available: false` on every current row, and on the fixture row this run measured the card
+     renders its heading and a "No data" badge and exposes no controls at all. A sentence here
+     claiming the participant can record a judgement would be a claim about a control that is
+     not there. So the wording names the destination and stops, and the report says plainly
+     where the route lands. */
+  function briefDecisionRouteHtml() {
+    return '<div class="eb-section eb-decision-route">'
+      + '<p class="eb-sec-head">Recording your judgement</p>'
+      + '<p class="eb-route-note">Your judgement on this recommendation is recorded on the '
+      + 'Governance Decision card, further down this page.</p>'
+      + '<button type="button" class="btn small eb-to-decision" data-brief-to-decision="1">'
+      + 'Go to the Governance Decision card \u2193</button></div>';
   }
 
   /* RUN 70, FIX 4. THE SCRIPTED BRIEF IS REBUILT ON THE STORED FIGURES.
@@ -2046,16 +2084,57 @@
       // 5. ESCALATION OF ANY ASSESSED ADVERSE CONDITION, with the setter's own figure so the
       //    sentence names the figure behind it and Check 1 is satisfied by evidence, not by
       //    softening the words.
+      /* RUN 91, SECTION 3.4. AN ADVERSE READING IS STATED WITH ITS FIGURE, ITS REACH AND WHAT
+         FOLLOWS -- and its reach is stated in BOTH directions.
+
+         WHAT WAS WRONG. On the measured row this branch never ran at all (see the
+         `project_status_basis` graft in `primeAndRefresh`), so the GENERIC branch rendered and
+         closed with "Routine monitoring appears sufficient this cycle" beside a category the
+         row bands Red. The owner's ruling is that a recommendation must state its reason: an
+         adverse category is not automatically a project-level threat, and the brief must say
+         what the adverse reading is, what it does and does not reach, and what follows.
+
+         THE FIGURE. `evidence_metric` is the setter's own sentence and is frequently null on a
+         stored specification reading; where it is, the module's own stored `display` and then
+         its stored `value` are used. All three are figures the row holds, so check 1 is
+         satisfied by evidence rather than by softening the words. Where the module stored no
+         figure at all that is said, and no number is invented for it. */
       const adverse = ev.categories.filter((c) => c.status
         && statusKeyFromText(c.status) !== "green");
+      const reqKeys = basis.required_categories || [];
+      const supKeys = basis.supporting_categories || [];
       adverse.forEach((c) => {
         const bits = (c.setBy || []).map((mid) => {
           const m = ev.modules.filter((x) => x.module_id === mid)[0];
-          return m ? (mid + " reading " + (m.evidence_metric || "no figure stated")) : mid;
+          if (!m) return mid;
+          const fig = (m.evidence_metric != null && m.evidence_metric !== "") ? m.evidence_metric
+            : (m.display != null && m.display !== "") ? m.display
+            : (m.value != null ? String(m.value) : null);
+          return mid + (fig ? " reading " + fig : " which stored no figure");
         });
+        const isRequired = reqKeys.indexOf(c.key) >= 0;
+        const isSupporting = supKeys.indexOf(c.key) >= 0;
         iRec.push("Escalate now, without waiting for an official posture: " + c.key + " "
           + catName(c.key) + " reads " + c.status
           + (bits.length ? ", set by " + bits.join("; ") : "") + ".");
+        // WHAT IT REACHES, AND WHAT IT DOES NOT. Stated from the basis the server published,
+        // not from a judgement made here.
+        if (isSupporting) {
+          iRec.push("What that reaches: " + c.key + " is a SUPPORTING category, so this reading "
+            + "does not set the project status and could not have set it even had the required "
+            + "categories all reported. What it does not reach: the required core, which is "
+            + (basis.required_assessed || []).join(", ")
+            + " assessed and " + missing.join(", ") + " unassessed, so no project-level "
+            + "conclusion follows from it either way.");
+        } else if (isRequired) {
+          iRec.push("What that reaches: " + c.key + " is a REQUIRED category, so this reading "
+            + "would contribute to the project status once every required category reports. "
+            + "What it does not reach: a project status now, because " + missing.join(", ")
+            + " are still unassessed.");
+        }
+        iRec.push("What follows: treat this as a category-level finding on " + c.key
+          + " and act on it at that level; it is not evidence of a project-level condition, and "
+          + "the absence of a project status is not evidence that there is none.");
       });
       if (basis.fused_band) {
         iRec.push("Worst-wins over the categories that did report would have produced "
@@ -2218,7 +2297,40 @@
     return cls || "none";
   }
 
-  function briefFooter(brief) {
+  /* RUN 91, SECTION 3.3. THE TWO COUNTS THE BRIEF PRINTS ARE DERIVED AT RENDER FROM THIS ROW.
+
+     WHAT WAS WRONG, MEASURED IN A BROWSER. The header read "grouped analysis across 11 signal
+     categories" -- `projectCats().length`, the size of the whole taxonomy, not of anything on
+     the page -- and the footer read "51 modules", the stored `summary.total_modules` count. The
+     brief itself said, on the same row, that 9 modules produced a figure and 12 produced none:
+     twenty-one, not fifty-one. Neither printed number matched anything a reader could see.
+
+     WHAT THEY NOW COUNT, said out loud so the number is not ambiguous:
+       * categories -- every category this brief accounts for: the ones the row carries a
+         category status for, plus every required and supporting category the server's
+         `project_status_basis` names, whether or not it was ever called. That is the set the
+         Signal Pattern and Key Drivers sections between them list.
+       * modules -- every module this row holds: those that produced a figure plus those that
+         abstained.
+
+     NO STORED OR HARD-CODED COUNT IS CARRIED. Where there is no row there is no number, and the
+     clause is omitted rather than filled with one. */
+  function briefScope(project) {
+    let ev = null;
+    try { ev = briefEvidence(project); } catch (e) { return null; }
+    if (!ev || !ev.row) return null;
+    const b = ev.statusBasis || {};
+    const keys = Object.create(null);
+    (ev.categories || []).forEach((c) => { if (c && c.key) keys[c.key] = 1; });
+    (b.required_categories || []).forEach((k) => { keys[k] = 1; });
+    (b.supporting_categories || []).forEach((k) => { keys[k] = 1; });
+    const reported = (ev.modules || []).length;
+    const silent = (ev.abstainedCount != null) ? ev.abstainedCount : 0;
+    return { categories: Object.keys(keys).length, modules: reported + silent,
+             reported: reported, silent: silent };
+  }
+
+  function briefFooter(brief, project) {
     if (!brief) return "";
     const snap = brief.snapshot || null;
     const computedAt = (snap && snap.computed_at) || brief.generated_at || null;
@@ -2228,10 +2340,12 @@
       const d = new Date(computedAt);
       when = d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
     } catch (e) {}
-    const total = (snap && snap.summary && snap.summary.total_modules) || null;
+    // RUN 91. `snap.summary.total_modules` is NOT read here any more -- see `briefScope`.
+    const scope = project ? briefScope(project) : null;
     const conf = snap && snap.summary && snap.summary.evidence_agreement && snap.summary.evidence_agreement.confidence;
     const parts = ["Generated from stored log", when];
-    if (total) parts.push(total + " modules");
+    if (scope) parts.push(scope.modules + " modules on this row (" + scope.reported
+                          + " produced a figure, " + scope.silent + " produced none)");
     if (conf) parts.push(conf + " confidence");
     return `<div class="eb-foot">${esc(parts.join(" · "))}</div>`;
   }
@@ -2710,19 +2824,26 @@
     try { flags = briefFlagsHtml(project); } catch (e) {}
     let consistency = "";
     try { consistency = briefConsistencyHtml(project); } catch (e) {}
+    // RUN 91, SECTION 3.3. The header's category count is this row's, derived here, or absent.
+    let scope = null;
+    try { scope = briefScope(project); } catch (e) {}
+    const scopeClause = scope
+      ? esc("grouped analysis across the " + scope.categories + " signal categories this brief "
+            + "accounts for")
+      : esc("grouped analysis of this period's stored result");
     const state = cached ? "ready" : "loading";
     return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief" data-eb-id="${esc(projectId)}">
       <div class="eb-head">
         <div>
           <p class="eyebrow eb-eyebrow">Executive brief${project && project.name ? ": " + esc(project.name) : ""}</p>
-          <p class="kn-sub eb-sub">${period ? "Reporting period: " + esc(period) + " · " : ""}grouped analysis across ${projectCats().length} signal categories</p>
+          <p class="kn-sub eb-sub">${period ? "Reporting period: " + esc(period) + " · " : ""}${scopeClause}</p>
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>
       ${flags}
       ${consistency}
       ${briefBodyHtml(state, cached, null, project)}
-      ${cached ? briefFooter(cached) : ""}
+      ${cached ? briefFooter(cached, project) : ""}
     </section>`;
   }
 
@@ -2734,7 +2855,7 @@
     const oldFoot = panel.querySelector(".eb-foot");
     if (oldFoot) oldFoot.remove();
     panel.insertAdjacentHTML("beforeend", briefBodyHtml(state, brief, errMsg, project));
-    if (state === "ready" && brief) panel.insertAdjacentHTML("beforeend", briefFooter(brief));
+    if (state === "ready" && brief) panel.insertAdjacentHTML("beforeend", briefFooter(brief, project));
     if (project) {
       const accent = briefAccentClass(project);
       panel.className = panel.className.replace(/\beb-accent-\S+/g, "").trim() + " eb-accent-" + accent;
@@ -2809,6 +2930,25 @@
   }
 
   function wireBrief(root, project) {
+    /* RUN 91, SECTION 3.5. The route, wired. `toggleSection` is app.js's own collapse control,
+       the same one the section headers call, so this opens the section exactly as a click on
+       its header would; the body is then scrolled into view and focused for a keyboard reader.
+       Delegated from the panel root because the button is re-created by `setBriefState` on every
+       regenerate, and a listener bound to the old node would be lost with it. */
+    root.addEventListener("click", (e) => {
+      const btn = e.target && e.target.closest
+        ? e.target.closest("[data-brief-to-decision]") : null;
+      if (!btn) return;
+      const body = document.getElementById("body-d-decision");
+      const closed = !body || body.style.display === "none";
+      if (closed && typeof window.toggleSection === "function") {
+        try { window.toggleSection("d-decision"); } catch (err) {}
+      }
+      const sec = document.getElementById("section-d-decision");
+      if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+      const head = sec ? sec.querySelector(".collapse-header") : null;
+      if (head && head.focus) { try { head.focus(); } catch (err) {} }
+    });
     root.querySelectorAll("[data-eb-regen]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const period = briefCurrentPeriod(project);
