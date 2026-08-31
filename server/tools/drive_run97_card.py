@@ -213,6 +213,19 @@ assert _sv.get("ok") is True, str(_sv)[:300]
 _pv = post({"action": "projectperiods", "session_token": PM, "id": D})
 assert _pv.get("ok") is True, str(_pv)[:300]
 
+# THE CATEGORY SPECIFICATIONS ARE PRESSED THROUGH THE REAL ROUTE, for both periods.
+#
+# `documents._result_view` serves `module_results` from the SPECIFICATION PROJECTION, not from
+# the Python row, so a project with no stored specification reading serves an EMPTY module list
+# and every module renders in its no-current-result STATE. That is Run 79's design, not a
+# defect -- but it means the Signal Flow's module -> category branches have no LIVE tier to
+# measure until the categories have been called. `projectcategoryapply` is the button a
+# participant presses; nothing is written here by hand.
+for _per in (1, 2):
+    _ap = post({"action": "projectcategoryapply", "session_token": PM, "id": D, "period": _per})
+    print(f"category apply period {_per}: ok={_ap.get('ok')} "
+          f"readings={len(_ap.get('readings') or [])} servedBy={_ap.get('servedBy')}")
+
 sock = socket.socket()
 sock.bind(("127.0.0.1", 0))
 PORT = sock.getsockname()[1]
