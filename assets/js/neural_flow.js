@@ -774,70 +774,102 @@
        stops. A category carrying no posture does not reach the centre: its stream runs inward
        from the category node and TERMINATES, short, with a visible blunt end and no arrowhead.
        Drawing it arriving would assert a completeness the row does not have. ════════════════ */
-    var W = 1400, H = 1000, PAD_TOP = 45;
-    var CXC = W / 2, CYC = H / 2 + 8;
-    var R_CAT = 178, R_MOD = 300, R_DOC = 424;
-    /* The fraction of the way in that an unresolved stream is allowed to travel before it
-       stops. It must be visibly short of the status node's own radius. */
+    /* ═══ RUN 94, SECTION 3. A LEFT-TO-RIGHT TREE, IN FOUR COLUMNS. ══════════════════════
+       WHAT THIS REPLACES AND WHY. Run 90's three concentric rings were structurally honest --
+       every stream ran inward, nothing was encoded in a radius -- and they were unreadable.
+       MEASURED, not asserted: at 1280px the rendered <text> bounding boxes of the ring layout
+       intersected in SIXTEEN pairs (module label over module label in the crowded upper arcs,
+       document label over module label where the rings came closest). The owner's complaint is
+       legibility, so the geometry changes and NOTHING ELSE DOES.
+
+       THE FOUR COLUMNS, left to right: documents, the modules they feed, the six weighted
+       performance categories, the project status. Branches are cubic curves that leave a parent
+       horizontally and arrive at a child horizontally, in the manner of a mind map, so no branch
+       crosses the body of the tree.
+
+       NOTHING IS ENCODED IN A POSITION. Every document sits at the same x; so does every module,
+       every category and the status. The ROW PITCH is uniform inside each column -- a module is
+       not higher because it matters more. A category sits at the vertical MEAN of its own
+       modules' rows, which is a packing decision that keeps its branches short; the module count
+       it packs is printed in words in the tooltip and the header, never left to be read off a
+       gap.
+
+       THE POPULATION IS NOT REDUCED TO MAKE IT FIT. 27 document types, 42 modules in service and
+       6 categories all render. The SVG is TALLER than the ring layout was, and the page scrolls,
+       which section 3's own sentence permits.
+
+       DOCUMENT ROW ORDER IS A BARYCENTRE SORT, and it is legibility only. A document is placed
+       at the mean row of the modules it feeds, so the doc->module fan crosses itself as little
+       as the real bipartite relation allows. No document is dropped, added, merged or renamed;
+       `DOC_KEYS` itself is untouched and every array indexed by `di` still lines up. ════════ */
+    var W = 1400, H = 940;
+
+    /* THE FOUR COLUMN ABSCISSAE, and the label gutters between them. Sized against the widest
+       label each column actually carries (35 characters for "Contract Value / Original
+       Agreement" at 13px monospace; 30 for a truncated module name; 34 for
+       "Document-Derived Condition Signals" at 15px), not guessed. */
+    var COL_DOC = 300, COL_MOD = 430, COL_CAT = 750, COL_PRJ = 1330;
+    /* ONE CONSTANT PER COLUMN, and the same gap after every name in that column, so the gap
+       after a short name states nothing about that module or that category. Sized against the
+       widest label the column actually carries: 26 characters at 13px monospace for a module,
+       38 for "A · Document-Derived Condition Signals" at 15px for a category. */
+    var MOD_LABEL_GUTTER = 215;
+    var CAT_LABEL_GUTTER = 358;
+    var TOP = 80, ROW = 20;                    /* uniform module pitch; position encodes nothing */
+    /* The fraction of the way to the status node an unresolved stream is allowed to travel
+       before it stops. Run 90's rule, carried over unchanged. */
     var STOP_SHORT = 0.45;
 
-    function px(a, r) { return CXC + Math.cos(a) * r; }
-    function py(a, r) { return CYC + Math.sin(a) * r; }
-    /* Start at the top and go clockwise, so the first category reads where a reader looks. */
-    function ang(frac) { return -Math.PI / 2 + frac * Math.PI * 2; }
-    /* A label on the left half of the circle is end-anchored so it grows outward, not inward. */
-    function anchorFor(a) { return Math.cos(a) < -0.0001 ? 'end' : 'start'; }
-    function labelDX(a, d) { return Math.cos(a) < -0.0001 ? -d : d; }
-    /* AN INWARD ARC BETWEEN TWO RINGS, and this is the difference between a convergence and a
-       hairball. The first attempt put the control point at (cos of the outer angle, sin of the
-       inner angle), which is not a point on any circle: every edge swung across the middle of
-       the diagram and the six streams were invisible inside it. Measured in the browser at
-       1280px, and it is reported as iteration 1's failure rather than quietly corrected.
+    /* ── MODULES: one row each, in registry order within their category. ── */
+    var modYs = MODULES.map(function(_, mi) { return TOP + mi * ROW; });
+    var BODY_BOTTOM = TOP + Math.max(0, MODULES.length - 1) * ROW;
+    var modXs = MODULES.map(function() { return COL_MOD; });
+    var modY = modYs;
 
-       The control point now sits on the ANGULAR BISECTOR, taking the SHORT way round, at a
-       radius just outside the midpoint of the two rings. Every edge therefore stays inside its
-       own annulus, bows gently in the direction it travels, and reads as flowing inward. */
-    function arcPath(a1, r1, a2, r2) {
-      var d = a2 - a1;
-      while (d > Math.PI) d -= Math.PI * 2;
-      while (d < -Math.PI) d += Math.PI * 2;
-      var am = a1 + d / 2, rm = (r1 + r2) / 2 * 1.04;
-      return 'M' + px(a1, r1) + ',' + py(a1, r1)
-           + ' Q' + px(am, rm) + ',' + py(am, rm)
-           + ' ' + px(a2, r2) + ',' + py(a2, r2);
+    /* ── DOCUMENTS: one row each, spread over the same vertical band, ordered by the mean row
+          of the modules they feed so the fan self-crosses as little as it can. ── */
+    var docOrder = DOC_KEYS.map(function(_, di) {
+      var ms = docToMods[di] || [];
+      var bary = ms.length
+        ? ms.reduce(function(a, mi) { return a + mi; }, 0) / ms.length
+        : MODULES.length;      /* a document no module consumes sorts to the bottom */
+      return { di: di, bary: bary };
+    }).sort(function(a, b) { return a.bary - b.bary || a.di - b.di; });
+    var docSlot = [];
+    docOrder.forEach(function(o, slot) { docSlot[o.di] = slot; });
+    var DOC_PITCH = DOC_KEYS.length > 1
+      ? (BODY_BOTTOM - TOP) / (DOC_KEYS.length - 1) : 0;
+    function docX(di) { return COL_DOC; }
+    function docY(di) { return TOP + docSlot[di] * DOC_PITCH; }
+
+    /* ── CATEGORIES: one row each, at the vertical mean of their own modules. ── */
+    var catCX = CATS.map(function() { return COL_CAT; });
+    var catCY = CATS.map(function(_, ci) {
+      var idxs = catModIdxs[ci] || [];
+      if (!idxs.length) return TOP + (BODY_BOTTOM - TOP) / 2;
+      var sum = idxs.reduce(function(a, mi) { return a + modYs[mi]; }, 0);
+      return sum / idxs.length;
+    });
+    var PRJ_X = COL_PRJ, PRJ_Y = TOP + (BODY_BOTTOM - TOP) / 2;
+
+    /* A MIND-MAP BRANCH. Leaves its parent horizontally, arrives at its child horizontally.
+       The control points sit on the two endpoints' own rows, so the curve never wanders above
+       or below the band between them and never crosses the body of the tree. */
+    function link(x1, y1, x2, y2) {
+      var mx = x1 + (x2 - x1) * 0.5;
+      return 'M' + x1 + ',' + y1
+           + ' C' + mx + ',' + y1 + ' ' + mx + ',' + y2 + ' ' + x2 + ',' + y2;
     }
 
-    /* ── DOCUMENTS: one full circle, evenly spaced. Radius and spacing encode nothing. ── */
-    var docA = DOC_KEYS.map(function(_, i) { return ang(i / DOC_KEYS.length); });
-    function docX(i) { return px(docA[i], R_DOC); }
-    function docY(i) { return py(docA[i], R_DOC); }
-
-    /* ── CATEGORIES AND THEIR MODULES: each category takes a wedge sized to hold its own
-          modules, and sits at the middle of it. ── */
-    var totalMods = MODULES.length || 1;
-    var modA = [];                 // indexed by module flat index
-    var catA = [];                 // indexed by category index
-    var acc = 0;
-    CATS.forEach(function(cat, ci) {
-      var n = catModIdxs[ci].length;
-      var start = acc / totalMods, end = (acc + n) / totalMods;
-      catA[ci] = ang((start + end) / 2);
-      catModIdxs[ci].forEach(function(mi, j) {
-        /* Inset half a slot at each end so neighbouring categories' modules do not touch. */
-        modA[mi] = ang(start + ((j + 0.5) / Math.max(1, n)) * (end - start));
-      });
-      acc += n;
-    });
-    function modX(mi) { return px(modA[mi], R_MOD); }
-    function modY_(mi) { return py(modA[mi], R_MOD); }
-    var modY = MODULES.map(function(_, mi) { return modY_(mi); });
-    var modXs = MODULES.map(function(_, mi) { return modX(mi); });
-    var catCX = CATS.map(function(_, ci) { return px(catA[ci], R_CAT); });
-    var catCY = CATS.map(function(_, ci) { return py(catA[ci], R_CAT); });
-    var PRJ_X = CXC, PRJ_Y = CYC;
-
+    /* Column label sides. Documents label LEFT of their node so the branch leaving rightward is
+       never drawn across the words; modules and categories label RIGHT, into their own gutter. */
     // ── 5. Build SVG ─────────────────────────────────────────────────────────
-    var svg = se('svg', { viewBox:'0 0 '+W+' '+H, width:'100%', height:H, xmlns:NS, style:'display:block' }, container);
+    /* RUN 94. `height:auto` with the viewBox, instead of a fixed pixel height. With the height
+       pinned at H the SVG letterboxed: at 1280px the panel is 1151 wide, the tree scaled to
+       0.82 and 84px of dead band sat above and below it. Letting the height follow the aspect
+       ratio removes the band, and the chart sits in the page instead of floating in a box. */
+    var svg = se('svg', { viewBox:'0 0 '+W+' '+H, width:'100%', xmlns:NS,
+                          style:'display:block;height:auto' }, container);
 
     // Solid panel background — page-bg underlay + surface wash — so the NYC
     // skyline art and page gradients never bleed through the diagram. On the
@@ -895,15 +927,21 @@
     ];
     /* The four ring captions read across the top of the frame, left to right, outermost ring
        first -- the order the evidence travels. */
-    var HDR_X = [200, 500, 820, 1160];
+    /* One caption per column, centred over the column's own label gutter. */
+    /* ITERATION 2. The status caption is END-anchored at the right margin. Centred at 1315
+       it ran past the viewBox and rendered as "GOVERNED PROJECT STATU" -- measured in the
+       PNG, not inferred. */
+    var HDR_X = [150, 530, 930, 1392];
+    var HDR_ANCHOR = ['middle', 'middle', 'middle', 'end'];
     HEADERS.forEach(function(row) {
+      var anc = HDR_ANCHOR[row[0]];
       row = [HDR_X[row[0]], row[1], row[2]];
-      var t1 = se('text', { x:row[0], y:16, 'text-anchor':'middle', fill:'var(--faint, #4a5a7a)',
-        'font-size':'11', 'font-weight':'700', 'letter-spacing':'0.08em',
+      var t1 = se('text', { x:row[0], y:22, 'text-anchor':anc, fill:'var(--faint, #4a5a7a)',
+        'font-size':'12', 'font-weight':'700', 'letter-spacing':'0.04em',
         'font-family':'monospace', class:'lnf-halo lnf-hdr-arch' }, svg);
       t1.textContent = row[1];
-      var t2 = se('text', { x:row[0], y:30, 'text-anchor':'middle', fill:'var(--muted, #5a7898)',
-        'font-size':'11', 'font-weight':'700', 'letter-spacing':'0.08em',
+      var t2 = se('text', { x:row[0], y:42, 'text-anchor':anc, fill:'var(--muted, #5a7898)',
+        'font-size':'12', 'font-weight':'700', 'letter-spacing':'0.04em',
         'font-family':'monospace', class:'lnf-halo lnf-hdr-activity' }, svg);
       t2.textContent = row[2];
     });
@@ -932,11 +970,21 @@
          The terminus is also written into the DOM as `data-edge-terminates`, so a check reads
          the shipped decision instead of measuring a stroke length. */
       var arrives = isEstimable(cs);
-      var a = catA[ci];
-      var rStart = R_CAT - 11;
-      var rEnd = arrives ? 26 : R_CAT * (1 - STOP_SHORT);
-      var x1=px(a, rStart), y1=py(a, rStart), x2=px(a, rEnd), y2=py(a, rEnd);
-      var attrs = { d:'M'+x1+','+y1+' L'+x2+','+y2,
+      /* RUN 94. The same rule, in the tree's geometry: an arriving stream is the mind-map
+         branch from the category node to the status node's left edge; a stream that carries no
+         posture leaves its category and STOPS, 45% of the way along the gap, on its own row,
+         with a blunt cap, no arrowhead and a drawn terminus dot. */
+      /* RUN 94, ITERATION 2, and it is a real defect the first pass shipped and the browser
+         caught. Starting the stream at the category node ran it through the category's own
+         name -- MEASURED in the rendered PNG at 1280px on NYC: a line drawn straight across
+         "Schedule Performance", "System Dynamics and Complexity" and "Delivery Quality
+         Performance". Zero label-pair overlaps did not catch it, because a line is not a label.
+         The stream now leaves past the label gutter, exactly as the module branches do. */
+      var x1 = catCX[ci] + CAT_LABEL_GUTTER, y1 = catCY[ci];
+      var xArrive = PRJ_X - 26;
+      var x2 = arrives ? xArrive : x1 + (xArrive - x1) * (1 - STOP_SHORT);
+      var y2 = arrives ? PRJ_Y : y1;
+      var attrs = { d:arrives ? link(x1, y1, x2, y2) : ('M'+x1+','+y1+' L'+x2+','+y2),
         fill:'none', stroke:edgeStroke(cs), 'stroke-width':arrives ? '1.8' : '1.4',
         opacity:arrives ? '0.55' : '0.30',
         'stroke-linecap':arrives ? 'round' : 'butt',
@@ -962,7 +1010,13 @@
     var MODCAT_OP = '0.35';
     var modCatEls = MODULES.map(function(m, mi) {
       var ci=m.catI;
-      var p = se('path', { d:arcPath(modA[mi], R_MOD - 5, catA[ci], R_CAT + 10),
+      /* RUN 94. The branch leaves at the END of the module's label gutter, not at the dot.
+         Starting it at the dot ran it horizontally along the module's own row for two hundred
+         pixels, underneath the label -- legible only because of the halo, and section 3.2 asks
+         for better than that. Beginning past the words means NO branch is drawn under a
+         module label at all. The gutter is one constant for every module, so the gap it leaves
+         after a short name states nothing about that module. */
+      var p = se('path', { d:link(COL_MOD + MOD_LABEL_GUTTER, modY[mi], catCX[ci] - 11, catCY[ci]),
         fill:'none', stroke:edgeStroke(modInfos[mi].status, modInfos[mi].color),
         'stroke-width':'0.8', opacity:MODCAT_OP, 'stroke-linecap':'round',
         'data-edge-type':'MODULE -> CATEGORY', 'data-edge-src':m.name,
@@ -993,7 +1047,7 @@
       // two modules of a category by registry order. `docToMods` is derived at build time from
       // the generated document-emission map and each module's own declared required inputs.
       docToMods[di].forEach(function(mi) {
-        var d = arcPath(docA[di], R_DOC - 6, modA[mi], R_MOD + 5);
+        var d = link(docX(di) + 6, docY(di), modXs[mi] - 5, modY[mi]);
         var edgeAttrs = { 'data-edge-type':'DOCUMENT -> MODULE', 'data-edge-src':key,
                           'data-edge-dst':MODULES[mi].name };
         var base = se('path', { d:d, class:'lnf-a-line', fill:'none',
@@ -1058,7 +1112,7 @@
         var dst = catIndexOf(taxId);
         if (dst < 0) return;
         var cs = catStatuses[qualI];
-        var x1=catCX[qualI], y1=catCY[qualI], x2=catCX[dst], y2=catCY[dst], xh=CXC + k * 20;
+        var x1=catCX[qualI], y1=catCY[qualI], x2=catCX[dst], y2=catCY[dst], xh=COL_CAT + 40 + k * 20;
         var line = se('path', {
           d:'M'+x1+','+y1+' C'+xh+','+y1+' '+xh+','+y2+' '+x2+','+y2,
           fill:'none', stroke:edgeStroke(cs), 'stroke-width':'1', opacity:'0.45',
@@ -1085,17 +1139,12 @@
     // ── 7. Node layer ─────────────────────────────────────────────────────────
     var nodeG = se('g', { id:'lnf-nodes' }, svg);
 
-    // Category group micro-labels (dim, above each module group)
-    CATS.forEach(function(cat, ci) {
-      var firstMI = catModIdxs[ci][0];
-      if (firstMI == null) return;
-      var t = se('text', {
-        x:modXs[firstMI], y:modY[firstMI]-11,
-        fill:'var(--faint, #1e2c44)', 'font-size':'9', 'font-family':'monospace',
-        'text-anchor':'end', 'font-weight':'700', class:'lnf-halo'
-      }, nodeG);
-      t.textContent = cat.group || '';
-    });
+    /* RUN 94. THE GROUP MICRO-LABEL IS GONE, and it is a legibility removal, not a fact
+       removal. It printed the group letter ("A") in 9px above the first module of each
+       category. In a column layout it lands between two module rows and intersects the label
+       above it -- three of the sixteen measured overlaps. The same letter is still printed, on
+       the category node's own label, for every one of the six; nothing a reader could learn
+       from it has been taken away. */
 
     // Module dots + right-side labels (11.5px, truncated 26 chars — full
     // names stay available in the hover tooltip)
@@ -1137,10 +1186,9 @@
       if (info.status === 'Red') circle.classList.add('lnf-red-pulse');
 
       var lbl = se('text', {
-        x:modXs[mi] + labelDX(modA[mi], 8), y:modY[mi],
-        'text-anchor':anchorFor(modA[mi]),
+        x:modXs[mi] + 12, y:modY[mi], 'text-anchor':'start',
         fill:live ? 'var(--muted, #5a7898)' : 'var(--faint, #1e2c44)',
-        'font-size':'11.5', 'font-family':'monospace',
+        'font-size':'13', 'font-family':'monospace',
         'dominant-baseline':'middle', 'pointer-events':'none', class:'lnf-halo'
       }, g);
       if (!live) lbl.setAttribute('opacity','0.55');
@@ -1203,11 +1251,11 @@
       circle.style.transformOrigin = x + 'px ' + y + 'px';
       if (cs==='Red') circle.classList.add('lnf-red-pulse');
       // group letter + name label, nudged up so the role caption sits directly beneath
-      var t = se('text', { x:x+labelDX(catA[ci],14), y:y-4, 'text-anchor':anchorFor(catA[ci]), fill:'var(--muted, #6a8aaa)', 'font-size':'13', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
+      var t = se('text', { x:x+16, y:y-6, 'text-anchor':'start', fill:'var(--muted, #6a8aaa)', 'font-size':'15', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
       t.textContent = (cat.group ? cat.group+' · ' : '') + cat.name;
       var role = CAT_ROLE[cat.id];
       if (role) {
-        var rt = se('text', { x:x+labelDX(catA[ci],14), y:y+9, 'text-anchor':anchorFor(catA[ci]), fill:'var(--faint, #6f7d90)', 'font-size':'9', 'font-style':'italic', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo lnf-cat-role' }, g);
+        var rt = se('text', { x:x+16, y:y+12, 'text-anchor':'start', fill:'var(--faint, #6f7d90)', 'font-size':'11', 'font-style':'italic', 'font-family':'monospace', 'dominant-baseline':'middle', class:'lnf-halo lnf-cat-role' }, g);
         rt.textContent = role;
         var rtitle = se('title', {}, rt);
         rtitle.textContent = cat.name + ' · ' + role;
@@ -1248,7 +1296,7 @@
         'text-anchor':'middle', 'dominant-baseline':'middle', 'font-family':'monospace' }, prjG);
       t.textContent = pair[0];
     });
-    var prjStatusText = se('text', { x:PRJ_X, y:PRJ_Y+38, fill:prjColor, 'font-size':'12', 'font-weight':'700',
+    var prjStatusText = se('text', { x:PRJ_X, y:PRJ_Y+40, fill:prjColor, 'font-size':'14', 'font-weight':'700',
       'text-anchor':'middle', 'font-family':'monospace', class:'lnf-halo' }, prjG);
     // RUN 16, WORKSTREAM A8. The node used to print the internal word "None" at a project with
     // no stored result, which reads as a verdict rather than as an absence of one. The governed
@@ -1308,9 +1356,9 @@
                                   : (notApplicable ? 'registered-not-active' : 'not-uploaded') };
       if (glow) dAttrs.filter = glow;
       seShape(notApplicable ? 'square' : 'circle', x, y, 5, dAttrs, g);
-      var t = se('text', { x:x + labelDX(docA[di], 10), y:y,
+      var t = se('text', { x:x - 12, y:y,
         fill:uploaded?'var(--muted, #7a9ac0)':(notApplicable?COL.NotRelevant:'var(--faint, #253045)'),
-        'font-size':'13', 'font-family':'monospace', 'text-anchor':anchorFor(docA[di]), 'dominant-baseline':'middle', class:'lnf-halo' }, g);
+        'font-size':'13', 'font-family':'monospace', 'text-anchor':'end', 'dominant-baseline':'middle', class:'lnf-halo' }, g);
       if (!uploaded) t.setAttribute('opacity','0.55');
       t.textContent = name;
 

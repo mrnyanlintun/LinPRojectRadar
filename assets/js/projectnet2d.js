@@ -126,6 +126,106 @@
       NotRelevant: c.NotRelevant || "#5b3dd6"
     };
   }
+  /* ═══ RUN 94, SECTION 5. THE SITE'S OWN PALETTE, READ AT RUNTIME. ══════════════════════
+     NOTHING IS INVENTED AND NOTHING IS ADDED TO THE THEME. Every colour below is a CSS custom
+     property already declared in assets/css/radar.css, read with getComputedStyle off <body>,
+     so the chart re-themes with the page. That is also the only way the requirement can hold
+     across more than one theme: `server/app/theme.py` THEMES is ("plain","light","newyork",
+     "maria") -- four storable themes, plus `dark` (Gotham), archived there but still rendering
+     if forced -- and each redeclares these tokens with different values.
+
+     The literals in the `||` arms are the values Run 90 had hard-coded. They are kept as a
+     last-ditch fallback for a script-order failure in which getComputedStyle returns nothing,
+     and they are NOT a second palette: on any real page the token wins. */
+  var TOKENS = ["--page-bg", "--surface", "--surface-soft", "--line", "--line-strong",
+                "--text", "--heading", "--muted", "--faint", "--accent",
+                "--status-nodata", "--status-notrelevant-text"];
+  function theme() {
+    var out = {}, cs = null;
+    try { cs = window.getComputedStyle(document.body); } catch (e) { cs = null; }
+    TOKENS.forEach(function (k) {
+      var v = "";
+      if (cs) { try { v = String(cs.getPropertyValue(k) || "").trim(); } catch (e) { v = ""; } }
+      out[k] = v;
+    });
+    return {
+      pageBg:  out["--page-bg"]      || "#080d18",
+      surface: out["--surface"]      || "#0b0e17",
+      soft:    out["--surface-soft"] || "#111d31",
+      line:    out["--line"]         || "#3a4a66",
+      lineStrong: out["--line-strong"] || "#41506d",
+      text:    out["--text"]         || "#e6edf9",
+      /* NOT USED FOR ANY INK. FINDING, RUN 94: `--heading` is redeclared on `maria` and on
+         :root only. The `newyork` and `dark` blocks override `--text` but NOT `--heading`, so
+         on those two themes --heading resolves to the :root (Fairbanks) value #0f1216 -- near
+         black -- and the words PROJECT STATUS rendered near-black on a near-black scrim. That
+         was MEASURED in the rendered canvas PNG at 1280px on NYC, and it is the exact
+         legibility Run 90 needed three iterations for. The token is read and reported; the ink
+         comes from `--text`, which every theme block does redeclare. This is a defect in
+         radar.css, NOT fixed here: fixing it would move a theme token, which section 5.3
+         requires be declared, and section 6 does not put the stylesheet in scope. */
+      heading: out["--heading"]      || "#e6edf9",
+      muted:   out["--muted"]        || "#93a3bf",
+      faint:   out["--faint"]        || "#7c8aa5"
+    };
+  }
+  /* A CSS colour to {r,g,b,a}. Handles the three forms the theme blocks actually use --
+     #rgb, #rrggbb and rgb()/rgba() -- and returns null for anything else rather than guessing. */
+  function rgb(c) {
+    c = String(c || "").trim();
+    var m = /^#([0-9a-f]{3})$/i.exec(c);
+    if (m) return { r: parseInt(m[1][0]+m[1][0],16), g: parseInt(m[1][1]+m[1][1],16),
+                    b: parseInt(m[1][2]+m[1][2],16), a: 1 };
+    m = /^#([0-9a-f]{6})$/i.exec(c);
+    if (m) return { r: parseInt(m[1].slice(0,2),16), g: parseInt(m[1].slice(2,4),16),
+                    b: parseInt(m[1].slice(4,6),16), a: 1 };
+    m = /^rgba?\(([^)]+)\)$/i.exec(c);
+    if (m) {
+      var q = m[1].split(/[,\s\/]+/).filter(Boolean).map(parseFloat);
+      if (q.length >= 3) return { r: q[0], g: q[1], b: q[2], a: q.length > 3 ? q[3] : 1 };
+    }
+    return null;
+  }
+  function alpha(c, a) {
+    var v = rgb(c); if (!v) return c;
+    return "rgba(" + Math.round(v.r) + "," + Math.round(v.g) + "," + Math.round(v.b) + "," + a + ")";
+  }
+  /* Blend toward white (t>0) or black (t<0). USED ONLY FOR SHADING A SPHERE, never to state a
+     band: the body's dominant fill and its rim are always the exact band colour the rest of the
+     interface uses, and only the terminator between them is mixed. */
+  function shade(c, t) {
+    var v = rgb(c); if (!v) return c;
+    var to = t >= 0 ? 255 : 0, k = Math.abs(t);
+    return "rgb(" + Math.round(v.r + (to - v.r) * k) + ","
+                  + Math.round(v.g + (to - v.g) * k) + ","
+                  + Math.round(v.b + (to - v.b) * k) + ")";
+  }
+  /* Is the page's own ground dark? The scene sits IN the page, so its shading has to know
+     which way "lighter" is. Read from the theme, not assumed. */
+  /* THE INK THE THEME ITSELF PRESCRIBES FOR TEXT SITTING ON A BAND. radar.css declares
+     --status-ink-complete / green / yellow / amber (#0b1220 on the dark themes) and
+     --status-ink-red (#f5f8ff); a planet's key is printed ON its band colour, so it must use
+     the theme's own ink for that band rather than a white this file chose. */
+  function inkFor(band) {
+    var s = String(band || "").toLowerCase(), k = null;
+    if (s.indexOf("red") >= 0) k = "red";
+    else if (s.indexOf("amber") >= 0 || s.indexOf("orange") >= 0) k = "amber";
+    else if (s.indexOf("yellow") >= 0) k = "yellow";
+    else if (s.indexOf("green") >= 0) k = "green";
+    else if (s.indexOf("complete") >= 0 || s.indexOf("blue") >= 0) k = "complete";
+    var v = "";
+    if (k) {
+      try { v = String(window.getComputedStyle(document.body)
+                       .getPropertyValue("--status-ink-" + k) || "").trim(); } catch (e) { v = ""; }
+    }
+    return v || "#ffffff";
+  }
+  function isDarkGround(TH) {
+    var v = rgb(TH.pageBg);
+    if (!v) return true;
+    return (0.2126 * v.r + 0.7152 * v.g + 0.0722 * v.b) < 128;
+  }
+
   function bandColor(band) {
     var C = colors(), s = String(band || "").toLowerCase();
     if (!s) return null;
@@ -389,6 +489,9 @@
 
     function draw() {
       if (!size.w) resize();
+      /* Re-read the palette every frame: the theme switcher changes it under a live canvas. */
+      var TH = theme(), DARK = isDarkGround(TH);
+      C = colors();
       /* Re-place every moon for this instant. Sixty-three cosines and sines per frame; this is
          the whole cost of the animation and it is measured in the report. */
       sys.planets.forEach(function (p) {
@@ -397,9 +500,29 @@
       var scene = { bodies: [], edges: [] };
       ctx.clearRect(0, 0, size.w, size.h);
 
-      /* SPACE. A flat wash, not a starfield: a random star could be mistaken for a body. */
-      ctx.fillStyle = "rgba(8,13,24,0.92)";
+      /* ═══ RUN 94, SECTION 4.2. THE FIELD THE SYSTEM SITS IN. ═══════════════════════════
+         STILL NOT A STARFIELD. Run 90's reason stands and is not softened: a random speck
+         would be mistaken for a body, and a body is a module. What replaces the flat black is
+         a DEPTH WASH -- one radial gradient, brightest at the centre of the system and falling
+         to the page's own ground at the corners, plus a soft vignette. It states nothing. It
+         is the same wash whatever the row says, on every project, and it is drawn from the
+         page's own --surface / --page-bg tokens, so on Fairbanks and Miami the field is light
+         and on Gotham and NYC it is dark. The picture is no longer drained; the ABSENCE that
+         has to stay visible is a property of one body, and it is drawn on that body. */
+      var cxw = size.w / 2, cyw = size.h / 2, rad = Math.max(size.w, size.h) * 0.78;
+      var wash = ctx.createRadialGradient(cxw, cyw * 0.92, 0, cxw, cyw, rad);
+      wash.addColorStop(0, alpha(DARK ? shade(TH.surface, 0.10) : TH.surface, 1));
+      wash.addColorStop(0.55, alpha(TH.surface, 1));
+      wash.addColorStop(1, alpha(DARK ? shade(TH.pageBg, -0.25) : TH.pageBg, 1));
+      ctx.fillStyle = wash;
       ctx.fillRect(0, 0, size.w, size.h);
+      /* A single faint horizon band, so the scene has a floor to sit on rather than floating in
+         a void. It marks nothing: it is at a fixed fraction of the canvas, not at any body. */
+      var hz = ctx.createLinearGradient(0, cyw * 0.55, 0, size.h);
+      hz.addColorStop(0, alpha(TH.line, 0));
+      hz.addColorStop(0.62, alpha(TH.line, DARK ? 0.16 : 0.10));
+      hz.addColorStop(1, alpha(TH.line, 0));
+      ctx.fillStyle = hz; ctx.fillRect(0, 0, size.w, size.h);
 
       var hp = tf(sys.healthPos);
       var byKey = Object.create(null);
@@ -432,17 +555,33 @@
       var hcol = bandColor(sys.health);
       var sunR = 26 * hp.s * 1.6;
       if (hcol) {
-        var sgrd = ctx.createRadialGradient(hp.x, hp.y, 1, hp.x, hp.y, sunR * 2.6);
-        sgrd.addColorStop(0, hcol); sgrd.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.beginPath(); ctx.arc(hp.x, hp.y, sunR * 2.6, 0, Math.PI * 2);
-        ctx.fillStyle = sgrd; ctx.globalAlpha = 0.5; ctx.fill(); ctx.globalAlpha = 1;
+        /* RUN 94. A CORONA WITH FALL-OFF, not one flat disc of colour. Three stops instead of
+           two, so the light reads as light. The band colour itself is unchanged: stop 0 IS the
+           status token, and it is the same hex the status pill carries elsewhere. */
+        var sgrd = ctx.createRadialGradient(hp.x, hp.y, sunR * 0.6, hp.x, hp.y, sunR * 3.0);
+        sgrd.addColorStop(0, alpha(hcol, 0.85));
+        sgrd.addColorStop(0.35, alpha(hcol, 0.30));
+        sgrd.addColorStop(1, alpha(hcol, 0));
+        ctx.beginPath(); ctx.arc(hp.x, hp.y, sunR * 3.0, 0, Math.PI * 2);
+        ctx.fillStyle = sgrd; ctx.fill();
+        var sbody = ctx.createRadialGradient(hp.x - sunR * 0.3, hp.y - sunR * 0.35, sunR * 0.08,
+                                             hp.x, hp.y, sunR);
+        sbody.addColorStop(0, shade(hcol, 0.55));
+        sbody.addColorStop(0.45, hcol);
+        sbody.addColorStop(1, shade(hcol, -0.28));
+        ctx.beginPath(); ctx.arc(hp.x, hp.y, sunR, 0, Math.PI * 2);
+        ctx.fillStyle = sbody; ctx.fill();
+        ctx.strokeStyle = hcol; ctx.lineWidth = 2; ctx.stroke();
+      } else {
+        /* UNLIT, AND IT STAYS UNLIT. Run 90's rule: on Indeterminate the platform has issued no
+           band, so the centre carries no band colour and no corona of any kind. It is drawn
+           from the theme's own no-data surface and dashed rim, which is what makes it read as
+           an absence in the site's own language rather than as a fifth quiet band. */
+        ctx.beginPath(); ctx.arc(hp.x, hp.y, sunR, 0, Math.PI * 2);
+        ctx.fillStyle = DARK ? shade(TH.surface, -0.35) : shade(TH.soft, -0.06); ctx.fill();
+        ctx.strokeStyle = TH.lineStrong; ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
       }
-      ctx.beginPath(); ctx.arc(hp.x, hp.y, sunR, 0, Math.PI * 2);
-      ctx.fillStyle = hcol || "#0d1526"; ctx.globalAlpha = hcol ? 0.95 : 1; ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = hcol || "#3a4a66"; ctx.lineWidth = 2;
-      if (!hcol) ctx.setLineDash([4, 4]);
-      ctx.stroke(); ctx.setLineDash([]);
       scene.bodies.push({ kind: "health", key: "__health__",
                           state: hcol ? "lit" : "unlit",
                           status: sys.health || null, x: Math.round(hp.x), y: Math.round(hp.y),
@@ -469,18 +608,30 @@
             ctx.fillStyle = C.Red; ctx.globalAlpha = 0.92; ctx.fill(); ctx.globalAlpha = 1;
             ctx.strokeStyle = C.Red; ctx.lineWidth = 2.4; ctx.stroke();
             /* IT LOOKS WRONG ON PURPOSE, and by geometry as well as colour. */
-            ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
+            ctx.strokeStyle = inkFor("red"); ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(q.x - r * 0.7, q.y - r * 0.7); ctx.lineTo(q.x + r * 0.7, q.y + r * 0.7);
             ctx.moveTo(q.x + r * 0.7, q.y - r * 0.7); ctx.lineTo(q.x - r * 0.7, q.y + r * 0.7);
             ctx.stroke();
           } else if (col) {
-            var grd = ctx.createRadialGradient(q.x, q.y, 1, q.x, q.y, r * 1.9);
-            grd.addColorStop(0, col); grd.addColorStop(1, "rgba(0,0,0,0)");
-            ctx.beginPath(); ctx.arc(q.x, q.y, r * 1.9, 0, Math.PI * 2);
-            ctx.fillStyle = grd; ctx.globalAlpha = 0.32; ctx.fill(); ctx.globalAlpha = 1;
+            /* RUN 94, SECTION 4.1. A LIT PLANET IS A SPHERE, NOT A FLAT DISC. One glow pass with
+               fall-off, then a limb-shaded body: the light comes from the upper left on EVERY
+               body, identically, so the shading is depth and nothing else. The dominant fill and
+               the rim are the exact band colour the status pill uses; only the terminator is
+               mixed, which is why a reader never has to learn a second colour language. */
+            var grd = ctx.createRadialGradient(q.x, q.y, r * 0.7, q.x, q.y, r * 2.3);
+            grd.addColorStop(0, alpha(col, 0.42));
+            grd.addColorStop(0.4, alpha(col, 0.16));
+            grd.addColorStop(1, alpha(col, 0));
+            ctx.beginPath(); ctx.arc(q.x, q.y, r * 2.3, 0, Math.PI * 2);
+            ctx.fillStyle = grd; ctx.fill();
+            var body = ctx.createRadialGradient(q.x - r * 0.34, q.y - r * 0.38, r * 0.05,
+                                                q.x, q.y, r);
+            body.addColorStop(0, shade(col, 0.45));
+            body.addColorStop(0.42, col);
+            body.addColorStop(1, shade(col, -0.32));
             ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2);
-            ctx.fillStyle = col; ctx.globalAlpha = 0.85; ctx.fill(); ctx.globalAlpha = 1;
+            ctx.fillStyle = body; ctx.fill();
             ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.stroke();
           } else {
             /* RUN 90, SECTION 3.2. A CATEGORY CARRYING NO POSTURE MUST NOT READ AS ANY BAND.
@@ -488,19 +639,25 @@
                Run 82 dashed it only when the category had never been called, which left a
                category that WAS called and produced no posture drawn with a solid rim that
                read like a quiet fifth band. Both are the same fact to a reader: not assessed. */
+            /* RUN 94 keeps this exactly as Run 90 ruled it, and only re-sources the two
+               colours from the theme. NO band fill, NO corona, NO sphere shading -- a
+               not-assessed planet must not gain the presence the lit ones just gained, because
+               that presence is what "lit" now means. It is a flat, hollow, dashed outline on
+               the page's own surface: visibly a body, visibly not reporting. */
             ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI * 2);
-            ctx.fillStyle = "#111d31"; ctx.fill();
-            ctx.strokeStyle = "#3a4a66"; ctx.lineWidth = 1.3;
+            ctx.fillStyle = DARK ? shade(TH.surface, 0.06) : shade(TH.soft, -0.03);
+            ctx.fill();
+            ctx.strokeStyle = TH.lineStrong; ctx.lineWidth = 1.3;
             ctx.setLineDash([4, 4]);
             ctx.stroke(); ctx.setLineDash([]);
           }
-          ctx.fillStyle = failed ? "#fff" : "#e6edf9";
+          ctx.fillStyle = failed ? inkFor("red") : (col ? inkFor(p.status) : TH.text);
           ctx.font = "700 11px system-ui, sans-serif"; ctx.textAlign = "center";
           ctx.fillText(p.key, q.x, q.y + 4);
-          ctx.font = "9px system-ui, sans-serif"; ctx.fillStyle = "#93a3bf";
+          ctx.font = "9px system-ui, sans-serif"; ctx.fillStyle = TH.muted;
           ctx.fillText(p.lit + " of " + p.total + " banded", q.x, q.y + r + 12);
           if (!col && !failed) {
-            ctx.fillStyle = "#7c8aa5";
+            ctx.fillStyle = TH.faint;
             ctx.fillText("not assessed", q.x, q.y + r + 23);
           }
           /* RUN 90. `baseR` and `orbitR` are the MODEL radii, before the perspective divide.
@@ -519,12 +676,18 @@
           if (m.state === "computed") {
             var mc = bandColor(m.band) || C.Complete;
             /* A LIT BODY, with a halo so it reads as lit and not merely coloured. */
-            ctx.beginPath(); ctx.arc(mq.x, mq.y, mr * 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = mc; ctx.globalAlpha = 0.18; ctx.fill();
-            ctx.globalAlpha = 1;
+            var mg = ctx.createRadialGradient(mq.x, mq.y, mr * 0.5, mq.x, mq.y, mr * 2.8);
+            mg.addColorStop(0, alpha(mc, 0.40));
+            mg.addColorStop(1, alpha(mc, 0));
+            ctx.beginPath(); ctx.arc(mq.x, mq.y, mr * 2.8, 0, Math.PI * 2);
+            ctx.fillStyle = mg; ctx.fill();
+            var mb = ctx.createRadialGradient(mq.x - mr * 0.35, mq.y - mr * 0.4, mr * 0.05,
+                                              mq.x, mq.y, mr);
+            mb.addColorStop(0, shade(mc, 0.5)); mb.addColorStop(0.45, mc);
+            mb.addColorStop(1, shade(mc, -0.3));
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr, 0, Math.PI * 2);
-            ctx.fillStyle = mc; ctx.fill();
-            ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.6;
+            ctx.fillStyle = mb; ctx.fill();
+            ctx.strokeStyle = mc; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.9;
             ctx.stroke(); ctx.globalAlpha = 1;
           } else if (m.state === "computed_unbanded") {
             /* RUN 90. COMPUTED, AND ASSERTED NO BAND. Visible and UNLIT: a body with a rim, no
@@ -532,13 +695,16 @@
                any other band. It is drawn LARGER and with a brighter rim than an abstention,
                because a figure was produced here and nothing was produced there. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr, 0, Math.PI * 2);
-            ctx.fillStyle = "#16233a"; ctx.fill();
-            ctx.strokeStyle = "#b9c6dc"; ctx.lineWidth = 1.2; ctx.stroke();
+            ctx.fillStyle = DARK ? shade(TH.surface, 0.10) : shade(TH.soft, -0.02); ctx.fill();
+            /* The rim is --muted, not --text: at --text the unbanded moons rendered as bright
+               white rings that read as LIT. They must be visible and unlit. --muted still
+               outranks the abstention's --faint, which is Run 90's stated ordering. */
+            ctx.strokeStyle = TH.muted; ctx.lineWidth = 1.2; ctx.stroke();
           } else if (m.state === "abstained") {
             /* DARK, STILL IN ORBIT: a filled body with a solid rim. Present, silent. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr * 0.92, 0, Math.PI * 2);
             ctx.fillStyle = C.None; ctx.fill();
-            ctx.strokeStyle = "#7c8aa5"; ctx.lineWidth = 1; ctx.stroke();
+            ctx.strokeStyle = TH.faint; ctx.lineWidth = 1; ctx.stroke();
           } else if (m.state === "not_relevant") {
             /* OUTLINE ONLY, NO BODY. Never called; does not apply to this project type. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr, 0, Math.PI * 2);
@@ -547,7 +713,7 @@
           } else {
             /* NOT CALLED: dotted, no fill, no rim. Distinct from both dark states above. */
             ctx.beginPath(); ctx.arc(mq.x, mq.y, mr * 0.85, 0, Math.PI * 2);
-            ctx.strokeStyle = "#41506d"; ctx.lineWidth = 0.9;
+            ctx.strokeStyle = TH.line; ctx.lineWidth = 0.9;
             ctx.setLineDash([1, 2.2]); ctx.stroke(); ctx.setLineDash([]);
           }
           scene.bodies.push({ kind: "moon", key: m.id, category: d.p.key, state: m.state,
@@ -561,13 +727,13 @@
          used to cover them. The reader must always be able to read the status, and on most
          current rows that word is "Indeterminate". */
       ctx.textAlign = "center";
-      ctx.fillStyle = "rgba(8,13,24,0.82)";
+      ctx.fillStyle = alpha(TH.surface, 0.86);
       var lw = Math.max(ctx.measureText("PROJECT STATUS").width,
                         ctx.measureText(String(sys.health || "no status")).width) + 16;
       ctx.fillRect(hp.x - lw / 2, hp.y - 18, lw, 36);
-      ctx.fillStyle = "#e6edf9"; ctx.font = "600 12px system-ui, sans-serif";
+      ctx.fillStyle = TH.text; ctx.font = "600 12px system-ui, sans-serif";
       ctx.fillText("PROJECT STATUS", hp.x, hp.y - 4);
-      ctx.fillStyle = hcol || "#93a3bf";
+      ctx.fillStyle = hcol || TH.muted;
       ctx.fillText(String(sys.health || "no status"), hp.x, hp.y + 12);
 
       ctx.textAlign = "left";
