@@ -90,9 +90,49 @@ def _posture(basis: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+
+#: Fields that are bookkeeping rather than a reading, and must never be offered as "the figure".
+_NON_FIGURE_KEYS = frozenset({"seed", "periods", "breach_index", "votes", "module_count"})
+
+
+def _headline_figure(mod: Mapping[str, Any]) -> tuple[str, Any] | None:
+    """
+    ONE figure from a module's own reading, to be named in a sentence that asserts a condition.
+
+    THE THREE RECOMMENDATION CHECKS REQUIRE THIS. Check 1 rejects a sentence that asserts a
+    condition about the project and names no figure, and check 3 rejects one naming a figure the
+    stored result does not hold. Run 96 measured both firing on the first draft of the assessed
+    finding, and the SENTENCE was changed rather than the check: it now carries the figure the
+    module actually computed, read off the stored reading itself.
+
+    The choice is deterministic -- the first numeric field in the module's own key order that is
+    not bookkeeping -- so the same reading always yields the same sentence.
+    """
+    for key, value in mod.items():
+        if key in _NON_FIGURE_KEYS:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        return (str(key), value)
+    return None
+
+
+def _adverse_phrase(key: str, cats: Mapping[str, Mapping[str, Any]],
+                    by_id: Mapping[str, Mapping[str, Any]]) -> str:
+    """`Cost & EVM Performance (Red, A1.7 tcpi 3.5)` -- the category, its band, and its figure."""
+    cat = cats.get(key, {})
+    band = str(cat.get("status") or "").title()
+    for mid in (cat.get("status_set_by") or []):
+        fig = _headline_figure(by_id.get(mid, {}))
+        if fig:
+            return f"{_cat_name(key)} ({band}, {mid} {fig[0].replace('_', ' ')} {fig[1]})"
+    return f"{_cat_name(key)} ({band})"
+
+
 # ------------------------------------------------------------------ 2. the finding
 
-def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]]) -> str | None:
+def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]],
+             modules: Sequence[Mapping[str, Any]] = ()) -> str | None:
     """
     ONE declarative sentence, naming its figure, produced by rule and not by choice.
 
@@ -104,6 +144,7 @@ def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]]) ->
     assessed = list(basis.get("required_assessed") or [])
     missing = list(basis.get("required_missing") or [])
     adverse = [k for k in assessed if _band(cats.get(k, {}).get("status")) in _SEVERITY]
+    by_id = {m.get("module_id"): m for m in modules if m.get("module_id")}
 
     if basis.get("status") == "Indeterminate":
         parts = [
@@ -113,9 +154,7 @@ def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]]) ->
         ]
         if adverse:
             worst = sorted(adverse, key=lambda k: _SEVERITY[_band(cats[k]["status"])])
-            named = ", ".join(
-                f"{_cat_name(k)} shows a {str(cats[k]['status']).title()} condition"
-                for k in worst)
+            named = ", ".join(_adverse_phrase(k, cats, by_id) for k in worst)
             parts.append(
                 f"That withholding does not qualify what was assessed: {named}.")
         return " ".join(parts)
@@ -126,8 +165,7 @@ def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]]) ->
             worst = sorted(adverse, key=lambda k: _SEVERITY[_band(cats[k]["status"])])
             adverse_txt = (
                 " The categories carrying the adverse condition are "
-                + ", ".join(f"{_cat_name(k)} ({str(cats[k]['status']).title()})" for k in worst)
-                + ".")
+                + ", ".join(_adverse_phrase(k, cats, by_id) for k in worst) + ".")
         return (
             f"The project posture is {basis['status']}, formed from all "
             f"{len(assessed)} required categories.{adverse_txt}")
@@ -433,7 +471,7 @@ def compose_decision_brief(*,
 
     card["posture"] = _posture(basis)
 
-    finding = _finding(basis, cats)
+    finding = _finding(basis, cats, modules)
     if finding:
         card["finding"] = finding
 
