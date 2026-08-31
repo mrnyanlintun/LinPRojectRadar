@@ -160,7 +160,10 @@
      source of stage. `STATE.evidenceLabels` is what the evidence screen actually
      displayed, so the decision form can offer exactly those items and nothing
      the participant never saw. */
-  var STATE = { server: null, evidenceLabels: [] };
+  // RUN 96. `brief` is the Governance Decision card, composed server-side by
+  // `app/decision_brief.py` and carried on the stored result view as `decision_brief`. It is
+  // held here so the reveal can lay it out without a second round trip.
+  var STATE = { server: null, evidenceLabels: [], brief: null };
 
   // The preliminary judgment card, held while it is out of the document, and the sibling it
   // sits before. See the note in render(): the card is removed at the lock and must come back
@@ -353,6 +356,10 @@
     // assumes it governs is exactly how the detail page defect survived unnoticed.
     var res = await call("projectresults", { id: pid, period: 1 });
     var docs = await call("projectuploadstatus", { id: pid, period: 1 });
+    // RUN 96. The composed card travels on the same response as the evidence summary, so the
+    // reveal has it in hand. It is derived from this row at read time and carries no band of
+    // its own; if the server did not compose one, nothing is rendered for it.
+    STATE.brief = (res && res.ok === true && res.result && res.result.decision_brief) || null;
 
     var html = "";
     var labels = [];
@@ -575,6 +582,185 @@
     return '<div class="dc-group"><h3>' + esc(title) + "</h3>" + body + "</div>";
   }
 
+  /* ============================================================
+     THE GOVERNANCE DECISION CARD -- the Decision Brief Cards and Module-Response Playbook.
+
+     WHAT THIS RENDERS AND WHAT IT WILL NOT.
+
+     The platform produces a PERFORMANCE FINDING and a DECISION QUESTION. It does NOT produce an
+     action recommendation: no prescribed remedy, no deadline, no approval authority and no
+     corrective-action template appear anywhere below, because each needs an approved knowledge
+     base the platform does not have.
+
+     NOTHING HERE DECIDES ANYTHING. Every sentence is composed in Python by
+     `server/app/decision_brief.py` from stored readings, thresholds, trends, category results
+     and provenance, and arrives on `decision_brief`. This file lays it out. No model chooses a
+     status, a driver, a threshold, an action, an authority, or whether evidence was adequate.
+
+     RENDER ONLY WHAT CAN BE POPULATED TRUTHFULLY. `field()` already prints nothing for an empty
+     value, and the composer omits a block it cannot fill, so an absent block is absent -- there
+     is no "not established", no "not available", and no placeholder of any kind.
+
+     ALTERNATIVES AND COMPARATIVE EFFECTS IS NOT RENDERED AT ALL. It renders only when the
+     What-if Scenario Matrix has computed on user-supplied alternatives. B4.4 and B4.7 were
+     retired and Run 96 removed them from the registry, and `recommendation_options` reports
+     `available: false` on every row, so the block can never be populated today. It is hidden
+     entirely rather than shown as an empty state, because "alternatives considered: none" says
+     alternatives were weighed and rejected. None were ever computed.
+
+     THE LABELS THE PLAYBOOK CHANGED:
+       "Recommended action"      -> "Decision-support finding"
+       "Conflict"                -> "Material drivers"
+       "Documentation required"  -> "Evidence used" and "Assessment limitations"
+     ============================================================ */
+
+  function briefBlock(title, bodyHtml) {
+    if (!bodyHtml) return "";
+    return '<div class="dc-group"><h3>' + esc(title) + "</h3>" + bodyHtml + "</div>";
+  }
+
+  function para(text) {
+    if (text === null || text === undefined || text === "") return "";
+    return '<p style="margin:4px 0 0; font-size:13px;">' + esc(text) + "</p>";
+  }
+
+  function num(v) {
+    if (typeof v !== "number") return String(v);
+    if (Math.abs(v) >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    return String(Math.round(v * 1000) / 1000);
+  }
+
+  /* THE POSTURE. `official` is stated in words rather than implied by the absence of a badge:
+     a reader must be able to tell a withheld posture from one the instrument stands behind. */
+  function renderPosture(p) {
+    if (!p || !p.status) return "";
+    var body = '<p style="margin:4px 0 0; font-size:15px; font-weight:600;">' +
+      esc(p.status) + "</p>";
+    body += para(p.official
+      ? "This is the official posture for the period."
+      : "No official posture is issued for this period.");
+    // The fused band is shown BESIDE an unofficial status, never instead of it, so that
+    // withholding the posture cannot conceal an adverse reading.
+    if (p.fused_band) {
+      body += para("Worst band among the categories that were assessed: " + p.fused_band + ".");
+    }
+    return briefBlock("Project posture", body);
+  }
+
+  /* THE FORECAST LINES. One line per figure a module actually computed. A line that did not
+     compute is absent: never blank, never a fabricated forecast. */
+  function renderForecast(rows) {
+    if (!rows || !rows.length) return "";
+    var body = '<table class="dc-brief-table"><tbody>' + rows.map(function (r) {
+      return "<tr><td>" + esc(r.label) + "</td><td>" + esc(num(r.value)) +
+        '</td><td class="dc-note">' + esc(r.module_id || "") + " " +
+        esc(r.method_class || "") + "</td></tr>";
+    }).join("") + "</tbody></table>";
+    return briefBlock("Forecast and baseline comparison", body);
+  }
+
+  /* MATERIAL DRIVERS. Four collapsed, the rest behind an expansion. The ORDER and the selection
+     rule are the composer's and are printed with them, so a reader can check the list against
+     the rule rather than taking it on trust. */
+  function driverRow(d) {
+    var band = d.band ? '<span class="dc-band">' + esc(d.band) + "</span> " : "";
+    return "<li>" + band + "<strong>" + esc(d.category_name || d.category) + "</strong>" +
+      (d.module_id ? " &middot; " + esc(d.module_id) : "") +
+      (d.method_class ? " " + esc(d.method_class) : "") +
+      '<div class="dc-note">' + esc(d.role) + "</div>" +
+      (d.reading ? '<div style="font-size:12px; margin-top:2px;">' + esc(d.reading) + "</div>" : "") +
+      "</li>";
+  }
+
+  function renderDrivers(dr) {
+    if (!dr || !dr.total) return "";
+    var body = '<ul class="dc-drivers">' + (dr.collapsed || []).map(driverRow).join("") + "</ul>";
+    if (dr.expanded && dr.expanded.length) {
+      body += '<details class="dc-more"><summary>' + esc(dr.expanded.length) +
+        " further driver" + (dr.expanded.length === 1 ? "" : "s") + "</summary>" +
+        '<ul class="dc-drivers">' + dr.expanded.map(driverRow).join("") + "</ul></details>";
+    }
+    body += '<p class="dc-note" style="margin-top:6px;">Selected as the modules that set a ' +
+      "category posture or explain why one could not be formed, ordered " + esc(dr.order) + ".</p>";
+    // SIGNALS ARE CALLED CONTRADICTORY ONLY WHERE THE PLATFORM COMPUTED A DISAGREEMENT.
+    if (dr.computed_disagreement) {
+      var pairs = Object.keys(dr.computed_disagreement).map(function (k) {
+        return k + " " + num(dr.computed_disagreement[k]);
+      }).join(", ");
+      body += para("A disagreement between signals was computed in: " + pairs + ".");
+    }
+    return briefBlock("Material drivers", body);
+  }
+
+  function renderEvidence(ev) {
+    if (!ev) return "";
+    var body = "";
+    body += para(ev.modules_computed + " modules computed for this period; " +
+      ev.modules_asserting_a_band + " asserted a band.");
+    if (ev.categories_assessed && ev.categories_assessed.length) {
+      body += para("Categories carrying a posture: " + ev.categories_assessed.join(", ") + ".");
+    }
+    if (ev.evidence_bodies && ev.evidence_bodies.length) {
+      body += para("Bodies of evidence read: " + ev.evidence_bodies.join("; ") + ".");
+    }
+    if (ev.source_documents && ev.source_documents.length) {
+      body += para("Source documents: " + ev.source_documents.length + ".");
+    }
+    return briefBlock("Evidence used", body);
+  }
+
+  function renderLimitations(items) {
+    if (!items || !items.length) return "";
+    return briefBlock("Assessment limitations",
+      "<ul>" + items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>");
+  }
+
+  /* THE WEIGHTED VOTING DIAGNOSTIC. Labelled a diagnostic, because Conservative Dominance sets
+     the official status and this is a comparison ensemble a reviewer may weigh against it. */
+  function renderVoting(v) {
+    if (!v) return "";
+    var body = para(v.role);
+    if (v.status_color) body += para("Band: " + v.status_color + ".");
+    if (v.evidence_metric) body += para(v.evidence_metric);
+    if (v.insufficient_data && v.abstention_reason_code) {
+      body += para("It abstained: " + v.abstention_reason_code + ".");
+    }
+    return briefBlock("Weighted Voting diagnostic", body);
+  }
+
+  /* THE REVIEWER. Rendered ONLY where the project record holds an actual assigned reviewer.
+     A ROLE IS NEVER INFERRED, and no line implying the platform holds authority is printed:
+     the platform does not own authority. Where no reviewer is recorded, this block is absent. */
+  function renderReviewer(r) {
+    if (!r || !r.assigned_reviewer) return "";
+    return briefBlock("Reviewer disposition", para("Assigned reviewer: " + r.assigned_reviewer + "."));
+  }
+
+  function renderAudit(a) {
+    if (!a) return "";
+    var rows = Object.keys(a).map(function (k) {
+      return "<tr><td>" + esc(k.replace(/_/g, " ")) + "</td><td>" + esc(String(a[k])) + "</td></tr>";
+    }).join("");
+    if (!rows) return "";
+    return briefBlock("Audit record", '<table class="dc-brief-table"><tbody>' + rows + "</tbody></table>");
+  }
+
+  function renderDecisionBrief(brief) {
+    if (!brief) return "";
+    // THE PLAYBOOK'S ORDER. `alternatives` is deliberately absent from this list; see above.
+    return renderPosture(brief.posture) +
+      briefBlock("Decision-support finding", para(brief.finding)) +
+      briefBlock("Why this finding was produced", para(brief.why)) +
+      renderForecast(brief.forecast) +
+      renderDrivers(brief.drivers) +
+      renderEvidence(brief.evidence) +
+      renderLimitations(brief.limitations) +
+      briefBlock("Decision question", para(brief.question)) +
+      renderVoting(brief.weighted_voting) +
+      renderReviewer(brief.reviewer) +
+      renderAudit(brief.audit);
+  }
+
   function renderPackage(pkg, revealAt) {
     if (!pkg) {
       $("dc-package").innerHTML =
@@ -584,11 +770,12 @@
     var html = '<div class="dc-locked-banner">Shown at ' +
       esc(revealAt ? new Date(revealAt).toLocaleString() : "not recorded") +
       ". Your preliminary judgment was recorded before this point and is unchanged.</div>";
-    html += field("Recommended action", pkg.recommended_action);
+    // The composed card comes first: it is the platform's own finding about this project.
+    html += renderDecisionBrief(STATE.brief);
+    // The researcher-authored package fields follow, under the playbook's labels. Each is
+    // hidden when empty by `field()`, so a package carrying nothing prints nothing.
     html += field("Detected condition", pkg.detected_condition);
-    html += field("Alternatives considered", pkg.alternatives);
-    html += field("Uncertainty", pkg.uncertainty);
-    html += field("Limitations", pkg.limitations);
+    html += field("Assessment limitations", pkg.limitations);
     html += field("Where this applies", pkg.applicability_boundary);
     html += field("When this expires", pkg.expiration_trigger);
     html += field("Supporting evidence and provenance", pkg.provenance);
@@ -648,8 +835,10 @@
       '<h3>If this action requires it</h3>' +
       '<label class="dc-label" for="dc-owner">Owner</label>' +
       '<input id="dc-owner" class="dc-input" placeholder="Who carries this out">' +
-      '<label class="dc-label" for="dc-authority">Deciding authority</label>' +
-      '<input id="dc-authority" class="dc-input" placeholder="Who authorises it">' +
+      /* RUN 96 REMOVED THE "Deciding authority" INPUT. Asking the reviewer to name who
+         authorises an action implied the platform holds or allocates authority, and it does
+         not. Authority models are out of scope, and the card states a finding and a question
+         rather than an action needing approval. `authority_role` is no longer sent. */
       '<label class="dc-label" for="dc-deadline">By when</label>' +
       '<input id="dc-deadline" class="dc-input" placeholder="e.g. next reporting cycle">' +
       '<label class="dc-label" for="dc-residual">Residual risk</label>' +
@@ -691,7 +880,6 @@
       rationale: rationale,
       final_confidence: Number($("dc-final-confidence").value),
       owner_role: $("dc-owner").value.trim() || undefined,
-      authority_role: $("dc-authority").value.trim() || undefined,
       deadline: $("dc-deadline").value.trim() || undefined,
       residual_risk: $("dc-residual").value.trim() || undefined
     });

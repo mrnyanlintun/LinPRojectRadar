@@ -4848,3 +4848,33 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
   .detail-catspecs .dcat-mod { grid-template-columns: minmax(0, 1fr); }
   .detail-catspecs .dcat-reason { grid-column: 1; }
 }
+
+/* ============================================================================
+   RUN 96 — THE GOVERNANCE DECISION CARD (Decision Brief Cards and Module-Response Playbook)
+
+   Layout only. Nothing here decides what is shown: the composer omits a block it cannot fill
+   truthfully and `renderDecisionBrief` prints only what it is given, so there is no rule below
+   that hides or reveals content. There is deliberately no empty-state style, because the card
+   never renders an empty state.
+   ============================================================================ */
+.dc-brief-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 13px; }
+.dc-brief-table td { padding: 3px 8px 3px 0; vertical-align: top; border-bottom: 1px solid var(--line, rgba(128,128,128,.18)); }
+.dc-brief-table td:nth-child(2) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dc-brief-table td:last-child { text-align: right; white-space: nowrap; font-size: 12px; color: var(--faint); }
+.dc-drivers { list-style: none; margin: 6px 0 0; padding: 0; }
+.dc-drivers li { padding: 6px 0; border-bottom: 1px solid var(--line, rgba(128,128,128,.18)); font-size: 13px; }
+.dc-drivers li:last-child { border-bottom: 0; }
+.dc-band { display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+           padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; margin-right: 6px; }
+.dc-more { margin-top: 6px; font-size: 13px; }
+.dc-more summary { cursor: pointer; color: var(--faint); font-size: 12px; }
+@media (max-width: 1100px) {
+  .dc-brief-table td:last-child { display: none; }
+}
+/* `.dc-group` is what `field()` and every brief block above wrap themselves in, and it has
+   carried NO style since the card was built — which is part of why the card read as a flat run
+   of text with nothing to separate one claim from the next. */
+.dc-group { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line, rgba(128,128,128,.18)); }
+.dc-group:first-of-type { border-top: 0; padding-top: 0; }
+.dc-group > h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em;
+                 text-transform: uppercase; color: var(--faint); }

@@ -92,6 +92,7 @@ from .research_models import (
 )
 from .document_evidence import document_evidence
 from .evm_consistency import consistency_findings
+from .decision_brief import compose_decision_brief
 from .recommendation_basis import recommendation_basis
 from . import spec_projection
 from .risk_exposure import register_exposure
@@ -2694,6 +2695,33 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     # disagreement between two figures a document itself stated is evidence, in the same class
     # as `signal_inputs`, and carries no action.
     view["consistency_findings"] = consistency_findings(row.signal_inputs, row.period)
+    # RUN 96. THE GOVERNANCE DECISION CARD, COMPOSED FROM THIS ROW AT READ TIME.
+    #
+    # Same class as `recommendation_basis` and `consistency_findings` immediately above, and for
+    # the same reasons: a PURE FUNCTION of the row this response already carries, so no column is
+    # added, no migration is needed, and a row stored before this run answers exactly as one
+    # stored after it. NOTHING ON THIS PATH WRITES, so no stored figure can change.
+    #
+    # It carries NO band of its own, casts no vote, and does not revise `project_status` or
+    # `category_statuses`, which are read from the stored row above. It states a FINDING and a
+    # QUESTION and never an action, a deadline, an authority or a remedy.
+    #
+    # It is NOT gated by the reveal. The card is composed from the project's own computed
+    # readings, which the project manager is already shown; the researcher-authored
+    # recommendation package above is the thing the reveal gate withholds, and it is separate.
+    view["decision_brief"] = compose_decision_brief(
+        category_statuses=_spec_cats or {},
+        module_results=_spec_modules or [],
+        status_basis=_spec_basis or {},
+        row={
+            "simulation_version": row.simulation_version,
+            "seed": row.seed,
+            "period": row.period,
+            "period_cutoff": row.period_cutoff,
+            "computed_at": row.computed_at.isoformat() if row.computed_at else None,
+        },
+        source_documents=row.source_documents,
+    )
     if include_recommendation and package is not None:
         view["recommendation"] = {
             "package_id": package.package_id,

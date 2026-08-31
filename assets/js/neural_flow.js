@@ -1081,7 +1081,40 @@
        identities were not traceable across the gap -- measured in the rendered PNG at 1280px on
        `plain`. Nothing about what the line ASSERTS changed: an unestimable module's line is
        still dropped to 0.14, which is the distinction that carries meaning. */
-    var MODCAT_OP = '0.55';
+    /* RUN 96 HOISTED THE BRANCH-WEIGHT CONSTANTS so BOTH branch layers read the same three
+       numbers from one place. They were declared with the Class A block below; a second copy for
+       Class B would be exactly the drift that made the two layers unequal in the first place.
+       `on` is the layer weight; `off` is the STATE weight for a document that was not uploaded
+       and is unchanged. */
+    var A_BASE = { on: '0.45', off: '0.12' };
+    var A_DASH = { on: '0.75', off: '0.12' };
+    var A_W    = { on: '1.6',  off: '0.7'  };
+
+    /* RUN 96, GOAL THREE. THE MODULE -> CATEGORY BRANCHES NOW CARRY THE SAME STROKE TREATMENT
+       AS THE DOCUMENT -> MODULE BRANCHES, because the owner measured that a reader could follow
+       evidence into a module and then lost it.
+
+       WHAT WAS ACTUALLY UNEQUAL. It was never one opacity against another. A doc->module branch
+       is TWO STACKED PATHS at 1.6px -- a static base at 0.45 with a brighter animated dash at
+       0.75 over it -- so it composites to roughly 0.86. A mod->cat branch was ONE path at 1px
+       and 0.55. Raising 0.55 alone could not have closed that: the difference was the stroke
+       treatment, not the number. So the treatment is what changed, and the two layers now use
+       THE SAME constants, taken from Class A rather than retyped.
+
+       WHICH OPACITIES ENCODE A LAYER AND WHICH ENCODE A STATE -- established before changing
+       anything, and the state ones are untouched:
+         LAYER  0.45 / 0.75 at 1.6px  the treatment shared by both branch layers (was 0.55/1px
+                                      for mod->cat, which is the inequality being corrected).
+         STATE  0.14  an unestimable module's mod->cat line. Run 94b's note calls this "the
+                      distinction that carries meaning" and it keeps its value exactly.
+         STATE  0.12  a document that has not been uploaded. Unchanged.
+         STATE  0.55 / 0.30 with `data-edge-terminates`, on the CATEGORY -> STATUS edges. That
+                      pair encodes whether a category carries a posture and is NOT a layer
+                      weight. Nothing here touches it -- it is a different set of elements.
+       The 0.55 that mod->cat used to carry and the 0.55 an arriving category edge carries were
+       the same NUMBER on different layers and meant different things; separating them is the
+       whole of this change. */
+    var MODCAT = { base:A_BASE.on, dash:A_DASH.on, w:A_W.on, dead:'0.14', deadW:A_W.off };
     var modCatEls = MODULES.map(function(m, mi) {
       var ci=m.catI;
       /* RUN 94. The branch leaves at the END of the module's label gutter, not at the dot.
@@ -1090,21 +1123,30 @@
          for better than that. Beginning past the words means NO branch is drawn under a
          module label at all. The gutter is one constant for every module, so the gap it leaves
          after a short name states nothing about that module. */
-      var p = se('path', { d:link(COL_MOD + MOD_LABEL_GUTTER, modY[mi], catCX[ci] - 11, catCY[ci]),
-        fill:'none',
-        /* RUN 94b, SECTION 4.1: the module's own identity colour, the node this line leaves. */
-        stroke:idColour('module', m.module_id || m.name,
-                        edgeStroke(modInfos[mi].status, modInfos[mi].color)),
-        'stroke-width':'1', opacity:MODCAT_OP, 'stroke-linecap':'round',
-        'data-edge-type':'MODULE -> CATEGORY', 'data-edge-src':m.name,
-        'data-edge-dst':CATS[ci].name }, lineG);
+      var d = link(COL_MOD + MOD_LABEL_GUTTER, modY[mi], catCX[ci] - 11, catCY[ci]);
       // Same rule one level down: a module path is live only when that module has a current
       // result. A disabled, abstaining, sector-excluded or never-computed module contributes
       // nothing, and its line must not move as though it did.
       var modLive = isEstimable(modInfos[mi].status);
-      if (!modLive) p.setAttribute('opacity', '0.14');
-      flowAnim(p, 'lnf-flow-b', modLive);
-      return p;
+      /* RUN 94b, SECTION 4.1: the module's own identity colour, the node this line leaves. */
+      var idCol = idColour('module', m.module_id || m.name,
+                           edgeStroke(modInfos[mi].status, modInfos[mi].color));
+      var w = modLive ? MODCAT.w : MODCAT.deadW;
+      function seg(cls, op) {
+        var el = se('path', { d:d, fill:'none', stroke:idCol,
+          'stroke-width':w, opacity:op, 'stroke-linecap':'round',
+          'data-edge-type':'MODULE -> CATEGORY', 'data-edge-src':m.name,
+          'data-edge-dst':CATS[ci].name }, lineG);
+        if (cls) el.setAttribute('class', cls);
+        return el;
+      }
+      // The static base and the animated overlay, exactly as Class A draws them. The overlay is
+      // the SAME edge drawn a second time and names itself the same way, so the edge inventory
+      // still reconciles and no path is left unnamed.
+      var base = seg('', modLive ? MODCAT.base : MODCAT.dead);
+      var dash = seg('lnf-b-dash', modLive ? MODCAT.dash : MODCAT.dead);
+      flowAnim(dash, 'lnf-flow-b', modLive);
+      return { base:base, dash:dash, live:modLive };
     });
 
     // Class A (input): doc → module. Drawn as TWO stacked paths sharing the
@@ -1113,9 +1155,6 @@
     // single faint stroke. UPLOADED docs render bright (base .45 / dash .75,
     // 1.6px); not-uploaded stay faint (.12) — the contrast is the signal.
     // Store per-doc arrays of {base, dash, modI} for hover interaction.
-    var A_BASE = { on: '0.45', off: '0.12' };
-    var A_DASH = { on: '0.75', off: '0.12' };
-    var A_W    = { on: '1.6',  off: '0.7'  };
     var docLineMap = DOC_KEYS.map(function() { return []; });
     DOC_KEYS.forEach(function(key, di) {
       var up = isUploaded(key);
@@ -1296,8 +1335,10 @@
           var metStr = info.metric ? '<div class="sub">metric: '+escH(info.metric)+'</div>' : '';
           var statusLabel = info.na ? escH(sectorNAText) : info.status;
           showTT(evt,'<div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
-          modCatEls[mi].setAttribute('opacity','0.70');
-          modCatEls[mi].setAttribute('stroke-width','1.4');
+          modCatEls[mi].base.setAttribute('opacity','0.85');
+          modCatEls[mi].dash.setAttribute('opacity','0.85');
+          modCatEls[mi].base.setAttribute('stroke-width','2.2');
+          modCatEls[mi].dash.setAttribute('stroke-width','2.2');
           classAFocus(function(e){ return e.modI===mi; });
         };
       })(m, mi, info, circle));
@@ -1306,8 +1347,12 @@
         return function() {
           hideTT();
           circle.style.transform = '';
-          modCatEls[mi].setAttribute('opacity', MODCAT_OP);
-          modCatEls[mi].setAttribute('stroke-width','1');
+          var _mc = modCatEls[mi];
+          _mc.base.setAttribute('opacity', _mc.live ? MODCAT.base : MODCAT.dead);
+          _mc.dash.setAttribute('opacity', _mc.live ? MODCAT.dash : MODCAT.dead);
+          var _w = _mc.live ? MODCAT.w : MODCAT.deadW;
+          _mc.base.setAttribute('stroke-width', _w);
+          _mc.dash.setAttribute('stroke-width', _w);
           classAReset();
         };
       })(mi, info, circle));
