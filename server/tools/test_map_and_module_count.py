@@ -306,9 +306,9 @@ def main() -> None:
         console.log(JSON.stringify({
           allCats: all.length, allMods: sum(all),
           projCats: proj.length, projMods: sum(proj),
-          projHasPortfolio: proj.some(c => c.level === 'portfolio' || c.portfolioLevel),
-          parkedFilterKeepsD1: all.filter(c=>!c.parked).some(c=>c.id==='d1'),
-          d1Modules: (all.filter(c=>c.id==='d1')[0]||{modules:[]}).modules.length
+          catKeys: all.map(c => c.key).sort(),
+          emptyCats: all.filter(c => !((c&&c.modules)||[]).length).map(c => c.key),
+          charted: (window.performanceCategories()||[]).map(c => c.key).sort()
         }));
         """, str(ROOT / "assets/js/taxonomy.js")],
         capture_output=True, text=True)
@@ -337,9 +337,42 @@ def main() -> None:
     _svc = _reg.service_index()
     _reg_mods = len(_svc)
     _reg_cats = len({v["category"] for v in _svc.values()})
-    check(tx["allCats"] > tx["projCats"],
-          "the taxonomy genuinely has a portfolio-level category to exclude "
-          "(so the checks below are not vacuous)", json.dumps(tx))
+    # RUN 97 REWRITES THE PROPOSITION THAT STOOD HERE, WHICH THIS RUN MADE FALSE.
+    #
+    # It read: "the taxonomy genuinely has a portfolio-level category to exclude (so the checks
+    # below are not vacuous)", asserted as `allCats > projCats`. That was true only because D1
+    # Portfolio Health -- five modules, all retired at Run 43, computing nothing -- was still
+    # emitted as an empty portfolio-level container. Run 97 removes D1 and the whole
+    # project-level/portfolio-level distinction with it, so `projectLevelCategories()` is the
+    # roster and `allCats > projCats` can never again be true. Asserting it would fail; deleting
+    # it would drop a check that can still say something true.
+    #
+    # WHAT IT ASSERTS NOW, and both halves can fail:
+    #   1. the browser taxonomy holds EXACTLY the categories the registry declares in service --
+    #      same count and the same identifiers, not merely the same number;
+    #   2. the CHARTED set is exactly the five weighted performance categories.
+    # Neither is derived from the thing under test: the oracle for (1) is
+    # `registry.service_index()`, read in Python from the registry CSV, and the oracle for (2)
+    # is `models_gov.WEIGHTED_VOTING_CATEGORY_WEIGHTS`, read in Python from the server module
+    # that sets the weights. The subject is `assets/js/taxonomy.js`, loaded under node above.
+    _reg_cat_keys = sorted({v["category"] for v in _svc.values()})
+    check(tx["catKeys"] == _reg_cat_keys,
+          "the taxonomy holds exactly the categories the registry declares in service",
+          f"browser {tx['catKeys']} / registry {_reg_cat_keys}")
+    check(tx["allCats"] == tx["projCats"],
+          "there is no portfolio-level category to hold out: every category the taxonomy "
+          "emits is a category of a project",
+          json.dumps(tx))
+    check(not tx["emptyCats"],
+          "no category is emitted holding no module in service",
+          str(tx["emptyCats"]))
+    _weights = importlib.import_module("app.simulation.models_gov")
+    _charted = sorted(_weights.WEIGHTED_VOTING_CATEGORY_WEIGHTS)
+    check(tx["charted"] == _charted,
+          "the charted set is the five weighted performance categories",
+          f"browser {tx['charted']} / weights {_charted}")
+    check(len(_charted) == 5,
+          "and there are five of them", str(_charted))
     check(tx["projMods"] == _reg_mods,
           "the browser's project population is exactly the registry's modules in service",
           f"browser {tx['projMods']} / registry {_reg_mods}")
@@ -351,47 +384,33 @@ def main() -> None:
           "holds a module in service for",
           f"browser {tx['projCats']} / registry {_reg_cats} "
           f"({sorted({v['category'] for v in _svc.values()})})")
-    # AND THE PORTFOLIO CONTAINER IS THE ONE DECLARED EXCEPTION, STATED RATHER THAN IMPLIED.
-    # D1 Portfolio Health holds NO module in service -- all five were retired at Run 43 -- and it
-    # is nevertheless still emitted, which is why allCats is one more than projCats above. Run 95
-    # made `build_client_taxonomy.py` drop a category that holds nothing, and scoped that rule to
-    # GROUP A precisely so this long-standing portfolio-level container was not swept away with
-    # A5. That scope is asserted here rather than left as a comment.
-    check(tx["allCats"] == _reg_cats + 1,
-          "exactly one category is emitted with no module in service, and it is the "
-          "portfolio-level container",
-          f"browser {tx['allCats']} / registry {_reg_cats} + D1")
-    check("A5" not in {v["category"] for v in _svc.values()},
-          "A5 Systems and Dynamics holds no module in service after Run 95")
-    check(tx["d1Modules"] == 0,
-          "Portfolio Health computes nowhere: its category container is retained and empty",
-          str(tx["d1Modules"]))
-    # ...AND THE FIVE ARE RETIRED FROM SERVICE RATHER THAN MERELY ABSENT FROM THE BROWSER. An
-    # empty d1 list on its own is also what a taxonomy that simply lost the rows would look like.
-    # This asserts the registry's own account of them: each resolves, each is marked retired, and
-    # each carries the reason it was retired with.
-    _d1 = ["D1.1", "D1.2", "D1.3", "D1.4", "D1.5"]
-    _retired = _reg.retired_modules()
-    check(all(m in _reg.registry_index() for m in _d1),
-          "the five Group D identifiers still resolve in the registry",
-          str([m for m in _d1 if m not in _reg.registry_index()]))
-    check(all(m in _retired and _retired[m].strip() for m in _d1),
-          "and every one of them is retired from service, with a stated reason",
-          str({m: _retired.get(m) for m in _d1}))
-    check(_reg.live_portfolio_modules_count() == 0
-          if hasattr(_reg, "live_portfolio_modules_count") else
-          len(importlib.import_module("app.simulation.portfolio_health")
-              .live_portfolio_modules()) == 0,
-          "so no Portfolio Health module is live on the portfolio route",
-          str(importlib.import_module("app.simulation.portfolio_health")
-              .live_portfolio_modules()))
-    check(not tx["projHasPortfolio"],
-          "and no portfolio-level category is in the project-level set")
-    # The discriminator is the LEVEL, not `parked`. A fallback in detail.js used `!parked` and
-    # therefore leaked Portfolio Health; this records why that was wrong.
-    check(tx["parkedFilterKeepsD1"],
-          "filtering on 'parked' would NOT exclude Portfolio Health, which is why every filter "
-          "here uses the level")
+
+    # RUN 97. THE D1 IDENTIFIERS ARE NAMED HERE, IN THIS FILE, AND ASSERTED NOT TO RESOLVE.
+    #
+    # What stood here asked `registry.retired_modules()` for the retired set and then asserted
+    # that the five D1 identifiers were in it. After Run 97 the registry holds NO retired module
+    # at all, so an oracle of that shape cannot fail: it would be asking the registry what is
+    # absent and then agreeing with it. The five identifiers are therefore WRITTEN OUT below,
+    # with the reason, and the assertion is that none of them resolves anywhere -- not in the
+    # registry index, not in service, not in the browser taxonomy. Re-adding any D1 row to
+    # `p0-baseline/module_renumbering_map.csv` turns this red.
+    #
+    # WHY THEY WENT. D1 Portfolio Health was an eleventh category holding five modules that were
+    # retired at Run 43 as outside the unit of analysis: they compare projects against each
+    # other, they all required `portfolioVectors`, and they computed nothing for the single
+    # project whose page this is. The owner ruled the category out entirely in Run 97.
+    _D1_REMOVED = ["D1.1", "D1.2", "D1.3", "D1.4", "D1.5"]
+    check(not [m for m in _D1_REMOVED if m in _reg.registry_index()],
+          "no D1 identifier resolves in the registry",
+          str([m for m in _D1_REMOVED if m in _reg.registry_index()]))
+    check(not [m for m in _D1_REMOVED if m in _svc],
+          "and none is in service", str([m for m in _D1_REMOVED if m in _svc]))
+    check("D1" not in tx["catKeys"],
+          "and the browser taxonomy emits no D1 category", str(tx["catKeys"]))
+    check(_reg.retired_modules() == {},
+          "the registry holds no retired module at all, which is why the identifiers above are "
+          "written out here rather than read back from it",
+          str(_reg.retired_modules()))
 
     section("5. NO PROJECT SURFACE COUNTS THE WHOLE TAXONOMY")
 

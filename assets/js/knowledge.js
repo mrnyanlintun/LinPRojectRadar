@@ -22,7 +22,7 @@
   function taxCounts() {
     const c = (typeof window !== "undefined" && window.LIN_TAXONOMY_COUNTS) || {};
     const cats = (typeof window !== "undefined" && window.LIN_CATEGORIES) || [];
-    const projectCats = cats.filter(function (x) { return !(x && x.level === "portfolio"); });
+    const projectCats = cats.slice();  // RUN 97: no category is portfolio-level any more
     const inService = cats.reduce(function (n, x) { return n + ((x && x.modules) || []).length; }, 0);
     const projectInService = projectCats.reduce(function (n, x) { return n + ((x && x.modules) || []).length; }, 0);
     return {

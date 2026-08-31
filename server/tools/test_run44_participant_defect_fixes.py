@@ -559,8 +559,13 @@ check(".ds-computed" in (ROOT / "assets/css/radar.css").read_text(encoding="utf-
 
 head("7. SECTION 4.4 -- THE PORTFOLIO HEALTH STATEMENT (section 5 items 7 and 13)")
 
-check(JS["cat8RetiredLive"] is True,
-      "Portfolio Health is retired against the taxonomy the page actually loads, derived from "
+# RUN 97. `cat8Retired` answers by finding a portfolio-level category in the loaded roster and
+# seeing it empty. With D1 removed there is no such category, so the predicate is FALSE against
+# the live taxonomy -- not because Portfolio Health came back, but because it is gone rather
+# than emptied. The predicate is left in place and asserted at its true value; the fact that
+# matters is asserted directly below and above, against the registry and the roster.
+check(JS["cat8RetiredLive"] is False,
+      "the retired-Portfolio-Health predicate is FALSE against the live taxonomy, because "
       "the roster rather than stated")
 # RUN 51, RULING 1. NON-VACUITY: the six symbols really were there to delete. Asserted against
 # the bytes at ad4f614, not against a memory of them.
@@ -601,18 +606,25 @@ check("data-run-portfolio-analysis" in _PRIOR and "data-refresh-health" in _PRIO
 check("renderCat8Health" in _PRIOR.split("window.LinDeepDive")[1]
       and "renderCat8Health" not in _NOW,
       "and window.LinDeepDive no longer exports it")
-check(JS["cat8RetiredNoTaxonomy"] is False and JS["cat8RetiredEmptyTaxonomy"] is False,
-      "FALSE with no taxonomy loaded: a page that cannot see the roster asserts nothing about "
-      "it", f"{JS['cat8RetiredNoTaxonomy']}/{JS['cat8RetiredEmptyTaxonomy']}")
-check(JS["cat8RetiredNoPortfolioCat"] is False,
-      "FALSE when the taxonomy carries no portfolio-level category at all")
-check(JS["cat8RetiredIfReinstated"] is False,
-      "and FALSE again the moment a Portfolio Level module is reinstated: the predicate is "
-      "DERIVED from the roster, not a constant spelled as a function")
-check(JS["taxonomyPortfolioCats"] and all(c["modules"] == 0
-                                          for c in JS["taxonomyPortfolioCats"]),
-      "the live taxonomy does carry a portfolio-level category and it carries zero modules, so "
-      "the TRUE above is not vacuously true", json.dumps(JS["taxonomyPortfolioCats"]))
+# RUN 97. FIVE CHECKS REPLACED, AND THE PROPOSITION THEY RESTED ON IS THE ONE THIS RUN MADE
+# FALSE. They exercised `cat8Retired`, a browser predicate that answered "is Portfolio Health
+# retired?" by looking for a portfolio-level category in the roster and finding it empty, and
+# the last of them asserted that "the live taxonomy DOES carry a portfolio-level category and
+# it carries zero modules, so the TRUE above is not vacuously true". Run 97 removed D1 from the
+# taxonomy authority, so the taxonomy carries no portfolio-level category at all: the predicate
+# has nothing to read and that last check asserts something now false.
+#
+# What is asserted instead is the stronger fact the removal established -- no portfolio-level
+# category is emitted, and the five identifiers are named here rather than read back from a
+# roster that no longer contains them.
+from app.simulation import registry as _REG97                        # noqa: E402
+_D1_IDS = ("D1.1", "D1.2", "D1.3", "D1.4", "D1.5")
+check(not JS["taxonomyPortfolioCats"],
+      "the live taxonomy carries NO portfolio-level category: D1 Portfolio Health is removed, "
+      "not merely emptied", json.dumps(JS["taxonomyPortfolioCats"]))
+check(not [m for m in _D1_IDS if m in _REG97.registry_index()],
+      "and none of the five D1 identifiers resolves in the registry",
+      str([m for m in _D1_IDS if m in _REG97.registry_index()]))
 
 src_dd = _NOW   # RUN 54: the file is deleted; see the note above.
 # RUN 51, RULING 1. Three checks reconciled, none deleted. They asserted the CONTENT of a
@@ -650,10 +662,15 @@ for banned in ("D1", "Cat 8", "PH."):
           f"the new sentence names no module or category identifier ({banned}), per "
           "NAMING_AUTHORITY.md")
 
-from app.simulation.portfolio_health import live_portfolio_modules   # noqa: E402
-check(live_portfolio_modules() == (),
-      "and the server agrees: no portfolio module is in service, so the sentence is true of the "
-      "code and not merely of the taxonomy artifact", str(live_portfolio_modules()))
+# RUN 97. `app/simulation/portfolio_health.py` held `live_portfolio_modules` and nothing else
+# that any live path reached; it and `app/simulation/portfolio.py` are deleted with Group D. The
+# server's agreement is now asserted by their absence, which is a stronger statement than an
+# empty tuple returned by a module that still exists.
+import importlib.util as _ilu2                                        # noqa: E402
+check(_ilu2.find_spec("app.simulation.portfolio_health") is None
+      and _ilu2.find_spec("app.simulation.portfolio") is None,
+      "and the server agrees: the two portfolio-level modules are deleted, so no portfolio "
+      "module can be in service")
 
 head("8. SECTION 4.5 -- NO COMMENT OR DOCSTRING DESCRIBES THE WITHDRAWN REFUSAL "
      "(section 5 item 8)")
@@ -694,15 +711,30 @@ avail = REG.available_modules()
 check(set(avail) == set(REG.VALIDATED) & set(REG.service_index()),
       "and the function itself is unchanged: the intersection of the implemented set with the "
       "modules in service", str(len(avail)))
-retired_reached = [m for m in REG.retired_modules() if m in avail]
+# RUN 97. This asked the registry for the retired set and then asserted none of it was
+# reachable; with the set empty the loop has nothing to iterate and the check cannot fail. The
+# fifty-six removed identifiers are named in `run96_removed.py` instead.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from run96_removed import REMOVED as _REMOVED_IDS                     # noqa: E402
+retired_reached = [m for m in _REMOVED_IDS if m in avail]
 check(not retired_reached,
-      "no retired identifier is reachable through it", str(retired_reached))
+      "no removed identifier is reachable through it", str(retired_reached))
 
 head("9. THE POPULATIONS, DERIVED (section 5 items 11, 12 and 13)")
 
 svc, reg_all = REG.service_index(), REG.registry_index()
-check(len(svc) == 63, "modules in service is 63, derived from the registry CSV", str(len(svc)))
-check(len(reg_all) == 101, "registry total is 101, derived", str(len(reg_all)))
+# RUN 97. These were typed literals -- 63 and 101 -- and both went false when Run 96 removed
+# fifty-one rows and Run 97 removed five more. A typed population figure in a check is the same
+# defect as a typed one in production, and this instrument has paid for it repeatedly. What is
+# asserted now is the IDENTITY that the removals established: everything registered is in
+# service, and no removed identifier resolves, with the removal roster read from
+# `run96_removed.py` rather than from the registry it audits.
+check(len(svc) == len(reg_all) and len(reg_all) > 0,
+      "every registered module is in service: nothing is retired-but-registered any more",
+      f"{len(svc)} in service / {len(reg_all)} registered")
+check(not [m for m in _REMOVED_IDS if m in reg_all],
+      "and no removed identifier resolves in the registry",
+      str([m for m in _REMOVED_IDS if m in reg_all]))
 check(len(svc) + len(REG.retired_modules()) == len(reg_all),
       "and the two reconcile with nothing left over",
       f"{len(svc)}+{len(REG.retired_modules())}={len(reg_all)}")

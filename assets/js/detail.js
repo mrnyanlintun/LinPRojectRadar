@@ -16,33 +16,23 @@
 
   /* THE CATEGORIES A SINGLE PROJECT HAS, AND WHY EVERY COUNT ON THIS PAGE USES THEM.
 
-     `LIN_CATEGORIES` is the taxonomy IN SERVICE, across twelve categories. The REGISTRY holds
-     101 modules -- Group A 53, Group B 36, Group C 7, Group D 5 -- and Run 43 retired 38 of
-     them from service on the owner's ruling of 2026-08-21, leaving 63. (This comment read 52
-     for Group A until Run 43; the registry has always held 53 and 101, and only the comment was
-     wrong.) Retirement is a statement about the taxonomy, not about arithmetic: every retired
-     module keeps its registry entry and its audit lineage, and none of them reaches this page.
-
-     Group D is PORTFOLIO LEVEL. Its one category, Portfolio Health, detects patterns ACROSS
-     projects and requires more than one by definition; its five modules all declare
-     `required: ['portfolioVectors']`. They cannot compute for a single project and they do not
-     belong on a single project's page. All five are now retired from service as well, so the
-     category renders with no module rows at all.
+     `LIN_CATEGORIES` is the taxonomy IN SERVICE. RUN 97: the registry holds 45 modules, all
+     of them in service and none retired, across ten categories -- A1 7, A2 4, A3 4, A4 8,
+     A6 4 (the five weighted performance categories, 27 modules), and B1 4, B2 1, B3 5, B4 1,
+     C1 7 behind them. There is no portfolio-level category any more: D1 Portfolio Health and
+     its five retired modules were removed from the taxonomy authority, so `projectCats()` is
+     now the roster itself and is kept as the single point every count on this page reads, so
+     the page cannot disagree with itself.
 
      Counting the whole taxonomy on this page is how the detail view came to advertise 101
-     modules across 12 categories while the Signal Flow diagram in the same page, which already
-     filtered correctly, read 96 across 11. Every count, every axis and every iteration below
-     goes through these two functions so the page cannot disagree with itself again.
-
-     Portfolio Health is unaffected on the portfolio, where it belongs: the "Portfolio
-     health" card (index.html, filled by `renderPortfolio` in workspace.js) reads it from each
-     project's own stored result. */
+     modules across 12 categories while the Signal Flow diagram in the same page read 96
+     across 11. */
   function projectCats() {
     const all = window.LIN_CATEGORIES || [];
     if (window.projectLevelCategories) {
       try { return window.projectLevelCategories() || []; } catch (e) { /* fall through */ }
     }
-    return all.filter((c) => !(c && (c.level === "portfolio" || c.portfolioLevel)));
+    return all.slice();
   }
 
   function projectModuleCount() {

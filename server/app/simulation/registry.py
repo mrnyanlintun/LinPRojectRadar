@@ -24,7 +24,6 @@ from .method_labels import (  # noqa: F401
     claim_limit, method_label,
 )
 from .models import SIMULATION_VERSION, STOCHASTIC, VALIDATED  # noqa: F401
-from .portfolio import PORTFOLIO_VALIDATED
 from .rng import make_rng, seed_from
 from .signal_package import (
     ADAPTER_TIERS, CATEGORY_9_DEVIATION, NESTED_INPUT_MODULES, SIGNAL_QUALIFICATION,
@@ -36,10 +35,6 @@ CSV_PATH = pathlib.Path(__file__).resolve().parents[3] / "p0-baseline" / "module
 
 class MissingModuleError(RuntimeError):
     """Raised when a caller asks for a module this server cannot compute."""
-
-
-class PortfolioModuleError(RuntimeError):
-    """Raised when a single-project computation reaches a Group D module."""
 
 
 # ---------------------------------------------------------------------------------------------
@@ -496,14 +491,12 @@ def unported_modules() -> list[str]:
     """
     Everything declared in the registry but implemented nowhere.
 
-    The Group D subtraction is the point. This used to be `registry_index() - VALIDATED`, and
-    VALIDATED holds only the single-project modules, so all five Group D modules were reported as
-    unported even though portfolio.py implements them. It answered 6 where exactly 1 is genuine,
-    and two checks in the suite had to compute the unported set themselves to work around it.
-
-    No import cycle: portfolio.py imports only from rng.
+    RUN 97. The Group D subtraction is gone with Group D. `PORTFOLIO_VALIDATED` held the five
+    D1 Portfolio Health implementations and existed only so that they were not miscounted as
+    unported; no D1 identifier is in the registry any more, so subtracting it would subtract
+    nothing. The set is now exactly what is in service and not in VALIDATED.
     """
-    return sorted(set(service_index()) - set(VALIDATED) - set(PORTFOLIO_VALIDATED))
+    return sorted(set(service_index()) - set(VALIDATED))
 
 
 def group_of(new_id: str) -> str:
@@ -540,11 +533,10 @@ def run_module(new_id: str, si: dict, rand: Callable[[], float],
     # derived from the registry CSV) and by category linkage, and nowhere else. Downstream
     # calculation reads categories, so it takes no retired module into account; a caller that
     # names a retired identifier directly is answered as it always was.
-    if index[new_id]["group"] == "D":
-        raise PortfolioModuleError(
-            f"{new_id} is a Group D portfolio-level module and requires 3 or more projects; "
-            f"it cannot be computed on a single project"
-        )
+    # RUN 97, GOAL ONE. THE GROUP D BRANCH IS GONE, BECAUSE GROUP D IS GONE. The registry
+    # holds no row whose group is "D", so this test could never be true and the branch could
+    # never be taken. `PortfolioModuleError`, which existed only to be raised here, is removed
+    # with it.
     if new_id in DISABLED_CONCEPT_ONLY:
         # RUN 30 CLOSURE. THE SHARED SENTENCE BECAME FALSE FOR THREE OF THE EIGHT. It says the
         # module has "no production implementation of the analytical structure its name claims",

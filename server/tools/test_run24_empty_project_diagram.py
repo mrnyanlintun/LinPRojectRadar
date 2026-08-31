@@ -129,11 +129,18 @@ check(ALL_MODS == PROJ_MODS + len(_SVC_PORTFOLIO),
 # RUN 96 CARRIED RETIREMENT THROUGH TO REMOVAL, so the registry no longer holds 101. What this
 # line exists to assert is the RECONCILIATION -- in service plus retired accounts for every row,
 # with nothing unaccounted -- and that is asserted on the registry's own numbers, non-empty.
-check(len(_REGISTRY) > 0
-      and len(_SERVICE) + len(_REG.retired_modules()) == len(_REGISTRY),
-      "and the roster in service plus the retired reconcile to the REGISTRY exactly "
-      "to exactly, so retirement removed modules from service and not from the registry",
-      f"{len(_SERVICE)} + {len(_REG.retired_modules())} vs {len(_REGISTRY)}")
+# RUN 97 REPLACED THE RECONCILIATION THAT STOOD HERE. It asserted
+# `in service + retired == registered`, with the retired set read from the registry. After
+# Run 97 no module is retired, so that reads `45 + 0 == 45` and cannot fail: both sides come
+# from the same derivation of the same file. The proposition that can still fail is that the
+# fifty-six identifiers this registry removed -- named in `run96_removed.py`, not read back
+# from the registry -- do not resolve, and that everything registered is in service.
+from run96_removed import REMOVED as _REMOVED_IDS                     # noqa: E402
+_back = sorted(m for m in _REMOVED_IDS if m in _REGISTRY)
+check(len(_REGISTRY) > 0 and len(_SERVICE) == len(_REGISTRY) and not _back,
+      "every registered module is in service and no removed identifier resolves, so the "
+      "registry and the roster in service are the same set",
+      f"{len(_SERVICE)} in service / {len(_REGISTRY)} registered; back: {_back}")
 # RUN 95 RETIRED THE ONLY SUPPLIED ENTRY, so the figure is now "every module in service is
 # computed, none supplied". A4.1 Document Risk Score was the single registry entry the
 # extraction model SUPPLIED rather than the analytical server computing -- and it was also the

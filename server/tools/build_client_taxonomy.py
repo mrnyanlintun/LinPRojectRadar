@@ -49,7 +49,6 @@ ROOT = HERE.parent.parent
 sys.path.insert(0, str(ROOT / "server"))
 
 from app.simulation import registry as REG                                  # noqa: E402
-from app.simulation.portfolio import PORTFOLIO_VALIDATED as PV              # noqa: E402
 
 AUTHORITY = HERE / "taxonomy_authority.json"
 TARGETS = {
@@ -102,7 +101,7 @@ def build() -> str:
         "   is reverted or caught. Change an authority and regenerate.",
         "",
         "     name, method_class, disabled   server/app/simulation/registry.py (and the",
-        "                                    portfolio dispatch table) -- the identifiers the",
+        "                                    dispatch table) -- the identifiers the",
         "                                    production runners actually emit",
         "     everything else                server/tools/taxonomy_authority.json -- category",
         "                                    identity, colour, description, and each module's",
@@ -132,26 +131,18 @@ def build() -> str:
     # it back, with no edit to this generator and none to either client artifact. This is the
     # SAME rule as the module filter twelve lines below, one level up.
     #
-    # SCOPED TO GROUP A, AND THE SCOPE IS A CORRECTION MADE INSIDE RUN 95 AFTER MEASURING.
-    # The first form of this filter applied to EVERY category and removed TWO, not one: it also
-    # removed D1 Portfolio Health, whose five modules were all retired at RUN 43 and which has
-    # shipped as a declared, empty, portfolio-level category ever since without anyone treating
-    # that as a defect. `test_map_and_module_count.py` depends on its presence -- it checks that
-    # "the taxonomy genuinely has a portfolio-level category to exclude", which is what stops the
-    # project-level filters below it from being vacuous -- so removing it would have made a real
-    # check assert nothing. The tree's own precedent for an empty PORTFOLIO-LEVEL category is
-    # that it stays, and this run does not overturn a precedent it was not asked to touch.
+    # RUN 97. THE GROUP A SCOPING IS GONE, AND SO IS THE ONLY CATEGORY IT EXISTED TO SPARE.
     #
-    # The owner's ruling is about the performance categories the two charts and the project
-    # status draw, and those are exactly the GROUP A project-level ones. `group` is a field on
-    # the authority row, so the scope is derived here too: still no category name is written.
+    # Run 95 scoped this filter to group A for one reason, stated in its own comment: applying
+    # it to every category also removed D1 Portfolio Health, an empty portfolio-level category
+    # that a check depended on. D1 is removed from the authority by this run, so the exception
+    # protects nothing and the rule applies where it always should have: A CATEGORY THAT HOLDS
+    # NO MODULE IN SERVICE IS NOT EMITTED, whatever group it is in.
     #
-    # So exactly ONE category is removed, and that is measured rather than assumed: A5 System
-    # Dynamics & Complexity, which lost its last five modules in service at Run 95. Every other
-    # group A category still holds at least one.
+    # Still derived, still no category name written here: a category is emitted if and only if
+    # at least one of its authority modules is in `service_index()`.
     authority = [c for c in authority
-                 if c["group"] != "A"
-                 or any(m["module_id"] in names for m in c["modules"])]
+                 if any(m["module_id"] in names for m in c["modules"])]
     for ci, cat in enumerate(authority):
         lines.append("  {")
         lines.append("    id: %s, key: %s, name: %s," % (js(cat["id"]), js(cat["key"]),
@@ -174,11 +165,9 @@ def build() -> str:
             parts = ["id: %s" % js(m["id"]), "module_id: %s" % js(mid),
                      "name: %s" % js(names[mid])]
             # THE IDENTIFIER THE RUNNER ACTUALLY EMITS. A module with no dispatch entry keeps the
-            # authority's own value, which is the case for the supplied and portfolio identities.
+            # authority's own value, which is the case for the supplied identity.
             if mid in REG.VALIDATED:
                 parts.append("method_class: %s" % js(REG.VALIDATED[mid][0]))
-            elif mid in PV:
-                parts.append("method_class: %s" % js(PV[mid]))
             elif "method_class" in m:
                 # An identity the platform neither dispatches nor computes -- the supplied
                 # Document Risk Score. No server authority governs its class, so the taxonomy

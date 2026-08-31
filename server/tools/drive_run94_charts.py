@@ -525,7 +525,12 @@ with sync_playwright() as pw:
                 # and a typed set would have gone on passing while drawing every one of them,
                 # which is precisely the vacuity this driver exists to defeat. The oracle is
                 # `registry.retired_modules()`, and the assertion is over DRAWN moon keys.
-                _RETIRED = set(_REG95.retired_modules())
+                # RUN 97. `registry.retired_modules()` is now empty -- nothing is retired,
+                # the removals were carried through -- so a set read from it would make the
+                # assertion below unfailable. The fifty-six removed identifiers are named in
+                # `run96_removed.py` and that record is the oracle.
+                from run96_removed import REMOVED as _REMOVED_IDS
+                _RETIRED = set(_REMOVED_IDS)
                 say(f"  RETIRED MODULES THE REGISTRY DECLARES: {len(_RETIRED)}")
                 say(f"  RETIRED MOONS DRAWN: {sorted(set(m['key'] for m in moons) & _RETIRED)} (must be empty)")
                 # RUN 95, SECTION 4.1. EVERY PLANET CARRIES ITS CATEGORY'S NAME, read back from

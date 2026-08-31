@@ -152,8 +152,7 @@
     var LC = window.LIN_CATEGORIES;
     if (LC && LC.length) {
       var PLC = window.performanceCategories ? window.performanceCategories()
-        : LC.filter(function(c) { return c && c.group === 'A'
-                                  && !(c.level === 'portfolio' || c.portfolioLevel); });
+        : LC.filter(function(c) { return c && c.group === 'A'; });
       var cats = PLC.map(function(c, ci) {
         return { id: ci + 1, taxId: c.id, name: c.name, group: c.group,
                  groupName: c.groupName, count: (c.modules || []).length };

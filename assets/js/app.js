@@ -1316,7 +1316,7 @@
      linking to the Health dialog instead of an expandable module list. */
   function categoryLedgerHtml(p) {
     if (!window.LIN_CATEGORIES) return "";
-    const projectCats = window.projectLevelCategories ? projectLevelCategories() : LIN_CATEGORIES.filter((c) => !(c && c.level === "portfolio"));
+    const projectCats = window.projectLevelCategories ? projectLevelCategories() : LIN_CATEGORIES.slice();
     const rows = projectCats.map((cat) => {
       const status = window.getCategoryStatus ? getCategoryStatus(cat.id, p) : null;
       const open = cat.id === "b3" ? " open" : "";   // Governance (Group B: Regulatory and Authority Thresholds) open by default
@@ -1381,21 +1381,9 @@
       </details>`;
     }).join("");
 
-    // PORTFOLIO HEALTH IS NOT RENDERED HERE ANY MORE.
-    //
-    // This ledger has exactly one host: the project detail page (see the guard at the top of
-    // renderLedger). Portfolio Health is Group D, portfolio level: it detects patterns ACROSS
-    // projects, its five modules all require `portfolioVectors`, and it cannot compute for the
-    // single project whose page this is. It was rendered as a separated row carrying its own
-    // explanation that it "compares this project against the rest of the portfolio", which is
-    // a true sentence about a category that has nothing to say on this screen, sitting under a
-    // heading that had just counted its five modules into the project's total.
-    //
-    // It is unchanged on the portfolio, which is where it belongs: the "Portfolio health"
-    // card (index.html, filled by `renderPortfolio` in workspace.js) reads it from each
-    // project's own stored result. Checked, not assumed -- `LinIngest.openHealthModal`, which
-    // `deepdive.js:2260` reaches for, does not exist anywhere in this codebase, so that call
-    // is a no-op behind its own guard and is NOT the surface this row was standing in for.
+    // RUN 97. Portfolio Health -- D1, five retired modules, portfolio level -- is removed
+    // from the taxonomy entirely, so there is no category here to separate out and no row to
+    // suppress. The ledger renders the categories the roster holds.
     return rows;
   }
 
@@ -2937,7 +2925,8 @@
     var c = window.LIN_TAXONOMY_COUNTS;
     if (!c) return;
     var cats = window.LIN_CATEGORIES || [];
-    var proj = cats.filter(function (x) { return !(x && x.level === "portfolio"); });
+    // RUN 97. No category is portfolio-level any more; the roster is the list.
+    var proj = cats.slice();
     var derived = {
       registered: c.registered,
       inService: c.inService,

@@ -258,7 +258,7 @@
     /* The same rule, inline, if taxonomy.js did not load its accessors: group A, project level.
        NOT a written-out list of six keys, so this arm cannot drift from the roster either. */
     return (window.LIN_CATEGORIES || []).filter(function (c) {
-      return c && c.group === "A" && !(c.level === "portfolio" || c.portfolioLevel);
+      return c && c.group === "A";  // RUN 97: no category is portfolio-level any more
     });
   }
   function storedRow(project) {

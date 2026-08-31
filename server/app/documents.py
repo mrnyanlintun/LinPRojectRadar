@@ -2182,7 +2182,6 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     path to drift.
     """
     from .simulation import compute_project
-    from .simulation.portfolio_health import compute_portfolio_health_snapshot
 
     # THE CROSS-PERIOD SERIES, assembled here because this is the single point BOTH assembly
     # paths pass through: the document path above and training period generation. Every period
@@ -2408,87 +2407,15 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff,
                           project_id=project.legacy_id)
 
-    # Portfolio snapshot — CUTOFF-ALIGNED (P1). A portfolio vector for another project is
-    # selected by `period_cutoff <= cutoff`, taking that project's latest live result at or
-    # before THIS computation's cutoff. NEVER max(period): that let a stored period-1 result
-    # change when another project advanced to period 2, and made two projects computed for
-    # the same period at different wall-clock moments see different portfolios. With the
-    # cutoff bound, recomputing an earlier period after other projects have moved on
-    # reproduces the portfolio that period actually saw.
-    others = session.scalars(
-        select(ComputedResult).where(
-            ComputedResult.superseded_by.is_(None),
-            ComputedResult.period_cutoff <= cutoff,
-        )
-    ).all()
-    vectors: list[dict] = []
-    by_project: dict[Any, ComputedResult] = {}
-    for r in others:
-        prev = by_project.get(r.project_id)
-        if prev is None or (
-            (r.period_cutoff, r.period or 0) > (prev.period_cutoff, prev.period or 0)
-        ):
-            by_project[r.project_id] = r
-    for pid, r in by_project.items():
-        legacy = session.get(Project, pid)
-        # TRAINING ISOLATION, BOTH DIRECTIONS (run 2). A training project's vector must never
-        # enter a real project's portfolio snapshot — that snapshot is stored on the result and
-        # is exactly "anything the analysis reads". And a training run's own portfolio must not
-        # ingest real projects either: a trainee's screen is generated, not an operational
-        # surface. So a vector is included only when its project's is_training matches the
-        # project being computed. A missing project row contributes nothing rather than
-        # defaulting in.
-        if legacy is None or bool(legacy.is_training) != bool(project.is_training):
-            continue
-        s = r.signal_inputs or {}
-        vectors.append({"id": legacy.legacy_id if legacy else str(pid),
-                        "cpi": s.get("cpi"), "spi": s.get("spi"),
-                        "docRiskScore": s.get("docRiskScore"),
-                        "actualPctComplete": s.get("actualPctComplete"),
-                        # RUN 33. The other projects' GOVERNED PORTFOLIO STRUCTURES, carried
-                        # from their own stored signal inputs -- which is where
-                        # `project_data.apply_to_signal_inputs` put them when that project was
-                        # computed. Nothing is re-derived here and nothing is invented for a
-                        # project that supplied none.
-                        "signal_inputs": s})
-    # Include this project's freshly computed vector, which is not yet stored.
-    vectors = [v for v in vectors if v["id"] != project.legacy_id]
-    vectors.append({"id": project.legacy_id, "cpi": si.get("cpi"), "spi": si.get("spi"),
-                    "docRiskScore": si.get("docRiskScore"),
-                    "actualPctComplete": si.get("actualPctComplete"),
-                    "signal_inputs": si})
-    # Always call, and store whatever it returns — including the abstention shape. Collapsing
-    # an abstention to a bare NULL (the behaviour before Run 2) discarded its reason, and T5's
-    # portfolio view is required to render the reason verbatim rather than reconstruct one.
+    # RUN 97, GOAL ONE. PORTFOLIO-LEVEL COMPUTATION IS GONE FROM THIS PATH.
     #
-    # AT v20 the message rendered here was "Portfolio too small for anomaly detection — need at
-    # least 3 projects with signal data", reproducing a legacy off-by-one between that guard and
-    # its own wording. At v21 the reason is the governed one the canonical layer states, and the
-    # legacy sentence travels with the legacy implementation it belongs to.
-    #
-    # RUN 33. `history`, this project's per-period snapshots, no longer reaches Portfolio Health.
-    # PH.3 is defined on a GOVERNED SIGNAL HISTORY with a stable signal identity, real reporting
-    # dates, declared units, declared orientation and a per-observation qualification state; a
-    # list of result snapshots carries none of those, and list position is not time. The
-    # snapshots remain assembled and stored for the project-level series that already read them.
-    # RUN 33, THE CANONICAL v21 PORTFOLIO HEALTH ROUTE. The five Portfolio Health readings are
-    # produced by `canonical_v8` over ONE governed cohort, through the dispatcher in
-    # `portfolio_health.py`. The superseded v20 implementation, `portfolio.compute_portfolio`,
-    # is PRESERVED for the Run-2/6/13/14/15/17/20 findings recorded about it and is NOT called
-    # from here or from anywhere else in production; `portfolio_health.assert_not_reachable`
-    # proves that from this function's own source rather than from a list.
-    #
-    # WHY THE COHORT IS NOT `vectors`. A portfolio comparison needs a declared population, a
-    # declared period, a declared feature schema and a declared model version before it means
-    # anything, and "the rows this query returned" is none of those. Where no governed cohort has
-    # been supplied through `saveprojectdata`, all five modules abstain and say so -- which is
-    # the correct reading, not a regression from the populated one v20 produced.
-    snapshot = compute_portfolio_health_snapshot(
-        project.legacy_id, si,
-        [(v["id"], v.get("signal_inputs") or {}) for v in vectors
-         if v["id"] != project.legacy_id],
-        cutoff)
-
+    # What stood here assembled a cross-project vector list and called
+    # `portfolio_health.compute_portfolio_health_snapshot`, whose only consumers were the five
+    # D1 Portfolio Health modules. D1 and its five modules are removed from the registry, so
+    # there is nothing for the cohort to be read by and nothing for the snapshot to hold. The
+    # `portfolio_snapshot` COLUMN IS NOT DROPPED and no row is rewritten: rows stored before
+    # this run keep exactly what they hold, and no migration is added. New rows leave the
+    # column at its NULL default because nothing computes a value for it any more.
     row = ComputedResult(
         result_id=result_id or new_ulid(),
         project_id=project.id,
@@ -2507,7 +2434,6 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
         abstained=run.get("abstained"),
         category_statuses=run.get("category_statuses"),
         project_status=run.get("project_status"),
-        portfolio_snapshot=snapshot,
         # NOT NULL in the schema. Taken from the run itself, never defaulted here: a result
         # whose provenance was invented by the caller is worse than no result.
         simulation_version=run["simulation_version"],
@@ -2658,7 +2584,6 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
             period=(f"P{row.period}" if row.period is not None else None),
             period_cutoff=row.period_cutoff,
         ),
-        "portfolio_snapshot": row.portfolio_snapshot,
         "simulation_version": row.simulation_version,
         "seed": row.seed,
         "period_cutoff": str(row.period_cutoff) if row.period_cutoff else None,

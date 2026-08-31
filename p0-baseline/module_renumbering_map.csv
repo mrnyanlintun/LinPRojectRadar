@@ -44,10 +44,5 @@ C1.4,Audit Trail Completeness,9.4,C,Data & Evidence Health,C1,Data Integrity,aut
 C1.5,Information Completeness Ratio,9.5,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
 C1.6,Cross-document Consistency Score,9.6,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
 C1.7,Reporting Frequency Index,9.7,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
-D1.1,Isolation Forest,PH.1,D,Portfolio Level,D1,Portfolio Health,RETIRED Run 43 as D1.1: reason 1 (outside the unit of analysis).
-D1.2,Portfolio Outlier Detection,PH.2,D,Portfolio Level,D1,Portfolio Health,RETIRED Run 43 as D1.2: reason 1 (outside the unit of analysis). also met reason 4.
-D1.3,Signal Trajectory Classifier,PH.3,D,Portfolio Level,D1,Portfolio Health,RETIRED Run 43 as D1.3: reason 1 (outside the unit of analysis).
-D1.4,Cross-project Pattern Detector,PH.4,D,Portfolio Level,D1,Portfolio Health,RETIRED Run 43 as D1.4: reason 1 (outside the unit of analysis). also met reason 4.
-D1.5,Anomaly Score,PH.5,D,Portfolio Level,D1,Portfolio Health,RETIRED Run 43 as D1.5: reason 1 (outside the unit of analysis). also met reason 4.
 RETIRED,Document Risk Extraction,1.3,-,-,-,-,alias of 4.1; consolidated into A4.1
 RETIRED,DSM Rework Propagation (Cat 3 entry),3.2,-,-,-,-,alias of 5.1; consolidated into A5.1

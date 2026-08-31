@@ -45,7 +45,6 @@ sys.path.insert(0, str(HERE))
 
 from app.simulation import registry as R  # noqa: E402
 from app.simulation.models import VALIDATED  # noqa: E402
-from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
 
 _passed = 0
 _total = 0
@@ -82,11 +81,13 @@ for new_id in index:
     groups.setdefault(R.group_of(new_id), []).append(new_id)
 
 registered_total = len(index)
+# RUN 97. Group D is removed from the registry, so `groups` holds no "D" key and the
+# portfolio/project split is a split of nothing. `project_registered` is the registry total.
 portfolio_registered = len(groups.get("D", []))
 project_registered = registered_total - portfolio_registered
 
 print(f"        . registry_index()          {registered_total}")
-print(f"        . Group D (Portfolio Health) {portfolio_registered}")
+print(f"        . Group D (Portfolio Health) {portfolio_registered}  (removed at Run 97)")
 print(f"        . project level              {project_registered}")
 
 # RUN 96 REPLACED THE TYPED POPULATION FIGURES. They said 101 / 5 / 96 / 95 and had been
@@ -97,12 +98,15 @@ print(f"        . project level              {project_registered}")
 # still sees them.
 check("the registry declares a non-empty registered population",
       registered_total > 0, str(registered_total))
-check("five of them are Portfolio Health -- the container Run 96 STOPPED on and left in place",
-      portfolio_registered == 5, str(portfolio_registered))
-check("the rest are project level", project_registered == registered_total - portfolio_registered,
-      str(project_registered))
-check("and project-level + Portfolio Health = the registry total, on its own numbers",
-      project_registered + portfolio_registered == registered_total)
+# RUN 97. The three checks that stood here asserted that five of the registered modules were
+# Portfolio Health and that project-level plus Portfolio Health came to the total. D1 and its
+# five rows are removed, so the first is false and the other two are arithmetic about an empty
+# set. What is asserted instead is that NO group D row is registered at all -- which is the
+# proposition Run 97 actually established, and which goes red the moment one comes back.
+check("no Group D row is registered: the portfolio level is gone from the registry, not merely "
+      "retired within it", portfolio_registered == 0, str(sorted(groups.get("D", []))))
+check("so every registered module is project level", project_registered == registered_total,
+      f"{project_registered} / {registered_total}")
 
 # SELF-TEST, so the identity above is not a tautology of the subtraction that produced it.
 check("self-test: the identity check can distinguish an unequal pair",
@@ -116,8 +120,14 @@ check("self-test: the identity check can distinguish an unequal pair",
 check("the server's validated project set is exactly the registry's project-level rows",
       len(VALIDATED) == project_registered,
       f"VALIDATED {len(VALIDATED)} / registry project-level {project_registered}")
-check("and its validated portfolio set is 5", len(PORTFOLIO_VALIDATED) == 5,
-      str(len(PORTFOLIO_VALIDATED)))
+# RUN 97. `PORTFOLIO_VALIDATED` was the five D1 dispatch entries in
+# `app/simulation/portfolio.py`. That module implemented nothing but Group D and is deleted, so
+# the check that its set held five is replaced by the one that says so.
+import importlib.util as _ilu                                          # noqa: E402
+check("the portfolio dispatch table is gone with Group D",
+      _ilu.find_spec("app.simulation.portfolio") is None
+      and _ilu.find_spec("app.simulation.portfolio_health") is None,
+      "app.simulation.portfolio / portfolio_health still importable")
 # RUN 95 CLOSED THE ONE-SUPPLIED GAP BY RETIRING THE MODULE THAT MADE IT.
 #
 # A4.1 Document Risk Score was the only module the registry held IN SERVICE that no runner
@@ -132,7 +142,7 @@ check("and its validated portfolio set is 5", len(PORTFOLIO_VALIDATED) == 5,
 # above; what changed is that the difference between "declared" and "computable" is now
 # entirely accounted for by RETIREMENT rather than partly by an unimplemented module.
 sys.path.insert(0, str(HERE))
-from run96_removed import REMOVED_AT_RUN96                          # noqa: E402
+from run96_removed import REMOVED_AT_RUN96, REMOVED as REMOVED_IDS  # noqa: E402
 unported = R.unported_modules()
 check("no registered module in service is unported to the analytical server any more",
       unported == [], str(unported))
@@ -152,10 +162,15 @@ check("so the modules in service at project level are exactly the ones the serve
       "with nothing supplied and nothing unimplemented",
       sorted(_svc_project) == sorted(set(VALIDATED) & set(_svc)),
       f"{len(_svc_project)} in service / {len(set(VALIDATED) & set(_svc))} computable")
-check("and the registry's declared total is still the roster in service plus the retired, so "
-      "retirement removed modules from service and not from the registry",
-      len(_svc) + len(R.retired_modules()) == registered_total,
-      f"{len(_svc)} + {len(R.retired_modules())} vs {registered_total}")
+# RUN 97. The old proposition was `in service + retired == registered`, and with the retired
+# set empty it is `45 + 0 == 45`: two derivations of one file agreeing with each other. What
+# is asserted now is that no removed identifier resolves -- the roster is written out in
+# `run96_removed.py` and is not read back from the registry -- and that everything registered
+# is in service.
+_back_ids = sorted(m for m in REMOVED_AT_RUN96 if m in R.registry_index())
+check("no identifier this registry removed resolves, and everything registered is in service",
+      len(_svc) == registered_total and not _back_ids,
+      f"{len(_svc)} in service / {registered_total} registered; back: {_back_ids}")
 
 # ============================================================ 2. audit-derived populations
 section("2. THE SCIENTIFIC-AUDIT POPULATION, DERIVED FROM THE COMMITTED AUDIT ARTIFACT")
@@ -193,10 +208,12 @@ _audit_gone = sorted(audit_ids - set(index))
 check("every scientific target the registry still carries is a registered module, so the audit "
       "did not assess anything the platform does not carry",
       not (audit_ids & set(index) - set(index)), str([]))
-check("and every target it no longer carries is one Run 96 removed, by the removal roster "
-      "rather than by the registry",
-      set(_audit_gone) <= set(REMOVED_AT_RUN96),
-      str(sorted(set(_audit_gone) - set(REMOVED_AT_RUN96))))
+# RUN 97 widened the roster this joins against from Run 96's fifty-one to all fifty-six: the
+# audit assessed the five D1 Portfolio Health targets and Run 97 removed those rows too.
+check("and every target it no longer carries is one this registry removed, by the removal "
+      "roster rather than by the registry",
+      set(_audit_gone) <= set(REMOVED_IDS),
+      str(sorted(set(_audit_gone) - set(REMOVED_IDS))))
 check("Run 96 genuinely reached the audit population -- this is not vacuous",
       len(_audit_gone) > 0, str(len(_audit_gone)))
 # RUN 96. A3.4 Material Cost Variance was the one registered module outside the audit

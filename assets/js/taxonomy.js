@@ -35,7 +35,7 @@
    is reverted or caught. Change an authority and regenerate.
 
      name, method_class, disabled   server/app/simulation/registry.py (and the
-                                    portfolio dispatch table) -- the identifiers the
+                                    dispatch table) -- the identifiers the
                                     production runners actually emit
      everything else                server/tools/taxonomy_authority.json -- category
                                     identity, colour, description, and each module's
@@ -46,7 +46,7 @@
    made in the wrong copy passed every source check while the live page stayed broken;
    and the two had already drifted apart on their own, with nine modules carrying
    `disabled: true` in one and not the other. */
-window.LIN_TAXONOMY_COUNTS = { registered: 50, inService: 45, retired: 5, serverComputes: 45, supplied: 0 };
+window.LIN_TAXONOMY_COUNTS = { registered: 45, inService: 45, retired: 0, serverComputes: 45, supplied: 0 };
 window.LIN_CATEGORIES = [
   {
     id: 'a1', key: 'A1', name: 'Cost and EVM Performance',
@@ -172,15 +172,6 @@ window.LIN_CATEGORIES = [
       { id: 'c1_6', module_id: 'C1.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['ev','ac'] },
       { id: 'c1_7', module_id: 'C1.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['docDate'] }
     ]
-  },
-  {
-    id: 'd1', key: 'D1', name: 'Portfolio Health',
-    group: 'D', groupName: 'Portfolio Level',
-    color: '#64748b',
-    description: 'Portfolio-wide pattern detection. Requires three or more projects and is parked on the portfolio page.',
-    level: 'portfolio',
-    modules: [
-    ]
   }
 ];
 
@@ -258,15 +249,19 @@ window.categoryNAModules = function (catId, project) {
     return window.isModuleSectorNA(m.method_class, project);
   });
 };
-/* True for the Portfolio Health suite (ex-"Cat 8") — portfolio-scale, not part
-   of the numbered 1-10 project-category sequence. Renderers that walk
-   LIN_CATEGORIES for a project's category rollup should route entries where
-   this returns true to the Health dialog instead of the numbered list. */
-window.isPortfolioLevelCategory = function (cat) {
-  return !!(cat && cat.level === "portfolio");
-};
-/* The 10 project-level categories in display order (Portfolio Health excluded) —
-   the canonical list for anything rendering a gapless 1-10 sequence. */
+/* RUN 97, GOAL ONE. THE PORTFOLIO-LEVEL DISTINCTION IS GONE, BECAUSE THERE IS NO
+   PORTFOLIO-LEVEL CATEGORY LEFT TO DISTINGUISH.
+
+   `isPortfolioLevelCategory` and `projectLevelCategories` existed to hold ONE category out of
+   the roster: D1 Portfolio Health, whose five modules were retired at Run 43 and which Run 97
+   removes from the taxonomy authority entirely. With D1 gone, a filter separating project-level
+   from portfolio-level categories separated the roster from nothing -- it returned every
+   category it was given -- while reading on the page as though a real exclusion were happening.
+   Six callers carried that filter; all six now read the roster directly.
+
+   Nothing about which categories the charts draw has changed: that is
+   `window.performanceCategories()` below, which is a DIFFERENT and still-live rule -- the five
+   weighted performance categories A1 A2 A3 A4 A6. */
 /* ------------------------------------------------------------
    Does this category describe the CONDITION of the project?
 
@@ -286,7 +281,7 @@ window.contributesToProjectStatus = function (cat) {
 };
 
 window.projectLevelCategories = function () {
-  return LIN_CATEGORIES.filter(function (c) { return !window.isPortfolioLevelCategory(c); });
+  return LIN_CATEGORIES.slice();
 };
 
 /* ---------------------------------------------------------------------------
@@ -774,9 +769,9 @@ window.performanceCategories = function () {
      · The fusion is server-side (server/app/simulation/compute.py) and the browser reads its
        stored result. getProjectFusion above does the reading; nothing here fuses anything.
      · Only the categories that describe the CONDITION of the project vote.
-       contributes_to_project_status() excludes Group C (Data and Evidence Health) and Group D
-       (Portfolio Level), so Portfolio Health does NOT vote in a project's status. Group D needs
-       more than one project and the registry refuses it on a single-project path.
+       contributes_to_project_status() excludes Group C (Data and Evidence Health). RUN 97:
+       Group D (Portfolio Level) is not excluded any more because it no longer exists -- D1
+       Portfolio Health and its five retired modules are removed from the taxonomy.
      · Nothing writes red_review. getProjectFusion reads row.red_review because that is the
        honest way to surface a server-set flag, but the server has never set one, so redReview
        is always false today. Do not reintroduce a browser-side inference to fill the gap.
