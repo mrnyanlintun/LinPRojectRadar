@@ -2566,6 +2566,13 @@ COVERED_BY_RUN_4 = {"A1.7", "A1.8"}
 # once covered readable and makes the removal itself a checked fact rather than a silent edit.
 _registered = {m for m in registry.registry_index()
                if m in VALIDATED or m in registry.PORTFOLIO_VALIDATED}
+# THE REMOVAL'S OWN ORACLE. `registry.registry_index()` cannot be both the thing audited and the
+# expectation: Run 96 measured that writing A1.1 back left this suite GREEN. The stated roster in
+# `run96_removed.py` is the independent authority, and it is what turns a restored row red.
+sys.path.insert(0, str(ROOT / "server" / "tools"))
+from run96_removed import assert_removed as _assert_run96_removed   # noqa: E402
+_assert_run96_removed(lambda name, cond, detail="": check(cond, name, detail), registry)
+
 _removed_at_run96 = sorted(COVERED_HERE - set(registry.registry_index()))
 check(all(m not in registry.registry_index() for m in _removed_at_run96),
       "every id this suite once covered that Run 96 removed no longer resolves in the registry",

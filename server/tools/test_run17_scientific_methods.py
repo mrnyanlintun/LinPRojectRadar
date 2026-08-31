@@ -31,6 +31,7 @@ sys.path.insert(0, str(HERE / "run17" / "oracle"))
 
 import canonical_oracles as O                                   # noqa: E402
 from population import population, reconciliation               # noqa: E402
+from run96_removed import assert_removed as _assert_run96_removed  # noqa: E402
 from app.simulation import registry as REG                      # noqa: E402
 from app.simulation import fusion as FUSION                     # noqa: E402
 from app.simulation.portfolio import compute_portfolio          # noqa: E402
@@ -1616,6 +1617,9 @@ def main() -> int:
         w.writerows(DEFECTS)
     # RUN 96'S SUBSTITUTION GATE. It must have happened, it must match the registry, and the
     # count must be stated -- otherwise the substitution above is a way of skipping checks.
+    # THE REMOVAL'S OWN ORACLE, INDEPENDENT OF THE REGISTRY IT AUDITS. Without this the checks
+    # above adapt to a restored row instead of failing on it, which Run 96 measured directly.
+    _assert_run96_removed(lambda name, cond, detail="": check("RUN96", name, cond, detail), REG)
     check("GATE", "Run 96 removed modules this audit covers, and the substitution ran",
           len(RUN96_SUBSTITUTED) > 0, str(len(RUN96_SUBSTITUTED)))
     check("GATE", "every module the substitution covered is genuinely absent from the registry",
