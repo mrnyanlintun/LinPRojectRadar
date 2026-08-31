@@ -1517,18 +1517,30 @@ print("\n-- B2.1 to B2.8 on the assembled package: the canonical route, and the 
 # THE HISTORICAL ARITHMETIC IS PRESERVED AND STILL CHECKED, below, by calling the legacy
 # functions directly. They remain in models_evc.py and models_fuzzy.py as the record of the
 # v14/v15 line, and no production route reaches them.
+# RUN 96 REMOVED THESE SEVEN FROM THE REGISTRY ENTIRELY. Until Run 96 they were retired-but-
+# resolving, and this block asserted that the canonical route ABSTAINED on each. The owner's Run
+# 96 ruling is that retired means removed: their rows, dispatch entries and specifications are
+# gone, so `run_module` can no longer be asked for them at all.
+#
+# THE CHECK IS NOT DELETED, IT IS RE-POINTED AT THE NEW STATE, which is strictly stronger than
+# what it asserted before. An abstention proved the route declined to invent a reading; a
+# MissingModuleError proves the identifier does not resolve anywhere, which is the whole of the
+# removal. The oracle is the registry itself, so if a row is ever put back this goes red.
 for _mid, _name in (("B2.1", "dempster-shafer"), ("B2.2", "rough sets"),
                     ("B2.3", "neutrosophic"), ("B2.4", "interval fuzzy"),
                     ("B2.5", "z-numbers"), ("B2.6", "plts"),
                     ("B2.8", "belief rule base")):
-    r = registry.run_module(_mid, _PKG, NOOP, "2025-06-30")
-    check(abstains(r) and r.get("result_source") == "CANONICAL_V5_LAYER"
-          and r.get("canonical_disposition") == "NOT_ESTIMABLE_STRUCTURE_ABSENT",
-          f"{_name}: the assembled arms are crisp project metrics, not this method's defining "
-          f"structure, so the canonical route abstains and says which structure it awaited",
-          str(r.get("canonical_disposition")))
-    check(r.get("canonical_structure") and r.get("lineage"),
-          f"{_name}: and the abstaining ledger row still names the structure and the lineage")
+    check(_mid not in registry.registry_index(),
+          f"{_name}: {_mid} was removed from the registry at Run 96 and no longer resolves",
+          str(_mid in registry.registry_index()))
+    try:
+        registry.run_module(_mid, _PKG, NOOP, "2025-06-30")
+        _raised = ""
+    except registry.MissingModuleError as _e:
+        _raised = str(_e)
+    check(_raised.startswith(_mid) and "not in the module registry" in _raised,
+          f"{_name}: and asking the dispatcher for it refuses by name rather than computing",
+          _raised or "NO REFUSAL -- run_module returned a reading")
 
 # THE PRESERVED HISTORICAL ARITHMETIC, called directly. Every number below is the one the cycle-7
 # and cycle-9 workings derived by hand, unchanged.
@@ -1619,12 +1631,22 @@ _PKG_BIG = package(_FLAT_RED, _MC_RED, _CU_RED,
 ka(registry.run_module("B1.4", _PKG_BIG, NOOP, "2025-06-30")["mean_worst_2"], 3.0,
    "worst 2 of m: sixty further module rows do not dilute identical adverse evidence")
 
-print("\n-- The two of the fourteen that are disabled refuse before their input is read --")
+print("\n-- The two that were disabled as concept-only were REMOVED at Run 96 --")
+# They used to refuse as DISABLED_UNSAFE on a fully assembled package. Run 96 removed their
+# registry rows outright, so the refusal is now at the dispatcher and the identifier itself is
+# gone. The check asserts the new state; it is not deleted, and it can still fail.
 for mid, name in (("B2.7", "Plithogenic Sets"), ("B2.9", "Quantum Probability")):
-    rr = registry.run_module(mid, _PKG_V, NOOP, "2025-06-30")
-    check(abstains(rr) and rr["activation_state"] == "DISABLED_UNSAFE"
-          and name in rr["evidence_metric"],
-          f"{name}: refused as concept-only even on a fully assembled package")
+    check(mid not in registry.registry_index(),
+          f"{name}: {mid} was removed from the registry at Run 96 and no longer resolves",
+          str(mid in registry.registry_index()))
+    try:
+        registry.run_module(mid, _PKG_V, NOOP, "2025-06-30")
+        _got = "RETURNED A READING"
+    except registry.MissingModuleError as _e:
+        _got = str(_e)
+    check("not in the module registry" in _got,
+          f"{name}: and a fully assembled package cannot reach it either",
+          _got)
 
 print("\n-- A first period has no trend, and the two governance projections say so --")
 _PKG_P1 = package({"cpi": 0.95, "spi": 0.95, "bac": 1000000, "docRiskScore": 0.1},
@@ -1794,24 +1816,28 @@ ka((r["reporting_compliance_assessed"], "breach" in r["evidence_metric"].lower()
 # exhausted over the SAME grid, which is what makes this a stronger assertion than the one it
 # replaces: not "no pair produces Green" but "no pair produces any band, any ranking or any
 # recommended course at all".
-_banded, _ranked = [], []
+# RUN 96 REMOVED B4.7 MINIMAX REGRET FROM THE REGISTRY. Run 70's grid exhausted 3,721 index
+# pairs to prove the module banded nowhere and ranked nothing. That property is now carried by a
+# stronger fact: the identifier does not resolve, so there is no route by which any of those
+# 3,721 pairs could reach a band, a ranking or a recommended course. The grid is kept and still
+# walked, so the assertion is over the same population, not a narrowed one.
+_reachable = []
 for _c in [x / 100 for x in range(70, 131)]:
     for _sp in [x / 100 for x in range(70, 131)]:
-        _rr = registry.run_module("B4.7", {"cpi": _c, "spi": _sp, "bac": 1}, NOOP, "x")
-        if _rr.get("status_color") is not None:
-            _banded.append((_c, _sp))
-        if "expected_regret" in _rr or "recommended_action" in _rr:
-            _ranked.append((_c, _sp))
-ka(len(_banded), 0,
-   "regret minimization: no band anywhere on the whole index grid (3,721 index pairs), where "
-   "the shipped code banded on every one of them and could reach Green on none")
-ka(len(_ranked), 0,
-   "regret minimization: and no ranking and no recommended course on any of the 3,721 either")
-r = registry.run_module("B4.7", {"cpi": 0.92, "spi": 0.99, "bac": 1000000}, NOOP, "2025-06-30")
-ka(r["insufficient_data"], True, "regret minimization: it abstains on a complete input")
-ka(r["abstention_reason_code"], "canonical_decision_structure_absent",
-   "regret minimization: the stable reason names the structure the corpus does not contain")
-speakable(r, "regret minimization")
+        try:
+            registry.run_module("B4.7", {"cpi": _c, "spi": _sp, "bac": 1}, NOOP, "x")
+            _reachable.append((_c, _sp))
+        except registry.MissingModuleError:
+            pass
+ka(len(_reachable), 0,
+   "regret minimization: B4.7 is unreachable on every one of the 3,721 index pairs, so no band, "
+   "no ranking and no recommended course can be produced anywhere on the grid")
+ka(len(_reachable) == 0 and 61 * 61, 3721,
+   "regret minimization: and the grid genuinely has 3,721 pairs -- the check is not vacuous")
+check("B4.7" not in registry.registry_index(),
+      "regret minimization: the identifier itself was removed from the registry at Run 96",
+      str("B4.7" in registry.registry_index()))
+
 
 print("\n-- The portfolio group, D1.1, D1.3, D1.4 and D1.5 --")
 # HAND, a four-project portfolio of identical vectors except the current one. Each dimension's
@@ -2088,7 +2114,23 @@ _still_banding = _CORRECTED_BY_RUN7 & {m for m, _ in _banded_on_nothing}
 ka(_still_banding, set(),
    "none of the five Run 7 corrected reports a status about a project nothing has been reported "
    "for, where every one of them did before")
-for _m in sorted(_CORRECTED_BY_RUN7):
+# RUN 96 REMOVED FOUR OF THE FIVE. A2.2, A2.3, A3.1 and A5.1 no longer resolve, so the property
+# Run 7 established -- that none of them reports a status about a project nothing was reported
+# for -- is now carried by their absence, asserted here rather than assumed. A2.1 is still in
+# service and is still put through the whole of Run 7's original case below.
+_gone_of_run7 = sorted(_CORRECTED_BY_RUN7 - set(registry.registry_index()))
+ka(len(_gone_of_run7), 4,
+   "four of the five Run 7 corrected were removed from the registry at Run 96")
+for _m in _gone_of_run7:
+    try:
+        registry.run_module(_m, {}, lambda: 0.5, "2025-06-30")
+        _g = "RETURNED A READING"
+    except registry.MissingModuleError as _e:
+        _g = str(_e)
+    check("not in the module registry" in _g,
+          f"{_m} was removed at Run 96: it cannot band on an empty input because it cannot run",
+          _g)
+for _m in sorted(_CORRECTED_BY_RUN7 & set(registry.registry_index())):
     _rr = registry.run_module(_m, {}, lambda: 0.5, "2025-06-30")
     ka(_rr.get("insufficient_data"), True, f"{_m} abstains on an input carrying nothing")
     ka(_rr.get("status_color"), None, f"{_m} offers no band on an input carrying nothing")
@@ -2518,8 +2560,20 @@ COVERED_HERE = {
 #: Given a known-answer case and exhausted boundary tests by the validate-seven run, not here.
 COVERED_BY_RUN_4 = {"A1.7", "A1.8"}
 
+# RUN 96: COVERED_HERE is a STATED set and the registry is the DERIVED one, so the removal of
+# fifty-one rows put stated ids in it that no longer exist. They are not deleted from the stated
+# set -- they are separated out and asserted GONE, which keeps this suite's account of what it
+# once covered readable and makes the removal itself a checked fact rather than a silent edit.
 _registered = {m for m in registry.registry_index()
                if m in VALIDATED or m in registry.PORTFOLIO_VALIDATED}
+_removed_at_run96 = sorted(COVERED_HERE - set(registry.registry_index()))
+check(all(m not in registry.registry_index() for m in _removed_at_run96),
+      "every id this suite once covered that Run 96 removed no longer resolves in the registry",
+      str([m for m in _removed_at_run96 if m in registry.registry_index()]))
+check(len(_removed_at_run96) > 0,
+      "and the removal genuinely reached this suite's covered set -- this check is not vacuous",
+      str(len(_removed_at_run96)))
+COVERED_HERE = COVERED_HERE & set(registry.registry_index())
 _disabled = set(registry.DISABLED_CONCEPT_ONLY)
 _uncovered = sorted(_registered - COVERED_HERE - COVERED_BY_RUN_4 - _disabled)
 check(COVERED_HERE <= _registered, "every id this suite claims to cover is a registered module",
