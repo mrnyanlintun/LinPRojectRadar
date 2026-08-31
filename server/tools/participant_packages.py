@@ -766,6 +766,87 @@ PARTICIPANT_PACKAGES: tuple[Package, ...] = (
     ),
 )
 
+#: RUN 92. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
+#: omitted, so the identity builder reads a DECLARATION instead of falling back to a hard-coded
+#: empty list. MEASURED: all sixty-nine members of the v26 record are present in the tree; none
+#: is absent. A member disappearing without being named here still raises.
+V26_TO_V27_DELETED: tuple[str, ...] = ()
+
+#: RUN 92. The files whose bytes moved between v26 and the current tree. TWELVE, measured by
+#: hashing every one of the sixty-nine members of code_audit/run63_participant_package_v26_
+#: checksums.sha256 against the tree at 56c432a. TWO of the twelve are sequence-bearing.
+V26_TO_V27_CHANGED = (
+    "assets/css/radar.css",
+    "assets/js/categories.js",
+    "assets/js/decision.js",
+    "assets/js/detail.js",
+    "assets/js/ingest.js",
+    "assets/js/knowledge.js",
+    "assets/js/neural_flow.js",
+    "assets/js/projectnet2d.js",
+    "assets/js/signals.js",
+    "assets/js/taxonomy.js",
+    "assets/js/workspace.js",
+    "index.html",
+)
+
+#: RUN 92. THE NAMED EXCEPTION OF RECORD FOR THIS LINK, declared here rather than discovered by
+#: a checksum. Its authority is the owner's Run 92 order, section 2.1. Written by Lin Tun on
+#: 2026-08-31. This is the record of a judgement the owner has made; it is not a request for
+#: anyone's approval and nothing here awaits a countersignature.
+#:
+#: MEASURED, NOT ASSUMED. Of the five members of SEQUENCE_BEARING_FILES_FROM_V21, exactly two
+#: moved. `assets/js/decision-ui.js`, `assets/questionnaires/intake.json` and
+#: `assets/questionnaires/debrief.json` are present and byte for byte identical to the v26
+#: record. The sealed CONTENT of the two that moved was recovered by walking every commit that
+#: touched each path and taking the blob whose bytes hash to the sum the v26 record holds --
+#: the record holds sums, not content -- and both recoveries were re-verified at this head:
+#: `assets/js/decision.js` sealed at blob 4910660260217db8, the blob at commit 7e7fc4e9;
+#: `assets/js/workspace.js` sealed at blob a85fc707ddb8087f, the blob at commit a8dfe094.
+#:
+#: WHAT MOVED INSIDE assets/js/decision.js, EXACTLY. Run 69 stopped the browser applying its own
+#: red, amber and green thresholds to numbers the server had already stored. Those thresholds
+#: existed nowhere else in the platform and nobody calibrated them. Each signal class now
+#: displays the band the server actually stored, or nothing where the server stored none, and
+#: the portfolio list says "not yet analysed" instead of a colour invented from indices. The
+#: retired threshold function REMAINS IN THE FILE, unreferenced, carrying a comment that it must
+#: not be wired back in.
+#:
+#: WHAT MOVED INSIDE assets/js/workspace.js, EXACTLY. Run 79 removed the Portfolio Health card
+#: and its loader. Portfolio Health is retired -- portfolio_health.live_portfolio_modules()
+#: returns nothing -- and the card's ENTIRE content was one sentence saying that no
+#: portfolio-level reading is produced. The card carried NO controls. Three helpers that existed
+#: only to word its rows went with it, and a per-project loader nothing else needed.
+#:
+#: THE JUDGEMENT, stated as a fact about the sequence. NO decision step, reveal gate, lock,
+#: randomisation, questionnaire, append-only record or control was added, moved or removed.
+#: What a participant is asked, in what order, with what options, and how it is recorded, is
+#: UNCHANGED between the sealed version and its successor. Both changes are to what the
+#: interface DISPLAYS, and both stopped the interface asserting something the analysis had not
+#: established.
+#:
+#: THE SCOPE. This record covers exactly those two files at the content diffed above. It does
+#: NOT authorise any future change to them, and it says NOTHING about the other ten changed
+#: members of the v26 record, none of which is sequence-bearing.
+#:
+#: NOT ESTABLISHED, and therefore not recorded: participant counts, collection dates, and
+#: anything about a live study population. No such figure was measured and none is asserted.
+#:
+#: HOW THIS RECORD IS AND IS NOT CONSUMED, measured at Run 92 from the generator's own code.
+#: `build_run37_acceptance.py` blocker B04 reads only V20_TO_V21_SEQUENCE_EXCEPTION, which is
+#: the DELETION path -- its condition (b) requires every excepted file to be ABSENT from the
+#: tree. B04 otherwise hashes every member of the sequence-bearing set against PP.CURRENT's
+#: record with NO content-move exception path, and B11 does the same over all sixty-nine
+#: members. THIS CONSTANT THEREFORE DOES NOT AND CANNOT TURN B04 OR B11 GREEN. On the v23-to-v24
+#: and v24-to-v25 links those blockers went green because a NEW checksum record was minted and
+#: PP.CURRENT advanced to it; the exception constant was the declaratory half, read by
+#: test_run28, test_run36 and the release builders, never by the blocker. No consumption path is
+#: invented here.
+V26_TO_V27_SEQUENCE_EXCEPTION = (
+    "assets/js/decision.js",
+    "assets/js/workspace.js",
+)
+
 #: RUN 63. NOTHING LEFT THE PACKAGE ACROSS THIS LINK. Declared as an EMPTY tuple rather than
 #: omitted, so the identity builder reads a DECLARATION instead of falling back to a hard-coded
 #: empty list. A member of a pinned identity group disappearing without being named here still
