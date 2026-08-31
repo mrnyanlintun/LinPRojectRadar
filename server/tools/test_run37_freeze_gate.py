@@ -127,7 +127,28 @@ def _minting_run(pkg) -> int:
 
 _RUN = _minting_run(_PP.CURRENT)
 _PRED_RUN = _minting_run(_PP.PARTICIPANT_PACKAGES[-2])
-SUCCESSOR_GATE = f"run{_RUN}_successor_freeze_gate.csv"
+# RUN 91. THE GATE ARTEFACT'S NAME IS DERIVED FROM THE GENERATOR, NOT FROM THE PACKAGE LINK.
+#
+# WHAT WAS WRONG. This name was `f"run{_RUN}_successor_freeze_gate.csv"`, with `_RUN` read from
+# the PARTICIPANT PACKAGE link (v26, minted at run 63). But the gate artefact is a property of
+# the FREEZE CANDIDATE, not of the participant package, and the two chains parted at Run 67:
+# `build_run37_acceptance.py` advanced `GATE_FILE` to `run67_successor_freeze_gate.csv` while the
+# package chain stayed at v26/run63. The generator therefore wrote run67 into the temp directory
+# and this file looked for run63 there, found nothing, and `run37.gate.reproduces` failed for ever
+# with "0 fresh vs 15 committed" -- a NAME MISMATCH reported as a stale snapshot. Worse, `_gate`
+# below falls back to the COMMITTED csv when `_fresh` is empty, so all fifteen blocker checks were
+# reading the stale artefact: the vacuity this suite's own comment says the campaign found.
+#
+# NOTHING IS LOOSENED. The name still resolves to ONE specific file for ONE specific release; it
+# is now read from the one place that decides it, and this raises rather than guessing.
+_GEN_SRC = (HERE / "build_run37_acceptance.py").read_text(encoding="utf-8")
+_m = re.search(r'^GATE_FILE = "([^"]+)"', _GEN_SRC, re.M)
+if _m is None:
+    raise SystemExit(
+        "RUN 91 DERIVATION FAILED: build_run37_acceptance.py carries no module-level GATE_FILE "
+        "constant, so the gate artefact's name cannot be derived from the generator that writes "
+        "it. Stopping rather than falling back to a typed constant.")
+SUCCESSOR_GATE = _m.group(1)
 SUCCESSOR_RECORD = f"RUN{_RUN}_SUCCESSOR_FREEZE_RECORD.json"
 SUCCESSOR_REPORT = f"RUN{_RUN}_SUCCESSOR_FREEZE_REPORT.md"
 SUCCESSOR_CHECKSUMS = f"RUN{_RUN}_SUCCESSOR_FREEZE_CHECKSUMS.csv"
@@ -195,7 +216,19 @@ check("run37.gate.reproduces",
 # nothing it looked at and all fifteen faults stayed green: the suite was VACUOUS and the
 # non-vacuity campaign is what found it. The committed artefact is still required to reproduce,
 # immediately above, so a stale commit is caught too -- but the LIVE TREE is what decides.
-_gate = _fresh or _committed
+# RUN 91. THE FALLBACK TO THE COMMITTED CSV IS REMOVED, AND THAT IS A STRENGTHENING.
+#
+# `_gate = _fresh or _committed` meant that whenever the generator REFUSED TO RUN -- which it has
+# done on every clean tree since the CANDIDATE fixed point went stale -- every one of the fifteen
+# blocker checks silently read the COMMITTED snapshot instead. That snapshot records a clean gate,
+# so the suite reported all fifteen classes green while a live evaluation reports B01, B04, B11 and
+# B15 BLOCKED. The one line that would have said so, `run37.gate.reproduces`, was itself failing for
+# an unrelated name mismatch (see SUCCESSOR_GATE above) and was read as a known cosmetic failure.
+# That is the exact vacuity the comment above says the campaign found, reintroduced by a fallback.
+#
+# A gate that cannot regenerate CANNOT CERTIFY. There is now no artefact to fall back to: the
+# blocker checks read the freshly regenerated gate or they read nothing and fail.
+_gate = _fresh
 check("run37.gate.fifteen_blocker_classes", len(_gate) == 15,
       "all fifteen blocker classes are evaluated", len(_gate))
 
