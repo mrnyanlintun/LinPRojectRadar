@@ -966,7 +966,16 @@
     // documents and ninety-six modules. The counts are unchanged and still derived from the
     // registry rather than typed in; what changed is that they are now labelled as what they
     // are, and the project's own figures sit beneath them.
-    var HEADERS = [
+    /* THE MODULE CAPTION'S WORDING WAS CORRECTED at the run that removed the retired rows. It read
+   "MODULES IN SERVICE", and `MODULES` is not the modules in service: it is the modules THIS
+   CHART DRAWS, which are the ones belonging to the weighted performance categories in the
+   column beside it. The registry's figure across every category is larger, so the caption named
+   one population and counted another. The number was right and the words were wrong, so the
+   words changed -- it now says what it counts, and it counts what the next caption scopes.
+
+   The literals stay OUT of the block below: a check asserts no architecture count is typed
+   there, and it went red on a number written inside a comment. That is the check working. */
+var HEADERS = [
       // RUN 21. The words now match what the number counts. Before a reset the window IS the
       // project, so the original wording is kept exactly. After one, the figure is a
       // since-the-reset count and says so, and the retained documents are named beside it
@@ -979,7 +988,7 @@
                (!hasCurrentRow && retainedBeforeReset > 0)
                  ? ('0 CURRENT, ' + retainedBeforeReset + ' RETAINED')
                  : (uploadedDocCount + ' UPLOADED ON THIS PROJECT')],
-      [1, MODULES.length + ' MODULES IN SERVICE',
+      [1, MODULES.length + ' MODULES IN THESE CATEGORIES',
                modWithResult + ' WITH A CURRENT RESULT'],
       [2, CATS.length + ' WEIGHTED PERFORMANCE CATEGORIES',
                catEstimable + ' CARRY A POSTURE'],

@@ -139,13 +139,28 @@ check("and its rendered count is that list's length, not a number",
 # ============================================================================================
 from app.simulation.registry import (registry_index, service_index,  # noqa: E402
                                      CORE_VOTING_MODULES)
-check("registry total is 101", len(registry_index()) == 101, str(len(registry_index())))
-check("modules in service is 63", len(service_index()) == 63, str(len(service_index())))
+# RUN 96. The literals said 101 and 63 and had been retyped at every retirement since Run 43;
+# the owner's Run 96 ruling removed fifty-one rows, so they are now false. What these
+# guarantees exist to assert is that the platform figures are DERIVED AND CONSISTENT, and that
+# is asserted here on the registry's own numbers, with the figures printed so a reader sees
+# them. The removal itself is asserted against the roster below, which the registry cannot
+# rewrite, so a row written back still fails.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from run96_removed import REMOVED_AT_RUN96                          # noqa: E402
+print(f"  platform figures: registered {len(registry_index())}, "
+      f"in service {len(service_index())}")
+check("the registry total is non-empty and in service is a subset of it",
+      len(registry_index()) > 0
+      and set(service_index()) <= set(registry_index()),
+      f"{len(service_index())} in service of {len(registry_index())} registered")
+check("every module Run 96 removed is absent from the registry, by the removal roster",
+      not [m for m in REMOVED_AT_RUN96 if m in registry_index()],
+      str([m for m in REMOVED_AT_RUN96 if m in registry_index()]))
 check("voting modules are exactly A1.7 and A1.8",
       sorted(CORE_VOTING_MODULES) == ["A1.7", "A1.8"], str(sorted(CORE_VOTING_MODULES)))
 _unresolved = [mid for mid in registry_index() if registry_index().get(mid) is None]
-check("every runtime lookup across all 101 registered modules resolves",
-      not _unresolved and len(registry_index()) == 101, str(_unresolved))
+check("every runtime lookup across every registered module resolves",
+      not _unresolved and len(registry_index()) > 0, str(_unresolved))
 
 # ============================================================================================
 # ORDER SECTION 8, GUARANTEE 6. THE RUN 61 RULE STILL BINDS THIS RUN'S OWN DRIVER.

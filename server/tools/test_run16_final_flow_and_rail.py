@@ -61,7 +61,10 @@ for gone in ("' DOCUMENTS'", "' MODULES'", "' CATEGORIES'"):
 # were turned RED against the Run 90 build first, then re-pointed at the shipped wording. The
 # thing being asserted is unchanged: the header is a truthful label, not a bare noun.
 for wanted in ("SUPPORTED DOCUMENT TYPES", "UPLOADED ON THIS PROJECT",
-               "MODULES IN SERVICE", "WITH A CURRENT RESULT",
+               # RUN 96: was "MODULES IN SERVICE", which named the registry's population and
+               # counted the charted one. The label must still be truthful, which is the
+               # assertion; the truthful label changed.
+               "MODULES IN THESE CATEGORIES", "WITH A CURRENT RESULT",
                "WEIGHTED PERFORMANCE CATEGORIES", "CARRY A POSTURE"):
     check(wanted in FLOW, f"and carries the truthful label {wanted!r}")
 check("NOT ESTIMABLE" in FLOW and "'Not estimable'" in FLOW,
@@ -89,12 +92,21 @@ check(set(declared) <= set(DOC_TYPES),
       "every document type the diagram draws is one the extraction layer recognises",
       str(sorted(set(declared) - set(DOC_TYPES))))
 
+from app.simulation import registry as _REG16  # noqa: E402
 rows = list(csv.DictReader(
     (ROOT / "p0-baseline" / "module_renumbering_map.csv").open(encoding="utf-8-sig")))
 live = [r for r in rows if r["new_id"].strip().upper() != "RETIRED"]
 project_level = [r for r in live if r["group"] != "D"]
-check(len(project_level) == 96,
-      "the registry declares 96 project-level modules, which is what the label now names",
+# RUN 96. The literal said 96 and had to be retyped at every retirement since Run 43; the owner's
+# Run 96 ruling removed fifty-one rows and it would now say 45. The label under test names what
+# the registry declares, so the registry is what it is checked against -- read here from the CSV
+# directly, which is a different path from the one the label is built on.
+check(len(project_level) == len(_REG16.service_index()) - len(
+          [m for m in _REG16.service_index() if _REG16.group_of(m) == "D"]),
+      "the registry's project-level rows are what the label names",
+      str(len(project_level)))
+check(len(project_level) > 0,
+      "and the project-level population is not empty -- this is not vacuous",
       str(len(project_level)))
 
 # ---------------------------------------------------------------- A3: edges show activity only

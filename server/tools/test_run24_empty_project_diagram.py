@@ -126,8 +126,12 @@ check((ALL_CATS, ALL_MODS, PROJ_CATS, PROJ_MODS)
 check(ALL_MODS == PROJ_MODS + len(_SVC_PORTFOLIO),
       "and the whole-taxonomy figure reconciles to the project-level one",
       f"{ALL_MODS} != {PROJ_MODS} + {len(_SVC_PORTFOLIO)}")
-check(len(_REGISTRY) == 101 and len(_SERVICE) + len(_REG.retired_modules()) == len(_REGISTRY),
-      "and the REGISTRY still holds 101, which the roster in service plus the retired reconcile "
+# RUN 96 CARRIED RETIREMENT THROUGH TO REMOVAL, so the registry no longer holds 101. What this
+# line exists to assert is the RECONCILIATION -- in service plus retired accounts for every row,
+# with nothing unaccounted -- and that is asserted on the registry's own numbers, non-empty.
+check(len(_REGISTRY) > 0
+      and len(_SERVICE) + len(_REG.retired_modules()) == len(_REGISTRY),
+      "and the roster in service plus the retired reconcile to the REGISTRY exactly "
       "to exactly, so retirement removed modules from service and not from the registry",
       f"{len(_SERVICE)} + {len(_REG.retired_modules())} vs {len(_REGISTRY)}")
 # RUN 95 RETIRED THE ONLY SUPPLIED ENTRY, so the figure is now "every module in service is
@@ -156,8 +160,14 @@ check(len(_SERVICE) == len([m for m in _SERVICE if m in _REG.VALIDATED
 # wording, exactly as Run 26 re-pointed the guards it had turned red. WHAT THEY ASSERT IS
 # UNCHANGED and is the whole point of them: the figure is READ FROM THE BUILT MODEL and never
 # typed in. The literal-count guard below is untouched.
-check("MODULES.length + ' MODULES IN SERVICE'" in FLOW,
+# RUN 96 CORRECTED THE WORD, NOT THE FIGURE. `MODULES` is the modules this chart DRAWS -- the
+# ones in the weighted performance categories beside it -- and the caption called them the
+# modules in service, which is a larger population. The figure is still read from the built model
+# and still never typed in, which is what this check exists to assert.
+check("MODULES.length + ' MODULES IN THESE CATEGORIES'" in FLOW,
       "the module column header reads its figure from the built model")
+check("MODULES.length + ' MODULES IN SERVICE'" not in FLOW,
+      "and no longer calls the charted population the modules in service")
 check("CATS.length + ' WEIGHTED PERFORMANCE CATEGORIES'" in FLOW,
       "the category column header reads its figure from the built model")
 # RUN 51, SECTION 6.1. The two figures are still read from the built model; the WORD beside

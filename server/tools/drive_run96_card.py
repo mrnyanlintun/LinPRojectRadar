@@ -116,5 +116,84 @@ with sync_playwright() as pw:
                         f"{all(b['visible'] for b in shown)}")
         say(f"  PAGE ERRORS: {errs[:3]}")
         pg.close()
+    # ================================================================= GOAL THREE
+    # THE TWO BRANCH LAYERS, MEASURED FROM THE RENDERED SVG ATTRIBUTES.
+    #
+    # The Run 94 driver's own project has NO module with a current result, so every
+    # module -> category line there renders in its unestimable STATE (0.14) and there is no live
+    # one to compare against. That measurement is reported as it stands; this one supplies a row
+    # whose modules DO carry results, which is the only way to see the LIVE tier of both layers.
+    # The production file is loaded and its own `render` is called; nothing is reimplemented.
+    FLOWPAGE = """<!doctype html><meta charset="utf-8"><style>__CSS__</style>
+    <body><div id="flowhost" style="width:1240px"></div></body>"""
+    for VW in (1280, 1024):
+        say("=" * 96)
+        say(f"GOAL THREE -- SIGNAL FLOW BRANCH ATTRIBUTES AT {VW}px")
+        pg = b.new_page(viewport={"width": VW, "height": 2400})
+        errs = []
+        pg.on("pageerror", lambda e: errs.append(str(e)))
+        pg.set_content(FLOWPAGE.replace("__CSS__", CSS))
+        for f in ("assets/js/config.js", "assets/js/taxonomy.js", "assets/js/categories.js"):
+            pg.add_script_tag(content=(ROOT / f).read_text(encoding="utf-8"))
+        prow = json.loads((SCRATCH / "row_posture.json").read_text())
+        pg.evaluate("""(r)=>{
+          window.LinResults = { rowFor: () => r, all: () => [r] };
+          window.LinDocs = window.LinDocs || { statusFor: () => ({}) };
+          /* `isUploaded` is filled from the DOCUMENTS PANEL'S OWN event walk -- the chart calls
+             `LinDetail.uploadedDocEvents(project)` rather than reading a field -- so a document
+             type is marked uploaded here by supplying that event log, which is the same shape
+             the panel renders. Without it every doc -> module line renders in its not-uploaded
+             STATE and there is no live tier to compare. */
+          const types = Object.keys((r.signal_inputs && r.signal_inputs.sources) || {});
+          window.LinDetail = window.LinDetail || {};
+          window.LinDetail.uploadedDocEvents = () =>
+            types.map(t => ({ type:'signals_extracted', docType:t }));
+        }""", prow)
+        pg.add_script_tag(content=FLOW)
+        ok = pg.evaluate("""(r)=>{
+          try {
+            window.LinNeuralFlow.render(
+              /* The shape the chart actually reads: `simulationSignals.signal_array` is what
+                 builds its method-class lookup, and `documents` is what marks a type uploaded.
+                 Measured, not guessed: with only `module_results` supplied every line rendered
+                 in its unestimable STATE and there was no live tier to compare. */
+              { id:'run96', project_id:'run96', name:'Run 96', sector:'construction',
+                project_status:r.project_status, category_statuses:r.category_statuses,
+                module_results:r.module_results, signal_inputs:r.signal_inputs,
+                simulationSignals:{ signal_array:r.module_results },
+                documents:(r.signal_inputs && r.signal_inputs.sources)
+                            ? Object.keys(r.signal_inputs.sources).map(
+                                function(k){ return { doc_type:k, uploaded:true }; })
+                            : [] },
+              document.getElementById('flowhost'));
+            return 'rendered';
+          } catch (e) { return 'ERROR ' + e.message; }
+        }""", prow)
+        say(f"  render: {ok}")
+        m = pg.evaluate("""() => {
+          const rows = (t) => Array.from(document.querySelectorAll(
+              '[data-edge-type="' + t + '"]')).map(e => (e.getAttribute('opacity')||'?') +
+              ' @ ' + (e.getAttribute('stroke-width')||'?') + 'px');
+          const tally = (a) => a.reduce((m,k)=>(m[k]=(m[k]||0)+1,m),{});
+          const term = Array.from(document.querySelectorAll('[data-edge-terminates]')).map(e=>
+            [e.getAttribute('data-edge-terminates'), e.getAttribute('opacity'),
+             !!e.getAttribute('stroke-dasharray'), !!e.getAttribute('marker-end')].join('|'));
+          return { dm: tally(rows('DOCUMENT -> MODULE')), mc: tally(rows('MODULE -> CATEGORY')),
+                   term: tally(term) };
+        }""")
+        say(f"    DOCUMENT -> MODULE   {m['dm']}")
+        say(f"    MODULE   -> CATEGORY {m['mc']}")
+        LIVE_DM = {k for k in m["dm"] if not k.startswith("0.12")}
+        LIVE_MC = {k for k in m["mc"] if not k.startswith("0.14")}
+        say(f"    LIVE TIER doc->mod {sorted(LIVE_DM)}")
+        say(f"    LIVE TIER mod->cat {sorted(LIVE_MC)}")
+        say(f"    GOAL THREE MET -- the two layers render at the SAME opacity and stroke "
+            f"treatment: {LIVE_DM == LIVE_MC and len(LIVE_MC) > 0}")
+        say(f"    STATE OPACITIES UNTOUCHED -- 0.14 on an unestimable mod->cat: "
+            f"{any(k.startswith('0.14') for k in m['mc'])}; 0.12 on a not-uploaded doc->mod: "
+            f"{any(k.startswith('0.12') for k in m['dm'])}")
+        say(f"    CATEGORY -> STATUS terminations (must be unchanged): {m['term']}")
+        say(f"  PAGE ERRORS: {errs[:2]}")
+        pg.close()
     b.close()
 say("RUN 96 CARD DRIVE COMPLETE")

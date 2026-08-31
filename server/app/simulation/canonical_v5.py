@@ -72,28 +72,17 @@ from .canonical_v3 import _f, _provenance, _rows
 # =================================================================================================
 
 #: Module id -> the signal-inputs key carrying its defining v5 structure.
+#:
+#: RUN 96 REMOVED EIGHTEEN ENTRIES. `test_run30_non_vacuity`'s fault 34 exists to catch an ORPHAN
+#: STRUCTURE -- one a caller may write and no registered module reads -- and it caught exactly
+#: that here: the owner's Run 96 ruling removed the B2 modules from the registry and their
+#: structure declarations survived them. A structure with no reader is a key the intake would go
+#: on accepting and nothing would ever consume, which is the defect that guard names.
 V5_STRUCTURE_KEYS: dict[str, str] = {
     "B1.2": "signalWeightPolicy",
-    "B2.1": "evidenceMassFunctions",
-    "B2.2": "roughDecisionTable",
-    "B2.3": "neutrosophicAssessment",
-    "B2.4": "intervalFuzzyAssessment",
-    "B2.5": "zNumberAssessment",
-    "B2.6": "probabilisticLinguisticAssessment",
-    "B2.7": "plithogenicLabStructure",
-    "B2.8": "beliefRuleBase",
-    "B2.10": "pythagoreanFuzzyAssessment",
-    "B2.11": "pictureFuzzyAssessment",
-    "B2.12": "hesitantFuzzyAssessment",
-    "B2.13": "type2FuzzyAssessment",
-    "B2.14": "maximumEntropyProblem",
-    "B2.15": "possibilityAssessment",
-    "B2.16": "sphericalFuzzyAssessment",
-    "B2.17": "fermateanFuzzyAssessment",
     "B2.18": "decisionAlternatives",
-    "B2.19": "decisionAlternatives",
-    "B2.20": "hypersoftLabStructure",
 }
+
 
 #: The plain words for what each structure IS. These reach a reader in the abstention sentence,
 #: so they carry no module id, no key name and no reason code, per the naming rules.
