@@ -1432,6 +1432,17 @@
       if (resp.result.project_status_basis && !p.storedResult.project_status_basis) {
         p.storedResult.project_status_basis = resp.result.project_status_basis;
       }
+      // THE EIGHTH FIELD, RUN 97, AND IT IS THE SECOND HALF OF WHY RUN 96'S CARD NEVER
+      // REACHED A PARTICIPANT. `decision_brief` -- the eight composed blocks of the Governance
+      // Decision card -- is produced by `documents.py _result_view` and is NOT on the list
+      // projection. `rowFor` prefers `storedResult`, so the card's own renderer, reading the
+      // brief off whatever `rowFor` returns, found nothing on every detail page. MEASURED in a
+      // real browser at 1280px and 1024px before this graft: `rowFor(p).decision_brief` false
+      // while the server composed the full object. Same graft, same guarded shape, same reason
+      // as the seven fields above.
+      if (resp.result.decision_brief && !p.storedResult.decision_brief) {
+        p.storedResult.decision_brief = resp.result.decision_brief;
+      }
     } else if (!p.storedResult) {
       // a_get delivered no storedResult (a race, or the list projection had not attached it
       // yet) but the row exists. Attach it so every rowFor(p) on this page reads the complete

@@ -1453,25 +1453,26 @@
     const d = deriveDecision(p);
     const stateClass = d.healthState.toLowerCase().replace("-review", "");
 
+    // THE CARD ITSELF, RUN 97. Composed server-side by `server/app/decision_brief.py` from the
+    // stored row and carried on the served result as `decision_brief`; laid out by the single
+    // production renderer in `decision-ui.js`. Nothing below is composed in the browser.
+    //
+    // WHAT THIS REPLACED, AND WHY. Until Run 97 this card printed a "Recommended action"
+    // heading over three fields: Conflict, Authority and Documentation required. Two of the
+    // three had no source at all and said so on the page ("Not established: the platform holds
+    // no assigned authority", "...no documentation requirement"), and the heading named an
+    // output the platform does not produce. The playbook replaces all three: the finding, its
+    // drivers, the evidence used and the limitations, each composed from stored figures, plus
+    // the decision question. A block the composer cannot fill is omitted, not shown empty.
+    const row = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(p) : null;
+    const brief = row && row.decision_brief;
+    const briefHtml = (brief && window.LinDecisionUI && LinDecisionUI.renderBrief)
+      ? LinDecisionUI.renderBrief(brief) : "";
+
     // The courses of action, generated at display time from the stored row. See
     // recommendation_options.js: every consequence is a stored figure or a stated absence.
     const optionsHtml = (window.LinRecOptions && LinRecOptions.htmlForProject)
       ? LinRecOptions.htmlForProject(p) : "";
-
-    // AUTHORITY IS READ FROM THE STORED RESULT, NOT FROM A LITERAL. The governance module in
-    // the Recommendation and Governance group stores the authority it assigned; that is the
-    // only authority the platform holds. deriveDecision's own authority string is a literal
-    // with nothing behind it, so it is used only as a last resort and labelled when absent.
-    const spec = (window.LinRecOptions && LinRecOptions.buildForProject)
-      ? LinRecOptions.buildForProject(p) : null;
-    const authorityText = (spec && spec.authority)
-      ? spec.authority
-      : "Not established: the platform holds no assigned authority for this project.";
-    // DOCUMENTATION REQUIRED IS NOT STORED ANYWHERE. Neither the analytical layer nor the
-    // stored result records a documentation requirement; the previous value here was a
-    // literal in the browser rules with no source behind it. Marked, not dressed up.
-    const documentationText =
-      "Not established: the platform holds no documentation requirement for this state.";
 
     const fairnessBlock = d.fairnessGateRequired
       ? `<label class="fairness-gate">
@@ -1485,17 +1486,12 @@
       `<div class="dc-head">
          <div>
            <p class="eyebrow">Governance decision</p>
-           <h2>Recommended action</h2>
+           <h2>Decision brief</h2>
          </div>
          <span class="state-badge state-${esc(stateClass)}">${esc(d.healthState)}</span>
        </div>
-       <div class="dc-grid">
-         <div class="dc-field"><span class="dc-label">Conflict</span><span class="dc-value">${esc(d.conflictType)}</span></div>
-         <div class="dc-field"><span class="dc-label">Authority</span><span class="dc-value" id="dc-authority">${esc(authorityText)}</span></div>
-         <div class="dc-field dc-wide"><span class="dc-label">Documentation required</span><span class="dc-value" id="dc-documentation">${esc(documentationText)}</span></div>
-       </div>
+       ${briefHtml}
        ${optionsHtml}
-       <p class="dc-caveat">Recommended actions require named human approval before they are recorded; fairness gates require contractor response opportunity before any formal action.</p>
        ${actionPlanHtml(p)}
        ${fairnessBlock}
        <label class="rationale-label">Reviewer rationale <span class="req">(required, min 20 characters)</span>
@@ -1505,7 +1501,7 @@
          <button class="btn export-btn">Export audit JSON</button>
          <button class="btn export-xlsx-btn">Export Report (XLSX)</button>
        </div>
-       <p class="dc-note">Recommendation only: a named human reviewer records the decision. The recommendation does not trigger any action on its own.</p>`;
+       <p class="dc-note">The platform states a finding and a question. A named human reviewer records the decision; nothing here triggers any action on its own.</p>`;
 
     wireDecisionControls(p, d, root);
   }

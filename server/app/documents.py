@@ -2717,7 +2717,14 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
             "simulation_version": row.simulation_version,
             "seed": row.seed,
             "period": row.period,
-            "period_cutoff": row.period_cutoff,
+            # RUN 97, GOAL ZERO, THE FIRST OF TWO BREAKS. This was `row.period_cutoff`, a
+            # `datetime.date`, which `json.dumps` cannot encode. `decision_brief` copies it
+            # through to the response, so EVERY `projectresults` call raised TypeError and
+            # returned a 500 -- measured in a real browser: the detail page's served result
+            # never arrived at all, `rowFor(p).period` was null, and the Governance Decision
+            # card fell back to its awaiting state. Line 2664 already stringifies the same
+            # column for the same response; this now matches it.
+            "period_cutoff": str(row.period_cutoff) if row.period_cutoff else None,
             "computed_at": row.computed_at.isoformat() if row.computed_at else None,
         },
         source_documents=row.source_documents,

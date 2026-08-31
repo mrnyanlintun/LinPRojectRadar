@@ -942,7 +942,15 @@
      card measures what a participant is shown, with the real stylesheet, at a real viewport.
      A card that was never rendered was never built, and this is how it is rendered. It reads
      nothing and writes nothing; it only hands out the functions above. */
+  /* RUN 97. THE CARD'S PRODUCTION ENTRY POINT.
+
+     Run 96 published these functions only as `__cardForTest` and rendered the card only on the
+     participant reveal screen. The operational Governance Decision card on the project detail
+     page is `LinApp.renderDecisionCard`, a different function in a different file, which never
+     saw any of this -- so the owner's own route went on printing the pre-playbook card. The
+     renderer is one implementation with two hosts; this is how the second one reaches it. */
   window.LinDecisionUI = window.LinDecisionUI || {};
+  window.LinDecisionUI.renderBrief = renderDecisionBrief;
   window.LinDecisionUI.__cardForTest = {
     renderDecisionBrief: renderDecisionBrief,
     renderPosture: renderPosture,
