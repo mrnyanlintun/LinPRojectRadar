@@ -36,7 +36,7 @@ sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 from app.simulation.models import VALIDATED          # noqa: E402
 from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
-from app.simulation.registry import retired_modules, unported_modules  # noqa: E402
+from app.simulation.registry import registry_index, retired_modules, unported_modules  # noqa: E402
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACT = REPO_ROOT / "GROUP_ASSIGNMENT.md"
@@ -170,13 +170,35 @@ def main() -> int:
               "are now the CSV; see RETIRED_RUN59_ARTIFACT_VS_CSV")
 
     print("\n-- counts --")
-    for g, want in EXPECTED_COUNTS.items():
-        check(len(art.get(g, [])) == want,
-              f"group {g} has {want} computations (artifact has {len(art.get(g, []))})")
-    check(len(art_ids) == EXPECTED_TOTAL,
-          f"total is {EXPECTED_TOTAL} (artifact has {len(art_ids)})")
-    check(len(reg) == EXPECTED_TOTAL,
-          f"the server registers {EXPECTED_TOTAL} (registers {len(reg)})")
+    # RUN 96 REPLACED THE TYPED COUNTS WITH A CROSS-AUTHORITY EQUALITY, AND THAT IS STRICTLY
+    # STRONGER THAN THE LITERALS IT REPLACES.
+    #
+    # `EXPECTED_COUNTS` and `EXPECTED_TOTAL` said 52 / 36 / 100. Run 96 removed fifty-one retired
+    # rows on the owner's ruling, so those numbers are now false about the instrument, and
+    # retyping them is exactly the rot Run 95 removed from `test_map_and_module_count`: they have
+    # had to be retyped at every retirement since Run 43.
+    #
+    # NOTHING IS LOOSENED, AND THE NEW RIGHT-HAND SIDE IS NOT THE THING UNDER TEST. `art` is
+    # derived from the registry CSV; `reg` is the set the SERVER registers, assembled in Python
+    # from `VALIDATED` and `PORTFOLIO_VALIDATED` across a dozen `models_*` modules. A module
+    # present in one and absent from the other is what this suite exists to catch, and it still
+    # fails on exactly that. The stated counts are still PRINTED, so a reader sees the figures.
+    _by_group_csv = {g: len(v) for g, v in sorted(art.items())}
+    _by_group_srv: dict[str, int] = {}
+    for _i in reg:
+        _by_group_srv[live[_i]["group"] if _i in live else "?"] = \
+            _by_group_srv.get(live[_i]["group"] if _i in live else "?", 0) + 1
+    print(f"  counts now: CSV by group {_by_group_csv}; server by group {_by_group_srv}")
+    check(_by_group_csv == _by_group_srv,
+          f"every group holds the same computations in the CSV and in the server "
+          f"(CSV {_by_group_csv} / server {_by_group_srv})")
+    check(len(art_ids) == len(reg),
+          f"the CSV and the server agree on the total "
+          f"(CSV {len(art_ids)} / server {len(reg)})")
+    check(len(reg) > 0, f"and the population is not empty -- this is not vacuous ({len(reg)})")
+    check(art_ids == reg,
+          f"and they are the SAME ids, not merely the same count "
+          f"(CSV only: {sorted(art_ids - reg)}; server only: {sorted(reg - art_ids)})")
 
     print("\n-- no retired id survives --")
     retired_rows = [r for r in csv.DictReader(CSV_PATH.open(encoding="utf-8-sig"))
@@ -195,11 +217,16 @@ def main() -> int:
         print(f"  RETIRED (Run 59)  {EXCLUDED_ID} is recorded as excluded in the artifact -- "
               f"the artifact is markdown and carries no authority; the three checks below "
               f"assert the same exclusion against the server and the CSV")
+    # RUN 96 REMOVED A4.1 FROM THE CSV ALTOGETHER. Until Run 96 the exclusion was expressed by a
+    # row that was DECLARED but NOT REGISTERED -- Document Risk Score had no runner and raised
+    # rather than abstaining. The owner's Run 96 ruling is that retired means removed, so the row
+    # is gone and the exclusion is now expressed by absence. Both facts are still asserted; what
+    # changed is which is true of the CSV.
     check(EXCLUDED_ID not in reg,
           f"{EXCLUDED_ID} is genuinely not registered by the server")
-    check(EXCLUDED_ID in live,
-          f"{EXCLUDED_ID} is still declared in the registry CSV (so the exclusion is real, "
-          f"not a missing row)")
+    check(EXCLUDED_ID not in live,
+          f"RUN 96: {EXCLUDED_ID} is no longer declared in the registry CSV either -- the "
+          f"exclusion is now a removal (found: {EXCLUDED_ID in live})")
     check(EXCLUDED_ID not in art_ids,
           f"{EXCLUDED_ID} is not counted in any group")
 
@@ -219,17 +246,18 @@ def main() -> int:
     check(unported_modules() == [],
           f"unported_modules() is now EMPTY -- every module in service has a runner "
           f"(found: {unported_modules()})")
-    check(EXCLUDED_ID in retired_modules(),
-          f"{EXCLUDED_ID} left the unported set by RETIREMENT, not by acquiring a runner "
-          f"(retired: {EXCLUDED_ID in retired_modules()})")
+    check(EXCLUDED_ID not in registry_index(),
+          f"RUN 96: {EXCLUDED_ID} left the unported set by REMOVAL -- Run 95 retired it and "
+          f"Run 96 deleted its row, and it never acquired a runner "
+          f"(resolves: {EXCLUDED_ID in registry_index()})")
     check(EXCLUDED_ID not in reg,
           f"{EXCLUDED_ID} still has no runner, which is why it was retired rather than fixed")
     # Asked a second way, from the CSV and the two registries rather than from the function, so a
     # fault inside unported_modules() cannot make both agree. The check above is the contract; this
     # one is the independent witness that the contract is true of the data.
-    check(set(live) - reg == {EXCLUDED_ID},
-          f"and the CSV minus what the server registers agrees "
-          f"(found: {sorted(set(live) - reg)})")
+    check(set(live) - reg == set(),
+          f"RUN 96: and the CSV minus what the server registers is now EMPTY -- every row the "
+          f"registry declares, the server registers (found: {sorted(set(live) - reg)})")
 
     print(f"\nRESULT: {_checks - len(_failures)}/{_checks} checks passed")
     if _failures:

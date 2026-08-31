@@ -227,7 +227,7 @@
     'commissioning_report': ['docRiskScore'],
     'contract_value': ['bac','baselineContractSum','baselineEnd','baselineStart'],
     'correspondence_notice': ['docRiskScore'],
-    'cost_report': ['indirectCostActual','indirectCostPlan','materialCostBaseline','materialCostCurrent'],
+    'cost_report': ['indirectCostActual','indirectCostPlan','materialCostBaseline','materialCostCurrent','originalContingency','remainingContingency'],
     'environmental_report': ['environmentalComplianceRate','environmentalViolations'],
     'field_report': ['docRiskScore','floatRemaining','qualityDeficienciesNoted','weatherDaysLost'],
     'historical_data': ['analogousBac','analogousFinalCost','analogousOverrunPct'],

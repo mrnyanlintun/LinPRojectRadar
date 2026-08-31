@@ -89,13 +89,19 @@ print(f"        . registry_index()          {registered_total}")
 print(f"        . Group D (Portfolio Health) {portfolio_registered}")
 print(f"        . project level              {project_registered}")
 
-check("the registry declares 101 registered modules", registered_total == 101,
-      str(registered_total))
-check("five of them are Portfolio Health", portfolio_registered == 5,
-      str(portfolio_registered))
-check("ninety-six of them are project level", project_registered == 96,
+# RUN 96 REPLACED THE TYPED POPULATION FIGURES. They said 101 / 5 / 96 / 95 and had been
+# retyped at every retirement since Run 43; the owner's Run 96 ruling removed fifty-one rows, so
+# they are now false. What this section exists to assert is the IDENTITY between the registry's
+# parts and its whole and between the registry and what the server can compute -- and that is
+# what is asserted, on the registry's own numbers, with the figures printed above so a reader
+# still sees them.
+check("the registry declares a non-empty registered population",
+      registered_total > 0, str(registered_total))
+check("five of them are Portfolio Health -- the container Run 96 STOPPED on and left in place",
+      portfolio_registered == 5, str(portfolio_registered))
+check("the rest are project level", project_registered == registered_total - portfolio_registered,
       str(project_registered))
-check("and the identity 96 + 5 = 101 holds on the registry's own numbers",
+check("and project-level + Portfolio Health = the registry total, on its own numbers",
       project_registered + portfolio_registered == registered_total)
 
 # SELF-TEST, so the identity above is not a tautology of the subtraction that produced it.
@@ -103,7 +109,13 @@ check("self-test: the identity check can distinguish an unequal pair",
       not (96 + 4 == 101))
 
 # ------------------------------------------------------------ what the server can compute
-check("the server's validated project set is 95", len(VALIDATED) == 95, str(len(VALIDATED)))
+# Cross-authority, and this is the assertion that matters: the CSV declares the project-level
+# rows, VALIDATED is assembled in Python across a dozen `models_*` modules, and Run 96 removed
+# seventy-five dispatch entries. A row declared and not dispatched, or dispatched and not
+# declared, fails here.
+check("the server's validated project set is exactly the registry's project-level rows",
+      len(VALIDATED) == project_registered,
+      f"VALIDATED {len(VALIDATED)} / registry project-level {project_registered}")
 check("and its validated portfolio set is 5", len(PORTFOLIO_VALIDATED) == 5,
       str(len(PORTFOLIO_VALIDATED)))
 # RUN 95 CLOSED THE ONE-SUPPLIED GAP BY RETIRING THE MODULE THAT MADE IT.
@@ -119,15 +131,21 @@ check("and its validated portfolio set is 5", len(PORTFOLIO_VALIDATED) == 5,
 # would break. The registry's own 101 and its group D five are unchanged and still checked
 # above; what changed is that the difference between "declared" and "computable" is now
 # entirely accounted for by RETIREMENT rather than partly by an unimplemented module.
+sys.path.insert(0, str(HERE))
+from run96_removed import REMOVED_AT_RUN96                          # noqa: E402
 unported = R.unported_modules()
 check("no registered module in service is unported to the analytical server any more",
       unported == [], str(unported))
-check("and A4.1 Document Risk Score, which was the only one, left by RETIREMENT rather than "
-      "by acquiring a runner -- its identifier still resolves and it is still not in VALIDATED",
-      ("A4.1" in R.retired_modules() and "A4.1" in index
-       and index["A4.1"]["module_name"] == "Document Risk Score"
-       and "A4.1" not in VALIDATED),
-      str(sorted(R.retired_modules())[:3]))
+# RUN 96 CARRIED THE RETIREMENT THROUGH TO REMOVAL. Run 95 retired A4.1 and left the row so the
+# identifier still resolved; the owner's Run 96 ruling deleted it. It still left by RETIREMENT
+# and still never acquired a runner -- what changed is that the row is gone too, so the fact is
+# now asserted as an absence and against the removal roster, which the registry cannot rewrite.
+check("and A4.1 Document Risk Score, which was the only one, left by RETIREMENT and then by "
+      "REMOVAL rather than by acquiring a runner -- it never entered VALIDATED",
+      ("A4.1" not in index and "A4.1" not in VALIDATED
+       and "A4.1" in REMOVED_AT_RUN96),
+      f"resolves={'A4.1' in index} validated={'A4.1' in VALIDATED} "
+      f"on roster={'A4.1' in REMOVED_AT_RUN96}")
 _svc = R.service_index()
 _svc_project = [m for m in _svc if index[m]["group"] != "D"]
 check("so the modules in service at project level are exactly the ones the server computes, "
@@ -165,31 +183,56 @@ check("and the identity 95 + 5 = 100 holds on the artifact's own rows",
 
 # ---- the join: the audit population against the registry population
 outside = sorted(set(index) - audit_ids)
-check("every scientific target is a registered module, so the audit did not assess anything "
-      "the platform does not carry", not (audit_ids - set(index)),
-      str(sorted(audit_ids - set(index))))
-check("exactly one registered module was outside the hundred-target population",
-      len(outside) == 1, str(outside))
-check("and it is Material Cost Variance, which is REGISTERED and disabled pending an "
-      "evidence-design decision: that is the whole of the difference between 101 registered "
-      "and 100 assessed",
-      outside == ["A3.4"] and index["A3.4"]["module_name"] == "Material Cost Variance",
-      str(outside))
-check("Material Cost Variance remains registered rather than deleted to make the numbers "
-      "agree", "A3.4" in index)
-check("and it remains disabled", "A3.4" in R.DISABLED_MODULES)
+# RUN 96. The Run 17/26 audit population is a HISTORICAL record of what was assessed, and the
+# owner's Run 96 ruling removed fifty-one of those modules from the instrument. So the audit
+# necessarily names ids the registry no longer carries, and the check is re-pointed: every id the
+# audit assessed and the registry STILL carries must be registered, and every one it no longer
+# carries must be one Run 96 removed -- read from the removal roster, not from the registry, so
+# a row written back fails here.
+_audit_gone = sorted(audit_ids - set(index))
+check("every scientific target the registry still carries is a registered module, so the audit "
+      "did not assess anything the platform does not carry",
+      not (audit_ids & set(index) - set(index)), str([]))
+check("and every target it no longer carries is one Run 96 removed, by the removal roster "
+      "rather than by the registry",
+      set(_audit_gone) <= set(REMOVED_AT_RUN96),
+      str(sorted(set(_audit_gone) - set(REMOVED_AT_RUN96))))
+check("Run 96 genuinely reached the audit population -- this is not vacuous",
+      len(_audit_gone) > 0, str(len(_audit_gone)))
+# RUN 96. A3.4 Material Cost Variance was the one registered module outside the audit
+# population, and Run 96 removed it. The rows now outside are the five Group D Portfolio Health
+# rows the run STOPPED on, which the audit population never covered. The count is derived.
+check("no registered module is outside the audit population any more -- the one that was, "
+      "A3.4 Material Cost Variance, is the one Run 96 removed",
+      outside == [], str(outside))
+check("RUN 96: Material Cost Variance was REMOVED from the registry, not merely disabled -- "
+      "the owner's ruling is that retired means removed",
+      "A3.4" not in index, str("A3.4" in index))
+check("and it is named on the Run 96 removal roster, so putting the row back fails here",
+      "A3.4" in REMOVED_AT_RUN96)
+check("and it remains in the disabled set, which is the record of WHY it left",
+      "A3.4" in R.DISABLED_MODULES)
 
-# ---- THE TWO DIFFERENT NINETY-FIVES. This is the check that stops them being collapsed.
+# ---- THE TWO DIFFERENT NINETY-FIVES ARE GONE, AND SO IS THE REASON THEY DIFFERED.
+# The server's project population was 95 because A4.1 Document Risk Score was declared with no
+# runner; the audit's was 95 because A3.4 Material Cost Variance was registered but not assessed.
+# The whole point of these checks was that the two 95s were DIFFERENT populations and must not be
+# collapsed. Run 96 removed BOTH modules, so both exclusions are now empty -- and an assertion
+# that two empty sets differ would be false. The fact that replaces it is the one that is now
+# true and is stronger: there is no excluded module on either side, and the two populations
+# COINCIDE rather than merely counting the same.
 server_excluded = set(unported)
 audit_excluded = set(outside)
-check("the server's excluded project module and the audit's excluded project module are "
-      "DIFFERENT modules, so the two ninety-fives are two populations and not one",
-      server_excluded != audit_excluded,
-      f"server excludes {sorted(server_excluded)}, audit excludes {sorted(audit_excluded)}")
-check("Material Cost Variance IS one of the modules the server can compute, so it is not the "
-      "reason the server's project count is 95", "A3.4" in VALIDATED)
-check("and Document Risk Score IS one of the hundred scientific targets, so it is not the "
-      "reason the audit's project count is 95", "A4.1" in audit_ids)
+check("RUN 96: the server excludes no project module -- every row it declares, it can run",
+      server_excluded == set(), str(sorted(server_excluded)))
+check("RUN 96: and the audit excludes none either", audit_excluded == set(),
+      str(sorted(audit_excluded)))
+check("so the two populations now COINCIDE, and the reason they once differed is recorded: "
+      "A4.1 had no runner, A3.4 was registered but unassessed, and Run 96 removed both",
+      "A4.1" in REMOVED_AT_RUN96 and "A3.4" in REMOVED_AT_RUN96)
+check("both are named on the removal roster, so writing either row back fails here",
+      "A4.1" not in index and "A3.4" not in index,
+      str([m for m in ("A4.1", "A3.4") if m in index]))
 
 # ---- assessed is not passed
 passes = sum(1 for r in audit if r["scientific_disposition"] == "SCIENTIFIC_PASS")

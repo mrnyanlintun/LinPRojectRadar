@@ -549,6 +549,54 @@ with sync_playwright() as pw:
                     f"distinct rim colours drawn: {len(set(m.get('identityColor') for m in moons))}")
                 say(f"  attrs: {N['attrs']}")
                 say(f"  note: {N['note']}")
+        # ---------------------------------------------------- RUN 96, GOAL THREE
+        # THE TWO BRANCH LAYERS, READ BACK OUT OF THE RENDERED SVG ATTRIBUTES.
+        # Not asserted from the source file: these are the attributes the browser holds after
+        # the chart drew itself, at this viewport.
+        BRANCHES = r"""() => {
+          const grab = (t) => Array.from(document.querySelectorAll(
+              '[data-edge-type="' + t + '"]')).map(e => ({
+            op: e.getAttribute('opacity'),
+            w: e.getAttribute('stroke-width'),
+            cls: e.getAttribute('class') || '',
+            term: e.getAttribute('data-edge-terminates')
+          }));
+          const cat = Array.from(document.querySelectorAll('[data-edge-terminates]')).map(e => ({
+            term: e.getAttribute('data-edge-terminates'),
+            op: e.getAttribute('opacity'),
+            dash: e.getAttribute('stroke-dasharray'),
+            marker: e.getAttribute('marker-end') || ''
+          }));
+          const tally = (rows) => {
+            const m = {};
+            rows.forEach(r => { const k = r.op + ' @ ' + r.w + 'px'; m[k] = (m[k]||0)+1; });
+            return m;
+          };
+          return { docMod: tally(grab('DOCUMENT -> MODULE')),
+                   modCat: tally(grab('MODULE -> CATEGORY')),
+                   nDocMod: grab('DOCUMENT -> MODULE').length,
+                   nModCat: grab('MODULE -> CATEGORY').length,
+                   catStatus: cat };
+        }"""
+        try:
+            _b = pg.evaluate(BRANCHES)
+            say("  " + "=" * 70)
+            say(f"  RUN 96 GOAL THREE, RENDERED BRANCH ATTRIBUTES AT {VW}px")
+            say(f"    DOCUMENT -> MODULE  n={_b['nDocMod']}  opacity@width: {_b['docMod']}")
+            say(f"    MODULE   -> CATEGORY n={_b['nModCat']} opacity@width: {_b['modCat']}")
+            _dm = set(_b['docMod']); _mc = set(_b['modCat'])
+            say(f"    THE TWO LAYERS USE THE SAME OPACITY/STROKE TREATMENT: "
+                f"{_dm == _mc}   (doc->mod {sorted(_dm)} / mod->cat {sorted(_mc)})")
+            _terms = {}
+            for _c in _b['catStatus']:
+                _k = (_c['term'], _c['op'], bool(_c['dash']), bool(_c['marker']))
+                _terms[_k] = _terms.get(_k, 0) + 1
+            say(f"    CATEGORY -> STATUS terminations (must be unchanged: "
+                f"'at-centre' with a marker, 'short' dashed without one): {_terms}")
+            say(f"    STATE OPACITY 0.14 STILL PRESENT ON AN UNESTIMABLE mod->cat LINE: "
+                f"{any('0.14' in k for k in _b['modCat'])}")
+        except Exception as _e:                                        # noqa: BLE001
+            say(f"  RUN 96 BRANCH MEASUREMENT FAILED: {_e}")
         say(f"  PAGE ERRORS: {errs}")
         pg.close()
     b.close()

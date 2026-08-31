@@ -936,4 +936,21 @@
     $("dc-decide-btn").addEventListener("click", submitDecision);
     $("dc-advance-btn").addEventListener("click", advance);
   }
+
+  /* RUN 96. THE CARD'S TEST SEAM, on the pattern detail.js already uses for `__briefForTest`.
+     It exports the PRODUCTION render functions -- not copies -- so a browser measurement of the
+     card measures what a participant is shown, with the real stylesheet, at a real viewport.
+     A card that was never rendered was never built, and this is how it is rendered. It reads
+     nothing and writes nothing; it only hands out the functions above. */
+  window.LinDecisionUI = window.LinDecisionUI || {};
+  window.LinDecisionUI.__cardForTest = {
+    renderDecisionBrief: renderDecisionBrief,
+    renderPosture: renderPosture,
+    renderDrivers: renderDrivers,
+    renderForecast: renderForecast,
+    renderLimitations: renderLimitations,
+    renderVoting: renderVoting,
+    renderReviewer: renderReviewer,
+    renderAudit: renderAudit
+  };
 })();
