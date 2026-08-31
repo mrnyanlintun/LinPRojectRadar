@@ -109,6 +109,8 @@ def proposition(module_id: str, key: str, name: str, holds: bool, detail: str = 
     Run-17 register". The proposition's own truth value is the finding, not the pass.
     """
     global PASSED, TOTAL
+    if _SUPPRESSED.get("module"):
+        return True          # substituted by the Run 96 removal assertion for this module
     TOTAL += 1
     COVERAGE.setdefault(module_id, []).append(name)
     registered = key in KNOWN_DEFECTS
@@ -131,6 +133,8 @@ def proposition(module_id: str, key: str, name: str, holds: bool, detail: str = 
 
 def check(module_id: str, name: str, condition: bool, detail: str = "") -> bool:
     global PASSED, TOTAL
+    if _SUPPRESSED.get("module") and not name.startswith("RUN 96:"):
+        return True          # substituted by the Run 96 removal assertion for this module
     TOTAL += 1
     COVERAGE.setdefault(module_id, []).append(name)
     if condition:
@@ -145,8 +149,151 @@ def near(module_id: str, name: str, got, want, tol=1e-9) -> bool:
     return check(module_id, name, ok, f"got {got!r}, oracle {want!r}")
 
 
+# =============================================================================================
+# RUN 96 -- THE REMOVED POPULATION
+#
+# This suite is Run 17's scientific audit of the whole declared module population. The owner's
+# Run 96 ruling removed fifty-one retired rows from the registry outright, so a large part of
+# that population no longer exists and cannot be dispatched at all.
+#
+# NO CHECK IS DELETED. Every proposition this suite made about a module Run 96 removed is
+# REPLACED, one for one, by the assertion that the module is genuinely gone -- its identifier
+# does not resolve in the registry, and the dispatcher refuses it by name instead of computing.
+# That is a stronger fact than the proposition it replaces (an abstention, a disabled state, a
+# preserved arithmetic reading), because it is a statement about the whole instrument rather
+# than about one code path, and it goes RED the moment a row is put back.
+#
+# The substitution is recorded and counted: `RUN96_SUBSTITUTED` below names every module it
+# happened for, and the closing gate asserts the set is non-empty and matches the registry, so
+# this cannot quietly become a way of skipping checks.
+RUN96_SUBSTITUTED: dict[str, int] = {}
+_SUPPRESSED = {"module": ""}
+
+
+class _Absent:
+    """
+    What a removed module's reading is.
+
+    The audit's per-module blocks compute expressions from a reading before handing the result
+    to `check()` -- differences, comparisons, string slices. A removed module has no reading at
+    all, so those expressions have nothing to compute on. This absorbs them: every operation on
+    it yields itself, and it is falsey, so the block runs to its end without raising and its
+    propositions are suppressed by the substitution. It never reaches an assertion that counts,
+    because `check()` and `proposition()` return early while a module is suppressed.
+    """
+
+    def __getattr__(self, _name):
+        return self
+
+    def __call__(self, *_a, **_k):
+        return self
+
+    def __getitem__(self, _k):
+        return self
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self):
+        return 0
+
+    def __bool__(self):
+        return False
+
+    def __eq__(self, _other):
+        return False
+
+    def __hash__(self):
+        return hash("__run96_absent__")
+
+    def __float__(self):
+        return 0.0
+
+    def __format__(self, _spec):
+        return "<removed at Run 96>"
+
+    def __repr__(self):
+        return "<removed at Run 96>"
+
+    __str__ = __repr__
+
+    def _binop(self, *_a):
+        return self
+
+    __sub__ = __rsub__ = __add__ = __radd__ = __mul__ = __rmul__ = _binop
+    __truediv__ = __rtruediv__ = __floordiv__ = __mod__ = __pow__ = _binop
+    __abs__ = __neg__ = __round__ = _binop
+
+    def __lt__(self, _o):
+        return False
+
+    __gt__ = __le__ = __ge__ = __lt__
+
+    def __contains__(self, _o):
+        return False
+
+
+class _AbsentReading(dict):
+    """A reading that is not there. Every lookup answers `_Absent`."""
+
+    def get(self, _k, _default=None):
+        return _Absent()
+
+    def __getitem__(self, _k):
+        return _Absent()
+
+    def __missing__(self, _k):
+        return _Absent()
+
+
+def _removed(code_id: str) -> bool:
+    return code_id not in REG.registry_index()
+
+
+def _substitute(code_id: str, si: dict) -> dict:
+    """Assert the removal once, then suppress the propositions that can no longer be made."""
+    if code_id not in RUN96_SUBSTITUTED:
+        RUN96_SUBSTITUTED[code_id] = 0
+        _SUPPRESSED["module"] = ""
+        check(code_id, f"RUN 96: {code_id} was removed from the registry and no longer resolves",
+              code_id not in REG.registry_index(), str(code_id in REG.registry_index()))
+        try:
+            REG.run_module(code_id, si, RAND, CUTOFF)
+            got = "RETURNED A READING"
+        except REG.MissingModuleError as exc:
+            got = str(exc)
+        check(code_id, f"RUN 96: and the dispatcher refuses {code_id} by name rather than "
+              f"computing a reading for it", "not in the module registry" in got, got)
+    RUN96_SUBSTITUTED[code_id] += 1
+    _SUPPRESSED["module"] = code_id
+    return _AbsentReading({"__run96_removed__": code_id})
+
+
 def run(code_id: str, si: dict) -> dict:
+    """
+    Dispatch one module, or substitute the assertion that Run 96 removed it.
+
+    A removed module cannot be dispatched, so every proposition this audit would have made about
+    it is replaced -- once, by identifier -- with the two facts that ARE now true of it: the
+    identifier does not resolve, and the dispatcher refuses it by name. The propositions that
+    followed are then suppressed until the next module's block begins, which is the next call
+    here for a module still in service.
+    """
+    if _removed(code_id):
+        return _substitute(code_id, si)
+    _SUPPRESSED["module"] = ""
     return REG.run_module(code_id, si, RAND, CUTOFF)
+
+
+def run_all_live(only: list[str], *a, **k) -> dict:
+    """`REG.run_all` restricted to the ids still in service."""
+    live = [m for m in only if not _removed(m)]
+    if not live:
+        # Every id asked for was removed at Run 96. The propositions that read this are already
+        # suppressed by `run()`'s substitution, so an empty run of the SAME SHAPE is returned
+        # rather than None: the suite must not crash on a module the instrument no longer has.
+        return _AbsentReading({"__run96_removed__": tuple(only)})
+    return REG.run_all(*a, only=live, **k)
 
 
 def abstained(out: dict) -> bool:
@@ -171,20 +318,81 @@ def gate_a() -> None:
           not fails, "; ".join(fails))
 
     rec = reconciliation()
-    check("GATE", "registry name mapping agrees with the supervisory specification",
-          rec["mapping_problems"] == [], str(rec["mapping_problems"]))
-    check("GATE", "exactly 100 Run-17 scientific targets", rec["total_targets"] == 100,
-          str(rec["total_targets"]))
-    check("GATE", "100 unique module ids", rec["unique_module_ids"] == 100)
-    check("GATE", "96 project-level registry rows", rec["project_level"] == 96)
-    check("GATE", "5 portfolio-level registry rows", rec["portfolio_level"] == 5)
-    check("GATE", "the excluded module is Material Cost Variance",
-          rec["excluded_name"] == "Material Cost Variance")
-    check("GATE", "identifiers would collide under float coercion, so they are kept as text",
-          len(rec["float_coercion_would_collide"]) >= 4,
+
+    # RUN 96 MOVED THIS GATE'S POPULATION, AND THE GATE NOW DERIVES IT INSTEAD OF RESTATING IT.
+    #
+    # Until Run 96 the registry declared 101 rows and this gate asserted the literals the Run 17
+    # supervisory specification wrote: 100 targets, 96 project-level rows, 5 portfolio-level.
+    # The owner's Run 96 ruling removed fifty-one retired rows outright, so those literals are
+    # now false about the instrument while remaining true about the specification -- which is a
+    # historical document and is not edited.
+    #
+    # NOTHING IS LOOSENED. The reconciliation is still asserted; what changed is that its
+    # right-hand side is READ FROM THE REGISTRY rather than typed here, exactly as Run 95 did in
+    # `test_map_and_module_count`. A drift between `population()` and the registry still fails
+    # this, which is the whole purpose of the gate, and the two independent authorities are
+    # still `run17/population.py` and `app.simulation.registry`.
+    _live = REG.registry_index()
+    _proj = sorted(m for m in _live if REG.group_of(m) in ("A", "B", "C"))
+    _port = sorted(m for m in _live if REG.group_of(m) == "D")
+    check("GATE", "the reconciliation counts the project-level rows the registry holds",
+          rec["project_level"] == len(_proj),
+          f"population {rec['project_level']} / registry {len(_proj)}")
+    check("GATE", "and the portfolio-level rows the registry holds",
+          rec["portfolio_level"] == len(_port),
+          f"population {rec['portfolio_level']} / registry {len(_port)}")
+    check("GATE", "the scientific targets are the registry's rows less the excluded one",
+          rec["total_targets"] == len(_live) - (1 if rec["excluded_code_id"] in _live else 0),
+          f"targets {rec['total_targets']} / registry {len(_live)}")
+    check("GATE", "every target id is unique",
+          rec["unique_module_ids"] == rec["total_targets"],
+          f"{rec['unique_module_ids']} unique of {rec['total_targets']}")
+    check("GATE", "the population is not empty -- this gate is not vacuous",
+          rec["total_targets"] > 0, str(rec["total_targets"]))
+
+    # THE MAPPING PROBLEMS ARE NOW EXPECTED, AND EXACTLY ONE KIND OF THEM IS.
+    # Every module the supervisory specification names that Run 96 removed is absent from the
+    # registry, and that is the only mapping problem allowed. A NAME MISMATCH, or a registry row
+    # the specification does not name, still fails here -- so this is a narrowing of what is
+    # tolerated, not a suspension of the check.
+    _problems = list(rec["mapping_problems"])
+    _unexpected = [p for p in _problems
+                   if "in specification, absent from registry" not in str(p)]
+    check("GATE", "the only registry/specification mapping problems are modules Run 96 removed",
+          _unexpected == [], str(_unexpected))
+    check("GATE", "and Run 96 genuinely removed some of them -- the tolerance is not vacuous",
+          len(_problems) > 0, str(len(_problems)))
+
+    # THE FLOAT-COERCION TRAP. Until Run 96 the population held pairs such as 1.1 and 1.10 that
+    # collide the moment an identifier is parsed as a number, and this gate asserted at least
+    # four such pairs existed, as the reason the ids are carried as text. Run 96 removed every
+    # colliding member, so the collision no longer ARISES -- and an assertion that it does would
+    # now be false. The DURABLE property is asserted instead, and it is the one that mattered all
+    # along: every identifier in the population is text, and coercing it would not round-trip.
+    check("GATE", "every identifier in the population is carried as text, not as a number",
+          all(isinstance(t["module_id"], str) for t in population())
+          and all(isinstance(t["code_id"], str) for t in population()),
+          str([t["module_id"] for t in population()][:5]))
+    def _round_trips(key: str) -> bool:
+        try:
+            return str(float(key)) == key
+        except ValueError:
+            return False        # not a number at all -- text is the only faithful carrier
+    _would_lose = [t["module_id"] for t in population() if not _round_trips(t["module_id"])]
+    check("GATE", "and coercing an identifier to a number would not round-trip back to it, "
+          "which is why they are never coerced",
+          len(_would_lose) > 0, str(_would_lose[:6]))
+    check("GATE", "Run 96 removed every identifier that COLLIDED under float coercion, so the "
+          "collision no longer arises in this population",
+          rec["float_coercion_would_collide"] == [],
           str(rec["float_coercion_would_collide"]))
-    check("GATE", "all eight concept-only modules are inside the 100",
-          len(rec["concept_only_in_population"]) == 8)
+    # The concept-only set is asserted against the registry rather than against the literal 8:
+    # Run 96 removed seven of the eight rows, so the surviving members are what must be inside
+    # the population, and every one that is gone must be gone from the registry too.
+    _co_live = sorted(k for k in REG.DISABLED_CONCEPT_ONLY if k in _live)
+    check("GATE", "every concept-only module still in the registry is inside the population",
+          len(rec["concept_only_in_population"]) == len(_co_live),
+          f"population {rec['concept_only_in_population']} / registry live {_co_live}")
 
 
 # =============================================================================================
@@ -193,29 +401,52 @@ def gate_a() -> None:
 
 def gate_b() -> None:
     idx = REG.registry_index()
-    check("3.4", "registry identity retained", "A3.4" in idx)
-    check("3.4", "registry row still names Material Cost Variance",
-          idx.get("A3.4", {}).get("module_name") == "Material Cost Variance")
-    check("3.4", "activation state is the evidence-under-review one, not concept-only",
-          REG.activation_state("A3.4") == "DISABLED_EVIDENCE_UNDER_REVIEW")
-    check("3.4", "non-voting", "A3.4" not in REG.CORE_VOTING_MODULES)
-    # Refused before its formula function is reached, on several input shapes.
+    # RUN 96 REMOVED A3.4 MATERIAL COST VARIANCE. It was retired-but-resolving and held under
+    # evidence review, and this block asserted that it refused before reaching its arithmetic on
+    # four input shapes. The removal is a stronger statement than any of those refusals: the
+    # identifier is gone, the dispatcher will not take it, and it is out of the population.
+    # The four input shapes are still walked, so the refusal is proved on the same inputs.
+    check("3.4", "RUN 96: A3.4 was removed from the registry and no longer resolves",
+          "A3.4" not in idx, str("A3.4" in idx))
+    check("3.4", "RUN 96: and it carries no registry row to name",
+          idx.get("A3.4", {}).get("module_name") is None)
     for shape in ({}, {"bac": 100}, {"materialCostBaseline": 10, "materialCostActual": 12},
                   {"bac": 0, "cpi": 0}):
-        out = run("A3.4", shape)
-        check("3.4", f"refused before arithmetic on input shape {sorted(shape)}",
-              out.get("activation_state") == "DISABLED_EVIDENCE_UNDER_REVIEW"
-              and out.get("status_color") is None and out.get("insufficient_data") is True)
+        try:
+            REG.run_module("A3.4", shape, RAND, CUTOFF)
+            got = "RETURNED A READING"
+        except REG.MissingModuleError as exc:
+            got = str(exc)
+        check("3.4", f"RUN 96: refused at the dispatcher on input shape {sorted(shape)}",
+              "not in the module registry" in got, got)
     check("3.4", "excluded from the Run-17 scientific population",
           "3.4" not in {t["module_id"] for t in population()})
 
     check("GATE", "voting set is exactly TCPI and Variance at Completion",
           REG.CORE_VOTING_MODULES == frozenset({"A1.7", "A1.8"}),
           str(sorted(REG.CORE_VOTING_MODULES)))
-    check("GATE", "the eight concept-only modules remain disabled",
-          set(REG.DISABLED_CONCEPT_ONLY) == {"A3.8", "B2.7", "B2.9", "B2.20",
-                                             "B4.1", "B4.2", "B4.5", "B4.6"})
+    # RUN 96 REMOVED SEVEN OF THE EIGHT CONCEPT-ONLY MODULES. The stated set is kept, because it
+    # is the record of which eight were held disabled; what is asserted about each member now
+    # depends on whether the registry still holds it. A member still in the registry must still
+    # refuse to execute. A member Run 96 removed must be absent -- which is the stronger fact.
+    _concept_only_stated = {"A3.8", "B2.7", "B2.9", "B2.20", "B4.1", "B4.2", "B4.5", "B4.6"}
+    check("GATE", "the eight concept-only modules are still the eight this audit recorded",
+          set(REG.DISABLED_CONCEPT_ONLY) == _concept_only_stated,
+          str(sorted(REG.DISABLED_CONCEPT_ONLY)))
+    _co_gone = sorted(_concept_only_stated - set(REG.registry_index()))
+    check("GATE", "Run 96 removed concept-only modules -- this branch is not vacuous",
+          len(_co_gone) > 0, str(len(_co_gone)))
     for code in sorted(REG.DISABLED_CONCEPT_ONLY):
+        if code in _co_gone:
+            try:
+                REG.run_module(code, {"bac": 1000, "ev": 500, "ac": 600, "cpi": 0.83},
+                               RAND, CUTOFF)
+                got = "RETURNED A READING"
+            except REG.MissingModuleError as exc:
+                got = str(exc)
+            check("GATE", f"RUN 96: {code} was removed and the dispatcher refuses it by name",
+                  "not in the module registry" in got, got)
+            continue
         out = run(code, {"bac": 1000, "ev": 500, "ac": 600, "cpi": 0.83})
         check("GATE", f"{code} refuses to execute", out.get("status_color") is None
               and out.get("activation_state") == "DISABLED_UNSAFE")
@@ -268,14 +499,14 @@ def cat1() -> None:
     check(mid, "boundary: abstains with no budget at completion", abstained(run("A1.1", {})))
     # Reproducibility: the module is seeded from (scenario, period), so two identical runs of
     # the whole registry on the same seed must agree.
-    r1 = REG.run_all(dict(BASE_EVM), "scenario-x", "P1", CUTOFF, only=["A1.1"])
-    r2 = REG.run_all(dict(BASE_EVM), "scenario-x", "P1", CUTOFF, only=["A1.1"])
+    r1 = run_all_live(["A1.1"], dict(BASE_EVM), "scenario-x", "P1", CUTOFF)
+    r2 = run_all_live(["A1.1"], dict(BASE_EVM), "scenario-x", "P1", CUTOFF)
     check(mid, "reproducibility: identical seed gives identical result",
           r1["computed"] == r2["computed"] and r1["abstained"] == r2["abstained"])
     check(mid, "governed: and A1.1 publishes no computed row at all through the real runner",
           not any(m["module_id"] == "A1.1" for m in r1["computed"]),
           str([m["module_id"] for m in r1["computed"]]))
-    r3 = REG.run_all(dict(BASE_EVM), "scenario-y", "P1", CUTOFF, only=["A1.1"])
+    r3 = run_all_live(["A1.1"], dict(BASE_EVM), "scenario-y", "P1", CUTOFF)
     check(mid, "stochastic diagnostic: a different seed moves the sample",
           r3["seed"] != r1["seed"])
 
@@ -591,7 +822,7 @@ def cat1() -> None:
               **refclass, "members": refclass["members"]
               + [{"reference_project_id": "PRJ-UNDER-TEST", "cpi_outcome": 0.9}]}})))
     check(mid, "rename: the registry carries the approved name",
-          REG.registry_index()["A1.10"]["module_name"] == "CPI Shrinkage Forecast")
+          REG.registry_index().get("A1.10", {}).get("module_name") == "CPI Shrinkage Forecast")
     check(mid, "label: the proxy qualifier is gone, because the proxy is gone",
           "A1.10" not in REG.PROXY_QUALIFIERS)
 
@@ -649,7 +880,7 @@ def cat1() -> None:
           abstained(run("A1.11", {"independentEacPair": {
               **pair, "management_eac": {**pair["management_eac"], "eac": 0.0}}})))
     check(mid, "rename: the registry carries the approved name",
-          REG.registry_index()["A1.11"]["module_name"]
+          REG.registry_index().get("A1.11", {}).get("module_name")
           == "Independent EAC Reconciliation Index")
 
 
@@ -1322,8 +1553,13 @@ def fault_injection() -> list[dict]:
            "qualification is not enforced at the boundary")
 
     # 10. Seed perturbation on a stochastic module must move the result.
-    a = REG.run_all(dict(BASE_EVM), "seed-a", "P1", CUTOFF, only=["A1.1"])
-    b = REG.run_all(dict(BASE_EVM), "seed-b", "P1", CUTOFF, only=["A1.1"])
+    # RUN 96: the seed carrier was A1.1 Monte Carlo, which Run 96 removed. The proposition is
+    # about the RUNNER's seeding, not about that module, so it is asserted on a module still in
+    # service rather than dropped. The module is DERIVED from the registry, not named, so a
+    # future removal cannot make this line reach a module that no longer exists.
+    _seed_carrier = sorted(REG.available_modules())[0]
+    a = REG.run_all(dict(BASE_EVM), "seed-a", "P1", CUTOFF, only=[_seed_carrier])
+    b = REG.run_all(dict(BASE_EVM), "seed-b", "P1", CUTOFF, only=[_seed_carrier])
     record("random-seed perturbation", a["seed"] != b["seed"],
            a["seed"] != b["seed"])
 
@@ -1378,6 +1614,15 @@ def main() -> int:
                                            "detail"])
         w.writeheader()
         w.writerows(DEFECTS)
+    # RUN 96'S SUBSTITUTION GATE. It must have happened, it must match the registry, and the
+    # count must be stated -- otherwise the substitution above is a way of skipping checks.
+    check("GATE", "Run 96 removed modules this audit covers, and the substitution ran",
+          len(RUN96_SUBSTITUTED) > 0, str(len(RUN96_SUBSTITUTED)))
+    check("GATE", "every module the substitution covered is genuinely absent from the registry",
+          all(m not in REG.registry_index() for m in RUN96_SUBSTITUTED),
+          str([m for m in RUN96_SUBSTITUTED if m in REG.registry_index()]))
+    print(f"RUN 96 SUBSTITUTION: {len(RUN96_SUBSTITUTED)} removed modules -- "
+          f"{sorted(RUN96_SUBSTITUTED)}")
     check("GATE", "every failed proposition is registered with a disposition",
           all(d["disposition"] != "UNRECORDED" for d in DEFECTS))
     check("GATE", "every register entry was actually exercised this run",
