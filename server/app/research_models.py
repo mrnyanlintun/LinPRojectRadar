@@ -525,6 +525,9 @@ class Document(Base):
     # Model identifier AND version — "claude-opus" alone would not let a later reader tell which
     # weights produced a stored figure.
     extraction_model: Mapped[str] = mapped_column(Text, nullable=True)
+    # 0031. The provider that served `extraction_model`. See the migration: a model identifier
+    # is not a provider, and the provider is a setting from Run 93 onward. NULL on pre-0031 rows.
+    extraction_provider: Mapped[str] = mapped_column(Text, nullable=True)
     # 0030. The sha256 of the exact extraction prompt (field list included) this row's stored
     # extraction was produced under. The upload cache serves a known hash ONLY while this equals
     # the current fingerprint for the stored doc_type; NULL or unequal means the extraction
@@ -1100,6 +1103,11 @@ class SpecificationReading(Base):
     modules: Mapped[dict] = mapped_column(JSONType, nullable=True)
     reason: Mapped[str] = mapped_column(Text, nullable=True)
     missing_upstream: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    # 0031. WHICH PROVIDER answered, beside the model identifier below. A model name alone does
+    # not identify the provider that served it, and Run 93 made the provider a setting, so two
+    # rows in this table may have been produced by two different providers. NULL on every
+    # pre-0031 row, truthfully; "recorded" where the fixture served and no provider was asked.
+    provider: Mapped[str] = mapped_column(Text, nullable=True)
     served_by: Mapped[str] = mapped_column(Text, nullable=False)
     model_id: Mapped[str] = mapped_column(Text, nullable=True)
     specification_sha256: Mapped[str] = mapped_column(Text, nullable=True)

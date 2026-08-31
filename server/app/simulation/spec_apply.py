@@ -42,6 +42,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from .. import ai_provider
 from .fusion import BAND_SEVERITY, worst_band
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -204,6 +205,10 @@ def build_prompt(category_key: str, spec_text: str, signal_inputs: dict,
 # --------------------------------------------------------------------------- the clients
 
 
+# Run 93: the endpoint, the key, the authentication header, the request shape and the model
+# identifier all moved to `app.ai_provider`, which is the one boundary where a provider's
+# differences live. These names remain because the module's own tests and tools import them; the
+# live path no longer reads them.
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 SPEC_MODEL = "claude-sonnet-4-5"
@@ -211,49 +216,40 @@ MAX_TOKENS = 8192
 REQUEST_TIMEOUT_S = 180
 
 
-class AnthropicSpecApplier:
-    """One HTTPS POST per category. The live path. Stateless, safe to share across threads."""
+class ProviderSpecApplier:
+    """
+    One HTTPS POST per category, through whichever provider is configured. The live path.
+    Stateless, safe to share across threads.
+
+    IT DOES NOT KNOW WHICH PROVIDER ANSWERED and neither does anything downstream of it, beyond
+    the `provider` and `model_id` it reports so the reading can be stamped. Endpoint, header,
+    request shape, response shape and refusal wording are all handled in `ai_provider`.
+    """
 
     served_by = "model"
 
-    def __init__(self, api_key: str, model: str = SPEC_MODEL, url: str = ANTHROPIC_URL,
-                 temperature: float | None = 0.0) -> None:
-        self._api_key = api_key
-        self.model = model
-        self._url = url
-        self._temperature = temperature
+    def __init__(self, client) -> None:
+        self._client = client
+
+    @property
+    def provider(self) -> str:
+        return self._client.provider
 
     @property
     def model_id(self) -> str:
-        return self.model
+        return self._client.model_id
 
     def apply(self, category_key: str, prompt: str) -> str:
-        body: dict[str, Any] = {
-            "model": self.model,
-            "max_tokens": MAX_TOKENS,
-            "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
-        }
-        if self._temperature is not None:
-            body["temperature"] = self._temperature
-        req = urllib.request.Request(
-            self._url, data=json.dumps(body).encode("utf-8"), method="POST",
-            headers={"content-type": "application/json",
-                     "x-api-key": self._api_key,
-                     "anthropic-version": ANTHROPIC_VERSION})
         try:
-            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_S) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", "replace")[:400]
-            raise SpecApplicationError(f"the model API returned {exc.code}: {detail}") from None
-        except urllib.error.URLError as exc:
-            raise SpecApplicationError(f"the model API is unreachable: {exc.reason}") from None
-        if str(payload.get("stop_reason") or "") == "max_tokens":
-            raise SpecApplicationError(
-                f"the model ran out of output space ({MAX_TOKENS} tokens) before it finished "
-                "answering. Retrying will stop in the same place.")
-        blocks = payload.get("content") or []
-        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+            return self._client.complete(
+                [{"type": "text", "text": prompt}], max_tokens=MAX_TOKENS, temperature=0.0)
+        except ai_provider.ProviderCallError as exc:
+            # Surfaced as the platform's own error type, with the provider named inside it.
+            raise SpecApplicationError(str(exc)) from None
+
+
+# Kept as the historic name for the Anthropic boundary.
+AnthropicSpecApplier = ProviderSpecApplier
 
 
 class RecordedSpecApplier:
@@ -273,6 +269,8 @@ class RecordedSpecApplier:
 
     served_by = "recorded"
     model_id = "recorded-fixture"
+    # Run 93. Not a provider name: the honest statement that no provider was asked.
+    provider = "recorded"
 
     def __init__(self, recorded: dict[str, str]) -> None:
         self._recorded = dict(recorded or {})
@@ -294,11 +292,31 @@ class RecordedSpecApplier:
 
 
 def build_applier(recorded: dict[str, str] | None = None):
-    """Live applier if a key is set, otherwise the recorded one. Never both, never a guess."""
-    key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
-    if key:
-        return AnthropicSpecApplier(key)
+    """
+    The configured provider's applier if its key is present, otherwise the recorded one.
+    Never both, never a guess, and NEVER a different provider than the one configured.
+
+    A configured provider whose key is missing is a deliberate, visible downgrade to the
+    recorded applier ONLY in a keyless verification environment, exactly as before -- and every
+    row it serves is stamped served_by "recorded", so no reader can mistake it for a model.
+    """
+    cfg = ai_provider.load_provider("spec")
+    if cfg.key_present():
+        return ProviderSpecApplier(
+            ai_provider.build_client(cfg, timeout_s=REQUEST_TIMEOUT_S))
     return RecordedSpecApplier(recorded or {})
+
+
+def require_applier():
+    """
+    The configured provider or a LOUD failure. No recorded fallback.
+
+    `build_applier` keeps the keyless verification path alive; this is the entry point for
+    anything that must be a real model call, and it raises ProviderNotConfigured naming the
+    provider and the variable that was empty.
+    """
+    cfg = ai_provider.load_provider("spec")
+    return ProviderSpecApplier(ai_provider.build_client(cfg, timeout_s=REQUEST_TIMEOUT_S))
 
 
 # --------------------------------------------------------------------------- reading the answer
@@ -375,6 +393,9 @@ def apply_category(category_key: str, signal_inputs: dict, applier=None,
     base: dict[str, Any] = {
         "category": category_key,
         "state": None, "status": None, "served_by": None, "model_id": None,
+        # Run 93. WHICH PROVIDER answered, beside which model. A figure from one model and a
+        # figure from another are not the same evidence.
+        "provider": None,
         "modules": [],
         "counts": {COMPUTED: 0, ABSTAINED: 0, OUT_OF_ORDER: 0, FAILED: 0},
         "reason": None,
@@ -400,6 +421,7 @@ def apply_category(category_key: str, signal_inputs: dict, applier=None,
         prompt = build_prompt(category_key, spec_text, signal_inputs, upstream_report)
         base["served_by"] = getattr(applier, "served_by", "unknown")
         base["model_id"] = getattr(applier, "model_id", None)
+        base["provider"] = getattr(applier, "provider", None)
         answer = applier.apply(category_key, prompt)
         rows = [normalise_module(r) for r in parse_answer(answer)]
     except SpecApplicationError as exc:

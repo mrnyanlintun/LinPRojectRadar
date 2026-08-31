@@ -52,6 +52,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable
 
+from . import ai_provider
 from .extraction_fields import (
     CLASSIFY_HINTS,
     DOC_TYPES,
@@ -466,58 +467,55 @@ def parse_json_response(raw: str) -> dict:
 # --------------------------------------------------------------------------- real client
 
 
-class AnthropicExtractor:
-    """One HTTPS POST per document. Stateless, so it is safe to share across threads."""
+class ProviderExtractor:
+    """
+    One HTTPS POST per document, through whichever provider is configured. Stateless, so it is
+    safe to share across threads.
 
-    def __init__(self, api_key: str, model: str = EXTRACTION_MODEL,
-                 url: str = ANTHROPIC_URL) -> None:
+    Run 93: the endpoint, the authentication header and the request/response shapes moved to
+    `app.ai_provider`. This class keeps the extraction-specific behaviour -- the content block,
+    the classify/extract prompts, and the truncation distinction -- and knows nothing about
+    which provider answered beyond the `provider` and `model_id` it reports for the stored row.
+    """
+
+    def __init__(self, api_key: str = "", model: str = EXTRACTION_MODEL,
+                 url: str = ANTHROPIC_URL, client=None) -> None:
         self._api_key = api_key
         self.model = model
         self._url = url
+        if client is None:
+            cfg = ai_provider.ProviderConfig(
+                role="extraction", provider="anthropic", wire="anthropic", model=model,
+                url=url, key_env="ANTHROPIC_API_KEY")
+            client = ai_provider.AnthropicClient(cfg, api_key, REQUEST_TIMEOUT_S)
+        self._client = client
 
     # ``model_id`` is recorded on every document row so a later reader can tell which weights
-    # produced a stored figure.
+    # produced a stored figure; ``provider`` says which provider served those weights, because
+    # a model identifier alone does not.
     @property
     def model_id(self) -> str:
-        return self.model
+        return self._client.model_id
+
+    @property
+    def provider(self) -> str:
+        return self._client.provider
 
     def _post(self, prompt: str, content_block: dict, max_tokens: int) -> str:
-        body = json.dumps({
-            "model": self.model,
-            "max_tokens": max_tokens,
-            "messages": [{"role": "user", "content": [content_block,
-                                                      {"type": "text", "text": prompt}]}],
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            self._url, data=body, method="POST",
-            headers={
-                "content-type": "application/json",
-                "x-api-key": self._api_key,
-                "anthropic-version": ANTHROPIC_VERSION,
-            },
-        )
         try:
-            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_S) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", "replace")[:400]
-            raise ExtractionError(f"extraction API returned {exc.code}: {detail}") from None
-        except urllib.error.URLError as exc:
-            raise ExtractionError(f"extraction API unreachable: {exc.reason}") from None
-        blocks = payload.get("content") or []
-        text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
-        # THE API SAYS SO ITSELF. `stop_reason` is the authoritative statement that the answer
-        # was cut off by the output cap rather than finished; `describe_json_truncation` is the
-        # fallback for a caller that never sees this field. Raising here means the message names
-        # truncation even when the truncated prefix happens to close its own braces.
-        if str(payload.get("stop_reason") or "") == "max_tokens":
-            cut = describe_json_truncation(text)
+            return self._client.complete(
+                [content_block, {"type": "text", "text": prompt}], max_tokens=max_tokens)
+        except ai_provider.ProviderTruncated as exc:
+            # THE API SAYS SO ITSELF -- `stop_reason`/`finish_reason` is the authoritative
+            # statement that the answer was cut off by the output cap rather than finished.
+            # `describe_json_truncation` is the fallback for a caller that never sees it.
+            cut = describe_json_truncation("")
             raise TruncatedResponseError(
-                f"the model ran out of output space ({max_tokens} tokens) before it finished "
-                "answering" + (": " + cut if cut else "") +
-                ". Retrying will stop in the same place; the answer has to be made smaller."
-            )
-        return text
+                str(exc) + (": " + cut if cut else "") +
+                " Retrying will stop in the same place; the answer has to be made smaller."
+            ) from None
+        except ai_provider.ProviderCallError as exc:
+            raise ExtractionError(str(exc)) from None
 
     @staticmethod
     def _content_block(raw: bytes, mime_type: str, filename: str = "",
@@ -671,6 +669,8 @@ class StubExtractor:
     """
 
     model_id = "stub/recorded-v1"
+    # Run 93. Not a provider name: the honest statement that no provider was asked.
+    provider = "stub"
 
     def __init__(self, recorded: dict[str, tuple[str, dict]],
                  delay_s: float = 0.0) -> None:
@@ -715,24 +715,36 @@ class StubExtractor:
         return rec_type, dict(fields), confidence
 
 
+AnthropicExtractor = ProviderExtractor
+
+
 def build_extractor(*, require_real: bool = False,
                     recorded: dict[str, tuple[str, dict]] | None = None,
                     delay_s: float = 0.0):
     """
-    Real extractor if ANTHROPIC_API_KEY is set, otherwise the stub.
+    The CONFIGURED provider's extractor if its key is set, otherwise the stub.
+
+    Run 93: which provider that is comes from configuration (`AI_PROVIDER`, or
+    `AI_EXTRACTION_PROVIDER`), defaulting to anthropic, which is what this returned before.
+    There is NO fallback to a second provider: a configured provider with no key returns the
+    stub in a verification environment and, under `require_real=True`, raises naming the
+    provider and the variable that was empty.
 
     `require_real=True` turns a missing key into an error. Production passes it, so a
     misconfigured deployment fails loudly at the first upload instead of silently filling the
     research record with stub output.
     """
-    key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
-    if key:
-        return AnthropicExtractor(key)
+    cfg = ai_provider.load_provider("extraction")
+    if cfg.key_present():
+        return ProviderExtractor(
+            model=cfg.model, url=cfg.url,
+            client=ai_provider.build_client(cfg, timeout_s=REQUEST_TIMEOUT_S))
     if require_real:
-        raise ExtractionError(
-            "ANTHROPIC_API_KEY is not set. Refusing to extract with the stub in an environment "
-            "that requires real extraction."
-        )
+        raise ExtractionError(str(ai_provider.ProviderNotConfigured(
+            f"AI provider {cfg.provider!r} is configured for the extraction call site but "
+            f"{cfg.key_env} is not set in this environment. Refusing to extract with the stub "
+            f"in an environment that requires real extraction. Nothing is served by another "
+            f"provider in its place.")))
     return StubExtractor(recorded or {}, delay_s=delay_s)
 
 

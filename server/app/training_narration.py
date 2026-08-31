@@ -28,10 +28,13 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from . import ai_provider
 from .extraction_client import ANTHROPIC_URL, ANTHROPIC_VERSION
 
 log = logging.getLogger("opus-gubernatio-server")
 
+# Run 93: the live path reads the model from configuration via `ai_provider`
+# (role "narration", default claude-3-5-haiku-latest). Kept as the documented default.
 NARRATION_MODEL = "claude-3-5-haiku-latest"
 NARRATION_MAX_TOKENS = 300
 NARRATION_TIMEOUT_S = 20
@@ -49,8 +52,12 @@ _PROMPT = (
 
 def narrate(view: dict[str, Any]) -> str | None:
     """One narration for one period view. None on any failure; the figures stand alone."""
-    key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
-    if not key:
+    try:
+        cfg = ai_provider.load_provider("narration")
+    except ai_provider.ProviderConfigError as exc:
+        log.warning("training_narration_unconfigured", extra={"reason": str(exc)[:200]})
+        return None
+    if not cfg.key_present():
         return None
     # Only the figures a narrator needs, never the whole state: hazard and anything that
     # forecasts an event stays out, for the same reason it stays out of the state view.
@@ -63,27 +70,17 @@ def narrate(view: dict[str, Any]) -> str | None:
         "period_changes": (view.get("state") or {}).get("period_changes"),
         "notice": view.get("notice"),
     }
-    body = json.dumps({
-        "model": NARRATION_MODEL,
-        "max_tokens": NARRATION_MAX_TOKENS,
-        "messages": [{"role": "user",
-                      "content": _PROMPT + json.dumps(payload, default=str)}],
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        ANTHROPIC_URL, data=body, method="POST",
-        headers={"content-type": "application/json", "x-api-key": key,
-                 "anthropic-version": ANTHROPIC_VERSION},
-    )
     try:
-        with urllib.request.urlopen(req, timeout=NARRATION_TIMEOUT_S) as resp:
-            answer = json.loads(resp.read().decode("utf-8"))
-        text = "".join(b.get("text", "") for b in (answer.get("content") or [])
-                       if b.get("type") == "text").strip()
-    except (urllib.error.URLError, urllib.error.HTTPError, ValueError, OSError) as exc:
+        client = ai_provider.build_client(cfg, timeout_s=NARRATION_TIMEOUT_S)
+        text = client.complete(
+            [{"type": "text", "text": _PROMPT + json.dumps(payload, default=str)}],
+            max_tokens=NARRATION_MAX_TOKENS).strip()
+    except (ai_provider.ProviderNotConfigured, ai_provider.ProviderCallError,
+            ValueError, OSError) as exc:
         log.warning("training_narration_failed", extra={"reason": str(exc)[:200]})
         return None
     if not text:
         return None
     # The naming authority bans em dashes on every surface; a model instruction is a request,
     # this is the enforcement.
-    return text.replace("—", ",").replace(" ,", ",")
+    return text.replace("\u2014", ",").replace(" ,", ",")

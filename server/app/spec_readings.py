@@ -71,6 +71,9 @@ def store_reading(session: Session, project_id: str, period: int, row: dict) -> 
         # NOT NULL by design. A reading whose origin is unknown is worse than no reading, and
         # "recorded" must never be mistaken for a live model call.
         served_by=row.get("served_by") or "unknown",
+        # 0031. Which provider, beside which model. Not optional in meaning: a reading that
+        # cannot say which model produced it is unusable for comparison later.
+        provider=row.get("provider"),
         model_id=row.get("model_id"),
         specification_sha256=_spec_sha(category_key),
         simulation_version=SIMULATION_VERSION,
@@ -96,6 +99,7 @@ def reading_payload(stored: SpecificationReading) -> dict[str, Any]:
         "reason": stored.reason,
         "missingUpstream": stored.missing_upstream or [],
         "servedBy": stored.served_by,
+        "provider": stored.provider,
         "modelId": stored.model_id,
         "specificationSha256": stored.specification_sha256,
         "simulationVersion": stored.simulation_version,
@@ -182,7 +186,9 @@ def a_projectcategoryapply(session: Session, payload: dict, secret: str, ttl: in
             apply_and_store(session, project.id, period, key, figures, applier)))
     session.commit()
     return {"ok": True, "period": period, "readings": out,
-            "servedBy": getattr(applier, "served_by", "unknown")}
+            "servedBy": getattr(applier, "served_by", "unknown"),
+            "provider": getattr(applier, "provider", None),
+            "modelId": getattr(applier, "model_id", None)}
 
 
 def a_projectcategoryreadings(session: Session, payload: dict, secret: str, ttl: int) -> dict:

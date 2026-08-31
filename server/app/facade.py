@@ -267,6 +267,15 @@ def _ordered(session: Session, archived: bool):
 # ---------------------------------------------------------------- GET actions
 
 
+def _ai_provider_diagnostics() -> dict[str, Any]:
+    """Never raises: a health endpoint that 500s on a bad AI setting hides the real state."""
+    try:
+        from .ai_provider import provider_diagnostics
+        return provider_diagnostics()
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
 def a_health(session: Session, params: dict) -> dict[str, Any]:
     return {
         "ok": True,
@@ -278,6 +287,11 @@ def a_health(session: Session, params: dict) -> dict[str, Any]:
         # `endpoints` below advertises only what is served.
         "openaiKeyPresent": bool(_setting("openai_key_present")),
         "anthropicKeyPresent": bool(_setting("anthropic_key_present")),
+        # Run 93. WHICH provider and model each of the three call sites is configured for, and
+        # whether that provider's key is present. PRESENCE ONLY -- no key value is ever
+        # reported here, and the two flags above are kept because the live backend reported
+        # them and callers read them.
+        "aiProviders": _ai_provider_diagnostics(),
         # Still literally false: there is no Drive knowledge library on this service.
         "libPresent": False,
         "libFileCount": 0,

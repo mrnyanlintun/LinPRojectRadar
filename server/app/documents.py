@@ -2876,6 +2876,10 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     by_hash = {r["sha256"]: r for r in results}
 
     model_id = getattr(extractor, "model_id", None) or getattr(extractor, "model", "unknown")
+    # 0031. WHICH PROVIDER served those weights. A model identifier alone does not say, and the
+    # provider is a setting from Run 93 onward, so two stored extractions may come from two
+    # different providers with nothing else in the row to tell them apart.
+    provider_id = getattr(extractor, "provider", None) or "unknown"
     for r in results:
         if not r["ok"]:
             continue
@@ -2899,6 +2903,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             held.doc_type = r["doc_type"]
             held.extraction = extraction
             held.extraction_model = model_id
+            held.extraction_provider = provider_id
             held.classification_confidence = r.get("confidence")
             held.extraction_contract = extraction_contract_fingerprint(r["doc_type"] or "")
             held.extracted_at = func.now()
@@ -2912,6 +2917,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             doc_type=r["doc_type"],
             extraction=extraction,
             extraction_model=model_id,
+            extraction_provider=provider_id,
             # 0030. The contract this extraction was just made under. What the cache compares.
             extraction_contract=extraction_contract_fingerprint(r["doc_type"] or ""),
             # 0016. The classifier's own confidence, which the platform used to discard. None
@@ -2942,6 +2948,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
             doc_type=None,
             extraction=None,
             extraction_model=None,
+            extraction_provider=None,
             classification_confidence=None,
             first_uploaded_by=caller.participant_id,
         ))
@@ -3123,7 +3130,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     audit(session, "documents_uploaded", participant_id=caller.participant_id,
           project_id=project.legacy_id, period=period, files=len(decoded),
           cached=cached_count, extracted=extracted_count, failed=failed_count,
-          extraction_model=model_id)
+          extraction_model=model_id, extraction_provider=provider_id)
 
     # THE PROJECT'S OWN EVENT LOG, which is a different store from audit_events and the one C1.4
     # Audit Trail Completeness reads. No current path wrote `signals_extracted`, so C1.4 reported
@@ -3206,6 +3213,7 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
         "unmapped_filenames": unmapped,
         "extraction_seconds": elapsed,
         "extraction_model": model_id,
+        "extraction_provider": provider_id,
         "server_time": now_iso(),
     }
 
@@ -3333,6 +3341,7 @@ def a_extractsignals(session: Session, payload: dict, secret: str, ttl: int) -> 
         "note": first.get("note"),
         "was_cached": first.get("was_cached"),
         "extraction_model": resp.get("extraction_model"),
+        "extraction_provider": resp.get("extraction_provider"),
         "extraction_seconds": resp.get("extraction_seconds"),
         "server_time": resp.get("server_time"),
     }

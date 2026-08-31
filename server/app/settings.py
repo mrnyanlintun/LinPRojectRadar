@@ -36,11 +36,17 @@ class Settings:
     # anthropicKeyPresent / openaiKeyPresent flags the /exec health and ping actions report,
     # which the live backend uses to mean "this deployment has a key", nothing more.
     #
-    # Presence rather than value is deliberate. Nothing on this service makes a provider call
-    # yet — every AI action is still deferred — so holding the secret in a long-lived object
+    # RUN 93 CORRECTION: the sentence below said "Nothing on this service makes a provider call
+    # yet". That became false somewhere between Run 66 and Run 85 -- `extraction_client` and
+    # `simulation/spec_apply` both make live calls when a key is present. The RULE it justifies
+    # is unchanged and is now load-bearing rather than merely prudent: this object still holds
+    # presence, never the key, and every call site reads its key at the point of use through
+    # `ai_provider.read_key`. These two flags are ANTHROPIC/OPENAI specific and are kept for the
+    # live backend's health contract; `ai_provider.provider_diagnostics` is the general answer.
+    #
+    # Presence rather than value is deliberate. Holding the secret in a long-lived object
     # would add an exposure surface (a stray repr, a debugger frame, a future log line) that
-    # buys nothing today. When an AI action lands it should read its key at the point of use.
-    # This mirrors the rule the module already follows for DATABASE_URL: expose the derived,
+    # buys nothing. This mirrors the rule the module already follows for DATABASE_URL: expose the derived,
     # credential-free fact, never the credential.
     anthropic_key_present: bool = False
     openai_key_present: bool = False
