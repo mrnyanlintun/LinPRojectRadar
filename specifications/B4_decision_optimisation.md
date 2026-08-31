@@ -155,57 +155,7 @@ domains, so there is nothing to assign.
 
 ---
 
-## B4.4 — What-If Scenario Matrix — RETIRED at Run 89, not in service
-
-**Identity.** Live id `B4.4`. Method class `WhatIf_Scenario_Matrix`. Candidate actions compared
-across scenarios.
-
-**Required inputs.** `actionScenarioMatrix` — a mapping, and the only input read. It must carry the
-**actions** being compared (each with an identity), the **scenarios** they are compared under, an
-outcome for **every** action-scenario pair, the declared `orientation`, the `units` and the
-`model_version`. Optionally, scenario probabilities.
-
-**Method — a comparison, not a choice.**
-```
-rows    = candidate ACTIONS
-columns = SCENARIOS
-cells   = the declared outcome for each (action, scenario) pair
-matrix[a][s] = cell(a, s)          for every action a and every scenario s
-```
-Where — and **only** where — the governed structure states scenario probabilities:
-```
-ExpectedValue(a) = sum over s of  cell(a, s) * P(s)
-```
-Otherwise `expected_values` is `null`. **No probability is invented, so no expected value is
-computed unless the governed structure states the probabilities.**
-
-**Bands.** **None**, and the authority boundary above applies in full.
-
-**The refusal to choose, and it is on the result.** `recommended_action` is **always `None`**, and
-the result carries `recommendation_reason` verbatim: *"this measure compares alternatives under
-scenarios and applies no decision rule; it names no action"*. The evidence sentence says the same
-thing: *"N actions are compared across M scenarios; this measure applies no decision rule and names
-no action."* **A specification applying this module must not name a preferred action, must not rank
-the actions, and must not describe any action as best, safest or recommended.** Applying a decision
-rule to this same matrix is a different module's work, and a human authorises the selection.
-
-**Interpretation.** The matrix says what each action is expected to produce under each scenario, in
-the declared units and the declared orientation. It is the material for a decision; it is not the
-decision.
-
-**Nothing to report.**
-1. Structure absent or not a mapping: the two sentences above, with `W` = *"a governed
-   action-by-scenario matrix: the actions being compared, the scenarios they are compared under,
-   and an outcome for every pair"*.
-2. No actions or no scenarios recorded: `"Awaiting a governed action-by-scenario matrix: the
-   actions being compared, the scenarios they are compared under, and an outcome for every pair.
-   No entries are recorded, so there is nothing to solve and no figure is produced in place of
-   one."`
-3. **An action without an identity refuses**, in the words `canonical_v7` raises for it. Several
-   forecast formulas with no action identity are not a what-if matrix, which is why that case is a
-   refusal rather than a default naming.
-4. A missing cell: the matrix must be complete, and an incomplete one refuses in the words
-   `canonical_v7` raises for the missing pair.
+## B4.4 — What-If Scenario Matrix — RETIRED at Run 89, not in service. Its specification is archived verbatim at `specifications/archive/B4_decision_optimisation.md`; the identifier still resolves and is still listed by `registry.retired_modules()`.
 
 ---
 
