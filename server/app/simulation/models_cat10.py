@@ -206,6 +206,4 @@ def _sentence(module_id: str, result: dict[str, Any]) -> str:
 #: had no payoff matrix and therefore defined no regret. The canonical method IS the minimax
 #: regret decision rule, so the method class says so.
 CAT10_CANONICAL: dict[str, tuple[str, Callable]] = {
-    "B4.3": ("Constraint_Satisfaction",
-             _route("B4.3", "Constraint_Satisfaction", V7.constraint_satisfaction)),
 }

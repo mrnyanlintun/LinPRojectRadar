@@ -346,6 +346,108 @@ try:
                   "the card renders as separate .dc-group blocks, not one run of flat text",
                   str(len(out["groups"])))
             check(not errors, "no page errors", str(errors[:3]))
+
+            # ---------------------------------------------------------------- GOAL THREE
+            # THE SIGNAL FLOW, ON THE SAME REAL PAGE, IN ONE RENDER.
+            #
+            # Not a fixture handed to `LinNeuralFlow.render`: the section is expanded on the
+            # detail page that has already loaded its own row, and every figure below is read
+            # back out of the SVG attributes that were drawn.
+            page.evaluate("(id) => { window.__run97id = id; }", D)
+            flow = page.evaluate("""async () => {
+                const body = document.querySelector('#body-d-neural');
+                if (body) body.style.display = '';
+                document.dispatchEvent(new CustomEvent('lin:section-opened',
+                                                       {detail: {id: 'd-neural'}}));
+                for (let i = 0; i < 80; i++) {
+                  if (document.querySelector('#body-d-neural svg')) break;
+                  await new Promise(r => setTimeout(r, 250));
+                }
+                await new Promise(r => setTimeout(r, 1200));
+                const svg = document.querySelector('#body-d-neural svg');
+                if (!svg) return {error: 'no svg drawn'};
+                const rows = (t) => Array.from(svg.querySelectorAll(
+                    '[data-edge-type="' + t + '"]')).map(e =>
+                    (e.getAttribute('opacity')||'?') + ' @ ' +
+                    (e.getAttribute('stroke-width')||'?') + 'px');
+                const tally = (a) => a.reduce((m,k)=>(m[k]=(m[k]||0)+1,m),{});
+                const term = Array.from(svg.querySelectorAll('[data-edge-terminates]')).map(e=>
+                  [e.getAttribute('data-edge-terminates'), e.getAttribute('opacity'),
+                   !!e.getAttribute('stroke-dasharray'),
+                   !!e.getAttribute('marker-end')].join('|'));
+                // THE COLUMN EXTENTS, from the drawn node positions -- the frame is the
+                // viewBox, and each column is the span of its own nodes within it.
+                // Node groups carry `data-kind`; the row is read from the group's own drawn
+                // bounding box in the SVG's user space, so it is the position that was DRAWN.
+                // The row a node was DRAWN on, read from the circle inside its group. getBBox
+                // answers zero for an element whose ancestor is not laid out, which is why the
+                // attribute is read rather than the box.
+                const ys = (kind) => Array.from(svg.querySelectorAll('[data-kind="'+kind+'"]'))
+                    .map(n => { const c = n.querySelector('circle,rect,polygon');
+                                if (!c) return NaN;
+                                const v = c.getAttribute('cy');
+                                if (v !== null) return parseFloat(v);
+                                const y = c.getAttribute('y'), h = c.getAttribute('height');
+                                return y === null ? NaN
+                                       : parseFloat(y) + (h ? parseFloat(h) / 2 : 0); })
+                    .filter(v => !isNaN(v));
+                const span = (a) => a.length ? {n: a.length, top: Math.round(Math.min(...a)),
+                                                bottom: Math.round(Math.max(...a))} : {n: 0};
+                const vb = (svg.getAttribute('viewBox')||'').split(/\s+/).map(Number);
+                return {
+                  viewBox: vb,
+                  dm: tally(rows('DOCUMENT -> MODULE')),
+                  mc: tally(rows('MODULE -> CATEGORY')),
+                  term: tally(term),
+                  doc: span(ys('document')),
+                  mod: span(ys('module')),
+                  cat: span(ys('category')),
+                  liveModules: svg.querySelectorAll(
+                      '[data-kind="module"][data-active="true"]').length,
+                  liveDocs: svg.querySelectorAll(
+                      '[data-kind="document"][data-active="true"]').length,
+                  moduleResults: (() => {
+                      const r = (window.LinResults && window.LinResults.rowFor)
+                          ? window.LinResults.rowFor({id: window.__run97id}) : null;
+                      return r && r.module_results ? r.module_results.length : -1; })()
+                };
+            }""")
+            print(f"  SIGNAL FLOW: {json.dumps(flow)[:400]}")
+            if not flow.get("error"):
+                H = flow["viewBox"][3] if len(flow["viewBox"]) == 4 else 0
+                for name in ("doc", "mod", "cat"):
+                    s = flow[name]
+                    print(f"    column {name}: {s}")
+                # THE TWO BRANCH LAYERS, SIDE BY SIDE, FROM THIS ONE RENDER.
+                live_dm = sorted(k for k in flow["dm"] if not k.startswith("0.12"))
+                live_mc = sorted(k for k in flow["mc"] if not k.startswith("0.14"))
+                print(f"    LIVE doc->mod {live_dm}")
+                print(f"    LIVE mod->cat {live_mc}")
+                check(bool(live_dm) and bool(live_mc),
+                      "both branch layers carry a LIVE tier in THIS render, so they can be "
+                      "compared side by side", f"dm {live_dm} / mc {live_mc}")
+                check(live_dm == live_mc,
+                      "and the two live tiers are the same opacity and stroke width",
+                      f"dm {live_dm} / mc {live_mc}")
+                # THE COLUMNS SPAN THE FRAME. Measured against the viewBox height, not asserted.
+                spans = [flow[n] for n in ("doc", "mod", "cat") if flow[n].get("n")]
+                if spans and H:
+                    tops = [s["top"] for s in spans]; bots = [s["bottom"] for s in spans]
+                    print(f"    frame height {H}; column tops {tops}; column bottoms {bots}")
+                    check(max(bots) >= H - 120,
+                          "the columns reach the bottom of the frame -- no empty band",
+                          f"lowest node {max(bots)} of {H}")
+                    check(max(bots) - min(bots) <= 2 and max(tops) - min(tops) <= 2,
+                          "and all three columns span the same vertical extent",
+                          f"tops {tops} bottoms {bots}")
+                check(bool(flow["term"]),
+                      "the category -> status terminations are still drawn and readable",
+                      str(flow["term"]))
+                print(f"    CATEGORY -> STATUS terminations (must be unchanged): {flow['term']}")
+                print(f"    STATE OPACITIES: 0.14 unestimable mod->cat present: "
+                      f"{any(k.startswith('0.14') for k in flow['mc'])}; "
+                      f"0.12 not-uploaded doc->mod present: "
+                      f"{any(k.startswith('0.12') for k in flow['dm'])}")
             page.close()
         browser.close()
 finally:

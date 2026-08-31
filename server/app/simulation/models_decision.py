@@ -254,5 +254,4 @@ def run_abm_governance(si: dict, rand: Callable[[], float], period_cutoff) -> di
 
 DECISION_EXTENSIONS: dict[str, tuple[str, Callable]] = {
     "B1.1": ("Conservative_Dominance", run_conservative_dominance),
-    "B3.1": ("ABM_Governance", run_abm_governance),
 }

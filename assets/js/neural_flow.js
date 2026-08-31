@@ -857,14 +857,27 @@
     var COL_CAT = COL_MOD + MOD_LABEL_GUTTER + 60;
     var COL_PRJ = COL_CAT + CAT_LABEL_GUTTER + 190;
     var W = COL_PRJ + 62, H = 940;
-    var TOP = 80, ROW = 20;                    /* uniform module pitch; position encodes nothing */
+    /* RUN 97, GOAL THREE. THE THREE COLUMNS SPAN THE FRAME, AND THE ROW PITCH IS DERIVED.
+
+       `ROW` was the constant 20. The module column therefore ended at `TOP + (n-1) * 20`, which
+       for the 27 modules of the five weighted performance categories is y=600 in a 940-tall
+       viewBox: documents and modules crowded into the upper two thirds and the bottom third of
+       the frame was empty. The document and category columns are BOTH derived from
+       `BODY_BOTTOM`, so all three inherited it.
+
+       The pitch is now the frame: `BOTTOM` is a fixed margin, `BODY_BOTTOM` is the bottom of the
+       drawing area, and the pitch is whatever divides the band evenly between the rows there
+       are. Position still encodes nothing -- it is uniform spacing, only over the whole height
+       instead of over an arbitrary 20px multiple. One module would sit at TOP as before. */
+    var TOP = 80, BOTTOM = 44;
+    var BODY_BOTTOM = Math.max(TOP, H - BOTTOM);
+    var ROW = MODULES.length > 1 ? (BODY_BOTTOM - TOP) / (MODULES.length - 1) : 0;
     /* The fraction of the way to the status node an unresolved stream is allowed to travel
        before it stops. Run 90's rule, carried over unchanged. */
     var STOP_SHORT = 0.45;
 
     /* ── MODULES: one row each, in registry order within their category. ── */
     var modYs = MODULES.map(function(_, mi) { return TOP + mi * ROW; });
-    var BODY_BOTTOM = TOP + Math.max(0, MODULES.length - 1) * ROW;
     var modXs = MODULES.map(function() { return COL_MOD; });
     var modY = modYs;
 
@@ -892,12 +905,22 @@
     function docY(di) { return TOP + docSlot[di] * DOC_PITCH; }
 
     /* ── CATEGORIES: one row each, at the vertical mean of their own modules. ── */
+    /* RUN 97, GOAL THREE. THE CATEGORY COLUMN SPANS THE FRAME LIKE THE OTHER TWO.
+
+       A category used to sit at the VERTICAL MEAN of its own modules. With the module column
+       spread across the whole frame that put the first category a third of the way down and the
+       last a third of the way up from the bottom -- the category column occupied a shorter band
+       than the two beside it, which is the second half of what the owner measured. Categories
+       are now spread EVENLY across the same band the documents and modules use.
+
+       Nothing is lost by it: the categories are emitted in registry order and their modules are
+       grouped in that same order, so a category still sits beside the block of modules that
+       feed it and the branches still do not cross. Position encodes nothing here either. */
     var catCX = CATS.map(function() { return COL_CAT; });
+    var CAT_PITCH = CATS.length > 1 ? (BODY_BOTTOM - TOP) / (CATS.length - 1) : 0;
     var catCY = CATS.map(function(_, ci) {
-      var idxs = catModIdxs[ci] || [];
-      if (!idxs.length) return TOP + (BODY_BOTTOM - TOP) / 2;
-      var sum = idxs.reduce(function(a, mi) { return a + modYs[mi]; }, 0);
-      return sum / idxs.length;
+      if (CATS.length === 1) return TOP + (BODY_BOTTOM - TOP) / 2;
+      return TOP + ci * CAT_PITCH;
     });
     var PRJ_X = COL_PRJ, PRJ_Y = TOP + (BODY_BOTTOM - TOP) / 2;
 

@@ -413,5 +413,4 @@ def _r_critic(out: dict) -> tuple[str, dict]:
 # =================================================================================================
 
 CAT7_CANONICAL: dict[str, tuple[str, Callable]] = {
-    "B2.18": ("MARCOS", _route("B2.18", "MARCOS", "marcos", "_r_marcos")),
 }

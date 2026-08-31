@@ -46,7 +46,7 @@
    made in the wrong copy passed every source check while the live page stayed broken;
    and the two had already drifted apart on their own, with nine modules carrying
    `disabled: true` in one and not the other. */
-window.LIN_TAXONOMY_COUNTS = { registered: 45, inService: 45, retired: 0, serverComputes: 45, supplied: 0 };
+window.LIN_TAXONOMY_COUNTS = { registered: 30, inService: 30, retired: 0, serverComputes: 30, supplied: 0 };
 window.LIN_CATEGORIES = [
   {
     id: 'a1', key: 'A1', name: 'Cost and EVM Performance',
@@ -122,40 +122,7 @@ window.LIN_CATEGORIES = [
     description: 'Synthesis of the assembled signal set into a single recommended posture.',
     modules: [
       { id: 'b1_1', module_id: 'B1.1', name: 'Conservative Dominance', method_class: 'Conservative_Dominance', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b1_2', module_id: 'B1.2', name: 'Weighted Voting', method_class: 'Weighted_Voting', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b1_3', module_id: 'B1.3', name: 'Majority Rules', method_class: 'Majority_Rules', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b1_4', module_id: 'B1.4', name: 'Worst-N-of-M', method_class: 'Worst_N_of_M', active: true, required: ['cpi','spi','docRiskScore'] }
-    ]
-  },
-  {
-    id: 'b2', key: 'B2', name: 'Evidence Combination',
-    group: 'B', groupName: 'Recommendation and Governance',
-    color: '#5ed7ff',
-    description: 'Evidence combination under uncertainty: fuzzy, rough, neutrosophic and belief-function methods.',
-    modules: [
-      { id: 'b2_18', module_id: 'B2.18', name: 'MARCOS Ranking', method_class: 'MARCOS', active: true, required: ['cpi','spi','docRiskScore'] }
-    ]
-  },
-  {
-    id: 'b3', key: 'B3', name: 'Regulatory and Authority Thresholds',
-    group: 'B', groupName: 'Recommendation and Governance',
-    color: '#e0556b',
-    description: 'Regulatory and authority thresholds that determine who must act and at what level.',
-    modules: [
-      { id: 'b3_1', module_id: 'B3.1', name: 'Agent-Based Governance Model', method_class: 'ABM_Governance', active: true, required: ['cpi','spi','docRiskScore'] },
-      { id: 'b3_2', module_id: 'B3.2', name: 'FAR/Agency EVMS Applicability Monitor', method_class: 'EVMS_Applicability', active: true, required: ['bac','cpi','ev','ac'] },
-      { id: 'b3_3', module_id: 'B3.3', name: 'Versioned A-11 Capital Programming Conformance Check', method_class: 'A11_Conformance', active: true, required: ['bac','cpi','actualPctComplete'] },
-      { id: 'b3_4', module_id: 'B3.4', name: 'EVMS Reporting Compliance Monitor', method_class: 'EVMS_Reporting_Compliance', active: true, required: ['bac','cpi','spi'] },
-      { id: 'b3_5', module_id: 'B3.5', name: 'Contract Modification Governance Check', method_class: 'Modification_Governance', active: true, required: ['changeOrderCount','baselineContractSum','revisedContractSum'] }
-    ]
-  },
-  {
-    id: 'b4', key: 'B4', name: 'Decision Optimization',
-    group: 'B', groupName: 'Recommendation and Governance',
-    color: '#a78bfa',
-    description: 'Decision optimisation and trade-off analysis over the available courses of action.',
-    modules: [
-      { id: 'b4_3', module_id: 'B4.3', name: 'Constraint Satisfaction Analysis', method_class: 'Constraint_Satisfaction', active: true, required: ['cpi','spi','bac'] }
+      { id: 'b1_2', module_id: 'B1.2', name: 'Weighted Voting', method_class: 'Weighted_Voting', active: true, required: ['cpi','spi','docRiskScore'] }
     ]
   },
   {
@@ -164,13 +131,7 @@ window.LIN_CATEGORIES = [
     color: '#94a3b8',
     description: 'Evidence quality of the underlying document set. Authoring-time only: these describe how trustworthy the evidence is, never the condition of the project.',
     modules: [
-      { id: 'c1_1', module_id: 'C1.1', name: 'Missing Data Index', method_class: 'Missing_Data_Index', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
-      { id: 'c1_2', module_id: 'C1.2', name: 'Data Timeliness Score', method_class: 'Data_Timeliness_Score', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['docDate'] },
-      { id: 'c1_3', module_id: 'C1.3', name: 'Source Reliability Weighting', method_class: 'Source_Reliability_Weighting', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
-      { id: 'c1_4', module_id: 'C1.4', name: 'Audit Trail Completeness', method_class: 'Audit_Trail_Completeness', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
-      { id: 'c1_5', module_id: 'C1.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] },
-      { id: 'c1_6', module_id: 'C1.6', name: 'Cross-document Consistency Score', method_class: 'Cross_Doc_Consistency', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['ev','ac'] },
-      { id: 'c1_7', module_id: 'C1.7', name: 'Reporting Frequency Index', method_class: 'Reporting_Frequency_Index', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['docDate'] }
+      { id: 'c1_5', module_id: 'C1.5', name: 'Information Completeness Ratio', method_class: 'Information_Completeness_Ratio', active: true, authoringOnly: true, excludeFromProjectStatus: true, required: ['bac'] }
     ]
   }
 ];

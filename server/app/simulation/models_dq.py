@@ -361,11 +361,5 @@ def run_reporting_frequency(si: dict, rand: Callable[[], float],
 
 
 DQ_EXTENSIONS: dict[str, tuple[str, Callable]] = {
-    "C1.1": ("Missing_Data_Index", run_missing_data_index),
-    "C1.2": ("Data_Timeliness_Score", run_data_timeliness),
-    "C1.3": ("Source_Reliability_Weighting", run_source_reliability),
-    "C1.4": ("Audit_Trail_Completeness", run_audit_trail),
     "C1.5": ("Information_Completeness_Ratio", run_info_completeness),
-    "C1.6": ("Cross_Doc_Consistency", run_cross_doc_consistency),
-    "C1.7": ("Reporting_Frequency_Index", run_reporting_frequency),
 }

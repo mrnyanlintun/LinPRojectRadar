@@ -28,21 +28,6 @@ A6.3,Environmental Compliance Rate,8.8,A,Project Health,A6,Delivery Quality Perf
 A6.4,Contractor Performance Assessment Signal,8.9,A,Project Health,A6,Delivery Quality Performance,moved from former Cat 8 Governance; describes project performance not authority
 B1.1,Conservative Dominance,6.1,B,Recommendation & Governance,B1,Signal Synthesis,
 B1.2,Weighted Voting,6.2,B,Recommendation & Governance,B1,Signal Synthesis,
-B1.3,Majority Rules,6.3,B,Recommendation & Governance,B1,Signal Synthesis,
-B1.4,Worst-N-of-M,6.4,B,Recommendation & Governance,B1,Signal Synthesis,
-B2.18,MARCOS Ranking,7.18,B,Recommendation & Governance,B2,Evidence Combination,
-B3.1,Agent-Based Governance Model,8.1,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.2,FAR/Agency EVMS Applicability Monitor,8.2,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.3,Versioned A-11 Capital Programming Conformance Check,8.3,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.4,EVMS Reporting Compliance Monitor,8.4,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B3.5,Contract Modification Governance Check,8.5,B,Recommendation & Governance,B3,Regulatory & Authority Thresholds,
-B4.3,Constraint Satisfaction Analysis,10.3,B,Recommendation & Governance,B4,Decision Optimization,
-C1.1,Missing Data Index,9.1,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
-C1.2,Data Timeliness Score,9.2,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
-C1.3,Source Reliability Weighting,9.3,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
-C1.4,Audit Trail Completeness,9.4,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
 C1.5,Information Completeness Ratio,9.5,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
-C1.6,Cross-document Consistency Score,9.6,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
-C1.7,Reporting Frequency Index,9.7,C,Data & Evidence Health,C1,Data Integrity,authoring-time quality gate; not participant-facing; must not enter project status aggregation
 RETIRED,Document Risk Extraction,1.3,-,-,-,-,alias of 4.1; consolidated into A4.1
 RETIRED,DSM Rework Propagation (Cat 3 entry),3.2,-,-,-,-,alias of 5.1; consolidated into A5.1

@@ -1388,7 +1388,6 @@ def _register_extensions() -> None:
     from .models_doc import A4_EXTENSIONS, A5_EXTENSIONS, A6_EXTENSIONS
     from .models_decision import DECISION_EXTENSIONS
     from .models_dq import DQ_EXTENSIONS
-    from .models_evc import EVC_EXTENSIONS
     from .models_fuzzy import FUZZY_EXTENSIONS
     from .models_gov import GOV_BATCH_A, GOV_BATCH_B
     from .models_evm import A1_EXTENSIONS
@@ -1401,13 +1400,16 @@ def _register_extensions() -> None:
     VALIDATED.update(A6_EXTENSIONS)
     VALIDATED.update(GOV_BATCH_A)
     VALIDATED.update(GOV_BATCH_B)
-    VALIDATED.update(EVC_EXTENSIONS)
     VALIDATED.update(FUZZY_EXTENSIONS)
     VALIDATED.update(DQ_EXTENSIONS)
     VALIDATED.update(DECISION_EXTENSIONS)
     # RUN 30 CLOSURE, v16. THE TWENTY CATEGORY-7 IDENTITIES ARE REPOINTED, LAST, so this line is
     # the one that decides which implementation production runs and a reader can see it decide.
-    # `EVC_EXTENSIONS` and `FUZZY_EXTENSIONS` are still imported and still updated above, because
+    # RUN 97. `models_evc.py` is DELETED. It served B2.2 through B2.9, Evidence Combination,
+    # whose rows Run 96 removed -- `EVC_EXTENSIONS` had been an empty dict since -- and Run 97's
+    # addendum removes B2 entirely. It was kept only because eight suites called its functions
+    # directly, which the addendum names as not a reason.
+    # `FUZZY_EXTENSIONS` is still imported and still updated above, because
     # they also carry Category-7-adjacent modules that Run 30 is not in scope to touch; what
     # changes is that every B2.x key they set is overwritten here by the thin canonical route in
     # models_cat7.py. The legacy Category-7 functions therefore remain in the tree as the

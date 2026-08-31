@@ -1084,14 +1084,7 @@ def run_regret_minimization(si: dict, rand: Callable[[], float],
 
 GOV_BATCH_A: dict[str, tuple[str, Callable]] = {
     "B1.2": ("Weighted_Voting", run_weighted_voting),
-    "B1.3": ("Majority_Rules", run_majority_rules),
-    "B1.4": ("Worst_N_of_M", run_worst_n_of_m),
-    "B3.2": ("FAR_Threshold", run_far_threshold),
-    "B3.3": ("OMB_A11_Check", run_omb_a11_check),
-    "B3.4": ("EVM_Reporting_Threshold", run_evm_reporting_threshold),
-    "B3.5": ("Contract_Mod_Frequency", run_contract_mod_frequency),
 }
 
 GOV_BATCH_B: dict[str, tuple[str, Callable]] = {
-    "B4.3": ("Constraint_Satisfaction", run_constraint_satisfaction),
 }

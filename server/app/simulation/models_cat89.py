@@ -70,18 +70,10 @@ DISPOSITION_UNQUALIFIED = "BLOCKED_UNQUALIFIED_EVIDENCE"
 #: Which downstream use each module's evidence is qualified FOR. Qualification is use-specific
 #: (section 19), so a module names its use rather than asking a global question.
 MODULE_USE: dict[str, str] = {
-    "B3.1": "governance_authorization",
-    "B3.2": "regulatory_applicability",
-    "B3.3": "regulatory_conformance",
-    "B3.4": "regulatory_conformance",
-    "B3.5": "governance_authority_check",
     "A6.1": "requirement_conformance",
     "A6.2": "safety_measurement",
     "A6.3": "environmental_conformance",
     "A6.4": "official_assessment_ingestion",
-    "C1.1": "quality_assessment", "C1.2": "quality_assessment", "C1.3": "quality_assessment",
-    "C1.4": "quality_assessment", "C1.5": "quality_assessment", "C1.6": "quality_assessment",
-    "C1.7": "quality_assessment",
 }
 
 #: What each use requires of its evidence. Section 21 forbids one global rule; these are the
@@ -442,15 +434,6 @@ def _evms_reporting(structure: dict) -> dict[str, Any]:
 #: THE ROUTE TABLE. `registry.VALIDATED` is repointed at these, and nothing else reaches the
 #: Category-8/9 legacy implementations from a production run.
 CAT89_CANONICAL: dict[str, tuple[str, Callable]] = {
-    "B3.1": ("ABM_Governance", _route("B3.1", "ABM_Governance", _abm, gated=True)),
-    "B3.2": ("EVMS_Applicability",
-             _route("B3.2", "EVMS_Applicability", V6.evms_applicability, gated=True)),
-    "B3.3": ("A11_Conformance",
-             _route("B3.3", "A11_Conformance", V6.a11_conformance, gated=True)),
-    "B3.4": ("EVMS_Reporting_Compliance",
-             _route("B3.4", "EVMS_Reporting_Compliance", _evms_reporting, gated=True)),
-    "B3.5": ("Modification_Governance",
-             _route("B3.5", "Modification_Governance", V6.modification_governance, gated=True)),
     "A6.1": ("Quality_Compliance",
              _route("A6.1", "Quality_Compliance", V6.quality_compliance, gated=True)),
     "A6.2": ("Safety_Performance",
@@ -459,21 +442,7 @@ CAT89_CANONICAL: dict[str, tuple[str, Callable]] = {
              _route("A6.3", "Environmental_Compliance", V6.environmental_compliance, gated=True)),
     "A6.4": ("Contractor_Performance",
              _route("A6.4", "Contractor_Performance", V6.contractor_assessment, gated=True)),
-    "C1.1": ("Missing_Data_Index",
-             _route("C1.1", "Missing_Data_Index", V6.missing_data_index, gated=False)),
-    "C1.2": ("Data_Timeliness_Score",
-             _route("C1.2", "Data_Timeliness_Score", V6.data_timeliness, gated=False)),
-    "C1.3": ("Source_Reliability_Weighting",
-             _route("C1.3", "Source_Reliability_Weighting", V6.source_reliability, gated=False)),
-    "C1.4": ("Audit_Trail_Completeness",
-             _route("C1.4", "Audit_Trail_Completeness", V6.audit_trail_completeness,
-                    gated=False)),
     "C1.5": ("Information_Completeness_Ratio",
              _route("C1.5", "Information_Completeness_Ratio", V6.information_completeness,
                     gated=False)),
-    "C1.6": ("Cross_Doc_Consistency",
-             _route("C1.6", "Cross_Doc_Consistency", V6.cross_document_consistency,
-                    gated=False)),
-    "C1.7": ("Reporting_Frequency_Index",
-             _route("C1.7", "Reporting_Frequency_Index", V6.reporting_frequency, gated=False)),
 }

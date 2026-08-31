@@ -494,5 +494,4 @@ def run_hypersoft_sets(si: dict, rand: Callable[[], float], period_cutoff) -> di
 
 
 FUZZY_EXTENSIONS: dict[str, tuple[str, Callable]] = {
-    "B2.18": ("MARCOS", run_marcos),
 }
