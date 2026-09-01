@@ -2045,9 +2045,44 @@ def _evidence_qualification(period: int, observations: list[dict]) -> dict | Non
     # DECIDE WITH: same field, same lowest tier, same latest as-of, and still two different
     # values. At that point selection falls through to the document ROLE rank, which is a
     # deterministic tiebreak and not a statement that one figure is right.
+    #
+    # RUN 100. ONE FIELD IS EXCLUDED FROM THE COMPARISON, AND IT IS NOT A SUPPRESSION.
+    #
+    # The rule below asks whether two documents STATE DIFFERENT VALUES FOR THE SAME FIELD, and
+    # its whole force comes from the premise that the field names ONE FACT ABOUT THE PROJECT
+    # which the two documents assert incompatibly. `bac`, `ev`, `plannedPctComplete` are such
+    # facts: two documents putting a different earned value on the same date contradict each
+    # other, and the gate is right to refuse.
+    #
+    # `docRiskScore` IS NOT SUCH A FACT. The extraction contract defines it per document --
+    # "document_risk_score, if requested, is a number between 0 and 1 inclusive, where 0 is no
+    # concern and 1 is severe concern" (extraction_client.py) -- and it is requested from each
+    # of the SEVEN doc types in `extraction_merge.DOC_RISK_DOC_TYPES` separately. The A4.1 note
+    # at the derivation site below says it in as many words: what the pipeline supplies is "a
+    # single number per document". A submittal register scoring itself 0.15 and an inspection
+    # report scoring itself 0.10 are each describing THEMSELVES. They are not two answers to one
+    # question, so there is nothing for the declared precedence rule to fail to decide, and
+    # "the documents disagree" is a category error rather than a finding.
+    #
+    # Leaving it in refused every gated module on any realistic upload: a period carrying more
+    # than one of those seven doc types will almost always carry more than one distinct
+    # self-score, and the only way to satisfy the gate would be to require seven independent
+    # documents to publish an identical risk score, which is a false uniformity the platform has
+    # no business demanding.
+    #
+    # THE CHECK ITSELF IS UNCHANGED for every other field, including a zero. This excludes one
+    # field whose values are not comparable, not a class of disagreement.
+    #
+    # `docDate` would have the same shape, but it is in `field_registry.UNEMITTABLE_FIELDS` and
+    # never becomes an observation, so it cannot reach here. `docRiskScore` is the only
+    # per-document self-descriptive field in the emittable vocabulary.
+    NOT_A_SHARED_ASSERTION: frozenset[str] = frozenset({"docRiskScore"})
+
     per_field: dict[str, list[dict]] = {}
     for o in observations:
         if o.get("field") is None:
+            continue
+        if str(o["field"]) in NOT_A_SHARED_ASSERTION:
             continue
         per_field.setdefault(str(o["field"]), []).append(o)
 

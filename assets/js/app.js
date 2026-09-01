@@ -1296,11 +1296,22 @@
 
   function awaitingHtml(p, what) {
     const uploaded = hasUploadedDocuments(p);
+    // RUN 100. THE TWO CASES WERE THE WRONG WAY ROUND, AGAINST THE OWNER'S DEFINITION.
+    //
+    // The owner's definition, stated this run: AWAITING ANALYSIS MEANS DOCUMENTS HAVE BEEN
+    // UPLOADED AND "Process all" HAS NOT YET BEEN PRESSED. A pre-analysis state, nothing else.
+    //
+    // This function had the phrase on the OTHER branch: a project with NO documents was told
+    // "Awaiting analysis", and the project that actually is awaiting analysis -- documents
+    // extracted, compute not yet pressed -- was told something else. A project with nothing
+    // uploaded is not awaiting analysis; there is nothing yet to analyse, and the next action
+    // is an upload, not a compute. The phrase now names the state the owner defined, and the
+    // empty case says plainly what it is.
     const body = uploaded
-      ? `<p><strong>Documents uploaded, computation not yet run.</strong> This project's documents have been extracted but the analysis has not been run for this period.</p>
+      ? `<p><strong>Awaiting analysis.</strong> This project's documents have been uploaded and extracted for this period, and Process all has not been pressed yet.</p>
         <p class="kn-sub">Run the analysis for this period from the workspace upload panel. Extraction alone does not produce a result; nothing is shown here until the analysis has actually run, and nothing is fabricated in the meantime.</p>`
-      : `<p><strong>Awaiting analysis.</strong> This project has no computed result yet.</p>
-        <p class="kn-sub">Upload this project's documents, then run the analysis for this period from the workspace upload panel. Nothing is shown here until that has happened, and nothing is fabricated in the meantime.</p>`;
+      : `<p><strong>No documents uploaded.</strong> Nothing has been uploaded for this project yet, so there is nothing to analyse.</p>
+        <p class="kn-sub">Upload this project's documents for this period from the workspace upload panel, then run the analysis. Nothing is shown here until that has happened, and nothing is fabricated in the meantime.</p>`;
     return `<div class="ledger-head"><div>
         <p class="eyebrow">${esc(what)}</p>
         <h2>${esc(p.id)}</h2><p class="ledger-sub">${esc(p.name)}</p>

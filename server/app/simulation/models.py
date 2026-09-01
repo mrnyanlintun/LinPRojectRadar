@@ -821,7 +821,27 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # earned value, planned value and actual cost all equal its budget at 100 per cent now publishes
 # "Complete", where before it published "Indeterminate" like every other project. Nothing else
 # about the rollup moves: worst-wins, the required core and the Indeterminate gate are unaltered.
-SIMULATION_VERSION = "sim-2026.08-v45"
+# RUN 100 moves this to v46 because this run CHANGES WHAT THE PLATFORM COMPUTES, in two places.
+#
+#   1. `docRiskScore` is no longer compared across documents when the period's Category-9
+#      evidence record looks for material conflicts. It is a per-document self-score, not a
+#      shared assertion about the project, so two documents carrying different ones were never
+#      contradicting each other -- and the false conflict refused EVERY gated module on any
+#      realistic upload. Measured on the real route: A6.1, A6.2 and A6.3 now compute on a
+#      21-document fixture where all four A6 modules previously abstained on
+#      "1 unresolved material conflict".
+#   2. The recorded spec applier no longer falls back to the bare category key. A recorded
+#      answer is served only on an exact prompt-sha256 match -- that is, only against the
+#      figures it was recorded against -- and anything else abstains with the reason stated.
+#      Before this run a project at 100 per cent and one at 25 per cent were measured receiving
+#      the identical recorded A1 posture. THIS AFFECTS THE KEYLESS PATH ONLY: `build_applier`
+#      returns the configured provider's applier whenever its key is present and never consults
+#      the recorded corpus at all.
+#
+# Nothing else moves: worst-wins, the required core, the Indeterminate gate, Conservative
+# Dominance and Run 99's `delivery_complete` are all unaltered. Results computed under
+# sim-2026.08-v45 remain valid under that stamp.
+SIMULATION_VERSION = "sim-2026.08-v46"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from

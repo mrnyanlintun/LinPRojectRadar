@@ -152,11 +152,23 @@ def live_statuses(session: Session, projects: list) -> dict[str, dict[str, Any]]
     # project has no evidence row for is not a period any surface can render. What `r` no
     # longer decides is WHAT THE STATUS IS.
     #
-    # NO FALLBACK. A project whose categories have never been called gets `project_status`
-    # None and an empty `category_statuses`, and `with_stored_status` then leaves the legacy
-    # document's empty status, so the list says the project is awaiting analysis. That is the
-    # order's rule at section 2: the surface renders the stored reading or it renders nothing.
-    # It must NOT render the Python layer's older figure.
+    # NO FALLBACK. A project whose categories have never been called gets an empty
+    # `category_statuses`, and the Python module layer's older figure is NOT substituted for it.
+    # That is the order's rule at section 2: the surface renders the stored reading or it
+    # renders nothing.
+    #
+    # RUN 100 CORRECTS WHAT THIS NOTE SAID NEXT. It claimed such a project gets `project_status`
+    # None, so `with_stored_status` leaves the legacy document's empty status and "the list says
+    # the project is awaiting analysis". THAT HAS BEEN FALSE SINCE RUN 89. `spec_projection.
+    # project_status` applies the required-core gate first: A1, A2, A3, A6 must each carry a
+    # posture, and when any of them does not the published status is the WORD "Indeterminate" --
+    # not None. So `with_stored_status` finds a truthy status, sets it on the row, and the list
+    # prints "Indeterminate". None is now published only when the required core is fully
+    # assessed and the fused band is itself absent.
+    #
+    # The stale note mattered: it described the portfolio as falling through to an empty status,
+    # which is why a defect in what the list actually publishes stayed invisible to inspection
+    # of this file. Measured on the real list route this run, not asserted.
     from . import spec_projection
 
     # RUN 99. The computed row's own figures ride along so the Complete promotion is decided on

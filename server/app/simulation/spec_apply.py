@@ -287,8 +287,20 @@ class RecordedSpecApplier:
         key = self.key_for(prompt)
         if key in self._recorded:
             return self._recorded[key]
-        if category_key in self._recorded:
-            return self._recorded[category_key]
+        # RUN 100. THE BARE CATEGORY KEY IS NOT CONSULTED, AND ITS REMOVAL IS THE POINT.
+        #
+        # This used to fall back to `self._recorded[category_key]`, which returned the recorded
+        # A1 answer for ANY figures whatsoever: a project 100% complete and a project 25%
+        # complete were measured receiving the identical posture, because the only thing the
+        # lookup asked was "is this category A1". A recorded answer is a reading taken against
+        # SPECIFIC FIGURES, and served against different ones it is not reproducibility, it is
+        # a fabricated answer wearing a real one's clothes.
+        #
+        # The prompt sha256 above IS the figures: the prompt carries them, so an exact hash match
+        # is exactly the guarantee "this answer was recorded against these figures". Anything
+        # else abstains, with the reason stated, in the same words the categories that hold no
+        # recorded answer at all already use. The recorded path exists for reproducibility and
+        # may not stand in for a model.
         raise SpecApplicationError(
             f"no recorded answer is held for category {category_key} on these figures "
             f"(prompt sha256 {key[:16]}), and there is no model key in this environment to ask. "
