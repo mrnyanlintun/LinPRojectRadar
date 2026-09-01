@@ -159,8 +159,12 @@ def live_statuses(session: Session, projects: list) -> dict[str, dict[str, Any]]
     # It must NOT render the Python layer's older figure.
     from . import spec_projection
 
+    # RUN 99. The computed row's own figures ride along so the Complete promotion is decided on
+    # the portfolio list by the SAME function the detail page and the compute route use. The
+    # readings still decide the risk band; these decide only whether the work is delivered.
     projections = spec_projection.projections(
-        session, [(r.project_id, r.period) for r in rows])
+        session, [(r.project_id, r.period) for r in rows],
+        {r.project_id: (r.signal_inputs or {}) for r in rows})
     out: dict[str, dict[str, Any]] = {}
     for r in rows:
         proj = projections[r.project_id]

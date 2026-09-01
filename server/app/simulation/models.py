@@ -817,7 +817,11 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # `unported_modules()`. The five weighted performance categories hold 27 between them. Voting is
 # still exactly A1.7 and A1.8. Results computed under sim-2026.08-v43 remain valid under that
 # stamp.
-SIMULATION_VERSION = "sim-2026.08-v44"
+# RUN 99 moves this to v45 because this run CHANGES WHAT THE PLATFORM COMPUTES: a project whose
+# earned value, planned value and actual cost all equal its budget at 100 per cent now publishes
+# "Complete", where before it published "Indeterminate" like every other project. Nothing else
+# about the rollup moves: worst-wins, the required core and the Indeterminate gate are unaltered.
+SIMULATION_VERSION = "sim-2026.08-v45"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -842,6 +846,11 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  "sim-2026.08-v42",
  "sim-2026.08-v43",
  "sim-2026.08-v44",
+ # RUN 99: the Complete promotion. A project whose earned value, planned value and actual cost
+ # all equal its budget at 100 per cent publishes "Complete"; before v45 it published
+ # "Indeterminate" like every other project. Rows stamped v44 and earlier remain valid under
+ # their own stamp.
+ "sim-2026.08-v45",
 )
 
 

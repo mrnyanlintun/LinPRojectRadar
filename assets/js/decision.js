@@ -241,8 +241,22 @@ function deriveHealthState(project) {
     if (typeof window !== "undefined" && window.getProjectFusion) {
       const f = window.getProjectFusion(project);
       if (f && f.status) return f.status;
-      // A stored row exists and carries no status: say so, do not invent one.
-      if (f && f.stored) return "Awaiting analysis";
+      /* RUN 99, THE OWNER'S SECTION 3. A STORED ROW IS A PROCESSED PROJECT, AND A PROCESSED
+         PROJECT MUST NEVER SAY "AWAITING ANALYSIS".
+
+         That word has one meaning and it is his: documents uploaded, Process all not yet
+         pressed. Returning it for a row that EXISTS said the opposite of what had happened --
+         the project had been analysed, and the analysis had produced no publishable status.
+
+         The platform already has a word for exactly that condition and it is the one the
+         server itself stores: "Indeterminate", issued by the required-core gate in
+         `simulation/compute.py` when a required category carries no posture. It is returned
+         here rather than a new word, so this surface and the server say the same thing.
+
+         IT IS A SEVENTH STATUS AND THE OWNER HAS NOT RULED ON IT. Run 99 reports that; it does
+         not paper over it by relabelling it as one of the six, and it does not invent an
+         eighth. */
+      if (f && f.stored) return "Indeterminate";
     }
   } catch (e) { /* fall through */ }
 

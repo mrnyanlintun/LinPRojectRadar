@@ -288,6 +288,8 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
 # so the two status paths cannot drift about which categories are required. That is the failure
 # this programme has already found nine times.
 from .simulation.compute import (  # noqa: E402
+    _COMPLETE as COMPLETE,
+    delivery_complete,
     _INDETERMINATE as INDETERMINATE,
     _REQUIRED_CATEGORIES as REQUIRED_CATEGORIES,
     _SUPPORTING_CATEGORIES as SUPPORTING_CATEGORIES,
@@ -307,14 +309,29 @@ def required_core_missing(cats: dict[str, dict[str, Any]]) -> list[str]:
     return [k for k in REQUIRED_CATEGORIES if not (cats.get(k) or {}).get("status")]
 
 
-def project_status_basis(cats: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def project_status_basis(cats: dict[str, dict[str, Any]],
+                         signal_inputs: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Why the project status is what it is: the fused band, the gate's verdict, and the reason.
 
     Carried beside `project_status` so a surface can render the Indeterminate brief the owner
     specified without re-deriving the gate, and so nothing has to infer WHY from the word alone.
+
+    RUN 99, THE COMPLETE PROMOTION. `signal_inputs` is the computed row's own figures and is
+    OPTIONAL, so every existing caller that has no row to hand keeps its previous behaviour
+    exactly: without figures nothing can be complete, and this function returns byte for byte
+    what it returned before this run. The rule itself is NOT restated here -- it is
+    `simulation.compute.delivery_complete`, imported above, for the same reason the required
+    core is imported rather than restated: two status paths that each hold their own copy of a
+    rule are two status paths that will disagree, and this programme has found that nine times.
+
+    Complete is decided AHEAD of the required-core gate. The gate withholds an official RISK
+    POSTURE when a required category carries none; completion is not a posture but a fact about
+    delivery, and no unassessed category can make a finished project unfinished. Behind the
+    gate the owner's three complete projects could never publish Complete at all.
     """
     missing = required_core_missing(cats)
+    complete = delivery_complete(signal_inputs)
     fused = worst_band([c.get("status") for c in cats.values()
                         if c.get("status") and c.get("contributes_to_project_status")])
     detail = []
@@ -343,12 +360,14 @@ def project_status_basis(cats: dict[str, dict[str, Any]]) -> dict[str, Any]:
         # lets it be official. It is reported either way so an Indeterminate brief can still show
         # every assessed category and any that are Red.
         "fused_band": fused,
-        "official": not missing,
-        "status": INDETERMINATE if missing else fused,
+        "official": complete or not missing,
+        "delivery_complete": complete,
+        "status": COMPLETE if complete else (INDETERMINATE if missing else fused),
     }
 
 
-def project_status(cats: dict[str, dict[str, Any]]) -> str | None:
+def project_status(cats: dict[str, dict[str, Any]],
+                   signal_inputs: dict[str, Any] | None = None) -> str | None:
     """
     The official project status.
 
@@ -357,10 +376,11 @@ def project_status(cats: dict[str, dict[str, Any]]) -> str | None:
     When any required category carries none, it is INDETERMINATE, which is not a band and is not
     ranked against one.
     """
-    return project_status_basis(cats)["status"]
+    return project_status_basis(cats, signal_inputs)["status"]
 
 
-def projection(session: Session, project_id: str, period: int) -> dict[str, Any]:
+def projection(session: Session, project_id: str, period: int,
+               signal_inputs: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     The three fields every surface reads, built from the specification readings alone.
 
@@ -374,14 +394,16 @@ def projection(session: Session, project_id: str, period: int) -> dict[str, Any]
         "module_results": module_rows(readings),
         "abstained": abstention_rows(readings),
         "category_statuses": cats,
-        "project_status": project_status(cats),
-        "project_status_basis": project_status_basis(cats),
+        "project_status": project_status(cats, signal_inputs),
+        "project_status_basis": project_status_basis(cats, signal_inputs),
         "specification_categories_called": sorted(readings),
         "specification_reading_count": len(readings),
     }
 
 
-def projections(session: Session, pairs: list[tuple[str, int]]) -> dict[str, dict[str, Any]]:
+def projections(session: Session, pairs: list[tuple[str, int]],
+                inputs_by_project: dict[str, dict[str, Any]] | None = None
+                ) -> dict[str, dict[str, Any]]:
     """
     The same projection for many (project_id, period) pairs, in ONE query.
 
@@ -407,12 +429,13 @@ def projections(session: Session, pairs: list[tuple[str, int]]) -> dict[str, dic
     for pid, period in wanted:
         readings = per_project.get(pid) or {}
         cats = category_statuses(readings)
+        si = (inputs_by_project or {}).get(pid)
         out[pid] = {
             "module_results": module_rows(readings),
             "abstained": abstention_rows(readings),
             "category_statuses": cats,
-            "project_status": project_status(cats),
-            "project_status_basis": project_status_basis(cats),
+            "project_status": project_status(cats, si),
+            "project_status_basis": project_status_basis(cats, si),
             "specification_categories_called": sorted(readings),
             "specification_reading_count": len(readings),
         }

@@ -2548,8 +2548,12 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     # No stored field is invented for it: on a Python-layer row it is DERIVED from that row's
     # own `category_statuses` by the same pure function, so a stored row and a fresh projection
     # can never disagree about which required categories are missing.
+    # RUN 99. Same figures, same one function: without them the Complete promotion could not be
+    # decided here and the detail page would disagree with the portfolio list about a finished
+    # project. `spec` already carries the basis when the caller built it from a row.
     _spec_basis = (spec.get("project_status_basis") if spec is not None
-                   else spec_projection.project_status_basis(_spec_cats or {}))
+                   else spec_projection.project_status_basis(_spec_cats or {},
+                                                             row.signal_inputs or {}))
     view = {
         "result_id": row.result_id,
         "period": row.period,
@@ -3879,7 +3883,8 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
     # projection and the row can never describe two different periods.
     view = _result_view(row, include_recommendation=visible, package=package,
                         project_legacy_id=project.legacy_id,
-                        spec=spec_projection.projection(session, project.id, row.period))
+                        spec=spec_projection.projection(session, project.id, row.period,
+                                                        row.signal_inputs or {}))
 
     # WHAT THE PERIOD'S DOCUMENTS ESTABLISH, read at display time and not frozen into the row.
     # Read from the period's LIVE documents (superseded revisions already excluded), so a

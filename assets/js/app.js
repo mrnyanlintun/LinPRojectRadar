@@ -154,7 +154,49 @@
      Found by tests_render.html, which is the whole reason that harness exists: in a page without
      store.js the unqualified hasSignals reference threw a ReferenceError, the list row silently
      fell back to its minimal catch-block form, and the assertion went red. */
+  /* RUN 99, THE OWNER'S SECTION 3, AND THE DEFECT HE WAS LOOKING AT.
+
+     "Awaiting analysis" has ONE meaning, and it is the owner's: documents have been uploaded
+     and Process all has not yet been pressed. A project that HAS been processed must never
+     carry it.
+
+     It did. Measured on the owner's own portfolio page, on a project seeded and computed
+     through the real routes: the row read "Awaiting analysis" beside a green dot reading
+     "Computed". Neither of the two things the briefing suspected was the cause.
+
+     THE ACTUAL PATH, end to end:
+       compute route   stores project_status = "Indeterminate" (compute.py, the required-core
+                       gate: only A1 of the five required categories carries a posture, because
+                       27 of the 30 modules in service abstain for want of document types the
+                       platform has no contract for).
+       portfolio route serves that word verbatim as `status` on the list row
+                       (facade.live_statuses -> with_stored_status / slim_row).
+       this page       asked LinResults.hasResult(p) FIRST. At list-render time the results
+                       store has not primed, so that is false, and the row fell to
+                       deriveHealthState()'s no-stored-row arm, which returns "Awaiting
+                       analysis". The served word never got looked at.
+
+     So the served status is read FIRST here, on every row, slim or full. It is the answer the
+     server actually published for this project and it is available on the row before anything
+     primes. A word the server did publish is never replaced by "Awaiting analysis", which
+     means the opposite; only a project the server published NOTHING for gets that.
+
+     A SERVED WORD THAT IS NOT ONE OF THE OWNER'S SIX IS NOT LAUNDERED AND NOT INVENTED OVER.
+     It is returned as its own key, so it cannot be misfiled into `empty` and cannot be
+     silently dropped. "Indeterminate" is such a word: it is a seventh status this platform
+     issues and the owner has not ruled on it. Reported, not papered over. */
+  function servedStatus(p) {
+    if (!p) return null;
+    const s = p.status || ((p.storedResult || {}).project_status) || null;
+    return (typeof s === "string" && s.trim()) ? s.trim() : null;
+  }
   function statusKey(p) {
+    const served = servedStatus(p);
+    if (served) {
+      const n = (typeof normalizeStatusLabel === "function") ? normalizeStatusLabel(served) : null;
+      return n ? n.toLowerCase().replace("-review", "")
+               : served.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    }
     if (p && p.slim) {
       const lab = (typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
       return lab ? lab.toLowerCase().replace("-review", "") : "empty";
@@ -195,10 +237,23 @@
   function renderStatusLegend() {
     const host = document.getElementById("status-legend");
     if (!host) return;
-    const counts = { complete: 0, green: 0, yellow: 0, amber: 0, red: 0, empty: 0 };
+    /* RUN 99. THE LOOP COULD NOT FAIL AND THAT WAS THE PROBLEM. `counts[k]++` on a key this
+       object does not hold is `undefined++` -- NaN, and NO THROW -- so a project carrying a
+       status outside the six vanished from the legend without the catch ever firing and
+       without any count moving. It is now counted somewhere real: `other`, which is NOT one of
+       the owner's six and is NOT rendered as a band. Nothing is misfiled into `empty`, because
+       `empty` means "awaiting analysis" and that has the owner's narrow definition.
+
+       `renderStatusLegend.lastCounts` is left on the function so a driver reading the page can
+       see the totals reconcile against LIN_PROJECTS.length rather than having to infer it. */
+    const counts = { complete: 0, green: 0, yellow: 0, amber: 0, red: 0, empty: 0, other: 0 };
     (window.LIN_PROJECTS || []).forEach((p) => {
-      try { counts[statusKey(p)]++; } catch (e) { counts.empty++; }
+      let k;
+      try { k = statusKey(p); } catch (e) { k = "empty"; }
+      if (Object.prototype.hasOwnProperty.call(counts, k) && k !== "other") counts[k]++;
+      else counts.other++;
     });
+    renderStatusLegend.lastCounts = counts;
     host.innerHTML = LEGEND_BANDS.map(([name, key, cssVar]) =>
       `<span class="legend-item" data-status="${key}">`
       + `<span class="legend-dot" style="background:var(${cssVar})" aria-hidden="true"></span>`
@@ -213,6 +268,14 @@
   // reads the stored row and already returns "Awaiting analysis" when there is none, so it can
   // simply be asked.
   function stateLabel(p) {
+    // RUN 99. Same correction and the same reason as statusKey above: the word the server
+    // published for this project is what the row prints. "Awaiting analysis" is reserved for
+    // a project the server published no status for at all.
+    const served = servedStatus(p);
+    if (served) {
+      return ((typeof normalizeStatusLabel === "function") && normalizeStatusLabel(served))
+             || served;
+    }
     if (p && p.slim) {
       const lab = (typeof slimStatusLabel === "function") ? slimStatusLabel(p) : null;
       return lab || "Awaiting analysis";

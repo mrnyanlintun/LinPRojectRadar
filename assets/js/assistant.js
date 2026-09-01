@@ -113,7 +113,21 @@
       }
       if (!label) { empty++; return; }
       const isRed = String(label).indexOf("Red") >= 0;
-      const key = isRed ? "Red" : (counts[label] != null ? label : "Green");
+      /* RUN 99. THE FALLBACK WAS `"Green"`, AND IT WAS THE WRONG WAY ROUND.
+
+         Any status this tally did not already hold a bucket for was counted as Green. The
+         server publishes "Indeterminate" -- the required-core gate's answer when a required
+         category carries no posture -- for every project in a deployment with no model key, so
+         the assistant reported an entire portfolio of unassessable projects as healthy. A
+         status word nothing recognises is the one case where a favourable default is least
+         defensible: it is exactly where the platform knows least.
+
+         It is now counted as unassessed, beside the projects with no result at all, and never
+         as a band. Nothing is invented in its place and no project is called Green that no
+         module called Green. */
+      const known = isRed || counts[label] != null;
+      if (!known) { empty++; return; }
+      const key = isRed ? "Red" : label;
       counts[key] = (counts[key] || 0) + 1;
       if (isRed) reds.push(p.id);
     });

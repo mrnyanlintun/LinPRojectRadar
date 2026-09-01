@@ -41,6 +41,74 @@ _REQUIRED_CATEGORIES: tuple[str, ...] = ("A1", "A2", "A3", "A4", "A6")
 #: empty tier. They publish `[]` and that is the true answer: no category is supporting.
 _SUPPORTING_CATEGORIES: tuple[str, ...] = ()
 _INDETERMINATE = "Indeterminate"
+
+# --------------------------------------------------------------- RUN 99, THE COMPLETE STATUS
+#
+# THE OWNER'S RULING, RUN 99 SECTION 4: "Complete" is one of the six statuses every project must
+# resolve to, and he states its condition precisely -- "earned value, planned value and actual
+# cost all equal to budget at 100 percent". Three of his fifteen planned projects are authored
+# to exactly that.
+#
+# BEFORE THIS RUN NOTHING IN THE SERVED TREE COULD EMIT IT. Measured, not argued: a project
+# seeded through the real upload and compute routes with EV = PV = AC = BAC and 100 per cent
+# complete published "Indeterminate", identically to a project 25 per cent through its work.
+# `--status-complete` existed as a CSS token and `LEGEND_BANDS` named it, but a token and a
+# legend row are not a code path. The one promotion rule in the tree, `deriveProjectStatus` in
+# assets/js/taxonomy.js, is reachable ONLY from the researcher deep-dive surface, which
+# recomputes in the browser; nothing on the participant's route calls it.
+#
+# IT IS A FACT ABOUT DELIVERY, NOT A RISK BAND, and that is why it sits AHEAD of the required-
+# core gate rather than behind it. The gate asks "may an OFFICIAL RISK POSTURE be issued" and
+# withholds one when a required category carries none. Completion is not a posture: the work is
+# delivered at budget or it is not, and no schedule-risk or quality reading can make a finished
+# project unfinished. Behind the gate, the owner's three complete projects could never publish
+# Complete -- they carry the same unassessed categories as every other project -- and a status
+# he has ruled the platform publishes would be unreachable by construction.
+#
+# "COMPLETE" IS NOT A BAND AND IS DELIBERATELY NOT ADDED TO `fusion.BAND_SEVERITY`. It never
+# enters `worst_band` and is never ranked against Green, Yellow, Amber or Red. WORST-WINS IS
+# UNTOUCHED: `fuse_signals(voting)` is not altered, not re-ordered and not consulted twice, and
+# `fused_band` is reported beside the status either way, so nothing that needs the SEVERITY of a
+# completed project's evidence loses it to this promotion.
+#
+# EXACT EQUALITY, AND NO TOLERANCE. The owner's condition is an equality and it is applied as
+# one. A tolerance would be a threshold this run invented, and an invented threshold is the
+# thing this programme fails runs for. A project one pound short of budget is not Complete here
+# and that is the honest answer, not a rounding defect.
+_COMPLETE = "Complete"
+
+
+def _as_number(value):
+    """The value as a finite number, or None. Booleans are not numbers here."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    return out if out == out and out not in (float("inf"), float("-inf")) else None
+
+
+def delivery_complete(signal_inputs: dict | None) -> bool:
+    """
+    The owner's Complete condition, in one place, read by BOTH status paths.
+
+    True when the budget is a positive number, earned value, planned value and actual cost are
+    all exactly equal to it, and the recorded percent complete is 100. Any missing figure is
+    False: an absent number is not evidence of completion.
+    """
+    si = signal_inputs or {}
+    bac = _as_number(si.get("bac"))
+    if bac is None or bac <= 0:
+        return False
+    for key in ("ev", "pv", "ac"):
+        value = _as_number(si.get(key))
+        if value is None or value != bac:
+            return False
+    pct = _as_number(si.get("actualPctComplete"))
+    if pct is None:
+        pct = _as_number(si.get("pctComplete"))
+    return pct == 100.0
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
 
@@ -240,6 +308,11 @@ def compute_project(si: dict, scenario_id: str, period: str,
     _required_missing = [k for k in _REQUIRED_CATEGORIES
                          if not (category_statuses.get(k) or {}).get("status")]
     _fused_band = project["status"] if project else None
+    # RUN 99. The Complete promotion, decided by the one function above and applied identically
+    # on the specification path in `spec_projection`. Ahead of the gate; see the note there.
+    _complete = delivery_complete(si)
+    _published = (_COMPLETE if _complete
+                  else (_INDETERMINATE if _required_missing else _fused_band))
 
     # ------------------------------------------------------------------ RUN 11, GATES 5 AND 6
     # Derived, not asserted, and derived by the same pure function the read path uses, so a
@@ -260,7 +333,7 @@ def compute_project(si: dict, scenario_id: str, period: str,
         "abstained": run["abstained"],
         "unported": run["unported"],
         "category_statuses": category_statuses,
-        "project_status": _INDETERMINATE if _required_missing else _fused_band,
+        "project_status": _published,
         # Why the status is what it is, so a surface can render the Indeterminate brief without
         # re-deriving the gate. The fused band is reported EITHER WAY, so an Indeterminate brief
         # can still show every assessed category and any that are Red.
@@ -282,8 +355,9 @@ def compute_project(si: dict, scenario_id: str, period: str,
             "supporting_not_assessed": [k for k in _SUPPORTING_CATEGORIES
                                         if not (category_statuses.get(k) or {}).get("status")],
             "fused_band": _fused_band,
-            "official": not _required_missing,
-            "status": _INDETERMINATE if _required_missing else _fused_band,
+            "official": _complete or not _required_missing,
+            "delivery_complete": _complete,
+            "status": _published,
         },
         # The band worst-wins produced, kept under its own name so nothing that needs the
         # SEVERITY loses it to the gate. This is not a second project status.
