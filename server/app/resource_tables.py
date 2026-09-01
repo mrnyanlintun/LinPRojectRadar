@@ -195,9 +195,24 @@ def overhead_allocation_base(extraction: dict) -> dict | None:
     if not base or not source or planned_oh is None or actual_oh is None \
             or planned_driver is None or actual_driver is None:
         return None
+    # RUN 103, SECTION 4. THE PERIOD AND POPULATION FACTS, CARRIED THROUGH AS THE DOCUMENT
+    # STATED THEM AND NEVER DEFAULTED. `canonical_v3.overhead_absorption_variance` returns NOT
+    # ASSESSED where the two sides state different periods or unreconcilable cost-code
+    # populations, and it can only do that if the two sides' own statements reach it. A cost
+    # report that states none of these leaves the keys absent, and the variance band is withheld
+    # with that as its stated reason -- which is the owner's ruling, not a gap.
+    _text = lambda k: (str(extraction.get(k)).strip()
+                       if str(extraction.get(k) or "").strip() else None)
     return {
         "allocation_base": base,
         "driver_source": source,
+        "actual_period": _text("overhead_actual_period"),
+        "planned_period": _text("overhead_planned_period"),
+        "progress_basis": _text("overhead_progress_basis"),
+        "cost_code_population": _text("overhead_cost_code_population"),
+        "cost_code_mapping": _text("overhead_cost_code_mapping"),
+        "substantial_completion_declared": extraction.get("substantial_completion_declared"),
+        "unabsorbed_overhead_amount": _number(extraction.get("unabsorbed_overhead_amount")),
         "planned_overhead": planned_oh,
         "actual_overhead": actual_oh,
         "planned_driver": planned_driver,

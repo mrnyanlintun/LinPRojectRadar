@@ -301,6 +301,35 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "too, under the table's own headings; do not decide for yourself whether an activity is "
         "critical and do not compute a float the table does not print."
     ) if "lookahead_activities_json" in fields else ""
+    # RUN 103. THE FLATTENED SCHEDULE EXPORT. A2.1 and A2.12 are defined on a NETWORK -- rows
+    # with logic between them -- and the platform has never asked a document for one. The shape
+    # is named for the same reason as the six tables above: unnamed, the model returns null for
+    # a table the schedule update plainly prints. NOTHING IS TO BE REPAIRED IN THE ANSWER: a
+    # broken predecessor reference, a duplicate id or a missing duration is REPORTED by the
+    # platform's diagnostics and corrected by the scheduler, so the model is told in terms not
+    # to mend one.
+    schedule_network_hint = (
+        " schedule_network_json, if requested and the document contains an activity or schedule "
+        "table with logic (one row per activity, carrying a duration and its predecessor or "
+        "successor relationships), is a JSON array with one object per PRINTED ROW of that "
+        "table, using the table's own column headings as keys and its values as printed; return "
+        "every row the document prints and no others. Do not add an activity the document does "
+        "not list, do not invent a predecessor, a relationship type or a lag a row does not "
+        "print, and DO NOT CORRECT the logic: if a row names a predecessor that is not in the "
+        "table, or two rows carry the same activity id, or a duration is blank, return them "
+        "exactly as printed -- the platform reports those faults and the scheduler corrects the "
+        "source. Return an empty array only if the document has no such table. "
+        "schedule_calendar, if requested, is the project calendar the schedule states (for "
+        "example '5-day work week'), schedule_calendars_json is the list of calendar names the "
+        "export defines, schedule_version is the schedule's own revision identifier, "
+        "schedule_baseline_finish_day is the APPROVED baseline finish and "
+        "schedule_imposed_finish_day the required or contractual completion date, each as the "
+        "working-day number the schedule states it on where it states one, and "
+        "remaining_planned_duration_days is the remaining planned duration in working days as "
+        "the document states it with remaining_duration_basis the dates it was measured between "
+        "as printed; return null for any of these the document does not state, and do not "
+        "compute, convert or estimate one it does not state."
+    ) if "schedule_network_json" in fields else ""
     # RUN 87. THE TWO COMPLIANCE REGISTERS, named the same way and for the same reason: A6.1
     # and A6.3 are defined on a POPULATION of requirements, and without naming the shape the
     # model returns a summary for a table the document prints in full.
@@ -424,7 +453,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

@@ -219,10 +219,34 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "consumed_float", "baseline_curve_json", "baseline_version",
         "baseline_approval_source",
     ],
+    # RUN 103. THE FLATTENED SCHEDULE EXPORT, AND THE TWO SCALARS THE SLIP RATIO NEEDS.
+    #
+    # A2.12 Critical Path Analysis and A2.1 PERT Network Criticality both read
+    # `scheduleNetwork`, and Run 102 measured that NOTHING SUPPLIED IT: the structure had no
+    # document path at all, so both modules abstained on a network the project's own schedule
+    # update prints. `schedule_network_json` asks for that export as a table on the
+    # `lookahead_activities_json` precedent -- one object per printed activity row, keyed by the
+    # export's own column headings -- and `schedule_calendar`, `schedule_calendars_json`,
+    # `schedule_baseline_finish_day` and `schedule_imposed_finish_day` are the provenance and
+    # the two reference dates the analysis is measured against. NONE is derived: the baseline
+    # finish is the APPROVED baseline the contract states, and the imposed finish is a required
+    # or contractual completion date where the schedule states one. Where the export states no
+    # imposed date the float rule is not evaluable and says so; nothing is inferred for it.
+    #
+    # THE TWO SCALARS. Run 102 recorded that A2.7 Milestone Trend's slip-ratio denominator --
+    # remaining planned duration -- is stated by NO DOCUMENT, so the ratio was never formed.
+    # `remaining_planned_duration_days` is that figure as the schedule update states it on its
+    # face, and `remaining_duration_basis` is the provenance beside it: the date it was measured
+    # from and to. Both are printed cells. No denominator is derived from a clock and none is
+    # invented, so a document stating neither leaves the module abstaining exactly as it does
+    # today.
     "schedule_update": [
         "planned_percent_complete", "planned_value_to_date", "data_date", "total_float",
         "consumed_float", "activities_planned", "activities_constrained", "lookahead_weeks",
         "milestones_json",
+        "schedule_network_json", "schedule_calendar", "schedule_calendars_json",
+        "schedule_baseline_finish_day", "schedule_imposed_finish_day", "schedule_version",
+        "remaining_planned_duration_days", "remaining_duration_basis",
     ],
     # RUN 69. THE MODIFICATION REGISTER, WHICH IS A TABLE AND NOT A COUNT.
     #
@@ -401,6 +425,25 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "material_cost_current", "report_date", "overhead_allocation_base",
         "planned_allocation_base_quantity", "actual_allocation_base_quantity",
         "overhead_driver_source",
+        # RUN 103, SECTION 4. THE FACTS THE OWNER'S ABSORPTION-VARIANCE BAND NEEDS, AND THEY ARE
+        # FACTS, NOT ARITHMETIC. The variance is (actual overhead incurred - planned overhead
+        # absorbed) / planned overhead absorbed, for THE SAME PERIOD and THE SAME COST-CODE
+        # POPULATION. `indirect_cost_plan` and `indirect_cost_actual` are the two amounts and
+        # were already asked for; what the platform could never establish is whether they cover
+        # the same period and the same cost codes, and the owner's ruling is that where they do
+        # not, the answer is Not Assessed rather than a posture. So the two periods are asked
+        # for separately -- a cost report prints them on its face -- with the cost-code
+        # population each side covers and the documented mapping where they differ, and the
+        # PROGRESS BASIS that aligns planned absorption, which is what makes a planned figure a
+        # figure for THIS period rather than a whole-project budget.
+        #
+        # `substantial_completion_declared` and `unabsorbed_overhead_amount` are the two facts
+        # the owner's substantial-completion floor turns on. Neither is inferred from a percent
+        # complete: substantial completion is a DECLARED contractual state, and a platform that
+        # decided it for itself would be deciding a contract question.
+        "overhead_actual_period", "overhead_planned_period", "overhead_progress_basis",
+        "overhead_cost_code_population", "overhead_cost_code_mapping",
+        "substantial_completion_declared", "unabsorbed_overhead_amount",
         "original_contingency", "remaining_contingency",
     ],
     "past_performance_report": [

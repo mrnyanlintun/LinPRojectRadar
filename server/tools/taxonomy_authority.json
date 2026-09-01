@@ -121,6 +121,14 @@
           "plannedLaborHours",
           "actualLaborHours"
         ]
+      },
+      {
+        "id": "a2_12",
+        "module_id": "A2.12",
+        "active": true,
+        "required": [
+          "scheduleNetwork"
+        ]
       }
     ]
   },

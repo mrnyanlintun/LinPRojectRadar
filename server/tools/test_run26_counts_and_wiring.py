@@ -219,9 +219,19 @@ check("Run 96 genuinely reached the audit population -- this is not vacuous",
 # RUN 96. A3.4 Material Cost Variance was the one registered module outside the audit
 # population, and Run 96 removed it. The rows now outside are the five Group D Portfolio Health
 # rows the run STOPPED on, which the audit population never covered. The count is derived.
-check("no registered module is outside the audit population any more -- the one that was, "
-      "A3.4 Material Cost Variance, is the one Run 96 removed",
-      outside == [], str(outside))
+# RUN 103 RE-POINTED THIS, IT DID NOT WEAKEN IT. The Run 17/26 audit population is a SEALED
+# HISTORICAL record of what was assessed in August 2026. A module REGISTERED AFTER that audit
+# cannot be in it, and writing it into the audit CSV would be falsifying sealed evidence. So the
+# check now demands that every registered module outside the audit population be one named on an
+# explicit roster of post-audit additions, with the run that added it -- which is exactly the
+# form Run 96 used for the removals. An unrostered new module still fails here.
+ADDED_AFTER_RUN26_AUDIT: dict[str, str] = {
+    "A2.12": "Critical Path Analysis, added at Run 103 on the owner's section 2 order",
+}
+check("every registered module outside the Run 17/26 audit population is one REGISTERED AFTER "
+      "that audit and named on the post-audit roster, with the run that added it",
+      set(outside) <= set(ADDED_AFTER_RUN26_AUDIT),
+      str(sorted(set(outside) - set(ADDED_AFTER_RUN26_AUDIT))))
 check("RUN 96: Material Cost Variance was REMOVED from the registry, not merely disabled -- "
       "the owner's ruling is that retired means removed",
       "A3.4" not in index, str("A3.4" in index))
@@ -242,7 +252,12 @@ server_excluded = set(unported)
 audit_excluded = set(outside)
 check("RUN 96: the server excludes no project module -- every row it declares, it can run",
       server_excluded == set(), str(sorted(server_excluded)))
-check("RUN 96: and the audit excludes none either", audit_excluded == set(),
+# RUN 103. The same re-pointing as above, for the same reason: the audit population is sealed
+# and cannot name a module registered after it. What must stay true is that the audit excludes
+# nothing EXCEPT post-audit additions -- the populations still coincide over everything the
+# audit could have covered.
+check("RUN 96, re-pointed at RUN 103: the audit excludes nothing except modules registered "
+      "after it", audit_excluded <= set(ADDED_AFTER_RUN26_AUDIT),
       str(sorted(audit_excluded)))
 check("so the two populations now COINCIDE, and the reason they once differed is recorded: "
       "A4.1 had no runner, A3.4 was registered but unassessed, and Run 96 removed both",

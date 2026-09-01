@@ -64,6 +64,8 @@ V3_STRUCTURE_KEYS: dict[str, str] = {
     "A2.8": "lookAheadSchedule",
     "A2.9": "resourceProfile",
     "A2.10": "scheduleNetwork",
+    # RUN 103. A2.12 Critical Path Analysis reads the same governed export A2.1 reads.
+    "A2.12": "scheduleNetwork",
     "A2.11": "scheduleNetwork",
     "A3.1": "referenceClassPopulation",
     "A3.3": "productionOutputRecord",
@@ -99,6 +101,8 @@ V3_STRUCTURE_WORDS: dict[str, str] = {
             "duration for each",
     "A2.6": "a time phased baseline: the cumulative value of work planned to be complete at the "
             "end of each period",
+    "A2.12": "the project's activity network: the activities, the logic between them, a duration "
+             "for each, the calendar, and the approved baseline finish",
     "A2.7": "a milestone forecast history: each milestone's committed date and the date it was "
             "forecast for in each reporting period since",
     "A2.8": "a look ahead schedule: the window it covers, the activities planned in it, and "
@@ -1486,6 +1490,11 @@ def milestone_trend(structure: dict) -> dict[str, Any]:
                 float(structure["remaining_planned_duration_days"])
                 if isinstance(structure.get("remaining_planned_duration_days"), (int, float))
                 else None),
+            # RUN 103. The basis beside the figure: the dates the remaining duration was
+            # measured between, as the schedule update printed them. Provenance, not arithmetic.
+            "remaining_duration_basis": (
+                str(structure["remaining_duration_basis"]).strip()
+                if str(structure.get("remaining_duration_basis") or "").strip() else None),
             "deteriorating_count": sum(1 for m in out if m["direction"] == "deteriorating")}
 
 
@@ -2111,3 +2120,459 @@ def inflation_adjustment(structure: dict, base_cost: float) -> dict[str, Any]:
             "current_index_value": current_index, "base_cost": float(base_cost),
             "adjusted_cost": float(base_cost) * factor,
             "escalation_amount": float(base_cost) * (factor - 1.0), **meta}
+
+
+# =============================================================================================
+# RUN 103 -- SCHEDULE NETWORK DIAGNOSTICS, AND DETERMINISTIC CRITICAL PATH ANALYSIS
+#
+# `parse_schedule_network` above REFUSES on the FIRST fault it finds, with a sentence. That is
+# the right instinct -- a network with a broken logic is never repaired, never inferred and
+# never partially computed -- but a scheduler correcting the source needs EVERY fault named in
+# one pass, not the first one. `schedule_network_diagnostics` walks the same rows and collects
+# them all, with the affected source rows and activity ids beside each count. It NEVER repairs
+# anything and NEVER returns a network that carries a fault: `valid` is False and the caller
+# reports Not Assessed with the diagnostics as the stated reason.
+#
+# THE TWO FUNCTIONS ARE NOT TWO READINGS OF THE CONTRACT. The diagnostics are built ON TOP of
+# `parse_schedule_network`: a network the diagnostics call valid is re-parsed by it, and if that
+# parse still refuses, the refusal is recorded as a diagnostic rather than swallowed, so the two
+# cannot silently disagree about what a valid network is.
+# =============================================================================================
+
+#: The relation types a schedule logic tie may state. A row stating anything else is REPORTED,
+#: never coerced to Finish-to-Start. FS is the default ONLY where the row states no type at all,
+#: which is what a flattened predecessor list without a type column means.
+SCHEDULE_RELATION_TYPES: frozenset[str] = frozenset({"FS", "SS", "FF", "SF"})
+
+#: RUN 103. The milestone classes the owner's hard override names, on the SCHEDULE side. Kept
+#: identical in meaning to `models_ext._COMMITTED_MILESTONE_CLASSES` because the owner's ruling
+#: is that two modules banding the same quantity must not band it differently.
+COMMITTED_MILESTONE_CLASSES: frozenset[str] = frozenset({
+    "contractual", "regulatory", "turnover", "owner_committed", "owner-committed", "required",
+})
+
+
+def _relation_of(raw: Any) -> tuple[str | None, str]:
+    """(relation type, the text as stated). None when the stated type is not one of the four."""
+    text = str(raw or "").strip()
+    if not text:
+        return "FS", ""
+    word = text.upper().replace("-", "").replace("_", "").replace(" ", "")
+    return (word if word in SCHEDULE_RELATION_TYPES else None), text
+
+
+def _lag_of(raw: Any) -> tuple[float | None, str]:
+    """(lag in working days, the text as stated). None when the lag is not readable as a number."""
+    if raw is None or raw == "":
+        return 0.0, ""
+    v = num(raw, None)
+    if v is None or not math.isfinite(v):
+        return None, str(raw)
+    return float(v), str(raw)
+
+
+def schedule_network_diagnostics(structure: Any) -> dict[str, Any]:
+    """
+    Every fault in a flattened schedule export, named at once, with the rows that carry it.
+
+    NOTHING IS REPAIRED AND NOTHING IS DROPPED. A dangling predecessor is not deleted so the
+    rest can compute; a duplicate id is not renamed; a cycle is not broken. The scheduler
+    corrects the source and this platform names which rows made it unreadable.
+
+    Returned keys: `valid`, `activities_read`, `activities_accepted`, and one entry per fault
+    class carrying its count and the affected source rows or activity ids.
+    """
+    d: dict[str, Any] = {
+        "activities_read": 0, "activities_accepted": 0,
+        "missing_activity_id": [], "duplicate_activity_id": [],
+        "dangling_predecessor": [], "dangling_successor": [], "self_link": [],
+        "cycle_activities": [], "missing_duration": [], "negative_duration": [],
+        "unreadable_predecessor_list": [], "unrecognised_relation_type": [],
+        "unreadable_lag": [], "disconnected_components": [],
+        "invalid_calendar": [], "structure_refusal": None,
+    }
+    if not isinstance(structure, dict) or not isinstance(structure.get("activities"), list) \
+            or not structure.get("activities"):
+        d["valid"] = False
+        d["structure_refusal"] = (
+            "No schedule export was provided for this project, or what was provided is not a "
+            "list of activities, so no network is assembled and no critical path is computed.")
+        return _diagnostics_totals(d)
+
+    rows = structure["activities"]
+    d["activities_read"] = len(rows)
+    seen: dict[str, int] = {}
+    accepted: dict[str, dict[str, Any]] = {}
+    for i, r in enumerate(rows):
+        row_no = i + 1
+        if not isinstance(r, dict):
+            d["missing_activity_id"].append({"row": row_no, "stated": repr(r)[:60]})
+            continue
+        aid = str(r.get("activity_id") or "").strip()
+        if not aid:
+            d["missing_activity_id"].append({"row": row_no, "stated": ""})
+            continue
+        if aid in seen:
+            d["duplicate_activity_id"].append(
+                {"row": row_no, "activity_id": aid, "first_seen_row": seen[aid]})
+            continue
+        seen[aid] = row_no
+        dur = num(r.get("current_duration"), None)
+        if dur is None or not math.isfinite(dur):
+            d["missing_duration"].append({"row": row_no, "activity_id": aid,
+                                          "stated": r.get("current_duration")})
+            continue
+        if dur < 0:
+            d["negative_duration"].append({"row": row_no, "activity_id": aid, "stated": dur})
+            continue
+        preds = r.get("predecessors") or []
+        if not isinstance(preds, list):
+            d["unreadable_predecessor_list"].append(
+                {"row": row_no, "activity_id": aid, "stated": repr(preds)[:60]})
+            continue
+        # A predecessor may be a bare id or a mapping stating the relation type and the lag.
+        links: list[dict[str, Any]] = []
+        for p in preds:
+            if isinstance(p, dict):
+                pid = str(p.get("activity_id") or p.get("predecessor_id") or "").strip()
+                rel, rel_text = _relation_of(p.get("relation_type") or p.get("type"))
+                lag, lag_text = _lag_of(p.get("lag"))
+            else:
+                pid, rel, rel_text, lag, lag_text = str(p).strip(), "FS", "", 0.0, ""
+            if rel is None:
+                d["unrecognised_relation_type"].append(
+                    {"row": row_no, "activity_id": aid, "predecessor_id": pid,
+                     "stated": rel_text})
+            if lag is None:
+                d["unreadable_lag"].append(
+                    {"row": row_no, "activity_id": aid, "predecessor_id": pid,
+                     "stated": lag_text})
+            if pid == aid:
+                d["self_link"].append({"row": row_no, "activity_id": aid})
+            links.append({"predecessor_id": pid, "relation_type": rel or rel_text,
+                          "lag": lag if lag is not None else lag_text})
+        cal = str(r.get("calendar") or "").strip()
+        stated_calendars = structure.get("calendars")
+        if cal and isinstance(stated_calendars, list) and stated_calendars \
+                and cal not in [str(c).strip() for c in stated_calendars]:
+            d["invalid_calendar"].append({"row": row_no, "activity_id": aid, "stated": cal})
+        accepted[aid] = {
+            "activity_id": aid, "row": row_no, "current_duration": float(dur),
+            "links": links,
+            "predecessors": [l["predecessor_id"] for l in links],
+            "baseline_duration": num(r.get("baseline_duration"), None),
+            "baseline_finish_day": num(r.get("baseline_finish_day"), None),
+            "milestone_class": (str(r.get("milestone_class")).strip().lower()
+                                if r.get("milestone_class") is not None else None),
+            "calendar": cal,
+            "optimistic": num(r.get("optimistic_duration"), None),
+            "most_likely": num(r.get("most_likely_duration"), None),
+            "pessimistic": num(r.get("pessimistic_duration"), None),
+        }
+
+    # Dangling references, in both directions. A successor reference is dangling in exactly the
+    # same way, and a flattened export that states successors is checked on both.
+    for aid, a in accepted.items():
+        for pid in a["predecessors"]:
+            if pid and pid != aid and pid not in accepted:
+                d["dangling_predecessor"].append(
+                    {"row": a["row"], "activity_id": aid, "names": pid})
+    for i, r in enumerate(rows):
+        if not isinstance(r, dict):
+            continue
+        aid = str(r.get("activity_id") or "").strip()
+        succs = r.get("successors")
+        if isinstance(succs, list):
+            for s in succs:
+                sid = str(s.get("activity_id") if isinstance(s, dict) else s or "").strip()
+                if sid and sid not in accepted:
+                    d["dangling_successor"].append(
+                        {"row": i + 1, "activity_id": aid, "names": sid})
+
+    # Cycles. Every activity that cannot be placed by a topological sweep is in one, or is
+    # downstream of one, and all of them are named.
+    placeable = {aid: [p for p in a["predecessors"] if p in accepted and p != aid]
+                 for aid, a in accepted.items()}
+    placed: list[str] = []
+    remaining = set(accepted)
+    while True:
+        ready = sorted(a for a in remaining if all(p in placed for p in placeable[a]))
+        if not ready:
+            break
+        for a in ready:
+            placed.append(a)
+            remaining.discard(a)
+    if remaining:
+        d["cycle_activities"] = sorted(remaining)
+
+    # Disconnected components: a network whose logic falls into more than one island has no
+    # single start-to-finish path, and the components are named rather than silently joined.
+    if accepted and not remaining:
+        parent = {a: a for a in accepted}
+
+        def find(x: str) -> str:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        for aid, a in accepted.items():
+            for p in a["predecessors"]:
+                if p in accepted:
+                    ra, rb = find(aid), find(p)
+                    if ra != rb:
+                        parent[ra] = rb
+        groups: dict[str, list[str]] = {}
+        for a in accepted:
+            groups.setdefault(find(a), []).append(a)
+        if len(groups) > 1:
+            d["disconnected_components"] = [sorted(v) for _, v in sorted(groups.items())]
+
+    d["activities_accepted"] = len(accepted)
+    d["_accepted"] = accepted
+    d["_order"] = placed
+    return _diagnostics_totals(d)
+
+
+#: The fault classes whose presence makes a network invalid. `invalid_calendar` is here because
+#: an activity on a calendar the export does not define cannot be converted to working time, and
+#: converting it on some other calendar would be inventing the conversion.
+_FAULT_KEYS: tuple[str, ...] = (
+    "missing_activity_id", "duplicate_activity_id", "dangling_predecessor",
+    "dangling_successor", "self_link", "cycle_activities", "missing_duration",
+    "negative_duration", "unreadable_predecessor_list", "unrecognised_relation_type",
+    "unreadable_lag", "disconnected_components", "invalid_calendar",
+)
+
+
+def _diagnostics_totals(d: dict[str, Any]) -> dict[str, Any]:
+    faults = {k: len(d.get(k) or []) for k in _FAULT_KEYS}
+    d["fault_counts"] = faults
+    d["fault_total"] = sum(faults.values())
+    if "valid" not in d:
+        d["valid"] = (d["fault_total"] == 0 and d["activities_accepted"] > 0
+                      and d.get("structure_refusal") is None)
+    d["faults_present"] = sorted(k for k, n in faults.items() if n)
+    return d
+
+
+def critical_path_analysis(diagnostics: dict[str, Any], structure: dict,
+                           critical_tolerance: float = 0.0,
+                           near_critical_band: float = 10.0) -> dict[str, Any]:
+    """
+    The deterministic forward and backward passes, float, the controlling path and the forecast.
+
+    Longest-path logic on the accepted network. Lags shift the predecessor constraint; a
+    relation type other than Finish-to-Start is honoured on the start or finish it names.
+
+        ES_i = max over links of (predecessor's constrained date + lag), zero when there are none
+        EF_i = ES_i + d_i;  LF_i = min over successors of their constraint, project finish
+        TF_i = LS_i - ES_i;  FF_i = min successor ES - EF_i
+
+    `critical_tolerance` is the float at or below which an activity is flagged critical, and
+    `near_critical_band` is the low-float band above it. BOTH ARE OWNER-CONFIGURED and are
+    stated, never inferred.
+    """
+    if not diagnostics.get("valid"):
+        raise StructureAbsent(
+            "The schedule export provided for this project could not be read as a network, so "
+            "no critical path is computed from it and no best-effort path is reported.")
+    acts = diagnostics["_accepted"]
+    order = diagnostics["_order"]
+    es: dict[str, float] = {}
+    ef: dict[str, float] = {}
+    for a in order:
+        starts = [0.0]
+        for l in acts[a]["links"]:
+            p = l["predecessor_id"]
+            if p not in acts:
+                continue
+            lag = float(l["lag"]) if isinstance(l["lag"], (int, float)) else 0.0
+            rel = l["relation_type"]
+            if rel == "SS":
+                starts.append(es[p] + lag)
+            elif rel == "FF":
+                starts.append(ef[p] + lag - acts[a]["current_duration"])
+            elif rel == "SF":
+                starts.append(es[p] + lag - acts[a]["current_duration"])
+            else:
+                starts.append(ef[p] + lag)
+        es[a] = max(starts)
+        ef[a] = es[a] + acts[a]["current_duration"]
+    finish = max(ef.values()) if ef else 0.0
+    succ: dict[str, list[tuple[str, str, float]]] = {a: [] for a in acts}
+    for a in acts:
+        for l in acts[a]["links"]:
+            p = l["predecessor_id"]
+            if p in acts:
+                lag = float(l["lag"]) if isinstance(l["lag"], (int, float)) else 0.0
+                succ[p].append((a, l["relation_type"], lag))
+    lf: dict[str, float] = {}
+    ls: dict[str, float] = {}
+    for a in reversed(order):
+        finishes = []
+        for s, rel, lag in succ[a]:
+            if rel == "SS":
+                finishes.append(ls[s] - lag + acts[a]["current_duration"])
+            elif rel == "FF":
+                finishes.append(lf[s] - lag)
+            elif rel == "SF":
+                finishes.append(ls[s] - lag + acts[a]["current_duration"])
+            else:
+                finishes.append(ls[s] - lag)
+        lf[a] = min(finishes) if finishes else finish
+        ls[a] = lf[a] - acts[a]["current_duration"]
+    total_float = {a: ls[a] - es[a] for a in acts}
+    free_float = {a: (min((es[s] for s, _, _ in succ[a]), default=finish) - ef[a]) for a in acts}
+    critical = sorted(a for a in acts if total_float[a] <= critical_tolerance + 1e-9)
+    near = sorted(a for a in acts
+                  if critical_tolerance + 1e-9 < total_float[a]
+                  <= critical_tolerance + near_critical_band + 1e-9)
+    negative = sorted(a for a in acts if total_float[a] < -1e-9)
+
+    # THE CONTROLLING PATH: the longest valid start-to-finish chain, walked back from the
+    # activity that finishes last through the predecessor that constrains it.
+    end = max(acts, key=lambda a: (ef[a], -total_float[a], a))
+    path = [end]
+    guard = 0
+    while guard <= len(acts):
+        guard += 1
+        cur = path[-1]
+        drivers = [l["predecessor_id"] for l in acts[cur]["links"]
+                   if l["predecessor_id"] in acts
+                   and abs(ef[l["predecessor_id"]]
+                           + (float(l["lag"]) if isinstance(l["lag"], (int, float)) else 0.0)
+                           - es[cur]) < 1e-9]
+        if not drivers:
+            break
+        path.append(sorted(drivers, key=lambda p: (-ef[p], p))[0])
+    path.reverse()
+
+    floats = sorted(total_float.values())
+    median = (floats[len(floats) // 2] if len(floats) % 2
+              else (floats[len(floats) // 2 - 1] + floats[len(floats) // 2]) / 2.0)
+    lowest = sorted(acts, key=lambda a: (total_float[a], a))[:10]
+
+    baseline_finish = num(structure.get("baseline_finish_day"), None)
+    imposed_finish = num(structure.get("imposed_finish_day"), None)
+    remaining_planned = num(structure.get("remaining_planned_duration_days"), None)
+    late_milestones = [
+        {"activity_id": a, "milestone_class": acts[a]["milestone_class"],
+         "baseline_finish_day": acts[a]["baseline_finish_day"],
+         "forecast_finish_day": ef[a],
+         "days_late": ef[a] - float(acts[a]["baseline_finish_day"])}
+        for a in sorted(acts)
+        if acts[a]["milestone_class"] in COMMITTED_MILESTONE_CLASSES
+        and isinstance(acts[a]["baseline_finish_day"], (int, float))
+        and ef[a] > float(acts[a]["baseline_finish_day"]) + 1e-9]
+
+    return {
+        "activity_count": len(acts),
+        "early_start": es, "early_finish": ef, "late_start": ls, "late_finish": lf,
+        "total_float": total_float, "free_float": free_float,
+        "critical_activities": critical, "near_critical_activities": near,
+        "negative_float_activities": negative,
+        "critical_count": len(critical), "near_critical_count": len(near),
+        "negative_float_count": len(negative),
+        "critical_tolerance_days": float(critical_tolerance),
+        "near_critical_band_days": float(near_critical_band),
+        "controlling_path": path,
+        "controlling_path_length_days": finish,
+        "forecast_completion_day": finish,
+        "baseline_completion_day": (float(baseline_finish)
+                                    if baseline_finish is not None else None),
+        "forecast_finish_variance_days": (finish - float(baseline_finish)
+                                          if baseline_finish is not None else None),
+        "imposed_finish_day": float(imposed_finish) if imposed_finish is not None else None,
+        "controlling_path_total_float_days": (float(imposed_finish) - finish
+                                              if imposed_finish is not None else None),
+        "remaining_planned_duration_days": (float(remaining_planned)
+                                            if remaining_planned is not None else None),
+        "minimum_total_float_days": floats[0] if floats else None,
+        "median_total_float_days": median if floats else None,
+        "ten_lowest_float_activities": [
+            {"activity_id": a, "total_float_days": total_float[a],
+             "free_float_days": free_float[a]} for a in lowest],
+        "committed_milestones_forecast_late": late_milestones,
+        "calendar": str(structure.get("calendar") or ""),
+        "schedule_version": str(structure.get("schedule_version") or ""),
+        "logic_integrity": "the network read without a fault: "
+                           f"{diagnostics['activities_accepted']} of "
+                           f"{diagnostics['activities_read']} activities accepted, no duplicate "
+                           f"identity, no dangling reference, no self link, no cycle and one "
+                           f"connected component",
+    }
+
+
+# ---------------------------------------------------------- 3.5 overhead absorption variance
+
+
+def overhead_absorption_variance(structure: dict) -> dict[str, Any]:
+    """
+    RUN 103, SECTION 4. The owner's absorption variance, and the three conditions that refuse it.
+
+        AbsorptionVariance = (actual overhead incurred - planned overhead absorbed)
+                             / planned overhead absorbed
+
+    A POSITIVE result is UNFAVOURABLE. This is a different quantity from the RATE variance
+    `overhead_absorption` computes: the rate variance is per unit of the allocation base, this is
+    the amount variance against the plan for the same period. Both are reported; only this one is
+    banded, because it is the one the owner's tolerance is defined over.
+
+    NOT ASSESSED, NEVER A POSTURE, on any of three conditions, and each returns its own reason:
+
+      1. Planned absorbed overhead is zero or absent. Nothing is divided by zero and no plan is
+         inferred.
+      2. Actual and planned cover DIFFERENT PERIODS. A variance between two periods is not a
+         variance.
+      3. The cost-code populations cannot be reconciled without a documented mapping. Where the
+         two sides name different populations and no mapping is stated, the reading is refused.
+
+    A structure that STATES NEITHER PERIOD states no period mismatch either, so condition 2 is
+    not fired on silence -- but the silence is recorded on the reading, and the module reports it
+    rather than claiming the periods matched.
+    """
+    planned = num(structure.get("planned_overhead"), None)
+    actual = num(structure.get("actual_overhead"), None)
+    actual_period = str(structure.get("actual_period") or "").strip()
+    planned_period = str(structure.get("planned_period") or "").strip()
+    population = str(structure.get("cost_code_population") or "").strip()
+    mapping = str(structure.get("cost_code_mapping") or "").strip()
+    progress_basis = str(structure.get("progress_basis") or "").strip()
+
+    out: dict[str, Any] = {
+        "planned_overhead_absorbed": planned, "actual_overhead_incurred": actual,
+        "actual_period": actual_period or None, "planned_period": planned_period or None,
+        "cost_code_population": population or None, "cost_code_mapping": mapping or None,
+        "progress_basis": progress_basis or None,
+        "periods_stated": bool(actual_period and planned_period),
+        "absorption_variance_fraction": None, "not_assessed_reason": None,
+    }
+    if planned is None or not math.isfinite(planned) or planned <= 0:
+        out["not_assessed_reason"] = (
+            "the planned absorbed overhead for this period is zero or is not stated, so there "
+            "is nothing for the actual to be measured against. Nothing is divided by zero and "
+            "no plan is inferred from the actual")
+        return out
+    if actual is None or not math.isfinite(actual):
+        out["not_assessed_reason"] = (
+            "no actual indirect or general-conditions overhead is stated for this period, so no "
+            "variance against the plan is formed")
+        return out
+    if actual_period and planned_period and actual_period.lower() != planned_period.lower():
+        out["not_assessed_reason"] = (
+            f"the actual overhead is stated for {actual_period!r} and the planned absorption "
+            f"for {planned_period!r}. A variance between two different periods is not a "
+            f"variance, and no reading is taken from the pair")
+        return out
+    if population and mapping and population.lower() != mapping.lower():
+        pass  # a documented mapping is present; the populations are reconcilable by it
+    elif structure.get("cost_code_populations_differ") and not mapping:
+        out["not_assessed_reason"] = (
+            "the actual and planned overhead cover different cost-code populations and no "
+            "documented mapping between them is stated, so they cannot be reconciled and no "
+            "variance is formed")
+        return out
+    out["absorption_variance_fraction"] = (actual - planned) / planned
+    out["favourable"] = out["absorption_variance_fraction"] <= 0
+    return out

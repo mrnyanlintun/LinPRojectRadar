@@ -330,7 +330,26 @@ def run_milestone_trend(si: dict, rand: Callable[[], float], period_cutoff) -> d
     # its approved date with no approved baseline change. A milestone whose record does not say
     # which of those it is cannot be judged against that condition, and its class is never
     # inferred from its name.
-    _cuts = _BR.entry("milestone_slip_ratio_bands")
+    # ============ RUN 103, SECTION 3. RE-BANDED ONTO THE OWNER'S HYBRID RULE, WHICH IS THE
+    # SAME RULE A2.12 CRITICAL PATH ANALYSIS USES, FROM THE SAME FUNCTION.
+    #
+    # RUN 102 GAVE THIS MODULE PERCENTAGE-ONLY BANDS (2, 5 and 10 per cent of remaining
+    # duration). The owner's Run 103 ruling makes percentage-only too coarse and observes that
+    # Milestone Trend measures the SAME QUANTITY as Critical Path Analysis's forecast slip. Two
+    # modules banding the same quantity must not band it differently, so both now call
+    # `hybrid_schedule_slip_band` -- working-day slip bands leading, the percentage guardrail as
+    # a floor, the committed-milestone override, worst-of. THERE IS ONE COPY OF THE RULE.
+    #
+    # WHAT IS AND IS NOT EVALUABLE HERE. The float rule needs a controlling path and a stated
+    # imposed finish; a milestone forecast history carries neither, so on this module the float
+    # rule is NOT EVALUABLE and says so on the row. That is not a weakening: a non-evaluable
+    # rule is never counted as a pass, and the other three still govern.
+    #
+    # THE SLIP IS IN DAYS NOW, NOT A RATIO. The quantity banded is the worst milestone variance
+    # against its APPROVED baseline in working days -- the same quantity A2.12 bands as forecast
+    # completion slip. The ratio is still computed and reported where the denominator is stated,
+    # and it now feeds the GUARDRAIL rather than being the band itself.
+    _cuts = _BR.entry("critical_path_control_bands")
     _remaining = reading.get("remaining_planned_duration_days")
     _committed = [m for m in reading["milestones"]
                   if str(m.get("milestone_class") or "") in _COMMITTED_MILESTONE_CLASSES
@@ -350,71 +369,47 @@ def run_milestone_trend(si: dict, rand: Callable[[], float], period_cutoff) -> d
         worst_variance_days=reading["worst_variance_days"],
         worst_variance_against_approved_days=_worst_appr,
         remaining_planned_duration_days=_remaining,
+        remaining_duration_basis=reading.get("remaining_duration_basis"),
         slip_ratio=(round(_ratio, 4) if _ratio is not None else None),
         committed_milestones_forecast_late=_committed,
         deteriorating_count=reading["deteriorating_count"],
         milestones=reading["milestones"],
         canonical_structure="milestone_forecast_history",
     )
-    _override_words = (
-        "HARD OVERRIDE: Red if any contractual, regulatory, turnover or owner-committed "
-        "milestone is forecast later than its approved date and no approved baseline change "
-        "exists. The milestone's class must be STATED by the record; it is never inferred from "
-        "a name, so a record that states no class cannot fire this override and does not.")
-    if _committed:
-        return banded(
-            "Milestone_Trend", _message,
-            status_color="Red",
-            boundary=(_override_words + " This project's record states "
-                      f"{len(_committed)} such milestone"
-                      f"{'' if len(_committed) == 1 else 's'} forecast beyond its approved date "
-                      f"with no approved baseline change."),
-            basis=("the owner's Run 102 order, section 3, Milestone Trend Analysis. The "
-                   "override is a commitment condition, not a percentage: a committed date "
-                   "missed with no approved change is missed however small the ratio"),
-            provenance=PROVENANCE_OWNER_CALIBRATED,
-            threshold_source=THRESHOLD_SOURCE_OWNER,
-            band_hard_override_fired=True,
-            **_fields)
-    if _ratio is None or not _cuts.get("configured"):
+    if not _cuts.get("configured"):
         return band_abstained(
             "Milestone_Trend", _message,
-            reason=("the owner's measure is a SLIP RATIO -- the current forecast finish less "
-                    "the approved baseline finish, divided by the REMAINING PLANNED DURATION -- "
-                    "and this project's milestone forecast history states no remaining planned "
-                    "duration for the ratio's denominator. The variance in days is reported "
-                    "above; a variance in days is not a slip ratio and the bands are not "
-                    "applied to it, because the whole point of the ratio is that five days on a "
-                    "twenty-day package and five days on a thousand-day programme are not the "
-                    "same slip. No denominator is derived from a clock and none is invented"
-                    if _ratio is None else
-                    "no slip-ratio band is configured, so the ratio is displayed and no band is "
-                    "asserted"),
+            reason="no schedule control tolerance is configured, so the variances are displayed "
+                   "and no band is asserted",
             **_fields)
-    _g, _y, _a = (_cuts["green_at_or_below"], _cuts["yellow_at_or_below"],
-                  _cuts["amber_at_or_below"])
-    _colour = ("Green" if _ratio <= _g else "Yellow" if _ratio <= _y
-               else "Amber" if _ratio <= _a else "Red")
+    _band = hybrid_schedule_slip_band(
+        _cuts,
+        # NOT EVALUABLE ON THIS STRUCTURE, and it is stated rather than passed as a zero: a
+        # milestone forecast history states no activity network, so it has no controlling path
+        # and no total float on one.
+        controlling_float_days=None,
+        slip_days=_worst_appr,
+        remaining_planned_duration_days=_remaining,
+        late_committed_milestones=_committed)
+    _fields["band_rules"] = _band["rules"]
+    _fields["band_governing_rules"] = _band["governing_rules"]
+    _fields["band_rules_not_evaluable"] = _band["rules_not_evaluable"]
+    _fields["band_basis_id"] = "owner_configured_construction_control_tolerance"
+    if _band["colour"] is None:
+        return band_abstained(
+            "Milestone_Trend", _message,
+            reason=("none of the owner's four rules is evaluable on this milestone forecast "
+                    "history: " + "; ".join(r["why"] for r in _band["rules"]
+                                            if not r["evaluable"])),
+            **_fields)
     return banded(
         "Milestone_Trend", _message,
-        status_color=_colour,
-        boundary=(
-            f"on the SLIP RATIO -- (current forecast finish minus approved baseline finish) "
-            f"divided by remaining planned duration, here "
-            f"{_js_str(round(_ratio, 4))}: at or below {_g} is Green; above {_g} and at or "
-            f"below {_y} is Yellow; above {_y} and at or below {_a} is Amber; above {_a} is "
-            f"Red. A forecast EARLIER than the approved baseline gives a ratio at or below zero "
-            f"and is Green. {_override_words}"),
-        basis=("the owner's Run 102 order, section 3, and the threshold table attached to it. "
-               "OWNER-CONFIGURED, and the owner states it in terms: 'The 2%, 5%, and 10% values "
-               "are not universal construction standards; they are a documented owner tolerance "
-               "structure that avoids treating a five-day slip identically on a 20-day package "
-               "and a 1,000-day capital program.' A stricter figure stated in a project "
-               "document overrides them, and none is stated by any document this project has "
-               "uploaded"),
+        status_color=_band["colour"],
+        boundary=hybrid_band_words(_band, _cuts),
+        basis=HYBRID_BAND_BASIS,
         provenance=PROVENANCE_OWNER_CALIBRATED,
         threshold_source=THRESHOLD_SOURCE_OWNER,
-        band_hard_override_fired=False,
+        band_hard_override_fired=bool(_committed),
         **_fields)
 
 
@@ -1048,25 +1043,40 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
         reading = overhead_absorption(structure)
     except StructureAbsent as absent:
         return insufficient("Overhead_Absorption", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    # ------------------------------------------ RUN 101, SECTION 3.3: NO BAND, AND WHY NOT
-    # THE OWNER'S RULING, VERBATIM IN EFFECT: "No published construction-controls basis exists,
-    # and the owner has ruled against inventing one from audit-materiality convention. The module
-    # computes and displays its variance and trend, asserts no band, and casts no vote."
+    # ================ RUN 103, SECTION 4. THE OWNER HAS SUPPLIED THE BASIS RUN 101 AND RUN 102
+    # LEFT THIS MODULE BANDLESS FOR WANT OF.
     #
-    # NO APPROVED THRESHOLD BASIS IS CONFIGURED FOR THIS QUANTITY. A plus-or-minus five, ten or
-    # fifteen per cent ladder is expressly forbidden here, and section 12.1e fails the run for
-    # attaching one. The figures below are the whole reading.
-    return band_abstained(
-        "Overhead_Absorption",
+    #     AbsorptionVariance = (actual overhead incurred - planned overhead absorbed)
+    #                          / planned overhead absorbed,  a POSITIVE result being UNFAVOURABLE
+    #
+    #     Green <= 5 per cent | Yellow > 5 to 10 | Amber > 10 to 15 | Red > 15
+    #     A FAVOURABLE variance -- actual below planned -- is Green.
+    #
+    # WHAT IS NOT BANDED, AND SECTION 12.5 FAILS THE RUN FOR IT: absolute overhead as a share of
+    # project cost. That is a different quantity with a different denominator and the owner
+    # forbids it in terms. What is banded is the VARIANCE against planned absorption for the
+    # SAME PERIOD and the SAME COST-CODE POPULATION.
+    #
+    # THE RATE VARIANCE IS STILL REPORTED AND IS NOT WHAT BANDS. `overhead_absorption` computes
+    # a variance per unit of the allocation base; the owner's tolerance is defined over the
+    # amount variance against the plan. Attaching his bands to the rate variance would be
+    # attaching a band to a quantity it was not drawn over.
+    #
+    # NOT ASSESSED, NEVER A POSTURE, on the three conditions the owner names --
+    # `canonical_v3.overhead_absorption_variance` returns the reason and this returns it on the
+    # row. Nothing is divided by zero and no plan is inferred.
+    from .canonical_v3 import overhead_absorption_variance
+    _var = overhead_absorption_variance(structure)
+    _cuts = _BR.entry("overhead_absorption_variance_bands")
+    _message = (
         f"Overhead is being absorbed at {_js_str(round2(reading['actual_rate']))} for each unit "
         f"of {reading['allocation_base']} against {_js_str(round2(reading['planned_rate']))} "
         f"planned, a rate variance of "
-        f"{_js_str(round1(reading['relative_rate_variance'] * 100))} per cent",
-        reason=("no approved threshold basis is configured for an overhead rate variance: no "
-                "published construction-controls source states a control limit for this "
-                "quantity, and the owner has ruled against drawing one from audit-materiality "
-                "convention, which measures a different thing. The variance and its direction "
-                "are reported and no colour is offered with them"),
+        f"{_js_str(round1(reading['relative_rate_variance'] * 100))} per cent"
+        + (f"; against planned absorption for the period the variance is "
+           f"{_js_str(round1(_var['absorption_variance_fraction'] * 100))} per cent"
+           if _var["absorption_variance_fraction"] is not None else ""))
+    _fields = dict(
         planned_rate=reading["planned_rate"],
         actual_rate=reading["actual_rate"],
         rate_variance=reading["rate_variance"],
@@ -1074,8 +1084,69 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
         allocation_base=reading["allocation_base"],
         planned_driver=reading["planned_driver"],
         actual_driver=reading["actual_driver"],
+        absorption_variance_fraction=_var["absorption_variance_fraction"],
+        planned_overhead_absorbed=_var["planned_overhead_absorbed"],
+        actual_overhead_incurred=_var["actual_overhead_incurred"],
+        overhead_actual_period=_var["actual_period"],
+        overhead_planned_period=_var["planned_period"],
+        overhead_periods_stated=_var["periods_stated"],
+        overhead_progress_basis=_var["progress_basis"],
+        overhead_cost_code_population=_var["cost_code_population"],
+        band_basis_id="owner_configured_cost_variance_tolerance",
         canonical_structure="overhead_allocation_base",
     )
+    if _var["absorption_variance_fraction"] is None or not _cuts.get("configured"):
+        return band_abstained(
+            "Overhead_Absorption", _message,
+            reason=(_var["not_assessed_reason"] or
+                    "no overhead absorption variance tolerance is configured, so the variance "
+                    "is displayed and no band is asserted"),
+            **_fields)
+    _v = _var["absorption_variance_fraction"]
+    _g, _y, _a = (_cuts["green_at_or_below_fraction"], _cuts["yellow_at_or_below_fraction"],
+                  _cuts["amber_at_or_below_fraction"])
+    _colour = ("Green" if _v <= _g else "Yellow" if _v <= _y else "Amber" if _v <= _a else "Red")
+    # THE SUBSTANTIAL-COMPLETION FLOOR. A DECLARED contractual state and a STATED unabsorbed
+    # amount, never a percent complete this file decided for itself: substantial completion is a
+    # contract question and a platform that answered it would be answering a contract question.
+    _sub = structure.get("substantial_completion_declared")
+    _unabsorbed = num(structure.get("unabsorbed_overhead_amount"), None)
+    _floor_fired = bool(_sub) and _unabsorbed is not None and _unabsorbed > 0
+    if _floor_fired and _colour in ("Green", "Yellow"):
+        _colour = "Amber"
+    _fields["substantial_completion_floor_fired"] = _floor_fired
+    return banded(
+        "Overhead_Absorption", _message,
+        status_color=_colour,
+        boundary=(
+            f"on the OVERHEAD ABSORPTION VARIANCE -- (actual overhead incurred minus planned "
+            f"overhead absorbed) divided by planned overhead absorbed, for the same period and "
+            f"the same cost-code population, here "
+            f"{_js_str(round1(_v * 100))} per cent: at or below {_g * 100} per cent is Green; "
+            f"above {_g * 100} and at or below {_y * 100} is Yellow; above {_y * 100} and at or "
+            f"below {_a * 100} is Amber; above {_a * 100} is Red. A POSITIVE variance is "
+            f"UNFAVOURABLE and a FAVOURABLE variance -- actual below planned -- is Green. "
+            f"ABSOLUTE OVERHEAD AS A SHARE OF PROJECT COST IS NOT BANDED HERE and is a "
+            f"different quantity. "
+            + ("SUBSTANTIAL-COMPLETION FLOOR FIRED: substantial completion is declared and "
+               "overhead remains materially unabsorbed, so the posture is at least Amber."
+               if _floor_fired else
+               "The substantial-completion floor did not fire: this project's cost report does "
+               "not declare substantial completion with an unabsorbed overhead balance, and "
+               "neither fact is inferred from a percent complete.")
+            + (" WHERE SCHEDULE IS RED AND THIS IS AMBER OR RED, the two are LINKED DRIVERS of "
+               "one condition -- a project running late absorbs its time-related overhead over "
+               "a longer period -- and must be read as one driver, not double-counted as two "
+               "independent pieces of evidence.")),
+        basis=("the owner's Run 103 order, section 4, and the threshold entry "
+               "`overhead_absorption_variance_bands`. The band basis identifier the owner named "
+               "for it is `owner_configured_cost_variance_tolerance`. OWNER-CONFIGURED: these "
+               "are NOT universal construction or regulatory thresholds and are not presented "
+               "as any. Run 101 and Run 102 left this module bandless for want of a basis; the "
+               "owner has now supplied one and it is his, not a published source's"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        **_fields)
 
 
 # ------------------------------------------------------------ A3.6 Cost Risk Analysis P80
@@ -1373,3 +1444,320 @@ A3_EXTENSIONS: dict[str, tuple[str, Callable]] = {
     "A3.5": ("Overhead_Absorption", run_overhead_absorption),
     "A3.6": ("Cost_Risk_Analysis", run_cost_risk),
 }
+
+
+# =============================================================================================
+# RUN 103 -- THE OWNER'S HYBRID SCHEDULE-SLIP RULE, WRITTEN ONCE AND USED BY BOTH MODULES
+#
+# Section 3 of the owner's Run 103 order: "Two modules banding the same quantity must not band
+# it differently." A2.12 Critical Path Analysis bands forecast completion slip; A2.7 Milestone
+# Trend Analysis bands the same slip against the same commitment. So the rule lives HERE, once,
+# and both call it. There is no second copy to drift.
+#
+# WORST-OF ACROSS FOUR RULES, and each measures a different exposure:
+#
+#   1. TOTAL FLOAT ON THE CONTROLLING PATH, working days:  > 20 Green | 11-20 Yellow |
+#      1-10 Amber | <= 0 Red.
+#   2. FORECAST COMPLETION SLIP, working days:  <= 0 Green | > 0 to 10 Yellow |
+#      > 10 to 20 Amber | > 20 Red.
+#   3. THE PERCENTAGE GUARDRAIL, slip as a share of remaining planned working duration. It is a
+#      FLOOR, NOT A BAND: at least Yellow above 2 per cent, at least Amber above 5 per cent, Red
+#      above 10 per cent. It can only raise the posture, never lower it.
+#   4. THE HARD OVERRIDE: Red if any contractual, owner-committed, turnover or required
+#      milestone is forecast later than its approved baseline date, whatever the day count.
+#
+# WHY DAY BANDS LEAD AND PERCENTAGES GUARD, in the owner's own reasoning, recorded here because
+# section 2.3 requires it to be recorded in the specification: on a two-year project a 5 per
+# cent slip is about 36 calendar days and 10 per cent about 73 -- far too late for an early
+# warning. Fixed day bands give control sensitivity; the percentage keeps the rule sane on much
+# shorter or much longer projects.
+#
+# A RULE WITH NO INPUT IS NOT EVALUATED AND IS NOT COUNTED AS GREEN. Where the network states no
+# imposed completion date the float rule is NOT EVALUABLE -- the backward pass anchors on the
+# network's own finish, so the controlling path's float is zero by construction and firing Red
+# from it would be measuring the arithmetic rather than the schedule. That is Run 102's ruling
+# on the same question and the owner has not overturned it. Where no remaining planned duration
+# is stated the guardrail is not evaluable. Each non-evaluable rule says so on the row.
+# =============================================================================================
+
+_SEVERITY: dict[str, int] = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
+
+
+def hybrid_schedule_slip_band(cuts: dict, *, controlling_float_days: float | None,
+                              slip_days: float | None,
+                              remaining_planned_duration_days: float | None,
+                              late_committed_milestones: list) -> dict[str, Any]:
+    """
+    The owner's four rules, evaluated separately and combined worst-of. Never invents an input.
+
+    Returns the colour, the per-rule verdicts, and the words for the boundary. `colour` is None
+    when NO rule was evaluable, which is an abstention and not a Green.
+    """
+    rules: list[dict[str, Any]] = []
+
+    if controlling_float_days is None:
+        rules.append({"rule": "total float on the controlling path", "evaluable": False,
+                      "colour": None,
+                      "why": "this schedule states no imposed or required completion date, so "
+                             "the controlling path's total float is zero by construction (that "
+                             "is what the backward pass does when it anchors on the network's "
+                             "own finish) and carries no information about exposure. The float "
+                             "rule is NOT EVALUABLE on it, was not applied, and is not counted "
+                             "as a pass"})
+    else:
+        f = float(controlling_float_days)
+        colour = ("Green" if f > cuts["float_green_above"]
+                  else "Yellow" if f >= cuts["float_yellow_at_or_above"]
+                  else "Amber" if f >= cuts["float_amber_at_or_above"] else "Red")
+        rules.append({"rule": "total float on the controlling path", "evaluable": True,
+                      "value_days": f, "colour": colour,
+                      "why": f"total float on the controlling path is {f} working days: above "
+                             f"{cuts['float_green_above']} is Green; "
+                             f"{cuts['float_yellow_at_or_above']} to "
+                             f"{cuts['float_yellow_at_or_below']} is Yellow; "
+                             f"{cuts['float_amber_at_or_above']} to "
+                             f"{cuts['float_amber_at_or_below']} is Amber; at or below "
+                             f"{cuts['float_red_at_or_below']} is Red"})
+
+    if slip_days is None:
+        rules.append({"rule": "forecast completion slip", "evaluable": False, "colour": None,
+                      "why": "no approved baseline finish is stated for this schedule, so the "
+                             "forecast finish has nothing to be measured against and no slip is "
+                             "formed. Nothing is inferred in its place"})
+    else:
+        s = float(slip_days)
+        colour = ("Green" if s <= cuts["slip_green_at_or_below"]
+                  else "Yellow" if s <= cuts["slip_yellow_at_or_below"]
+                  else "Amber" if s <= cuts["slip_amber_at_or_below"] else "Red")
+        rules.append({"rule": "forecast completion slip", "evaluable": True, "value_days": s,
+                      "colour": colour,
+                      "why": f"the current forecast finish is {s} working days against the "
+                             f"approved baseline finish: on or before baseline is Green; above "
+                             f"{cuts['slip_green_at_or_below']} to "
+                             f"{cuts['slip_yellow_at_or_below']} is Yellow; above "
+                             f"{cuts['slip_yellow_at_or_below']} to "
+                             f"{cuts['slip_amber_at_or_below']} is Amber; above "
+                             f"{cuts['slip_red_above']} is Red"})
+
+    _rem = remaining_planned_duration_days
+    if slip_days is None or not isinstance(_rem, (int, float)) or _rem <= 0:
+        rules.append({"rule": "percentage guardrail", "evaluable": False, "colour": None,
+                      "why": "the guardrail is the slip as a share of REMAINING PLANNED WORKING "
+                             "DURATION, and this project's record states no remaining planned "
+                             "duration above zero for that denominator. No denominator is "
+                             "derived from a clock and none is invented, so the guardrail is "
+                             "not applied and cannot raise the posture"})
+        _guard_fraction = None
+    else:
+        _guard_fraction = float(slip_days) / float(_rem)
+        floor = ("Red" if _guard_fraction > cuts["guardrail_red_above_fraction"]
+                 else "Amber" if _guard_fraction > cuts["guardrail_amber_above_fraction"]
+                 else "Yellow" if _guard_fraction > cuts["guardrail_yellow_above_fraction"]
+                 else "Green")
+        rules.append({"rule": "percentage guardrail", "evaluable": True,
+                      "value_fraction": round(_guard_fraction, 4), "colour": floor,
+                      "why": f"the slip is {round(_guard_fraction * 100, 2)} per cent of the "
+                             f"remaining planned working duration. THIS IS A FLOOR, NOT A BAND: "
+                             f"at least Yellow above "
+                             f"{cuts['guardrail_yellow_above_fraction'] * 100} per cent, at "
+                             f"least Amber above "
+                             f"{cuts['guardrail_amber_above_fraction'] * 100} per cent, Red "
+                             f"above {cuts['guardrail_red_above_fraction'] * 100} per cent. It "
+                             f"can raise the posture and can never lower it"})
+
+    if late_committed_milestones:
+        rules.append({"rule": "committed-milestone hard override", "evaluable": True,
+                      "colour": "Red", "count": len(late_committed_milestones),
+                      "why": f"{len(late_committed_milestones)} contractual, owner-committed, "
+                             f"turnover or required milestone"
+                             f"{'' if len(late_committed_milestones) == 1 else 's'} "
+                             f"forecast later than the approved baseline date. A committed date "
+                             f"missed is missed whatever the day count"})
+    else:
+        rules.append({"rule": "committed-milestone hard override", "evaluable": True,
+                      "colour": "Green", "count": 0,
+                      "why": "no milestone whose record STATES a contractual, owner-committed, "
+                             "turnover or required class is forecast beyond its approved "
+                             "baseline date. A milestone whose class the record does not state "
+                             "is not judged against this override and its class is never "
+                             "inferred from its name"})
+
+    applied = [r for r in rules if r["evaluable"] and r["colour"]]
+    colour = (max((r["colour"] for r in applied), key=lambda c: _SEVERITY[c])
+              if applied else None)
+    governing = [r["rule"] for r in applied if r["colour"] == colour]
+    return {"colour": colour, "rules": rules, "governing_rules": governing,
+            "guardrail_fraction": _guard_fraction,
+            "rules_not_evaluable": [r["rule"] for r in rules if not r["evaluable"]]}
+
+
+def hybrid_band_words(band: dict, cuts: dict) -> str:
+    """The boundary sentence for a hybrid band: every rule, its verdict and why."""
+    parts = [
+        "on the owner's HYBRID SCHEDULE CONTROL RULE -- four rules evaluated separately and "
+        "combined WORST-OF, the most severe applicable result governing. "]
+    for r in band["rules"]:
+        parts.append(f"[{r['rule']}: "
+                     f"{r['colour'] if r['evaluable'] else 'NOT EVALUABLE'}] {r['why']}. ")
+    parts.append(
+        "WHY DAY BANDS LEAD AND PERCENTAGES GUARD: on a two-year project a 5 per cent slip is "
+        "about 36 calendar days and 10 per cent about 73, far too late for an early warning. "
+        "Fixed day bands give control sensitivity; the percentage keeps the rule sane on much "
+        "shorter or much longer projects.")
+    if band["governing_rules"]:
+        parts.append(" The posture is set by: " + "; ".join(band["governing_rules"]) + ".")
+    return "".join(parts)
+
+
+HYBRID_BAND_BASIS: str = (
+    "the owner's Run 103 order, sections 2.3 and 3, and the threshold entry "
+    "`critical_path_control_bands`. The band basis identifier the owner named for it is "
+    "`owner_configured_construction_control_tolerance`. OWNER-CONFIGURED: these day counts and "
+    "percentages are a documented owner tolerance for this platform. THEY ARE NOT UNIVERSAL "
+    "CONSTRUCTION STANDARDS and are not presented as any. A stricter figure stated in a project "
+    "document overrides them, and none is stated by any document this project has uploaded")
+
+
+# ------------------------------------------------------------ A2.12 Critical Path Analysis
+
+
+def run_critical_path_analysis(si: dict, rand: Callable[[], float],
+                               period_cutoff) -> dict[str, Any]:
+    """
+    RUN 103. DETERMINISTIC CRITICAL PATH ANALYSIS OVER THE PROJECT'S OWN SCHEDULE EXPORT.
+
+    THE OWNER'S SECTION 2. A valid CPM network yields deterministic critical path analysis,
+    which does not depend on duration uncertainty and is the more useful measure. The network is
+    assembled from the supported flattened schedule export on canonical activity ids; every
+    failure is REPORTED and NONE IS REPAIRED. No inferred links, no dropped rows, no best-effort
+    path: where the network is invalid this module and A2.1 PERT are both NOT ASSESSED, with the
+    diagnostics as the stated reason.
+
+    WHY THIS IS A SEPARATE MODULE AND NOT A CHANGE TO A2.1. A2.1 measures stochastic
+    criticality -- how often an activity decides the finish once durations vary -- and needs
+    three-point durations. This measures the deterministic controlling path, its float and its
+    forecast against baseline, and needs none. PERT is never a substitute for it and is now
+    GATED BEHIND it: A2.1 abstains where the network does not validate.
+
+    THE IDENTIFIER IS A2.12 AND THE GAP BELOW IT IS DELIBERATE. A2.2 through A2.6, A2.10 and
+    A2.11 existed and were REMOVED FROM THE REGISTRY AT RUN 96. Their names are still recorded
+    in sealed freeze records (A2.2 Line of Balance and A2.3 CCPM Buffer Health are named in the
+    Run 28 freezes), so reusing one of those identifiers would make a sealed record name two
+    different modules by one identifier. A2.12 is the lowest identifier never used.
+    """
+    from .canonical_v3 import critical_path_analysis, schedule_network_diagnostics
+    try:
+        structure = require_v3_structure(si, "A2.12")
+    except StructureAbsent as absent:
+        return insufficient("Critical_Path_Analysis", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT)
+    diagnostics = schedule_network_diagnostics(structure)
+    _diag_fields = {k: v for k, v in diagnostics.items() if not k.startswith("_")}
+    if not diagnostics["valid"]:
+        # NOT ASSESSED, WITH THE DIAGNOSTICS AS THE STATED REASON. Nothing is repaired and no
+        # best-effort path is offered. The scheduler corrects the source; this platform names
+        # which rows made it unreadable.
+        _named = "; ".join(
+            f"{k.replace('_', ' ')}: {diagnostics['fault_counts'][k]}"
+            for k in diagnostics["faults_present"])
+        return insufficient(
+            "Critical_Path_Analysis",
+            (diagnostics["structure_refusal"] or
+             (f"The schedule export provided states "
+              f"{diagnostics['activities_read']} activities, of which "
+              f"{diagnostics['activities_accepted']} could be accepted, and it carries "
+              f"{diagnostics['fault_total']} logic faults ({_named}). A network with a fault "
+              f"has no reliable critical path, so NO reading is taken and no partial path is "
+              f"reported. The affected rows and activity identifiers are recorded beside this "
+              f"reason so the source schedule can be corrected in one pass.")),
+            ABSTAIN_STRUCTURE_ABSENT,
+            schedule_network_diagnostics=_diag_fields,
+            canonical_structure="schedule_network")
+    _cuts = _BR.entry("critical_path_control_bands")
+    try:
+        reading = critical_path_analysis(
+            diagnostics, structure,
+            critical_tolerance=float(_cuts.get("critical_flag_tolerance_days") or 0.0),
+            near_critical_band=float(_cuts.get("near_critical_band_days") or 0.0))
+    except StructureAbsent as absent:
+        return insufficient("Critical_Path_Analysis", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT,
+                            schedule_network_diagnostics=_diag_fields)
+    _fields = dict(
+        controlling_path=reading["controlling_path"],
+        controlling_path_length_days=reading["controlling_path_length_days"],
+        forecast_completion_day=reading["forecast_completion_day"],
+        baseline_completion_day=reading["baseline_completion_day"],
+        forecast_finish_variance_days=reading["forecast_finish_variance_days"],
+        imposed_finish_day=reading["imposed_finish_day"],
+        controlling_path_total_float_days=reading["controlling_path_total_float_days"],
+        remaining_planned_duration_days=reading["remaining_planned_duration_days"],
+        critical_count=reading["critical_count"],
+        near_critical_count=reading["near_critical_count"],
+        negative_float_count=reading["negative_float_count"],
+        critical_activities=reading["critical_activities"],
+        near_critical_activities=reading["near_critical_activities"],
+        negative_float_activities=reading["negative_float_activities"],
+        critical_flag_tolerance_days=reading["critical_tolerance_days"],
+        near_critical_band_days=reading["near_critical_band_days"],
+        minimum_total_float_days=reading["minimum_total_float_days"],
+        median_total_float_days=reading["median_total_float_days"],
+        ten_lowest_float_activities=reading["ten_lowest_float_activities"],
+        committed_milestones_forecast_late=reading["committed_milestones_forecast_late"],
+        early_start={a: reading["early_start"][a] for a in sorted(reading["early_start"])},
+        early_finish={a: reading["early_finish"][a] for a in sorted(reading["early_finish"])},
+        late_start={a: reading["late_start"][a] for a in sorted(reading["late_start"])},
+        late_finish={a: reading["late_finish"][a] for a in sorted(reading["late_finish"])},
+        total_float={a: reading["total_float"][a] for a in sorted(reading["total_float"])},
+        free_float={a: reading["free_float"][a] for a in sorted(reading["free_float"])},
+        calendar=reading["calendar"],
+        schedule_version=reading["schedule_version"],
+        logic_integrity=reading["logic_integrity"],
+        schedule_network_diagnostics=_diag_fields,
+        canonical_structure="schedule_network",
+    )
+    _message = (
+        f"The controlling path runs through {len(reading['controlling_path'])} activities "
+        f"({' -> '.join(reading['controlling_path'][:6])}"
+        f"{' ...' if len(reading['controlling_path']) > 6 else ''}) and finishes on working day "
+        f"{_js_str(round1(reading['forecast_completion_day']))}"
+        + (f", {_js_str(round1(reading['forecast_finish_variance_days']))} working days against "
+           f"the approved baseline finish"
+           if reading["forecast_finish_variance_days"] is not None else
+           ", and no approved baseline finish is stated for it to be measured against")
+        + f"; {reading['critical_count']} activities are critical and "
+          f"{reading['near_critical_count']} near critical")
+    if not _cuts.get("configured"):
+        return band_abstained(
+            "Critical_Path_Analysis", _message,
+            reason="no critical-path control tolerance is configured, so the analysis is "
+                   "displayed and no band is asserted",
+            **_fields)
+    _band = hybrid_schedule_slip_band(
+        _cuts,
+        controlling_float_days=reading["controlling_path_total_float_days"],
+        slip_days=reading["forecast_finish_variance_days"],
+        remaining_planned_duration_days=reading["remaining_planned_duration_days"],
+        late_committed_milestones=reading["committed_milestones_forecast_late"])
+    _fields["band_rules"] = _band["rules"]
+    _fields["band_governing_rules"] = _band["governing_rules"]
+    _fields["band_rules_not_evaluable"] = _band["rules_not_evaluable"]
+    _fields["band_basis_id"] = "owner_configured_construction_control_tolerance"
+    if _band["colour"] is None:
+        return band_abstained(
+            "Critical_Path_Analysis", _message,
+            reason=("none of the owner's four rules is evaluable on this schedule: "
+                    + "; ".join(r["why"] for r in _band["rules"] if not r["evaluable"])),
+            **_fields)
+    return banded(
+        "Critical_Path_Analysis", _message,
+        status_color=_band["colour"],
+        boundary=hybrid_band_words(_band, _cuts),
+        basis=HYBRID_BAND_BASIS,
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_hard_override_fired=bool(reading["committed_milestones_forecast_late"]),
+        **_fields)
+
+
+A2_EXTENSIONS["A2.12"] = ("Critical_Path_Analysis", run_critical_path_analysis)

@@ -48,7 +48,7 @@
    made in the wrong copy passed every source check while the live page stayed broken;
    and the two had already drifted apart on their own, with nine modules carrying
    `disabled: true` in one and not the other. */
-window.LIN_TAXONOMY_COUNTS = { registered: 30, inService: 30, retired: 0, serverComputes: 30, supplied: 0 };
+window.LIN_TAXONOMY_COUNTS = { registered: 31, inService: 31, retired: 0, serverComputes: 31, supplied: 0 };
 window.LIN_CATEGORIES = [
   {
     id: 'a1', key: 'A1', name: 'Cost and EVM Performance',
@@ -74,7 +74,8 @@ window.LIN_CATEGORIES = [
       { id: 'a2_1', module_id: 'A2.1', name: 'PERT Network Criticality', method_class: 'PERT_Network_Criticality', active: true, required: ['spi','bac'] },
       { id: 'a2_7', module_id: 'A2.7', name: 'Milestone Trend Analysis', method_class: 'Milestone_Trend', active: true, required: ['milestoneHistory'] },
       { id: 'a2_8', module_id: 'A2.8', name: 'Look-Ahead Schedule Health', method_class: 'Lookahead_Health', active: true, required: ['activitiesPlanned','activitiesConstrained'] },
-      { id: 'a2_9', module_id: 'A2.9', name: 'Resource Loading Index', method_class: 'Resource_Loading', active: true, required: ['plannedLaborHours','actualLaborHours'] }
+      { id: 'a2_9', module_id: 'A2.9', name: 'Resource Loading Index', method_class: 'Resource_Loading', active: true, required: ['plannedLaborHours','actualLaborHours'] },
+      { id: 'a2_12', module_id: 'A2.12', name: 'Critical Path Analysis', method_class: 'Critical_Path_Analysis', active: true, required: ['scheduleNetwork'] }
     ]
   },
   {

@@ -329,6 +329,12 @@ _LADDER_ONLY = (
     # carry a simulation trial count and a governed percentile, and neither number is calibrated
     # against anything in this repository. They join the sweep rather than being excused from it.
     "A2.1", "A3.1",
+    # RUN 103. A2.12 Critical Path Analysis joins the sweep on the same footing as every other
+    # banded module: its band ladder -- the owner's day counts, the percentage guardrail floors,
+    # the critical-flag tolerance and the near-critical band -- is an OWNER-CONFIGURED tolerance
+    # and is calibrated against nothing in this repository. It is not excused from the sweep for
+    # being new.
+    "A2.12",
     # RUN 29. A5.1 abstained unconditionally from Run 7 until Run 29 gave it the dependency
     # matrix it was waiting for, so it carried no tunable value and needed no entry. It does
     # now: the propagation rounds the rework it reports to a fixed number of places, and the

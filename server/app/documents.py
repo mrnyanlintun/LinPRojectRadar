@@ -1772,6 +1772,52 @@ def _run69_structures(session: Session, project: Project, period: int,
             if base is not None:
                 out.setdefault("overheadAllocationBase", base)
 
+        elif doc_type == "schedule_update":
+            # RUN 103. THE SUPPLY PATH `scheduleNetwork` HAS NEVER HAD.
+            #
+            # A2.1 PERT and A2.12 Critical Path Analysis both read this structure and Run 102
+            # measured that NOTHING built it. The schedule update prints the flattened export,
+            # so it is read here on the same rule as the resource histogram above: ONE document
+            # supplies the network, the longest of them, because stitching two exports together
+            # would produce a network neither of them printed.
+            #
+            # NOTHING IS REPAIRED AND NOTHING IS DROPPED. Every row the export printed reaches
+            # the structure as it was printed; the diagnostics in
+            # `canonical_v3.schedule_network_diagnostics` name the faults and the module reports
+            # them. A network that cannot be read is NOT ASSESSED, never best-effort.
+            from .schedule_network_table import read_schedule_network
+            _acts = read_schedule_network(ex.get("schedule_network_json"))
+            if _acts:
+                _existing = out.get("scheduleNetwork")
+                if _existing is None or len(_acts) > len(_existing["activities"]):
+                    _cals = ex.get("schedule_calendars_json")
+                    out["scheduleNetwork"] = {
+                        "activities": _acts,
+                        "calendar": str(ex.get("schedule_calendar") or "").strip(),
+                        "calendars": ([str(c).strip() for c in _cals]
+                                      if isinstance(_cals, list) else None),
+                        "baseline_finish_day": ex.get("schedule_baseline_finish_day"),
+                        "imposed_finish_day": ex.get("schedule_imposed_finish_day"),
+                        "remaining_planned_duration_days":
+                            ex.get("remaining_planned_duration_days"),
+                        "schedule_version": str(ex.get("schedule_version") or "").strip(),
+                        "status_basis": "schedule update uploaded for this period",
+                        "assembled_by": "document extraction",
+                        "source_document_type": "schedule_update",
+                    }
+            # RUN 103, SECTION 3. THE TWO SCALARS A2.7's SLIP RATIO NEEDS. Run 102 recorded that
+            # the remaining-planned-duration denominator was stated by no document at all. It is
+            # stated by this one now, on its face, with the basis beside it. Neither is derived.
+            _rem = ex.get("remaining_planned_duration_days")
+            _basis = str(ex.get("remaining_duration_basis") or "").strip()
+            if _rem is not None and _basis:
+                out.setdefault("scheduleRemainingDuration", {
+                    "remaining_planned_duration_days": _rem,
+                    "remaining_duration_basis": _basis,
+                    "assembled_by": "document extraction",
+                    "source_document_type": "schedule_update",
+                })
+
         elif doc_type == "change_order":
             mods = read_modification_register(ex.get("modifications_json"))
             if mods:
@@ -2406,6 +2452,16 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
         # readers already consume it; the new key is what A2.7 reads.
         forecast_history = _milestone_forecast_history(milestone_history)
         if forecast_history is not None:
+            # RUN 103, SECTION 3. The denominator the slip ratio needs, carried onto the
+            # structure from the schedule update that STATES it. Absent that document's two
+            # scalars the key is absent and A2.7 abstains from the ratio exactly as it does
+            # today: no denominator is derived from a clock and none is invented.
+            _rem = si.get("scheduleRemainingDuration")
+            if isinstance(_rem, dict):
+                forecast_history["remaining_planned_duration_days"] = _rem.get(
+                    "remaining_planned_duration_days")
+                forecast_history["remaining_duration_basis"] = _rem.get(
+                    "remaining_duration_basis")
             si["milestoneForecastHistory"] = forecast_history
 
     # 0024. THE REGISTER'S EXPOSURE, SERVED TO THE MODULES THAT WOULD NEED IT.

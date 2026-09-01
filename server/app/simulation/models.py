@@ -1374,13 +1374,71 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
     of an eightieth percentile to a modal baseline, which is a different quantity, and nothing
     here reintroduces it.
     """
+    # ================== RUN 103, SECTION 2.4. PERT IS GATED BEHIND THE NETWORK'S VALIDITY, AND
+    # BEHIND THE PRESENCE OF DURATION UNCERTAINTY.
+    #
+    # The owner's ruling: "PERT Network Criticality runs only after the network validates and
+    # only when duration-uncertainty inputs exist -- three-point or distribution durations.
+    # Absent them, PERT is Not Assessed while Critical Path Analysis still produces its posture.
+    # PERT is never a substitute for CPA."
+    #
+    # BEFORE THIS RUN `pert_criticality` FELL BACK to a single deterministic pass when any
+    # activity lacked a three-point estimate, and reported a criticality index of 1.0 or 0.0 per
+    # activity from ONE pass. That index is a deterministic critical-path flag wearing a
+    # stochastic measure's name, and section 12.3 forbids exactly that. The fallback is not
+    # removed from `canonical_v3` -- it is still the documented deterministic-collapse oracle --
+    # but this MODULE no longer takes it: with no duration uncertainty stated, PERT is NOT
+    # ASSESSED and A2.12 Critical Path Analysis is the module that reports on this network.
+    from .canonical_v3 import schedule_network_diagnostics as _diagnose
     try:
         structure = require_v3_structure(si, "A2.1")
-        network = parse_schedule_network(structure)
-        reading = pert_criticality(network, rand, trials=2000)
     except StructureAbsent as absent:
         return insufficient("PERT_Network_Criticality", absent.sentence,
                             ABSTAIN_STRUCTURE_ABSENT)
+    _diag = _diagnose(structure)
+    _diag_fields = {k: v for k, v in _diag.items() if not k.startswith("_")}
+    if not _diag["valid"]:
+        return insufficient(
+            "PERT_Network_Criticality",
+            (_diag["structure_refusal"] or
+             (f"The schedule export provided carries {_diag['fault_total']} logic faults "
+              f"({', '.join(_diag['faults_present'])}), so the network does not validate. PERT "
+              f"runs only after the network validates, and no criticality is simulated over a "
+              f"network whose logic could not be read. The affected rows are recorded beside "
+              f"this reason.")),
+            ABSTAIN_STRUCTURE_ABSENT,
+            schedule_network_diagnostics=_diag_fields,
+            canonical_structure="schedule_network")
+    try:
+        network = parse_schedule_network(structure)
+    except StructureAbsent as absent:
+        return insufficient("PERT_Network_Criticality", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT,
+                            schedule_network_diagnostics=_diag_fields)
+    _no_uncertainty = sorted(
+        a for a, v in network["activities"].items()
+        if v["optimistic"] is None or v["most_likely"] is None or v["pessimistic"] is None)
+    if _no_uncertainty:
+        return insufficient(
+            "PERT_Network_Criticality",
+            (f"The network validates, but {len(_no_uncertainty)} of "
+             f"{network['count']} activities state no duration uncertainty -- no three point "
+             f"estimate and no duration distribution (first: "
+             f"{', '.join(_no_uncertainty[:5])}). PERT measures how often an activity is "
+             f"critical ONCE DURATIONS VARY, so with no variation stated there is nothing to "
+             f"simulate and NO READING IS TAKEN. A single deterministic pass is not a "
+             f"criticality index and is not reported as one. Critical Path Analysis reports the "
+             f"deterministic controlling path on this same network."),
+            ABSTAIN_MISSING_INPUT,
+            activities_without_three_point_durations=_no_uncertainty,
+            schedule_network_diagnostics=_diag_fields,
+            canonical_structure="schedule_network")
+    try:
+        reading = pert_criticality(network, rand, trials=2000)
+    except StructureAbsent as absent:
+        return insufficient("PERT_Network_Criticality", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT,
+                            schedule_network_diagnostics=_diag_fields)
     index = reading["criticality_index"]
     top = max(index, key=lambda a: (index[a], a))
     # ================== RUN 102, SECTION 3. THE BAND ON THE CRITICALITY INDEX, AND ITS OVERRIDE.

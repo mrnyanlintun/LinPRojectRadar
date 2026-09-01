@@ -209,12 +209,26 @@ check(E.run_milestone_trend({"milestoneForecastHistory": _mh_late},
       "0.001")
 
 print()
-print("6. NO SLIP RATIO WITHOUT ITS DENOMINATOR -- THE ABSTENTION IS REAL")
+print("6. NO SLIP RATIO WITHOUT ITS DENOMINATOR -- THE GUARDRAIL IS NOT EVALUABLE AND SAYS SO")
+# RUN 103 RE-POINTED THIS CHECK, AND THE BEHAVIOUR IT ASSERTED WAS DELIBERATELY CHANGED BY THE
+# OWNER'S SECTION 3. Run 102 banded A2.7 on the slip RATIO alone, so with no denominator there
+# was no band at all. The owner has ruled that percentage-only is too coarse: working-day slip
+# bands now LEAD and the percentage is a GUARDRAIL. So a missing denominator no longer silences
+# the module -- the day band governs -- and what must still be true, and is checked here, is
+# that the guardrail is reported NOT EVALUABLE rather than passed as a zero or invented.
 _mh_nodenom = {k: v for k, v in _mh.items() if k != "remaining_planned_duration_days"}
 _r = E.run_milestone_trend({"milestoneForecastHistory": _mh_nodenom}, None, None)
-check(_r.get("status_color") is None and bool(_r.get("band_withheld_reason")),
-      "with no remaining planned duration stated, A2.7 computes, states its reason and asserts "
-      "no band", str(_r.get("status_color")))
+check(_r.get("slip_ratio") is None
+      and "percentage guardrail" in (_r.get("band_rules_not_evaluable") or []),
+      "with no remaining planned duration stated, A2.7 forms NO ratio and reports the "
+      "percentage guardrail as not evaluable",
+      str(_r.get("band_rules_not_evaluable")))
+check(_r.get("status_color") in ("Green", "Yellow", "Amber", "Red"),
+      "and the working-day slip band still governs, which is the owner's Run 103 hybrid rule",
+      str(_r.get("status_color")))
+_gov = _r.get("band_governing_rules") or []
+check("percentage guardrail" not in _gov,
+      "and the non-evaluable guardrail did not set the posture", str(_gov))
 
 print()
 print(f"RESULT: {PASS}/{PASS + FAIL} checks passed")
