@@ -11,9 +11,16 @@ than qualifying them.
 
 ## How a module in this category answers
 
-- **A reading with a band.** Only **A4.2 RFI Velocity** and **A4.3 Submittal Rejection Rate** can
-  produce one. Both ladders are recorded in the source as **uncited**, and both modules are
-  outside `registry.CORE_VOTING_MODULES`, so neither votes.
+- **A reading with a band.** **A4.2 RFI Velocity** and **A4.6 Change Order Frequency** produce
+  one. *(RUN 102 EDIT, on the owner's authority in his Run 102 order section 5. This sentence
+  read "Only A4.2 RFI Velocity and A4.3 Submittal Rejection Rate can produce one. Both ladders
+  are recorded in the source as uncited, and both modules are outside
+  `registry.CORE_VOTING_MODULES`, so neither votes." Run 101 rebuilt A4.2 and A4.6 in code and
+  was forbidden from editing this specification, so it described modules that no longer behave
+  that way. **A4.3 no longer bands at all**: Run 101 removed its five/fifteen/twenty-five per
+  cent ladder because it was sourced to nothing, and it now bands only where a project's own
+  submittal plan states an acceptance target. **A4.6 does band**, on change impact. Neither A4.2
+  nor A4.6 is in `registry.CORE_VOTING_MODULES` and neither votes; that part was and is true.)*
 - **A reading with no band — calibration pending.** Seven of the nine. The method runs, the
   figure is real, and no colour is claimed. The module carries the standard note verbatim:
   *"The method this measure is named for has been carried out and the figure is reported. No
@@ -89,21 +96,48 @@ overdue_ratio = rfiOverdue / rfiCount        (only when rfiOverdue is present an
 
 **Bands, and where each threshold came from.**
 
-| Band | Velocity condition | Overdue-share condition |
-|---|---|---|
-| Green | `per_week <= 2` | `ratio < 0.10` |
-| Yellow | `per_week <= 4` | `ratio < 0.20` |
-| Amber | `per_week <= 8` | `ratio < 0.35` |
-| Red | otherwise | otherwise |
+*(RUN 102 EDIT, on the owner's authority in his Run 102 order section 5. What stood here is
+quoted in full in `REPORT_2026-09-01_run102.md`; it described a two-axis ladder banding on
+requests per week and on an overdue share against three uncited cutoffs. **THE VELOCITY LADDER
+IS GONE.** Run 101 removed it because nothing sourced two, four and eight requests per week, and
+because a rate of questions is not a condition. What bands now is the OVERDUE PROPORTION alone.)*
 
-The reported band is the **worse of the two** on the rank `Green < Yellow < Amber < Red`; the
-overdue band is used only when it outranks the velocity band.
+| Band | Condition on the overdue proportion `rfiOverdue / rfiOpen` |
+|---|---|
+| Green | `ratio == 0` — nothing open is overdue |
+| Yellow | `0 < ratio <= 0.10` |
+| Amber | `0.10 < ratio <= 0.25` |
+| Red | `ratio > 0.25`, **or** any overdue request where no open count is reported |
 
-**Where these thresholds came from: nothing.** The source says so in those terms — Run 4 looked
-for a source specifying two, four and eight requests per week, and for one specifying ten, twenty
-and thirty-five per cent overdue, and found neither. The boundaries are left exactly as they
-stand, uncited, and **this module does not vote**. This specification records them and does not
-change them.
+**Where these thresholds came from, and the two halves have different provenance.**
+
+- **THE BASIS IS THE CONTRACT'S OWN RESPONSE PERIOD**, which is what makes a request *overdue* at
+  all: a request unanswered beyond it is overdue by the contract's definition, not by an industry
+  average. Where this project's uploaded contract states its period, that figure governs and the
+  reading's `threshold_source` is `project_specific`. Where it does not, the platform's
+  configured stand-in is **seven business days**, held in
+  `simulation/band_reference_data.json` under `rfi_contract_response_period_business_days` with
+  its source, and the reading's `threshold_source` is `owner_configured_default`. The
+  provenance class of the basis is **CODIFIED**.
+- **THE FOUR BOUNDARIES DRAWN FROM IT ARE NOT CONTRACTUAL** and have no published basis. They are
+  the owner's stated thresholds, and the reading's `band_boundary_provenance_class` is
+  **OWNER-CALIBRATED** so that a platform-chosen cutoff is never presented as though a standard
+  fixed it.
+- **OVERDUE MUST BE COUNTED IN BUSINESS DAYS, EXCLUDING WEEKENDS AND HOLIDAYS.** This platform
+  performs **no date arithmetic on requests for information**: it takes the overdue count as the
+  source document states it, so that requirement falls on the document's author and is stated in
+  the extraction contract. A calendar-day count marks every request overdue two days early.
+- **CORROBORATION RECORDED, NOT USED AS THE SOURCE.** Aboseif et al. (2023), *Journal of
+  Management in Engineering*, gives a high-performing RFI processing time of seven days or fewer.
+  That corroborates the period from an empirical direction; **the contract remains the source**.
+  The same paper's requests-per-million-dollars figure measures a different quantity and is
+  applied nowhere.
+
+**Where no band is asserted.** Where the request log states no overdue count, the issue rate and
+the open count are displayed and **no band is drawn from them**. Where nothing is open there is
+no denominator, and that is reported rather than banded as though it were compliance.
+
+**This module does not vote.** It is outside `registry.CORE_VOTING_MODULES`, unchanged.
 
 **Interpretation.** A high velocity says the field is asking a lot of questions per unit of time,
 which is evidence about the clarity of the issued documents rather than about cost. A high overdue
@@ -267,13 +301,46 @@ day period. **Frequency and magnitude are two quantities and are never combined 
 composite** — that combination is what the module did before Run 28 and it is what the supplied
 contract forbids. Change type, cause, direction and contract lineage are retained on the reading.
 
-**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending
-with the standard note.
+**Bands.**
 
-**Interpretation.** The frequency says how often the scope is being changed; the magnitude says
-how much of the contract those changes represent. A project with many small changes and one with
-one enormous change are different conditions and this module reports them as two figures so they
-stay different.
+*(RUN 102 EDIT, on the owner's authority in his Run 102 order section 5. What stood here read:
+"**None. This module asserts no band and none may be attached.** Calibration-pending with the
+standard note." Run 101 rebuilt this module in code — it bands on change IMPACT — and was
+forbidden from editing this file, so the specification described a module that no longer behaves
+that way.)*
+
+**WHAT IS BANDED IS CHANGE IMPACT, NOT FREQUENCY.** The frequency is still computed and is still
+reported, and it is explicitly **not** what the band is drawn over: the count of changes over a
+span of days says how often the scope moved, not what the movement did. Two halves band, and the
+**worse of the two** is what the module asserts, with the other reported beside it.
+
+**Cost impact — ADDITIONS as a proportion of the ORIGINAL contract value.** Additions and
+omissions are measured separately and an omission is never adverse: a reduction is Green and is
+never netted into the additions, because a scope reduction and a scope increase are different
+conditions and cancelling one against the other hides both.
+
+| Band | Condition |
+|---|---|
+| Green | net change at or below zero, **or** additions strictly under 5 per cent |
+| Yellow | additions at or above 5 per cent and at or below 10 per cent |
+| Amber | additions above 10 per cent and at or below 20 per cent |
+| Red | additions above 20 per cent |
+
+**Schedule impact — the days a change adds, and the float it consumes.** Reported and banded on
+the same worse-of rule where the register states them.
+
+**Where these thresholds came from.** The owner's stated authority, and the ladder's basis is a
+**CONVENTION**: a contingency reserve is conventionally around twenty per cent of contract value,
+held in `simulation/band_reference_data.json` under
+`change_order_contingency_reserve_fraction`, so change exposure beyond it has passed the money set
+aside to absorb it, and Amber begins at half the reserve. **No standards clause fixes 5, 10 or 20
+per cent.** The reading's `threshold_source` is `owner_configured_default`. A project whose own
+contract states a change-order tolerance overrides this, and the source is then that document.
+
+**Interpretation.** The frequency says how often the scope is being changed; the impact says what
+those changes did to the money and to the time. A project with many small changes and one with
+one enormous change are different conditions and this module reports them as separate figures so
+they stay different.
 
 **Nothing to report.** The two `require_v4_structure` sentences, with `W` = *"a change event register
 with the exposure it is measured over: each change, its type, cause and value, and the span of

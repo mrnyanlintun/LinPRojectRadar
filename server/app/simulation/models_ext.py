@@ -39,6 +39,7 @@ from .models import (
     ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
     ABSTAIN_NOT_APPLICABLE, ABSTAIN_STRUCTURE_ABSENT,
     PROVENANCE_CODIFIED, PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
+    THRESHOLD_SOURCE_EXTERNAL, THRESHOLD_SOURCE_OWNER, THRESHOLD_SOURCE_PROJECT,
     band_abstained, banded, calibration_pending, check_inputs, eligible, insufficient, refuse,
 )
 from . import band_reference as _BR
@@ -310,19 +311,119 @@ def run_milestone_trend(si: dict, rand: Callable[[], float], period_cutoff) -> d
     except StructureAbsent as absent:
         return insufficient("Milestone_Trend", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
     worst = max(reading["milestones"], key=lambda m: m["current_variance_days"])
-    return calibration_pending(
-        "Milestone_Trend",
+    # ================== RUN 102, SECTION 3. THE SLIP RATIO, AND THE COMMITTED-MILESTONE OVERRIDE.
+    #
+    #     slip ratio = (current forecast finish - approved baseline finish)
+    #                  / remaining planned duration
+    #
+    # THE DENOMINATOR IS THE RECORD'S OWN AND IS NEVER DERIVED. Remaining planned duration is
+    # measured from the data date to the planned finish; this file reads no clock and this
+    # structure carries no data date, so where the record does not state
+    # `remaining_planned_duration_days` NO RATIO IS FORMED and the module reports its variances
+    # and abstains from a band with the reason on the row. Section 12.13 makes inventing that
+    # denominator worse than abstaining, and the owner's own rationale for the 2/5/10 tolerance
+    # -- that a five-day slip must not read the same on a 20-day package and a 1,000-day
+    # programme -- is exactly an argument that the denominator matters.
+    #
+    # THE HARD OVERRIDE NEEDS THE MILESTONE'S CLASS AND IT MUST BE STATED. The owner's condition
+    # is a CONTRACTUAL, REGULATORY, TURNOVER or OWNER-COMMITTED milestone forecast later than
+    # its approved date with no approved baseline change. A milestone whose record does not say
+    # which of those it is cannot be judged against that condition, and its class is never
+    # inferred from its name.
+    _cuts = _BR.entry("milestone_slip_ratio_bands")
+    _remaining = reading.get("remaining_planned_duration_days")
+    _committed = [m for m in reading["milestones"]
+                  if str(m.get("milestone_class") or "") in _COMMITTED_MILESTONE_CLASSES
+                  and m["variance_against_approved_days"] > 0
+                  and not m.get("rebaselined")]
+    _worst_appr = reading["worst_variance_against_approved_days"]
+    _ratio = (_worst_appr / _remaining
+              if isinstance(_remaining, (int, float)) and _remaining > 0 else None)
+    _message = (
         f"{reading['milestone_count']} milestone"
         f"{'' if reading['milestone_count'] == 1 else 's'} followed across their forecasts; the "
         f"largest variance against the original commitment is "
         f"{_js_str(round1(worst['current_variance_days']))} days, and "
-        f"{reading['deteriorating_count']} of them moved further out this period",
+        f"{reading['deteriorating_count']} of them moved further out this period")
+    _fields = dict(
         milestone_count=reading["milestone_count"],
         worst_variance_days=reading["worst_variance_days"],
+        worst_variance_against_approved_days=_worst_appr,
+        remaining_planned_duration_days=_remaining,
+        slip_ratio=(round(_ratio, 4) if _ratio is not None else None),
+        committed_milestones_forecast_late=_committed,
         deteriorating_count=reading["deteriorating_count"],
         milestones=reading["milestones"],
         canonical_structure="milestone_forecast_history",
     )
+    _override_words = (
+        "HARD OVERRIDE: Red if any contractual, regulatory, turnover or owner-committed "
+        "milestone is forecast later than its approved date and no approved baseline change "
+        "exists. The milestone's class must be STATED by the record; it is never inferred from "
+        "a name, so a record that states no class cannot fire this override and does not.")
+    if _committed:
+        return banded(
+            "Milestone_Trend", _message,
+            status_color="Red",
+            boundary=(_override_words + " This project's record states "
+                      f"{len(_committed)} such milestone"
+                      f"{'' if len(_committed) == 1 else 's'} forecast beyond its approved date "
+                      f"with no approved baseline change."),
+            basis=("the owner's Run 102 order, section 3, Milestone Trend Analysis. The "
+                   "override is a commitment condition, not a percentage: a committed date "
+                   "missed with no approved change is missed however small the ratio"),
+            provenance=PROVENANCE_OWNER_CALIBRATED,
+            threshold_source=THRESHOLD_SOURCE_OWNER,
+            band_hard_override_fired=True,
+            **_fields)
+    if _ratio is None or not _cuts.get("configured"):
+        return band_abstained(
+            "Milestone_Trend", _message,
+            reason=("the owner's measure is a SLIP RATIO -- the current forecast finish less "
+                    "the approved baseline finish, divided by the REMAINING PLANNED DURATION -- "
+                    "and this project's milestone forecast history states no remaining planned "
+                    "duration for the ratio's denominator. The variance in days is reported "
+                    "above; a variance in days is not a slip ratio and the bands are not "
+                    "applied to it, because the whole point of the ratio is that five days on a "
+                    "twenty-day package and five days on a thousand-day programme are not the "
+                    "same slip. No denominator is derived from a clock and none is invented"
+                    if _ratio is None else
+                    "no slip-ratio band is configured, so the ratio is displayed and no band is "
+                    "asserted"),
+            **_fields)
+    _g, _y, _a = (_cuts["green_at_or_below"], _cuts["yellow_at_or_below"],
+                  _cuts["amber_at_or_below"])
+    _colour = ("Green" if _ratio <= _g else "Yellow" if _ratio <= _y
+               else "Amber" if _ratio <= _a else "Red")
+    return banded(
+        "Milestone_Trend", _message,
+        status_color=_colour,
+        boundary=(
+            f"on the SLIP RATIO -- (current forecast finish minus approved baseline finish) "
+            f"divided by remaining planned duration, here "
+            f"{_js_str(round(_ratio, 4))}: at or below {_g} is Green; above {_g} and at or "
+            f"below {_y} is Yellow; above {_y} and at or below {_a} is Amber; above {_a} is "
+            f"Red. A forecast EARLIER than the approved baseline gives a ratio at or below zero "
+            f"and is Green. {_override_words}"),
+        basis=("the owner's Run 102 order, section 3, and the threshold table attached to it. "
+               "OWNER-CONFIGURED, and the owner states it in terms: 'The 2%, 5%, and 10% values "
+               "are not universal construction standards; they are a documented owner tolerance "
+               "structure that avoids treating a five-day slip identically on a 20-day package "
+               "and a 1,000-day capital program.' A stricter figure stated in a project "
+               "document overrides them, and none is stated by any document this project has "
+               "uploaded"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_hard_override_fired=False,
+        **_fields)
+
+
+#: RUN 102. The four milestone classes the owner's hard override names. A milestone whose record
+#: states none of them is not judged against the override at all, and its class is NEVER
+#: inferred from its identifier or its name.
+_COMMITTED_MILESTONE_CLASSES: frozenset = frozenset({
+    "contractual", "regulatory", "turnover", "owner_committed", "owner-committed",
+})
 
 
 # ------------------------------------------------------------ A2.8 Look-Ahead Schedule Health
@@ -355,18 +456,82 @@ def run_lookahead_health(si: dict, rand: Callable[[], float], period_cutoff) -> 
         reading = look_ahead_ready_fraction(structure)
     except StructureAbsent as absent:
         return insufficient("Lookahead_Health", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
-        "Lookahead_Health",
+    # ================ RUN 102, SECTION 3. CONSTRAINT-FREE READINESS, AND THE BLOCKED-CRITICAL
+    # OVERRIDE. The measure matches the owner's definition: planned activities READY WHEN DUE
+    # divided by planned activities DUE in the window, which is what the ready fraction is --
+    # the inventory's rows are the activities the look-ahead plans, and a row whose constraints
+    # are cleared is ready. ONLY ACTIVITIES GENUINELY DUE WITHIN THE ACTIVE WINDOW COUNT, and
+    # that is enforced where it can be: the inventory is the document's own look-ahead window,
+    # its horizon is stated on the structure and travels onto the reading, and nothing here
+    # widens it or pulls a row in from outside it.
+    #
+    # THE CONSTRAINT TYPE IS RECORDED so the brief can name the actual driver -- design or RFI,
+    # submittal, procurement, access, predecessor completion, labour, equipment, permit,
+    # inspection, owner decision. `canonical_v3.look_ahead_ready_fraction` REFUSES a constrained
+    # row that states no category at all, so the inventory cannot be silently uncategorised.
+    _cuts = _BR.entry("lookahead_readiness_bands")
+    _blocked = reading.get("blocked_critical_activities") or []
+    _ready = reading["ready_fraction"]
+    _message = (
         f"{reading['planned'] - reading['constrained']} of {reading['planned']} activities "
         f"planned in the {reading['horizon']} look ahead window are free of open constraints, a "
-        f"ready fraction of {_js_str(round2(reading['ready_fraction']))}",
-        ready_fraction=round2(reading["ready_fraction"]),
+        f"ready fraction of {_js_str(round2(_ready))}")
+    _fields = dict(
+        ready_fraction=round2(_ready),
         planned=reading["planned"],
         constrained=reading["constrained"],
         constraint_categories=reading["constraint_categories"],
+        blocked_critical_activities=_blocked,
         horizon=reading["horizon"],
         canonical_structure="look_ahead_schedule",
     )
+    _override_words = (
+        "HARD OVERRIDE: Red if a critical-path or zero/negative-float activity is blocked by an "
+        "unresolved constraint. Both facts must be STATED by the look-ahead row -- that it is "
+        "on the critical path, or its total float -- because the look-ahead inventory and the "
+        "activity network are different structures and neither is inferred from the other.")
+    if _blocked:
+        return banded(
+            "Lookahead_Health", _message,
+            status_color="Red",
+            boundary=(_override_words + f" This project's look-ahead states {len(_blocked)} "
+                      f"such activit{'y' if len(_blocked) == 1 else 'ies'} blocked."),
+            basis=("the owner's Run 102 order, section 3, Look-Ahead Schedule Health. The "
+                   "override is a condition on the controlling path, not a proportion: "
+                   "look-ahead planning exists to remove constraints before work is due, and a "
+                   "constraint left on the critical path is the failure the measure is for"),
+            provenance=PROVENANCE_OWNER_CALIBRATED,
+            threshold_source=THRESHOLD_SOURCE_OWNER,
+            band_hard_override_fired=True,
+            **_fields)
+    if not _cuts.get("configured"):
+        return band_abstained(
+            "Lookahead_Health", _message,
+            reason="no readiness band is configured, so the ready fraction is displayed and no "
+                   "band is asserted",
+            **_fields)
+    _g, _y, _a = (_cuts["green_at_or_above"], _cuts["yellow_at_or_above"],
+                  _cuts["amber_at_or_above"])
+    _colour = ("Green" if _ready >= _g else "Yellow" if _ready >= _y
+               else "Amber" if _ready >= _a else "Red")
+    return banded(
+        "Lookahead_Health", _message,
+        status_color=_colour,
+        boundary=(
+            f"on constraint-free readiness -- planned activities ready when due divided by "
+            f"planned activities due in the window: at or above {_g} is Green; at or above {_y} "
+            f"and below {_g} is Yellow; at or above {_a} and below {_y} is Amber; below {_a} is "
+            f"Red. Each boundary is INCLUSIVE ON ITS LOWER SIDE. {_override_words}"),
+        basis=("the owner's Run 102 order, section 3, and the threshold table attached to it. "
+               "OWNER-CONFIGURED, on the owner's stated reason that 'look-ahead planning is "
+               "specifically intended to identify and remove constraints before work is due'. "
+               "No published standard fixes 90, 80 and 70 per cent. A stricter figure stated in "
+               "a project document overrides them, and none is stated by any document this "
+               "project has uploaded"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_hard_override_fired=False,
+        **_fields)
 
 
 # ------------------------------------------------------------ A2.9 Resource Loading Index
@@ -399,21 +564,99 @@ def run_resource_loading(si: dict, rand: Callable[[], float], period_cutoff) -> 
     except StructureAbsent as absent:
         return insufficient("Resource_Loading", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
     peak = reading["peak"]
-    return calibration_pending(
-        "Resource_Loading",
+    # ================= RUN 102, SECTION 3. THE PEAK LOAD RATIO, AND THE ZERO-FLOAT OVERRIDE.
+    #
+    # UNLIKE RESOURCES ARE NEVER AGGREGATED (section 12.8). The ratio banded is a SINGLE
+    # bucket's -- one resource type, one period, in that type's own unit -- and the peak across
+    # types is banded with its type named. Nothing sums labour hours to equipment hours, and no
+    # conversion between them is supplied by any project resource plan this platform holds, so
+    # none is invented. The per-type peaks travel beside the headline so a reader sees which
+    # unit the banded ratio is in.
+    #
+    # THE OWNER'S MEASURE IS "for controlling and near-critical activities". THE RESOURCE
+    # PROFILE AND THE ACTIVITY NETWORK ARE DIFFERENT STRUCTURES and this module holds only the
+    # first, so which buckets load controlling work must be STATED on the bucket
+    # (`affects_zero_or_negative_float`). Where no bucket states it, the ratio is banded over
+    # every bucket the profile holds and the boundary text says so, rather than the module
+    # claiming a restriction it did not apply.
+    _cuts = _BR.entry("resource_peak_load_bands")
+    _over_zero_float = reading.get("overloaded_zero_float_buckets") or []
+    _ratio = reading["peak_load_ratio"]
+    _message = (
         f"The heaviest period is {peak['time_bucket']} for {peak['resource_type']}, demanding "
         f"{_grouped(peak['demand'])} against {_grouped(peak['available_capacity'])} available, a "
         f"load ratio of {_js_str(round2(peak['load_ratio']))}; "
         f"{reading['over_capacity_buckets']} of {reading['bucket_count']} periods are above "
-        f"capacity",
+        f"capacity")
+    _fields = dict(
         peak_load_ratio=round2(reading["peak_load_ratio"]),
         peak_time_bucket=peak["time_bucket"],
         peak_resource_type=peak["resource_type"],
+        peak_by_resource_type=reading["peak_by_resource_type"],
+        resource_types=reading["resource_types"],
+        no_conversion_between_unlike_resources=(
+            reading["no_conversion_between_unlike_resources"]),
+        overloaded_zero_float_buckets=_over_zero_float,
         over_capacity_buckets=reading["over_capacity_buckets"],
         bucket_count=reading["bucket_count"],
         buckets=reading["buckets"],
         canonical_structure="resource_profile",
     )
+    _override_words = (
+        "HARD OVERRIDE: Red if any resource overload affects work on a zero or negative float "
+        "path. The bucket must STATE that it does; the resource profile and the activity "
+        "network are different structures and neither is inferred from the other.")
+    _scope = (
+        " Which buckets load controlling or near-critical work is stated on the buckets "
+        "themselves where the profile says so; where it does not, the ratio is formed over "
+        "every bucket the profile holds and no restriction is claimed that was not applied."
+        if not any(b.get("affects_zero_or_negative_float") for b in reading["buckets"])
+        else " The profile states which buckets load zero or negative float work.")
+    if _over_zero_float:
+        return banded(
+            "Resource_Loading", _message,
+            status_color="Red",
+            boundary=(_override_words + f" This project's profile states "
+                      f"{len(_over_zero_float)} over-capacity bucket"
+                      f"{'' if len(_over_zero_float) == 1 else 's'} on a zero or negative float "
+                      f"path."),
+            basis=("the owner's Run 102 order, section 3, Resource Loading Index. The override "
+                   "is a schedule-consequence condition, not a ratio: an overload on work with "
+                   "no float has nowhere to absorb the shortfall"),
+            provenance=PROVENANCE_OWNER_CALIBRATED,
+            threshold_source=THRESHOLD_SOURCE_OWNER,
+            band_hard_override_fired=True,
+            **_fields)
+    if not _cuts.get("configured"):
+        return band_abstained(
+            "Resource_Loading", _message,
+            reason="no peak load band is configured, so the ratio is displayed and no band is "
+                   "asserted",
+            **_fields)
+    _g, _y, _a = (_cuts["green_at_or_below"], _cuts["yellow_at_or_below"],
+                  _cuts["amber_at_or_below"])
+    _colour = ("Green" if _ratio <= _g else "Yellow" if _ratio <= _y
+               else "Amber" if _ratio <= _a else "Red")
+    return banded(
+        "Resource_Loading", _message,
+        status_color=_colour,
+        boundary=(
+            f"on the PEAK LOAD RATIO -- peak planned demand divided by available planned "
+            f"capacity, within ONE resource type in that type's own unit: at or below {_g} is "
+            f"Green; above {_g} and at or below {_y} is Yellow; above {_y} and at or below {_a} "
+            f"is Amber; above {_a} is Red. The banded ratio is {peak['resource_type']} in "
+            f"{peak['time_bucket']}; unlike resources are never summed into one ratio and no "
+            f"conversion between them is invented.{_scope} {_override_words}"),
+        basis=("the owner's Run 102 order, section 3, and the threshold table attached to it. "
+               "OWNER-CONFIGURED, on the owner's stated reason that a loading index's 'actual "
+               "risk depends on available capacity and the schedule consequence of the affected "
+               "work'. No published standard fixes 1.00, 1.10 and 1.20. A stricter figure "
+               "stated in a project document overrides them, and none is stated by any document "
+               "this project has uploaded"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_hard_override_fired=False,
+        **_fields)
 
 
 # ------------------------------------------------------------ A2.10 Schedule Risk Analysis P80
@@ -636,6 +879,9 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
                "fixes 1.0, 1.2 or 1.5, and the research says the specific boundaries are weaker "
                "still than the heuristic they sit on"),
         provenance=PROVENANCE_CONVENTION,
+        # RUN 102, SECTION 6. The owner stated these boundaries; no project document and no
+        # published instrument fixes them.
+        threshold_source=THRESHOLD_SOURCE_OWNER,
         band_exhaustion_arm_fired=bool(exhausted),
         **figures)
 
@@ -696,6 +942,7 @@ def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -
                "44, which calls the 0.85 and 0.90 cut points 'conventional practitioner values, "
                "not codified'. No standards clause fixes 0.95, 0.90 or 0.85"),
         provenance=PROVENANCE_CONVENTION,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
         productivity_index=round2(reading["productivity_index"]),
         actual_productivity=reading["actual_productivity"],
         planned_productivity=reading["planned_productivity"],
@@ -958,6 +1205,12 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
                "was not completed"),
         provenance=PROVENANCE_CODIFIED,
         boundary_provenance=PROVENANCE_OWNER_CALIBRATED,
+        # RUN 102, SECTION 6, RUNG 2. The P80 requirement is a formal external instrument -- DOE
+        # Order 413.3B and GAO-20-195G -- and that is what the measure is drawn against, so the
+        # threshold source is the external basis even though the intermediate gap cutoff is the
+        # owner's. The two fields say the two different things; neither is derived from the
+        # other.
+        threshold_source=THRESHOLD_SOURCE_EXTERNAL,
         p80_minus_bac_gap_fraction=_gap,
         p80_gap_yellow_cutoff=_gap_cut,
         **_figs)

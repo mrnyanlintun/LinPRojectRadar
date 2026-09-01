@@ -36,8 +36,10 @@ from .canonical import (
 from .canonical_v3 import (
     ccpm_buffer_consumption as canonical_buffer_consumption,
     lob_production_rates as canonical_lob_rates,
+    cpm_forward_backward,
     parse_schedule_network, pert_criticality, reference_class_forecast, require_v3_structure,
 )
+from . import band_reference as _BR
 from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 
 # Stamped on every result set, so a later change to this layer is detectable in already-collected
@@ -871,12 +873,37 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # Dominance, `delivery_complete` and `scope_signal_inputs` are all unaltered, and no stored row
 # was migrated, deleted or rewritten. Results computed under sim-2026.08-v46 remain valid under
 # that stamp.
-SIMULATION_VERSION = "sim-2026.08-v47"
+# RUN 102 -> sim-2026.09-v48. WHAT MODULES COMPUTE CHANGED AGAIN, and section 10.10 orders the
+# mint. Six things moved:
+#
+#   1. A2.1 PERT Network Criticality, A2.7 Milestone Trend, A2.8 Look-Ahead Health and A2.9
+#      Resource Loading NOW BAND. Run 101 ordered the first and the fourth left bandless and the
+#      owner has reversed that. Each carries the owner's configured tolerance and its hard
+#      override; A2.7 additionally COMPUTES A NEW QUANTITY, the slip ratio, which it did not.
+#   2. A6.1 QUALITY IS REBUILT. It computed a requirement conformance rate and banded on it; it
+#      now computes FIRST-PASS INSPECTION ACCEPTANCE and bands on that, with the critical-item
+#      override. The conformance rate is still reported and is no longer what bands.
+#   3. A6.2 SAFETY FREQUENCY BANDS ON THE BENCHMARK RATIO -- project TRIR over the published
+#      construction TRIR -- rather than on three absolute cutoffs derived from it, and gains the
+#      fatality / life-threatening / stop-work / high-severity hard override. The three measures
+#      are unchanged and are still never composited; the exposure floor is unchanged.
+#   4. A6.3 ENVIRONMENTAL IS REBUILT AGAIN, from Run 101's consequence ladder to a TIMELY
+#      CLOSURE RATE with a mandatory-deadline override. It computes a quantity it did not.
+#   5. A6.4 GAINED A NUMERIC FALLBACK for a score that is not one of the five CPARS ratings.
+#   6. EVERY BAND NOW ALSO CARRIES `threshold_source` -- which rung of the owner's precedence
+#      order supplied its figure. New key on a JSON column, so no migration; the stored row is
+#      genuinely different and the stamp must say so.
+#
+# Nothing else moves. Worst-wins, the required core of five, the Indeterminate gate, Conservative
+# Dominance, `delivery_complete` and `scope_signal_inputs` are all unaltered, and no stored row
+# was migrated, deleted or rewritten. Results computed under sim-2026.08-v47 remain valid under
+# that stamp.
+SIMULATION_VERSION = "sim-2026.09-v48"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v46"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v47"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -901,6 +928,19 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # "Indeterminate" like every other project. Rows stamped v44 and earlier remain valid under
  # their own stamp.
  "sim-2026.08-v45",
+ # RUN 102 APPENDS THE THREE THAT WERE MISSED. This tuple is documented as never edited and
+ # only appended to, and it stopped at v45: Run 100's v46 and Run 101's v47 moved
+ # SIMULATION_VERSION without appending here, so the history disagreed with the stamp. Both are
+ # added now in the order they were minted, with v48 after them. Nothing already in this tuple
+ # is altered, and no stored row is touched: this is the record catching up with the stamps, not
+ # a claim that anything was recomputed.
+ "sim-2026.08-v46",
+ # RUN 101: the bands and their provenance. A6.2 became three measures, A4.2 and A4.6 were
+ # rebuilt, and every band began carrying its boundary, its basis and its provenance class.
+ "sim-2026.08-v47",
+ # RUN 102: Schedule gets its four bands, three A6 modules are re-banded on the owner's stated
+ # measures, A6.4 gains a numeric fallback, and every band carries its `threshold_source`.
+ "sim-2026.09-v48",
 )
 
 
@@ -1090,6 +1130,48 @@ PROVENANCE_WORDS: dict[str, str] = {
 BAND_PROVENANCE_CLASSES: frozenset[str] = frozenset(PROVENANCE_WORDS)
 
 
+# =============================================================================================
+# RUN 102, SECTION 6. `threshold_source` -- WHICH LAYER OF THE PRECEDENCE ORDER SUPPLIED THIS
+# THRESHOLD. IT SITS BESIDE `band_basis_provenance_class` AND DOES NOT REPLACE IT.
+#
+# THE TWO ANSWER DIFFERENT QUESTIONS AND THAT IS WHY BOTH ARE STORED:
+#
+#   band_basis_provenance_class  -- WHAT KIND OF THING the basis is. CODIFIED / CONVENTION /
+#                                   OWNER-CALIBRATED. An epistemic claim: is there a standard
+#                                   behind this number, a widely used practice, or nothing but
+#                                   the owner's judgement.
+#   threshold_source             -- WHICH RUNG OF THE OWNER'S PRECEDENCE ORDER actually
+#                                   supplied the figure THIS reading used. project_specific /
+#                                   formal_external_basis / owner_configured_default. A
+#                                   procedural claim about where the platform got it.
+#
+# THEY ARE NOT A RENAMING OF ONE ANOTHER AND THE MAPPING IS NOT ONE-TO-ONE. A codified basis can
+# arrive from a project document (a contract restating a regulatory deadline: CODIFIED /
+# project_specific) or from the formal external instrument itself (CODIFIED /
+# formal_external_basis). An owner-calibrated boundary is normally owner_configured_default, but
+# a project quality plan stating a stricter acceptance figure is OWNER-CALIBRATED in kind and
+# project_specific in source. So both are written and neither is derived from the other.
+#
+# RUNG 4 OF THE PRECEDENCE ORDER -- no threshold available -- HAS NO VALUE HERE ON PURPOSE. A
+# reading with no threshold asserts no band, so it never reaches this function; it goes through
+# `band_abstained` with its reason, which is section 6's rung 4 implemented exactly.
+THRESHOLD_SOURCE_PROJECT = "project_specific"
+THRESHOLD_SOURCE_EXTERNAL = "formal_external_basis"
+THRESHOLD_SOURCE_OWNER = "owner_configured_default"
+
+THRESHOLD_SOURCE_WORDS: dict[str, str] = {
+    THRESHOLD_SOURCE_PROJECT: ("a threshold stated in a document this project uploaded -- its "
+                               "contract, permit, approved baseline, quality control plan, "
+                               "inspection and test plan, or an owner-supplied figure"),
+    THRESHOLD_SOURCE_EXTERNAL: ("a formal external basis -- a published standard, regulation, "
+                                "agency instrument or industry benchmark"),
+    THRESHOLD_SOURCE_OWNER: ("the owner's configured default tolerance for this platform, "
+                             "stated in his Run 102 threshold table"),
+}
+
+THRESHOLD_SOURCES: frozenset[str] = frozenset(THRESHOLD_SOURCE_WORDS)
+
+
 #: RUN 101, MID-RUN. THE RESEARCH REPORTS ARRIVED AFTER GOAL ONE WAS FIRST IMPLEMENTED, AND THEY
 #: FORCED THIS DISTINCTION. `RESEARCH_2_safety_and_environmental_severity.md`, recommendation 2:
 #: "Band frequency against the published industry average, not an invented cutoff. State that ONLY
@@ -1110,7 +1192,8 @@ BAND_PROVENANCE_CLASSES: frozenset[str] = frozenset(PROVENANCE_WORDS)
 #: from; `band_boundary_provenance_class` is where the CUTOFFS come from. A module whose two are
 #: the same passes one value and both are written, so nothing is lost for the simple cases.
 def banded(method_class: str, message: str, *, status_color: str, boundary: str,
-           basis: str, provenance: str, boundary_provenance: str | None = None,
+           basis: str, provenance: str, threshold_source: str,
+           boundary_provenance: str | None = None,
            **fields: Any) -> dict[str, Any]:
     """
     A result that DOES assert a band, carrying the boundary it crossed and that boundary's basis.
@@ -1125,6 +1208,13 @@ def banded(method_class: str, message: str, *, status_color: str, boundary: str,
     section 12.2 fails the run for.
     """
     boundary_provenance = boundary_provenance or provenance
+    # RUN 102, SECTION 12.5. A BAND STORED WITHOUT ITS THRESHOLD SOURCE IS A RUN-FAILING ACT, so
+    # this is a REQUIRED keyword and it raises rather than defaulting. A default here would be a
+    # place where forgetting is possible, which is the whole reason provenance is enforced the
+    # same way one line below.
+    if threshold_source not in THRESHOLD_SOURCES:
+        raise ValueError(f"{method_class}: {threshold_source!r} is not one of the three "
+                         f"threshold sources; a band may not be stored without one")
     for _p in (provenance, boundary_provenance):
         if _p not in BAND_PROVENANCE_CLASSES:
             raise ValueError(f"{method_class}: {_p!r} is not one of the three provenance "
@@ -1145,6 +1235,13 @@ def banded(method_class: str, message: str, *, status_color: str, boundary: str,
         "band_basis_provenance_class": provenance,
         "band_boundary_provenance_class": boundary_provenance,
         "band_boundary_provenance_words": PROVENANCE_WORDS[boundary_provenance],
+        # RUN 102, SECTION 6. Which rung of the precedence order supplied this threshold.
+        "threshold_source": threshold_source,
+        "threshold_source_words": THRESHOLD_SOURCE_WORDS[threshold_source],
+        "threshold_precedence_order": (
+            "project-specific document, then formal external basis, then the owner's configured "
+            "default. Where none of the three supplies a threshold the figure is displayed, no "
+            "band is asserted, no vote is cast and the reason is stated"),
         "band_provenance_split_note": (
             "the BASIS -- the measure and the anchor it is drawn against -- and the BOUNDARIES "
             "-- the cutoffs that divide the bands -- may come from different places, and where "
@@ -1267,8 +1364,15 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
     computes: every trial redraws every activity duration from its three-point estimate and
     RECOMPUTES the forward and backward passes, so criticality is measured rather than ranked.
     Where the network is absent the module still ABSTAINS, and nothing is reconstructed from an
-    index. No band is asserted: the old ladder was drawn over a ratio of an eightieth percentile
-    to a modal baseline, which is not this quantity.
+    index.
+
+    RUN 102, SECTION 0.1. THE OWNER HAS REVERSED RUN 101's INSTRUCTION THAT THIS MODULE STAY
+    BANDLESS. It bands on the criticality index against his configured tolerances, with the
+    zero-or-negative-controlling-float hard override; see the block at the band below for why
+    that override is evaluated against an IMPOSED finish date and not against the backward
+    pass's own float. The old ladder Run 28 removed is NOT restored: it was drawn over a ratio
+    of an eightieth percentile to a modal baseline, which is a different quantity, and nothing
+    here reintroduces it.
     """
     try:
         structure = require_v3_structure(si, "A2.1")
@@ -1279,20 +1383,93 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
                             ABSTAIN_STRUCTURE_ABSENT)
     index = reading["criticality_index"]
     top = max(index, key=lambda a: (index[a], a))
-    return calibration_pending(
-        "PERT_Network_Criticality",
-        f"Over {reading['trials']} simulated runs of the network, {top} lies on the critical "
-        f"path in {int(js_round(index[top] * 100))} per cent of them, the most of any activity",
+    # ================== RUN 102, SECTION 3. THE BAND ON THE CRITICALITY INDEX, AND ITS OVERRIDE.
+    # RUN 101 ORDERED THIS MODULE LEFT BANDLESS AND THE OWNER HAS REVERSED THAT (Run 102,
+    # section 0.1). The measure matches the owner's definition exactly: criticality index = runs
+    # in which the activity or path is critical / total simulation runs, which is what
+    # `canonical_v3.pert_criticality` computes and has computed since Run 28. The direction is
+    # ADVERSE UPWARD -- an activity critical in more runs is more of a threat -- so the
+    # boundaries are inclusive on their LOWER side and Red is the open top.
+    #
+    # THE HARD OVERRIDE, AND WHY IT IS NOT FIRED FROM CPM FLOAT ALONE. The owner's condition is
+    # "zero or negative total float on the controlling path", and his stated rationale is that
+    # "zero total float defines a critical condition, while negative float indicates the current
+    # schedule cannot meet its IMPOSED COMPLETION CONDITION". In a network with NO imposed
+    # completion date the critical path's total float is ZERO BY CONSTRUCTION -- that is what the
+    # backward pass does -- so firing the override from it would take EVERY project to Red and
+    # would be measuring the arithmetic rather than the schedule. The override is therefore
+    # evaluated against the IMPOSED FINISH the network states, and where the network states none
+    # the override is NOT EVALUABLE and the row says so rather than firing or silently passing.
+    _cuts = _BR.entry("pert_criticality_bands")
+    _share = index[top]
+    _imposed = structure.get("imposed_finish_day")
+    _finish = reading.get("project_finish")
+    if _finish is None:
+        _finish = cpm_forward_backward(network)["project_finish"]
+    _controlling_float = (float(_imposed) - float(_finish)
+                          if isinstance(_imposed, (int, float)) else None)
+    _override_words = (
+        "HARD OVERRIDE: Red if the current deterministic schedule has zero or negative total "
+        "float on the controlling path. Zero total float defines a critical condition; negative "
+        "float means the current schedule cannot meet its imposed completion condition. It is "
+        "evaluated against the IMPOSED completion date the network states, never against the "
+        "backward pass alone, whose float on the critical path is zero by construction when no "
+        "date is imposed.")
+    _fields = dict(
         criticality_index={a: round(index[a], 4) for a in sorted(index)},
         most_critical_activity=top,
-        most_critical_share=round(index[top], 4),
+        most_critical_share=round(_share, 4),
         trials=reading["trials"],
         deterministic=reading["deterministic"],
         project_finish_p80=reading.get("project_finish_p80"),
         activity_moments={a: v for a, v in sorted(reading["activity_moments"].items())},
         schedule_version=network["schedule_version"],
         canonical_structure="schedule_network",
+        imposed_finish_day=_imposed,
+        controlling_path_total_float=_controlling_float,
+        controlling_path_float_override_evaluable=_controlling_float is not None,
     )
+    _message = (
+        f"Over {reading['trials']} simulated runs of the network, {top} lies on the critical "
+        f"path in {int(js_round(_share * 100))} per cent of them, the most of any activity")
+    if not _cuts.get("configured"):
+        return band_abstained(
+            "PERT_Network_Criticality", _message,
+            reason="no criticality band is configured, so the index is displayed and no band "
+                   "is asserted",
+            **_fields)
+    _g, _y, _a = _cuts["green_below"], _cuts["yellow_below"], _cuts["amber_below"]
+    if _controlling_float is not None and _controlling_float <= 0:
+        _colour = "Red"
+    else:
+        _colour = ("Green" if _share < _g else "Yellow" if _share < _y
+                   else "Amber" if _share < _a else "Red")
+    _boundary = (
+        f"on the criticality index -- runs in which the activity or path is critical divided by "
+        f"total simulation runs: below {_g} is Green; at or above {_g} and below {_y} is "
+        f"Yellow; at or above {_y} and below {_a} is Amber; at or above {_a} is Red. Each "
+        f"boundary is INCLUSIVE ON ITS LOWER SIDE and the direction is adverse upward. "
+        + _override_words
+        + (f" This network states an imposed finish, and the controlling path's total float "
+           f"against it is {_controlling_float}."
+           if _controlling_float is not None else
+           " This network states NO imposed completion date, so the override is not evaluable "
+           "on it and was not applied; the band above rests on the criticality index alone."))
+    return banded(
+        "PERT_Network_Criticality", _message,
+        status_color=_colour,
+        boundary=_boundary,
+        basis=("the owner's Run 102 order, section 3, and the threshold table attached to it. "
+               "OWNER-CONFIGURED: the criticality index itself is a standard PERT/Monte Carlo "
+               "quantity, but no published standard fixes where 0.20, 0.50 and 0.80 divide the "
+               "bands. They are a documented owner tolerance and are not presented as a "
+               "construction standard. A stricter figure stated in a project document overrides "
+               "them, and none is stated by any document this project has uploaded"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_hard_override_fired=bool(_controlling_float is not None
+                                      and _controlling_float <= 0),
+        **_fields)
 
 
 # ---------------------------------------------------------------- A2.2 LOB

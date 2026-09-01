@@ -549,6 +549,22 @@ def compose_decision_brief(*,
         card["finding"] = finding
 
     why = _why(basis)
+    # RUN 102, GOAL ONE. WHICH LAYER PRODUCED EACH POSTURE, NAMED ON THE CARD.
+    # Section 12.1 fails the run for a fallback that does not say so. `posture_layer` is written
+    # onto every merged category entry by `spec_projection.merge_python_row`, and this sentence
+    # reads it back rather than restating a rule -- so a card can never claim a layer the
+    # reading does not carry. Where every posture came from the specification layer the sentence
+    # is not added: there is nothing to disclose.
+    _from_python = sorted(k for k, c in cats.items()
+                          if (c or {}).get("posture_layer") == "python_module_layer")
+    if _from_python:
+        _layers = (
+            "The posture for " + ", ".join(_from_python) + " is served from this platform's own "
+            "Python module layer, because the specification layer holds no reading for "
+            + ("that category" if len(_from_python) == 1 else "those categories") +
+            " this period. Every other posture on this card is a stored specification reading. "
+            "No category's posture is formed from both layers.")
+        why = (why + " " + _layers) if why else _layers
     if why:
         card["why"] = why
 

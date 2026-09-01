@@ -202,4 +202,150 @@ def read_requirement_rows(raw: Any) -> list[dict]:
     return [_row(r) for r in raw if isinstance(r, dict)]
 
 
-__all__ = ["read_requirement_rows"]
+# =============================================================================================
+# RUN 102, SECTION 4.3. THE CORRECTIVE-ACTION REGISTER, WITH ITS DEADLINES AND ITS CLOSURE DATES.
+#
+# WHY IT IS A SECOND READER AND NOT THE ONE ABOVE. `read_requirement_rows` maps a closure WORD
+# onto a satisfied/unsatisfied boolean. A timeliness question cannot be answered from a word: it
+# needs the date the action was required to be closed by and the date it was closed. Those are
+# two columns the reader above does not look for and would have nowhere to put. So this reader
+# maps the register's own headings onto the field names `canonical_v6._timely_closure` reads.
+#
+# NO DEADLINE IS SUPPLIED, DERIVED OR DEFAULTED HERE. An action whose row prints no required
+# deadline reaches the canonical function without one, and the canonical function puts it in
+# neither the numerator nor the denominator and counts it separately. That is the honest place
+# for an action nobody committed a date to, and the EPA Construction General Permit's seven-day
+# figure is NOT substituted for it: it is a fact about one permit regime, not about this
+# project's commitments.
+#
+# NO DATE ARITHMETIC IS PERFORMED HERE OR ANYWHERE ON THIS PATH. The two dates travel as the
+# document printed them and the comparison happens once, in the canonical function, on ISO
+# strings. No clock is read.
+_ACTION_HEADINGS: dict[str, tuple[str, ...]] = {
+    "action_id": (
+        "corrective action id", "corrective action no", "corrective action number",
+        "action id", "action no", "action number", "action ref", "car no", "car id", "car",
+        "finding id", "ncr no", "ncr id", "item id", "item no", "id", "no", "ref", "action",
+    ),
+    "required_deadline": (
+        "required deadline", "deadline", "required closure date", "due date", "due",
+        "required by", "close by", "closure required by", "corrective action due",
+        "required completion date", "target date", "required date",
+    ),
+    "closure_date": (
+        "closure date", "closed date", "date closed", "actual closure date", "completed date",
+        "date completed", "resolved date", "date resolved", "closeout date",
+    ),
+    "severity": (
+        "severity", "criticality", "critical", "priority", "risk level", "classification",
+        "grade",
+    ),
+    "deadline_source": (
+        "deadline source", "requirement source", "permit reference", "permit condition",
+        "authority", "basis", "source", "reference",
+    ),
+    "description": (
+        "description", "finding", "observation", "detail", "details", "corrective action "
+        "description", "issue",
+    ),
+    "status": ("status", "state", "closure status", "disposition", "current status"),
+}
+
+#: Words a register prints to say a deadline is not discretionary. Read, never inferred: an
+#: action is treated as carrying a mandatory deadline only where the document says so.
+_MANDATORY_WORDS = frozenset({
+    "mandatory", "regulatory", "permit", "statutory", "required by permit", "enforceable",
+    "regulatory deadline", "permit deadline", "non negotiable", "yes",
+})
+
+
+def _action_pick(row: dict, field: str) -> Any:
+    wanted = _ACTION_HEADINGS[field]
+    normalised = {_norm(k): v for k, v in row.items()}
+    for heading in wanted:
+        if heading in normalised:
+            return normalised[heading]
+    for key, value in normalised.items():
+        for heading in wanted:
+            if heading and heading in key:
+                return value
+    return None
+
+
+def _iso(value: Any) -> str | None:
+    """A date as the document printed it, kept only when it is already an ISO date."""
+    text = _text(value)
+    if text is None:
+        return None
+    text = text.strip()[:10]
+    return text if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text) else None
+
+
+def read_corrective_action_rows(raw: Any) -> list[dict]:
+    """
+    The corrective-action rows a document printed, in the shape `canonical_v6._timely_closure`
+    reads. One dict per printed row, in the register's own order.
+
+    A ROW WHOSE DATES ARE NOT ISO DATES CARRIES NO DATE. It is not reformatted or guessed at, so
+    it reaches the canonical function as an action with no stated deadline and is counted
+    separately rather than being judged on a date this reader invented a reading of.
+    """
+    if not isinstance(raw, list):
+        return []
+    out: list[dict] = []
+    for r in raw:
+        if not isinstance(r, dict):
+            continue
+        entry: dict[str, Any] = {
+            "action_id": _text(_action_pick(r, "action_id")),
+            "required_deadline": _iso(_action_pick(r, "required_deadline")),
+            "closure_date": _iso(_action_pick(r, "closure_date")),
+        }
+        for key in ("severity", "deadline_source", "description", "status"):
+            text = _text(_action_pick(r, key))
+            if text is not None:
+                entry[key] = text.lower() if key == "severity" else text
+        _src = _norm(entry.get("deadline_source") or "")
+        _sev = _norm(entry.get("severity") or "")
+        if any(w in _src for w in _MANDATORY_WORDS) or _sev in ("critical", "high"):
+            entry["deadline_is_mandatory"] = True
+        # THE CLOSURE OUTCOME, WHERE THE STATUS COLUMN STATES IT AND THE DATES DO NOT. A row
+        # printing "Open"/"Overdue" with a deadline and no closure date says the action is
+        # unclosed; whether its deadline has passed is a further fact and only the word
+        # "overdue" states it. Nothing here reads a clock to decide.
+        _status = _norm(entry.get("status") or "")
+        if _status in ("overdue", "past due", "late", "delinquent"):
+            entry["deadline_passed"] = True
+        elif _status in ("open", "outstanding", "in progress", "ongoing"):
+            entry["deadline_passed"] = False
+        out.append(entry)
+    return out
+
+
+def read_critical_failure_rows(raw: Any) -> list[dict]:
+    """
+    RUN 102, SECTION 4.1. The FAILED items an inspection document itself designates critical, a
+    hold point, a life-safety requirement or a commissioning acceptance test.
+
+    NOTHING IS DESIGNATED CRITICAL HERE. The extraction instruction tells the model to include a
+    row only where the document designates it, and this reader passes those rows through with
+    their identity, the kind stated and the status printed. A row this reader cannot read at all
+    is skipped; a row with no identity travels with `item_id: None`, visible in the result.
+    """
+    if not isinstance(raw, list):
+        return []
+    out: list[dict] = []
+    for r in raw:
+        if not isinstance(r, dict):
+            continue
+        out.append({
+            "item_id": _text(_action_pick(r, "action_id")),
+            "kind": _text(_pick(r, "criticality")),
+            "description": _text(_action_pick(r, "description")),
+            "status": _text(_action_pick(r, "status")),
+        })
+    return out
+
+
+__all__ = ["read_requirement_rows", "read_corrective_action_rows",
+           "read_critical_failure_rows"]

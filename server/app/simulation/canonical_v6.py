@@ -924,6 +924,70 @@ def modification_governance(structure: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _first_pass_acceptance(structure: Mapping[str, Any]) -> dict[str, Any] | None:
+    """
+    RUN 102, SECTION 4.1. FIRST-PASS INSPECTION ACCEPTANCE, and the critical-item override.
+
+        FirstPassAcceptance = items passing on FIRST inspection / items inspected
+
+    RE-INSPECTED ITEMS THAT LATER PASS ARE NOT FIRST-PASS PASSES and are never counted as such:
+    that is the whole point of the measure, and a document that states only "items passing"
+    without saying whether it means on first inspection does NOT establish this quantity. So the
+    field is named for what it must state and nothing is inferred from an items-failed count.
+
+    THE CRITICAL OVERRIDE IS NONCOMPENSATORY and is recorded here rather than decided here: a
+    failed critical inspection, hold-point inspection, life-safety requirement, commissioning
+    acceptance test, or any item the document explicitly designates critical is listed, and the
+    banding layer takes any entry in that list to Red however high the rate.
+
+    Returns None when the record does not state the two figures. Nothing is estimated from a
+    findings count, an audit score or a conformance rate: those are different quantities and
+    section 13's rule against substituting a summary for a denominator applies to all three.
+    """
+    inspected = structure.get("items_inspected")
+    passed = structure.get("items_passing_first_inspection")
+    if not isinstance(inspected, (int, float)) or not isinstance(passed, (int, float)):
+        return None
+    if inspected <= 0:
+        return {"first_pass_acceptance_rate": None,
+                "items_inspected": inspected,
+                "items_passing_first_inspection": passed,
+                "critical_quality_failures": [],
+                "first_pass_disposition": "INVALID_DENOMINATOR",
+                "first_pass_reason": ("no items are recorded as inspected in this period, so a "
+                                      "first-pass acceptance rate has no denominator and none "
+                                      "is formed")}
+    if passed < 0 or passed > inspected:
+        return {"first_pass_acceptance_rate": None,
+                "items_inspected": inspected,
+                "items_passing_first_inspection": passed,
+                "critical_quality_failures": [],
+                "first_pass_disposition": "NOT_ESTIMABLE",
+                "first_pass_reason": ("the inspection record states more items passing on first "
+                                      "inspection than it states inspected, or a negative "
+                                      "count, so the two figures do not describe one population "
+                                      "and no rate is formed from them")}
+    critical: list[dict[str, Any]] = []
+    for row in (structure.get("critical_quality_failures") or []):
+        if isinstance(row, dict):
+            critical.append({"item_id": row.get("item_id"),
+                             "kind": row.get("kind"),
+                             "description": row.get("description"),
+                             "status": row.get("status")})
+    return {
+        "first_pass_acceptance_rate": float(passed) / float(inspected),
+        "items_inspected": inspected,
+        "items_passing_first_inspection": passed,
+        "items_failing_first_inspection": inspected - passed,
+        "critical_quality_failures": critical,
+        "first_pass_disposition": "MEASURED",
+        "first_pass_definition": (
+            "items passing on FIRST inspection divided by items inspected. An item that failed "
+            "and later passed on re-inspection is not a first-pass pass and is not counted as "
+            "one"),
+    }
+
+
 def quality_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
     """
     8.6 QUALITY COMPLIANCE INDEX. REQUIREMENT-BASED.
@@ -948,7 +1012,12 @@ def quality_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
     # establishes the applicable, assessed and satisfied requirement populations this rate is
     # defined over, and section 13 forbids substituting a summary for a denominator. So the rate
     # is NOT estimated and the evidence is REPORTED, which is the honest partial disposition.
-    if "requirements" not in structure and structure.get("recorded_audit_evidence"):
+    # RUN 102. The first-pass figures are read FIRST, so a record carrying both an audit
+    # summary and a real inspection count is not routed into the NOT_ESTIMABLE branch below and
+    # lose the one quantity this module now bands on.
+    _fp_early = _first_pass_acceptance(structure)
+    if ("requirements" not in structure and structure.get("recorded_audit_evidence")
+            and _fp_early is None):
         return {
             "measure": "quality_compliance",
             "quality_compliance_rate": None,
@@ -963,6 +1032,29 @@ def quality_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
             "rule": REG.FAR_46_2.identity(),
             "calibration_pending": True,
         }
+    # ============ RUN 102, SECTION 4.1. THE MEASURE IS FIRST-PASS INSPECTION ACCEPTANCE.
+    # The owner's ruling: this module's measure is items passing on FIRST inspection over items
+    # inspected. That is a DIFFERENT QUANTITY from the requirement conformance rate below --
+    # different population (inspected items, not applicable requirements), different denominator
+    # and a different question -- so it is computed separately and is what the band is drawn
+    # over. The conformance rate is retained and reported beside it, labelled as not what bands,
+    # because it is a real measurement of a real thing and discarding it would lose it.
+    first_pass = _first_pass_acceptance(structure)
+    if first_pass is not None and "requirements" not in structure:
+        out = {"measure": "quality_compliance", "calibration_pending": True,
+               "register_id": structure.get("register_id"),
+               "register_version": structure.get("register_version"),
+               "rule": REG.FAR_46_2.identity(),
+               "quality_compliance_rate": None,
+               "applicable_assessed": 0, "satisfied": 0,
+               "unassessed_applicable": [], "critical_exceptions": [],
+               "disposition": "MEASURED",
+               "conformance_rate_note": (
+                   "no applicable requirement register accompanies this inspection record, so "
+                   "no requirement conformance rate is measurable. The first-pass acceptance "
+                   "rate below is the measure this module bands on and it is measured")}
+        out.update(first_pass)
+        return out
     reqs = _rows(structure, "requirements", "a governed quality requirement register")
     applicable_assessed, satisfied, unassessed, critical_exceptions = [], [], [], []
     for r in reqs:
@@ -1001,6 +1093,8 @@ def quality_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
         return out
     out["quality_compliance_rate"] = len(satisfied) / len(applicable_assessed)
     out["disposition"] = "MEASURED"
+    if first_pass is not None:
+        out.update(first_pass)
     return out
 
 
@@ -1193,6 +1287,115 @@ def safety_performance(structure: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _timely_closure(structure: Mapping[str, Any]) -> dict[str, Any] | None:
+    """
+    RUN 102, SECTION 4.3. TIMELY CLOSURE OF ENVIRONMENTAL CORRECTIVE ACTIONS.
+
+        TimelyClosureRate = actions closed BY their required deadline / actions requiring closure
+
+    THE DEADLINE IS THE PROJECT'S OWN and is CODIFIED -- its permit, its environmental
+    management plan, or its contract. Nothing here supplies a deadline, defaults one, or infers
+    one from the EPA Construction General Permit: an action whose record states no required
+    deadline cannot be judged timely or late and is EXCLUDED FROM BOTH the numerator and the
+    denominator, and counted separately so the reader can see how much of the register the rate
+    does not cover.
+
+    OPEN AND PAST DEADLINE IS NOT TIMELY. An action still open whose deadline has passed counts
+    in the denominator and not the numerator; an action still open and still WITHIN its deadline
+    is not yet an action requiring closure by a passed date and is counted separately as
+    outstanding-within-deadline, because calling it late would be asserting a failure that has
+    not happened and calling it closed would be asserting a closure that has not happened.
+
+    NO DATE ARITHMETIC IS PERFORMED ON A CLOCK. Comparison is between two dates the record
+    states, as ISO strings; no wall clock is read anywhere in this file. Where the record states
+    the outcome directly (`closed_on_time` true or false) that statement is used, because the
+    document's own author is the authority on its own register.
+
+    THE MANDATORY OVERRIDE ALWAYS OUTRANKS THE PERCENTAGE (section 4.3). Every action that is
+    unclosed past a mandatory regulatory or permit deadline, and every critical permit
+    violation, enforcement notice or stop-work condition, is listed separately for the banding
+    layer, which takes any entry to Red however high the rate.
+
+    Returns None when no corrective-action register is recorded at all.
+    """
+    rows = structure.get("corrective_actions")
+    if not isinstance(rows, list) or not rows:
+        return None
+    required, on_time = 0, 0
+    no_deadline: list[Any] = []
+    open_within: list[Any] = []
+    overdue_mandatory: list[dict[str, Any]] = []
+    late: list[Any] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        aid = r.get("action_id")
+        deadline = str(r.get("required_deadline") or "").strip()
+        closure = str(r.get("closure_date") or "").strip()
+        stated = r.get("closed_on_time")
+        severity = str(r.get("severity") or "").strip().lower()
+        mandatory = bool(r.get("deadline_is_mandatory"))
+        if not deadline and stated is None:
+            no_deadline.append(aid)
+            continue
+        if isinstance(stated, bool):
+            timely = stated
+            resolved = True
+        elif closure:
+            timely = closure <= deadline
+            resolved = True
+        else:
+            # Still open. Timeliness turns on whether the deadline has passed, and only the
+            # record can say so: `deadline_passed` is the document's own statement.
+            passed = r.get("deadline_passed")
+            if passed is True:
+                timely, resolved = False, True
+            elif passed is False:
+                open_within.append(aid)
+                continue
+            else:
+                no_deadline.append(aid)
+                continue
+        if not resolved:
+            continue
+        required += 1
+        if timely:
+            on_time += 1
+        else:
+            late.append(aid)
+            if mandatory or severity in ("critical", "high"):
+                overdue_mandatory.append({
+                    "action_id": aid, "severity": r.get("severity"),
+                    "required_deadline": r.get("required_deadline"),
+                    "deadline_source": r.get("deadline_source"),
+                    "deadline_is_mandatory": mandatory,
+                    "closure_date": r.get("closure_date")})
+    out: dict[str, Any] = {
+        "corrective_actions_requiring_closure": required,
+        "corrective_actions_closed_by_deadline": on_time,
+        "corrective_actions_late": late,
+        "corrective_actions_open_within_deadline": open_within,
+        "corrective_actions_without_a_stated_deadline": no_deadline,
+        "overdue_mandatory_actions": overdue_mandatory,
+        "timely_closure_definition": (
+            "corrective actions closed by their required deadline, divided by corrective "
+            "actions requiring closure. The deadline is the project's own permit, environmental "
+            "management plan or contract; an action whose record states no deadline is in "
+            "neither the numerator nor the denominator and is counted separately"),
+    }
+    if required <= 0:
+        out.update({"timely_closure_rate": None,
+                    "timely_closure_disposition": "NOT_ESTIMABLE",
+                    "timely_closure_reason": (
+                        "no corrective action in this register has both a required deadline and "
+                        "a resolved outcome, so no timely-closure rate is measurable and none "
+                        "is estimated")})
+        return out
+    out.update({"timely_closure_rate": on_time / required,
+                "timely_closure_disposition": "MEASURED"})
+    return out
+
+
 def environmental_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
     """
     8.8 ENVIRONMENTAL COMPLIANCE RATE. APPLICABILITY COMES FIRST.
@@ -1238,6 +1441,14 @@ def environmental_compliance(structure: Mapping[str, Any]) -> dict[str, Any]:
             "a rate asserted by the source document and a reported violations count; neither is "
             "an applicable/assessed/satisfied requirement population, so neither is used as the "
             "environmental compliance rate")
+    # RUN 102, SECTION 4.3. THE TIMELY-CLOSURE MEASURE IS COMPUTED AHEAD OF THE APPLICABILITY
+    # GATE AND SURVIVES IT. Applicability governs whether a CONFORMANCE claim can be made about
+    # a permit regime; a corrective action's own stated deadline is a fact about the project's
+    # own commitments and does not depend on which authority issued the permit. So the closure
+    # figures are attached to every disposition below, including the refusals.
+    _closure = _timely_closure(structure)
+    if _closure is not None:
+        out.update(_closure)
     if not authority or not jurisdiction:
         out.update({"environmental_compliance_rate": None,
                     "disposition": "APPLICABILITY_NOT_ESTABLISHED",
@@ -1302,6 +1513,11 @@ def contractor_assessment(structure: Mapping[str, Any]) -> dict[str, Any]:
         "assessment_period": structure.get("assessment_period"),
         "status": structure.get("status"),
         "factor_definitions_version": structure.get("factor_definitions_version"),
+        # RUN 102, SECTION 4.4. THE CONTRACT'S OWN SCORECARD METHOD, where the record names one.
+        # Carried so the banding layer can YIELD to it: the owner's numeric fallback is a rung-3
+        # default and may not overwrite a rung-1 contract scorecard whose scale means something
+        # else on that contract's own paper.
+        "rating_scale_source": structure.get("rating_scale_source"),
         "narratives": structure.get("narratives"),
         "contractor_comments_state": structure.get("contractor_comments_state"),
         "agency_review_state": structure.get("agency_review_state"),

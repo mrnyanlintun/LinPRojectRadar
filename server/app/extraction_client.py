@@ -296,7 +296,10 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "empty array only if the document has no such table. lookahead_horizon, if requested, "
         "is the look-ahead window exactly as the document states it (for example '3 weeks'), "
         "and lookahead_status_date is the date the look-ahead stands at, as YYYY-MM-DD; return "
-        "null for either the document does not state."
+        "null for either the document does not state. Where the look-ahead table prints a "
+        "critical-path column or a total-float column for a row, return those cells as printed "
+        "too, under the table's own headings; do not decide for yourself whether an activity is "
+        "critical and do not compute a float the table does not print."
     ) if "lookahead_activities_json" in fields else ""
     # RUN 87. THE TWO COMPLIANCE REGISTERS, named the same way and for the same reason: A6.1
     # and A6.3 are defined on a POPULATION of requirements, and without naming the shape the
@@ -331,6 +334,46 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "do not close, open or resolve a row yourself; return an empty array only if the "
         "document has no such table."
     ) if "environmental_requirements_json" in fields else ""
+    # RUN 102, SECTION 4.1. FIRST-PASS ACCEPTANCE, ASKED FOR IN THE WORDS THAT DISTINGUISH IT.
+    # `items_passed` has been requested of inspection reports all along and cannot answer this:
+    # an item that failed and passed on re-inspection is in `items_passed` and is NOT a
+    # first-pass pass. The instruction says so in terms, and says to return null rather than
+    # reuse the other figure, because a plausible substitution here would silently change what
+    # the band means.
+    first_pass_hint = (
+        " items_passing_first_inspection, if requested, is the number of inspected items that "
+        "were ACCEPTED ON THE FIRST INSPECTION, before any rework or re-inspection. It is NOT "
+        "the same as items_passed: an item that failed and later passed on re-inspection counts "
+        "in items_passed and does NOT count here. Return it only where the document itself "
+        "distinguishes first-pass acceptance -- for example a 'first time right', 'first-pass "
+        "yield', 'accepted on first inspection' or 'passed without rework' figure -- and return "
+        "null where the document states only a total passed count. Do not compute it by "
+        "subtracting rework, and do not copy items_passed into it. "
+        "critical_quality_failures_json, if requested and the document records any FAILED item "
+        "that it designates critical, a hold point, a life-safety requirement or a commissioning "
+        "acceptance test, is a JSON array with one object per such PRINTED ROW, using the "
+        "document's own column headings as keys and its values as printed; do not decide for "
+        "yourself that an item is critical -- include a row only where the document designates "
+        "it -- and return an empty array where the document designates none."
+    ) if "items_passing_first_inspection" in fields else ""
+    # RUN 102, SECTION 4.3. THE ENVIRONMENTAL CORRECTIVE-ACTION REGISTER, WITH ITS DEADLINES.
+    # A timeliness question needs a deadline and a closure date; a closure WORD cannot answer
+    # it. The instruction refuses to let the model supply a deadline the document does not
+    # print, because the deadline is the project's own permit or contract commitment and an
+    # invented one would decide the band.
+    corrective_hint = (
+        " environmental_corrective_actions_json, if requested and the document contains a "
+        "CORRECTIVE ACTION register or log, is a JSON array with one object per PRINTED ROW of "
+        "that register, using the register's own column headings as keys and its values as "
+        "printed. Each row must carry, where the document prints them: the action's own "
+        "identifier, the DATE IT IS REQUIRED TO BE CLOSED BY, the DATE IT WAS ACTUALLY CLOSED, "
+        "its severity as printed, and whether the document states the deadline is a mandatory "
+        "regulatory or permit deadline. DO NOT SUPPLY A DEADLINE THE DOCUMENT DOES NOT PRINT -- "
+        "not from the EPA Construction General Permit, not from any other permit, and not from "
+        "your own knowledge -- and do not compute whether an action was late; return the dates "
+        "as printed and leave the comparison to the platform. Return an empty array only if the "
+        "document has no such register."
+    ) if "environmental_corrective_actions_json" in fields else ""
     # RUN 72. THE SCALE OF A RATIO FIELD, NAMED, because the general sentence below is false
     # of it. "Percentages as numbers 0-100" is correct for every 0..100 quantity in the
     # vocabulary and WRONG for a compliance rate, which the numeric contract bounds at 1.0. A
@@ -381,7 +424,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + quality_register_hint + environmental_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

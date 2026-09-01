@@ -178,13 +178,23 @@ def live_statuses(session: Session, projects: list) -> dict[str, dict[str, Any]]
         session, [(r.project_id, r.period) for r in rows],
         {r.project_id: (r.signal_inputs or {}) for r in rows})
     out: dict[str, dict[str, Any]] = {}
+    # RUN 102, GOAL ONE. THE SAME PER-CATEGORY FALLBACK THE DETAIL CARD NOW USES, applied here
+    # so the header line and the portfolio row cannot say one thing while the card says another
+    # -- which is the exact defect the docstring above records this function existing to remove.
+    # The "NO FALLBACK" paragraph above is superseded by the owner's Run 102 ruling, section 2.
+    # `merge_python_row` fills only the categories the specification layer has NO reading for,
+    # and labels every posture it serves.
     for r in rows:
-        proj = projections[r.project_id]
+        proj = spec_projection.merge_python_row(
+            projections[r.project_id], r.module_results, r.abstained,
+            r.category_statuses, r.signal_inputs)
         out[r.project_id] = {
             "result_id": r.result_id,
             "period": r.period,
             "project_status": proj["project_status"],
             "category_statuses": proj["category_statuses"],
+            "posture_layers": proj["posture_layers"],
+            "python_fallback_categories": proj["python_fallback_categories"],
         }
     return out
 

@@ -1667,18 +1667,40 @@ def _run69_structures(session: Session, project: Project, period: int,
             # register wins between two quality documents in one period, on the deterministic
             # rule `resourceProfile` states above. Where the document printed no readable table,
             # nothing is assembled and A6.1 goes on reaching NOT_ESTIMABLE, honestly.
-            from .compliance_register import read_requirement_rows
+            from .compliance_register import (
+                read_critical_failure_rows, read_requirement_rows,
+            )
             requirements = read_requirement_rows(ex.get("quality_requirements_json"))
-            if requirements:
+            # RUN 102, SECTION 4.1. THE FIRST-PASS ACCEPTANCE FIGURES, from the document that
+            # states them. `items_passed` is NOT read here and is not a substitute: it does not
+            # say whether an item passed on first inspection or after rework, and the whole
+            # measure turns on that distinction. Where the document states no first-pass figure
+            # nothing is assembled for it and A6.1 withholds its band with the reason on the row.
+            _inspected = ex.get("items_inspected")
+            _first_pass = ex.get("items_passing_first_inspection")
+            _has_first_pass = (isinstance(_inspected, (int, float))
+                               and isinstance(_first_pass, (int, float)))
+            if requirements or _has_first_pass:
                 existing = out.get("qualityRequirementRegister")
-                if existing is None or len(requirements) > len(existing["requirements"]):
-                    out["qualityRequirementRegister"] = {
-                        "requirements": requirements,
+                # The longest register still wins between two quality documents in one period;
+                # a document carrying first-pass figures and NO register does not displace one
+                # that carries a register, it ADDS its figures to whatever is assembled.
+                if existing is None or len(requirements) > len(existing.get("requirements", [])):
+                    _reg: dict = {
                         "register_id": _text_or_none(ex.get("quality_register_id")),
                         "register_version": _text_or_none(ex.get("quality_register_period")),
                         "assembled_by": "document extraction",
                         "source_document_type": doc_type,
                     }
+                    if requirements:
+                        _reg["requirements"] = requirements
+                    out["qualityRequirementRegister"] = _reg
+                    existing = _reg
+                if _has_first_pass and existing.get("items_inspected") is None:
+                    existing["items_inspected"] = _inspected
+                    existing["items_passing_first_inspection"] = _first_pass
+                    existing["critical_quality_failures"] = read_critical_failure_rows(
+                        ex.get("critical_quality_failures_json"))
 
         elif doc_type == "environmental_report":
             # RUN 87, A6.3. APPLICABILITY FIRST, AND IT IS READ, NEVER ASSUMED.
@@ -1688,15 +1710,27 @@ def _run69_structures(session: Session, project: Project, period: int,
             # document states neither, or only one, NOTHING IS ASSEMBLED HERE and the corpus
             # path's APPLICABILITY_NOT_ESTABLISHED stands -- a half-established applicability is
             # not an applicability, and supplying one half would be inventing the other.
-            from .compliance_register import read_requirement_rows
+            from .compliance_register import (
+                read_corrective_action_rows, read_requirement_rows,
+            )
             jurisdiction = _text_or_none(ex.get("environmental_jurisdiction"))
             authority = _text_or_none(ex.get("permitting_authority"))
-            if jurisdiction and authority:
+            # RUN 102, SECTION 4.3. THE CORRECTIVE-ACTION REGISTER IS ASSEMBLED WHETHER OR NOT
+            # APPLICABILITY IS ESTABLISHED, and that is deliberate. Applicability governs whether
+            # a CONFORMANCE claim can be made about a permit regime; a corrective action's own
+            # stated deadline is a commitment this project made and does not depend on which
+            # authority issued the permit. Assembling only when both applicability facts are
+            # present would have made the timely-closure measure unreachable for exactly the
+            # projects whose documents state their deadlines but not their issuing authority.
+            actions = read_corrective_action_rows(
+                ex.get("environmental_corrective_actions_json"))
+            if (jurisdiction and authority) or actions:
                 requirements = read_requirement_rows(
                     ex.get("environmental_requirements_json"))
                 existing = out.get("environmentalRequirementRegister")
                 if existing is None or len(requirements) > len(existing["requirements"]):
                     out["environmentalRequirementRegister"] = {
+                        "corrective_actions": actions,
                         "jurisdiction": jurisdiction,
                         "permitting_authority": authority,
                         "permit_id": _text_or_none(ex.get("permit_id")),
@@ -2561,10 +2595,17 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     RUN 79. `spec` IS THE SPECIFICATION READING PROJECTION AND IT IS THE SOURCE.
     When it is supplied -- `a_projectresults` always supplies it -- `module_results`,
     `abstained`, `category_statuses` and `project_status` are taken from
-    `spec_projection.projection()`, built from `specification_readings` alone, and the values
-    on `row` are NOT consulted for them. There is no fallback: where the specification layer
-    has no reading for a category the fields are empty and the page says the category has not
-    been called, rather than showing a figure from the retired Python layer.
+    `spec_projection.projection()`, built from `specification_readings` alone.
+
+    RUN 102 AMENDS THAT, ON THE OWNER'S RULING. Run 79's sentence here read "There is no
+    fallback ... rather than showing a figure from the retired Python layer", and that is no
+    longer what this function does. Where the specification layer has NO READING FOR A CATEGORY,
+    that category's posture and modules are served from the stored Python row and are LABELLED
+    as such, per category, through `spec_projection.merge_python_row`. Where the specification
+    layer DOES hold a reading it remains the source and nothing replaces it. The owner's ruling
+    is that the platform must display its own analysis: without a model key the specification
+    layer serves nothing at all, and a page that then shows nothing is not a stricter page, it
+    is an empty one.
 
     `row` IS STILL READ, for `signal_inputs`, the period, the provenance columns and the
     derivations below that are Python and stay Python -- the evidence qualification, the
@@ -2573,10 +2614,32 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     of scope. `computed_results` is history for the three fields above and remains the record
     of what the Python layer produced; nothing here deletes or writes it.
     """
-    _spec_modules = spec["module_results"] if spec is not None else row.module_results
-    _spec_abstained = spec["abstained"] if spec is not None else row.abstained
-    _spec_cats = spec["category_statuses"] if spec is not None else row.category_statuses
-    _spec_status = spec["project_status"] if spec is not None else row.project_status
+    # ================================ RUN 102, GOAL ONE. THE MERGE, AND WHY IT IS NOT A BLEND.
+    # WHAT THE DOCSTRING ABOVE SAID, AND WHAT IT ACTUALLY DID. The four lines that stood here
+    # read `spec is not None`, which `a_projectresults` makes true on EVERY participant read.
+    # An empty projection was therefore taken in full and `row.category_statuses` was never
+    # consulted, so a stored row carrying four Python postures rendered as "0 of 5 carry a
+    # posture". The owner's Run 102 ruling section 2 is that the platform must display its own
+    # analysis; the fallback is now PER CATEGORY and is VISIBLE.
+    #
+    # THE SPECIFICATION LAYER STILL WINS WHEREVER IT HAS A READING, and it wins on whether it
+    # ANSWERED the category, not on whether that answer carries a band -- so a category the
+    # specification layer called and which asserted no band keeps its own reading and is not
+    # overridden. See `spec_projection.merge_python_row` for the coherence argument the order's
+    # section 2 escape clause demands: the unit of merge is a whole category, both layers form a
+    # category posture by the SAME `worst_band` rule, and the merged mapping goes through the
+    # SAME required-core gate once. Nothing is averaged between the layers anywhere.
+    #
+    # `row` IS STILL READ for everything the previous docstring said it was read for -- the
+    # signal inputs, the period, the provenance columns, the evidence qualification, the
+    # recommendation basis, the EVM consistency check and the reveal-gate redaction. Those are
+    # untouched by this run.
+    _merged = spec_projection.merge_python_row(
+        spec, row.module_results, row.abstained, row.category_statuses, row.signal_inputs)
+    _spec_modules = _merged["module_results"]
+    _spec_abstained = _merged["abstained"]
+    _spec_cats = _merged["category_statuses"]
+    _spec_status = _merged["project_status"]
     # RUN 89, GOAL THREE. The required-core verdict rides beside the status, so the Indeterminate
     # brief can render the reason without re-deriving the gate on the client. A row computed
     # before Run 89 carries None here, and the client reads None as "the gate did not run".
@@ -2586,9 +2649,9 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     # RUN 99. Same figures, same one function: without them the Complete promotion could not be
     # decided here and the detail page would disagree with the portfolio list about a finished
     # project. `spec` already carries the basis when the caller built it from a row.
-    _spec_basis = (spec.get("project_status_basis") if spec is not None
-                   else spec_projection.project_status_basis(_spec_cats or {},
-                                                             row.signal_inputs or {}))
+    # RUN 102. Derived ONCE, by the one function, from the MERGED mapping -- so the gate and
+    # the fusion see exactly the postures the page shows and cannot disagree with them.
+    _spec_basis = _merged["project_status_basis"]
     view = {
         "result_id": row.result_id,
         "period": row.period,
@@ -2602,6 +2665,11 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
         "category_statuses": _spec_cats,
         "project_status": _spec_status,
         "project_status_basis": _spec_basis,
+        # RUN 102, SECTION 12.1: A FALLBACK THAT DOES NOT SAY SO IS THE DEFECT. Which layer
+        # produced each category's posture, and the plain sentence the card prints for it.
+        "posture_layers": _merged["posture_layers"],
+        "python_fallback_categories": _merged["python_fallback_categories"],
+        "posture_layer_note": _merged["posture_layer_note"],
         # RUN 11, GATES 5 AND 6. Derived at read time from the category statuses this row already
         # holds, by the same function the compute path uses. No column is added, so a row stored
         # before this run answers exactly as one stored after it, and migrations 0020 through

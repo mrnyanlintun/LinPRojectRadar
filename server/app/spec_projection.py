@@ -440,3 +440,194 @@ def projections(session: Session, pairs: list[tuple[str, int]],
             "specification_reading_count": len(readings),
         }
     return out
+
+
+# =============================================================================================
+# RUN 102, GOAL ONE. THE PYTHON ROW FILLS AN ABSENCE, AND IT SAYS SO.
+#
+# WHAT WAS MEASURED FIRST, BEFORE ANYTHING WAS CHANGED (order section 2.1). `documents.
+# _result_view` DID already have a fallback, and the briefing's "there is no fallback" is only
+# half right: the fallback was ALL-OR-NOTHING ON WHETHER THE CALLER BUILT A PROJECTION AT ALL --
+#
+#     _spec_cats = spec["category_statuses"] if spec is not None else row.category_statuses
+#
+# -- and `a_projectresults` ALWAYS builds one. So `spec is not None` was true on every
+# participant read, an EMPTY projection was taken in full, and `row.category_statuses` was never
+# consulted. A row carrying four Python postures rendered as "0 of 5 carry a posture".
+#
+# WHY MIXING THE LAYERS IS COHERENT, AND THE ESCAPE CLAUSE IN SECTION 2 DOES NOT FIRE. The two
+# layers are not two opinions about one quantity that would have to be averaged. They are two
+# producers of the SAME shape:
+#
+#   * the unit of merge is a CATEGORY, and a category is taken WHOLE from one layer or the
+#     other. No category's posture is ever formed from modules of both layers, so nothing is
+#     averaged, reconciled or blended anywhere;
+#   * both layers form a category posture by the SAME rule, `fusion.worst_band` over the bands
+#     of the modules that computed -- `spec_projection.category_statuses` calls it and
+#     `simulation.compute` calls it through `fuse_signals`. Conservative Dominance is untouched;
+#   * both then hand those postures to the SAME required-core gate and the SAME project fusion,
+#     which is `project_status_basis` below, called ONCE on the merged mapping.
+#
+# So a merged row is exactly what the platform would publish if the specification layer had been
+# asked about only the categories it was asked about. That is filling an absence, not overriding
+# a reading, and it is why the merge is per-category rather than per-field.
+#
+# THE FALLBACK IS NEVER SILENT (section 12.1). Every merged category carries `posture_layer` and
+# `posture_layer_words`, every module row served from the Python layer carries the same two, and
+# `merge_note` on the projection names which categories came from which layer. The decision
+# brief prints it. A reader of one module reading can tell which layer produced it without
+# consulting anything else.
+#
+# THE SPECIFICATION LAYER WINS WHERE IT HAS A READING (section 2.3), AND "HAS A READING" IS A
+# MEASURED DISTINCTION RATHER THAN A GUESS AT ONE. `spec_apply` stores four states, and only two
+# of them are a reading:
+#
+#   computed     -- the layer read the specification and produced module readings. A READING. It
+#                   wins, and the fallback does not touch that category.
+#   abstained    -- the layer read the specification and DECLINED, with its reason. ALSO A
+#                   READING: a stated refusal is an answer, and replacing it with a Python
+#                   posture would be OVERRIDING a reading rather than filling an absence, which
+#                   section 12.2 fails the run for.
+#   failed       -- "no recorded answer is held for category A1 on these figures ... and there
+#                   is no API key". NOT A READING. It is the row recording that the layer could
+#                   not be asked. Keyless, this is the state of EVERY category, which is
+#                   precisely the condition the owner's ruling is about.
+#   out_of_order -- "this category reads what the categories before it produced, and they have
+#                   not run yet". NOT A READING either: a record that the question was not put.
+#
+# THIS WAS MEASURED BEFORE IT WAS IMPLEMENTED, NOT ASSUMED, AND THE FIRST BUILD WAS WRONG. That
+# build tested only whether the specification layer had an ENTRY for the category. On the
+# owner's own route, keyless, `projectcategoryapply` STORES an entry for all ten categories --
+# state `failed`, served_by `recorded`, zero modules -- so that test found an entry everywhere
+# and the fallback never fired: the rendered card still read "0 of the 5 required categories
+# carry a posture" over a stored Python row carrying five Green ones. The distinction above is
+# what that measurement forced, and it is recorded here rather than quietly corrected.
+SPEC_STATES_THAT_ARE_A_READING: frozenset[str] = frozenset({sa.COMPUTED, sa.ABSTAINED})
+# =============================================================================================
+
+POSTURE_LAYER_SPEC = "specification_reading"
+POSTURE_LAYER_PYTHON = "python_module_layer"
+
+POSTURE_LAYER_WORDS: dict[str, str] = {
+    POSTURE_LAYER_SPEC: ("read by the specification layer, from the module specification, and "
+                         "stored as a specification reading"),
+    POSTURE_LAYER_PYTHON: ("computed by the platform's own Python module layer and served here "
+                           "because the specification layer holds no reading for this category "
+                           "this period"),
+}
+
+
+def _python_category_of(entry: dict[str, Any], module_id: Any) -> str:
+    """The category a stored Python row belongs to. Stated on the row, else its id's prefix."""
+    cat = entry.get("category")
+    if cat:
+        return str(cat)
+    return str(module_id or "").split(".")[0]
+
+
+def merge_python_row(spec: dict[str, Any] | None,
+                     row_module_results: Any,
+                     row_abstained: Any,
+                     row_category_statuses: Any,
+                     signal_inputs: dict[str, Any] | None = None) -> dict[str, Any]:
+    """
+    The specification projection, with the Python row filling the categories it has no reading
+    for. Visibly. See the block above for why this is coherent and where it refuses to act.
+
+    Returns the four fields `_result_view` publishes plus `project_status_basis` and the
+    merge's own record of what came from where.
+    """
+    spec = spec or {"module_results": [], "abstained": [], "category_statuses": {},
+                    "specification_categories_called": []}
+    spec_cats = dict(spec.get("category_statuses") or {})
+    row_cats = dict(row_category_statuses or {})
+
+    # The specification layer's answer is authoritative for every category it ANSWERED. A
+    # category whose stored state records that it could NOT be asked -- `failed`,
+    # `out_of_order` -- has not answered, and is open to the fallback.
+    answered = {k: e for k, e in spec_cats.items()
+                if (e or {}).get("state") in SPEC_STATES_THAT_ARE_A_READING}
+    unanswered = {k: e for k, e in spec_cats.items() if k not in answered}
+    merged: dict[str, dict[str, Any]] = {}
+    for key, entry in answered.items():
+        e = dict(entry)
+        e["posture_layer"] = POSTURE_LAYER_SPEC
+        e["posture_layer_words"] = POSTURE_LAYER_WORDS[POSTURE_LAYER_SPEC]
+        merged[key] = e
+    filled: list[str] = []
+    for key, entry in row_cats.items():
+        if key in merged:
+            continue                      # the specification layer answered; it wins. Section 2.3.
+        e = dict(entry)
+        e["posture_layer"] = POSTURE_LAYER_PYTHON
+        e["posture_layer_words"] = POSTURE_LAYER_WORDS[POSTURE_LAYER_PYTHON]
+        e["source"] = POSTURE_LAYER_PYTHON
+        e["served_from_python_fallback"] = True
+        # WHAT THE SPECIFICATION LAYER SAID INSTEAD, CARRIED ONTO THE ENTRY rather than
+        # discarded. A reader of one category can see both that the Python layer produced this
+        # posture and why the specification layer produced none.
+        _un = unanswered.get(key)
+        if _un:
+            e["specification_layer_state"] = _un.get("state")
+            e["specification_layer_reason"] = _un.get("reason")
+        merged[key] = e
+        filled.append(key)
+    # A category the specification layer could not be asked about and for which the PYTHON row
+    # also holds nothing keeps its unanswered entry, so the page still says why. Not dropped.
+    for key, entry in unanswered.items():
+        if key not in merged:
+            merged[key] = dict(entry)
+    filled.sort()
+
+    # The module rows follow their category, so no category's evidence is split across layers.
+    modules: list[dict[str, Any]] = [dict(m) for m in (spec.get("module_results") or [])]
+    for m in modules:
+        m.setdefault("posture_layer", POSTURE_LAYER_SPEC)
+        m.setdefault("posture_layer_words", POSTURE_LAYER_WORDS[POSTURE_LAYER_SPEC])
+    abstained: list[dict[str, Any]] = [dict(a) for a in (spec.get("abstained") or [])]
+    if filled:
+        wanted = set(filled)
+        for m in (row_module_results or []):
+            if not isinstance(m, dict):
+                continue
+            if _python_category_of(m, m.get("module_id")) in wanted:
+                e = dict(m)
+                e["source"] = POSTURE_LAYER_PYTHON
+                e["posture_layer"] = POSTURE_LAYER_PYTHON
+                e["posture_layer_words"] = POSTURE_LAYER_WORDS[POSTURE_LAYER_PYTHON]
+                modules.append(e)
+        for a in (row_abstained or []):
+            if not isinstance(a, dict):
+                continue
+            if _python_category_of(a, a.get("module_id")) in wanted:
+                e = dict(a)
+                e["source"] = POSTURE_LAYER_PYTHON
+                e["posture_layer"] = POSTURE_LAYER_PYTHON
+                abstained.append(e)
+
+    basis = project_status_basis(merged, signal_inputs)
+    served_by_layer = {
+        POSTURE_LAYER_SPEC: sorted(answered),
+        POSTURE_LAYER_PYTHON: filled,
+    }
+    note = None
+    if filled:
+        note = ("The specification layer holds no reading for "
+                + ", ".join(filled) + " this period, so "
+                + ("that category's" if len(filled) == 1 else "those categories'")
+                + " posture is served from the platform's own Python module layer and is "
+                  "labelled as such on every reading it produced. Where the specification layer "
+                  "does hold a reading it is the source and nothing replaces it.")
+    return {
+        "module_results": modules,
+        "abstained": abstained,
+        "category_statuses": merged,
+        "project_status": basis["status"],
+        "project_status_basis": basis,
+        "specification_categories_called": sorted(spec_cats),
+        "specification_reading_count": len(answered),
+        "specification_categories_unanswered": sorted(unanswered),
+        "posture_layers": served_by_layer,
+        "python_fallback_categories": filled,
+        "posture_layer_note": note,
+    }

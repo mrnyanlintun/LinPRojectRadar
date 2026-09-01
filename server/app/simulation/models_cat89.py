@@ -53,7 +53,12 @@ from .abm import ABMStructureError
 from .canonical import StructureAbsent
 from .canonical_v6 import V6_STRUCTURE_KEYS, V6_STRUCTURE_WORDS, v6_structure
 from .lineage import evidence_body_of, independence_established, lineage_status
-from .models import ABSTAIN_STRUCTURE_ABSENT, PROVENANCE_WORDS
+from .models import (
+    ABSTAIN_STRUCTURE_ABSENT, PROVENANCE_WORDS,
+    THRESHOLD_SOURCES, THRESHOLD_SOURCE_EXTERNAL, THRESHOLD_SOURCE_OWNER,
+    THRESHOLD_SOURCE_PROJECT,
+    THRESHOLD_SOURCE_WORDS,
+)
 from .qualified_evidence import (
     QualifiedEvidence, QUALIFICATION_RULE_VERSION, UNASSESSED, assess,
 )
@@ -362,139 +367,189 @@ def _a6_band(module_id: str, result: dict[str, Any], structure: Mapping[str, Any
     # site: a module whose basis and boundaries come from the same place returns four and both
     # classes are written the same. Only A6.2 differs today, and it differs because the research
     # says it must.
-    return out if len(out) == 5 else (out + (None,))
+    #
+    # RUN 102, SECTION 6. THE SIXTH ENTRY IS THE `threshold_source` -- which rung of the owner's
+    # precedence order actually supplied the figure. It is REQUIRED whenever a colour is
+    # returned; `_route` raises rather than store a band without it, which is section 12.5.
+    out = out + (None,) * (6 - len(out))
+    return out
 
 
 def _band_quality_compliance(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
     """
-    A6.1. NO BAND UNLESS THE PROJECT SUPPLIES ONE -- the owner's ruling, section 3.5.
+    A6.1. RUN 102, SECTION 4.1. THE MEASURE IS FIRST-PASS INSPECTION ACCEPTANCE.
 
-    THE PUBLISHED REWORK BENCHMARKS MEASURE REWORK COST AS A PROPORTION OF CONTRACT VALUE. That
-    is a different quantity from this one, with a different denominator (money, not requirements)
-    and a different direction, and section 2 forbids substituting it. It is not applied here and
-    must never be.
+        FirstPassAcceptance = items passing on FIRST inspection / items inspected
 
-    THE ONE THING THAT DOES BAND THIS is an acceptance target the PROJECT'S OWN DOCUMENTS state
-    -- a quality plan, an inspection and test plan, a specification or a contract saying, for
-    example, that acceptance shall be at least ninety-five per cent. When the register carries
-    one, THAT figure is the threshold and ITS source is the document. When it does not, the rate
-    is displayed and no band is asserted.
+    WHAT CHANGED AND WHY. Run 101 measured that this module computed a REQUIREMENT CONFORMANCE
+    RATE -- satisfied applicable assessed requirements over assessed applicable requirements --
+    and banded on that. The owner's Run 102 table defines the measure as first-pass inspection
+    acceptance, which is a different population with a different denominator. Section 12.3 fails
+    the run for attaching a band to a quantity the module does not compute, so the module now
+    COMPUTES the first-pass rate (`canonical_v6._first_pass_acceptance`) and the band is drawn
+    over that. The conformance rate is still reported and is explicitly not what bands.
 
-    AND THE TARGET MUST BE STATED FOR THIS QUANTITY. `acceptance_target_quantity` records what
-    the document's target was stated over. A target stated for something else is a threshold from
-    a related but different measure, which is the exact defect section 2 names, so it is refused
-    rather than applied.
+    THE REWORK-COST BENCHMARKS ARE NOT THE SOURCE FOR THESE BANDS AND ARE NOT CITED AS ONE. The
+    owner states it in terms: the published research supports rework COST as a proportion of
+    contract value, which is a different quantity with a different denominator and a different
+    direction. Section 12.3 fails the run for citing them here. They are not applied.
+
+    THE PRECEDENCE ORDER IS EXERCISED, NOT LABELLED. Where the project's own quality plan or
+    inspection and test plan states an acceptance target for THIS quantity, that figure is the
+    threshold and the threshold source is `project_specific` -- rung 1, and it overrides the
+    owner's default because it is stricter authority, not because it is stricter arithmetic.
+    Where it does not, the owner's configured 95/90/80 ladder applies at rung 3.
+
+    THE CRITICAL OVERRIDE IS NONCOMPENSATORY AND OUTRANKS BOTH. A failed critical inspection,
+    hold-point inspection, life-safety requirement, commissioning acceptance test or other
+    explicitly designated critical quality item is Red however high the rate.
     """
-    rate = result.get("quality_compliance_rate")
+    rate = result.get("first_pass_acceptance_rate")
     if rate is None:
+        _conf = result.get("quality_compliance_rate")
         return (None, None,
-                "no compliance rate was measurable from the evidence supplied, so there is no "
-                "figure for a threshold to be applied to", None)
-    # THE TARGET IS THE DOCUMENT'S, READ OFF THE PROJECT'S OWN REGISTER. Nothing here supplies
-    # one and nothing here defaults.
+                ("no first-pass inspection acceptance rate is measurable from the evidence "
+                 "supplied. This module's measure is items passing on FIRST inspection divided "
+                 "by items inspected, and an inspection record must state both figures for it. "
+                 + ("A requirement conformance rate of "
+                    f"{_conf} is reported and is NOT what this band is drawn over: it is a "
+                    "different population with a different denominator. " if _conf is not None
+                    else "")
+                 + "The published rework-cost benchmarks measure rework cost as a proportion of "
+                   "contract value, a different quantity again, and are not applied here"),
+                None, None, None)
+    # THE HARD OVERRIDE FIRST, because a critical failure cannot be averaged away by a rate.
+    critical = result.get("critical_quality_failures") or []
+    cuts = _BR.entry("quality_first_pass_acceptance_bands")
     target = structure.get("acceptance_target")
     source = structure.get("acceptance_target_source")
-    quantity = structure.get("acceptance_target_quantity")
-    if not isinstance(target, (int, float)) or not 0 < target <= 1 or not source:
+    quantity = str(structure.get("acceptance_target_quantity") or "").strip()
+    project_target = (isinstance(target, (int, float)) and 0 < target <= 1 and bool(source)
+                      and quantity in ("", "first_pass_acceptance",
+                                       "first_pass_inspection_acceptance"))
+    _override = (
+        "HARD OVERRIDE, and it outranks every percentage band: Red if a critical inspection, "
+        "hold-point inspection, life-safety requirement, commissioning acceptance test, or "
+        "other explicitly designated critical quality item fails. A critical failure does not "
+        "average away inside a high pass rate.")
+    if project_target:
+        boundary = (f"a first-pass acceptance rate at or above the project's own stated "
+                    f"acceptance target of {target} is Green; below it is Red. The document "
+                    f"states one figure, so two bands are what it supports and no intermediate "
+                    f"ladder is drawn between them. {_override}")
+        basis = (f"the project's own uploaded document: {source}. Rung 1 of the owner's "
+                 f"precedence order -- a project-specific threshold overrides the owner's "
+                 f"configured default")
+        colour = "Red" if critical else ("Green" if rate >= target else "Red")
+        return (colour, boundary, basis, "CODIFIED", None, THRESHOLD_SOURCE_PROJECT)
+    if not cuts.get("configured"):
         return (None, None,
-                "no acceptance target for this quantity is stated by any document this project "
-                "has uploaded. The published rework benchmarks measure rework cost as a "
-                "proportion of contract value, which is a different quantity with a different "
-                "denominator, and applying them here would be substituting a threshold from a "
-                "related but different measure. The rate is reported and no band is asserted",
-                None)
-    if quantity and str(quantity).strip() not in ("quality_compliance",
-                                                  "requirement_conformance_rate"):
-        return (None, None,
-                f"the acceptance target this project's documents state was stated over "
-                f"{quantity!r}, which is not the quantity this module computes, so it is not "
-                f"applied to it", None)
-    # THE PROJECT'S OWN TARGET IS THE BOUNDARY, AND IT IS INCLUSIVE ON ITS LOWER SIDE: a rate AT
-    # the stated target meets it. Only two bands are defensible from one stated figure -- met or
-    # not met -- and no intermediate ladder is invented between them.
-    colour = "Green" if rate >= target else "Red"
-    return (colour,
-            f"a conformance rate at or above the project's own stated acceptance target of "
-            f"{target} is Green; below it is Red. The document states one figure, so two bands "
-            f"are what it supports; no intermediate ladder is drawn between them",
-            f"the project's own uploaded document: {source}",
-            "CODIFIED")
+                "no acceptance threshold for first-pass inspection acceptance is configured and "
+                "no project document states one, so the rate is displayed and no band is "
+                "asserted", None, None, None)
+    g, y, a = (cuts["green_at_or_above"], cuts["yellow_at_or_above"], cuts["amber_at_or_above"])
+    colour = ("Red" if critical
+              else "Green" if rate >= g else "Yellow" if rate >= y
+              else "Amber" if rate >= a else "Red")
+    boundary = (
+        f"on first-pass inspection acceptance -- items passing on FIRST inspection divided by "
+        f"items inspected: at or above {g} is Green; at or above {y} and below {g} is Yellow; "
+        f"at or above {a} and below {y} is Amber; below {a} is Red. Each boundary is INCLUSIVE "
+        f"ON ITS LOWER SIDE. {_override}")
+    basis = (
+        "the owner's Run 102 order, section 4.1, and the threshold table attached to it. "
+        "OWNER-CONFIGURED: the owner states in terms that the collected research supports "
+        "REWORK COST BENCHMARKS, not a universal first-pass inspection-rate threshold, and that "
+        "rework ratios must NOT be cited as the source for these pass-rate bands. They are not "
+        "cited here and are not applied. A project quality plan or inspection and test plan "
+        "with a stricter requirement overrides these bands, and none is stated by any document "
+        "this project has uploaded")
+    return (colour, boundary, basis, "OWNER-CALIBRATED", None, THRESHOLD_SOURCE_OWNER)
 
 
 def _band_safety(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
     """
-    A6.2. THE REBUILD, AND WHY ONLY ONE OF THE THREE LEGS CAN BAND TODAY.
+    A6.2. RUN 102, SECTION 4.2. FREQUENCY BANDS ON THE BENCHMARK RATIO.
 
-    THE THREE MEASURES ARE REPORTED SEPARATELY AND ARE NEVER COMPOSITED (section 12.1d). Where
-    one band must front the category the rule is WORST-OF and this function says so on the row.
+        BenchmarkRatio = project TRIR / the applicable BLS construction TRIR
 
-    FREQUENCY. Bands against the published construction industry average, which section 12.3
-    requires to be CONFIGURED DATA carrying its year and source and forbids as a literal in code.
-    `band_reference_data.json` holds the entry and it is NOT CONFIGURED: no industry average was
-    supplied with the Run 101 order, and the research report the order names as its authority was
-    not present. So the rate is computed, reported on both the OSHA 200,000-hour and the ILO
-    1,000,000-hour bases, and NO BAND is asserted. Inventing a number here is section 12.2.
+    WHAT CHANGED, AND WHAT DID NOT. Run 101's THREE MEASURES STAY -- frequency, severity and
+    near-miss -- and they are still reported separately and are STILL NEVER COMPOSITED (section
+    12.7). This changes only HOW FREQUENCY BANDS: Run 101 compared the rate to three absolute
+    cutoffs derived from the benchmark; the owner now bands the RATIO of the rate to the
+    benchmark, at 0.75, 1.00 and 1.50. The two forms are close but not identical -- the ratio
+    form makes the benchmark ENTER THE ARITHMETIC rather than only the comparison -- and that is
+    the owner's stated intent.
 
-    SEVERITY. No threshold for a severity rate was supplied at all, so none is applied.
+    THE BENCHMARK IS CONFIGURED DATA AND IS NEVER A LITERAL HERE (section 12.6). It is read from
+    `band_reference_data.json` with its year, its unit and its source, and it is stored
+    UNVERIFIED. Where it is not configured NOTHING BANDS: no default is supplied, because a
+    default benchmark is an invented threshold.
 
-    NEAR-MISS. THE INTERPRETATION IS INVERTED AND GETTING IT BACKWARDS IS RUN-FAILING (12.1c). A
-    high reporting rate indicates a healthy reporting culture. No published expected near-miss
-    rate exists for construction, so no ladder is drawn over the count. The ONE band the order
-    states in terms is the near-zero one: near-zero reporting on an ACTIVE project is a concern,
-    not a Green, and that is the only near-miss band asserted.
+    THE FORMULA AND THE BENCHMARK ARE CODIFIED; THE THREE MULTIPLIERS ARE OWNER-CONFIGURED, so
+    the basis class and the boundary class differ and the reading carries both.
 
-    THE EXPOSURE FLOOR. Beneath the configured floor a rate swings entirely on whether one event
-    happened, so nothing bands beneath it.
+    TOTAL HOURS WORKED IS ALWAYS DISPLAYED BESIDE THE RATE -- the owner's reason is that small
+    projects have volatile rates after a single recordable event -- and that is why the exposure
+    floor stays: BENEATH THE FLOOR NOTHING BANDS (section 12.6).
+
+    THE HARD OVERRIDE OUTRANKS THE RATIO. A fatality, a serious life-threatening event, a
+    stop-work order or an unresolved high-severity safety violation is Red however low the rate.
     """
     floor = _BR.configured_value("safety_exposure_floor_hours")
     hours = result.get("employee_hours_worked")
     near = structure.get("near_miss_reported")
     active = bool(isinstance(hours, (int, float)) and hours > 0)
+    _severe = _severe_safety_events(structure, result)
+    _override = (
+        "HARD OVERRIDE, and it outranks the ratio: Red for a fatality, a serious "
+        "life-threatening event, a stop-work order, or an unresolved high-severity safety "
+        "violation, however low the recordable rate.")
+    if _severe:
+        return ("Red",
+                _override + " This project's safety record states " + _severe["what"] + ".",
+                ("the owner's Run 102 order, section 4.2. The override is a consequence "
+                 "condition, not a rate: no exposure-normalised frequency can make it not have "
+                 "happened, so it is applied before the exposure floor and before the ratio"),
+                "OWNER-CALIBRATED", None, THRESHOLD_SOURCE_OWNER)
     if isinstance(hours, (int, float)) and floor and hours < floor:
         return (None, None,
                 f"exposure for this period is {hours} employee hours, beneath the configured "
                 f"floor of {floor}. Beneath it a rate turns entirely on whether a single event "
                 f"happened, so no rate is banded and none is published as though it were "
-                f"stable", None)
-    # ---------------------------------------------- THE FREQUENCY LEG BANDS AGAINST THE ANCHOR
-    # RUN 101, MID-RUN. THE RESEARCH REPORTS ARRIVED AND SUPPLIED THE INDUSTRY AVERAGE THE ORDER
-    # REFERS TO: the US Bureau of Labor Statistics Survey of Occupational Injuries and Illnesses,
-    # construction NAICS 23, 2023, total recordable case rate about 2.4 per 100 full-time
-    # equivalent workers -- which is the SAME QUANTITY as per 200,000 employee hours, so it lands
-    # on the OSHA base this module already computes with no conversion.
-    #
-    # IT IS CONFIGURED DATA, NEVER A LITERAL HERE (section 12.3), and it is stored UNVERIFIED
-    # because both research reports flag it [Confirm] and state that primary-source verification
-    # was not completed.
-    #
-    # THE ANCHOR AND THE CUTOFFS HAVE DIFFERENT PROVENANCE, AND THIS IS THE MODULE THAT FORCED
-    # THE DISTINCTION. RESEARCH_2, recommendation 2: "State that ONLY THE INDUSTRY-AVERAGE ANCHOR
-    # IS SOURCED; intermediate cutoffs are platform-chosen with no published basis." So the basis
-    # class is CODIFIED, the boundary class is OWNER-CALIBRATED, and the reading carries both.
+                f"stable. Total hours worked is displayed beside the rate for exactly this "
+                f"reason", None, None, None)
+    # ------------------------------------------- THE FREQUENCY LEG BANDS ON THE BENCHMARK RATIO
     _anchor = _BR.configured_value("construction_industry_recordable_rate")
-    _cuts = _BR.entry("construction_frequency_band_cutoffs")
+    _cuts = _BR.entry("safety_benchmark_ratio_bands")
     _rate = (result.get("frequency") or {}).get("recordable_rate_osha_200k")
-    if _anchor and _cuts.get("configured") and isinstance(_rate, (int, float)):
-        _green, _yellow, _red = (_cuts["green_below"], _cuts["yellow_at_or_below"],
-                                 _cuts["red_at_or_above"])
-        colour = ("Green" if _rate < _green else "Yellow" if _rate <= _yellow
-                  else "Amber" if _rate < _red else "Red")
+    if _anchor and _cuts.get("configured") and isinstance(_rate, (int, float)) and _anchor > 0:
+        _ratio = _rate / float(_anchor)
+        _g, _y, _a = (_cuts["green_at_or_below"], _cuts["yellow_at_or_below"],
+                      _cuts["amber_at_or_below"])
+        colour = ("Green" if _ratio <= _g else "Yellow" if _ratio <= _y
+                  else "Amber" if _ratio <= _a else "Red")
         return (colour,
-                f"on the recordable case rate per 200,000 employee hours, against the published "
-                f"construction industry average of {_anchor}: below {_green} -- about half the "
-                f"average -- is Green; at or above {_green} and AT OR BELOW the average "
-                f"{_yellow} is Yellow; above the average and below {_red} is Amber; at or above "
-                f"{_red} -- about twice the average -- is Red. THE ANCHOR IS PUBLISHED; THESE "
-                f"THREE CUTOFFS ARE NOT. Zero is a value and is not treated as missing, but a "
-                f"zero recordable count never produces a favourable system claim: severity and "
-                f"near-miss are reported separately and are never combined with this measure",
-                f"THE ANCHOR: {_BR.source_of('construction_industry_recordable_rate')}. IT IS "
-                f"STORED UNVERIFIED -- both research reports flag the value [Confirm] and state "
-                f"that primary-source verification against the BLS publication and the current "
-                f"year was not completed. THE THREE CUTOFFS have no published basis at all: "
-                f"{_cuts.get('why_not_codified')}",
+                f"on the BENCHMARK RATIO -- this project's recordable case rate per 200,000 "
+                f"employee hours ({_rate}) divided by the applicable published construction "
+                f"benchmark ({_anchor}), giving {round(_ratio, 4)}: at or below {_g} is Green; "
+                f"above {_g} and at or below {_y} is Yellow; above {_y} and at or below {_a} is "
+                f"Amber; above {_a} is Red. THE FORMULA AND THE BENCHMARK ARE CODIFIED; THESE "
+                f"THREE MULTIPLIERS ARE THE OWNER'S. Total hours worked ({hours}) is displayed "
+                f"beside the rate, and nothing bands beneath the configured exposure floor. "
+                f"Zero is a value and is not treated as missing, but a zero recordable count "
+                f"never produces a favourable system claim: severity and near-miss are reported "
+                f"separately and are never combined with this measure. {_override}",
+                f"THE FORMULA is the OSHA incidence-rate identity and the BENCHMARK is "
+                f"{_BR.source_of('construction_industry_recordable_rate')}. IT IS STORED "
+                f"UNVERIFIED -- both research reports flag the value [Confirm] and state that "
+                f"primary-source verification against the BLS publication and the current year "
+                f"was not completed. THE THREE MULTIPLIERS 0.75, 1.00 and 1.50 are the owner's "
+                f"configured tolerance, stated in his Run 102 order section 4.2, and have no "
+                f"published basis",
                 "CODIFIED",
-                "OWNER-CALIBRATED")
+                "OWNER-CALIBRATED",
+                THRESHOLD_SOURCE_OWNER)
     if isinstance(near, (int, float)) and active:
         if near <= 0:
             return ("Amber",
@@ -503,95 +558,173 @@ def _band_safety(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
                     "indicates a working reporting culture, and a low or zero rate on an active "
                     "project indicates under-reporting rather than safety. Zero is a value here "
                     "and is not treated as missing",
-                    "the owner's Run 101 order, section 3.6. No published expected near-miss "
-                    "rate exists for construction, so no ladder is drawn over the count and "
-                    "only the near-zero condition the order states in terms is banded",
-                    "OWNER-CALIBRATED")
+                    "the owner's Run 101 order, section 3.6, unchanged by Run 102. No published "
+                    "expected near-miss rate exists for construction, so no ladder is drawn "
+                    "over the count and only the near-zero condition the order states in terms "
+                    "is banded",
+                    "OWNER-CALIBRATED", None, THRESHOLD_SOURCE_OWNER)
         return (None, None,
                 f"{near} near-misses were reported on an active project, which is the healthy "
                 f"direction. No published expected near-miss rate exists for construction, so "
                 f"reporting activity above zero is displayed and no ladder is drawn over the "
-                f"count", None)
+                f"count", None, None, None)
     unconfigured = _BR.entry("construction_industry_recordable_rate")
     return (None, None,
             "the frequency rate is reported on both the OSHA 200,000-hour and the ILO "
-            "1,000,000-hour bases and is not banded: " + str(unconfigured.get("why_absent")) +
+            "1,000,000-hour bases and is not banded, because the benchmark the ratio is formed "
+            "against is not available: " + str(unconfigured.get("why_absent")) +
             " No threshold for a severity rate was supplied, so none is applied, and no "
             "published expected near-miss rate exists for construction. The three measures are "
             "reported separately and are never combined into one index",
-            None)
+            None, None, None)
+
+
+#: The words a safety record may use for the four conditions the owner's hard override names.
+#: A record that states one of them is Red however low its rate. The words are the order's own;
+#: a severity word that is none of these matches nothing and is reported unranked rather than
+#: dropped to the nearest one.
+_SAFETY_OVERRIDE_WORDS: frozenset = frozenset({
+    "fatality", "fatal", "death", "permanent_total_disability",
+    "serious_life_threatening_event", "life_threatening", "serious_injury",
+    "stop_work", "stop_work_order", "cease_and_desist",
+    "unresolved_high_severity_violation", "high_severity_violation",
+})
+
+
+def _severe_safety_events(structure: Mapping[str, Any], result: dict[str, Any]) -> dict | None:
+    """
+    The owner's hard-override condition, read from what the record states. Never inferred.
+
+    TWO ROUTES, both the document's own statement: a `severe_events` list whose rows name one of
+    the override conditions, and the fatality count the severity leg already reads. Nothing here
+    derives a fatality from a rate or from days lost.
+    """
+    hits: list[str] = []
+    for row in (structure.get("severe_events") or []):
+        if isinstance(row, dict):
+            word = str(row.get("event_type") or row.get("severity") or "").strip().lower()
+        else:
+            word = str(row or "").strip().lower()
+        word = word.replace(" ", "_").replace("-", "_")
+        if word in _SAFETY_OVERRIDE_WORDS:
+            hits.append(word)
+    n_fatal = (result.get("severity") or {}).get("fatalities_or_ptd")
+    if isinstance(n_fatal, (int, float)) and n_fatal > 0:
+        hits.append(f"{int(n_fatal)} fatality or permanent total disability")
+    if not hits:
+        return None
+    return {"what": ", ".join(sorted(set(hits))), "events": sorted(set(hits))}
 
 
 def _band_environmental(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
     """
-    A6.3. THE CONSEQUENCE LADDER -- severity and consequence, not a closure rate.
+    A6.3. RUN 102, SECTION 4.3. TIMELY CLOSURE, AND THE MANDATORY-DEADLINE OVERRIDE.
 
-    THE OWNER'S RULING, SECTION 3.7: any violation goes Red outright. NO PUBLISHED CLOSURE-RATE
-    BENCHMARK EXISTS, and the old rate -- satisfied over assessed -- is not what bands. What is
-    codified is the EPA Construction General Permit's corrective-action deadline: generally
-    before the next storm event, no later than seven calendar days from discovery.
+        TimelyClosureRate = corrective actions closed by their required deadline
+                            / corrective actions requiring closure
 
-    THE CGP'S OWN DISTINCTION GOVERNS, and it is the whole ladder:
-        an OPEN-BUT-WITHIN-DEADLINE corrective action is a DEFICIENCY;
-        a MISSED DEADLINE or an UNAUTHORISED DISCHARGE is a VIOLATION.
+    THIS REPLACES RUN 101'S CONSEQUENCE LADDER, ON THE OWNER'S EXPLICIT REVERSAL (section 0.2).
+    Run 101 built a four-rung severity ladder over `environmental_findings` and took any
+    confirmed violation to Red. The owner has ruled that the measure is a closure RATE with a
+    critical-violation override, and that is what this now is. The severity words the ladder
+    ranked are retained below and are still read -- they are now the OVERRIDE's vocabulary
+    rather than the band's, which is where the owner has put them.
 
-    THE ORDERING IS DERIVED FROM STATUTORY CONSEQUENCE, NOT PUBLISHED AS A TAXONOMY. A
-    stop-work order, an unauthorised discharge, a permit suspension, criminal exposure, a
-    debarment trigger and a missed corrective-action deadline are each a consequence the statute
-    attaches; a notice of violation, an administrative order or a monetary penalty is an
-    enforcement action short of those; an open action still inside its deadline is neither. That
-    ordering is what the ladder ranks, and this specification says so rather than claiming a
-    published severity taxonomy exists.
+    THE DEADLINE IS CODIFIED AND IS THE PROJECT'S OWN -- its permit, its environmental
+    management plan, or its contract. NOTHING HERE SUPPLIES A DEADLINE OR DEFAULTS ONE, and the
+    EPA Construction General Permit's seven-day figure is NOT applied as a substitute: it is a
+    fact about one permit regime, not about this project's commitments, and applicability is
+    never assumed. An action stating no deadline is in neither the numerator nor the denominator
+    and is counted separately.
+
+    THE PERCENTAGE BANDS ARE OWNER-CONFIGURED. The owner records that no published universal
+    aggregate closure-rate threshold exists; the correct basis is the project's own instrument,
+    and the percentages over it are his.
+
+    A MANDATORY DEADLINE ALWAYS OVERRIDES THE PERCENTAGE (section 4.3, in terms). Any overdue
+    critical permit violation, enforcement notice, stop-work condition, or corrective action
+    unclosed past a mandatory regulatory or permit deadline is Red at any rate, including 100
+    per cent.
     """
-    findings = structure.get("environmental_findings")
-    if not isinstance(findings, list):
+    _override = (
+        "HARD OVERRIDE, and it outranks every percentage band: Red for any overdue critical "
+        "permit violation, enforcement notice, stop-work condition, or corrective action left "
+        "unclosed past a mandatory regulatory or permit deadline. A mandatory deadline always "
+        "overrides the percentage.")
+    overdue = list(result.get("overdue_mandatory_actions") or [])
+    enforcement = _environmental_override_findings(structure)
+    rate = result.get("timely_closure_rate")
+    cuts = _BR.entry("environmental_timely_closure_bands")
+    if overdue or enforcement:
+        what = []
+        if overdue:
+            what.append(f"{len(overdue)} corrective action"
+                        f"{'' if len(overdue) == 1 else 's'} unclosed past a mandatory or "
+                        f"critical deadline")
+        if enforcement:
+            what.append("an enforcement condition of the kind the override names: "
+                        + ", ".join(enforcement))
+        return ("Red",
+                _override + " This project's environmental record states " + "; ".join(what)
+                + ".",
+                ("the owner's Run 102 order, section 4.3. The DEADLINE is CODIFIED -- the "
+                 "project's own permit, environmental management plan or contract states it, "
+                 "and nothing here supplies or defaults one. The override is a consequence "
+                 "condition, not a percentage, and no closure rate can make it not have "
+                 "happened"),
+                "CODIFIED", None, THRESHOLD_SOURCE_PROJECT)
+    if rate is None:
         return (None, None,
-                "the environmental evidence supplied for this project states no severity and no "
-                "enforcement consequence for any finding, so the consequence ladder has nothing "
-                "to rank. A closure rate is not what bands here: no published closure-rate "
-                "benchmark exists, and the order rules that severity and consequence are the "
-                "measure", None)
-    red, amber, yellow = [], [], []
-    for f in findings:
+                (str(result.get("timely_closure_reason"))
+                 if result.get("timely_closure_reason") else
+                 "no corrective-action register with required deadlines is recorded for this "
+                 "project, so no timely-closure rate is measurable. This module's measure is "
+                 "corrective actions closed by their required deadline divided by corrective "
+                 "actions requiring closure; the deadline must be the project's own permit, "
+                 "environmental management plan or contract, and none is stated. No closure "
+                 "rate is estimated from a violations count or a document-stated compliance "
+                 "percentage, which are different quantities"),
+                None, None, None)
+    if not cuts.get("configured"):
+        return (None, None,
+                "no closure-rate band is configured, so the timely-closure rate is displayed "
+                "and no band is asserted", None, None, None)
+    g, y, a = (cuts["green_at"], cuts["yellow_at_or_above"], cuts["amber_at_or_above"])
+    colour = ("Green" if rate >= g else "Yellow" if rate >= y
+              else "Amber" if rate >= a else "Red")
+    boundary = (
+        f"on the timely closure rate -- corrective actions closed BY their required deadline "
+        f"divided by corrective actions requiring closure: {g} exactly, every action closed on "
+        f"time, is Green; at or above {y} and below {g} is Yellow; at or above {a} and below "
+        f"{y} is Amber; below {a} is Red. Green requires ALL of them, not almost all. "
+        f"{_override}")
+    basis = (
+        "the owner's Run 102 order, section 4.3. THE DEADLINE IS CODIFIED and is the project's "
+        "own -- its permit, its environmental management plan, or its contract -- and nothing "
+        "here supplies one, defaults one, or substitutes the EPA Construction General Permit's "
+        "seven-day figure for it. THE PERCENTAGE BANDS ARE OWNER-CONFIGURED: the owner records "
+        "that no published universal aggregate closure-rate threshold exists, so these three "
+        "percentages are his tolerance and are not presented as a published standard")
+    return (colour, boundary, basis, "CODIFIED", "OWNER-CALIBRATED", THRESHOLD_SOURCE_OWNER)
+
+
+def _environmental_override_findings(structure: Mapping[str, Any]) -> list[str]:
+    """
+    The enforcement conditions the owner's override names, as the record states them.
+
+    READ FROM THE SAME SEVERITY WORDS RUN 101'S LADDER RANKED. Those words are not deleted: the
+    owner has moved them from deciding the band to deciding the override, and a record that
+    already states them is still understood. A severity word that is none of them matches
+    nothing and is reported unranked rather than dropped to the nearest one.
+    """
+    hits: list[str] = []
+    for f in (structure.get("environmental_findings") or []):
         if not isinstance(f, dict):
             continue
         sev = str(f.get("severity") or "").strip().lower()
-        if sev in _ENV_RED:
-            red.append(f)
-        elif sev in _ENV_AMBER:
-            amber.append(f)
-        elif sev in _ENV_YELLOW:
-            yellow.append(f)
-    boundary = (
-        "Red -- ANY confirmed violation: a stop-work or cease-and-desist order, an unauthorised "
-        "discharge, a permit suspension or revocation, criminal exposure, a debarment trigger, "
-        "or a MISSED corrective-action deadline. Amber -- a notice of violation, an "
-        "administrative order, or a monetary penalty issued. Yellow -- an open corrective action "
-        "STILL WITHIN its deadline, or a documentation deficiency. Green -- in compliance, with "
-        "corrective actions closed within the deadline. The ladder is worst-wins: one Red "
-        "finding is Red however many findings are closed, because a violation does not average "
-        "away")
-    basis = (
-        "the owner's Run 101 order, section 3.7. What is CODIFIED is the EPA Construction "
-        "General Permit's corrective-action deadline -- generally before the next storm event, "
-        "no later than seven calendar days from discovery -- and its inspection frequency, and "
-        "it is the CGP's own distinction between an open-but-within-deadline corrective action "
-        "(a deficiency) and a missed deadline or unauthorised discharge (a violation) that "
-        "separates Yellow from Red. The ORDERING of the four rungs is derived from statutory "
-        "consequence and is not published as a severity taxonomy; the order records it as a "
-        "derivation and so does this specification")
-    if red:
-        return ("Red", boundary, basis, "CODIFIED")
-    if amber:
-        return ("Amber", boundary, basis, "CODIFIED")
-    if yellow:
-        return ("Yellow", boundary, basis, "CODIFIED")
-    if findings:
-        return ("Green", boundary, basis, "CODIFIED")
-    return (None, None,
-            "the environmental record for this project lists no findings at all. An empty list "
-            "is not the same statement as 'in compliance, corrective actions closed within the "
-            "deadline', and it is not read as one", None)
+        if sev in _ENV_OVERRIDE:
+            hits.append(sev)
+    return sorted(set(hits))
 
 
 #: The severity words each rung of the consequence ladder recognises. A finding whose severity is
@@ -607,6 +740,15 @@ _ENV_AMBER: frozenset = frozenset({
 })
 _ENV_YELLOW: frozenset = frozenset({
     "open_corrective_action_within_deadline", "documentation_deficiency", "deficiency",
+})
+
+#: RUN 102. THE OVERRIDE'S VOCABULARY: the conditions the owner's section 4.3 names in terms --
+#: an overdue critical permit violation, an enforcement notice, a stop-work condition. It is the
+#: Run 101 Red rung MINUS `missed_corrective_action_deadline`, which is no longer read from a
+#: severity word at all: a missed deadline is now MEASURED from the corrective-action register's
+#: own dates in `canonical_v6._timely_closure`, where it is a fact rather than a label.
+_ENV_OVERRIDE: frozenset = frozenset(_ENV_RED - {"missed_corrective_action_deadline"}) | frozenset({
+    "notice_of_violation", "enforcement_notice", "administrative_order",
 })
 
 
@@ -641,7 +783,7 @@ def _band_contractor(result: dict[str, Any]) -> tuple:
     if not isinstance(rows, list) or not rows:
         return (None, None,
                 "no governed contractor assessment with factor ratings is recorded for this "
-                "project, so there is no rating to map", None)
+                "project, so there is no rating to map", None, None, None)
     # THE RATING MAY ARRIVE AS THE DOCUMENT'S WORD OR AS ITS NUMBER ON THE SHIPPED FIVE-POINT
     # SCALE, and both resolve to the SAME word through `extraction_merge.CPARS_RATING_SCALE` --
     # the one authority for that scale, inverted here rather than transcribed. A rating that is
@@ -651,10 +793,47 @@ def _band_contractor(result: dict[str, Any]) -> tuple:
     mapped = [(_CPARS_BANDS[s], s) for s in seen if s in _CPARS_BANDS]
     unmapped = sorted({s for s in seen if s and s not in _CPARS_BANDS})
     if not mapped:
+        # ================ RUN 102, SECTION 4.4. THE NUMERIC FALLBACK, AND WHERE IT YIELDS.
+        # USED ONLY WHERE NO OWNER SCALE IS PROVIDED. A rating that resolves to one of the five
+        # CPARS words has already banded above and never reaches here, so this cannot displace
+        # the CPARS mapping. It also yields to the contract's own scorecard method: where the
+        # assessment record states a `rating_scale_source` -- the contract's own scorecard --
+        # this generic 0-to-100 ladder is NOT applied, because a contract scorecard is rung 1 of
+        # the precedence order and this is rung 3, and rung 3 may not overwrite rung 1 with a
+        # scale that means something else on that contract's own paper.
+        _numeric = _numeric_scores(rows)
+        _cuts = _BR.entry("contractor_numeric_fallback_bands")
+        _scale_source = result.get("rating_scale_source") or result.get(
+            "factor_definitions_version")
+        if _numeric and _cuts.get("configured") and not result.get("rating_scale_source"):
+            _g, _y, _a = (_cuts["green_at_or_above"], _cuts["yellow_at_or_above"],
+                          _cuts["amber_at_or_above"])
+            _worst_value, _worst_factor = min(_numeric)
+            colour = ("Green" if _worst_value >= _g else "Yellow" if _worst_value >= _y
+                      else "Amber" if _worst_value >= _a else "Red")
+            return (colour,
+                    f"on a numeric contractor performance score out of 100, WORST FACTOR "
+                    f"banding as above: at or above {_g} is Green; at or above {_y} and below "
+                    f"{_g} is Yellow; at or above {_a} and below {_y} is Amber; below {_a} is "
+                    f"Red. Each boundary is INCLUSIVE ON ITS LOWER SIDE. The worst rated factor "
+                    f"was {_worst_factor} at {_worst_value}, and a marginal factor is not "
+                    f"cancelled by a strong one",
+                    "the owner's Run 102 order, section 4.4. OWNER-CONFIGURED, and a FALLBACK "
+                    "only: it is used where no owner scale is provided and it YIELDS to the "
+                    "contract's own scorecard or rating method, which is rung 1 of the "
+                    "precedence order. The five CPARS ratings, where they are present, band "
+                    "through the CPARS mapping and never reach this ladder",
+                    "OWNER-CALIBRATED", None, THRESHOLD_SOURCE_OWNER)
+        _why_not = ""
+        if _numeric and result.get("rating_scale_source"):
+            _why_not = (f" A numeric score is recorded, and the owner's numeric fallback is NOT "
+                        f"applied to it: this contract states its own scorecard method "
+                        f"({_scale_source!r}), which outranks a generic 0-to-100 ladder, and "
+                        f"this platform holds no reading of that scorecard's own bands.")
         return (None, None,
                 f"none of the ratings recorded for this project is one of the five CPARS "
                 f"ratings the mapping is defined over (recorded: {unmapped}), so no band is "
-                f"asserted and none falls to a nearest rating", None)
+                f"asserted and none falls to a nearest rating.{_why_not}", None, None, None)
     worst = max(mapped, key=lambda p: _CPARS_SEVERITY[p[0]])
     return (worst[0],
             "Exceptional and Very Good map to Green; Satisfactory to Yellow; Marginal to Amber; "
@@ -664,9 +843,35 @@ def _band_contractor(result: dict[str, Any]) -> tuple:
             "into four bands is a DESIGN CHOICE, not a published mapping: Exceptional and Very "
             "Good are joined because both stand above the Satisfactory level the guidance "
             "defines as meeting contract requirements",
-            "the owner's Run 101 order, section 3.8: the five ratings are defined in the CPARS "
-            "guidance and referenced by FAR Subpart 42.15",
-            "CODIFIED")
+            "the owner's Run 101 order, section 3.8, unchanged by Run 102: the five ratings are "
+            "defined in the CPARS guidance and referenced by FAR Subpart 42.15",
+            "CODIFIED", None,
+            # RUNG 2. The CPARS/FAR rating scale is a formal external instrument, not this
+            # owner's configured tolerance and not a figure from this project's own contract.
+            THRESHOLD_SOURCE_EXTERNAL)
+
+
+def _numeric_scores(rows: list[dict[str, Any]]) -> list[tuple[float, Any]]:
+    """
+    RUN 102. The factor ratings that are plain numbers on a 0-to-100 scale, with their factors.
+
+    A RATING THAT IS ONE OF THE FIVE CPARS NUMBERS IS NOT ONE OF THESE. `_cpars_word` already
+    resolves 1 through 5 to the five CPARS words, and anything it resolves has banded through
+    the CPARS mapping and never reaches this function. A value outside 0 to 100 is not on the
+    scale this ladder is defined over and is left out rather than clamped.
+    """
+    out: list[tuple[float, Any]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        value = r.get("rating")
+        try:
+            number = float(str(value).strip())
+        except (TypeError, ValueError):
+            continue
+        if 0 <= number <= 100:
+            out.append((number, r.get("factor")))
+    return out
 
 
 _CPARS_SEVERITY: dict[str, int] = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
@@ -761,7 +966,8 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
         # need no column and no migration. Where no matching threshold exists the REASON is
         # stored on the row instead and the row stays bandless, which section 2 makes a correct
         # outcome rather than a failure.
-        _colour, _boundary, _basis, _prov, _bprov = _a6_band(module_id, result, structure)
+        _colour, _boundary, _basis, _prov, _bprov, _tsrc = _a6_band(
+            module_id, result, structure)
         _bprov = _bprov or _prov
         if _colour is not None:
             row["status_color"] = _colour
@@ -774,6 +980,18 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
             row["band_basis_provenance_class"] = _prov
             row["band_boundary_provenance_class"] = _bprov
             row["band_boundary_provenance_words"] = PROVENANCE_WORDS[_bprov]
+            # RUN 102, SECTION 12.5. A BAND STORED WITHOUT ITS THRESHOLD SOURCE FAILS THE RUN,
+            # so this raises rather than defaulting -- the same construction `models.banded`
+            # uses, for the same reason: a default is a place where forgetting is possible.
+            if _tsrc not in THRESHOLD_SOURCES:
+                raise ValueError(f"{module_id}: {_tsrc!r} is not one of the three threshold "
+                                 f"sources; a band may not be stored without one")
+            row["threshold_source"] = _tsrc
+            row["threshold_source_words"] = THRESHOLD_SOURCE_WORDS[_tsrc]
+            row["threshold_precedence_order"] = (
+                "project-specific document, then formal external basis, then the owner's "
+                "configured default. Where none of the three supplies a threshold the figure is "
+                "displayed, no band is asserted, no vote is cast and the reason is stated")
             if _bprov != _prov:
                 row["band_provenance_split_note"] = (
                     "the BASIS -- the measure and the published anchor it is drawn against -- and "
@@ -859,15 +1077,49 @@ def _sentence(module_id: str, result: dict[str, Any]) -> str:
         return ("; ".join(parts)
                 + ". These are three separate measures and are not combined into one index")
     if m == "quality_compliance":
-        r = result.get("quality_compliance_rate")
-        return (f"{result.get('satisfied')} of {result.get('applicable_assessed')} assessed "
-                f"applicable quality requirements are satisfied"
-                if r is not None else str(result.get("reason", "")))
+        # RUN 102. THE FIRST-PASS FIGURE LEADS, because it is what this module now bands on. The
+        # requirement conformance rate follows where it was also measurable, named as the second
+        # figure it is; neither stands in for the other.
+        parts = []
+        if result.get("first_pass_acceptance_rate") is not None:
+            parts.append(
+                f"{result.get('items_passing_first_inspection')} of "
+                f"{result.get('items_inspected')} items inspected were accepted on FIRST "
+                f"inspection, a first-pass acceptance rate of "
+                f"{round(result['first_pass_acceptance_rate'], 4)}"
+                + (f"; {len(result.get('critical_quality_failures') or [])} designated critical "
+                   f"or hold-point item(s) failed"
+                   if result.get("critical_quality_failures") else
+                   "; no designated critical or hold-point item failed"))
+        elif result.get("first_pass_reason"):
+            parts.append(str(result["first_pass_reason"]))
+        if result.get("quality_compliance_rate") is not None:
+            parts.append(
+                f"separately, {result.get('satisfied')} of {result.get('applicable_assessed')} "
+                f"assessed applicable quality requirements are satisfied, which is a different "
+                f"population and is not what the band is drawn over")
+        return ". ".join(parts) if parts else str(result.get("reason", ""))
     if m == "environmental_compliance":
-        r = result.get("environmental_compliance_rate")
-        return (f"{result.get('satisfied')} of {result.get('applicable_assessed')} assessed "
-                f"applicable environmental requirements are satisfied"
-                if r is not None else str(result.get("reason", "")))
+        # RUN 102. THE TIMELY-CLOSURE FIGURE LEADS, for the same reason.
+        parts = []
+        if result.get("timely_closure_rate") is not None:
+            parts.append(
+                f"{result.get('corrective_actions_closed_by_deadline')} of "
+                f"{result.get('corrective_actions_requiring_closure')} corrective actions "
+                f"requiring closure were closed by their required deadline, a timely closure "
+                f"rate of {round(result['timely_closure_rate'], 4)}"
+                + (f"; {len(result.get('corrective_actions_without_a_stated_deadline') or [])} "
+                   f"further action(s) state no deadline and are in neither the numerator nor "
+                   f"the denominator"
+                   if result.get("corrective_actions_without_a_stated_deadline") else ""))
+        elif result.get("timely_closure_reason"):
+            parts.append(str(result["timely_closure_reason"]))
+        if result.get("environmental_compliance_rate") is not None:
+            parts.append(
+                f"separately, {result.get('satisfied')} of {result.get('applicable_assessed')} "
+                f"assessed applicable environmental requirements are satisfied, which is a "
+                f"different population and is not what the band is drawn over")
+        return ". ".join(parts) if parts else str(result.get("reason", ""))
     if m == "contractor_assessment":
         return (f"{result.get('label')} recorded with "
                 f"{len(result.get('factor_ratings', []))} factor rating(s)"

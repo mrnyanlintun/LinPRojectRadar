@@ -1428,7 +1428,13 @@ def milestone_trend(structure: dict) -> dict[str, Any]:
             raise StructureAbsent(
                 "A milestone in the forecast history provided has no identity, so it cannot be "
                 "followed across reporting periods and no trend is reported.")
-        by_id.setdefault(mid, {"original": None, "approved": None, "forecasts": []})
+        by_id.setdefault(mid, {"original": None, "approved": None, "forecasts": [],
+                               "milestone_class": None})
+        # RUN 102, SECTION 3. The milestone's CLASS, where the record states it. The owner's
+        # hard override applies only to a contractual, regulatory, turnover or owner-committed
+        # milestone, so the class must be STATED; it is never inferred from a name.
+        if r.get("milestone_class") is not None:
+            by_id[mid]["milestone_class"] = str(r.get("milestone_class")).strip().lower()
         by_id[mid]["original"] = _f(r, "original_baseline_day", words)
         if r.get("approved_baseline_day") is not None:
             by_id[mid]["approved"] = _f(r, "approved_baseline_day", words)
@@ -1451,7 +1457,16 @@ def milestone_trend(structure: dict) -> dict[str, Any]:
         drifts = [series[i] - series[i - 1] for i in range(1, len(series))]
         direction = ("deteriorating" if variances[-1] > variances[-2]
                      else "improving" if variances[-1] < variances[-2] else "stable")
+        _approved = rec["approved"] if rec["approved"] is not None else rec["original"]
         out.append({"milestone_id": mid, "original_baseline_day": rec["original"],
+                    "milestone_class": rec["milestone_class"],
+                    # RUN 102. The two figures the owner's slip ratio is formed from: the
+                    # CURRENT forecast finish and the APPROVED baseline finish. The approved
+                    # baseline falls back to the original commitment only when no rebaseline was
+                    # approved, which is what "the approved baseline" means in that case.
+                    "current_forecast_day": series[-1],
+                    "approved_or_original_baseline_day": _approved,
+                    "variance_against_approved_days": series[-1] - _approved,
                     "approved_baseline_day": rec["approved"],
                     "forecast_days": series, "variance_days": variances,
                     "period_drift_days": drifts,
@@ -1461,6 +1476,16 @@ def milestone_trend(structure: dict) -> dict[str, Any]:
                     and rec["approved"] != rec["original"]})
     return {"milestones": out, "milestone_count": len(out),
             "worst_variance_days": max(m["current_variance_days"] for m in out),
+            "worst_variance_against_approved_days": max(
+                m["variance_against_approved_days"] for m in out),
+            # RUN 102. The denominator of the owner's slip ratio. IT IS THE RECORD'S OWN FIGURE
+            # AND IS NEVER DERIVED: remaining planned duration is measured from the data date to
+            # the planned finish, and this platform reads no clock and holds no data date on
+            # this structure. Where the record does not state it the ratio is not formed.
+            "remaining_planned_duration_days": (
+                float(structure["remaining_planned_duration_days"])
+                if isinstance(structure.get("remaining_planned_duration_days"), (int, float))
+                else None),
             "deteriorating_count": sum(1 for m in out if m["direction"] == "deteriorating")}
 
 
@@ -1484,6 +1509,7 @@ def look_ahead_ready_fraction(structure: dict) -> dict[str, Any]:
     seen = set()
     constrained = 0
     categories: dict[str, int] = {}
+    blocked_critical: list[dict] = []
     for r in rows:
         aid = str(r.get("activity_id") or "")
         if not aid:
@@ -1503,6 +1529,17 @@ def look_ahead_ready_fraction(structure: dict) -> dict[str, Any]:
                 "reported for the window.")
         if status == "OPEN":
             constrained += 1
+            # RUN 102, SECTION 3. The owner's hard override: a critical-path or zero/negative-
+            # float activity blocked by an unresolved constraint is Red. Both facts must be
+            # STATED by the look-ahead row -- `on_critical_path`, or a `total_float` at or below
+            # zero -- and neither is inferred from a category or a name.
+            _tf = r.get("total_float")
+            if bool(r.get("on_critical_path")) or (
+                    isinstance(_tf, (int, float)) and _tf <= 0):
+                blocked_critical.append({"activity_id": aid,
+                                         "on_critical_path": bool(r.get("on_critical_path")),
+                                         "total_float": _tf,
+                                         "constraint_category": r.get("constraint_category")})
             category = str(r.get("constraint_category") or "")
             if not category:
                 raise StructureAbsent(
@@ -1517,6 +1554,7 @@ def look_ahead_ready_fraction(structure: dict) -> dict[str, Any]:
             "nothing whose readiness can be measured.")
     return {"ready_fraction": (planned - constrained) / planned, "planned": planned,
             "constrained": constrained, "constraint_categories": categories,
+            "blocked_critical_activities": blocked_critical,
             "horizon": str(structure.get("horizon"))}
 
 
@@ -1556,10 +1594,36 @@ def resource_loading(structure: dict) -> dict[str, Any]:
         out.append({"time_bucket": bucket, "resource_type": resource,
                     "demand": demand, "available_capacity": capacity,
                     "load_ratio": demand / capacity,
+                    # RUN 102, SECTION 3. Whether the work this bucket loads sits on a zero or
+                    # negative float path. STATED BY THE ROW, never inferred: the resource
+                    # profile and the activity network are different structures and this
+                    # function holds only one of them.
+                    "affects_zero_or_negative_float": bool(
+                        r.get("affects_zero_or_negative_float")),
                     "deployed": num(r.get("deployed"), None)})
     peak = max(out, key=lambda r: r["load_ratio"])
+    # RUN 102, SECTION 3, AND SECTION 12.8. UNLIKE RESOURCES ARE NEVER AGGREGATED INTO ONE
+    # RATIO. The peak is the worst SINGLE bucket, and a bucket is one resource type in one
+    # period, in that type's own unit. Nothing sums labour hours to equipment hours and no
+    # conversion between them is invented; the peak travels with its resource type named so a
+    # reader knows which unit the ratio is in. A per-type peak is reported beside it.
+    per_type: dict[str, dict] = {}
+    for r in out:
+        best = per_type.get(r["resource_type"])
+        if best is None or r["load_ratio"] > best["load_ratio"]:
+            per_type[r["resource_type"]] = r
     return {"buckets": out, "bucket_count": len(out), "peak": peak,
             "peak_load_ratio": peak["load_ratio"],
+            "peak_resource_type": peak["resource_type"],
+            "peak_by_resource_type": {k: per_type[k] for k in sorted(per_type)},
+            "resource_types": sorted(per_type),
+            "no_conversion_between_unlike_resources": (
+                "each ratio is formed within one resource type in that type's own unit. Unlike "
+                "resources are never summed into one ratio, and no conversion between them is "
+                "supplied or invented"),
+            "overloaded_zero_float_buckets": [
+                r for r in out
+                if r["load_ratio"] > 1.0 and r["affects_zero_or_negative_float"]],
             "over_capacity_buckets": sum(1 for r in out if r["load_ratio"] > 1.0)}
 
 

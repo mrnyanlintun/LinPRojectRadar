@@ -83,7 +83,14 @@ ALL_FIELDS: tuple[str, ...] = (
     "critical_findings", "data_date", "deficiency_count", "delayed", "document_date",
     "document_risk_score", "earned_value", "environmental_issues_discussed", "float_remaining",
     "incident_rate", "indirect_cost_actual", "indirect_cost_plan", "items_failed",
-    "items_inspected", "long_lead_items_total", "lookahead_weeks", "material_cost_baseline",
+    "items_inspected",
+    # RUN 102, SECTION 4.1. The two figures the owner's first-pass acceptance measure is defined
+    # on, and the critical-item table its hard override reads. `items_passed` was ALREADY here
+    # and is NOT what this measure needs: it does not say whether an item passed on FIRST
+    # inspection or on a re-inspection after rework, and those are different quantities. So a
+    # field is added that says so on its face rather than reinterpreting one that does not.
+    "items_passing_first_inspection", "critical_quality_failures_json",
+    "long_lead_items_total", "lookahead_weeks", "material_cost_baseline",
     "material_cost_current", "ncr_closed", "ncr_issued", "ncr_open", "on_time_deliveries",
     "original_contingency", "original_contract_sum", "osha_recordable_incidents",
     "outstanding_action_items", "overall_rating", "percent_complete_verified", "period_to_date",
@@ -279,6 +286,8 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     # states less than a readable table, no register is assembled and A6.1 goes on abstaining.
     "inspection_report": [
         "document_risk_score", "document_date", "items_inspected", "items_passed", "items_failed",
+        # RUN 102, SECTION 4.1. See ALL_FIELDS for why `items_passed` is not reused for this.
+        "items_passing_first_inspection", "critical_quality_failures_json",
         "deficiency_count", "critical_deficiency_count",
         "quality_requirements_json", "quality_register_id", "quality_register_period",
     ],
@@ -316,6 +325,13 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "permit_conditions_total", "violations", "compliance_rate", "report_date",
         "environmental_jurisdiction", "permitting_authority", "permit_id", "permit_version",
         "permit_site_id", "operator_status", "environmental_requirements_json",
+        # RUN 102, SECTION 4.3. THE CORRECTIVE-ACTION REGISTER, ASKED FOR AS A REGISTER.
+        # The owner's measure is corrective actions closed BY THEIR REQUIRED DEADLINE over
+        # corrective actions requiring closure. `environmental_requirements_json` carries permit
+        # CONDITIONS and their closure WORD; it carries no deadline and no closure date, so it
+        # cannot answer a timeliness question. A separate table is asked for, and it must state
+        # each action, its required deadline, its closure date and its severity.
+        "environmental_corrective_actions_json",
     ],
     "ncr_log": ["ncr_issued", "ncr_closed", "ncr_open", "ncr_overdue", "report_period"],
     "subcontractor_report": [

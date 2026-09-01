@@ -55,6 +55,7 @@ from . import band_reference as _BR
 from .models import (
     ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT, ABSTAIN_STRUCTURE_ABSENT,
     PROVENANCE_CODIFIED, PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
+    THRESHOLD_SOURCE_OWNER, THRESHOLD_SOURCE_PROJECT,
     band_abstained, banded, calibration_pending, check_inputs, insufficient, refuse,
 )
 from .models_ext import _derived, _js_str
@@ -149,8 +150,18 @@ def _rfi_response_period(si: dict) -> tuple:
 
 
 def _rfi_band(overdue, open_count, si: dict) -> tuple:
-    """The band on overdue, or a reason. Reads no dates and computes no elapsed time."""
+    """The band on overdue, or a reason. Reads no dates and computes no elapsed time.
+
+    RUN 102, SECTION 6. THE PRECEDENCE ORDER IS GENUINELY EXERCISED HERE and is not a label:
+    when the project's own uploaded contract states its response period the threshold source is
+    `project_specific` -- rung 1 -- and when it does not, the configured stand-in is the owner's
+    default -- rung 3. The sixth element of the returned tuple carries that.
+    """
     period, source = _rfi_response_period(si)
+    _tsrc = (THRESHOLD_SOURCE_PROJECT
+             if isinstance(si.get("rfiResponsePeriodBusinessDays"), (int, float))
+             and si.get("rfiResponsePeriodBusinessDays") > 0
+             else THRESHOLD_SOURCE_OWNER)
     basis = (
         f"the contract's own response period of {period} business days -- an RFI unanswered "
         f"beyond it is overdue by the contract's definition, so the basis is the contract and "
@@ -177,20 +188,21 @@ def _rfi_band(overdue, open_count, si: dict) -> tuple:
                 "is not reported for this project. The issue rate and the open count are "
                 "displayed and no band is drawn from them: the published per-million-dollar "
                 "benchmark measures requests against contract value, which is a different "
-                "quantity, and it is not applied here", None, None)
+                "quantity, and it is not applied here", None, None, None)
     if not isinstance(open_count, (int, float)) or open_count <= 0:
         if overdue > 0:
             return ("Red", _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_CODIFIED,
-                PROVENANCE_OWNER_CALIBRATED)
+                PROVENANCE_OWNER_CALIBRATED, _tsrc)
         return (None, None,
                 "the request log reports no open requests, so an overdue proportion has no "
                 "denominator. With nothing open there is nothing that can be overdue, and that "
-                "is reported rather than banded as though it were compliance", None, None)
+                "is reported rather than banded as though it were compliance", None, None,
+                None)
     ratio = overdue / open_count
     colour = ("Green" if ratio == 0 else "Yellow" if ratio <= 0.10
               else "Amber" if ratio <= 0.25 else "Red")
     return (colour, _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_CODIFIED,
-            PROVENANCE_OWNER_CALIBRATED)
+            PROVENANCE_OWNER_CALIBRATED, _tsrc)
 
 
 def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
@@ -216,7 +228,7 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
             return insufficient("RFI_Velocity", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
         per_week = reading["rate_per_day"] * 7.0
         ratio = reading["overdue_ratio"]
-        _colour, _boundary, _basis, _prov, _bprov = _rfi_band(
+        _colour, _boundary, _basis, _prov, _bprov, _tsrc = _rfi_band(
             reading["overdue"], reading["open_relevant"], si)
         evidence = (
             f"{_js_str(reading['events_counted'])} requests for information over "
@@ -252,7 +264,8 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         if _colour is None:
             return band_abstained("RFI_Velocity", evidence, reason=_basis, **_figs)
         return banded("RFI_Velocity", evidence, status_color=_colour, boundary=_boundary,
-                      basis=_basis, provenance=_prov, boundary_provenance=_bprov, **_figs)
+                      basis=_basis, provenance=_prov, boundary_provenance=_bprov,
+                      threshold_source=_tsrc, **_figs)
     count = si.get("rfiCount") if si.get("rfiCount") is not None else si.get("rfiNumber")
     days = si.get("rfiPeriodDays")
     if count is None:
@@ -294,7 +307,8 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     overdue_ratio = None
     if si.get("rfiOverdue") is not None and isinstance(_open, (int, float)) and _open > 0:
         overdue_ratio = si["rfiOverdue"] / _open
-    _colour, _boundary, _basis, _prov, _bprov = _rfi_band(si.get("rfiOverdue"), _open, si)
+    _colour, _boundary, _basis, _prov, _bprov, _tsrc = _rfi_band(
+        si.get("rfiOverdue"), _open, si)
     avg_response = (si.get("rfiAvgResponseDays") if si.get("rfiAvgResponseDays") is not None
                     else si.get("rfiResponseTimeDays"))
     evidence = (f"{_js_str(count)} RFIs over {_js_str(days)} days "
@@ -329,7 +343,8 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     if _colour is None:
         return band_abstained("RFI_Velocity", evidence, reason=_basis, **_figs)
     return banded("RFI_Velocity", evidence, status_color=_colour, boundary=_boundary,
-                  basis=_basis, provenance=_prov, boundary_provenance=_bprov, **_figs)
+                  basis=_basis, provenance=_prov, boundary_provenance=_bprov,
+                  threshold_source=_tsrc, **_figs)
 
 
 # ------------------------------------------------------------ A4.3 Submittal Rejection Rate
@@ -601,6 +616,10 @@ def run_co_frequency(si: dict, rand: Callable[[], float], period_cutoff) -> dict
             "at half the reserve. No standards clause fixes 5, 10 or 20 per cent. THE SCHEDULE "
             "LADDER has no published basis at all and is the owner's stated threshold."),
         provenance=PROVENANCE_CONVENTION,
+        # RUN 102, SECTION 6, RUNG 3. The contingency-reserve fraction the cost ladder is drawn
+        # from is a convention the owner configured; no project document and no published
+        # instrument fixes these boundaries.
+        threshold_source=THRESHOLD_SOURCE_OWNER,
         boundary_provenance=(PROVENANCE_OWNER_CALIBRATED if _sched.get("band") == _worst
                              else PROVENANCE_CONVENTION),
         cost_impact_band=_cost_band,

@@ -45,7 +45,20 @@ _HEADINGS: dict[str, tuple[str, ...]] = {
         "constraint category", "constraint type", "constraint kind", "category of constraint",
         "type of constraint",
     ),
+    # RUN 102, SECTION 3. The two facts the owner's Look-Ahead hard override turns on. They are
+    # READ FROM THE LOOK-AHEAD ROW and are never inferred: the look-ahead inventory and the
+    # activity network are different structures and neither is derived from the other, so a row
+    # that does not print its criticality or its float simply cannot fire the override.
+    "on_critical_path": (
+        "critical path", "on critical path", "critical", "is critical", "cp",
+    ),
+    "total_float": (
+        "total float", "float", "float days", "tf", "slack", "total slack",
+    ),
 }
+
+#: Words a look-ahead row prints to say an activity is on the critical path. Read, never guessed.
+_CRITICAL_WORDS = frozenset({"yes", "y", "true", "critical", "on critical path", "cp", "1"})
 
 
 def _norm(heading: Any) -> str:
@@ -100,6 +113,20 @@ def read_lookahead_activities(raw: Any) -> list[dict]:
         description = _text(_pick(row, "description"))
         if description is not None:
             entry["description"] = description
+        # RUN 102. The criticality and the float, where the row printed them.
+        crit = _text(_pick(row, "on_critical_path"))
+        if crit is not None and " ".join(crit.lower().split()) in _CRITICAL_WORDS:
+            entry["on_critical_path"] = True
+        raw_float = _pick(row, "total_float")
+        if isinstance(raw_float, (int, float)) and not isinstance(raw_float, bool):
+            entry["total_float"] = float(raw_float)
+        else:
+            _t = _text(raw_float)
+            if _t is not None:
+                try:
+                    entry["total_float"] = float(_t)
+                except ValueError:
+                    pass
         if entry:
             out.append(entry)
     return out
