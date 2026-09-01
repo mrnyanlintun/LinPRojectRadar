@@ -1,0 +1,54 @@
+{
+  "_note": "CONFIGURED REFERENCE DATA, NOT CODE. Run 101 section 12.3 fails the run for storing a revisable published industry figure as a literal in code, because it is revised annually and a literal cannot carry the year it belongs to. Every entry here carries its value, its unit, the year it describes and the source as the owner's Run 101 order states it. Nothing in this file is a boundary the platform invented.",
+  "construction_industry_recordable_rate": {
+    "value": null,
+    "unit": "recordable cases per 200,000 employee hours",
+    "year": null,
+    "source": null,
+    "configured": false,
+    "why_absent": "No published construction industry average rate was supplied with the Run 101 order, and the accompanying research report the order names was not present. The figure is therefore NOT configured, and A6.2's frequency rate is reported without a band rather than banded against a number nobody supplied. Supply value, unit, year and source together and the frequency rate bands against them; supply none of them and it abstains."
+  },
+  "safety_exposure_floor_hours": {
+    "value": 200000,
+    "unit": "employee hours worked in the reporting period",
+    "source": "the owner's Run 101 order, section 3.6: 'Below roughly 200,000 hours a rate swings entirely on whether one event happened. State a floor in the specification and abstain beneath it.' 200,000 hours is also the OSHA normalising base itself, so beneath it the rate is an extrapolation from less than one base period.",
+    "provenance_class": "OWNER-CALIBRATED",
+    "configured": true
+  },
+  "osha_severity_conventions": {
+    "days_lost_cap_per_case": 180,
+    "fatality_or_ptd_day_charge": 6000,
+    "source": "the owner's Run 101 order, section 3.6: the OSHA 180-day cap per case and the standard 6,000-day charge for a fatality or permanent total disability. Both conventions are in force.",
+    "provenance_class": "CONVENTION",
+    "configured": true
+  },
+  "ilo_rate_base_hours": {
+    "value": 1000000,
+    "unit": "employee hours worked",
+    "source": "the owner's Run 101 order, section 3.6: international practice quotes rates on a 1,000,000-hour base, which differs from the OSHA 200,000-hour base by a factor of five.",
+    "provenance_class": "CONVENTION",
+    "configured": true
+  },
+  "cgp_corrective_action_deadline_days": {
+    "value": 7,
+    "unit": "calendar days from discovery",
+    "source": "the owner's Run 101 order, section 3.7: the EPA Construction General Permit's corrective-action deadline, generally before the next storm event and no later than seven calendar days from discovery.",
+    "provenance_class": "CODIFIED",
+    "configured": true
+  },
+  "rfi_contract_response_period_business_days": {
+    "value": 7,
+    "unit": "business days, excluding weekends and holidays",
+    "source": "the owner's Run 101 order, section 4: the contract's own response period. A project whose contract states a different period overrides this, and the source is then that document.",
+    "provenance_class": "CODIFIED",
+    "configured": true,
+    "note": "This is a DEFAULT standing in for a contract the platform has not read. Where a project supplies its own response period the project's figure governs."
+  },
+  "change_order_contingency_reserve_fraction": {
+    "value": 0.20,
+    "unit": "fraction of original contract value",
+    "source": "the owner's Run 101 order, section 4: a contingency reserve is conventionally around 20 per cent of contract value, so change exposure beyond 20 per cent has passed the money set aside to absorb it. Amber begins at half the reserve.",
+    "provenance_class": "CONVENTION",
+    "configured": true
+  }
+}

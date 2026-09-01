@@ -1026,6 +1026,93 @@ def calibration_pending(method_class: str, message: str, **fields: Any) -> dict[
     return out
 
 
+# =============================================================================================
+# RUN 101 -- THE BAND, ITS BOUNDARY, AND WHERE THE BOUNDARY CAME FROM
+#
+# THE OWNER'S RULING, RUN 101 SECTION 2. A module may assert a band only when a threshold exists
+# whose QUANTITY, DENOMINATOR, TIME BASIS and DIRECTION OF FAVOURABILITY match what the module
+# actually computes. Otherwise it computes, displays, asserts no band, casts no vote.
+#
+# AND WHERE A BAND IS ASSERTED, ITS SOURCE TRAVELS WITH IT, PERMANENTLY AND IN THE STORED ROW.
+# Section 3: "A threshold with no recorded basis is the defect this platform has spent forty runs
+# removing -- so the source travels with the number." `computed_results.module_results` is a JSON
+# blob (`research_models.py`), so these keys need no column and no migration.
+#
+# THE THREE PROVENANCE CLASSES ARE THE OWNER'S, VERBATIM FROM SECTION 3.
+# =============================================================================================
+
+#: The threshold rests on a standard, regulation, or agency requirement.
+PROVENANCE_CODIFIED: str = "CODIFIED"
+#: Widely used in practice, no standards clause fixing it.
+PROVENANCE_CONVENTION: str = "CONVENTION"
+#: No published basis found; the number is the owner's stated decision.
+PROVENANCE_OWNER_CALIBRATED: str = "OWNER-CALIBRATED"
+
+#: The plain words the decision brief prints for each class (Run 101 section 6.3). The brief
+#: composes from THIS, not from a model and not from a sentence written at the call site, so the
+#: same class always reads the same way wherever it is printed.
+PROVENANCE_WORDS: dict[str, str] = {
+    PROVENANCE_CODIFIED: "a standard, regulation or agency requirement",
+    PROVENANCE_CONVENTION: "widely used convention",
+    PROVENANCE_OWNER_CALIBRATED: "no published basis; the owner's stated threshold",
+}
+
+BAND_PROVENANCE_CLASSES: frozenset[str] = frozenset(PROVENANCE_WORDS)
+
+
+def banded(method_class: str, message: str, *, status_color: str, boundary: str,
+           basis: str, provenance: str, **fields: Any) -> dict[str, Any]:
+    """
+    A result that DOES assert a band, carrying the boundary it crossed and that boundary's basis.
+
+    `boundary` is what the figure was measured against, in words, including WHICH SIDE each
+    boundary is inclusive on (section 3, boundary rule 1). `basis` is the source, as the owner's
+    order states it. `provenance` is one of the three classes above.
+
+    Nothing here decides a band: the caller has already decided it from its own arithmetic. This
+    function exists so that a band and its provenance cannot be stored apart from one another --
+    it raises rather than emitting a colour with no recorded basis, which is exactly the defect
+    section 12.2 fails the run for.
+    """
+    if provenance not in BAND_PROVENANCE_CLASSES:
+        raise ValueError(f"{method_class}: {provenance!r} is not one of the three provenance "
+                         f"classes; a band may not be stored without one")
+    if not str(basis).strip() or not str(boundary).strip():
+        raise ValueError(f"{method_class}: a band may not be stored without its boundary and "
+                         f"its basis")
+    out: dict[str, Any] = {
+        "method_class": method_class,
+        "status_color": status_color,
+        "band_asserted": True,
+        "band_boundary": boundary,
+        "band_basis": basis,
+        "band_provenance_class": provenance,
+        "band_provenance_words": PROVENANCE_WORDS[provenance],
+        "evidence_metric": message,
+    }
+    out.update(fields)
+    return out
+
+
+def band_abstained(method_class: str, message: str, *, reason: str,
+                   **fields: Any) -> dict[str, Any]:
+    """
+    A COMPUTED figure with NO band, and the reason stated on the row.
+
+    Section 2: a module with no matching threshold "computes and displays its figure, asserts no
+    band, casts no vote, and takes no part in category posture ... with the reason stated on the
+    module and carried into the decision brief's limitations". Section 3 boundary rule 2: a
+    figure outside every band abstains WITH A STATED REASON and does not fall to a nearest band.
+
+    This is `calibration_pending` with the reason made specific to this module rather than the
+    one shared sentence, and it routes to `run["computed"]` by the same `calibration_pending`
+    flag `registry.record` already reads.
+    """
+    out = calibration_pending(method_class, message, **fields)
+    out["band_withheld_reason"] = reason
+    return out
+
+
 def check_inputs(si: dict, required: tuple[str, ...]) -> bool:
     return all(si.get(k) is not None for k in required)
 

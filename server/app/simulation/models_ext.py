@@ -38,7 +38,8 @@ from .canonical_v3 import (
 from .models import (
     ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
     ABSTAIN_NOT_APPLICABLE, ABSTAIN_STRUCTURE_ABSENT,
-    calibration_pending, check_inputs, eligible, insufficient, refuse,
+    PROVENANCE_CODIFIED, PROVENANCE_CONVENTION,
+    band_abstained, banded, calibration_pending, check_inputs, eligible, insufficient, refuse,
 )
 from .rng import clamp, js_round, num, round1, round2
 
@@ -564,12 +565,11 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
                   else f" at {int(js_round(reading['progress_fraction'] * 100))} per cent "
                        f"complete, a burn against progress of {_js_str(round2(burn))}")
     is_derived = _derived(si, "originalContingency", "remainingContingency")
-    return calibration_pending(
-        "Contingency_Burn_Rate",
-        f"Contingency is {int(js_round(reading['consumed_fraction'] * 100))} per cent "
-        f"consumed{burn_words}"
-        + (" (estimated; upload Pay Application contingency detail for precise figures)"
-           if is_derived else ""),
+    message = (f"Contingency is {int(js_round(reading['consumed_fraction'] * 100))} per cent "
+               f"consumed{burn_words}"
+               + (" (estimated; upload Pay Application contingency detail for precise figures)"
+                  if is_derived else ""))
+    figures = dict(
         consumed_fraction=round2(reading["consumed_fraction"]),
         burn_rate_pct=int(js_round(reading["consumed_fraction"] * 100)),
         remaining_pct=int(js_round((1 - reading["consumed_fraction"]) * 100)),
@@ -577,6 +577,62 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
         original_contingency=reading["original_contingency"],
         remaining_contingency=reading["remaining_contingency"],
     )
+    # ------------------------------------------------- RUN 101, THE BAND ON THE PROGRESS-BURN
+    # THE OWNER'S ORDER, SECTION 3.1: Green at or below 1.0; Yellow above 1.0 to 1.2; Amber above
+    # 1.2 to 1.5; Red above 1.5, OR contingency exhausted before substantial completion.
+    # CONVENTION. Boundary rule 1: every boundary is INCLUSIVE ON ITS UPPER SIDE and stated.
+    #
+    # THE BAND IS ON THE PROGRESS-NORMALISED BURN AND ON NOTHING ELSE. The consumed fraction on
+    # its own is not the quantity the ladder is drawn over -- forty per cent consumed is healthy
+    # at half-time and alarming at ten per cent complete -- so where no progress is reported the
+    # figures are published and NO band is asserted, with the reason on the row. That is
+    # section 2's rule, not a failure to band.
+    #
+    # THE EXHAUSTION ARM, AND ITS ONE HONEST LIMITATION, STATED ON THE ROW. The order's Red arm
+    # says "contingency exhausted before substantial completion". SUBSTANTIAL COMPLETION IS NOT A
+    # FIGURE THIS PLATFORM HOLDS: no module and no extraction contract carries the contract
+    # milestone or its date. Rather than substitute a related quantity silently -- which is the
+    # exact defect section 2 forbids -- the arm is applied against the REPORTED PERCENT COMPLETE
+    # being below one hundred, and the boundary text says so in those words wherever it is
+    # printed. Where no progress is reported the arm cannot fire and does not.
+    exhausted = (reading["remaining_contingency"] is not None
+                 and reading["remaining_contingency"] <= 0
+                 and reading.get("progress_fraction") is not None
+                 and reading.get("progress_fraction") < 1.0)
+    if burn is None and not exhausted:
+        return band_abstained(
+            "Contingency_Burn_Rate", message,
+            reason=("no percent complete is reported for this period, so the contingency "
+                    "consumed cannot be set against the work done; the share consumed on its "
+                    "own is not the quantity the threshold is drawn over, so no band is "
+                    "asserted and none is inferred from the share alone"),
+            **figures)
+    if exhausted:
+        color = "Red"
+    elif burn <= 1.0:
+        color = "Green"
+    elif burn <= 1.2:
+        color = "Yellow"
+    elif burn <= 1.5:
+        color = "Amber"
+    else:
+        color = "Red"
+    return banded(
+        "Contingency_Burn_Rate", message,
+        status_color=color,
+        boundary=(
+            "burn against progress at or below 1.0 is Green; above 1.0 and at or below 1.2 is "
+            "Yellow; above 1.2 and at or below 1.5 is Amber; above 1.5 is Red. Red also applies "
+            "where the contingency is exhausted -- nothing remaining -- while the reported "
+            "percent complete is still below one hundred; substantial completion as a contract "
+            "milestone is not a figure this platform holds, and the reported percent complete "
+            "stands in its place in this arm and only in this arm"),
+        basis=("the owner's Run 101 order, section 3.1, on the owner's stated authority: a "
+               "contingency drawdown that outruns progress is the condition that ends with no "
+               "reserve and work remaining. No standards clause fixes 1.0, 1.2 or 1.5"),
+        provenance=PROVENANCE_CONVENTION,
+        band_exhaustion_arm_fired=bool(exhausted),
+        **figures)
 
 
 # ------------------------------------------------------------ A3.3 Labor Productivity Index
@@ -607,11 +663,33 @@ def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -
         reading = labor_productivity(structure)
     except StructureAbsent as absent:
         return insufficient("Labor_Productivity", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
+    # ------------------------------------------------------ RUN 101, THE BAND ON THE INDEX
+    # THE OWNER'S ORDER, SECTION 3.2: Green at or above 0.95; Yellow at or above 0.90 and below
+    # 0.95; Amber at or above 0.85 and below 0.90; Red below 0.85. CONVENTION. The direction of
+    # favourability is UPWARD -- more output for each hour is better -- and the boundaries are
+    # INCLUSIVE ON THEIR LOWER SIDE, which is what makes 0.95 Green and 0.9499 Yellow.
+    #
+    # THE QUANTITY MATCHES. The order's words are "earned hours over expended hours"; what this
+    # module computes is earned output per actual hour over planned output per planned hour,
+    # which is the same ratio expressed on an installed-quantity basis rather than an hours
+    # basis -- the numerator and denominator are both hours-normalised production, the time
+    # basis is the reporting period for both, and one is favourable upward. Section 2 asks that
+    # the quantity, denominator, time basis and direction match, and here they do.
+    _pi = reading["productivity_index"]
+    _color = ("Green" if _pi >= 0.95 else "Yellow" if _pi >= 0.90
+              else "Amber" if _pi >= 0.85 else "Red")
+    return banded(
         "Labor_Productivity",
         f"{_js_str(round2(reading['actual_productivity']))} {reading['output_unit']} an hour "
         f"installed against {_js_str(round2(reading['planned_productivity']))} planned, a "
         f"productivity index of {_js_str(round2(reading['productivity_index']))}",
+        status_color=_color,
+        boundary=("a productivity index at or above 0.95 is Green; at or above 0.90 and below "
+                  "0.95 is Yellow; at or above 0.85 and below 0.90 is Amber; below 0.85 is Red"),
+        basis=("the owner's Run 101 order, section 3.2, on the owner's stated authority. No "
+               "standards clause fixes 0.95, 0.90 or 0.85; they are the boundaries widely used "
+               "in construction labour productivity reporting"),
+        provenance=PROVENANCE_CONVENTION,
         productivity_index=round2(reading["productivity_index"]),
         actual_productivity=reading["actual_productivity"],
         planned_productivity=reading["planned_productivity"],
@@ -717,12 +795,25 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
         reading = overhead_absorption(structure)
     except StructureAbsent as absent:
         return insufficient("Overhead_Absorption", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
+    # ------------------------------------------ RUN 101, SECTION 3.3: NO BAND, AND WHY NOT
+    # THE OWNER'S RULING, VERBATIM IN EFFECT: "No published construction-controls basis exists,
+    # and the owner has ruled against inventing one from audit-materiality convention. The module
+    # computes and displays its variance and trend, asserts no band, and casts no vote."
+    #
+    # NO APPROVED THRESHOLD BASIS IS CONFIGURED FOR THIS QUANTITY. A plus-or-minus five, ten or
+    # fifteen per cent ladder is expressly forbidden here, and section 12.1e fails the run for
+    # attaching one. The figures below are the whole reading.
+    return band_abstained(
         "Overhead_Absorption",
         f"Overhead is being absorbed at {_js_str(round2(reading['actual_rate']))} for each unit "
         f"of {reading['allocation_base']} against {_js_str(round2(reading['planned_rate']))} "
         f"planned, a rate variance of "
         f"{_js_str(round1(reading['relative_rate_variance'] * 100))} per cent",
+        reason=("no approved threshold basis is configured for an overhead rate variance: no "
+                "published construction-controls source states a control limit for this "
+                "quantity, and the owner has ruled against drawing one from audit-materiality "
+                "convention, which measures a different thing. The variance and its direction "
+                "are reported and no colour is offered with them"),
         planned_rate=reading["planned_rate"],
         actual_rate=reading["actual_rate"],
         rate_variance=reading["rate_variance"],
@@ -765,22 +856,80 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
         reading = cost_risk_simulation(structure, rand, trials=20000)
     except StructureAbsent as absent:
         return insufficient("Cost_Risk_Analysis", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
-        "Cost_Risk_Analysis",
-        f"Simulating {reading['risk_event_count']} risk event"
-        f"{'' if reading['risk_event_count'] == 1 else 's'} against a base cost of "
-        f"{_money(reading['base_cost'])} over {reading['trials']} trials puts the eightieth "
-        f"percentile total cost at {_money(reading['p80_total_cost'])}",
-        p80_total_cost=reading["p80_total_cost"],
-        p50_total_cost=reading["p50_total_cost"],
-        mean_total_cost=reading["mean_total_cost"],
-        base_cost=reading["base_cost"],
-        risk_event_count=reading["risk_event_count"],
-        trials=reading["trials"],
+    # ---------------------------------- RUN 101, THE BAND ON THE GAP BETWEEN P80 AND THE BAC
+    # THE OWNER'S ORDER, SECTION 3.4. The banded quantity is the GAP BETWEEN THE P80 OUTCOME AND
+    # THE BUDGET AT COMPLETION, so the budget at completion is now read here. It was not read
+    # before, and a simulated distribution with nothing to compare it against carries no band:
+    # a P80 of nine million is comfortable against a ten-million budget and ruinous against
+    # eight. CODIFIED -- the owner's order states the source as DOE Order 413.3B's P80 baseline
+    # requirement and the GAO Cost Estimating and Assessment Guide's best practice of funding to
+    # a stated confidence level.
+    #
+    # THE ONE PLACE THE ORDER'S FOUR ARMS OVERLAP, AND HOW IT IS RESOLVED WITHOUT A NEW NUMBER.
+    # The order gives Yellow as "BAC sits between P50 and P80" and Amber as "BAC is near or just
+    # above P50" -- two descriptions of the same interval. Splitting it needs a boundary the
+    # order does not state. RATHER THAN IMPORT A PERCENTAGE FROM OUTSIDE, the interval is divided
+    # at its own MIDPOINT, which is the only division expressible in the two quantiles the order
+    # itself names and introduces no figure that is not already in the ladder. The boundary text
+    # says this in words wherever it is printed, and the specification records it as a derivation
+    # rather than as a published threshold.
+    _p80 = reading["p80_total_cost"]
+    _p50 = reading["p50_total_cost"]
+    _bac = num(si.get("bac"), None)
+    _message = (f"Simulating {reading['risk_event_count']} risk event"
+                f"{'' if reading['risk_event_count'] == 1 else 's'} against a base cost of "
+                f"{_money(reading['base_cost'])} over {reading['trials']} trials puts the "
+                f"eightieth percentile total cost at {_money(_p80)}")
+    _figs = dict(
+        p80_total_cost=_p80, p50_total_cost=_p50,
+        mean_total_cost=reading["mean_total_cost"], base_cost=reading["base_cost"],
+        risk_event_count=reading["risk_event_count"], trials=reading["trials"],
         dependence_policy=reading["dependence_policy"],
         quantile_convention="right-continuous empirical inverse",
         canonical_structure="cost_risk_model",
+        budget_at_completion=_bac,
+        p80_minus_bac=(None if _bac is None else _p80 - _bac),
     )
+    if _bac is None or not _bac > 0 or _p80 is None or _p50 is None or _p80 < _p50:
+        return band_abstained(
+            "Cost_Risk_Analysis", _message,
+            reason=("the banded quantity is the gap between the eightieth-percentile outcome "
+                    "and the budget at completion, and no budget at completion above zero is "
+                    "reported for this project, so there is nothing to set the simulated "
+                    "distribution against; the percentiles are reported and no band is asserted"
+                    if _bac is None or not _bac > 0 else
+                    "the simulated distribution did not yield a median at or below its "
+                    "eightieth percentile, so the ladder the band is drawn on does not hold "
+                    "and no band is asserted"),
+            **_figs)
+    _mid = _p50 + (_p80 - _p50) / 2.0
+    if _bac >= _p80:
+        _color = "Green"
+    elif _bac >= _mid:
+        _color = "Yellow"
+    elif _bac >= _p50:
+        _color = "Amber"
+    else:
+        _color = "Red"
+    _message += (f", against a budget at completion of {_money(_bac)}"
+                 f" and a median of {_money(_p50)}")
+    return banded(
+        "Cost_Risk_Analysis", _message,
+        status_color=_color,
+        boundary=("a budget at completion at or above the eightieth-percentile total cost is "
+                  "Green; at or above the midpoint of the median-to-P80 interval and below P80 "
+                  "is Yellow; at or above the median and below that midpoint is Amber; below "
+                  "the median is Red. The order states Amber as 'near or just above' the "
+                  "median and gives no figure for it; the interval is divided at its own "
+                  "midpoint so that no number outside the two quantiles is introduced"),
+        basis=("the owner's Run 101 order, section 3.4, which states the source as DOE Order "
+               "413.3B's P80 baseline requirement and the GAO Cost Estimating and Assessment "
+               "Guide's best practice of funding to a stated confidence level. The Yellow/Amber "
+               "division inside the median-to-P80 interval is derived from those two quantiles "
+               "and is not itself published"),
+        provenance=PROVENANCE_CODIFIED,
+        p80_p50_midpoint=_mid,
+        **_figs)
 
 
 # ------------------------------------------------------------ A3.7 Analogous Estimating Ratio

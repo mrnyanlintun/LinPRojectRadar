@@ -1046,6 +1046,118 @@ def safety_performance(structure: Mapping[str, Any]) -> dict[str, Any]:
         out.update({"recordable_cases": cases, "employee_hours_worked": hours,
                     "incidence_rate": cases * 200000 / hours,
                     "lagging_disposition": "MEASURED"})
+    # ================================= RUN 101, THE REBUILD: ONE RATE BECOMES THREE MEASURES
+    # THE OWNER'S RULING, SECTION 3.6: "real practice uses accident frequency rate, accident
+    # severity rate, and near-miss reporting, not a single recordable rate. Report the three
+    # separately. DO NOT COMPOSITE THEM -- no standard supports a blended safety index."
+    # Section 12.1d fails the run for compositing them, and `combined_index` below stays None.
+    #
+    # FREQUENCY, ON BOTH BASES. The OSHA base is 200,000 employee hours; the ILO base is
+    # 1,000,000, and international practice quotes the second. THE TWO DIFFER ONLY BY A FACTOR OF
+    # FIVE, so both are published from one measurement rather than one being recomputed and
+    # possibly drifting from the other. Lost-time cases are reported on both bases too where the
+    # record states them, because a lost-time frequency rate and a recordable frequency rate are
+    # different quantities and neither stands in for the other.
+    #
+    # SEVERITY. Days lost per exposure hours, PLUS the mean days lost per lost-time case, which
+    # is the figure that says whether a severity rate is many small cases or one catastrophic
+    # one. TWO CONVENTIONS ARE IN FORCE AND ARE APPLIED HERE, both stated in the specification:
+    # the OSHA cap of 180 days per case, and the standard charge of 6,000 days for a fatality or
+    # permanent total disability. Days lost is not extracted from any document today; the
+    # extraction contract states what a safety report must print for it.
+    #
+    # NEAR-MISS. Reported and closed counts and the closure proportion. THE INTERPRETATION IS
+    # INVERTED AND GETTING IT BACKWARDS IS A RUN-FAILING ERROR (section 12.1c): a HIGH reporting
+    # rate indicates a healthy reporting culture, and a low or zero rate on an active project
+    # indicates UNDER-REPORTING, not safety. Nothing here treats a low count as favourable.
+    _ilo = 1000000
+    _osha = 200000
+    _lost_time = structure.get("lost_time_cases")
+    out["frequency"] = {
+        "recordable_cases": cases if isinstance(cases, (int, float)) else None,
+        "lost_time_cases": _lost_time if isinstance(_lost_time, (int, float)) else None,
+        "employee_hours_worked": hours if isinstance(hours, (int, float)) else None,
+        "recordable_rate_osha_200k": out.get("incidence_rate"),
+        "recordable_rate_ilo_1m": (None if out.get("incidence_rate") is None
+                                   else out["incidence_rate"] * (_ilo / _osha)),
+        "lost_time_rate_osha_200k": (
+            _lost_time * _osha / hours
+            if isinstance(_lost_time, (int, float)) and isinstance(hours, (int, float))
+            and hours > 0 else None),
+        "lost_time_rate_ilo_1m": (
+            _lost_time * _ilo / hours
+            if isinstance(_lost_time, (int, float)) and isinstance(hours, (int, float))
+            and hours > 0 else None),
+        "osha_base_hours": _osha, "ilo_base_hours": _ilo,
+        "base_note": ("the two bases differ only by a factor of five; the OSHA 200,000-hour base "
+                      "and the ILO 1,000,000-hour base are both published from one measurement "
+                      "rather than computed twice"),
+    }
+    # SEVERITY. The capped days are what the rate is formed on, and BOTH the raw and the capped
+    # figures travel so a reader can see the cap acting rather than only its result.
+    _cap = 180
+    _fatality_charge = 6000
+    _cases_days = structure.get("lost_time_case_days")
+    _fatalities = structure.get("fatalities_or_permanent_total_disabilities")
+    _severity: dict[str, Any] = {
+        "osha_cap_days_per_case": _cap,
+        "fatality_or_ptd_day_charge": _fatality_charge,
+        "conventions_in_force": ("the OSHA cap of 180 days lost per case and the standard "
+                                 "charge of 6,000 days for a fatality or permanent total "
+                                 "disability are both applied"),
+    }
+    if isinstance(_cases_days, list) and _cases_days:
+        raw = [d for d in _cases_days if isinstance(d, (int, float)) and d >= 0]
+        capped = [min(float(d), _cap) for d in raw]
+        charged = sum(capped)
+        n_fatal = int(_fatalities) if isinstance(_fatalities, (int, float)) else 0
+        charged += n_fatal * _fatality_charge
+        _severity.update({
+            "lost_time_cases_with_days": len(raw),
+            "days_lost_raw_total": sum(raw),
+            "days_lost_charged_total": charged,
+            "cases_capped": sum(1 for d in raw if d > _cap),
+            "fatalities_or_ptd": n_fatal,
+            "mean_days_lost_per_lost_time_case": (charged / (len(raw) + n_fatal)
+                                                  if (len(raw) + n_fatal) else None),
+            "severity_rate_osha_200k": (charged * _osha / hours
+                                        if isinstance(hours, (int, float)) and hours > 0
+                                        else None),
+            "severity_rate_ilo_1m": (charged * _ilo / hours
+                                     if isinstance(hours, (int, float)) and hours > 0 else None),
+            "severity_disposition": "MEASURED",
+        })
+    else:
+        _severity.update({
+            "severity_rate_osha_200k": None, "severity_rate_ilo_1m": None,
+            "mean_days_lost_per_lost_time_case": None,
+            "severity_disposition": "ABSTAIN_NO_DAYS_LOST_RECORDED",
+            "severity_reason": ("the safety record states no days lost for any lost-time case, "
+                                "so no severity rate is formed and no substitute is used. A "
+                                "safety report must state, for each lost-time case, the days "
+                                "lost, and separately the count of fatalities or permanent "
+                                "total disabilities"),
+        })
+    out["severity"] = _severity
+    # NEAR-MISS. Reporting activity and closure, never a raw-count ladder.
+    _nm_rep = structure.get("near_miss_reported")
+    _nm_closed = structure.get("near_miss_closed")
+    out["near_miss"] = {
+        "reported": _nm_rep if isinstance(_nm_rep, (int, float)) else None,
+        "closed": _nm_closed if isinstance(_nm_closed, (int, float)) else None,
+        "closure_proportion": (_nm_closed / _nm_rep
+                               if isinstance(_nm_rep, (int, float)) and _nm_rep > 0
+                               and isinstance(_nm_closed, (int, float)) else None),
+        "interpretation": ("a HIGH near-miss reporting rate indicates a healthy reporting "
+                           "culture. A LOW OR ZERO rate on an active project indicates "
+                           "under-reporting, not safety, and is never read as favourable"),
+        "disposition": ("RECORDED" if isinstance(_nm_rep, (int, float))
+                        else "ABSTAIN_NO_NEAR_MISS_RECORD"),
+    }
+    out["measures_are_separate"] = (
+        "frequency, severity and near-miss reporting are three measures and are reported "
+        "separately. No standard supports a blended safety index, so none is produced. Where one "
+        "band must front the category the rule is worst-of and it is named as such")
     leading = structure.get("leading_indicators")
     if isinstance(leading, list) and leading:
         out["leading_indicators"] = [
