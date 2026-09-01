@@ -529,15 +529,57 @@ try:
                       const shapes = Array.from(g.querySelectorAll('[data-port]'))
                         .filter(e => e.getAttribute('data-kind') === null
                                   || !/identity/.test(e.getAttribute('data-kind')||''));
-                      return shapes.map(e => ({
-                        port: e.getAttribute('data-port'),
-                        x: parseFloat(e.getAttribute('cx') !== null ? e.getAttribute('cx')
-                              : (e.getAttribute('x') || 'NaN')),
-                        r: e.getAttribute('r'),
-                        fill: e.getAttribute('fill'),
-                        op: e.getAttribute('opacity'),
-                        tag: e.tagName.toLowerCase()
-                      }));
+                      // RUN 103 GOAL SIX. THE READER IS SHAPE-AWARE. THE CHART IS UNCHANGED.
+                      // `config.linStatusShape` draws a port as a CIRCLE for Green, a TRIANGLE
+                      // for Yellow, a DIAMOND for Amber and a SQUARE for Red, so a non-Green
+                      // category's port is a <polygon> with no `cx` and no `r`, and reading
+                      // those attributes gave NaN on three checks per viewport. The chart was
+                      // right and the reader was blind. The centre and the radius are now
+                      // recovered from whatever was actually drawn -- `cx`/`r` on a circle,
+                      // `x`+`width`/2 on a rect, and the bounding box of the `points` list on a
+                      // polygon -- so a triangle, a diamond and a square are read at the same
+                      // coordinate a circle would have been, which is the coordinate the chart
+                      // drew them all from.
+                      const geom = (e) => {
+                        const cx = e.getAttribute('cx');
+                        if (cx !== null) {
+                          return {x: parseFloat(cx), r: e.getAttribute('r')};
+                        }
+                        const pts = e.getAttribute('points');
+                        if (pts) {
+                          const nums = (pts.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+                          const xs = nums.filter((_, i) => i % 2 === 0);
+                          const ys = nums.filter((_, i) => i % 2 === 1);
+                          if (!xs.length) return {x: NaN, r: null};
+                          const lo = Math.min(...xs), hi = Math.max(...xs);
+                          const ylo = Math.min(...ys), yhi = Math.max(...ys);
+                          // The half-extent, rounded to 3 places, is the polygon's own
+                          // equivalent of a circle's r: it is what makes two ports drawn at the
+                          // same size compare equal without the chart having to carry an `r`.
+                          return {x: (lo + hi) / 2,
+                                  r: String(Math.round(Math.max(hi - lo, yhi - ylo) / 2 * 1000)
+                                            / 1000)};
+                        }
+                        const x = e.getAttribute('x'), w = e.getAttribute('width');
+                        const h = e.getAttribute('height');
+                        if (x !== null) {
+                          return {x: parseFloat(x) + (w ? parseFloat(w) / 2 : 0),
+                                  r: w ? String(Math.max(parseFloat(w),
+                                                         h ? parseFloat(h) : 0) / 2) : null};
+                        }
+                        return {x: NaN, r: e.getAttribute('r')};
+                      };
+                      return shapes.map(e => {
+                        const g = geom(e);
+                        return {
+                          port: e.getAttribute('data-port'),
+                          x: g.x,
+                          r: g.r,
+                          fill: e.getAttribute('fill'),
+                          op: e.getAttribute('opacity'),
+                          tag: e.tagName.toLowerCase()
+                        };
+                      });
                     });
                 const ringPorts = (kind, ident) => Array.from(
                     svg.querySelectorAll('[data-kind="'+ident+'"]')).map(e => [

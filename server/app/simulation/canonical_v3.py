@@ -1020,9 +1020,20 @@ def parse_schedule_network(structure: dict) -> dict[str, Any]:
             raise StructureAbsent(
                 "An activity in the schedule network provided states its predecessors in a form "
                 "this measure cannot read, so no reading is taken.")
+        # RUN 103. A PREDECESSOR MAY ARRIVE AS A BARE ID OR AS A MAPPING stating the relation
+        # type and the lag, because a flattened schedule export prints both forms and
+        # `schedule_network_table` reads both. THIS IS NOT A REPAIR: the identifier is read out
+        # of the mapping it was printed in, nothing is added and nothing is dropped, and a
+        # mapping that names no activity yields the empty identifier, which this function then
+        # refuses as a dangling reference exactly as it refuses a bare one. Before this run a
+        # mapping was str()'d whole and every logic tie in a real export read as dangling, so
+        # `parse_schedule_network` and `schedule_network_diagnostics` disagreed about what a
+        # valid network is -- which is the one thing the two must never do.
+        _pred_ids = [str(p.get("activity_id") or p.get("predecessor_id") or "")
+                     if isinstance(p, dict) else str(p) for p in preds]
         activities[aid] = {
             "activity_id": aid,
-            "predecessors": [str(p) for p in preds],
+            "predecessors": _pred_ids,
             "current_duration": duration,
             "baseline_duration": (num(r.get("baseline_duration"), None)
                                   if r.get("baseline_duration") is not None else None),

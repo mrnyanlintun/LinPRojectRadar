@@ -898,12 +898,12 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # Dominance, `delivery_complete` and `scope_signal_inputs` are all unaltered, and no stored row
 # was migrated, deleted or rewritten. Results computed under sim-2026.08-v47 remain valid under
 # that stamp.
-SIMULATION_VERSION = "sim-2026.09-v48"
+SIMULATION_VERSION = "sim-2026.09-v49"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v47"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.09-v48"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results
@@ -941,6 +941,14 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # RUN 102: Schedule gets its four bands, three A6 modules are re-banded on the owner's stated
  # measures, A6.4 gains a numeric fallback, and every band carries its `threshold_source`.
  "sim-2026.09-v48",
+ # RUN 103: A2.12 Critical Path Analysis enters service; the schedule network gains a full
+ # diagnostics pass and a document supply path; A2.1 PERT is gated behind the network's validity
+ # and behind stated duration uncertainty; A2.7 Milestone Trend is re-banded onto the SAME hybrid
+ # slip rule A2.12 uses; and A3.5 Overhead Absorption bands for the first time. THE STAMP IS
+ # MOVED AND THIS TUPLE IS APPENDED TO IN THE SAME EDIT, which is what section 10.10 requires and
+ # what Runs 100 and 101 did not do. No stored row is recomputed and none is touched: rows
+ # stamped v48 and earlier remain valid under their own stamp.
+ "sim-2026.09-v49",
 )
 
 
@@ -1007,7 +1015,7 @@ ZERO_CASE_DISPOSITIONS: tuple[str, ...] = (
 
 
 def insufficient(method_class: str, message: str | None = None,
-                 reason_code: str | None = None) -> dict[str, Any]:
+                 reason_code: str | None = None, **fields: Any) -> dict[str, Any]:
     """
     The abstention contract, matching the JavaScript helper exactly.
 
@@ -1028,6 +1036,15 @@ def insufficient(method_class: str, message: str | None = None,
     }
     if reason_code is not None:
         out["abstention_reason_code"] = reason_code
+    # RUN 103. AN ABSTENTION MAY CARRY THE EVIDENCE OF WHY IT ABSTAINED. The owner's section 2.1
+    # requires the schedule-network diagnostics -- the counts and the affected rows -- to travel
+    # with the refusal, so the scheduler can correct the source in one pass. Nothing here can
+    # turn an abstention into a reading: `status_color` stays None and `insufficient_data` stays
+    # True whatever is passed, and neither may be overwritten.
+    for _k, _v in fields.items():
+        if _k in ("status_color", "insufficient_data", "method_class"):
+            raise ValueError(f"an abstention may not carry {_k!r}")
+        out[_k] = _v
     return out
 
 

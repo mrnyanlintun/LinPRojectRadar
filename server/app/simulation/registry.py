@@ -691,9 +691,16 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             # supplied, the disposition and the lineage travel onto the abstaining row too.
             # These are new keys only: the participant ledger's status accessors read module_id,
             # status_color and evidence_metric, none of which is touched.
+            # RUN 103. `schedule_network_diagnostics` joins that list, and for the same
+            # reason: the owner's section 2.1 requires the counts and the AFFECTED ROWS to
+            # travel with the refusal, so the scheduler can correct the source in one pass. A
+            # refusal that names a fault total but not the rows is not the diagnostics object
+            # the order asks for. `module_results` and `abstained` are both JSONType, so this
+            # needs no column and no migration.
             for _k in ("result_source", "canonical_disposition", "canonical_structure",
                        "structure_provenance", "abstention_reason", "lineage",
-                       "canonical_state", "operational"):
+                       "canonical_state", "operational", "schedule_network_diagnostics",
+                       "activities_without_three_point_durations"):
                 if out.get(_k) is not None:
                     entry[_k] = out[_k]
             abstained.append(entry)

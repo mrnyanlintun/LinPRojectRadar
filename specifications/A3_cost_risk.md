@@ -186,23 +186,59 @@ RateVariance           = ActualRate - PlannedRate
 RelativeRateVariance   = RateVariance / PlannedRate
 ```
 
-**Bands. NONE, AND THE RUN 101 ORDER RULES IT SO EXPRESSLY. NO APPROVED THRESHOLD BASIS IS
-CONFIGURED FOR THIS QUANTITY.**
+**Bands. THE OWNER SUPPLIED THE BASIS AT RUN 103 AND THIS MODULE BANDS.** Run 101 and Run 102 left
+it bandless for want of one, and that history is kept below because the reason it was bandless is
+the reason the band is drawn where it is.
+
+**What is banded is the ABSORPTION VARIANCE, not the rate variance and never absolute overhead.**
+
+```
+AbsorptionVariance = (actual overhead incurred - planned overhead absorbed)
+                     / planned overhead absorbed          A POSITIVE result is UNFAVOURABLE
+```
+
+* **Green ≤ 5 % · Yellow > 5 % to 10 % · Amber > 10 % to 15 % · Red > 15 %**
+* **A favourable variance — actual below planned — is Green.**
+* Basis `owner_configured_cost_variance_tolerance`. **These are not universal construction or
+  regulatory thresholds and are not described as any.**
+* **Absolute overhead as a share of project cost is NOT banded here.** Only the variance against
+  planned absorption **for the same period and the same cost-code population**.
+
+**Not Assessed, never a posture,** on any of three conditions, each returning its own reason:
+planned absorbed overhead is zero or absent; actual and planned cover different periods; or the
+cost-code populations cannot be reconciled without a documented mapping. **Nothing is divided by
+zero and no plan is inferred.**
+
+**Two further rules.** Where the project is substantially complete and final overhead remains
+materially unabsorbed, the posture is **at least Amber**, and Red above 15 per cent — and both
+facts must be **stated** (`substantial_completion_declared`, `unabsorbed_overhead_amount`), never
+decided here from a percent complete, because substantial completion is a contract question.
+Where Schedule is Red and overhead under-absorption is Amber or Red, the two are **linked drivers
+of one condition** — a project running late absorbs its time-related overhead over a longer period
+— and must be read as one driver rather than double-counted as two independent pieces of evidence.
+The boundary text on the row says so.
+
+**The rate variance is still computed and reported and is explicitly not what bands.** The rate
+variance is per unit of the allocation base; the owner's tolerance is defined over the amount
+variance against the plan, and attaching his bands to the rate variance would be attaching a band
+to a quantity it was not drawn over.
+
+**The contract that supplies it.** `cost_report` states the period actual indirect or
+general-conditions overhead and the planned budgeted or absorbed overhead (`indirect_cost_actual`,
+`indirect_cost_plan`, already asked for), each side's own reporting period
+(`overhead_actual_period`, `overhead_planned_period`), the cost-code population and any documented
+mapping (`overhead_cost_code_population`, `overhead_cost_code_mapping`), and the progress basis
+that aligns planned absorption (`overhead_progress_basis`).
+
+### The history, kept because it explains the boundary
 
 The owner's Run 101 order, section 3.3: *"No published construction-controls basis exists, and the
 owner has ruled against inventing one from audit-materiality convention. The module computes and
-displays its variance and trend, asserts no band, and casts no vote."*
-
-`RESEARCH_1` section 58 supports the ruling rather than merely permitting it: overhead has *"no
-sourced basis for bands"*, and it lists *"leave the module bandless and report the raw variance"*
-as an option — the owner has chosen it, and section 165 calls **"no published basis found"** the
-correct answer.
-
-**A ±5 / ±10 / ±15 per cent ladder, or any other, is expressly forbidden here**, and section 12.1e
-of that order fails the run for attaching one. Audit-materiality convention measures a different
-thing — whether a misstatement would change a reader's decision about a financial statement — and
-applying it to a mid-execution overhead rate variance is substituting a threshold from a related
-but different measure, which section 2 forbids in terms.
+displays its variance and trend, asserts no band, and casts no vote."* `RESEARCH_1` section 58
+records that overhead has *"no sourced basis for bands"*. **That remains true, and the Run 103
+band does not claim otherwise:** it is the owner's own configured tolerance, declared as such on
+every row, and it is not presented as a published or regulatory threshold. Audit-materiality
+convention is still not applied and still measures a different thing.
 
 The module computes and displays both rates and both variances. The reason no colour accompanies
 them is **stored on the row** as `band_withheld_reason` and is carried into the decision brief's
