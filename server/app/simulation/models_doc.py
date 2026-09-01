@@ -51,9 +51,11 @@ from .canonical_v4 import (
     tornado_ranking,
     weather_day_impact,
 )
+from . import band_reference as _BR
 from .models import (
     ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT, ABSTAIN_STRUCTURE_ABSENT,
-    calibration_pending, check_inputs, insufficient, refuse,
+    PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
+    band_abstained, banded, calibration_pending, check_inputs, insufficient, refuse,
 )
 from .models_ext import _derived, _js_str
 from .rng import js_round, num, round1, round2
@@ -96,6 +98,89 @@ def _and_list(items: list[str]) -> str:
 # ------------------------------------------------------------ A4.2 RFI Velocity
 
 
+# ================================ RUN 101, A4.2: THE BAND IS ON OVERDUE, AGAINST THE CONTRACT
+#
+# THE OWNER'S RULING, SECTION 4. The module reported RFIs issued per week and banded on it. THE
+# PUBLISHED PER-MILLION-DOLLAR BENCHMARK MEASURES A DIFFERENT QUANTITY -- requests per million
+# dollars of contract value, not requests per week -- and does not apply. The old per-week ladder
+# at 2, 4 and 8, which this file's own comment recorded as sourced to nothing, IS REMOVED. The
+# weekly rate and the open count are CONTEXT. THE OVERDUE COUNT IS WHAT BANDS.
+#
+# THE THRESHOLD IS THE CONTRACT'S OWN RESPONSE PERIOD: seven business days. An RFI unanswered
+# beyond it is overdue BY THE CONTRACT'S DEFINITION, so the basis is the contract, not an
+# industry average. Where a project's contract states a different period, that figure governs and
+# its source is the document.
+#
+# BUSINESS DAYS, AND WHERE THAT REQUIREMENT LIVES. Section 12.1a fails this run for computing
+# overdue in CALENDAR days. THE PLATFORM DOES NO DATE ARITHMETIC HERE AT ALL: `rfiOverdue` and
+# the register's own overdue flags arrive as figures the DOCUMENT states
+# (`extraction_merge._NUMERIC_EMISSIONS["rfi_log"]` maps `rfi_overdue` straight through), and no
+# code path in this repository derives an overdue count from RFI dates. So the business-day
+# requirement is a requirement on THE DOCUMENT'S AUTHOR, it is stated in the extraction contract
+# and in the specification, and it is restated on every reading this module produces -- because a
+# requirement nobody can see is a requirement nobody meets. A calendar-day count marks every RFI
+# overdue two days early, and this module says so on its own row rather than silently accepting
+# whichever the document did.
+#
+# THE FOUR BOUNDARIES ARE OWNER-CALIBRATED AND ARE NOT THE CONTRACT'S. The seven-day period IS
+# contractual; how many breaches of it constitute Yellow rather than Amber is not stated in any
+# contract or publication found. The reasoning, recorded so it can be argued with: GREEN IS
+# RESERVED FOR ZERO because the response period is a contractual term rather than an aspiration,
+# and a project meeting its own contract has nothing overdue; the two upper boundaries divide
+# what remains at a tenth and a quarter of the open log, because one late answer on a large log
+# is a lapse and a quarter of the log unanswered past its contractual term is a breakdown of the
+# information flow the schedule depends on. No publication supports 0.10 or 0.25.
+_RFI_OVERDUE_BOUNDARY = (
+    "on the proportion of OPEN requests that are overdue against the contract's own response "
+    "period: exactly zero overdue is Green; above zero and at or below 0.10 is Yellow; above "
+    "0.10 and at or below 0.25 is Amber; above 0.25 is Red. Zero is a value here and is not "
+    "treated as missing. The weekly issue rate and the open count are context and are not what "
+    "the band is drawn from")
+
+
+def _rfi_response_period(si: dict) -> tuple:
+    """(period in business days, its source). The project's contract wins; else the configured
+    default, which says on its face that it stands in for a contract nobody has read."""
+    stated = si.get("rfiResponsePeriodBusinessDays")
+    if isinstance(stated, (int, float)) and stated > 0:
+        return (stated, "this project's own contract, as its uploaded documents state it")
+    return (_BR.configured_value("rfi_contract_response_period_business_days"),
+            _BR.source_of("rfi_contract_response_period_business_days"))
+
+
+def _rfi_band(overdue, open_count, si: dict) -> tuple:
+    """The band on overdue, or a reason. Reads no dates and computes no elapsed time."""
+    period, source = _rfi_response_period(si)
+    basis = (
+        f"the contract's own response period of {period} business days -- an RFI unanswered "
+        f"beyond it is overdue by the contract's definition, so the basis is the contract and "
+        f"not an industry average. Source: {source}. THE FOUR BOUNDARIES DRAWN FROM IT ARE NOT "
+        f"CONTRACTUAL and have no published basis; they are the owner's stated thresholds "
+        f"(Run 101, section 4). OVERDUE MUST BE COUNTED IN BUSINESS DAYS, EXCLUDING WEEKENDS AND "
+        f"HOLIDAYS: this platform performs no date arithmetic on requests for information and "
+        f"takes the overdue count as the source document states it, so that requirement falls on "
+        f"the document's author and is stated in the extraction contract. A calendar-day count "
+        f"marks every request overdue two days early")
+    if not isinstance(overdue, (int, float)):
+        return (None, None,
+                "the request log states no overdue count, so the quantity this module bands on "
+                "is not reported for this project. The issue rate and the open count are "
+                "displayed and no band is drawn from them: the published per-million-dollar "
+                "benchmark measures requests against contract value, which is a different "
+                "quantity, and it is not applied here", None)
+    if not isinstance(open_count, (int, float)) or open_count <= 0:
+        if overdue > 0:
+            return ("Red", _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_OWNER_CALIBRATED)
+        return (None, None,
+                "the request log reports no open requests, so an overdue proportion has no "
+                "denominator. With nothing open there is nothing that can be overdue, and that "
+                "is reported rather than banded as though it were compliance", None)
+    ratio = overdue / open_count
+    colour = ("Green" if ratio == 0 else "Yellow" if ratio <= 0.10
+              else "Amber" if ratio <= 0.25 else "Red")
+    return (colour, _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_OWNER_CALIBRATED)
+
+
 def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     """
     Requests for information per unit of exposure time.
@@ -118,15 +203,9 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         except StructureAbsent as absent:
             return insufficient("RFI_Velocity", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
         per_week = reading["rate_per_day"] * 7.0
-        vel_status = ("Green" if per_week <= 2 else "Yellow" if per_week <= 4
-                      else "Amber" if per_week <= 8 else "Red")
-        overdue_status = None
         ratio = reading["overdue_ratio"]
-        if ratio is not None:
-            overdue_status = ("Green" if ratio < 0.10 else "Yellow" if ratio < 0.20
-                              else "Amber" if ratio < 0.35 else "Red")
-        status = (overdue_status
-                  if overdue_status and _RANK[overdue_status] > _RANK[vel_status] else vel_status)
+        _colour, _boundary, _basis, _prov = _rfi_band(
+            reading["overdue"], reading["open_relevant"], si)
         evidence = (
             f"{_js_str(reading['events_counted'])} requests for information over "
             f"{_js_str(reading['exposure_days'])} days "
@@ -139,24 +218,29 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         if ratio is not None:
             evidence += (f", {_js_str(reading['overdue'])} of "
                          f"{_js_str(reading['open_relevant'])} still open are overdue")
-        return {
-            "method_class": "RFI_Velocity",
-            "status_color": status,
-            "rfi_per_30d": round1(reading["rate_per_30_days"]),
-            "rfi_per_week": round1(per_week),
-            "rate_per_day": round2(reading["rate_per_day"]),
-            "total_rfis": reading["events_counted"],
-            "period_days": reading["exposure_days"],
-            "rows_supplied": reading["rows_supplied"],
-            "duplicate_rows_collapsed": reading["duplicate_rows_collapsed"],
-            "open_rfis": reading["open_relevant"],
-            "overdue_rfis": reading["overdue"],
-            "overdue_ratio": (round(ratio, 3) if ratio is not None else None),
-            "canonical_structure": "rfi_event_log",
-            "register_id": reading["register_id"],
-            "source": reading["source"],
-            "evidence_metric": evidence,
-        }
+        _figs = dict(
+            rfi_per_30d=round1(reading["rate_per_30_days"]),
+            rfi_per_week=round1(per_week),
+            rate_per_day=round2(reading["rate_per_day"]),
+            total_rfis=reading["events_counted"],
+            period_days=reading["exposure_days"],
+            rows_supplied=reading["rows_supplied"],
+            duplicate_rows_collapsed=reading["duplicate_rows_collapsed"],
+            open_rfis=reading["open_relevant"],
+            overdue_rfis=reading["overdue"],
+            overdue_ratio=(round(ratio, 3) if ratio is not None else None),
+            canonical_structure="rfi_event_log",
+            register_id=reading["register_id"],
+            source=reading["source"],
+            rfi_response_period_business_days=_rfi_response_period(si)[0],
+            overdue_counting_basis=(
+                "business days, excluding weekends and holidays, as the source document must "
+                "state it; this platform performs no date arithmetic on requests for information"),
+        )
+        if _colour is None:
+            return band_abstained("RFI_Velocity", evidence, reason=_basis, **_figs)
+        return banded("RFI_Velocity", evidence, status_color=_colour, boundary=_boundary,
+                      basis=_basis, provenance=_prov, **_figs)
     count = si.get("rfiCount") if si.get("rfiCount") is not None else si.get("rfiNumber")
     days = si.get("rfiPeriodDays")
     if count is None:
@@ -188,20 +272,17 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     is_derived = _derived(si, "rfiPeriodDays")
     per30 = js_round((count / days) * 300) / 10
     per_week = js_round((count / days) * 70) / 10
-    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked for a source specifying two,
-    # four and eight requests per week, and for one specifying ten, twenty and thirty-five per
-    # cent overdue, and found neither. The boundaries are left as they were, uncited, and this
-    # module DOES NOT VOTE. See registry.CORE_VOTING_MODULES.
-    vel_status = ("Green" if per_week <= 2 else "Yellow" if per_week <= 4
-                  else "Amber" if per_week <= 8 else "Red")
+    # RUN 101. THE PER-WEEK LADDER AT 2, 4 AND 8 IS GONE, and the comment that used to stand
+    # here is why: Run 4 looked for a source specifying it and found none. The owner's Run 101
+    # order settles it -- the weekly rate is CONTEXT and the OVERDUE COUNT is what bands, against
+    # the contract's own response period. The overdue proportion is formed over the OPEN count
+    # where the log states one, because an overdue request is by definition still open; where the
+    # log states no open count the total is not substituted for it, and the module says so.
+    _open = si.get("rfiOpen")
     overdue_ratio = None
-    overdue_status = None
-    if si.get("rfiOverdue") is not None and count > 0:
-        overdue_ratio = si["rfiOverdue"] / count
-        overdue_status = ("Green" if overdue_ratio < 0.10 else "Yellow" if overdue_ratio < 0.20
-                          else "Amber" if overdue_ratio < 0.35 else "Red")
-    status = (overdue_status if overdue_status and _RANK[overdue_status] > _RANK[vel_status]
-              else vel_status)
+    if si.get("rfiOverdue") is not None and isinstance(_open, (int, float)) and _open > 0:
+        overdue_ratio = si["rfiOverdue"] / _open
+    _colour, _boundary, _basis, _prov = _rfi_band(si.get("rfiOverdue"), _open, si)
     avg_response = (si.get("rfiAvgResponseDays") if si.get("rfiAvgResponseDays") is not None
                     else si.get("rfiResponseTimeDays"))
     evidence = (f"{_js_str(count)} RFIs over {_js_str(days)} days "
@@ -217,24 +298,33 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         evidence += f", oldest open {_js_str(si['rfiOldestOpenDays'])} days"
     if is_derived:
         evidence += " (assumed 30-day period; upload RFI log for precise velocity)"
-    return {
-        "method_class": "RFI_Velocity",
-        "status_color": status,
-        "rfi_per_30d": per30,
-        "rfi_per_week": per_week,
-        "total_rfis": count,
-        "period_days": days,
-        "open_rfis": si.get("rfiOpen") if si.get("rfiOpen") is not None else None,
-        "overdue_rfis": si.get("rfiOverdue") if si.get("rfiOverdue") is not None else None,
-        "overdue_ratio": (js_round(overdue_ratio * 1000) / 1000
-                          if overdue_ratio is not None else None),
-        "response_time_days": avg_response if avg_response is not None else None,
-        "canonical_structure": "extracted_register_totals",
-        "evidence_metric": evidence,
-    }
+    _figs = dict(
+        rfi_per_30d=per30,
+        rfi_per_week=per_week,
+        total_rfis=count,
+        period_days=days,
+        open_rfis=_open if _open is not None else None,
+        overdue_rfis=si.get("rfiOverdue") if si.get("rfiOverdue") is not None else None,
+        overdue_ratio=(js_round(overdue_ratio * 1000) / 1000
+                       if overdue_ratio is not None else None),
+        response_time_days=avg_response if avg_response is not None else None,
+        canonical_structure="extracted_register_totals",
+        rfi_response_period_business_days=_rfi_response_period(si)[0],
+        overdue_counting_basis=(
+            "business days, excluding weekends and holidays, as the source document must state "
+            "it; this platform performs no date arithmetic on requests for information"),
+    )
+    if _colour is None:
+        return band_abstained("RFI_Velocity", evidence, reason=_basis, **_figs)
+    return banded("RFI_Velocity", evidence, status_color=_colour, boundary=_boundary,
+                  basis=_basis, provenance=_prov, **_figs)
 
 
 # ------------------------------------------------------------ A4.3 Submittal Rejection Rate
+
+
+_SUBMITTAL_NO_BAND = (
+    "no universal basis exists for a submittal rejection share. The owner's Run 101 order, section 4, rules that this module computes and displays its figure and asserts no band unless a project document -- a submittal plan's acceptance target -- states one, and no such target is stated by any document this project has uploaded. The five, fifteen and twenty-five per cent ladder this module used to carry was sourced to nothing and is removed")
 
 
 def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
@@ -258,28 +348,26 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
         except StructureAbsent as absent:
             return insufficient("Submittal_Rejection", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
         rate = reading["rejection_rate"]
-        color = ("Green" if rate <= 0.05 else "Yellow" if rate <= 0.15
-                 else "Amber" if rate <= 0.25 else "Red")
-        return {
-            "method_class": "Submittal_Rejection",
-            "status_color": color,
-            "rejection_rate": round(rate, 3),
-            "rejected": reading["rejected"],
-            "total": reading["assessed"],
-            "unique_submittals": reading["unique_submittals"],
-            "resubmission_cycles": reading["resubmission_cycles"],
-            "disposition_counts": reading["disposition_counts"],
-            "taxonomy_version": reading["taxonomy_version"],
-            "canonical_structure": "submittal_decision_register",
-            "source": reading["source"],
-            "evidence_metric": (
-                f"{_js_str(reading['rejected'])} of {_js_str(reading['assessed'])} assessed "
-                f"submittal decisions were rejections "
-                f"({int(js_round(rate * 100))} per cent), from "
-                f"{_js_str(reading['unique_submittals'])} distinct submittals and "
-                f"{_js_str(reading['resubmission_cycles'])} resubmission cycles"
-            ),
-        }
+        # RUN 101, SECTION 4. THE UNCITED LADDER IS REMOVED AND NO BAND IS ASSERTED. See the
+        # reason carried on the row.
+        return band_abstained(
+            "Submittal_Rejection",
+            (f"{_js_str(reading['rejected'])} of {_js_str(reading['assessed'])} assessed "
+             f"submittal decisions were rejections "
+             f"({int(js_round(rate * 100))} per cent), from "
+             f"{_js_str(reading['unique_submittals'])} distinct submittals and "
+             f"{_js_str(reading['resubmission_cycles'])} resubmission cycles"),
+            reason=_SUBMITTAL_NO_BAND,
+            rejection_rate=round(rate, 3),
+            rejected=reading["rejected"],
+            total=reading["assessed"],
+            unique_submittals=reading["unique_submittals"],
+            resubmission_cycles=reading["resubmission_cycles"],
+            disposition_counts=reading["disposition_counts"],
+            taxonomy_version=reading["taxonomy_version"],
+            canonical_structure="submittal_decision_register",
+            source=reading["source"],
+        )
     use_rfa = (si.get("rfaTotal") is not None and si.get("rfaRejected") is not None
                and si["rfaTotal"] > 0)
     total = si.get("rfaTotal") if use_rfa else si.get("submittalsTotal")
@@ -301,11 +389,6 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
             "register cannot both be right",
         )
     rate = js_round((rejected / total) * 1000) / 1000
-    # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked for a source specifying five,
-    # fifteen and twenty-five per cent for a submittal rejection share and found none. The
-    # boundaries are left as they were, uncited, and this module DOES NOT VOTE.
-    color = ("Green" if rate <= 0.05 else "Yellow" if rate <= 0.15
-             else "Amber" if rate <= 0.25 else "Red")
     is_derived = not use_rfa and _derived(si, "submittalsTotal")
     evidence = (f"{_js_str(rejected)} of {_js_str(total)} "
                 + ("RFAs rejected (" if use_rfa else "submittals rejected (")
@@ -319,16 +402,15 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
             evidence += f", avg review {_js_str(si['rfaAvgReviewDays'])} days"
     if is_derived:
         evidence += " (estimated from doc risk; upload Submittal Register for precise figures)"
-    return {
-        "method_class": "Submittal_Rejection",
-        "status_color": color,
-        "rejection_rate": rate,
-        "rejected": rejected,
-        "total": total,
-        "source": "rfa_log" if use_rfa else "submittals",
-        "canonical_structure": "extracted_register_totals",
-        "evidence_metric": evidence,
-    }
+    return band_abstained(
+        "Submittal_Rejection", evidence,
+        reason=_SUBMITTAL_NO_BAND,
+        rejection_rate=rate,
+        rejected=rejected,
+        total=total,
+        source="rfa_log" if use_rfa else "submittals",
+        canonical_structure="extracted_register_totals",
+    )
 
 
 # ------------------------------------------------------------ A4.4 NCR Rate
@@ -445,14 +527,80 @@ def run_co_frequency(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         reading = change_frequency(require_v4_structure(si, "A4.6"))
     except StructureAbsent as absent:
         return insufficient("CO_Frequency", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
-        "CO_Frequency",
+    # ========================= RUN 101, THE REBUILD: A COUNT IS NOT THE MEASURE, IMPACT IS
+    # THE OWNER'S RULING, SECTION 4. What bands is COST IMPACT and SCHEDULE IMPACT, both against
+    # the ORIGINAL contract. The frequency is kept and displayed -- it was never wrong, it was
+    # simply not the measure -- and it is not what the colour is drawn from.
+    #
+    # COST IMPACT. Additions and omissions stated SEPARATELY, plus the net change as a proportion
+    # of the original contract value. AN OMISSION IS NEVER ADVERSE: a reduction is Green, and
+    # section 12.1b fails the run for treating one as adverse. So the ladder is climbed by the
+    # ADDITIONS fraction, and a net change of zero or below is Green outright whatever the
+    # additions were, because the money set aside has not been passed.
+    #
+    #   Green  -- net change zero or negative, OR additions strictly under 5 per cent
+    #   Yellow -- additions at or above 5 per cent and at or below 10 per cent
+    #   Amber  -- additions above 10 per cent and at or below 20 per cent
+    #   Red    -- additions above 20 per cent
+    #
+    # THE BASIS, AND IT IS RECORDED HERE AND IN THE STORED READING: a contingency reserve is
+    # conventionally around twenty per cent of contract value, so change exposure beyond twenty
+    # per cent has passed the money set aside to absorb it. AMBER BEGINS AT HALF THE RESERVE.
+    # CONVENTION, on the owner's stated authority.
+    #
+    # SCHEDULE IMPACT. Change-related delay days against the ORIGINAL contract duration, and the
+    # float consumption ratio -- change-related delay days over available total float on the
+    # affected path. IF FLOAT IS UNAVAILABLE THE SCHEDULE HALF ABSTAINS AND SAYS SO rather than
+    # assuming zero: assuming zero float would turn every unmeasured project Red.
+    _add_f = reading.get("additions_fraction")
+    _om_f = reading.get("omissions_fraction")
+    _net_f = reading["change_magnitude_net"]
+    _reserve = _BR.configured_value("change_order_contingency_reserve_fraction")
+    _cost_band = ("Green" if (_net_f <= 0 or _add_f < 0.05)
+                  else "Yellow" if _add_f <= 0.10
+                  else "Amber" if _add_f <= 0.20 else "Red")
+    _sched = _schedule_impact(require_v4_structure(si, "A4.6"), reading)
+    _bands = [_cost_band] + ([_sched["band"]] if _sched.get("band") else [])
+    _worst = max(_bands, key=lambda b: _RANK[b])
+    _message = (
+        f"Change orders have added "
+        f"{_js_str(round(_add_f * 100, 2))} per cent and omitted "
+        f"{_js_str(round(_om_f * 100, 2))} per cent of the original contract, a net change of "
+        f"{_js_str(round(_net_f * 100, 2))} per cent. {_sched['sentence']} "
         f"{_js_str(reading['change_count'])} governed changes over "
-        f"{_js_str(reading['exposure_days'])} days, a frequency of "
-        f"{_js_str(round(reading['change_frequency_per_30_days'], 3))} in a standard thirty day "
-        f"period. Their net value is "
-        f"{_js_str(round(reading['change_magnitude_net'] * 100, 2))} per cent of the baseline "
-        f"contract, which is a separate quantity and is not combined with the frequency.",
+        f"{_js_str(reading['exposure_days'])} days is the frequency, which is context and is "
+        f"not what the band is drawn from.")
+    return banded(
+        "CO_Frequency", _message,
+        status_color=_worst,
+        boundary=(
+            "COST IMPACT, on the ADDITIONS as a proportion of the ORIGINAL contract value: a net "
+            "change of zero or below, or additions strictly under 5 per cent, is Green; "
+            "additions at or above 5 per cent and at or below 10 per cent is Yellow; above 10 "
+            "per cent and at or below 20 per cent is Amber; above 20 per cent is Red. AN "
+            "OMISSION IS NEVER ADVERSE -- a reduction is Green and is never added to the "
+            "additions. SCHEDULE IMPACT: " + _sched["boundary"] + " Where both halves band, the "
+            "WORSE of the two is what the module asserts, and the other is reported beside it."),
+        basis=(
+            "the owner's Run 101 order, section 4, on the owner's stated authority. THE COST "
+            "LADDER'S BASIS: a contingency reserve is conventionally around "
+            f"{_js_str(round((_reserve or 0) * 100))} per cent of contract value, so change "
+            "exposure beyond that has passed the money set aside to absorb it, and Amber begins "
+            "at half the reserve. No standards clause fixes 5, 10 or 20 per cent. THE SCHEDULE "
+            "LADDER has no published basis at all and is the owner's stated threshold."),
+        provenance=PROVENANCE_CONVENTION,
+        cost_impact_band=_cost_band,
+        schedule_impact_band=_sched.get("band"),
+        schedule_impact_reason=_sched.get("reason"),
+        additions_fraction=round(_add_f, 6),
+        omissions_fraction=round(_om_f, 6),
+        additions_value=reading.get("additions_value"),
+        omissions_value=reading.get("omissions_value"),
+        contingency_reserve_fraction=_reserve,
+        change_related_delay_days=_sched.get("delay_days"),
+        available_total_float_days=_sched.get("total_float"),
+        float_consumption_ratio=_sched.get("float_ratio"),
+        original_contract_duration_days=_sched.get("original_duration"),
         change_frequency_per_day=round(reading["change_frequency_per_day"], 6),
         change_frequency_per_30_days=round(reading["change_frequency_per_30_days"], 4),
         change_count=reading["change_count"],
@@ -468,6 +616,82 @@ def run_co_frequency(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         canonical_structure="change_event_register",
         source=reading["source"],
     )
+
+
+def _schedule_impact(structure: dict, reading: dict) -> dict[str, Any]:
+    """
+    A4.6's SCHEDULE HALF. Change-related delay days against the original contract duration, and
+    the float consumption ratio on the affected path.
+
+    OWNER-CALIBRATED, on the owner's stated authority: no published basis exists for any of these
+    four conditions and none is claimed.
+
+        Green  -- no material float consumption or forecast completion movement, or the effect
+                  FULLY RESOLVED through an approved extension or rebaseline
+        Yellow -- float consumed without a current threat to contractual or key milestone
+                  completion
+        Amber  -- material erosion of float on a critical or near-critical path, unresolved time
+                  extension exposure, or a threatened milestone without confirmed completion
+                  movement
+        Red    -- forecast or contract completion movement, negative float, or documented
+                  unresolved critical-path time extension exposure
+
+    IF FLOAT IS UNAVAILABLE THIS HALF ABSTAINS AND SAYS SO. It does not assume zero. Assuming
+    zero float would make every project whose schedule was never measured read as Red, which is
+    manufacturing a finding out of an absence.
+    """
+    boundary = (
+        "forecast or contract completion movement, negative float, or documented unresolved "
+        "critical-path time extension exposure is Red; material erosion of float on a critical "
+        "or near-critical path, unresolved time extension exposure, or a threatened milestone "
+        "without confirmed completion movement is Amber; float consumed without a current threat "
+        "to contractual or key milestone completion is Yellow; no material float consumption or "
+        "forecast completion movement, or the effect fully resolved through an approved "
+        "extension or rebaseline, is Green.")
+    delay = structure.get("change_related_delay_days")
+    total_float = structure.get("available_total_float_days")
+    duration = structure.get("original_contract_duration_days")
+    resolved = bool(structure.get("time_extension_approved"))
+    moved = structure.get("forecast_completion_moved")
+    out: dict[str, Any] = {"boundary": boundary, "delay_days": delay,
+                           "total_float": total_float, "original_duration": duration,
+                           "float_ratio": None, "band": None}
+    if not isinstance(delay, (int, float)):
+        out["reason"] = ("the change register states no change-related delay days, so the "
+                         "schedule half of change impact is not measured and no band is drawn "
+                         "for it")
+        out["sentence"] = ("No change-related delay days are stated, so the schedule half of "
+                           "change impact abstains.")
+        return out
+    if not isinstance(total_float, (int, float)):
+        out["reason"] = ("the change register states no available total float on the affected "
+                         "path, so the float consumption ratio cannot be formed. It is NOT "
+                         "assumed to be zero: assuming zero float would report a threatened "
+                         "completion on a project whose schedule was simply never measured")
+        out["sentence"] = (f"{delay} change-related delay days are stated, but no available "
+                           f"total float on the affected path is, so the float consumption "
+                           f"ratio is not formed and is not assumed to be zero.")
+        return out
+    ratio = (delay / total_float) if total_float > 0 else None
+    out["float_ratio"] = ratio
+    if total_float < 0 or moved is True:
+        out["band"] = "Red"
+    elif resolved or delay <= 0:
+        out["band"] = "Green"
+    elif ratio is not None and ratio >= 1.0:
+        out["band"] = "Amber"
+    elif ratio is not None:
+        out["band"] = "Yellow"
+    else:
+        # total_float is zero and delay is positive: the path has no float left to consume and
+        # a delay has been recorded against it. That is negative float in all but name.
+        out["band"] = "Red"
+    out["sentence"] = (
+        f"{delay} change-related delay days stand against "
+        f"{total_float} days of available total float on the affected path"
+        + (f", a float consumption ratio of {round(ratio, 2)}" if ratio is not None else "")
+        + (", resolved through an approved time extension" if resolved else "") + ".")
+    return out
 
 
 # ------------------------------------------------------------ A4.7 Dispute Escalation Index

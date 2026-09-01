@@ -752,6 +752,17 @@ def change_frequency(structure: dict) -> dict[str, Any]:
         "exposure_days": exposure,
         "change_magnitude_net": net / baseline,
         "change_magnitude_gross": gross / baseline,
+        # RUN 101. ADDITIONS AND OMISSIONS STATED SEPARATELY, which the owner's order requires
+        # and which a net figure hides: a project with a five per cent addition and a five per
+        # cent omission is not the same project as one with neither. AN OMISSION IS NEVER
+        # ADVERSE (section 12.1b), so it is reported as the reduction it is and is never added
+        # to the exposure the additions represent.
+        "additions_value": sum(p["value"] for p in prepared if p["direction"] == "ADDITIVE"),
+        "omissions_value": sum(p["value"] for p in prepared if p["direction"] == "DEDUCTIVE"),
+        "additions_fraction": sum(p["value"] for p in prepared
+                                  if p["direction"] == "ADDITIVE") / baseline,
+        "omissions_fraction": sum(p["value"] for p in prepared
+                                  if p["direction"] == "DEDUCTIVE") / baseline,
         "baseline_contract_value": baseline,
         "revised_contract_value": baseline + net,
         "additive_count": sum(1 for p in prepared if p["direction"] == "ADDITIVE"),
