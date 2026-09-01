@@ -268,6 +268,44 @@ def _assemble(si: dict, module_id: str) -> dict | None:
                 "reported_violations": viol,
             },
         }
+    if module_id == "A6.4":
+        # ============================ RUN 101. THE GAP WAS ONE ASSEMBLER, NOT A MISSING TYPE.
+        # Run 96 recorded that A6.4 reads a governed assessment record NO DOCUMENT TYPE
+        # PRODUCES. That was measured again at this head and it is HALF TRUE: no assembler
+        # built the record, but `past_performance_report` IS a live document type and
+        # `extraction_merge._NUMERIC_EMISSIONS` has emitted its four CPARS-shaped ratings --
+        # overall, schedule, cost, quality -- to signal inputs all along, where NO MODULE READ
+        # THEM. They were orphan fields, which is precisely what this assembly function exists
+        # to close. No new document type is created here and none is needed.
+        #
+        # THE RECORD IS NEVER LABELLED CPARS BY THIS ASSEMBLY.
+        # `canonical_v6.contractor_assessment` derives `is_official_cpars_record` from the
+        # source system AND an official assessment id, and section 16 forbids labelling an
+        # internal project score as an official past-performance rating. So the source system
+        # is passed through EXACTLY as the document stated it and is never asserted here. A
+        # document that did not say CPARS produces an INTERNAL assessment, correctly labelled.
+        #
+        # THE FACTOR RATINGS ARE THE DOCUMENT'S OWN WORDS. Nothing is normalised, mapped or
+        # scored here; the band mapping happens once, in `_band_contractor`, against the five
+        # ratings the CPARS guidance defines.
+        _factors = [("Quality", si.get("qualityRating")),
+                    ("Schedule", si.get("scheduleRating")),
+                    ("Cost", si.get("costRating")),
+                    ("Overall", si.get("overallRating"))]
+        rows = [{"factor": name, "rating": str(value).strip()}
+                for name, value in _factors if value is not None and str(value).strip()]
+        if not rows:
+            return None
+        return {
+            "evidence_id": "A6.4-corpus",
+            "provenance": "assembled from the project's Past Performance Report extraction",
+            "source_system": si.get("pastPerformanceSourceSystem"),
+            "assessment_id": si.get("pastPerformanceAssessmentId"),
+            "contract_id": si.get("pastPerformanceContractId"),
+            "assessment_period": si.get("reportPeriod"),
+            "data_origin": "document extraction",
+            "factor_ratings": rows,
+        }
     if module_id == "A6.1":
         score = si.get("qualityAuditScore")
         findings = si.get("totalFindings")
@@ -562,7 +600,12 @@ def _band_contractor(result: dict[str, Any]) -> tuple:
         return (None, None,
                 "no governed contractor assessment with factor ratings is recorded for this "
                 "project, so there is no rating to map", None)
-    seen = [str(r.get("rating") or "").strip().lower() for r in rows if isinstance(r, dict)]
+    # THE RATING MAY ARRIVE AS THE DOCUMENT'S WORD OR AS ITS NUMBER ON THE SHIPPED FIVE-POINT
+    # SCALE, and both resolve to the SAME word through `extraction_merge.CPARS_RATING_SCALE` --
+    # the one authority for that scale, inverted here rather than transcribed. A rating that is
+    # neither one of the five words nor one of the five numbers resolves to nothing and falls
+    # into no band, which section 3 boundary rule 2 requires.
+    seen = [_cpars_word(r.get("rating")) for r in rows if isinstance(r, dict)]
     mapped = [(_CPARS_BANDS[s], s) for s in seen if s in _CPARS_BANDS]
     unmapped = sorted({s for s in seen if s and s not in _CPARS_BANDS})
     if not mapped:
@@ -585,6 +628,35 @@ def _band_contractor(result: dict[str, Any]) -> tuple:
 
 
 _CPARS_SEVERITY: dict[str, int] = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
+
+
+def _cpars_word(value: Any) -> str:
+    """
+    One rating, as its CPARS word in lower case, or "" when it is not one of the five.
+
+    DERIVED FROM THE SHIPPED SCALE, NEVER TRANSCRIBED BESIDE IT. `extraction_merge` coerces the
+    five adjectives a past performance evaluation prints into the five-point scale A6.4 reads, so
+    a rating reaches this function as either the word or its number depending on which path
+    assembled the record. Inverting the shipped dictionary is what keeps one authority for the
+    scale; writing the numbers out here again would be a second copy to drift.
+    """
+    from ..extraction_merge import CPARS_RATING_SCALE
+    if isinstance(value, str):
+        word = " ".join(value.strip().lower().split())
+        if word in CPARS_RATING_SCALE:
+            return word
+        try:
+            number = float(word)
+        except ValueError:
+            return ""
+    elif isinstance(value, (int, float)):
+        number = float(value)
+    else:
+        return ""
+    for word, n in CPARS_RATING_SCALE.items():
+        if n == number:
+            return word
+    return ""
 
 
 def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any]],
