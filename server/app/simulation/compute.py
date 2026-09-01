@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from .category_posture import category_posture
-from .fusion import fuse_signals, governed_status_semantics
+from .fusion import fuse_signals, governed_status_semantics, worst_band
 from .lineage import lineage_for, lineage_record
 from .qualification_gate import (
     GATE_VERSION,
@@ -67,10 +67,10 @@ _INDETERMINATE = "Indeterminate"
 # he has ruled the platform publishes would be unreachable by construction.
 #
 # "COMPLETE" IS NOT A BAND AND IS DELIBERATELY NOT ADDED TO `fusion.BAND_SEVERITY`. It never
-# enters `worst_band` and is never ranked against Green, Yellow, Amber or Red. WORST-WINS IS
-# UNTOUCHED: `fuse_signals(voting)` is not altered, not re-ordered and not consulted twice, and
-# `fused_band` is reported beside the status either way, so nothing that needs the SEVERITY of a
-# completed project's evidence loses it to this promotion.
+# enters `worst_band` and is never ranked against Green, Yellow, Amber or Red. THE PROJECT RULE
+# IS UNTOUCHED BY THIS PROMOTION: `fused_band` -- since Run 105 the worst band across the
+# contributing categories -- is reported beside the status either way, so nothing that needs the
+# SEVERITY of a completed project's evidence loses it to this promotion.
 #
 # EXACT EQUALITY, AND NO TOLERANCE. The owner's condition is an equality and it is applied as
 # one. A tolerance would be a threshold this run invented, and an invented threshold is the
@@ -258,6 +258,12 @@ def compute_project(si: dict, scenario_id: str, period: str,
             "posture_module_scores": posture["posture_module_scores"],
             "posture_banded_count": posture["posture_banded_count"],
             "posture_average": posture["posture_average"],
+            # RUN 105, GOAL THREE. Whether this posture is an average over one reading, and the
+            # sentence that says so. This call site hands over EVERY admitted module, banded or
+            # not, so `posture_modules_considered` is the length of that list.
+            "posture_single_reading": posture["posture_single_reading"],
+            "posture_thinness_words": posture["posture_thinness_words"],
+            "posture_modules_considered": posture["posture_modules_considered"],
             # The band the fusion would have produced, kept BESIDE the posture and never in
             # place of it, so the change this run made is visible in a stored row.
             "fusion_band": fused["status"] if fused else None,
@@ -327,22 +333,33 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # A4 Document Signals, A6 Delivery Quality -- carry a posture. There is no supporting tier
     # any more, and no category can create a Green merely because no documents were supplied.
     #
-    # THE PROJECT RULE ON THIS PATH IS NOT TOUCHED. `fuse_signals(voting)` above is not altered,
-    # not re-ordered and not consulted twice; `project["status"]` is exactly what it was. The
-    # gate is a condition LAYERED ON TOP, so when all five required categories are assessed the
-    # published status is byte-for-byte identical to the previous behaviour.
+    # THE GATE IS A CONDITION LAYERED ON TOP of whatever band the project rule produces, and
+    # Run 105 changed that rule (below) without touching the gate: when all five required
+    # categories carry a posture the gate passes the band through unaltered, exactly as before.
     #
-    # AND IT IS NOT WORST-WINS, WHICH RUN 104 MEASURED AND RECORDS HERE RATHER THAN ASSERTING
-    # THE COMMENT THIS REPLACES. `fuse_signals` combines the CATEGORY bands by Dempster's rule
-    # across independent bodies; only the SPECIFICATION path (`spec_projection.project_status`)
-    # applies `worst_band` to the categories, and that is the path the participant page is
-    # served from. Measured on the Run 104 corpus: four Green categories and one Amber gave a
-    # SERVED status of Amber and a stored Python `project_status` of Green. Run 104's order
-    # forbids changing how the project forms its status, so this is REPORTED and not altered. INDETERMINATE is not a band, is not in
-    # `BAND_SEVERITY`, and never enters a severity comparison.
+    # RUN 105, GOAL ONE. ONE PROJECT, ONE STATUS -- AND THE RULE IS WORST-WINS.
+    #
+    # WHAT STOOD HERE, AND WHY IT WAS WRONG. `_fused_band` was `project["status"]`, the band
+    # `fuse_signals` produced by combining the CATEGORY bands under Dempster's rule. The
+    # specification path (`spec_projection.project_status_basis`) applied `worst_band` to the
+    # same categories. Same project, same postures, two rules. Run 104 measured the divergence
+    # on the corpus project -- four Green categories and one Amber gave a SERVED status of Amber
+    # and a stored `project_status` of Green -- and its order forbade the fix. This run's order
+    # requires it: the project status is the worst band among the categories that carry one.
+    #
+    # THE FUSION IS STILL RUN AND STILL STORED. It no longer DECIDES. `project["conflict"]` is
+    # the belief-conflict coefficient `governed_status_semantics` reads below, and it is a real
+    # measurement over the same voting categories; removing the call would have forced a zero to
+    # be invented there. `fused_band` in the result keeps its name and now holds the worst-wins
+    # band, which is what every reader of that name already meant by it; the fusion's own band
+    # is published beside it as `dempster_band` so the two can still be compared in a stored row.
+    #
+    # THE GATE AND INDETERMINATE ARE UNCHANGED, by the order's own words. INDETERMINATE is not a
+    # band, is not in `BAND_SEVERITY`, and never enters a severity comparison.
     _required_missing = [k for k in _REQUIRED_CATEGORIES
                          if not (category_statuses.get(k) or {}).get("status")]
-    _fused_band = project["status"] if project else None
+    _dempster_band = project["status"] if project else None
+    _fused_band = worst_band([v["status"] for v in voting])
     # RUN 99. The Complete promotion, decided by the one function above and applied identically
     # on the specification path in `spec_projection`. Ahead of the gate; see the note there.
     _complete = delivery_complete(si)
@@ -397,6 +414,10 @@ def compute_project(si: dict, scenario_id: str, period: str,
         # The band worst-wins produced, kept under its own name so nothing that needs the
         # SEVERITY loses it to the gate. This is not a second project status.
         "fused_band": _fused_band,
+        # RUN 105. The band Dempster's rule would have produced over the same categories, kept
+        # BESIDE the status and never in place of it, so the change this run made is visible in
+        # a stored row -- the same discipline Run 104 applied to `fusion_band` per category.
+        "dempster_band": _dempster_band,
         # RUN 11, GATES 5 AND 6. project_conflict keeps its original name so every reader that
         # already looks for it keeps working, but it is None rather than 0.0 when the coefficient
         # cannot be estimated: a consumer that prints it now prints nothing instead of printing a

@@ -2683,8 +2683,11 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     # specification layer called and which asserted no band keeps its own reading and is not
     # overridden. See `spec_projection.merge_python_row` for the coherence argument the order's
     # section 2 escape clause demands: the unit of merge is a whole category, both layers form a
-    # category posture by the SAME `worst_band` rule, and the merged mapping goes through the
-    # SAME required-core gate once. Nothing is averaged between the layers anywhere.
+    # category posture by the SAME `simulation.category_posture` rule -- RUN 105 CORRECTION: the
+    # line that stood here named `worst_band`, which stopped being the category rule at Run 104.
+    # A1/A2/A3/A4 average their banded modules' scores, A6 takes the worst -- and the merged
+    # mapping goes through the SAME required-core gate and the SAME project rule (worst band
+    # across the categories) once. Nothing is averaged BETWEEN the layers anywhere.
     #
     # `row` IS STILL READ for everything the previous docstring said it was read for -- the
     # signal inputs, the period, the provenance columns, the evidence qualification, the
@@ -4593,6 +4596,14 @@ def a_projectdecisionrecord(session: Session, payload: dict, secret: str,
     # The posture the decision was recorded AGAINST, read from the stored row for that period
     # rather than accepted from the client, so the audit row cannot claim a posture the
     # platform never issued.
+    #
+    # RUN 105, AND THIS IS THE READER THAT MATTERED. `ComputedResult.project_status` is the RAW
+    # Python-layer status, and until Run 105 that was `fuse_signals`'s Dempster band while the
+    # participant's card was served the worst-wins band. On the corpus project the two differed:
+    # the card said Amber and this line would have stamped the decision Green. `compute` now
+    # applies the same worst-wins rule, so the posture stamped here is the posture the
+    # participant read. Rows written before Run 105 keep what they hold and are not rewritten;
+    # their `simulation_version` (sim-2026.09-v50 or earlier) is what says which rule formed them.
     result = _live_result(session, project, period) if period is not None else None
     posture = None
     if result is not None:

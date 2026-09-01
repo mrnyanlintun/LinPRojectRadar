@@ -214,8 +214,14 @@ core voting modules*.
 **Comparison only. It cannot set a status.** B1.2 is in
 `spec_projection.COMPARISON_ONLY_MODULES`, so its band is never admitted to its category's rollup
 on the specification-reading path; and on the Python path it is evaluated *after* the rollup that
-produced its own input, so it is structurally incapable of reaching it. Conservative Dominance
-alone sets the official project status.
+produced its own input, so it is structurally incapable of reaching it.
+
+**Run 105 correction: Conservative Dominance does NOT set the official project status, and no
+module does.** The sentence that stood here said it did. B1.1 is a maximum over the four assembled
+signals and that is all it is. The official project status is formed from the CATEGORIES: A1, A2,
+A3 and A4 average their banded modules' scores, A6 Delivery Quality takes the worst band any of its
+modules asserted, and the project takes the worst band across the contributing categories, subject
+to the required-core gate and Indeterminate.
 
 **Interpretation.** The weighted vote says which state carries most of the owner's assigned weight
 across the performance categories, and the normalised weights and their provenance travel with the

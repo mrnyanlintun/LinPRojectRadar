@@ -8,8 +8,17 @@ not how the project is performing.
 
 **The owner's ruling, Run 89 section 3.** This category's role is **eligibility only**. It
 determines whether methods and categories have sufficient evidence to produce a posture. It
-produces **no project-health posture**. It enters **neither Conservative Dominance nor Weighted
-Voting**, and no reading in it can reach the official project status by any path.
+produces **no project-health posture**. It enters **no category posture and no project status**,
+and no reading in it can reach the official project status by any path.
+
+**Run 105 correction.** The sentence here previously said C1 "enters neither Conservative Dominance
+nor Weighted Voting", which described the platform's status rule by the name of a *module*.
+Conservative Dominance is B1.1 — a maximum over the four assembled signals — and it has never been
+the platform's status rule. The platform's rule is: the four performance categories (A1 Cost and
+EVM, A2 Schedule, A3 Cost Risk, A4 Document-Derived Signals) average their banded modules' scores;
+A6 Delivery Quality takes the worst band any of its modules asserted; the project takes the worst
+band across the contributing categories, subject to the required-core gate and Indeterminate. C1
+enters none of those three steps.
 
 **Information Completeness Ratio (`C1.5`) is the eligibility gate the owner named.** Its registry
 note already says what it is for: *"authoring-time quality gate; not participant-facing; must not

@@ -54,8 +54,11 @@ WORST-WINS THROUGHOUT, because that is no longer true of four categories out of 
   * A category the owner did not assign keeps worst-wins, unchanged.
 
 An abstention is still an absence of a reading, not an adverse one, and it is NOT a zero in the
-average either. THE PROJECT STATUS IS UNCHANGED: it is still `worst_band` over the categories
-that contribute, by `compute.contributes_to_project_status`, which excludes groups C and D.
+average either. THE PROJECT STATUS IS `worst_band` over the categories that contribute, by
+`compute.contributes_to_project_status`, which excludes groups C and D. RUN 105: it is now the
+rule on the PYTHON path too. Until Run 105 `simulation.compute` published `fuse_signals(voting)`'s
+Dempster band instead, and on the corpus project the stored row said Green while this path served
+Amber. One project, one status.
 
 `computed_results` IS NOT TOUCHED, NOT WRITTEN AND NOT DELETED. It remains the record of what
 the Python layer produced and the freeze architecture keeps referencing it. This module only
@@ -257,7 +260,11 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
         # and is unchanged. A1, A2, A3 and A4 average their banded modules' scores; A6 takes the
         # worst; a category the owner did not assign keeps worst-wins. The arithmetic is carried
         # on the entry so the brief can show its working.
-        posture = category_posture(key, [(mid, b) for mid, b in bands if b])
+        # RUN 105, GOAL THREE. `modules_in_category` is passed because this call site FILTERS to
+        # the banded modules; without it the record could not say how many admitted modules
+        # produced no band, and the thinness sentence would understate the silence.
+        posture = category_posture(key, [(mid, b) for mid, b in bands if b],
+                                   modules_in_category=len(bands))
         fused = posture["status"]
         group = groups.get(key, "")
         out[key] = {
@@ -270,6 +277,10 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
             "posture_module_scores": posture["posture_module_scores"],
             "posture_banded_count": posture["posture_banded_count"],
             "posture_average": posture["posture_average"],
+            # RUN 105, GOAL THREE. Whether this posture is an average over one reading.
+            "posture_single_reading": posture["posture_single_reading"],
+            "posture_thinness_words": posture["posture_thinness_words"],
+            "posture_modules_considered": posture["posture_modules_considered"],
             # No belief-conflict coefficient is defined over a specification reading, and one is
             # not invented. 0.0 is what `governed_status_semantics` reads for "no disagreement
             # measured"; the state below is what a reader should judge the reading by.
@@ -303,10 +314,11 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
 # publish `[]`, which is the true answer rather than a dead key. When any required category is
 # not assessed, the official status is INDETERMINATE.
 #
-# THE PROJECT-LEVEL RULE IS NOT TOUCHED. `worst_band` over the CATEGORIES is still the only
-# severity rule in this file and its arithmetic is not altered, not re-ordered and not consulted
-# twice -- Run 104 changed how a CATEGORY forms its posture and nothing about how the project
-# forms its status. The gate is a CONDITION LAYERED ON TOP of the fused band: when all five
+# THE PROJECT-LEVEL RULE IS NOT TOUCHED HERE, AND SINCE RUN 105 IT IS THE ONLY ONE ANYWHERE.
+# `worst_band` over the CATEGORIES is still the only severity rule in this file and its arithmetic
+# is not altered, not re-ordered and not consulted twice -- Run 104 changed how a CATEGORY forms
+# its posture and nothing about how the project forms its status; Run 105 changed the OTHER path
+# (`simulation.compute`) to this one, so both now take the worst across the categories. The gate is a CONDITION LAYERED ON TOP of the fused band: when all five
 # required categories carry a posture, this function returns EXACTLY what it returned before
 # Run 89, byte for byte. That equality is
 # measured, not argued, in `tools/test_run89_required_core.py`.
@@ -404,8 +416,11 @@ def project_status(cats: dict[str, dict[str, Any]],
     """
     The official project status.
 
-    When all four required categories carry a posture this is the worst contributing category's
-    band, or None -- the same rule, the same arithmetic, one level up, unchanged by this run.
+    When all FIVE required categories -- A1, A2, A3, A4, A6 -- carry a posture this is the worst
+    contributing category's band, or None. (RUN 105: the word here was "four", which has been
+    wrong since Run 95 moved the required core to five. Counted against `REQUIRED_CATEGORIES`.)
+    Since RUN 105 the Python rollup in `simulation.compute` applies this same rule, so the stored
+    row and the served page cannot disagree about the project status.
     When any required category carries none, it is INDETERMINATE, which is not a band and is not
     ranked against one.
     """
@@ -495,11 +510,16 @@ def projections(session: Session, pairs: list[tuple[str, int]],
 #   * the unit of merge is a CATEGORY, and a category is taken WHOLE from one layer or the
 #     other. No category's posture is ever formed from modules of both layers, so nothing is
 #     averaged, reconciled or blended anywhere;
-#   * both layers form a category posture by the SAME rule, `fusion.worst_band` over the bands
-#     of the modules that computed -- `spec_projection.category_statuses` calls it and
-#     `simulation.compute` calls it through `fuse_signals`. Conservative Dominance is untouched;
-#   * both then hand those postures to the SAME required-core gate and the SAME project fusion,
-#     which is `project_status_basis` below, called ONCE on the merged mapping.
+#   * both layers form a category posture by the SAME rule -- SINCE RUN 104 that rule is
+#     `simulation.category_posture`, NOT `worst_band`: A1, A2, A3 and A4 average their banded
+#     modules' scores, A6 takes the worst, and a category the owner did not assign keeps
+#     worst-wins. `spec_projection.category_statuses` and `simulation.compute` call the SAME
+#     function. (RUN 105 CORRECTION: the two lines that stood here said both layers used
+#     `worst_band` and named the rule "Conservative Dominance". Neither was true. Conservative
+#     Dominance is B1.1, a maximum over four assembled signals, and it is not a platform rule.)
+#   * both then hand those postures to the SAME required-core gate and the SAME project rule,
+#     which since RUN 105 is `worst_band` over the contributing categories on BOTH paths --
+#     `project_status_basis` below, called ONCE on the merged mapping.
 #
 # So a merged row is exactly what the platform would publish if the specification layer had been
 # asked about only the categories it was asked about. That is filling an absence, not overriding

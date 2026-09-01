@@ -185,16 +185,32 @@ def _posture_rules(cats: Mapping[str, Mapping[str, Any]]) -> str | None:
     claim a rule the reading does not carry.
     """
     lines: list[str] = []
+    thin: list[str] = []
     for key in sorted(cats):
         entry = cats.get(key) or {}
         if not entry.get("status") or not entry.get("posture_arithmetic"):
             continue
+        # RUN 105, GOAL THREE. A category whose average rests on ONE banded module is MARKED
+        # here, not left for the reader to notice that the count in the arithmetic says 1. The
+        # marker and the sentence are both READ BACK off the reading; neither is composed here.
+        mark = ("ONE READING ONLY -- " if entry.get("posture_single_reading") else "")
+        if entry.get("posture_single_reading"):
+            thin.append(f"{key} {_cat_name(key)}")
         lines.append(
-            f"{key} {_cat_name(key)} is {_band(entry['status'])}, formed from "
+            f"{mark}{key} {_cat_name(key)} is {_band(entry['status'])}, formed from "
             f"{entry.get('posture_rule_short') or 'its modules'}: "
             f"{entry['posture_arithmetic']}")
     if not lines:
         return None
+    if thin:
+        lines.append(
+            "READ " + (" and ".join(thin))
+            + (" with care: it rests" if len(thin) == 1 else " with care: they rest")
+            + " on a single banded module, so the average is that module's score and is not "
+              "the agreement of several. The platform publishes the posture rather than "
+              "withholding it, because a minimum banded count would leave a required category "
+              "without a posture and force the whole project to Indeterminate; what it will "
+              "not do is let the band read as a settled category position.")
     return ("How each category formed its posture. "
             "Four performance categories -- Cost and EVM, Schedule, Cost Risk and "
             "Document-Derived Signals -- average their banded modules' scores, so one weak "

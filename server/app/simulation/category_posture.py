@@ -37,9 +37,38 @@ required core, and are not performance measures; their rule is therefore UNCHANG
 (worst-wins), and that is recorded here as a default rather than left to silence. No vocabulary
 is widened and no threshold is invented for them.
 
-THE PROJECT STATUS IS NOT TOUCHED. It is still the worst band across the contributing
-categories, subject to the required-core gate and Indeterminate. This module changes how a
-CATEGORY forms its posture and nothing else.
+THE PROJECT STATUS IS NOT FORMED HERE. Since Run 105 it is the worst band across the
+contributing categories on BOTH paths -- the Python rollup and the specification projection --
+subject to the required-core gate and Indeterminate. This module forms a CATEGORY posture and
+nothing else.
+
+RUN 105, GOAL THREE. AN AVERAGE OVER ONE MODULE IS THAT MODULE, AND THE CARD MUST SAY SO.
+
+On the owner's corpus A4 Document-Derived Signals published Green from ONE banded module
+(A4.2 RFI Velocity) out of eight in service. The arithmetic string was already honest -- it
+said "1 banded module" -- but a reader who sees Green over a category name reasonably assumes
+several modules agreed, and that posture feeds the project status.
+
+WHAT WAS CONSIDERED, AND WHY A MINIMUM COUNT WAS REJECTED.
+
+  A MINIMUM BANDED COUNT below which the category carries no posture was measured against the
+  corpus before being rejected, not rejected by taste. Banded counts there are A1 2 of 7,
+  A2 4 of 5, A3 3 of 4, A4 1 of 8, A6 4 of 4. A floor of 2 strips A4's posture; a floor of 3
+  strips A4's and A1's. A4 and A1 are both in the REQUIRED CORE, so either floor forces the
+  corpus project to Indeterminate -- the platform would answer "we cannot say" about a project
+  whose modules did in fact read, which is a worse failure than a thin Green. It is also a
+  NUMBER WITH NO RECORDED BASIS: nothing in the owner's calibration says two readings are
+  enough and one is not, and rule 1 of this run's order forbids inventing one.
+
+  DISCLOSURE was chosen. The posture is carried, and the record now states -- in a field of its
+  own AND inside the arithmetic string every surface already renders -- that it rests on a
+  single reading, naming the module and how many modules in the category produced none. The
+  count is not a threshold: 1 is the point at which the word "average" stops describing what
+  happened, which is arithmetic and not calibration.
+
+  IT IS SCOPED TO AVERAGING. Worst-wins over one banded module is exactly what worst-wins
+  means -- the worst of one reading is that reading, and nothing was averaged away -- so no
+  thinness is claimed for A6 or for any category on the default rule.
 """
 
 from __future__ import annotations
@@ -94,6 +123,11 @@ RULE_WORDS: dict[str, str] = {
                  "of them is a finding in its own right"),
 }
 
+#: RUN 105, GOAL THREE. The point at which an average stops averaging. Not a calibrated
+#: threshold and not a floor on publication: at one banded module the mean IS that module's
+#: score, so the record says so. See the module docstring for why no minimum count was imposed.
+SINGLE_READING_COUNT = 1
+
 RULE_SHORT: dict[str, str] = {
     RULE_AVERAGE: "the average of its banded modules' scores",
     RULE_WORST: "the worst band among its modules",
@@ -117,8 +151,27 @@ def band_average(scores: Iterable[float]) -> str | None:
     return "Red"
 
 
+def thinness_words(module_id: Any, considered: int | None) -> str:
+    """
+    What the card says about an average formed from ONE reading. Read off the reading itself --
+    the module that banded and how many modules in the category were considered -- so no
+    surface has to compose it and none can overstate it.
+    """
+    silent = None
+    if isinstance(considered, int) and considered > SINGLE_READING_COUNT:
+        silent = considered - SINGLE_READING_COUNT
+    return ("THIS POSTURE RESTS ON ONE READING. Only " + str(module_id) + " asserted a band in "
+            "this category"
+            + (f", and {silent} other module" + ("" if silent == 1 else "s")
+               + " considered here produced none" if silent else "")
+            + ", so the average is that single module's score and nothing was averaged against "
+              "it. It is not the agreement of several modules, and it should be read as one "
+              "measurement rather than a settled category position.")
+
+
 def category_posture(category_key: str | None,
-                     module_bands: Iterable[tuple[Any, Any]]) -> dict[str, Any]:
+                     module_bands: Iterable[tuple[Any, Any]],
+                     modules_in_category: int | None = None) -> dict[str, Any]:
     """
     The posture of ONE category, and the arithmetic that produced it.
 
@@ -132,8 +185,13 @@ def category_posture(category_key: str | None,
     instead of guessing. Section 10.3 fails the run for a posture that cannot show it.
     """
     rule = rule_for(category_key)
+    pairs = list(module_bands)
+    # HOW MANY MODULES WERE ON THE TABLE. Callers that hand this function only the banded
+    # modules pass the total explicitly; callers that hand it every admitted module do not
+    # need to, and the length of what they handed over is the count. Never inflated.
+    considered = modules_in_category if isinstance(modules_in_category, int) else len(pairs)
     contributors: list[dict[str, Any]] = []
-    for module_id, band in module_bands:
+    for module_id, band in pairs:
         b = str(band).capitalize() if band is not None else None
         if b not in BAND_SEVERITY:
             continue
@@ -152,6 +210,13 @@ def category_posture(category_key: str | None,
         "posture_average": None,
         "posture_arithmetic": None,
         "status_set_by": [],
+        # RUN 105, GOAL THREE. Whether this posture is an average over a SINGLE reading, and
+        # the sentence that says so. False/None on every other posture, including a worst-wins
+        # category with one banded module -- the worst of one reading is that reading and
+        # nothing was averaged away.
+        "posture_single_reading": False,
+        "posture_thinness_words": None,
+        "posture_modules_considered": considered,
     }
     if not contributors:
         record["posture_arithmetic"] = (
@@ -173,6 +238,14 @@ def category_posture(category_key: str | None,
             + f" -- {len(scores)} banded module"
             + ("" if len(scores) == 1 else "s")
             + f", total {sum(scores):+.0f}, mean {mean:+.4g}, which crosses into {status}.")
+        if len(contributors) == SINGLE_READING_COUNT:
+            record["posture_single_reading"] = True
+            record["posture_thinness_words"] = thinness_words(
+                contributors[0]["module_id"], considered)
+            # APPENDED TO THE ARITHMETIC ITSELF, so every surface that already renders the
+            # working shows the thinness without a renderer being changed to look for a new
+            # field. The field exists as well, for a surface that wants to mark it.
+            record["posture_arithmetic"] += " " + record["posture_thinness_words"]
         return record
 
     status = worst_band([c["band"] for c in contributors])

@@ -334,17 +334,25 @@ check(sorted(_ps.get("required_categories") or []) == ["A1", "A2", "A3", "A4", "
 _cbands = [ (SERVED_CATS[k] or {}).get("status") for k in SERVED_CATS
             if (SERVED_CATS[k] or {}).get("contributes_to_project_status")
             and (SERVED_CATS[k] or {}).get("status") ]
-# THE PYTHON LAYER'S OWN PROJECT STATUS IS NOT WORST-WINS, AND THIS RUN MEASURED IT RATHER THAN
-# ASSUMING THE ORDER'S PREMISE. `compute.compute_project` publishes `fuse_signals(voting)`'s band
-# -- Dempster's rule ACROSS the categories -- and only the SPECIFICATION path applies
-# `worst_band` to the categories. While A6 read Green the two agreed; now that A6 reads Amber
-# they do not. The served route, which is what the participant page shows, is the worst-wins one.
+# RUN 105 CLOSED THE DIVERGENCE THIS PARAGRAPH RECORDED, and the paragraph is re-pointed rather
+# than deleted so the history stays readable. Run 104 measured `compute.compute_project`
+# publishing `fuse_signals(voting)`'s band -- Dempster's rule ACROSS the categories -- while only
+# the SPECIFICATION path applied `worst_band`; on this same fixture the stored row said Green and
+# the served page said Amber. Run 105 made the Python path take the worst across the categories
+# too, so the line printed below now shows the stored status EQUAL to the worst of its own
+# categories. The check added here is that equality; it did not hold at Run 104 and would go red
+# if the Dempster rule were restored.
 _pyfuse = PYSTATUS
 print(f"  stored PYTHON row project_status = {_pyfuse!r}; worst of its categories = "
       f"{worst_band([ (v or {}).get('status') for v in PYCATS.values() ])!r}")
 check(SERVED_STATUS == worst_band(_cbands),
       f"the served project status is the worst of the contributing categories {_cbands}",
       repr(SERVED_STATUS))
+# RUN 105. The stored row must now agree with it. Re-pointed, not weakened: this is a check the
+# tree could not pass before Run 105.
+check(_pyfuse == SERVED_STATUS,
+      "RUN 105: the stored PYTHON project_status equals the served one -- one project, one "
+      "status", f"stored {_pyfuse!r} vs served {SERVED_STATUS!r}")
 
 # =============================================================================================
 print()

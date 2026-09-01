@@ -471,10 +471,15 @@ def apply_category(category_key: str, signal_inputs: dict, applier=None,
     posture = category_posture(
         category_key,
         [(r.get("module_id"), r["band"]) for r in rows
-         if r["state"] == COMPUTED and r["band"] is not None])
+         if r["state"] == COMPUTED and r["band"] is not None],
+        # RUN 105, GOAL THREE. This call site filters to the banded modules, so the count of
+        # modules the category actually produced is passed explicitly.
+        modules_in_category=len(rows))
     base["status"] = posture["status"]
     base["posture_rule"] = posture["posture_rule"]
     base["posture_arithmetic"] = posture["posture_arithmetic"]
+    base["posture_single_reading"] = posture["posture_single_reading"]
+    base["posture_thinness_words"] = posture["posture_thinness_words"]
     return base
 
 

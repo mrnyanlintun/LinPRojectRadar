@@ -923,7 +923,21 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # `delivery_complete`, `scope_signal_inputs`, Run 102's layer merge and Run 103's network
 # diagnostics are all unaltered, no module was renamed, and no stored row was migrated, deleted
 # or rewritten. Results computed under sim-2026.09-v49 remain valid under that stamp.
-SIMULATION_VERSION = "sim-2026.09-v50"
+# RUN 105 MOVES THE STAMP TO v51, and the reason is a CHANGE IN WHAT A ROW HOLDS.
+# `compute.compute_project` no longer publishes `fuse_signals(voting)["status"]` -- Dempster's
+# rule across the categories -- as the project status. It publishes `worst_band` over the
+# contributing categories, which is the rule the specification path and the participant page
+# already used. A stored row computed under v50 can therefore carry a project_status that a row
+# computed under v51 from the same evidence would not, so the stamp must say so. `fused_band` now
+# holds the worst-wins band and `dempster_band` is added beside it, so nothing is lost.
+# Also in v51: a category whose AVERAGE rests on a single banded module now carries
+# `posture_single_reading`, `posture_thinness_words` and `posture_modules_considered`.
+#
+# Nothing else moves. The required core of five, the Indeterminate gate, the two category posture
+# rules, `delivery_complete` and the layer merge are unaltered, no module was renamed, and no
+# stored row was migrated, deleted or rewritten. Results computed under sim-2026.09-v50 remain
+# valid under that stamp.
+SIMULATION_VERSION = "sim-2026.09-v51"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -979,6 +993,9 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # margin cap; every posture carrying the arithmetic that produced it. THE STAMP IS MOVED AND
  # THIS TUPLE IS APPENDED TO IN THE SAME EDIT. No stored row is recomputed and none is touched.
  "sim-2026.09-v50",
+ # RUN 105: one project, one status. The Python rollup's project status moved from Dempster's
+ # rule across the categories to the worst band across them, matching the served page.
+ "sim-2026.09-v51",
 )
 
 

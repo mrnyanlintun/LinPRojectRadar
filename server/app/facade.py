@@ -203,6 +203,15 @@ def with_stored_status(doc: dict, stored: dict | None) -> dict[str, Any]:
     """
     The project document as a reader should see it: the stored computed status wins.
 
+    RUN 105 MEASURED WHAT `stored` ACTUALLY IS, because the name invites the wrong reading.
+    It is NOT the `computed_results` row. It is `live_statuses`'s output above, whose
+    `project_status` comes from `spec_projection.merge_python_row` -- the merged mapping through
+    the required-core gate and `worst_band`. So the portfolio list, the slim list and `a_get`
+    have always served the SPECIFICATION path's status, the same one the detail page serves, and
+    the Run 104 divergence never reached them. Measured on the real GET routes, not asserted:
+    `tools/drive_run105.py` part 1 presses `list` and `listslim` and compares them with
+    `projectresults`.
+
     RETURNS A COPY AND NEVER MUTATES `doc`. `project.doc` is a live ORM attribute on a JSON
     column, so assigning into it here would be picked up by the next flush and written back to
     the database — quietly creating the second source of truth this fix exists to remove. The
