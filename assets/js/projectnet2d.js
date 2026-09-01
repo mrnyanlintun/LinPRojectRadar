@@ -383,8 +383,8 @@
       var a = (i / Math.max(1, sys.planets.length)) * Math.PI * 2;
       /* ITERATION 3, AND IT IS A LEGIBILITY FIX MEASURED IN THE BROWSER, NOT A GUESS.
          With the ring lying deep in z (0.72 of R) the near half of it projected in FRONT of the
-         sun: at 1280px, A1 and A4 sat on top of the centre and the words PROJECT STATUS /
-         Indeterminate were unreadable behind them -- on the very state the order says to get
+         sun: at 1280px, A1 and A4 sat on top of the centre and the words PROJECT STATUS / the
+         no-posture status were unreadable behind them -- on the very state the order says to get
          right first. The ring is now close to the screen plane, so it projects as a wide, flat
          ellipse with the sun inside it and nothing in front of it. Radius is unchanged and
          still constant; only the PLANE the ring lies in moved. */
@@ -598,9 +598,10 @@
 
       /* THE SUN: THE PROJECT STATUS, AND IT IS UNLIT WHEN THE PLATFORM CANNOT CERTIFY ONE.
 
-         Run 89 made INDETERMINATE a real status: any of the required core A1, A2, A3, A6
-         without a posture and the platform issues no band at all. `Indeterminate` is
-         deliberately absent from `fusion.BAND_SEVERITY`, so `bandColor()` returns null for it
+         Run 89 made the no-posture word a real status: any of the required core A1, A2, A3,
+         A4, A6 without a posture and the platform issues no band at all. That word -- since
+         Run 106, "Awaiting analysis" -- is deliberately absent from `fusion.BAND_SEVERITY`,
+         so `bandColor()` returns null for it
          by the same route it returns null for a missing status -- nothing here tests for the
          word. On most current rows this is the state, so it is the one drawn first and
          deliberately: A DARK CENTRE, with a corona only when a band was actually issued. */
@@ -625,7 +626,7 @@
         ctx.fillStyle = sbody; ctx.fill();
         ctx.strokeStyle = hcol; ctx.lineWidth = 2; ctx.stroke();
       } else {
-        /* UNLIT, AND IT STAYS UNLIT. Run 90's rule: on Indeterminate the platform has issued no
+        /* UNLIT, AND IT STAYS UNLIT. Run 90's rule: with no posture the platform has issued no
            band, so the centre carries no band colour and no corona of any kind. It is drawn
            from the theme's own no-data surface and dashed rim, which is what makes it read as
            an absence in the site's own language rather than as a fifth quiet band. */
@@ -825,7 +826,8 @@
 
       /* THE SUN'S WORDS ARE PAINTED LAST, OVER EVERYTHING. A planet in front of the centre
          used to cover them. The reader must always be able to read the status, and on most
-         current rows that word is "Indeterminate". */
+         current rows that word is "Awaiting analysis" (Run 106 goal two; it was
+         "Indeterminate" until the owner ruled the seventh word out). */
       ctx.textAlign = "center";
       ctx.fillStyle = alpha(TH.surface, 0.86);
       var lw = Math.max(ctx.measureText("PROJECT STATUS").width,

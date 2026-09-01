@@ -369,6 +369,41 @@ def _archived_document_ids(session: Session, project: Project, period: int) -> s
     return {r for r in rows if r}
 
 
+
+def _json_rows(value):
+    """
+    RUN 106. The printed rows of a table an extraction returned, as a list of mappings.
+
+    Accepts the list itself or a JSON string of one, which is the shape every other `*_json`
+    field in this contract arrives in. Anything else is NO ROWS -- never a fabricated one.
+    """
+    import json as _json
+    if isinstance(value, str):
+        try:
+            value = _json.loads(value)
+        except (ValueError, TypeError):
+            return []
+    if not isinstance(value, list):
+        return []
+    return [r for r in value if isinstance(r, dict)]
+
+
+def _first_of(row, keys):
+    """
+    The first of several column headings a document might have used, matched case- and
+    separator-insensitively. Returns None where the row carries none of them: a column the
+    document did not print is absent, and no value is invented for it.
+    """
+    if not isinstance(row, dict):
+        return None
+    norm = {str(k).strip().lower().replace(" ", "_").replace("-", "_"): v
+            for k, v in row.items()}
+    for key in keys:
+        if key in norm and norm[key] not in (None, ""):
+            return norm[key]
+    return None
+
+
 def _period_documents(session: Session, project: Project, period: int) -> list[dict]:
     """
     The period's LIVE document SET, in the shape `assemble_signal_inputs` expects.
@@ -1818,6 +1853,123 @@ def _run69_structures(session: Session, project: Project, period: int,
                     "source_document_type": "schedule_update",
                 })
 
+        # ---------------------------------------------------------- RUN 106, SECTION 3
+        # THE SUBMITTAL DECISION REGISTER, READ FROM THE ROWS THE DOCUMENT PRINTS.
+        #
+        # A4.3's owner-supplied band is a FIRST-REVIEW rate, and the first review of a submittal
+        # is its earliest decision. That cannot be recovered from `submittals_total` and
+        # `submittals_rejected`, which are bare totals with no revision structure, so those two
+        # fields are left exactly as they were and a DECISION TABLE is read beside them. Nothing
+        # is inferred: each row carries the submittal, the revision and the decision date as the
+        # register printed them, and a register that prints no such table assembles nothing.
+        elif doc_type == "submittal_register":
+            _rows = _json_rows(ex.get("submittal_decisions_json"))
+            if _rows:
+                _decisions = []
+                for _r in _rows:
+                    _sid = _first_of(_r, ("submittal_id", "submittal", "submittal_no",
+                                          "submittal_number", "id"))
+                    _rev = _first_of(_r, ("revision_id", "revision", "rev", "revision_no"))
+                    _day = _first_of(_r, ("decision_day", "decision_date", "date", "reviewed"))
+                    _disp = _first_of(_r, ("disposition", "decision", "outcome", "status",
+                                           "action"))
+                    # THE REVIEWER IS REQUIRED BY THE CANONICAL STRUCTURE, not by this run: a
+                    # decision with no recorded reviewer cannot be governed, and
+                    # `canonical_v4.submittal_rejection` refuses the register without it. It is
+                    # read from the register's own column and NEVER invented -- a row that does
+                    # not print one is dropped from the assembled register, and the register
+                    # says how many decisions it carried.
+                    _rev_by = _first_of(_r, ("reviewer", "reviewed_by", "reviewer_name",
+                                             "review_by", "approver"))
+                    if _sid is None or _disp is None or _rev_by is None:
+                        continue
+                    _decisions.append({
+                        "submittal_id": str(_sid),
+                        "revision_id": ("0" if _rev is None else str(_rev)),
+                        "disposition": str(_disp),
+                        "reviewer": str(_rev_by),
+                        "decision_day": _day,
+                        "reporting_period": _r.get("reporting_period"),
+                    })
+                if _decisions:
+                    _reg = {
+                        "source": ("the submittal decision register uploaded for this period"),
+                        "taxonomy_version": "as printed by the register",
+                        "decisions": _decisions,
+                        "assembled_by": "document extraction",
+                        "source_document_type": doc_type,
+                    }
+                    _legend = ex.get("submittal_disposition_legend_json")
+                    if isinstance(_legend, dict) and _legend:
+                        _reg["disposition_mapping"] = _legend
+                    if ex.get("submittal_reporting_period") is not None:
+                        _reg["reporting_period"] = ex.get("submittal_reporting_period")
+                    # THE THREE RED OVERRIDES, CARRIED AS THE DOCUMENT DESIGNATED THEM. A field
+                    # the document does not state is left ABSENT, never written False: absent
+                    # means the condition was not tested, which A4.3 discloses on the row.
+                    _late = _json_rows(ex.get("rejected_critical_or_long_lead_late_json"))
+                    if ex.get("rejected_critical_or_long_lead_late_json") is not None:
+                        _reg["rejected_critical_or_long_lead_forecast_after_need_by"] = bool(_late)
+                    _blk = _json_rows(ex.get("rejected_blocking_past_deadline_json"))
+                    if ex.get("rejected_blocking_past_deadline_json") is not None:
+                        _reg["rejected_unresolved_past_review_deadline_blocking_work"] = bool(_blk)
+                    if ex.get("critical_package_rejected_resubmittals") is not None:
+                        _reg["critical_package_rejected_resubmittals"] = ex.get(
+                            "critical_package_rejected_resubmittals")
+                    _prev = out.get("submittalDecisionRegister")
+                    if _prev is None or len(_decisions) > len(_prev.get("decisions") or []):
+                        out["submittalDecisionRegister"] = _reg
+
+        # ---------------------------------------------------------- RUN 106, SECTION 3
+        # THE NCR LOG'S OWN DENOMINATOR AND ITS OVERRIDES.
+        #
+        # The owner's ladder is a percentage of INSPECTIONS PERFORMED, or of ACTIVE WORK PACKAGES
+        # where inspections cannot be reliably identified. `items_inspected` on an inspection
+        # report counts ITEMS, which is a different population, so it is not substituted here.
+        # Where the log states neither denominator, nothing is assembled and the existing
+        # count-form path below (built from `ncrIssued` and `itemsInspected`) is unaffected --
+        # that path reports its exposure unit honestly and A4.4 bands or withholds on it.
+        elif doc_type == "ncr_log":
+            _insp = ex.get("inspections_performed")
+            _awp = ex.get("active_work_packages")
+            _unit = ("inspections" if _insp is not None
+                     else ("active_work_packages" if _awp is not None else None))
+            _qty = _insp if _insp is not None else _awp
+            if _unit and ex.get("ncr_issued") is not None:
+                try:
+                    _q = float(_qty)
+                    _n = float(ex.get("ncr_issued"))
+                except (TypeError, ValueError):
+                    _q = _n = -1.0
+                if _q > 0 and _n >= 0 and _n == int(_n):
+                    _rec = {
+                        "source": "the nonconformance log uploaded for this period",
+                        "exposure_unit": _unit,
+                        "exposure_quantity": _q,
+                        "ncr_count": int(_n),
+                        "ncr_count_basis": (ex.get("ncr_denominator_basis")
+                                            or "nonconformances raised in the reporting period"),
+                        "open_count": ex.get("ncr_open"),
+                        "closed_count": ex.get("ncr_closed"),
+                        "reporting_period": ex.get("report_period"),
+                        "assembled_by": "document extraction",
+                        "source_document_type": doc_type,
+                    }
+                    for _fld, _key in (
+                            ("open_critical_ncr_json",
+                             "open_critical_life_safety_structural_or_code_ncr"),
+                            ("hold_point_or_turnover_blocking_ncr_json",
+                             "hold_point_or_commissioning_or_required_inspection_blocking_"
+                             "turnover"),
+                            ("ncr_open_past_contractual_closure_json",
+                             "ncr_open_past_contractual_closure_date")):
+                        if ex.get(_fld) is not None:
+                            _rec[_key] = bool(_json_rows(ex.get(_fld)))
+                    if ex.get("max_repeat_ncrs_one_root_cause_or_trade") is not None:
+                        _rec["max_repeat_ncrs_one_root_cause_or_trade"] = ex.get(
+                            "max_repeat_ncrs_one_root_cause_or_trade")
+                    out["ncrExposureRecord"] = _rec
+
         elif doc_type == "change_order":
             mods = read_modification_register(ex.get("modifications_json"))
             if mods:
@@ -2699,8 +2851,9 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     _spec_abstained = _merged["abstained"]
     _spec_cats = _merged["category_statuses"]
     _spec_status = _merged["project_status"]
-    # RUN 89, GOAL THREE. The required-core verdict rides beside the status, so the Indeterminate
-    # brief can render the reason without re-deriving the gate on the client. A row computed
+    # RUN 89, GOAL THREE. The required-core verdict rides beside the status, so the
+    # Awaiting-analysis brief (Run 106 goal two; it was the Indeterminate brief until this run
+    # removed the word) can render the reason without re-deriving the gate on the client. A row computed
     # before Run 89 carries None here, and the client reads None as "the gate did not run".
     # No stored field is invented for it: on a Python-layer row it is DERIVED from that row's
     # own `category_statuses` by the same pure function, so a stored row and a fresh projection

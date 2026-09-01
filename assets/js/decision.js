@@ -124,6 +124,14 @@ function normalizeStatusLabel(status) {
   if (s === "yellow" || s === "light-amber" || s === "lightamber") return "Yellow";
   if (s === "amber" || s === "orange") return "Amber";
   if (s === "red" || s === "red-review" || s === "redreview" || s === "critical") return "Red";
+  /* RUN 106, GOAL TWO. "Awaiting analysis" IS ONE OF THE OWNER'S SIX AND IS NORMALISED HERE.
+     Until this run the server's no-posture word was "Indeterminate", which this function did
+     not know, so `app.js statusKey()` fell through to a slugged key ("indeterminate") that the
+     legend's count object does not hold and the project was tallied under `other`. The owner
+     has ruled the word out; the word that replaces it is one of his six and must resolve, or
+     the same silent miscount returns under a new spelling. */
+  if (s === "awaiting analysis" || s === "awaiting-analysis" || s === "awaitinganalysis"
+      || s === "awaiting") return "Awaiting analysis";
   return null;
 }
 
@@ -248,15 +256,18 @@ function deriveHealthState(project) {
          pressed. Returning it for a row that EXISTS said the opposite of what had happened --
          the project had been analysed, and the analysis had produced no publishable status.
 
-         The platform already has a word for exactly that condition and it is the one the
-         server itself stores: "Indeterminate", issued by the required-core gate in
-         `simulation/compute.py` when a required category carries no posture. It is returned
-         here rather than a new word, so this surface and the server say the same thing.
+         RUN 106, GOAL TWO, AND THE OWNER HAS NOW RULED. Run 99 returned "Indeterminate" here
+         and reported it as a seventh status he had not ruled on. He has: there are SIX statuses
+         and Indeterminate is not one of them. "Awaiting analysis" now covers BOTH conditions --
+         documents uploaded and not yet processed, and processed with a required category
+         unassessed -- and the two are distinguished not by the label but by the SENTENCE that
+         must accompany it, which the server composes as `project_status_reason` and every
+         surface renders beside the word. That is the owner's requirement in his own words:
+         nobody will understand one word.
 
-         IT IS A SEVENTH STATUS AND THE OWNER HAS NOT RULED ON IT. Run 99 reports that; it does
-         not paper over it by relabelling it as one of the six, and it does not invent an
-         eighth. */
-      if (f && f.stored) return "Indeterminate";
+         The server publishes the same word from the same gate, so this surface and the server
+         still say the same thing, and no eighth word is invented. */
+      if (f && f.stored) return "Awaiting analysis";
     }
   } catch (e) { /* fall through */ }
 

@@ -78,15 +78,27 @@ def _posture(basis: Mapping[str, Any]) -> dict[str, Any]:
     """
     The official project posture, exactly as the status architecture published it.
 
-    `status` is what the instrument stands behind. `fused_band` is the worst band the ASSESSED
-    categories produced, and it is reported beside an Indeterminate status rather than instead of
-    it, because withholding an official posture must never conceal an adverse reading.
+    `status` is what the instrument stands behind. `fused_band` is the band the WEIGHTED VOTE
+    over the assessed categories produced (Run 106 goal one), and it is reported beside an
+    "Awaiting analysis" status rather than instead of it, because withholding a posture must
+    never conceal an adverse reading.
+
+    RUN 106, GOAL TWO. Where the status is "Awaiting analysis" the SENTENCE saying why comes
+    with it, read back off `status_reason` which the status architecture composed. A bare label
+    is never rendered: the owner's words are that nobody will understand one word.
     """
     status = basis.get("status")
     official = bool(basis.get("official"))
     out: dict[str, Any] = {"status": status, "official": official}
     if basis.get("fused_band"):
         out["fused_band"] = basis["fused_band"]
+    if basis.get("status_reason"):
+        out["status_reason"] = basis["status_reason"]
+    if basis.get("project_arithmetic"):
+        out["project_arithmetic"] = basis["project_arithmetic"]
+        out["project_rule_short"] = basis.get("project_rule_short")
+        out["project_boundary"] = basis.get("project_boundary")
+        out["project_weighted_sum"] = basis.get("project_weighted_sum")
     return out
 
 
@@ -136,7 +148,7 @@ def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]],
     """
     ONE declarative sentence, naming its figure, produced by rule and not by choice.
 
-    The Indeterminate path is the common case and is built as carefully as the assessed one: it
+    The Awaiting-analysis path is the common case and is built as carefully as the assessed one: it
     names how many required categories carry a posture, how many do not, and -- when an assessed
     category is adverse -- says so in the same sentence, so the withheld posture cannot bury it.
     """
@@ -146,7 +158,7 @@ def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]],
     adverse = [k for k in assessed if _band(cats.get(k, {}).get("status")) in _SEVERITY]
     by_id = {m.get("module_id"): m for m in modules if m.get("module_id")}
 
-    if basis.get("status") == "Indeterminate":
+    if not basis.get("official"):
         parts = [
             f"An official project posture is withheld: {len(assessed)} of the "
             f"{len(required)} required categories carry a posture and {len(missing)} do not "
@@ -166,10 +178,87 @@ def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]],
             adverse_txt = (
                 " The categories carrying the adverse condition are "
                 + ", ".join(_adverse_phrase(k, cats, by_id) for k in worst) + ".")
+        # RUN 106, GOAL FIVE. THE ADVERSE MODULE READINGS ARE NAMED WHATEVER THE BAND ABOVE
+        # THEM SAYS. Under the weighted rule a project can publish Green with a Red module
+        # inside it -- the owner has ruled that and it is not to be softened -- so the finding
+        # itself must not be able to close without naming it. The category-level sentence above
+        # cannot do that job: an averaging category with a Red module in it can read Yellow or
+        # even Green, and `_SEVERITY` does not rank Yellow, so the module vanished from the
+        # sentence entirely. This names the MODULE.
         return (
             f"The project posture is {basis['status']}, formed from all "
-            f"{len(assessed)} required categories.{adverse_txt}")
+            f"{len(assessed)} required categories.{adverse_txt}"
+            + _adverse_module_sentence(cats, modules, basis))
     return None
+
+
+#: Every band that is not Green is an adverse reading for the purpose of naming drivers. This is
+#: DELIBERATELY WIDER than `_SEVERITY`, which ranks only Red and Amber for ordering: a Yellow
+#: module inside a Green project is exactly the reading the owner's Run 106 ruling makes
+#: invisible if nothing goes looking for it.
+_ADVERSE_BANDS = frozenset({"yellow", "amber", "red"})
+
+
+def _adverse_readings(cats: Mapping[str, Mapping[str, Any]],
+                      modules: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """
+    RUN 106, GOAL FIVE. EVERY MODULE READING THAT IS NOT GREEN, WHATEVER SITS ABOVE IT.
+
+    A consequence of the owner's weighted project rule is that a Green project can hold a Red
+    module: the module moves its category, the category moves the sum by its weight, and the sum
+    can still band Green. The ruling stands. What must not stand is the Red disappearing.
+
+    THE SELECTION IS NOT A JUDGEMENT AND HAS NO THRESHOLD. Every module row whose stored
+    `status_color` is Yellow, Amber or Red is here, in severity order. Nothing is filtered by
+    category, by whether the module set its category's posture, or by how the project banded.
+    """
+    by_severity = {"red": 0, "amber": 1, "yellow": 2}
+    cat_of = {}
+    for key, cat in (cats or {}).items():
+        for mid in (cat.get("status_set_by") or []):
+            cat_of[mid] = key
+    rows: list[dict[str, Any]] = []
+    for mod in modules or []:
+        band = _band(mod.get("status_color"))
+        if band not in _ADVERSE_BANDS:
+            continue
+        mid = mod.get("module_id")
+        key = cat_of.get(mid) or mod.get("category")
+        cat = (cats or {}).get(key) or {}
+        rows.append({
+            "module_id": mid,
+            "band": band.title(),
+            "category": key,
+            "category_name": _cat_name(str(key)) if key else None,
+            "category_band": (str(cat.get("status")).title() if cat.get("status") else None),
+            "method_class": mod.get("method_class"),
+            "reading": mod.get("evidence_metric"),
+            "visible_above": ("this reading is more adverse than the band its category "
+                              "publishes" if cat.get("status")
+                              and by_severity.get(band, 9)
+                              < by_severity.get(_band(cat.get("status")), 9) else None),
+        })
+    rows.sort(key=lambda r: (by_severity.get(_band(r["band"]), 9),
+                             str(r.get("category") or ""), str(r.get("module_id") or "")))
+    return rows
+
+
+def _adverse_module_sentence(cats: Mapping[str, Mapping[str, Any]],
+                             modules: Sequence[Mapping[str, Any]],
+                             basis: Mapping[str, Any]) -> str:
+    """The sentence the finding closes with, naming adverse modules under a better status."""
+    rows = _adverse_readings(cats, modules)
+    if not rows:
+        return ""
+    named = "; ".join(
+        f"{r['module_id']} {r['band']}" + (f" ({r['reading']})" if r.get("reading") else "")
+        + (f" in {r['category']} {r['category_name']}" if r.get("category") else "")
+        for r in rows)
+    return (" ADVERSE READINGS INSIDE THIS POSTURE, named regardless of the band above them: "
+            + named + ". The project status is a weighted vote over the five category postures "
+            "and an adverse category moves the sum by its weight and no more, so a favourable "
+            "project band does not mean these readings were absent, outweighed on their own "
+            "terms, or found not to hold. Each is a finding at its own level.")
 
 
 # ------------------------------------------------------------------ 3. why it was produced
@@ -209,7 +298,7 @@ def _posture_rules(cats: Mapping[str, Mapping[str, Any]]) -> str | None:
             + " on a single banded module, so the average is that module's score and is not "
               "the agreement of several. The platform publishes the posture rather than "
               "withholding it, because a minimum banded count would leave a required category "
-              "without a posture and force the whole project to Indeterminate; what it will "
+              "without a posture and force the whole project to Awaiting analysis; what it will "
               "not do is let the band read as a settled category position.")
     return ("How each category formed its posture. "
             "Four performance categories -- Cost and EVM, Schedule, Cost Risk and "
@@ -217,8 +306,9 @@ def _posture_rules(cats: Mapping[str, Mapping[str, Any]]) -> str | None:
             "module moves the posture without dominating it. Delivery Quality takes the worst "
             "band any of its modules asserted, because quality, safety, environmental and "
             "contractor performance are conformance and compliance measures and an adverse "
-            "reading in one of them is a finding in its own right. The project then takes the "
-            "worst across the categories. " + " ".join(lines))
+            "reading in one of them is a finding in its own right. The project then WEIGHS "
+            "those five postures on the owner's profile and bands the sum; since Run 106 it does "
+            "NOT take the worst. " + " ".join(lines))
 
 
 def _why(basis: Mapping[str, Any]) -> str | None:
@@ -226,19 +316,25 @@ def _why(basis: Mapping[str, Any]) -> str | None:
     required = list(basis.get("required_categories") or ())
     if not required:
         return None
-    if basis.get("status") == "Indeterminate":
+    if not basis.get("official"):
         return (
             "An official posture is issued only when every required category carries one. "
             f"The required set is {', '.join(required)}. "
             f"{len(basis.get('required_missing') or [])} of them assert no band, so the "
-            "posture is withheld rather than imputed. The worst band among the categories that "
-            "were assessed is recorded beside it and is not used in its place.")
+            "posture is withheld rather than imputed. The band the weighted vote produced over "
+            "the categories that were assessed is recorded beside it and is not used in its "
+            "place.")
     return (
-        "The project posture is the worst band among the required categories: the worst "
-        f"category decides, and every one of the required set ({', '.join(required)}) carries "
-        "a band. No category's band was averaged, weighted away or overridden at project level. "
-        "How each CATEGORY formed the band it brings here is stated beside that category below, "
-        "because the platform does not use one rule for all of them.")
+        "The project posture is the WEIGHTED VOTE over the five category postures, on the "
+        "owner's weight profile: each posture scores Green +2, Yellow +1, Amber -1, Red -2, the "
+        "scores are weighted and summed, and the sum is banded at or above 1.5 Green, 0.5 "
+        f"Yellow, -0.5 Amber, below that Red. Every one of the required set "
+        f"({', '.join(required)}) carries a band. THERE IS NO OVERRIDE: an adverse category "
+        "moves the sum by its own weight and no more, which is why an adverse module reading is "
+        "named on this card whatever band sits above it. "
+        + str(basis.get("project_arithmetic") or "")
+        + " How each CATEGORY formed the band it brings here is stated beside that category "
+        "below, because the platform does not use one rule for all of them.")
 
 
 # ------------------------------------------------------------------ 4. forecast and baseline
@@ -484,7 +580,7 @@ def _question(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]]) -
     missing = list(basis.get("required_missing") or [])
     assessed_adverse = [k for k in (basis.get("required_assessed") or [])
                         if _band(cats.get(k, {}).get("status")) in _SEVERITY]
-    if basis.get("status") == "Indeterminate":
+    if not basis.get("official"):
         if assessed_adverse:
             return (
                 "On the evidence presented, is the adverse condition in "
@@ -506,20 +602,23 @@ def _weighted_voting(modules: Sequence[Mapping[str, Any]]) -> dict[str, Any] | N
     """
     THE WEIGHTED VOTING DIAGNOSTIC, and it is a DIAGNOSTIC and not the status.
 
-    THE CATEGORY POSTURE RULES set the official status -- averaging in the four performance
-    categories, worst-wins in Delivery Quality, then worst across the categories. B1.2 is a
-    comparison ensemble, admitted to the card as a reading a reviewer may weigh against the
-    official posture, and it is labelled that way so it cannot be mistaken for the decision.
+    RUN 106, GOAL ONE. IT IS NO LONGER A DIAGNOSTIC BESIDE THE STATUS -- IT IS A RESTATEMENT OF
+    THE STATUS RULE. The category posture rules still form the five postures (averaging in the
+    four performance categories, worst-wins in Delivery Quality); the PROJECT then weighs those
+    five on the owner's profile, and B1.2 reports that same weighted vote from the same function.
+    It is labelled as a restatement so a reviewer does not read it as a second opinion, and it
+    remains excluded from its own category's rollup because it is derived from that rollup.
     """
     b12 = next((m for m in modules if m.get("module_id") == "B1.2"), None)
     if not b12:
         return None
     out: dict[str, Any] = {
-        "role": ("diagnostic only -- the category posture rules and the worst category set the "
-                 "official status"),
+        "role": ("restates the project status rule -- the weighted vote over the five category "
+                 "postures -- computed by the same function that sets the status, so it is not "
+                 "a second opinion and cannot disagree with the band above"),
     }
-    for key in ("status_color", "evidence_metric", "class_votes", "insufficient_data",
-                "abstention_reason_code"):
+    for key in ("status_color", "evidence_metric", "weighted_sum", "project_arithmetic",
+                "class_votes", "insufficient_data", "abstention_reason_code"):
         if b12.get(key) is not None:
             out[key] = b12[key]
     if len(out) == 1:
@@ -589,7 +688,7 @@ def compose_decision_brief(*,
     row = dict(row or {})
 
     card: dict[str, Any] = {"order": [
-        "posture", "finding", "why", "forecast", "drivers", "evidence",
+        "posture", "finding", "why", "forecast", "drivers", "adverse_readings", "evidence",
         "limitations", "question", "weighted_voting", "reviewer", "audit",
     ]}
 
@@ -630,6 +729,20 @@ def compose_decision_brief(*,
     drivers = _drivers(cats, modules, basis)
     if drivers["total"]:
         card["drivers"] = drivers
+
+    # RUN 106, GOAL FIVE. A BLOCK OF ITS OWN, so an adverse module cannot be lost to the
+    # four-row collapse in `drivers` or to a category posture that reads better than it does.
+    # Every non-Green module reading is here, in severity order, whatever the project publishes.
+    adverse = _adverse_readings(cats, modules)
+    if adverse:
+        card["adverse_readings"] = {
+            "rows": adverse,
+            "rule": ("every module reading that is not Green, named regardless of the category "
+                     "posture or the project status above it. The project status is a weighted "
+                     "vote and an adverse category moves the sum by its weight and no more, so "
+                     "a favourable project band is not evidence that these readings were "
+                     "absent or outweighed."),
+        }
 
     card["evidence"] = _evidence(modules, cats, source_documents)
 

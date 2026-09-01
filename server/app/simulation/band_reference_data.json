@@ -269,5 +269,43 @@
     "threshold_source": "owner_configured_default",
     "configured": true,
     "verified": false
+  },
+  "submittal_first_review_rejection_bands": {
+    "green_below": 10.0,
+    "yellow_at_or_above": 10.0,
+    "amber_at_or_above": 20.0,
+    "red_at_or_above": 35.0,
+    "unit": "first-review rejection rate, PER CENT = submittals rejected or returned for revision on first review / submittals receiving a first review. Later resubmittal outcomes are NOT in the denominator: this measures first-pass document quality, not eventual cycles.",
+    "source": "the owner's Run 106 order, section 3. OWNER-CALIBRATED: a documented owner tolerance, not a published construction standard.",
+    "not_sourced_to_industry_reports": "INFORMAL SOURCES REPORTING FIRST-SUBMISSION REJECTION AROUND 30 TO 40 PER CENT ARE DESCRIPTIVE, NOT NORMATIVE, AND ARE NOT THE SOURCE FOR THESE BOUNDARIES. The owner states it in terms: 'that is descriptive, not normative -- do not cite it as the source.'",
+    "distinct_from_quality_compliance": "A6.1 Quality Compliance measures first-pass INSPECTION acceptance in Delivery Quality. This measures first-pass SUBMITTAL quality in Document-Derived Signals. A project can inspect well and submit badly; the two are not read as one another.",
+    "hard_override": "Red regardless of rate where any holds: a rejected critical-path or long-lead submittal whose forecast approval falls after its need-by date; a rejected submittal unresolved beyond the project-defined review deadline and blocking planned work; two or more rejected resubmittals for a critical work package.",
+    "zero_denominator": "Not Assessed. Never divide by zero and never band a raw count as if it were a rate.",
+    "band_basis_id": "owner_configured_construction_document_control_tolerance",
+    "provenance_class": "OWNER-CALIBRATED",
+    "threshold_source": "owner_configured_default",
+    "configured": true,
+    "verified": false
+  },
+  "ncr_rate_bands": {
+    "green_below": 2.0,
+    "yellow_at_or_above": 2.0,
+    "amber_at_or_above": 5.0,
+    "red_at_or_above": 10.0,
+    "unit": "NCR rate, PER CENT = new NCRs opened in the period / inspections performed in the period. FALLBACK DENOMINATOR where inspections cannot be reliably identified: active work packages in the period.",
+    "denominator_consistency": "The denominator type is stored with every result and must not change between periods within one project's trend. The two denominators are not mixed. Posture uses the CURRENT PERIOD only; earlier periods are trend.",
+    "denominator_types_the_ladder_applies_to": [
+      "inspections",
+      "active_work_packages"
+    ],
+    "source": "the owner's Run 106 order, section 3. OWNER-CALIBRATED: a documented owner tolerance, not a published construction standard.",
+    "distinct_from_quality_compliance": "A6.1 Quality Compliance measures first-pass inspection acceptance. This measures nonconformances raised per unit of inspection exposure. They are separate measures and are kept separate.",
+    "hard_override": "Red regardless of rate where any holds: any open critical, life-safety, structural or code-compliance NCR; any NCR on a hold point, failed commissioning test or required inspection blocking turnover; three or more repeat NCRs for one root cause or trade in the period; any NCR open beyond a documented contractual closure date. A HIGH INSPECTION COUNT MUST NOT DILUTE AN OPEN CRITICAL NCR -- the override takes precedence over the rate.",
+    "zero_denominator": "Not Assessed. Never divide by zero and never band a raw count as if it were a rate.",
+    "band_basis_id": "owner_configured_construction_quality_control_tolerance",
+    "provenance_class": "OWNER-CALIBRATED",
+    "threshold_source": "owner_configured_default",
+    "configured": true,
+    "verified": false
   }
 }

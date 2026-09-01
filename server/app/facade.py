@@ -161,10 +161,16 @@ def live_statuses(session: Session, projects: list) -> dict[str, dict[str, Any]]
     # None, so `with_stored_status` leaves the legacy document's empty status and "the list says
     # the project is awaiting analysis". THAT HAS BEEN FALSE SINCE RUN 89. `spec_projection.
     # project_status` applies the required-core gate first: A1, A2, A3, A6 must each carry a
-    # posture, and when any of them does not the published status is the WORD "Indeterminate" --
-    # not None. So `with_stored_status` finds a truthy status, sets it on the row, and the list
-    # prints "Indeterminate". None is now published only when the required core is fully
-    # assessed and the fused band is itself absent.
+    # posture, and when any of them does not a WORD is published -- not None. So
+    # `with_stored_status` finds a truthy status, sets it on the row, and the list prints it.
+    # None is now published only when the required core is fully assessed and the project rule's
+    # band is itself absent.
+    #
+    # RUN 106, GOAL TWO. THAT WORD IS NOW "Awaiting analysis", and it is one of the owner's six.
+    # It was "Indeterminate", a seventh status he had not ruled on; he has now ruled it out. The
+    # required core is A1, A2, A3, A4 and A6 (five since Run 95, not the four this note listed),
+    # and the list row carries `project_status_reason` beside the word so the portfolio can say
+    # WHICH category is unassessed rather than printing a label nobody can act on.
     #
     # The stale note mattered: it described the portfolio as falling through to an empty status,
     # which is why a defect in what the list actually publishes stayed invisible to inspection

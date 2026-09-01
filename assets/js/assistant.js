@@ -116,7 +116,8 @@
       /* RUN 99. THE FALLBACK WAS `"Green"`, AND IT WAS THE WRONG WAY ROUND.
 
          Any status this tally did not already hold a bucket for was counted as Green. The
-         server publishes "Indeterminate" -- the required-core gate's answer when a required
+         server published "Indeterminate" (since Run 106, "Awaiting analysis") -- the
+         required-core gate's answer when a required
          category carries no posture -- for every project in a deployment with no model key, so
          the assistant reported an entire portfolio of unassessable projects as healthy. A
          status word nothing recognises is the one case where a favourable default is least

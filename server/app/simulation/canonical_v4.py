@@ -466,8 +466,35 @@ def submittal_rejection(structure: dict) -> dict[str, Any]:
     for p in in_window:
         counts[p["disposition"]] = counts.get(p["disposition"], 0) + 1
     unique_submittals = {p["submittal_id"] for p in assessed}
+    # RUN 106, GOAL THREE. THE FIRST-REVIEW POPULATION, WHICH IS A DIFFERENT POPULATION.
+    #
+    # The owner's Run 106 measure is FIRST-REVIEW rejection: submittals rejected or returned for
+    # revision ON FIRST REVIEW, divided by submittals RECEIVING a first review. He states in
+    # terms that later resubmittal outcomes are not in the denominator, because the measure is
+    # first-pass document quality and not eventual cycles.
+    #
+    # `rejection_rate` above is the CONTRACT 4.3 quantity -- rejections over the whole assessed
+    # decision population -- and it is not touched, not renamed and not rebanded. The first-review
+    # share is computed BESIDE it, from the same rows, so the two quantities stay distinguishable
+    # and nothing that reads the contract figure changes.
+    #
+    # THE FIRST REVIEW IS THE EARLIEST DECISION FOR A SUBMITTAL, by decision day and then by
+    # revision identifier where a day is shared. Nothing is invented: a submittal with one
+    # decision is its own first review, and the ordering is read off fields the register states.
+    first: dict[str, dict[str, Any]] = {}
+    for p in assessed:
+        sid = p["submittal_id"]
+        key = (p["decision_day"], str(p["revision_id"]))
+        held = first.get(sid)
+        if held is None or key < (held["decision_day"], str(held["revision_id"])):
+            first[sid] = p
+    first_rows = list(first.values())
+    first_rejected = [p for p in first_rows if p["disposition"] in _REJECTED_DISPOSITIONS]
     return {
         "rejection_rate": len(rejected) / len(assessed),
+        "first_review_rate": (len(first_rejected) / len(first_rows)) if first_rows else None,
+        "first_review_rejected": len(first_rejected),
+        "first_review_assessed": len(first_rows),
         "rejected": len(rejected),
         "assessed": len(assessed),
         "decisions_supplied": len(prepared),

@@ -385,6 +385,53 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "yourself that an item is critical -- include a row only where the document designates "
         "it -- and return an empty array where the document designates none."
     ) if "items_passing_first_inspection" in fields else ""
+    # RUN 106, SECTION 3. THE TWO OWNER-SUPPLIED BANDS AND THE DOCUMENT SHAPES THEY NEED.
+    #
+    # NEITHER INSTRUCTION LETS THE MODEL SUPPLY A JUDGEMENT. The first-review population is
+    # recovered from the register's own printed decision rows, and every override is a row the
+    # document itself designates. Where the document prints none, null and empty arrays are the
+    # correct answers and the band is asserted on the rate alone with the absence disclosed.
+    submittal_hint = (
+        " submittal_decisions_json, if requested, is a JSON array with one object per DECISION ROW"
+        "  the register prints, using the register's own column headings as keys and its "
+        "values as printed. Each row must carry the submittal identifier, the revision "
+        "identifier and the decision date as the document states them, because the first review "
+        "of a submittal is identified as its earliest decision; do not merge revisions of one "
+        "submittal into a single row, do not compute a first-review rate yourself, and do not "
+        "reorder or renumber the revisions. submittal_disposition_legend_json, if requested, is "
+        "the register's own legend or key mapping its disposition codes to their printed "
+        "meanings, as a JSON object; return null where the register prints no legend rather "
+        "than inventing one. submittal_reporting_period is the period the register declares it "
+        "is reporting, as printed. rejected_critical_or_long_lead_late_json and "
+        "rejected_blocking_past_deadline_json are JSON arrays of the printed rows the document "
+        "itself designates as, respectively, a rejected critical-path or long-lead submittal "
+        "whose forecast approval falls after its need-by date, and a rejected submittal "
+        "unresolved beyond the stated review deadline and blocking planned work; include a row "
+        "only where the document designates it, never where you infer it, and return an empty "
+        "array where it designates none. critical_package_rejected_resubmittals is the count of "
+        "rejected resubmittals for a critical work package where the document states that count "
+        "or prints the rows to count; return null where it states neither."
+    ) if "submittal_decisions_json" in fields else ""
+    ncr_hint = (
+        " inspections_performed is the number of INSPECTIONS PERFORMED in the reporting period as "
+        "the log or its covering report states it; it is not the number of items inspected and "
+        "is not a count of nonconformances. active_work_packages is the number of work packages "
+        "ACTIVE in the period, and is the fallback denominator to be returned only where the "
+        "document states it. ncr_denominator_basis is the document's own words for which "
+        "population it is reporting against; return null rather than choosing one. Return null "
+        "for any of the three the document does not state -- do not derive one from the other, "
+        "and do not substitute a total from a different document. open_critical_ncr_json, "
+        "hold_point_or_turnover_blocking_ncr_json and ncr_open_past_contractual_closure_json are "
+        "JSON arrays of the printed rows the document itself designates as, respectively, an "
+        "open critical, life-safety, structural or code-compliance nonconformance; a "
+        "nonconformance on a hold point, failed commissioning test or required inspection "
+        "blocking turnover; and a nonconformance open beyond a documented contractual closure "
+        "date. Include a row only where the document designates it; return an empty array where "
+        "it designates none. max_repeat_ncrs_one_root_cause_or_trade is the largest number of "
+        "repeat nonconformances the document attributes to a single root cause or trade in the "
+        "period, where it states or prints that grouping; return null where it does not group "
+        "them."
+    ) if "inspections_performed" in fields or "submittal_decisions_json" in fields else ""
     # RUN 102, SECTION 4.3. THE ENVIRONMENTAL CORRECTIVE-ACTION REGISTER, WITH ITS DEADLINES.
     # A timeliness question needs a deadline and a closure date; a closure WORD cannot answer
     # it. The instruction refuses to let the model supply a deadline the document does not
@@ -453,7 +500,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + submittal_hint + ncr_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

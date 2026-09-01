@@ -1015,8 +1015,11 @@ var HEADERS = [
       [2, CATS.length + ' WEIGHTED PERFORMANCE CATEGORIES',
                catEstimable + ' CARRY A POSTURE'],
       [3, (governedLabel || 'PROJECT STATUS').toUpperCase(),
-               prjEstimable ? 'CURRENT' : (String(prjStatus) === 'Indeterminate'
-                                            ? 'INDETERMINATE' : 'NOT ESTIMABLE')],
+      /* RUN 106, GOAL TWO. The word is the owner's, read off the row rather than tested for
+         a literal: a status the platform published but could not band is "Awaiting analysis",
+         and anything else unestimable has no row at all. */
+               prjEstimable ? 'CURRENT' : (prjStatus ? String(prjStatus).toUpperCase()
+                                                     : 'NOT ESTIMABLE')],
     ];
     /* The four ring captions read across the top of the frame, left to right, outermost ring
        first -- the order the evidence travels. */
@@ -1507,15 +1510,19 @@ var HEADERS = [
     // no stored result, which reads as a verdict rather than as an absence of one. The governed
     // vocabulary is unchanged and no new status is invented: this renders the existing
     // no-data state in words a reader can act on.
-    /* RUN 90. THE CENTRE IS UNRESOLVED WHEN THE STATUS IS INDETERMINATE, and it says which
-       of the two unresolved things it is. `prjStatus` is `row.project_status`, read through
-       getProjectFusion and never recomputed here; Run 89 made `Indeterminate` a real stored
-       status, deliberately absent from the band vocabulary, so `colFor` already returns the
-       no-data colour for it and `isEstimable` is already false. What was missing is the WORD:
-       the node printed "Not estimable" over a row whose status the platform had positively
-       determined to be Indeterminate, which is a different fact from having no row at all. */
+    /* RUN 90. THE CENTRE IS UNRESOLVED WHEN THE PLATFORM ISSUED NO BAND, and it says which of
+       the two unresolved things it is. `prjStatus` is `row.project_status`, read through
+       getProjectFusion and never recomputed here; the no-posture word is deliberately absent
+       from the band vocabulary, so `colFor` already returns the no-data colour for it and
+       `isEstimable` is already false. What was missing is the WORD: the node printed "Not
+       estimable" over a row whose status the platform had positively determined, which is a
+       different fact from having no row at all.
+
+       RUN 106, GOAL TWO. THE WORD IS NO LONGER TESTED FOR AS A LITERAL. It was `=== 'Indeterminate'`,
+       which the owner has removed; hard-coding its replacement would put the same fragility back
+       one word along. Whatever the server published is printed. */
     prjStatusText.textContent = prjEstimable ? prjStatus
-      : (String(prjStatus) === 'Indeterminate' ? 'Indeterminate' : 'Not estimable');
+      : (prjStatus ? String(prjStatus) : 'Not estimable');
     var prjNodeLabel = governedLabel || 'Project Status';
     prjG.addEventListener('mouseenter', function(evt) {
       var line = prjEstimable

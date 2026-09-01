@@ -345,9 +345,24 @@ _cbands = [ (SERVED_CATS[k] or {}).get("status") for k in SERVED_CATS
 _pyfuse = PYSTATUS
 print(f"  stored PYTHON row project_status = {_pyfuse!r}; worst of its categories = "
       f"{worst_band([ (v or {}).get('status') for v in PYCATS.values() ])!r}")
-check(SERVED_STATUS == worst_band(_cbands),
-      f"the served project status is the worst of the contributing categories {_cbands}",
-      repr(SERVED_STATUS))
+# RE-POINTED AGAIN AT RUN 106, AND THE REASON IS THE OWNER'S RULING. He replaced worst-wins at
+# PROJECT level with his weighted vote: worst-wins meant a project was almost never Green, which
+# puts every reader in permanent alarm. So the served status is no longer the worst of the
+# contributing categories -- on this very fixture it is Green over an Amber A6. The equality this
+# section exists to prove is that THE TWO PATHS AGREE, and that is asserted immediately below and
+# is untouched. What is checked here is now the rule the platform actually applies, with the
+# superseded rule asserted to DIFFER so the check cannot pass on a fixture where both agree.
+# CATEGORY-level worst-wins is unchanged and is checked in section 3 of this same suite.
+from app.simulation.project_posture import project_posture as _pp106
+_w106 = _pp106({k: v for k, v in PYCATS.items()
+                if (v or {}).get("contributes_to_project_status")})
+check(SERVED_STATUS == _w106["status"],
+      f"the served project status is the owner's WEIGHTED VOTE over the contributing categories "
+      f"{_cbands}", repr(SERVED_STATUS))
+print("  weighted arithmetic:", _w106["project_arithmetic"])
+check(worst_band(_cbands) != SERVED_STATUS,
+      f"FAULT PROOF: worst-wins on this same fixture would say {worst_band(_cbands)!r}, not "
+      f"{SERVED_STATUS!r}, so the check above is about the Run 106 rule")
 # RUN 105. The stored row must now agree with it. Re-pointed, not weakened: this is a check the
 # tree could not pass before Run 105.
 check(_pyfuse == SERVED_STATUS,

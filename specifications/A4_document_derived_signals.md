@@ -11,8 +11,11 @@ than qualifying them.
 
 ## How a module in this category answers
 
-- **A reading with a band.** **A4.2 RFI Velocity** and **A4.6 Change Order Frequency** produce
-  one. *(RUN 102 EDIT, on the owner's authority in his Run 102 order section 5. This sentence
+- **A reading with a band.** **A4.2 RFI Velocity**, **A4.3 Submittal Rejection Rate**, **A4.4 NCR
+  Rate** and **A4.6 Change Order Frequency** produce one. *(RUN 106 EDIT: A4.3 and A4.4 band for
+  the first time, on the owner's Run 106 boundaries — see their sections. A4.3 bands only on the
+  governed submittal decision register; A4.4 only where the exposure unit is inspections or active
+  work packages.)* *(RUN 102 EDIT, on the owner's authority in his Run 102 order section 5. This sentence
   read "Only A4.2 RFI Velocity and A4.3 Submittal Rejection Rate can produce one. Both ladders
   are recorded in the source as uncited, and both modules are outside
   `registry.CORE_VOTING_MODULES`, so neither votes." Run 101 rebuilt A4.2 and A4.6 in code and
@@ -198,9 +201,60 @@ for display.
 | Amber | `rate <= 0.25` |
 | Red | otherwise |
 
-**Where these thresholds came from: nothing.** The source states it in those words — Run 4 looked
-for a source specifying five, fifteen and twenty-five per cent for a submittal rejection share and
-found none. The boundaries are unchanged and uncited, and **this module does not vote**.
+**Bands — RUN 106. The owner supplied the boundary, and it is drawn over a NEW quantity.**
+
+*The measure.* **First-review rejection rate** = submittals rejected or returned for revision **on
+first review** ÷ submittals **receiving a first review**, as a percentage. **Later resubmittal
+outcomes are not in the denominator.** This measures first-pass document quality, not eventual
+cycles. `canonical_v4.submittal_rejection` now returns `first_review_rate`,
+`first_review_rejected` and `first_review_assessed` beside the contract-4.3 `rejection_rate` over
+all assessed decisions; the contract quantity is unchanged, still reported, and is **not** the
+banded figure. The first review is the earliest decision for a submittal, by decision day and then
+by revision identifier.
+
+| Band | First-review rejection rate |
+|---|---|
+| Green | below 10% |
+| Yellow | at or above 10%, below 20% |
+| Amber | at or above 20%, below 35% |
+| Red | at or above 35% |
+
+Each boundary is inclusive on its lower side.
+
+*Red regardless of rate*, where any holds: a rejected critical-path or long-lead submittal whose
+forecast approval falls after its need-by date; a rejected submittal unresolved beyond the
+project-defined review deadline and blocking planned work; two or more rejected resubmittals for a
+critical work package.
+
+*Basis.* `owner_configured_construction_document_control_tolerance`, **OWNER-CALIBRATED**,
+`threshold_source = owner_configured_default`. Recorded in `band_reference_data.json` as
+`submittal_first_review_rejection_bands`. **Informal sources reporting first-submission rejection
+around 30 to 40 per cent are descriptive, not normative, and are not cited as the source.** A
+stricter figure stated in a project document — a submittal plan's acceptance target — overrides
+these under the threshold precedence order.
+
+*Zero denominator.* Not Assessed. Never a division by zero, and never a raw count banded as if it
+were a rate.
+
+*The extracted-totals path does not band.* A rejected count and a register total with no revision
+or decision-date structure cannot identify the first-review population, so the share formed from
+them is a different quantity and the owner's boundary is not attached to it. The figure is
+displayed and the reason is stated.
+
+*Overrides that could not be evaluated are disclosed, not assumed away.* Where the record states
+none of the three override fields, the row carries `band_overrides_evaluated: false` and names the
+absent fields; a field the record does not carry is **not** read as false.
+
+*This module still does not vote* — it is outside `registry.CORE_VOTING_MODULES` — but its band
+now enters A4's category average.
+
+**Distinct from A6.1 Quality Compliance.** That module measures first-pass **inspection**
+acceptance and sits in Delivery Quality. This measures first-pass **submittal** quality in
+Document-Derived Signals. A project can inspect well and submit badly. They are kept separate.
+
+*(Superseded: "Where these thresholds came from: nothing." Run 4 looked for a source specifying
+five, fifteen and twenty-five per cent and found none; Run 101 removed that ladder. The Run 106
+boundaries above are the owner's own and carry his recorded basis.)*
 
 **Interpretation.** A high rejection share says the packages arriving for review are not meeting
 the specification on first presentation, which costs review cycles and float. It says nothing
@@ -236,11 +290,56 @@ denominator declared on the record. Four nonconformances over one hundred inspec
 Open count, age of open, severity and closure rate are tracked **separately** and are not folded
 into the rate. **With no exposure, no normalised rate is fabricated.**
 
-**Bands.** **None. This module asserts no band and none may be attached.** It reports
-calibration-pending with the standard note. The former ladder was drawn over a different quantity:
-until Run 28 this module reported open nonconformances as a share of an audited findings cohort,
-which is a backlog share, not a rate — the numerator a stock carried across periods, the
-denominator the size of an audit. That quantity is gone and its ladder went with it.
+**Bands — RUN 106. The owner supplied the boundary, and it applies to TWO denominators and no
+others.**
+
+*The measure.* **NCR rate** = new NCRs opened in the period ÷ inspections performed in the period,
+as a percentage. **Fallback denominator** where inspections cannot be reliably identified: active
+work packages in the period.
+
+| Band | NCR rate |
+|---|---|
+| Green | below 2% |
+| Yellow | at or above 2%, below 5% |
+| Amber | at or above 5%, below 10% |
+| Red | at or above 10% |
+
+Each boundary is inclusive on its lower side.
+
+*Red regardless of rate*, where any holds: any open critical, life-safety, structural or
+code-compliance NCR; any NCR on a hold point, failed commissioning test or required inspection
+blocking turnover; three or more repeat NCRs for one root cause or trade in the period; any NCR
+open beyond a documented contractual closure date. **A high inspection count must not dilute an
+open critical NCR — the override takes precedence over the rate.** The severity counts the record
+already carries are read as well as the dedicated override fields, so an open critical
+nonconformance fires the override whether or not the dedicated field was stated.
+
+*The ladder applies only where the exposure unit is `inspections` or `active_work_packages`.* A
+nonconformance rate per labour hour, per unit of work value or per inspected item is a different
+quantity and 2/5/10 per cent means nothing over it: those records report the figure with
+calibration pending and the reason names the unit. The ladder is not widened to cover them.
+
+*The denominator type and the reporting period are stored with every result*
+(`denominator_type`, `denominator_type_words`, `reporting_period`). The denominator must be
+consistent across periods — the two denominators are **not** mixed within one project's trend, and
+a trend that silently switched denominator would be a fabricated trend. **Posture uses the current
+period only; earlier periods are trend.**
+
+*Zero denominator.* Not Assessed. `canonical_v4.ncr_rate` already refuses one; the runner states
+the rule as well so no future supply path can reach a division by zero.
+
+*Basis.* `owner_configured_construction_quality_control_tolerance`, **OWNER-CALIBRATED**,
+`threshold_source = owner_configured_default`. Recorded in `band_reference_data.json` as
+`ncr_rate_bands`.
+
+**Distinct from A6.1 Quality Compliance**, which measures first-pass inspection acceptance in
+Delivery Quality. A project can inspect well and still raise many nonconformances, or the reverse.
+They are separate measures and are kept separate.
+
+*(Superseded: "None. This module asserts no band and none may be attached." That was true until
+Run 106. The former ladder — open nonconformances as a share of an audited findings cohort, a
+backlog share and not a rate — is still gone and is not what the owner's boundaries are drawn
+over.)*
 
 **Interpretation.** The reading is how often nonconforming work is found per unit of the work that
 was actually looked at. It rises when quality falls and it also rises when inspection improves, so

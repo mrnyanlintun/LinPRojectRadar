@@ -211,21 +211,50 @@ core voting modules*.
 **Bands.** The winner is emitted as `status_color`. Where there is no unique winner,
 `status_color` is `None` and `tied_classes` names the tied classes.
 
-**Comparison only. It cannot set a status.** B1.2 is in
-`spec_projection.COMPARISON_ONLY_MODULES`, so its band is never admitted to its category's rollup
-on the specification-reading path; and on the Python path it is evaluated *after* the rollup that
-produced its own input, so it is structurally incapable of reaching it.
+**Run 106: B1.2 stops being comparison-only and becomes the status rule — and the arithmetic it
+published before is retired.** The owner has ruled that the weighted vote over the five category
+postures **is** the project status. It is computed once, in
+`simulation.project_posture.project_posture`, and called by **both** status paths; B1.2 *reports*
+that same function rather than computing its own. Its former rule was a **plurality of weight** —
+which band class holds most of the renormalised weight — and that is a different quantity. On
+`{A1 Green .28, A2 Green .28, A3 Red .17, A4 Red .11, A6 Red .16}` the plurality rule says Green
+(0.56 against 0.44) and the owner's scored sum says Amber (+0.32). A module named Weighted Voting
+that disagreed with the weighted vote setting the status would be the defect Run 104 closed one
+level down. The plurality distribution is still published on the row as `class_votes`; it decides
+nothing.
 
-**Run 105 correction: Conservative Dominance does NOT set the official project status, and no
-module does.** The sentence that stood here said it did. B1.1 is a maximum over the four assembled
-signals and that is all it is. The official project status is formed from the CATEGORIES: A1, A2,
-A3 and A4 average their banded modules' scores, A6 Delivery Quality takes the worst band any of its
-modules asserted, and the project takes the worst band across the contributing categories, subject
-to the required-core gate and Indeterminate.
+**The rule does not live in the module, and that is deliberate.** A module row is dispatch
+machinery: it can be retired, disabled or fail qualification, and a project status that existed
+only where a runner returned it would vanish with it — and would exist on the Python rollup path
+while the specification projection, which dispatches no modules, had nothing to read.
 
-**Interpretation.** The weighted vote says which state carries most of the owner's assigned weight
-across the performance categories, and the normalised weights and their provenance travel with the
-reading so a reader can see whose judgment produced them.
+**It is still not admitted to its category's rollup.** The set that excludes it was renamed at
+Run 106 from `COMPARISON_ONLY_MODULES` to `spec_projection.EXCLUDED_FROM_CATEGORY_ROLLUP`, because
+the old name had become a false statement about the module it contains. The exclusion itself is
+unchanged and its reason is structural: B1.2's reading is a second-pass restatement computed *from*
+the category rollup, so admitting it would make B1 Signal Synthesis's posture a restatement of the
+project status and would let a band re-enter the arithmetic that produced it.
+
+**Run 105 correction, carried forward: Conservative Dominance does NOT set the official project
+status.** The sentence that stood here said it did. B1.1 is a maximum over the four assembled
+signals and that is all it is; its own arithmetic is unchanged by Run 106 and its name remains
+accurate as a description of the module. **Run 106 correction: nor does *worst-wins* set it any
+more.** The official project status is formed from the CATEGORIES: A1, A2, A3 and A4 average their
+banded modules' scores; A6 Delivery Quality takes the worst band any of its modules asserted; and
+the project then takes the **owner's weighted vote** over those five postures — Green +2, Yellow
++1, Amber −1, Red −2, weighted A1 0.28, A2 0.28, A3 0.17, A4 0.11, A6 0.16, the sum banded at or
+above 1.5 Green, 0.5 Yellow, −0.5 Amber, below that Red — subject to the required-core gate, which
+publishes **Awaiting analysis** with a sentence naming what is missing when it withholds. There is
+no override at project level: an adverse category moves the sum by its own weight and no more, and
+the adverse module readings behind it are named on the decision card whatever band sits above them.
+
+**Interpretation.** Since Run 106 the weighted vote **is** the project status: the five category
+postures are scored, weighted on the owner's profile and summed, and the sum is banded. The
+weights, the normalised weights, the per-category contributions, the sum and the provenance of the
+profile all travel with the reading so a reader can check the arithmetic rather than trust it. An
+unassessed category is removed from the denominator and the remaining weights renormalised; it is
+never scored as zero, which on a −2 to +2 scale would read as a measured middling assessment when
+nothing was measured at all.
 
 **Nothing to report.**
 1. At module dispatch, before the rollup: `"Weighted Voting reads the six performance category

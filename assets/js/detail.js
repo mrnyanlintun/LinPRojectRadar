@@ -2069,10 +2069,11 @@
     }
 
     /* =====================================================================================
-       RUN 89, GOAL THREE. THE INDETERMINATE BRIEF.
+       RUN 89, GOAL THREE. THE NO-POSTURE BRIEF (RUN 106: "Awaiting analysis"; it was
+       "Indeterminate" until the owner ruled the seventh word out).
 
-       INDETERMINATE IS NOT A BLANK SCREEN AND NOT A FAILURE STATE. When a required category
-       carries no posture the server issues Indeterminate, and this branch renders the full
+       IT IS NOT A BLANK SCREEN AND NOT A FAILURE STATE. When a required category
+       carries no posture the server issues that word, and this branch renders the full
        brief the owner specified: the status and what it means, the reason and what is missing,
        EVERY assessed category and its posture INCLUDING any that are Red, every supporting
        category assessed or not, and a recommendation about EVIDENCE ACQUISITION, verification
@@ -2103,8 +2104,16 @@
       };
 
       // 1. THE STATUS.
-      const iRec = ["INDETERMINATE \u00b7 there is insufficient evidence for an official project "
-        + "posture this period, so none is issued."];
+      /* RUN 106, GOAL TWO. THE WORD IS THE OWNER'S SIXTH STATUS AND IT IS NEVER BARE.
+         "Indeterminate" is gone; "Awaiting analysis" replaces it, and the sentence that must
+         accompany it is READ BACK off `basis.status_reason`, which the server composed, rather
+         than being written a second time here. Where an older stored row carries no such
+         sentence the branch still names every missing category on its own lines below, so the
+         reader is never left with the label alone. */
+      const iRec = [String(basis.status || "Awaiting analysis").toUpperCase()
+        + " \u00b7 there is insufficient evidence for a project posture this period, so none "
+        + "is issued."];
+      if (basis.status_reason) iRec.push(String(basis.status_reason));
 
       // 2. THE REASON, naming which required category could not be assessed and what is missing.
       detail.forEach((d) => {
@@ -2179,9 +2188,10 @@
           + "the absence of a project status is not evidence that there is none.");
       });
       if (basis.fused_band) {
-        iRec.push("Worst-wins over the categories that did report would have produced "
+        iRec.push("The weighted vote over the categories that did report would have produced "
           + basis.fused_band + "; that band is recorded and is not issued as the official "
-          + "status, because the required categories are not all assessed.");
+          + "status, because the required categories are not all assessed."
+          + (basis.project_arithmetic ? " " + basis.project_arithmetic : ""));
       }
 
       // 3 AND 4. EVERY ASSESSED CATEGORY AND ITS POSTURE; EVERY SUPPORTING CATEGORY.
@@ -2222,7 +2232,7 @@
       /* THE CONCRETE COURSE THE PARTICIPANT ACTS ON. Named exactly as the decision card
          presents it -- "How did you treat the recommendation?", whose vocabulary is
          `research_decision.DISPOSITIONS` -- so this sentence names a control that exists.
-         `request_evidence` is called out because it is the disposition an Indeterminate
+         `request_evidence` is called out because it is the disposition a withheld
          status is actually about. Nothing in decision-ui.js is changed by this run. */
       iActions.push("Record how you treated this recommendation on the decision card - accept, "
         + "accept with conditions, modify, reject, defer, request evidence, escalate or "
@@ -2282,8 +2292,43 @@
                                         + darkCats.join(", ") + ")");
     const censusLine = censusBits.join(", ") + ".";
 
+    /* RUN 106, GOAL FIVE. THE ADVERSE MODULE READINGS ARE NAMED WHATEVER THE BAND ABOVE THEM.
+       A consequence of the owner's Run 106 project rule is that a project can publish Green
+       while a module inside it reads Red: the module moves its category's average, the category
+       moves the weighted sum by its own weight, and the sum can still band Green. The ruling
+       stands and is not softened. What must not stand is the Red disappearing from the card.
+       Before this run it could: `setterBits` above names only modules a category recorded as
+       having SET its posture, and the pattern block below buckets CATEGORIES, so a Red module
+       inside a category that averaged to Yellow or Green appeared nowhere at all.
+       Every non-Green module reading is listed here, in severity order, read off the stored
+       rows. No threshold and no judgement: not Green is adverse. */
+    const advRank = { red: 0, amber: 1, yellow: 2 };
+    const catOfModule = {};
+    ev.categories.forEach((c) => {
+      (c.setBy || []).forEach((mid) => { catOfModule[mid] = c; });
+    });
+    const adverseMods = ev.modules
+      .filter((m) => m.status_color && advRank[statusKeyFromText(m.status_color)] != null)
+      .sort((a, b) => advRank[statusKeyFromText(a.status_color)]
+                    - advRank[statusKeyFromText(b.status_color)]
+                    || String(a.module_id).localeCompare(String(b.module_id)));
+    const adverseLine = adverseMods.length
+      ? ("Adverse readings inside this posture, named regardless of the band above them: "
+         + adverseMods.map((m) => {
+             const c = catOfModule[m.module_id];
+             return m.module_id + " " + m.status_color
+                    + (m.evidence_metric ? " reading " + m.evidence_metric : "")
+                    + (c ? " in " + c.key + (c.status ? " which reads " + c.status : "") : "");
+           }).join("; ")
+         + ". The project status is a weighted vote over the five category postures and an "
+         + "adverse category moves the sum by its own weight and no more, so this project band "
+         + "is not evidence that these readings were absent or outweighed. Each is a finding at "
+         + "its own level.")
+      : "No module asserted a band worse than Green this period.";
+
     const recommendation = posture.toUpperCase() + " \u00b7 " + actionClause + "\n"
-      + postureSentence + "\n" + costLine + "\n" + schedLine + "\n" + censusLine;
+      + postureSentence + "\n" + costLine + "\n" + schedLine + "\n" + adverseLine
+      + "\n" + censusLine;
 
     // THE SIGNAL PATTERN CARRIES A COUNT AND THE CATEGORY KEYS AND NOTHING ELSE. The editorial
     // phrase that used to close each line ("the analysis indicates meaningful risk worth a

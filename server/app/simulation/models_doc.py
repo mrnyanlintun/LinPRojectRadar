@@ -347,6 +347,156 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
                   threshold_source=_tsrc, **_figs)
 
 
+
+# =================================================================================================
+# RUN 106, GOAL THREE. THE OWNER'S TWO CONSTRUCTION DOCUMENT-CONTROL AND QUALITY-CONTROL BANDS.
+#
+# Both are OWNER-CALIBRATED and neither is presented as a construction standard. The owner's
+# order states in terms that the informally reported 30-40 per cent first-submission rejection
+# figure is DESCRIPTIVE, NOT NORMATIVE, and is not to be cited as the source; it is recorded in
+# `band_reference_data.json` as a non-source for exactly that reason.
+#
+# THEY MEASURE DIFFERENT THINGS FROM A6.1 QUALITY COMPLIANCE, and the specifications say so.
+# Quality Compliance measures first-pass INSPECTION acceptance and sits in Delivery Quality. A
+# project can inspect well and submit badly, and the two must not be read as one another.
+#
+# A ZERO DENOMINATOR IS NOT ASSESSED. Never a division by zero, and never a raw count banded as
+# though it were a rate.
+#
+# THE OVERRIDES ARE RED REGARDLESS OF RATE, AND WHERE THE DOCUMENT DOES NOT CARRY THE FIELDS TO
+# EVALUATE THEM THE ROW SAYS SO. A high inspection count must not dilute an open critical NCR;
+# the override takes precedence over the rate, and a rate-derived band that could not be tested
+# against the overrides is published carrying `band_overrides_evaluated: False` and a sentence
+# naming which fields were absent. That is a disclosure, not a threshold.
+# =================================================================================================
+
+#: The owner's Run 106 first-review submittal rejection ladder, in PER CENT, worst cut first.
+#: Each cut is read as "at or above this figure", and the Green arm is the open bottom.
+SUBMITTAL_REJECTION_CUTS: tuple[tuple[float, str], ...] = (
+    (35.0, "Red"), (20.0, "Amber"), (10.0, "Yellow"))
+
+SUBMITTAL_REJECTION_BOUNDARY = (
+    "on the FIRST-REVIEW rejection rate -- submittals rejected or returned for revision on first "
+    "review, divided by submittals receiving a first review, as a percentage. Later resubmittal "
+    "outcomes are NOT in the denominator: this measures first-pass document quality, not eventual "
+    "cycles. Below 10 per cent is Green; at or above 10 and below 20 is Yellow; at or above 20 "
+    "and below 35 is Amber; at or above 35 is Red. Each boundary is INCLUSIVE ON ITS LOWER SIDE. "
+    "RED REGARDLESS OF RATE where any of three conditions holds: a rejected critical-path or "
+    "long-lead submittal whose forecast approval falls after its need-by date; a rejected "
+    "submittal unresolved beyond the project-defined review deadline and blocking planned work; "
+    "or two or more rejected resubmittals for a critical work package.")
+
+SUBMITTAL_REJECTION_BASIS = (
+    "the owner's Run 106 order, section 3, recorded as "
+    "`owner_configured_construction_document_control_tolerance`. OWNER-CALIBRATED: a documented "
+    "owner tolerance, not a published construction standard. Informal sources report "
+    "first-submission rejection around 30 to 40 per cent; that is DESCRIPTIVE and is not the "
+    "source for these boundaries and is not cited as one. A stricter figure stated in a project "
+    "document -- a submittal plan's acceptance target -- overrides them under the threshold "
+    "precedence order")
+
+#: The owner's Run 106 NCR ladder, in PER CENT, worst cut first.
+NCR_RATE_CUTS: tuple[tuple[float, str], ...] = (
+    (10.0, "Red"), (5.0, "Amber"), (2.0, "Yellow"))
+
+#: The two denominators the owner's NCR percentage ladder is drawn over, and NOTHING ELSE. The
+#: ladder is a share of inspections (or, where inspections cannot be reliably identified, of
+#: active work packages). It is NOT drawn over labour hours, work value or inspected units, and
+#: a rate over one of those is a different quantity that this ladder cannot band.
+NCR_DENOMINATOR_TYPES: dict[str, str] = {
+    "inspections": "inspections performed in the period",
+    "active_work_packages": "active work packages in the period",
+}
+
+NCR_RATE_BOUNDARY = (
+    "on the NCR rate -- new NCRs opened in the period divided by inspections performed in the "
+    "period, as a percentage; where inspections cannot be reliably identified the FALLBACK "
+    "denominator is active work packages in the period. Below 2 per cent is Green; at or above 2 "
+    "and below 5 is Yellow; at or above 5 and below 10 is Amber; at or above 10 is Red. Each "
+    "boundary is INCLUSIVE ON ITS LOWER SIDE. THE DENOMINATOR TYPE IS STORED WITH EVERY RESULT "
+    "and must be consistent across periods: the two denominators are not mixed within one "
+    "project's trend. RED REGARDLESS OF RATE where any of four conditions holds: an open "
+    "critical, life-safety, structural or code-compliance NCR; an NCR on a hold point, a failed "
+    "commissioning test or a required inspection blocking turnover; three or more repeat NCRs "
+    "for one root cause or trade in the period; or an NCR open beyond a documented contractual "
+    "closure date. A high inspection count does not dilute an open critical NCR -- the override "
+    "takes precedence over the rate.")
+
+NCR_RATE_BASIS = (
+    "the owner's Run 106 order, section 3, recorded as "
+    "`owner_configured_construction_quality_control_tolerance`. OWNER-CALIBRATED: a documented "
+    "owner tolerance, not a published construction standard. It measures a DIFFERENT quantity "
+    "from A6.1 Quality Compliance, which measures first-pass inspection acceptance in Delivery "
+    "Quality: a project can inspect well and raise many nonconformances, or the reverse")
+
+
+def _pct_band(pct: float, cuts: tuple[tuple[float, str], ...]) -> str:
+    """Band a percentage on a worst-first ladder of inclusive-lower cuts. Green is the bottom."""
+    for cut, band in cuts:
+        if pct >= cut:
+            return band
+    return "Green"
+
+
+#: The submittal override fields a document must state before the three Red overrides can be
+#: evaluated, and the NCR override fields. Named here so the row can say WHICH were absent
+#: instead of implying the overrides were tested and did not fire.
+SUBMITTAL_OVERRIDE_FIELDS: tuple[str, ...] = (
+    "rejected_critical_or_long_lead_forecast_after_need_by",
+    "rejected_unresolved_past_review_deadline_blocking_work",
+    "critical_package_rejected_resubmittals",
+)
+NCR_OVERRIDE_FIELDS: tuple[str, ...] = (
+    "open_critical_life_safety_structural_or_code_ncr",
+    "hold_point_or_commissioning_or_required_inspection_blocking_turnover",
+    "max_repeat_ncrs_one_root_cause_or_trade",
+    "ncr_open_past_contractual_closure_date",
+)
+
+
+def _override_state(structure: Any, fields: tuple[str, ...]) -> tuple[bool, list[str], list[str]]:
+    """
+    Which override fields the record actually carries, and which of them FIRED.
+
+    Returns (fired, fired_names, absent_names). A field the record does not carry is ABSENT and
+    is never read as False: absent means the condition was not tested, which is a different fact
+    from having been tested and found not to hold.
+    """
+    rec = structure if isinstance(structure, dict) else {}
+    fired: list[str] = []
+    absent: list[str] = []
+    for name in fields:
+        value = rec.get(name)
+        if value is None:
+            absent.append(name)
+            continue
+        if name.endswith("resubmittals") or name.startswith("max_repeat"):
+            try:
+                if float(value) >= 2 if name.endswith("resubmittals") else float(value) >= 3:
+                    fired.append(name)
+            except (TypeError, ValueError):
+                absent.append(name)
+            continue
+        if bool(value):
+            fired.append(name)
+    return (bool(fired), fired, absent)
+
+
+def _override_words(fired: list[str], absent: list[str], total: int) -> str:
+    if fired:
+        return ("A RED OVERRIDE FIRED and it takes precedence over the rate: "
+                + ", ".join(fired) + ".")
+    if len(absent) == total:
+        return ("None of the Red overrides could be evaluated: this project's record states none "
+                "of " + ", ".join(absent) + ". The band above rests on the rate alone, and an "
+                "override may hold without this reading being able to see it.")
+    if absent:
+        return ("Overrides evaluated on the fields the record carries; these were not stated and "
+                "were therefore NOT tested rather than treated as absent conditions: "
+                + ", ".join(absent) + ".")
+    return "Every Red override was evaluated against the record and none holds."
+
+
 # ------------------------------------------------------------ A4.3 Submittal Rejection Rate
 
 
@@ -375,25 +525,61 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
         except StructureAbsent as absent:
             return insufficient("Submittal_Rejection", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
         rate = reading["rejection_rate"]
-        # RUN 101, SECTION 4. THE UNCITED LADDER IS REMOVED AND NO BAND IS ASSERTED. See the
-        # reason carried on the row.
-        return band_abstained(
-            "Submittal_Rejection",
-            (f"{_js_str(reading['rejected'])} of {_js_str(reading['assessed'])} assessed "
-             f"submittal decisions were rejections "
-             f"({int(js_round(rate * 100))} per cent), from "
-             f"{_js_str(reading['unique_submittals'])} distinct submittals and "
-             f"{_js_str(reading['resubmission_cycles'])} resubmission cycles"),
-            reason=_SUBMITTAL_NO_BAND,
+        # RUN 106, GOAL THREE. THE OWNER SUPPLIED THE BOUNDARY, SO THE BAND IS ASSERTED -- and
+        # it is asserted over the FIRST-REVIEW population, which is the quantity he defined.
+        # `rejection_rate` (contract 4.3, all assessed decisions) is still reported beside it and
+        # is NOT the banded figure: banding it would band a different quantity under his words.
+        _fr_n = reading["first_review_assessed"]
+        _fr_r = reading["first_review_rejected"]
+        _figs = dict(
             rejection_rate=round(rate, 3),
             rejected=reading["rejected"],
             total=reading["assessed"],
+            first_review_rate=(round(reading["first_review_rate"], 4)
+                               if reading["first_review_rate"] is not None else None),
+            first_review_rejected=_fr_r,
+            first_review_assessed=_fr_n,
+            denominator_type="submittals_receiving_a_first_review",
+            denominator_type_words=("submittals receiving a first review in the reporting "
+                                    "period; later resubmittal outcomes are excluded"),
+            reporting_period=reading["reporting_period"],
             unique_submittals=reading["unique_submittals"],
             resubmission_cycles=reading["resubmission_cycles"],
             disposition_counts=reading["disposition_counts"],
             taxonomy_version=reading["taxonomy_version"],
             canonical_structure="submittal_decision_register",
             source=reading["source"],
+        )
+        if not _fr_n:
+            # A ZERO DENOMINATOR IS NOT ASSESSED. Never a division by zero and never a count
+            # banded as though it were a rate.
+            return insufficient(
+                "Submittal_Rejection",
+                "No submittal in this register received a first review in the reporting period, "
+                "so the first-review rejection rate has no denominator and none is formed.")
+        _pct = 100.0 * _fr_r / _fr_n
+        _fired, _fire_names, _absent = _override_state(structure, SUBMITTAL_OVERRIDE_FIELDS)
+        _colour = "Red" if _fired else _pct_band(_pct, SUBMITTAL_REJECTION_CUTS)
+        _ov = _override_words(_fire_names, _absent, len(SUBMITTAL_OVERRIDE_FIELDS))
+        return banded(
+            "Submittal_Rejection",
+            (f"{_js_str(_fr_r)} of {_js_str(_fr_n)} submittals receiving a first review were "
+             f"rejected or returned for revision ({round(_pct, 1)} per cent), from "
+             f"{_js_str(reading['assessed'])} assessed decisions in all and "
+             f"{_js_str(reading['resubmission_cycles'])} resubmission cycles. " + _ov),
+            status_color=_colour,
+            boundary=SUBMITTAL_REJECTION_BOUNDARY,
+            basis=SUBMITTAL_REJECTION_BASIS,
+            provenance=PROVENANCE_OWNER_CALIBRATED,
+            threshold_source=THRESHOLD_SOURCE_OWNER,
+            band_basis_id="owner_configured_construction_document_control_tolerance",
+            band_first_review_pct=round(_pct, 3),
+            band_override_fired=_fired,
+            band_override_conditions=_fire_names,
+            band_overrides_evaluated=(len(_absent) < len(SUBMITTAL_OVERRIDE_FIELDS)),
+            band_override_fields_absent=_absent,
+            band_override_words=_ov,
+            **_figs,
         )
     use_rfa = (si.get("rfaTotal") is not None and si.get("rfaRejected") is not None
                and si["rfaTotal"] > 0)
@@ -429,12 +615,33 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
             evidence += f", avg review {_js_str(si['rfaAvgReviewDays'])} days"
     if is_derived:
         evidence += " (estimated from doc risk; upload Submittal Register for precise figures)"
+    # RUN 106, GOAL THREE. THE EXTRACTED-TOTALS PATH CANNOT SEPARATE FIRST REVIEWS FROM
+    # RESUBMITTALS, AND SO IT DOES NOT BAND.
+    #
+    # The owner's measure is explicit that later resubmittal outcomes are NOT in the denominator.
+    # These totals are a rejected count and a register total with no revision structure behind
+    # them, so the first-review population cannot be identified from them and the share formed
+    # here is a DIFFERENT quantity from the one the owner banded. Banding it under his ladder
+    # would attach his boundary to a measure he did not define, which is the same defect as
+    # inventing a threshold, arrived at from the other end. The figure is displayed and the
+    # reason is stated; the governed register path above bands.
     return band_abstained(
         "Submittal_Rejection", evidence,
-        reason=_SUBMITTAL_NO_BAND,
+        reason=("the owner's Run 106 first-review rejection ladder is drawn over submittals "
+                "RECEIVING A FIRST REVIEW, excluding later resubmittal outcomes from the "
+                "denominator. This project supplied extracted register totals -- a rejected "
+                "count and a population total with no revision or decision-date structure -- "
+                "from which the first-review population cannot be identified, so the share "
+                "computed here is a different quantity and his boundary is not attached to it. "
+                "Upload a submittal decision register carrying each decision's submittal "
+                "identifier, revision identifier and decision date and this module bands"),
         rejection_rate=rate,
         rejected=rejected,
         total=total,
+        denominator_type="all_assessed_decisions",
+        denominator_type_words=("every submittal decision the extracted totals report, first "
+                                "reviews and resubmittals together and indistinguishable"),
+        reporting_period=si.get("period"),
         source="rfa_log" if use_rfa else "submittals",
         canonical_structure="extracted_register_totals",
     )
@@ -460,16 +667,13 @@ def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str
     renamed, and the exposure is now required rather than borrowed from an audit total.
     """
     try:
-        reading = ncr_rate(require_v4_structure(si, "A4.4"))
+        structure = require_v4_structure(si, "A4.4")
+        reading = ncr_rate(structure)
     except StructureAbsent as absent:
         return insufficient("NCR_Rate", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
     _open = (f" {_js_str(reading['open_count'])} are still open."
              if reading["open_count"] is not None else "")
-    return calibration_pending(
-        "NCR_Rate",
-        f"{_js_str(reading['ncr_count'])} nonconformances against "
-        f"{_js_str(reading['exposure_quantity'])} {reading['exposure_unit']}, a rate of "
-        f"{_js_str(round(reading['ncr_rate'], 4))} for each one." + _open,
+    _figs = dict(
         ncr_rate=round(reading["ncr_rate"], 6),
         ncr_count_basis=reading["ncr_count_basis"],
         event_detail_available=reading["event_detail_available"],
@@ -487,7 +691,86 @@ def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str
         severity_counts=reading["severity_counts"],
         canonical_structure="ncr_exposure_record",
         source=reading["source"],
+        reporting_period=(structure.get("reporting_period")
+                          if isinstance(structure, dict) else None),
     )
+    _msg = (f"{_js_str(reading['ncr_count'])} nonconformances against "
+            f"{_js_str(reading['exposure_quantity'])} {reading['exposure_unit']}, a rate of "
+            f"{_js_str(round(reading['ncr_rate'], 4))} for each one." + _open)
+    # RUN 106, GOAL THREE. THE OWNER SUPPLIED A PERCENTAGE LADDER, AND IT IS DRAWN OVER TWO
+    # DENOMINATORS AND NO OTHERS.
+    #
+    # His measure is new NCRs opened in the period over INSPECTIONS PERFORMED in the period, with
+    # ACTIVE WORK PACKAGES as the fallback where inspections cannot be reliably identified. A
+    # nonconformance rate per labour hour, per unit of work value or per inspected item is a
+    # DIFFERENT quantity, and 2/5/10 per cent means nothing over it. So the exposure unit the
+    # record states decides whether the ladder applies at all: where it is neither of the two,
+    # the figure is displayed with calibration pending and the reason names the unit. Widening
+    # the ladder to cover it would be inventing a threshold.
+    #
+    # THE DENOMINATOR TYPE IS STORED WITH EVERY RESULT, because the owner requires the
+    # denominator to be consistent across periods and a trend that silently switched denominator
+    # would be a fabricated trend. The two are not mixed within one project's trend; this module
+    # stores which was used and the trend surfaces read it.
+    _unit_key = str(reading["exposure_unit"] or "").strip().lower().replace(" ", "_")
+    _denominator = NCR_DENOMINATOR_TYPES.get(_unit_key)
+    if reading["exposure_quantity"] in (0, None) or not reading["exposure_quantity"]:
+        # A ZERO DENOMINATOR IS NOT ASSESSED. `canonical_v4.ncr_rate` already refuses one, so
+        # this arm is unreachable today; it is written because the owner requires the rule to be
+        # stated here and a future supply path must not be able to reach a division by zero.
+        return insufficient(
+            "NCR_Rate",
+            "The nonconformance record for this project reports no exposure in the period, so "
+            "the NCR rate has no denominator and none is formed.")
+    if _denominator is None:
+        return calibration_pending(
+            "NCR_Rate",
+            _msg + (" No band is asserted: the owner's Run 106 NCR ladder is a percentage of "
+                    "INSPECTIONS PERFORMED in the period, or of ACTIVE WORK PACKAGES where "
+                    "inspections cannot be reliably identified. This record measures exposure "
+                    "in " + str(reading["exposure_unit"]) + ", which is a different quantity, "
+                    "and his boundaries are not stretched to cover it."),
+            denominator_type=_unit_key or None,
+            denominator_type_words=("the exposure unit this record states, which is not one of "
+                                    "the two the owner's ladder is drawn over"),
+            **_figs)
+    _pct = 100.0 * reading["ncr_count"] / reading["exposure_quantity"]
+    _fired, _fire_names, _absent = _override_state(structure, NCR_OVERRIDE_FIELDS)
+    # THE OVERRIDE ALSO FIRES ON THE SEVERITY MIX THE RECORD ALREADY CARRIES. An open critical
+    # or life-safety nonconformance is a Red condition whether or not the dedicated override
+    # field was stated, and the severity counts are a field this platform already extracts.
+    _sev = reading.get("severity_counts") or {}
+    _crit = [k for k, v in _sev.items()
+             if str(k).strip().lower() in ("critical", "life_safety", "life-safety", "major")
+             and v]
+    if _crit and reading.get("open_count"):
+        _fired = True
+        _fire_names = _fire_names + ["open_nonconformances_with_" + ",".join(sorted(_crit))
+                                     + "_severity_recorded"]
+    _colour = "Red" if _fired else _pct_band(_pct, NCR_RATE_CUTS)
+    _ov = _override_words(_fire_names, _absent, len(NCR_OVERRIDE_FIELDS))
+    return banded(
+        "NCR_Rate",
+        _msg + f" That is {round(_pct, 1)} per cent of {NCR_DENOMINATOR_TYPES[_unit_key]}. " + _ov,
+        status_color=_colour,
+        boundary=NCR_RATE_BOUNDARY,
+        basis=NCR_RATE_BASIS,
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id="owner_configured_construction_quality_control_tolerance",
+        band_rate_pct=round(_pct, 3),
+        band_override_fired=_fired,
+        band_override_conditions=_fire_names,
+        band_overrides_evaluated=(len(_absent) < len(NCR_OVERRIDE_FIELDS) or bool(_crit)),
+        band_override_fields_absent=_absent,
+        band_override_words=_ov,
+        denominator_type=_unit_key,
+        denominator_type_words=NCR_DENOMINATOR_TYPES[_unit_key],
+        denominator_consistency_rule=(
+            "the denominator type is stored with every result and must not change between "
+            "periods within one project's trend: inspections and active work packages are two "
+            "populations and a trend that mixes them is not a trend"),
+        **_figs)
 
 
 # ------------------------------------------------------------ A4.5 Weather Day Impact

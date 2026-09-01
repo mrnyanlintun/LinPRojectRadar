@@ -37,10 +37,16 @@ required core, and are not performance measures; their rule is therefore UNCHANG
 (worst-wins), and that is recorded here as a default rather than left to silence. No vocabulary
 is widened and no threshold is invented for them.
 
-THE PROJECT STATUS IS NOT FORMED HERE. Since Run 105 it is the worst band across the
-contributing categories on BOTH paths -- the Python rollup and the specification projection --
-subject to the required-core gate and Indeterminate. This module forms a CATEGORY posture and
-nothing else.
+THE PROJECT STATUS IS NOT FORMED HERE. Since RUN 106 it is the owner's WEIGHTED VOTE over the
+five category postures, computed by `project_posture.project_posture` on BOTH paths -- the
+Python rollup and the specification projection -- subject to the required-core gate, which
+publishes "Awaiting analysis" with a sentence when it withholds. Worst-wins, which Run 105 had
+installed at project level, is gone from there and survives here as the rule for A6. This module
+forms a CATEGORY posture and nothing else.
+
+THE SCALE AND THE CUTS BELOW ARE NOW SHARED. `BAND_SCORE` and `AVERAGE_CUTS` are imported by
+`project_posture` rather than copied into it, so the category arithmetic and the project
+arithmetic cannot drift apart.
 
 RUN 105, GOAL THREE. AN AVERAGE OVER ONE MODULE IS THAT MODULE, AND THE CARD MUST SAY SO.
 
@@ -55,7 +61,7 @@ WHAT WAS CONSIDERED, AND WHY A MINIMUM COUNT WAS REJECTED.
   corpus before being rejected, not rejected by taste. Banded counts there are A1 2 of 7,
   A2 4 of 5, A3 3 of 4, A4 1 of 8, A6 4 of 4. A floor of 2 strips A4's posture; a floor of 3
   strips A4's and A1's. A4 and A1 are both in the REQUIRED CORE, so either floor forces the
-  corpus project to Indeterminate -- the platform would answer "we cannot say" about a project
+  corpus project to Awaiting analysis -- the platform would answer "we cannot say" about a project
   whose modules did in fact read, which is a worse failure than a thin Green. It is also a
   NUMBER WITH NO RECORDED BASIS: nothing in the owner's calibration says two readings are
   enough and one is not, and rule 1 of this run's order forbids inventing one.

@@ -780,7 +780,8 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #      specification; nothing in the code moved, because three independent barriers already
 #      held it out of the project status and all three were measured.
 #   3. THE REQUIRED CORE. An OFFICIAL project status is issued only when A1, A2, A3 and A6 all
-#      carry a posture; otherwise it is INDETERMINATE, with the fused band recorded beside it.
+#      carry a posture; otherwise no posture is issued. (RUN 106: the word published when it is
+#      not issued is "Awaiting analysis"; it was "Indeterminate" from Run 89 to Run 105.)
 #      WORST-WINS IS UNTOUCHED -- measured identical across all 256 four-band combinations --
 #      and "Indeterminate" is deliberately not a band and is not in BAND_SEVERITY.
 #   4. THREE MODULES LEFT SERVICE by Run 43's own mechanism: A5.1 DSM Rework Propagation, A5.5
@@ -933,11 +934,32 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # Also in v51: a category whose AVERAGE rests on a single banded module now carries
 # `posture_single_reading`, `posture_thinness_words` and `posture_modules_considered`.
 #
-# Nothing else moves. The required core of five, the Indeterminate gate, the two category posture
+# Nothing else moves. The required core of five, the required-core gate, the two category posture
 # rules, `delivery_complete` and the layer merge are unaltered, no module was renamed, and no
 # stored row was migrated, deleted or rewritten. Results computed under sim-2026.09-v50 remain
 # valid under that stamp.
-SIMULATION_VERSION = "sim-2026.09-v51"
+#
+# RUN 106 MOVES THE STAMP TO v52, and there are THREE changes in what a row holds.
+#
+#  1. THE PROJECT RULE. The project status is no longer the worst band across the categories. It
+#     is the owner's WEIGHTED VOTE over the five category postures -- A1 0.28, A2 0.28, A3 0.17,
+#     A4 0.11, A6 0.16, scored Green +2, Yellow +1, Amber -1, Red -2 and banded at or above 1.5
+#     Green, 0.5 Yellow, -0.5 Amber, below that Red -- computed by `project_posture` on both
+#     status paths. A row stamped v51 can carry a project_status that a v52 row from the same
+#     evidence would not: the owner's corpus project moves Amber to Green on exactly this change.
+#     `fused_band` now holds the weighted band; `dempster_band` is unchanged beside it.
+#  2. THE WORD. A project that can be given no posture publishes "Awaiting analysis", not
+#     "Indeterminate", and carries `project_status_reason` -- a sentence naming what is missing.
+#  3. TWO NEW BANDS. A4.3 Submittal Rejection Rate and A4.4 NCR Rate assert a band for the first
+#     time, on the owner's Run 106 boundaries, each storing its denominator type and reporting
+#     period. Rows stamped v51 and earlier hold a figure and no colour for both.
+#
+# Also in v52: B1.2 Weighted Voting publishes the project rule's own band and weighted sum
+# instead of a plurality of weight across band classes.
+#
+# No stored row is recomputed, migrated, deleted or rewritten, and NO MIGRATION IS ADDED. A row
+# carrying "Indeterminate" keeps it and remains valid under the stamp it was written with.
+SIMULATION_VERSION = "sim-2026.09-v52"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -996,6 +1018,12 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # RUN 105: one project, one status. The Python rollup's project status moved from Dempster's
  # rule across the categories to the worst band across them, matching the served page.
  "sim-2026.09-v51",
+ # RUN 106: the weights set the status. The project rule becomes the owner's weighted vote over
+ # the five category postures; "Indeterminate" is replaced by "Awaiting analysis" with a
+ # sentence naming what is missing; A4.3 and A4.4 band for the first time on the owner's
+ # supplied boundaries. THE STAMP IS MOVED AND THIS TUPLE IS APPENDED TO IN THE SAME EDIT. No
+ # stored row is recomputed and none is touched.
+ "sim-2026.09-v52",
 )
 
 

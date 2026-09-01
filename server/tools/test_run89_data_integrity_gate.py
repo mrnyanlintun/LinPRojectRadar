@@ -12,7 +12,7 @@ What is proved, by measurement rather than by argument:
       state, and it is asserted, so this test cannot pass vacuously.
   (4) An unassessed category returns NOT ASSESSED -- a null status -- rather than Green,
       Amber or Red. `fusion.worst_band` over no admitted band is None, at both levels.
-  (5) C1.5 is NOT added to `spec_projection.COMPARISON_ONLY_MODULES`: it does not need to be,
+  (5) C1.5 is NOT added to `spec_projection.EXCLUDED_FROM_CATEGORY_ROLLUP`: it does not need to be,
       because the whole of group C is already excluded one level up. Asserted so that a later
       run cannot quietly add it and believe it was always there.
 
@@ -76,22 +76,45 @@ check("A1 is unchanged by the injection", cats["A1"]["status"], "Green")
 # facts are measured and neither hides the other.
 check("THE FUSED BAND is A1's Green, not C1.5's Red",
       sp.project_status_basis(cats)["fused_band"], "Green")
-check("...and the PUBLISHED status is Indeterminate, because three required categories are "
-      "absent from this fixture -- C1.5 did not cause that either",
-      sp.project_status(cats), "Indeterminate")
+check("...and the PUBLISHED status is Awaiting analysis, because three required categories are "
+      "absent from this fixture -- C1.5 did not cause that either (RUN 106 renamed the word; "
+      "the fact is unchanged)",
+      sp.project_status(cats), sp.AWAITING)
 check("group predicate refuses group C", sim_compute.contributes_to_project_status("C"), False)
 
 print("\n3. THE SAME TEST GOES RED WITH THE EXCLUSION NEUTRALISED")
+# RE-POINTED AT RUN 106, AND THE REASON MATTERS. Under Run 105's worst-wins project rule,
+# neutralising the GROUP predicate was enough to let C1's Red into the project band. Under the
+# owner's Run 106 weighted rule there is a SECOND, INDEPENDENT exclusion: C1 is not in
+# `project_posture.PROJECT_CATEGORY_WEIGHTS` at all, so admitting the group moves nothing. Both
+# mechanisms are now measured -- the group predicate below, and the weight profile after it --
+# and the go-red proof is moved onto the profile, which is the one that can still flip the band.
 _real = sim_compute.contributes_to_project_status
 try:
     sp.contributes_to_project_status = lambda group: True
     cats_bad = sp.category_statuses(READINGS)
     check("NEUTRALISED: C1 now contributes", cats_bad["C1"]["contributes_to_project_status"], True)
-    check("NEUTRALISED: the fused band flips to C1.5's band -- this is the defect",
-          sp.project_status_basis(cats_bad)["fused_band"], "Red")
+    check("NEUTRALISED: the band STILL does not move -- C1 carries no weight either",
+          sp.project_status_basis(cats_bad)["fused_band"], "Green")
     check("NEUTRALISED: A1 arithmetic STILL unchanged", cats_bad["A1"]["status"], "Green")
+
+    # THE SECOND NEUTRALISATION, and this one DOES go red: put Data Integrity in the owner's
+    # weight profile. That is the defect the executable assertion in `project_posture` and the
+    # one in `models_gov` exist to make impossible.
+    import app.simulation.project_posture as PP
+    _real_weights = dict(PP.PROJECT_CATEGORY_WEIGHTS)
+    try:
+        PP.PROJECT_CATEGORY_WEIGHTS.clear()
+        PP.PROJECT_CATEGORY_WEIGHTS.update({"A1": 0.5, "C1": 0.5})
+        check("NEUTRALISED: with C1 weighted, the band flips to C1.5's Red -- this is the defect",
+              sp.project_status_basis(sp.category_statuses(READINGS))["fused_band"], "Amber")
+    finally:
+        PP.PROJECT_CATEGORY_WEIGHTS.clear()
+        PP.PROJECT_CATEGORY_WEIGHTS.update(_real_weights)
 finally:
     sp.contributes_to_project_status = _real
+check("RESTORED: C1 is excluded from the weight profile again",
+      "C1" in sp.project_status_basis(sp.category_statuses(READINGS))["project_weights"], False)
 
 print("\n4. RESTORED")
 cats_back = sp.category_statuses(READINGS)
@@ -108,9 +131,15 @@ check("...and it is not Green", _none["A2"]["status"] == "Green", False)
 check("...and the fused band over it alone is null",
       sp.project_status_basis(_none)["fused_band"], None)
 
-print("\n6. C1.5 IS NOT IN COMPARISON_ONLY_MODULES, AND DOES NOT NEED TO BE")
-check("COMPARISON_ONLY_MODULES is Run 87's set, unextended",
-      sorted(sp.COMPARISON_ONLY_MODULES), ["B1.2", "B1.3", "B1.4"])
+print("\n6. C1.5 IS NOT IN THE EXCLUDED SET, AND DOES NOT NEED TO BE")
+# RE-POINTED TWICE, AND BOTH REASONS ARE RECORDED. (a) RUN 98 trimmed the set to {B1.2}: B1.3 and
+# B1.4 left the registry at Run 97 and no longer resolve, so this line had been asserting a stale
+# membership since then and was ALREADY RED before Run 106 touched it. (b) RUN 106 renamed the set
+# to EXCLUDED_FROM_CATEGORY_ROLLUP, because B1.2 stopped being a comparison ensemble when the
+# owner made the weighted vote the project status rule. Neither change weakens what this section
+# proves, which is that C1.5 is not in the set.
+check("the excluded set is Run 98's, unextended",
+      sorted(sp.EXCLUDED_FROM_CATEGORY_ROLLUP), ["B1.2"])
 check("C1.5 is admitted to its OWN category rollup (it is a gate reading, not a project posture)",
       sp.admitted_to_category_rollup("C1.5"), True)
 
@@ -129,9 +158,14 @@ check("A5 is not in the profile", "A5" in GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS, 
 check("the provenance names the owner, not a literature value",
       "owner's stated authority" in GOV.WEIGHT_PROVENANCE, True)
 check("...summing to 1.00", round(sum(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS.values()), 10), 1.0)
-check("a C1 posture is ignored by the weighted vote, not weighed",
-      GOV.weighted_category_vote({"A1": {"status": "Green"}, "C1": {"status": "Red"}})["winner"],
-      "Green")
+# RE-POINTED AT RUN 106: `weighted_category_vote` no longer returns a plurality WINNER. The owner
+# made the weighted vote the project status rule, so it now returns the banded weighted SUM under
+# the key `status`. The fact under test -- that a C1 posture is ignored and not weighed -- is
+# unchanged and is asserted on the new key, and on the assessed set as well so the check names
+# what was and was not weighed rather than only what came out.
+_c1 = GOV.weighted_category_vote({"A1": {"status": "Green"}, "C1": {"status": "Red"}})
+check("a C1 posture is ignored by the weighted vote, not weighed", _c1["status"], "Green")
+check("...and C1 is not in the assessed set", _c1["assessed_categories"], ["A1"])
 # AND THE GUARD FIRES. Adding Data Integrity to the profile raises rather than being weighed.
 _real_profile = dict(GOV.WEIGHTED_VOTING_CATEGORY_WEIGHTS)
 _raised = None

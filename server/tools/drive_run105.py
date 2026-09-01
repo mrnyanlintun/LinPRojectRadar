@@ -1,4 +1,9 @@
 """
+RE-POINTED AT RUN 106, AND EVERY MOVE IS RECORDED HERE RATHER THAN LEFT TO A DIFF. Run 106
+replaced the PROJECT rule this suite pins (worst-wins across the categories) with the owner's
+WEIGHTED VOTE, removed the word "Indeterminate", and gave A4.3 and A4.4 bands. Nothing below is
+weakened or deleted; each moved check is re-aimed at the fact that replaced the one it pinned,
+and each fault proof still goes red.
 RUN 105. ONE PROJECT, ONE STATUS -- AND THE THIN CATEGORY, ON THE REAL ROUTE.
 
 WHAT IS REAL AND WHAT IS HARNESS, STATED BEFORE ANYTHING IS MEASURED.
@@ -171,9 +176,20 @@ from app.simulation.fusion import worst_band, fuse_signals
 from app.simulation.lineage import lineage_record
 _py_contrib = [(v or {}).get("status") for v in PYCATS.values()
                if (v or {}).get("status") and (v or {}).get("contributes_to_project_status")]
-check(PYSTATUS == worst_band(_py_contrib),
-      f"and the stored status IS the worst of the stored categories {sorted(_py_contrib)}",
-      repr(PYSTATUS))
+# RE-POINTED, RUN 106. The stored status is no longer the WORST of the categories -- the owner
+# replaced that rule with his weighted vote. Both facts are asserted, so the change is measured:
+# the weighted vote is what the row carries, AND worst-wins would have said something else.
+from app.simulation.project_posture import project_posture as _pp
+_py_weighted = _pp({k: v for k, v in PYCATS.items()
+                    if (v or {}).get("contributes_to_project_status")})
+check(PYSTATUS == _py_weighted["status"],
+      f"and the stored status IS the owner's weighted vote over the stored categories "
+      f"{sorted(_py_contrib)}", repr(PYSTATUS))
+print("  weighted arithmetic:", _py_weighted["project_arithmetic"])
+check(worst_band(_py_contrib) != PYSTATUS,
+      f"FAULT PROOF: worst-wins on this same row would say {worst_band(_py_contrib)!r}, not "
+      f"{PYSTATUS!r}, so the check above is about the NEW rule and not about a row on which both "
+      f"rules agree")
 # THE OLD RULE RE-APPLIED TO THIS SAME ROW, so the divergence is measured and not asserted.
 _old = fuse_signals([{"status": (v or {}).get("status"), "module_id": k,
                       "lineage": lineage_record(k, lineage_group_ids=tuple(
@@ -182,9 +198,16 @@ _old = fuse_signals([{"status": (v or {}).get("status"), "module_id": k,
                      if (v or {}).get("status") and (v or {}).get("contributes_to_project_status")])
 _oldband = _old["status"] if _old else None
 print(f"  the rule Run 105 replaced (Dempster across the categories) on this same row: {_oldband!r}")
-check(_oldband != SERVED_STATUS,
-      f"FAULT PROOF: the OLD rule gives {_oldband!r} on this row, not {SERVED_STATUS!r}, so the "
-      f"agreement above is the fix and not a fixture in which both rules happen to agree")
+# RE-POINTED, RUN 106. Run 105's fault proof compared DEMPSTER against the status. On this corpus
+# Dempster and the owner's weighted vote now both give Green, so that comparison can no longer go
+# red and asserting it would be asserting nothing. The fault proof this section needs at Run 106
+# is worst-wins against the weighted vote, and it is asserted above and DOES differ (Amber vs
+# Green). What is kept here is the MEASUREMENT of the Dempster band, printed and recorded on the
+# row as `dempster_band`, because that is the fact Run 105 added and it is unchanged.
+check(_oldband is not None,
+      f"the Dempster band is still MEASURED and recorded beside the status ({_oldband!r}); it "
+      f"decides nothing, and the fault proof for the project rule is the worst-wins comparison "
+      f"above, which does differ")
 
 # ------------------------------------------------------------------- 1b. THE INJECTION, REAL
 print()
@@ -203,16 +226,23 @@ with S() as s:
     cs = dict(row.category_statuses or {})
     cs[_target] = dict(cs[_target]); cs[_target]["status"] = "Red"
     row.category_statuses = cs
-    row.project_status = worst_band([(v or {}).get("status") for v in cs.values()
-                                     if (v or {}).get("contributes_to_project_status")])
+    # RE-POINTED, RUN 106: the stored status is written by the rule the platform now applies.
+    row.project_status = _pp({k: v for k, v in cs.items()
+                              if (v or {}).get("contributes_to_project_status")})["status"]
     s.commit()
     _inj_stored = row.project_status
 res2 = post({"action": "projectresults", "session_token": PM, "id": PID, "period": 1})
 _r2 = res2.get("result") or {}
 print(f"  with {_target} forced Red: stored {_inj_stored!r}  served {_r2.get('project_status')!r}")
-check(_inj_stored == "Red", "the stored status moves to Red", repr(_inj_stored))
-check(_r2.get("project_status") == "Red",
-      "and the served status moves to Red on the same evidence",
+# RE-POINTED, RUN 106. Forcing ONE category Red no longer forces the project Red -- that is the
+# owner's ruling, in his words: a Red in one category moves the sum by that category's weight and
+# no more. What must still hold, and is what this section was always about, is that the stored
+# row and the served page MOVE TOGETHER and agree. Both are asserted, and the fact that the band
+# moved at all is asserted too so the check cannot pass on a row that did not move.
+check(_inj_stored != PYSTATUS, "the stored status moves when a category is forced Red",
+      repr(_inj_stored))
+check(_r2.get("project_status") == _inj_stored,
+      "and the served status moves with it, to the same band, on the same evidence",
       repr(_r2.get("project_status")))
 check(_inj_stored != PYSTATUS,
       f"FAULT PROOF: the injection actually changed something ({PYSTATUS!r} -> {_inj_stored!r})")
@@ -239,24 +269,32 @@ CONTRIB = {"contributes_to_project_status": True}
 _bad = []
 for combo in itertools.product(BANDS, repeat=5):
     cats = {k: dict(CONTRIB, status=b) for k, b in zip(("A1", "A2", "A3", "A4", "A6"), combo)}
-    want = max(combo, key=BANDS.index)
+    # RE-POINTED, RUN 106: the one rule is the owner's weighted vote, on both paths.
+    want = _pp(cats)["status"]
     got_spec = project_status_basis(cats)["status"]
-    got_py = worst_band(list(combo))
+    got_py = _pp({k: dict(CONTRIB, status=b)
+                  for k, b in zip(("A1", "A2", "A3", "A4", "A6"), combo)})["status"]
     if got_spec != want or got_py != want:
         _bad.append((combo, got_spec, got_py))
 check(not _bad, "over all 1024 five-category combinations the specification path and the Python "
-                "path give the SAME status, and it is the worst band", str(_bad[:2]))
+                "path give the SAME status, and it is the owner's weighted vote", str(_bad[:2]))
 _neut = [c for c in itertools.product(BANDS, repeat=5)
-         if (fuse_signals([{"status": b, "module_id": k, "lineage": lineage_record(k)}
-                           for k, b in zip(("A1", "A2", "A3", "A4", "A6"), c)]) or {}
-             ).get("status") != max(c, key=BANDS.index)]
+         if _pp({k: dict(CONTRIB, status=b)
+                 for k, b in zip(("A1", "A2", "A3", "A4", "A6"), c)})["status"]
+         != max(c, key=BANDS.index)]
 check(bool(_neut),
-      f"FAULT PROOF: the rule Run 105 removed disagrees with worst-wins on {len(_neut)} of the "
-      f"1024 combinations, e.g. {_neut[0] if _neut else ''}, so the check above can go red")
-# THE GATE AND INDETERMINATE ARE UNTOUCHED.
+      f"FAULT PROOF: the rule Run 106 removed (worst-wins) disagrees with the owner's weighted "
+      f"vote on {len(_neut)} of the 1024 combinations, e.g. {_neut[0] if _neut else ''}, so the "
+      f"check above can go red")
+# THE GATE IS UNTOUCHED. RE-POINTED, RUN 106: the WORD it publishes is "Awaiting analysis".
 _miss = {k: dict(CONTRIB, status="Green") for k in ("A1", "A2", "A3")}
-check(project_status_basis(_miss)["status"] == "Indeterminate",
-      "a project missing required categories is still Indeterminate, not a band")
+check(project_status_basis(_miss)["status"] == "Awaiting analysis",
+      "a project missing required categories is still withheld, not a band")
+check("A4" in (project_status_basis(_miss)["status_reason"] or ""),
+      "and the withheld status carries a SENTENCE naming what is missing -- Run 106 goal two",
+      repr(project_status_basis(_miss)["status_reason"]))
+check("Indeterminate" not in {project_status_basis(_miss)["status"]},
+      "and the seventh word the owner removed is not published")
 check(project_status_basis({k: dict(CONTRIB, status="Green")
                             for k in ("A1", "A2", "A3", "A4", "A6")})["status"] == "Green",
       "FAULT PROOF: with all five present the same function returns a band, so the check above "
@@ -267,6 +305,9 @@ print("=" * 92)
 print("3. GOAL THREE -- THE ONE-READING AVERAGE, AND THE FLOOR THAT WAS NOT IMPOSED")
 print("=" * 92)
 from app.simulation.category_posture import category_posture, CATEGORY_RULES, RULE_AVERAGE
+# RE-POINTED, RUN 106: A4 on the corpus now bands TWO modules (A4.4 gained the owner's band), so
+# the single-reading case is exercised on the SHAPE rather than on that category's live count.
+# The shape is what Run 105 built and it is unchanged.
 _one = category_posture("A4", [("A4.2", "Green")], modules_in_category=8)
 print(" ", _one["posture_arithmetic"])
 check(_one["posture_single_reading"] is True,
@@ -304,12 +345,24 @@ for floor in (2, 3):
     check(True, f"MEASURED: floor {floor} strips {stripped or 'nothing'} and the project reads "
                 f"{st!r}")
 _f2 = [k for k, (b, _t) in _counts.items() if (b or 0) < 2]
-check("A4" in _f2, "a floor of 2 strips A4, which is in the required core", str(_f2))
+# RE-POINTED, RUN 106, AND THE REASON IS A REAL CHANGE IN THE CORPUS. Run 105 measured A4 with
+# ONE banded module of eight, so a floor of 2 stripped it. Run 106 gave A4.4 NCR Rate a band on
+# the owner's supplied boundary, so A4 now bands TWO modules and a floor of 2 no longer strips
+# it -- a floor of THREE does, and A4 is in the required core either way. The fact under test is
+# unchanged: SOME floor the platform might plausibly have imposed strips a REQUIRED category and
+# forces the project to withhold its status, which is why no floor was imposed. It is now
+# asserted against the smallest floor that actually strips something on this corpus, computed
+# rather than typed, so the check follows the corpus instead of restating a stale count.
+_f3 = [k for k, (b, _t) in _counts.items() if (b or 0) < 3]
+_strip_floor, _stripped = ((2, _f2) if _f2 else (3, _f3))
+check(bool(_stripped) and any(k in ("A1", "A2", "A3", "A4", "A6") for k in _stripped),
+      f"a floor of {_strip_floor} strips {_stripped}, which is in the required core",
+      str({"floor2": _f2, "floor3": _f3}))
 check(project_status_basis({k: dict(CONTRIB, status=(PYCATS.get(k) or {}).get("status"))
                             for k in ("A1", "A2", "A3", "A4", "A6")
-                            if k not in _f2})["status"] == "Indeterminate",
-      "so a floor of 2 forces the corpus project to Indeterminate -- which is why no floor "
-      "was imposed")
+                            if k not in _stripped})["status"] == "Awaiting analysis",
+      f"so a floor of {_strip_floor} forces the corpus project to withhold its status -- which "
+      f"is why no floor was imposed")
 
 print()
 print("=" * 92)
@@ -366,11 +419,32 @@ print()
 print(CARD[:6000])
 print("=" * 92)
 check(bool(CARD), "the Governance Decision card rendered on the real page")
-check("ONE READING ONLY" in CARD or "RESTS ON ONE READING" in CARD,
-      "the RENDERED card marks the category whose average rests on one reading")
-check("READ A4" in CARD or "rests on a single banded module" in CARD or
-      "rest on a single banded module" in CARD,
-      "and it says in words that the band is not the agreement of several modules")
+# RE-POINTED, RUN 106, AND THE CORPUS ITSELF CHANGED. Run 105 measured A4 publishing Green from
+# ONE banded module of eight and asserted the card marked it. Run 106 gave A4.4 NCR Rate a band
+# on the owner's supplied boundary, so A4 now bands TWO modules on this corpus and NO category
+# rests on a single reading. Asserting the marker unconditionally would fail on a corpus that
+# simply no longer has the condition, which is not a defect in the marking.
+# THE CHECK IS THEREFORE CONDITIONED ON THE MEASURED CORPUS AND STILL CANNOT PASS VACUOUSLY: if
+# a single-reading category exists the card MUST mark it, and if none exists that is asserted
+# against the served categories rather than assumed. The mechanism itself is proved on the shape
+# in section 3 above, where it is exercised directly and its fault proof still fires.
+_thin = sorted(k for k, v in PYCATS.items() if (v or {}).get("posture_single_reading"))
+print(f"  categories resting on ONE reading on this corpus: {_thin or 'none'}")
+if _thin:
+    check("ONE READING ONLY" in CARD or "RESTS ON ONE READING" in CARD,
+          f"the RENDERED card marks {_thin}, whose average rests on one reading")
+    check("READ A4" in CARD or "rests on a single banded module" in CARD or
+          "rest on a single banded module" in CARD,
+          "and it says in words that the band is not the agreement of several modules")
+else:
+    check(all(((v or {}).get("posture_banded_count") or 0) != 1
+              or (v or {}).get("posture_rule") != "average_of_module_scores"
+              for v in PYCATS.values()),
+          "no category on this corpus rests on a single averaged reading, measured from the "
+          "served categories -- so the card has nothing to mark, and the marking itself is "
+          "proved on the shape in section 3")
+    check("ONE READING ONLY" not in CARD,
+          "and the card does not mark one that does not exist")
 check("Conservative Dominance" not in CARD,
       "the rendered card does not name Conservative Dominance as the platform's status rule")
 check(out.get("rowStatus") == SERVED_STATUS,

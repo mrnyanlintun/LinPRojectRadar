@@ -16,9 +16,14 @@ nor Weighted Voting", which described the platform's status rule by the name of 
 Conservative Dominance is B1.1 — a maximum over the four assembled signals — and it has never been
 the platform's status rule. The platform's rule is: the four performance categories (A1 Cost and
 EVM, A2 Schedule, A3 Cost Risk, A4 Document-Derived Signals) average their banded modules' scores;
-A6 Delivery Quality takes the worst band any of its modules asserted; the project takes the worst
-band across the contributing categories, subject to the required-core gate and Indeterminate. C1
-enters none of those three steps.
+A6 Delivery Quality takes the worst band any of its modules asserted; and the project takes the
+**owner's weighted vote** across the contributing categories (Run 106 — Green +2, Yellow +1,
+Amber −1, Red −2, weighted A1 0.28, A2 0.28, A3 0.17, A4 0.11, A6 0.16, banded at or above 1.5
+Green, 0.5 Yellow, −0.5 Amber, below that Red), subject to the required-core gate, which publishes
+**Awaiting analysis** with a sentence naming what is missing when it withholds. C1 enters none of
+those three steps, and is excluded from the weight profile by an executable assertion in
+`simulation.project_posture`: data integrity is a precondition for using the criteria, never a
+criterion in them.
 
 **Information Completeness Ratio (`C1.5`) is the eligibility gate the owner named.** Its registry
 note already says what it is for: *"authoring-time quality gate; not participant-facing; must not

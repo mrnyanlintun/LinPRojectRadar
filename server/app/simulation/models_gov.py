@@ -43,7 +43,12 @@ from .arm_lineage import (  # noqa: F401  (re-exported for existing readers)
 )
 from .lineage import evidence_bodies
 from .models import (
-    ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient,
+    ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_MALFORMED_INPUT, PROVENANCE_OWNER_CALIBRATED,
+    PROVENANCE_WORDS, THRESHOLD_SOURCE_OWNER, THRESHOLD_SOURCE_WORDS, check_inputs, insufficient,
+)
+from .project_posture import (
+    PROJECT_CATEGORY_WEIGHTS, PROJECT_EXCLUDED_CATEGORIES,
+    WEIGHT_PROVENANCE as PROJECT_WEIGHT_PROVENANCE, project_posture,
 )
 from .models_ext import _derived, _js_str
 from .rng import js_round, round1, round2
@@ -379,91 +384,98 @@ def _synthesis_lineage(out: dict) -> dict[str, Any]:
 # It remains a module with a registry row, a method class and a specification; what moved is WHEN
 # in the run it is evaluated. A second-pass module is also structurally incapable of reaching the
 # category rollup that produced its own input, which is the same conclusion Run 87 reached by
-# admission and is why B1.2 stays in `spec_projection.COMPARISON_ONLY_MODULES` unchanged.
+# admission and is why B1.2 stays excluded from the category rollup.
+#
+# RUN 106, GOAL ONE. B1.2 STOPS BEING A COMPARISON ENSEMBLE AND BECOMES THE STATUS RULE, AND
+# THE ARITHMETIC IT USED TO PUBLISH IS RETIRED RATHER THAN KEPT BESIDE THE NEW ONE.
+#
+#   WHAT IT DID. `weighted_category_vote` computed a PLURALITY OF WEIGHT: it summed the
+#   renormalised weights that landed on each band CLASS and named the class holding the most.
+#   That is a different rule from the owner's, and on many postures it gives a different answer
+#   -- {A1 Green .28, A2 Green .28, A3 Red .17, A4 Red .11, A6 Red .16} is Green by plurality
+#   of weight (0.56 Green against 0.44 Red) and Amber by the owner's scored sum (+0.32). A
+#   module named "Weighted Voting" that disagreed with the weighted vote that sets the status
+#   would be the same defect Run 104 measured one level down.
+#
+#   WHERE THE RULE LIVES, AND WHY NOT HERE. The project rule is `simulation.project_posture`,
+#   called by BOTH status paths. It is not computed here, for a reason the platform has already
+#   paid for once: a module row is dispatch machinery. It can be retired, disabled or fail
+#   qualification, and a project status that existed only where a module runner returned it
+#   would vanish with it -- and it would exist on the Python rollup path while the specification
+#   projection, which dispatches no modules at all, had nothing to read. So the rule lives in one
+#   pure function, and B1.2 REPORTS it: its reading is now the project rule's own band and its
+#   own working, and it can no longer disagree with the status it is named for.
+#
+#   THE PLURALITY FIGURES ARE STILL PUBLISHED ON THE ROW, under `class_votes`, because they are
+#   a real measurement of how the weight is distributed across bands and a reviewer may want it.
+#   They no longer decide anything.
 # ---------------------------------------------------------------------------------------------
 
-#: The owner's weight profile, Run 89 section 2. HIS DECISION, NOT A DERIVED OR LITERATURE VALUE.
-#: Keyed by registry category key; the names are the owner's words for those categories.
-#: RUN 95, SECTION 3. THE OWNER'S REVISED PROFILE, OVER FIVE CATEGORIES. This is HIS DECISION and
-#: HIS STATED AUTHORITY -- it is not derived, not taken from the literature and not calibrated.
-#: A5 Systems and Dynamics is GONE: Run 95 retired every module it held, so it holds none in
-#: service, and an empty category has nothing to weigh rather than a weight of nothing. Its 0.10
-#: was not spread by any rule this file could defend; the owner restated the whole profile.
-WEIGHTED_VOTING_CATEGORY_WEIGHTS: dict[str, float] = {
-    "A1": 0.28,   # Cost and EVM Performance
-    "A2": 0.28,   # Schedule
-    "A3": 0.17,   # Cost Risk
-    "A4": 0.11,   # Document Signals
-    "A6": 0.16,   # Delivery Quality
-}
+#: RUN 106. ONE COPY OF THE WEIGHT PROFILE, AND IT IS NOT HERE ANY MORE.
+#:
+#: These five numbers were B1.2's own profile from Run 89 to Run 105 (restated at Run 95 section
+#: 3 when A5 Systems and Dynamics lost every module it held). At Run 106 the owner gave them
+#: PROJECT-LEVEL AUTHORITY: they decide the project status. So they moved to
+#: `simulation.project_posture`, where the project rule lives, and are IMPORTED here under the
+#: names this file has always used. A second copy beside the first is a thing that can drift,
+#: and a drifted weight profile would mean the module called Weighted Voting and the status the
+#: weighted vote sets disagree -- exactly the class of defect Run 104 closed one level down.
+WEIGHTED_VOTING_CATEGORY_WEIGHTS = PROJECT_CATEGORY_WEIGHTS
+WEIGHTED_VOTING_EXCLUDED_CATEGORIES = PROJECT_EXCLUDED_CATEGORIES
+WEIGHT_PROVENANCE = PROJECT_WEIGHT_PROVENANCE
 
-#: Executable, so the profile cannot lose its normalisation to an edit that forgets to check.
-assert abs(sum(WEIGHTED_VOTING_CATEGORY_WEIGHTS.values()) - 1.0) < 1e-9, \
-    "the owner's weight profile must sum to one"
-
-#: Data Integrity is a precondition, never a criterion. Executable, so the profile cannot acquire
-#: it by an edit that forgets the rule.
-WEIGHTED_VOTING_EXCLUDED_CATEGORIES: frozenset[str] = frozenset({"C1"})
-
-WEIGHT_PROVENANCE = ("the owner's stated authority, Run 95 section 3: his decision, not a derived "
-                     "or literature value and not calibrated")
 
 
 def weighted_category_vote(category_statuses: dict) -> dict[str, Any]:
     """
-    B1.2, second pass. Weigh the five performance category postures by the owner's profile.
+    B1.2, second pass. THE OWNER'S WEIGHTED VOTE OVER THE FIVE CATEGORY POSTURES.
 
-    THE RULE FOR A CATEGORY WITH NO POSTURE, and why it is this one rather than one of the other
-    two the order left open. `specifications/B1_signal_synthesis.md` shared rule 3 already states
-    it: "Missing evidence never defaults Green. An abstaining signal casts no vote, CARRIES NO
-    WEIGHT, and cannot occupy a position among the worst." Carrying no weight is not the same as
-    carrying weight toward zero. So an unassessed category is REMOVED FROM THE DENOMINATOR and the
-    remaining weights are RENORMALISED over the categories that actually carry a posture -- which
-    is also exactly what `canonical_v5.weighted_voting` already does over its eligible signals
-    ("normalised to sum to one over the eligible independent signals actually voting"). Treating
-    it as a zero would be scoring an absence, and dropping the term without renormalising would
-    make the class votes incomparable between projects. Neither is done, and no fourth rule is
-    invented.
+    RUN 106. THE ARITHMETIC IS `simulation.project_posture.project_posture` AND NOTHING IS
+    RECOMPUTED HERE. That function is the project status rule; this module reports it, so the
+    module named Weighted Voting and the status the weighted vote sets are the same number by
+    construction rather than by agreement.
 
-    WITH NO WEIGHTED CATEGORY ASSESSED AT ALL there is nothing to weigh, and the module abstains
-    with a reason about the postures. It does not report a state in place of one.
+    THE RULE FOR A CATEGORY WITH NO POSTURE is unchanged and is stated where the arithmetic is:
+    an unassessed category is REMOVED FROM THE DENOMINATOR and the remaining weights are
+    renormalised. `specifications/B1_signal_synthesis.md` shared rule 3 already states it --
+    "an abstaining signal casts no vote, CARRIES NO WEIGHT" -- and carrying no weight is not the
+    same as carrying weight toward zero. Zero is never used: on the -2..+2 scale it would sit
+    between Yellow and Amber and read as a measured middling assessment.
+
+    WITH NO WEIGHTED CATEGORY ASSESSED AT ALL there is nothing to weigh and the module abstains,
+    naming the postures. It does not report a state in place of one.
+
+    `class_votes` -- the share of the renormalised weight sitting on each band class -- is still
+    computed and still published. Since Run 106 it DECIDES NOTHING; it is a distribution a
+    reviewer may read beside the sum.
     """
     assert not (set(WEIGHTED_VOTING_CATEGORY_WEIGHTS) & WEIGHTED_VOTING_EXCLUDED_CATEGORIES), \
         "Data Integrity is a precondition for using the criteria, not a criterion in them."
     cats = category_statuses if isinstance(category_statuses, dict) else {}
-    present: dict[str, str] = {}
-    unassessed: list[str] = []
-    for key in WEIGHTED_VOTING_CATEGORY_WEIGHTS:
-        entry = cats.get(key)
-        band = normalise_status((entry or {}).get("status")) if isinstance(entry, dict) else None
-        if band:
-            present[key] = band
-        else:
-            unassessed.append(key)
+    posture = project_posture(cats)
+    present = {c["category"]: c["band"] for c in posture["category_scores"]}
+    unassessed = list(posture["unassessed_categories"])
     if not present:
         return {"estimable": False, "unassessed_categories": unassessed,
                 "reason": "none of the five weighted performance categories carries a posture, so "
                           "there is nothing to weigh and no weighted vote is reported"}
-    total = sum(WEIGHTED_VOTING_CATEGORY_WEIGHTS[k] for k in present)
-    weights = {k: WEIGHTED_VOTING_CATEGORY_WEIGHTS[k] / total for k in present}
+    weights = {c["category"]: c["normalised_weight"] for c in posture["category_scores"]}
     votes = {c: 0.0 for c in BAND_SEVERITY}
     for key, band in present.items():
         votes[band] = votes.get(band, 0.0) + weights[key]
-    best = max(votes.values())
-    winners = [c for c in sorted(BAND_SEVERITY, key=lambda x: BAND_SEVERITY[x]) if votes[c] == best]
     return {
         "estimable": True,
+        "status": posture["status"],
+        "weighted_sum": posture["weighted_sum"],
+        "category_scores": posture["category_scores"],
+        "project_arithmetic": posture["project_arithmetic"],
+        "project_boundary": posture["project_boundary"],
         "votes": votes,
         "normalised_weights": weights,
-        "assessed_categories": sorted(present),
+        "assessed_categories": posture["assessed_categories"],
         "unassessed_categories": unassessed,
-        "renormalised": bool(unassessed),
-        "unique_winner": len(winners) == 1,
-        "winner": winners[0] if len(winners) == 1 else None,
-        "tied_classes": winners if len(winners) > 1 else [],
-        "tie_policy": "a tie between classes returns no winner; the choice between tied classes "
-                      "is a governance decision and is not made here",
-        "weight_provenance": WEIGHT_PROVENANCE,
+        "renormalised": posture["renormalised"],
+        "weight_provenance": posture["weight_provenance"],
     }
 
 
@@ -486,23 +498,43 @@ def run_weighted_voting(si: dict, rand: Callable[[], float], period_cutoff) -> d
 
 
 def weighted_voting_result(category_statuses: dict) -> dict[str, Any]:
-    """The B1.2 module row for the second pass: a reading, or the abstention it states."""
+    """
+    The B1.2 module row for the second pass: a reading, or the abstention it states.
+
+    RUN 106. `status_color` IS THE PROJECT RULE'S OWN BAND. Before this run it was the band
+    class holding a plurality of the weight, which is a different quantity; see the header above
+    for the measured case where the two disagree.
+
+    NO BAND PROVENANCE IS ASSERTED AND NONE IS INVENTED. This row does not go through `banded()`
+    because its boundary is not a threshold over a measured quantity -- it is the owner's stated
+    project rule, published verbatim in `band_boundary` with `OWNER-CALIBRATED` provenance and
+    the `owner_configured_default` threshold source, which is the same treatment every other
+    owner-stated tolerance in this tree receives.
+    """
     out = weighted_category_vote(category_statuses)
     if not out.get("estimable"):
         return dict(insufficient("Weighted_Voting"), abstention_reason=out.get("reason"),
                     unassessed_categories=out.get("unassessed_categories", []))
     return {
         "method_class": "Weighted_Voting",
-        "status_color": out["winner"],
+        "status_color": out["status"],
+        "weighted_sum": out["weighted_sum"],
+        "category_scores": out["category_scores"],
+        "project_arithmetic": out["project_arithmetic"],
+        "band_boundary": out["project_boundary"],
+        "band_basis": ("the owner's Run 106 ruling, section 1: the project status is the "
+                       "weighted vote over the five category postures on his weight profile"),
+        "band_basis_id": "owner_configured_project_weighted_vote_profile",
+        "band_provenance_class": PROVENANCE_OWNER_CALIBRATED,
+        "band_provenance_words": PROVENANCE_WORDS[PROVENANCE_OWNER_CALIBRATED],
+        "threshold_source": THRESHOLD_SOURCE_OWNER,
+        "threshold_source_words": THRESHOLD_SOURCE_WORDS[THRESHOLD_SOURCE_OWNER],
         # NOT `votes`. RUN 89 MEASURED A REAL COLLISION: `registry.run_all` sets a BOOLEAN
         # `votes` on every computed row -- "is this module one of the CORE_VOTING_MODULES" --
         # and this module's class-weight distribution was landing on the same key, so a truthy
         # dict made B1.2 read as a voter on the stored row. The distribution keeps its own name.
         # (The collision was latent before this run only because B1.2 never computed.)
         "class_votes": out["votes"],
-        "unique_winner": out["unique_winner"],
-        "tied_classes": out["tied_classes"],
-        "tie_policy": out["tie_policy"],
         "normalised_weights": out["normalised_weights"],
         "weight_provenance": out["weight_provenance"],
         "assessed_categories": out["assessed_categories"],
@@ -510,13 +542,16 @@ def weighted_voting_result(category_statuses: dict) -> dict[str, Any]:
         "renormalised": out["renormalised"],
         "lineage": {
             "signal_qualification": SIGNAL_QUALIFICATION,
-            "synthesis_role": "comparison and sensitivity regime; not an independent project "
-                              "fact and not a voter",
+            # RUN 106. It is no longer a comparison regime. It is a RESTATEMENT of the project
+            # rule, and it is still not an independent project fact and still not admitted to
+            # its own category's rollup -- it is derived from that rollup.
+            "synthesis_role": "restates the project status rule; derived from the category "
+                              "rollup and therefore not evidence within it, and not a voter",
         },
         "evidence_metric": (
-            f"Weighted vote over {len(out['assessed_categories'])} of six performance "
-            f"categories: {out['winner']}" if out["unique_winner"]
-            else "Weighted vote: no single state carries most of the weight"),
+            f"Weighted vote over {len(out['assessed_categories'])} of the five weighted "
+            f"performance categories: weighted sum {out['weighted_sum']:+.4g}, "
+            f"{out['status']}"),
     }
 
 

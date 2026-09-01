@@ -165,7 +165,7 @@
      "Computed". Neither of the two things the briefing suspected was the cause.
 
      THE ACTUAL PATH, end to end:
-       compute route   stores project_status = "Indeterminate" (compute.py, the required-core
+       compute route   stores project_status = "Awaiting analysis" (compute.py, the required-core
                        gate: only A1 of the five required categories carries a posture, because
                        27 of the 30 modules in service abstain for want of document types the
                        platform has no contract for).
@@ -183,8 +183,16 @@
 
      A SERVED WORD THAT IS NOT ONE OF THE OWNER'S SIX IS NOT LAUNDERED AND NOT INVENTED OVER.
      It is returned as its own key, so it cannot be misfiled into `empty` and cannot be
-     silently dropped. "Indeterminate" is such a word: it is a seventh status this platform
-     issues and the owner has not ruled on it. Reported, not papered over. */
+     silently dropped. Run 99 reported "Indeterminate" as such a word -- a seventh status the
+     owner had not ruled on.
+
+     RUN 106, GOAL TWO. HE HAS RULED, AND THE SEVENTH WORD IS GONE. The server publishes
+     "Awaiting analysis" for a processed project with a required category unassessed, exactly as
+     it does for a project not yet processed, and `normalizeStatusLabel` now resolves it to the
+     owner's own legend row. The two conditions are told apart by the SENTENCE the server sends
+     with the word (`project_status_reason`), never by the word alone; the ONE MEANING Run 99
+     narrowed this label to is therefore widened by the owner's ruling, deliberately, and the
+     narrowing is replaced by a disclosure rather than removed. */
   function servedStatus(p) {
     if (!p) return null;
     const s = p.status || ((p.storedResult || {}).project_status) || null;
@@ -194,6 +202,13 @@
     const served = servedStatus(p);
     if (served) {
       const n = (typeof normalizeStatusLabel === "function") ? normalizeStatusLabel(served) : null;
+      /* RUN 106, GOAL TWO. "Awaiting analysis" IS THE OWNER'S SIXTH STATUS AND ITS LEGEND KEY
+         IS `empty`, which is the key `LEGEND_BANDS`, the CSS token `--status-nodata` and
+         `proxyHealth` have always used for it. Slugging it to "awaiting-analysis" would have
+         reproduced Run 99's measured defect exactly one word along: a key the counts object
+         does not hold, `counts[k]++` returning NaN without throwing, and the project vanishing
+         from the legend. Measured, not assumed -- that is how Run 99 found it. */
+      if (n === "Awaiting analysis") return "empty";
       return n ? n.toLowerCase().replace("-review", "")
                : served.toLowerCase().replace(/[^a-z0-9]+/g, "-");
     }

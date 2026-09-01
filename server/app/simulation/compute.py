@@ -11,6 +11,7 @@ from typing import Any
 
 from .category_posture import category_posture
 from .fusion import fuse_signals, governed_status_semantics, worst_band
+from .project_posture import project_posture
 from .lineage import lineage_for, lineage_record
 from .qualification_gate import (
     GATE_VERSION,
@@ -28,7 +29,12 @@ from .models_gov import weighted_voting_result as _weighted_voting_result
 #: RUN 95, THE OWNER'S RULING, SECTION 3.2. THE REQUIRED CORE IS ALL FIVE, AND IT SUPERSEDES
 #: RUN 89'S CORE OF FOUR. A4 Document Signals moves from supporting to required: an official
 #: project status is issued only when every one of the five weighted performance categories
-#: carries a posture, and if any one does not the status is Indeterminate.
+#: carries a posture, and if any one does not NO POSTURE IS ISSUED.
+#:
+#: RUN 106, GOAL TWO. THE WORD THE PLATFORM USES WHEN IT CANNOT ISSUE ONE IS NOW "Awaiting
+#: analysis". The owner has ruled there are six statuses and Indeterminate is not one of them.
+#: THE GATE ITSELF IS UNCHANGED -- what changed is the word, and that the word is never bare:
+#: `project_status_reason` below states which category is unassessed and why no posture follows.
 #:
 #: A5 Systems and Dynamics IS NOT LISTED HERE AND IS NOT A CATEGORY OF THIS PLATFORM ANY MORE.
 #: Run 95 retired every module it held, so it holds none in service; an empty category has
@@ -41,7 +47,71 @@ _REQUIRED_CATEGORIES: tuple[str, ...] = ("A1", "A2", "A3", "A4", "A6")
 #: the client all read them, and a key that vanishes reads as a missing field rather than as an
 #: empty tier. They publish `[]` and that is the true answer: no category is supporting.
 _SUPPORTING_CATEGORIES: tuple[str, ...] = ()
-_INDETERMINATE = "Indeterminate"
+# RUN 106, GOAL TWO. THE OWNER'S SIX STATUSES ARE Complete, Green, Yellow, Amber, Red AND
+# "Awaiting analysis", and the seventh word this platform used to publish -- "Indeterminate" --
+# is gone from every surface that issues, stores, renders or describes a status. His reason, in
+# his words: nobody will understand one word. So "Awaiting analysis" now covers BOTH conditions
+# a project can be in without a posture -- documents uploaded and not yet processed, and
+# processed with a required category unassessed -- and every one of them renders a SENTENCE
+# saying which it is and what is missing.
+#
+# ROWS ALREADY STORED CARRYING "Indeterminate" KEEP WHAT THEY HOLD. Nothing is rewritten and no
+# migration is added; a row stamped v51 or earlier means what it meant when it was written.
+_AWAITING = "Awaiting analysis"
+
+#: Reader-facing category names for the sentence below. The registry is the authority and is read
+#: first; this map exists only so a category with no registry row still gets a readable name
+#: rather than a bare key. It is the same fallback `decision_brief` carries, for the same reason.
+_CATEGORY_NAMES = {
+    "A1": "Cost and EVM Performance",
+    "A2": "Schedule Performance",
+    "A3": "Cost Risk",
+    "A4": "Document-Derived Signals",
+    "A6": "Delivery Quality",
+}
+
+
+def category_name(key: str) -> str:
+    """The registry's own name for a category, falling back to the map above, then to the key."""
+    try:
+        from .registry import load_registry
+        for row in load_registry():
+            if row.get("category") == key and row.get("category_name"):
+                return str(row["category_name"]).strip()
+    except Exception:                                                      # noqa: BLE001
+        pass
+    return _CATEGORY_NAMES.get(key, key)
+
+
+def _awaiting_reason(required_missing, category_statuses) -> str:
+    """
+    RUN 106, GOAL TWO. THE SENTENCE THAT MUST ACCOMPANY "Awaiting analysis".
+
+    The owner's words: a bare label is not enough, nobody will understand one word. So the
+    reason NAMES WHAT IS MISSING -- which required category carries no posture, and whether it
+    was never called or was called and produced no band -- and says plainly that no posture is
+    issued this period.
+
+    It asserts nothing about the project. "Cost Risk has not been assessed" is a statement about
+    the platform's evidence, not a finding about the work, which is why it needs no figure and
+    passes the Run 70 recommendation checks unchanged.
+    """
+    missing = list(required_missing or [])
+    if not missing:
+        return ("No project posture is issued this period. The analysis has not produced a "
+                "band for this project.")
+    cats = category_statuses if isinstance(category_statuses, dict) else {}
+    parts = []
+    for key in missing:
+        if key not in cats:
+            why = ("no module in this category was run for this period")
+        else:
+            why = ("the category was called and no module in it asserted a band")
+        parts.append(f"{category_name(key)} ({key}) has not been assessed \u2014 {why}")
+    return ("No project posture is issued this period, because a required category could not be "
+            "assessed: " + "; ".join(parts) + ". The project status is withheld rather than "
+            "imputed, and no value was substituted for what is missing.")
+
 
 # --------------------------------------------------------------- RUN 99, THE COMPLETE STATUS
 #
@@ -337,34 +407,53 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # Run 105 changed that rule (below) without touching the gate: when all five required
     # categories carry a posture the gate passes the band through unaltered, exactly as before.
     #
-    # RUN 105, GOAL ONE. ONE PROJECT, ONE STATUS -- AND THE RULE IS WORST-WINS.
+    # RUN 106, GOAL ONE. THE WEIGHTS SET THE STATUS, AND WORST-WINS IS GONE FROM PROJECT LEVEL.
     #
-    # WHAT STOOD HERE, AND WHY IT WAS WRONG. `_fused_band` was `project["status"]`, the band
-    # `fuse_signals` produced by combining the CATEGORY bands under Dempster's rule. The
-    # specification path (`spec_projection.project_status_basis`) applied `worst_band` to the
-    # same categories. Same project, same postures, two rules. Run 104 measured the divergence
-    # on the corpus project -- four Green categories and one Amber gave a SERVED status of Amber
-    # and a stored `project_status` of Green -- and its order forbade the fix. This run's order
-    # requires it: the project status is the worst band among the categories that carry one.
+    # WHAT STOOD HERE. Run 105 made `_fused_band = worst_band([v["status"] for v in voting])`,
+    # replacing the Dempster fusion that had decided it before. The owner has now ruled that
+    # rule out at project level for a stated reason: worst-wins means a project is almost never
+    # Green, everyone lives in permanent alarm, and nobody trusts the dashboard. The project
+    # status is the WEIGHTED VOTE over the five category postures on his profile -- A1 0.28,
+    # A2 0.28, A3 0.17, A4 0.11, A6 0.16 -- scored Green +2, Yellow +1, Amber -1, Red -2 and
+    # banded on the same cuts the category averages use. The rule is `project_posture`, which
+    # both this path and `spec_projection` call, so the two paths cannot drift.
     #
-    # THE FUSION IS STILL RUN AND STILL STORED. It no longer DECIDES. `project["conflict"]` is
-    # the belief-conflict coefficient `governed_status_semantics` reads below, and it is a real
+    # NO OVERRIDE. A Red in Delivery Quality moves the sum by 0.16 and no more. The consequence
+    # -- a Green project with an adverse module inside it -- is DISCLOSED rather than softened:
+    # `decision_brief` names every adverse module reading as a material driver regardless of
+    # the band above it.
+    #
+    # CATEGORY RULES ARE UNCHANGED. `category_posture` still averages A1-A4 and takes the worst
+    # in A6. This changed only how the project combines the five.
+    #
+    # THE FUSION IS STILL RUN AND STILL STORED, and still does not decide. `project["conflict"]`
+    # is the belief-conflict coefficient `governed_status_semantics` reads below and is a real
     # measurement over the same voting categories; removing the call would have forced a zero to
-    # be invented there. `fused_band` in the result keeps its name and now holds the worst-wins
-    # band, which is what every reader of that name already meant by it; the fusion's own band
-    # is published beside it as `dempster_band` so the two can still be compared in a stored row.
+    # be invented there. `dempster_band` keeps publishing the band Dempster's rule would give,
+    # beside the status and never in place of it.
     #
-    # THE GATE AND INDETERMINATE ARE UNCHANGED, by the order's own words. INDETERMINATE is not a
-    # band, is not in `BAND_SEVERITY`, and never enters a severity comparison.
+    # `worst_band` IS STILL IMPORTED AND STILL USED -- by `category_posture` for A6 and by the
+    # per-module fusion above. It is only the PROJECT rule that stopped being worst-wins.
+    #
+    # THE GATE IS UNCHANGED. What it publishes when it withholds is now "Awaiting analysis",
+    # with a sentence naming the unassessed category beside it.
     _required_missing = [k for k in _REQUIRED_CATEGORIES
                          if not (category_statuses.get(k) or {}).get("status")]
     _dempster_band = project["status"] if project else None
-    _fused_band = worst_band([v["status"] for v in voting])
+    _posture = project_posture(category_statuses)
+    _fused_band = _posture["status"]
     # RUN 99. The Complete promotion, decided by the one function above and applied identically
     # on the specification path in `spec_projection`. Ahead of the gate; see the note there.
     _complete = delivery_complete(si)
+    # RUN 106, GOAL TWO. A project with no posture publishes "Awaiting analysis" -- and it does
+    # so BOTH when a required category is unassessed and when the weighted rule formed no band
+    # at all. The second arm cannot be reached while the first stands (no posture at all means
+    # every required category is missing), and it is written anyway so no future edit to the
+    # gate can let a None reach a surface as a status.
     _published = (_COMPLETE if _complete
-                  else (_INDETERMINATE if _required_missing else _fused_band))
+                  else (_AWAITING if (_required_missing or not _fused_band) else _fused_band))
+    _status_reason = _awaiting_reason(_required_missing, category_statuses) if (
+        _published == _AWAITING) else None
 
     # ------------------------------------------------------------------ RUN 11, GATES 5 AND 6
     # Derived, not asserted, and derived by the same pure function the read path uses, so a
@@ -386,9 +475,9 @@ def compute_project(si: dict, scenario_id: str, period: str,
         "unported": run["unported"],
         "category_statuses": category_statuses,
         "project_status": _published,
-        # Why the status is what it is, so a surface can render the Indeterminate brief without
-        # re-deriving the gate. The fused band is reported EITHER WAY, so an Indeterminate brief
-        # can still show every assessed category and any that are Red.
+        # Why the status is what it is, so a surface can render the Awaiting-analysis brief
+        # without re-deriving the gate. The weighted band is reported EITHER WAY, so an
+        # Awaiting-analysis brief can still show every assessed category and any that are Red.
         "project_status_basis": {
             "required_categories": list(_REQUIRED_CATEGORIES),
             "supporting_categories": list(_SUPPORTING_CATEGORIES),
@@ -407,13 +496,31 @@ def compute_project(si: dict, scenario_id: str, period: str,
             "supporting_not_assessed": [k for k in _SUPPORTING_CATEGORIES
                                         if not (category_statuses.get(k) or {}).get("status")],
             "fused_band": _fused_band,
+            # RUN 106, GOAL ONE. The project rule's own working, so a card can show the sum
+            # instead of asking a reader to trust it, and goal two's sentence.
+            "project_rule": _posture["project_rule"],
+            "project_rule_short": _posture["project_rule_short"],
+            "project_rule_words": _posture["project_rule_words"],
+            "project_boundary": _posture["project_boundary"],
+            "project_arithmetic": _posture["project_arithmetic"],
+            "project_weighted_sum": _posture["weighted_sum"],
+            "project_category_scores": _posture["category_scores"],
+            "project_weights": _posture["weights"],
+            "project_weight_provenance": _posture["weight_provenance"],
+            "project_renormalised": _posture["renormalised"],
+            "status_reason": _status_reason,
             "official": _complete or not _required_missing,
             "delivery_complete": _complete,
             "status": _published,
         },
-        # The band worst-wins produced, kept under its own name so nothing that needs the
-        # SEVERITY loses it to the gate. This is not a second project status.
+        # The band the WEIGHTED RULE produced, kept under its own name so nothing that needs
+        # the band loses it to the gate. This is not a second project status. The NAME is Run
+        # 89's and is kept because every stored row and every surface already reads it; what it
+        # holds has been the project rule's own band since Run 105 and is the weighted band now.
         "fused_band": _fused_band,
+        # RUN 106, GOAL TWO. The sentence that goes with "Awaiting analysis", so no surface has
+        # to compose it and none can render the bare word.
+        "project_status_reason": _status_reason,
         # RUN 105. The band Dempster's rule would have produced over the same categories, kept
         # BESIDE the status and never in place of it, so the change this run made is visible in
         # a stored row -- the same discipline Run 104 applied to `fusion_band` per category.

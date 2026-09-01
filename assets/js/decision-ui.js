@@ -639,11 +639,22 @@
     body += para(p.official
       ? "This is the official posture for the period."
       : "No official posture is issued for this period.");
-    // The fused band is shown BESIDE an unofficial status, never instead of it, so that
-    // withholding the posture cannot conceal an adverse reading.
+    /* RUN 106, GOAL TWO. THE SENTENCE THAT MUST ACCOMPANY A WITHHELD POSTURE. The owner's
+       ruling is that a bare label is not enough -- nobody will understand one word -- so the
+       reason the status architecture composed is printed here, naming which required category
+       was not assessed. It is READ BACK, never written here. */
+    if (p.status_reason) body += para(p.status_reason);
+    /* The band is shown BESIDE an unofficial status, never instead of it, so that withholding
+       the posture cannot conceal an adverse reading.
+       RUN 106, GOAL ONE. THE LABEL WAS "Worst band among the categories that were assessed",
+       which stopped being true when the owner replaced worst-wins at project level with his
+       weighted vote. The wording now names the rule the platform actually applied, and the
+       arithmetic goes with it so a reader can check the sum rather than trust it. */
     if (p.fused_band) {
-      body += para("Worst band among the categories that were assessed: " + p.fused_band + ".");
+      body += para("Band from the weighted vote over the categories that were assessed: " +
+                   p.fused_band + ".");
     }
+    if (p.project_arithmetic) body += para(p.project_arithmetic);
     return briefBlock("Project posture", body);
   }
 
@@ -711,6 +722,34 @@
     return briefBlock("Material drivers", body);
   }
 
+  /* RUN 106, GOAL FIVE. ADVERSE READINGS, NAMED WHATEVER THE STATUS ABOVE THEM SAYS.
+
+     A consequence of the owner's Run 106 project rule is that a project can publish Green with a
+     Red module inside it: the module moves its category, the category moves the weighted sum by
+     its own weight, and the sum can still band Green. THAT RULING IS NOT SOFTENED HERE. What
+     this block prevents is the Red disappearing: "Material drivers" shows four rows collapsed
+     and selects by whether a module SET its category's posture, so a Red module in a category
+     that averaged to Yellow, or a fifth adverse row, could be absent from the visible card
+     entirely. Every non-Green module reading is listed here, in severity order, none collapsed.
+     The rule is printed with the list, so a reader can check the list against the rule. */
+  function renderAdverse(a) {
+    if (!a || !a.rows || !a.rows.length) return "";
+    var body = '<ul class="dc-drivers">' + a.rows.map(function (r) {
+      return "<li><span class=\"dc-band\">" + esc(r.band) + "</span> <strong>" +
+        esc(r.module_id || "") + "</strong>" +
+        (r.category ? " &middot; " + esc(r.category) +
+          (r.category_name ? " " + esc(r.category_name) : "") +
+          (r.category_band ? " (category reads " + esc(r.category_band) + ")" : "") : "") +
+        (r.reading ? '<div style="font-size:12px; margin-top:2px;">' + esc(r.reading) +
+          "</div>" : "") +
+        (r.visible_above ? '<div class="dc-note" style="font-size:12px; margin-top:2px;">' +
+          esc(r.visible_above) + "</div>" : "") +
+        "</li>";
+    }).join("") + "</ul>";
+    body += para(a.rule);
+    return briefBlock("Adverse readings", body);
+  }
+
   function renderEvidence(ev) {
     if (!ev) return "";
     var body = "";
@@ -774,6 +813,7 @@
       briefBlock("Why this finding was produced", para(brief.why)) +
       renderForecast(brief.forecast) +
       renderDrivers(brief.drivers) +
+      renderAdverse(brief.adverse_readings) +
       renderEvidence(brief.evidence) +
       renderLimitations(brief.limitations) +
       briefBlock("Decision question", para(brief.question)) +

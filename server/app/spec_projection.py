@@ -227,12 +227,32 @@ def abstention_rows(readings: dict[str, SpecificationReading]) -> list[dict[str,
 # naming two identifiers that do not exist cannot exclude them from a rollup they can never
 # reach, and it made the set unreadable as a statement about the platform in service. B1.2 is
 # unchanged and the RULE is unchanged -- what it names is now only what exists.
-COMPARISON_ONLY_MODULES: frozenset[str] = frozenset({"B1.2"})
+#
+# RUN 106, GOAL ONE. THE SET IS RENAMED AND ITS REASON IS RESTATED, BECAUSE THE OLD NAME BECAME
+# A FALSE STATEMENT. B1.2 Weighted Voting is no longer a comparison ensemble: the owner has
+# ruled that the weighted vote over the five category postures IS the project status rule, and
+# `simulation.project_posture` computes it for both status paths. A set called
+# COMPARISON_ONLY_MODULES that contains the status rule would have been a stale name inviting
+# exactly the misreading Run 87 fixed. Renamed rather than aliased -- two names for one set is a
+# drift hazard, and the two suites that read it are re-pointed with the reason recorded there.
+#
+# B1.2 IS STILL EXCLUDED FROM THE CATEGORY ROLLUP, AND FOR THE SAME STRUCTURAL REASON AS BEFORE.
+# Its reading is a SECOND-PASS restatement of the project posture, computed from the very
+# category rollup it would be feeding. Admitting it would make B1 Signal Synthesis's posture a
+# restatement of the project status rather than evidence about the project, and would let a
+# module's band re-enter the arithmetic that produced it. Exclusion from a rollup and being a
+# comparison ensemble were always different facts; only the second stopped being true.
+EXCLUDED_FROM_CATEGORY_ROLLUP: frozenset[str] = frozenset({"B1.2"})
 
 
 def admitted_to_category_rollup(module_id: str | None) -> bool:
-    """Does this module's band set its category's status? Comparison ensembles do not."""
-    return module_id not in COMPARISON_ONLY_MODULES
+    """
+    Does this module's band set its category's status?
+
+    A module whose reading is computed FROM the category rollup does not, because it cannot be
+    evidence for the thing it is derived from.
+    """
+    return module_id not in EXCLUDED_FROM_CATEGORY_ROLLUP
 
 
 def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, dict[str, Any]]:
@@ -304,7 +324,7 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
 
 
 # ---------------------------------------------------------------------------------------------
-# RUN 89, GOAL THREE. THE REQUIRED CORE, AND INDETERMINATE.
+# RUN 89, GOAL THREE. THE REQUIRED CORE, AND WHAT IS PUBLISHED WHEN IT IS INCOMPLETE.
 #
 # RUN 95, SECTION 3.2, SUPERSEDES RUN 89's CORE OF FOUR. An OFFICIAL project status is issued
 # only when ALL FIVE weighted performance categories -- A1, A2, A3, A4, A6 -- carry a posture.
@@ -312,30 +332,37 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
 # in service after Run 95's retirements and is not a category of this platform any more. There
 # is NO SUPPORTING TIER LEFT: `SUPPORTING_CATEGORIES` is empty and the `supporting_*` keys
 # publish `[]`, which is the true answer rather than a dead key. When any required category is
-# not assessed, the official status is INDETERMINATE.
+# not assessed, no official status is issued and the platform publishes "Awaiting analysis"
+# (RUN 106, GOAL TWO -- the owner's six statuses, with the seventh word removed), together with
+# a SENTENCE naming which required category is unassessed. The gate itself is unchanged.
 #
-# THE PROJECT-LEVEL RULE IS NOT TOUCHED HERE, AND SINCE RUN 105 IT IS THE ONLY ONE ANYWHERE.
-# `worst_band` over the CATEGORIES is still the only severity rule in this file and its arithmetic
-# is not altered, not re-ordered and not consulted twice -- Run 104 changed how a CATEGORY forms
-# its posture and nothing about how the project forms its status; Run 105 changed the OTHER path
-# (`simulation.compute`) to this one, so both now take the worst across the categories. The gate is a CONDITION LAYERED ON TOP of the fused band: when all five
-# required categories carry a posture, this function returns EXACTLY what it returned before
-# Run 89, byte for byte. That equality is
-# measured, not argued, in `tools/test_run89_required_core.py`.
+# RUN 106, GOAL ONE. THE PROJECT-LEVEL RULE IS THE OWNER'S WEIGHTED VOTE, AND IT IS WRITTEN IN
+# ONE PLACE -- `simulation.project_posture.project_posture`, imported below and called by BOTH
+# status paths. Worst-wins over the categories, which Run 105 installed on both paths, is gone
+# from project level by the owner's ruling: it made a project almost never Green, put every
+# reader in permanent alarm and destroyed trust in the dashboard. `worst_band` is still imported
+# and still used HERE for nothing at project level; the category rules (`category_posture`) still
+# use it for A6.
 #
-# "INDETERMINATE" IS NOT A BAND. It is deliberately NOT added to `fusion.BAND_SEVERITY` and it
+# The gate is a CONDITION LAYERED ON TOP of the weighted band: when all five required categories
+# carry a posture, this function returns the weighted band unaltered.
+#
+# "Awaiting analysis" IS NOT A BAND. It is deliberately NOT added to `fusion.BAND_SEVERITY` and
 # never enters `worst_band`, because it is not a severity and cannot be ranked against one. It is
-# the answer to a different question -- may an official status be issued at all -- and it is
-# produced only here, at the point where that question is asked.
+# the answer to a different question -- may a posture be issued at all -- and it is produced only
+# here and in `simulation.compute`, at the point where that question is asked. Exactly as
+# "Indeterminate" was before Run 106 removed the word.
 #
 # ONE DEFINITION, IMPORTED. The required and supporting sets live in `simulation/compute.py`
 # beside the Python rollup that also applies them, and are imported here rather than restated,
 # so the two status paths cannot drift about which categories are required. That is the failure
 # this programme has already found nine times.
+from .simulation.project_posture import project_posture  # noqa: E402
 from .simulation.compute import (  # noqa: E402
     _COMPLETE as COMPLETE,
     delivery_complete,
-    _INDETERMINATE as INDETERMINATE,
+    _AWAITING as AWAITING,
+    _awaiting_reason,
     _REQUIRED_CATEGORIES as REQUIRED_CATEGORIES,
     _SUPPORTING_CATEGORIES as SUPPORTING_CATEGORIES,
 )
@@ -359,7 +386,7 @@ def project_status_basis(cats: dict[str, dict[str, Any]],
     """
     Why the project status is what it is: the fused band, the gate's verdict, and the reason.
 
-    Carried beside `project_status` so a surface can render the Indeterminate brief the owner
+    Carried beside `project_status` so a surface can render the Awaiting-analysis brief the owner
     specified without re-deriving the gate, and so nothing has to infer WHY from the word alone.
 
     RUN 99, THE COMPLETE PROMOTION. `signal_inputs` is the computed row's own figures and is
@@ -377,8 +404,13 @@ def project_status_basis(cats: dict[str, dict[str, Any]],
     """
     missing = required_core_missing(cats)
     complete = delivery_complete(signal_inputs)
-    fused = worst_band([c.get("status") for c in cats.values()
-                        if c.get("status") and c.get("contributes_to_project_status")])
+    # RUN 106, GOAL ONE. The weighted vote over the five category postures, and the SAME
+    # function `simulation.compute` calls. `contributes_to_project_status` still decides
+    # admission, exactly as it did under worst-wins; only the combination rule changed.
+    contributing = {k: c for k, c in cats.items()
+                    if isinstance(c, dict) and c.get("contributes_to_project_status")}
+    posture = project_posture(contributing)
+    fused = posture["status"]
     detail = []
     for key in missing:
         entry = cats.get(key)
@@ -401,13 +433,30 @@ def project_status_basis(cats: dict[str, dict[str, Any]],
                                 if (cats.get(k) or {}).get("status")],
         "supporting_not_assessed": [k for k in SUPPORTING_CATEGORIES
                                     if not (cats.get(k) or {}).get("status")],
-        # The band worst-wins produced over the contributing categories, WHETHER OR NOT the gate
-        # lets it be official. It is reported either way so an Indeterminate brief can still show
-        # every assessed category and any that are Red.
+        # The band the WEIGHTED RULE produced over the contributing categories, WHETHER OR NOT
+        # the gate lets it be official. It is reported either way so an Awaiting-analysis brief
+        # can still show every assessed category and any that are Red.
         "fused_band": fused,
+        # RUN 106, GOAL ONE. The project rule's own working, identical in shape to what
+        # `simulation.compute` publishes, so a surface reads one set of keys on either path.
+        "project_rule": posture["project_rule"],
+        "project_rule_short": posture["project_rule_short"],
+        "project_rule_words": posture["project_rule_words"],
+        "project_boundary": posture["project_boundary"],
+        "project_arithmetic": posture["project_arithmetic"],
+        "project_weighted_sum": posture["weighted_sum"],
+        "project_category_scores": posture["category_scores"],
+        "project_weights": posture["weights"],
+        "project_weight_provenance": posture["weight_provenance"],
+        "project_renormalised": posture["renormalised"],
+        # RUN 106, GOAL TWO. The sentence that goes with "Awaiting analysis". Composed by the
+        # same function the Python rollup uses, so the two paths cannot word it differently.
+        "status_reason": (_awaiting_reason(missing, cats)
+                          if not complete and (missing or not fused) else None),
         "official": complete or not missing,
         "delivery_complete": complete,
-        "status": COMPLETE if complete else (INDETERMINATE if missing else fused),
+        "status": (COMPLETE if complete
+                   else (AWAITING if (missing or not fused) else fused)),
     }
 
 
@@ -416,13 +465,12 @@ def project_status(cats: dict[str, dict[str, Any]],
     """
     The official project status.
 
-    When all FIVE required categories -- A1, A2, A3, A4, A6 -- carry a posture this is the worst
-    contributing category's band, or None. (RUN 105: the word here was "four", which has been
-    wrong since Run 95 moved the required core to five. Counted against `REQUIRED_CATEGORIES`.)
-    Since RUN 105 the Python rollup in `simulation.compute` applies this same rule, so the stored
-    row and the served page cannot disagree about the project status.
-    When any required category carries none, it is INDETERMINATE, which is not a band and is not
-    ranked against one.
+    When all FIVE required categories -- A1, A2, A3, A4, A6 -- carry a posture this is the band
+    of the OWNER'S WEIGHTED VOTE over those postures (RUN 106, goal one), or None. The Python
+    rollup in `simulation.compute` calls the same `project_posture` function, so the stored row
+    and the served page cannot disagree about the project status.
+    When any required category carries none, it is "Awaiting analysis", which is not a band, is
+    not ranked against one, and is never published without the sentence saying what is missing.
     """
     return project_status_basis(cats, signal_inputs)["status"]
 

@@ -90,6 +90,27 @@ ALL_FIELDS: tuple[str, ...] = (
     # inspection or on a re-inspection after rework, and those are different quantities. So a
     # field is added that says so on its face rather than reinterpreting one that does not.
     "items_passing_first_inspection", "critical_quality_failures_json",
+    # RUN 106, SECTION 3. THE TWO OWNER-SUPPLIED BANDS NEED FIELDS THE CONTRACT DID NOT ASK FOR.
+    #
+    # A4.3 First-review submittal rejection is defined on submittals RECEIVING A FIRST REVIEW,
+    # excluding later resubmittal outcomes. `submittals_total` and `submittals_rejected` are
+    # bare totals with no revision structure, so the first-review population cannot be recovered
+    # from them at all -- the module therefore does not band on that path. What the measure needs
+    # is the DECISION TABLE the register prints: one row per decision, carrying the submittal, the
+    # revision and the decision date, so the earliest decision for each submittal is identifiable.
+    "submittal_decisions_json", "submittal_disposition_legend_json",
+    "submittal_reporting_period",
+    # A4.3's three Red overrides, each a printed table rather than a judgement.
+    "rejected_critical_or_long_lead_late_json", "rejected_blocking_past_deadline_json",
+    "critical_package_rejected_resubmittals",
+    # A4.4 NCR rate is a percentage of INSPECTIONS PERFORMED in the period, or of ACTIVE WORK
+    # PACKAGES where inspections cannot be reliably identified. `items_inspected` on an
+    # inspection report is the count of ITEMS inspected, which is a different denominator, so
+    # the NCR log is asked for its own.
+    "inspections_performed", "active_work_packages", "ncr_denominator_basis",
+    # A4.4's four Red overrides.
+    "open_critical_ncr_json", "hold_point_or_turnover_blocking_ncr_json",
+    "max_repeat_ncrs_one_root_cause_or_trade", "ncr_open_past_contractual_closure_json",
     "long_lead_items_total", "lookahead_weeks", "material_cost_baseline",
     "material_cost_current", "ncr_closed", "ncr_issued", "ncr_open", "on_time_deliveries",
     "original_contingency", "original_contract_sum", "osha_recordable_incidents",
@@ -266,6 +287,12 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     ],
     "submittal_register": [
         "document_risk_score", "document_date", "submittals_total", "submittals_rejected",
+        # RUN 106, SECTION 3. See ALL_FIELDS for why the bare totals cannot answer the owner's
+        # first-review measure and a decision table is asked for instead.
+        "submittal_decisions_json", "submittal_disposition_legend_json",
+        "submittal_reporting_period",
+        "rejected_critical_or_long_lead_late_json", "rejected_blocking_past_deadline_json",
+        "critical_package_rejected_resubmittals",
     ],
     "oac_minutes": [
         "document_risk_score", "document_date", "subcontractor_issues_discussed",
@@ -357,7 +384,14 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         # each action, its required deadline, its closure date and its severity.
         "environmental_corrective_actions_json",
     ],
-    "ncr_log": ["ncr_issued", "ncr_closed", "ncr_open", "ncr_overdue", "report_period"],
+    "ncr_log": [
+        "ncr_issued", "ncr_closed", "ncr_open", "ncr_overdue", "report_period",
+        # RUN 106, SECTION 3. The denominator the owner's ladder is drawn over, and which of the
+        # two it is, stated by the document rather than assumed by this platform.
+        "inspections_performed", "active_work_packages", "ncr_denominator_basis",
+        "open_critical_ncr_json", "hold_point_or_turnover_blocking_ncr_json",
+        "max_repeat_ncrs_one_root_cause_or_trade", "ncr_open_past_contractual_closure_json",
+    ],
     "subcontractor_report": [
         "scheduled_deliveries", "on_time_deliveries", "compliance_score", "report_period",
     ],
