@@ -229,6 +229,48 @@ def _forecast(modules: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     return lines
 
 
+#: RUN 101, GOAL FOUR. What the card prints for a band whose provenance predates this run's
+#: mechanism. A1.7 and A1.8 carry their citation in `registry.BAND_SOURCES` -- the Run 4
+#: mechanism -- and their specifications are OUT OF SCOPE for this run (section 9.1), so they
+#: are read through that older field rather than being left with no basis printed. Two
+#: mechanisms, one card, and neither is a model.
+def _boundary_and_basis(module_id: str, mod: Mapping[str, Any]) -> dict[str, Any]:
+    """
+    The boundary a driver's figure crossed and where that boundary came from, from STORED fields.
+
+    Returns the three keys the card renders. Nothing is inferred: a module that stored no
+    boundary gets no boundary printed, and the card says so in as many words rather than leaving
+    the reader to assume one existed.
+    """
+    boundary = mod.get("band_boundary")
+    basis = mod.get("band_basis")
+    provenance = mod.get("band_provenance_class")
+    words = mod.get("band_provenance_words")
+    if not basis:
+        # The Run 4 mechanism, for the two modules that predate this one.
+        from .simulation.registry import BAND_SOURCES
+        legacy = BAND_SOURCES.get(module_id)
+        if legacy:
+            boundary = boundary or legacy
+            basis = legacy
+            provenance = provenance or "CODIFIED"
+            words = words or "a standard, regulation or agency requirement"
+    if not provenance:
+        return {
+            "boundary": None,
+            "boundary_basis": None,
+            "boundary_provenance": None,
+            "boundary_note": ("this module asserted a band without recording the boundary it "
+                              "crossed or that boundary's source"),
+        }
+    return {
+        "boundary": boundary,
+        "boundary_basis": basis,
+        "boundary_provenance": provenance,
+        "boundary_provenance_words": words,
+    }
+
+
 # ------------------------------------------------------------------ 5. material drivers
 
 def _drivers(cats: Mapping[str, Mapping[str, Any]],
@@ -256,7 +298,7 @@ def _drivers(cats: Mapping[str, Mapping[str, Any]],
         cat_band = _band(cat.get("status"))
         for mid in (cat.get("status_set_by") or []):
             mod = by_id.get(mid, {})
-            rows.append({
+            row = {
                 "module_id": mid,
                 "category": key,
                 "category_name": _cat_name(key),
@@ -264,7 +306,22 @@ def _drivers(cats: Mapping[str, Mapping[str, Any]],
                 "method_class": mod.get("method_class"),
                 "reading": mod.get("evidence_metric"),
                 "role": "set the category posture",
-            })
+            }
+            # RUN 101, GOAL FOUR. THE REASONING FROM THE FIGURE TO THE FINDING IS MADE VISIBLE.
+            # Until now the card named a figure and a band and stopped there, which leaves the
+            # reader unable to tell a boundary somebody defended from one somebody invented. It
+            # now also states WHICH BOUNDARY THE FIGURE CROSSED and WHERE THAT BOUNDARY CAME
+            # FROM -- the source for a codified one, "widely used convention" for a conventional
+            # one, and plainly "no published basis; the owner's stated threshold" for an
+            # owner-calibrated one.
+            #
+            # THIS STAYS COMPOSED IN CODE AND ASSEMBLED FROM STORED FIELDS. No model decides a
+            # status, a driver, a threshold or a reason: `band_boundary`, `band_basis` and
+            # `band_provenance_class` were written onto the module's own row when the band was
+            # asserted, which is why goal one had to STORE the provenance rather than only write
+            # it in a specification.
+            row.update(_boundary_and_basis(mid, mod))
+            rows.append(row)
         if key in (basis.get("required_missing") or []):
             rows.append({
                 "module_id": None,

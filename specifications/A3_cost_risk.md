@@ -51,11 +51,37 @@ ProgressFraction = actualPctComplete / 100
 Oracle from the source: original 100, remaining 60, progress 0.50 gives a consumed fraction of
 0.40 and a normalized burn of 0.80.
 
-**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending
-with the standard note. The supplied contract states in terms that **no universal traffic-light
-bands are supplied** for either figure and that threshold calibration belongs later. The
-four-band ladder this module carried over the normalized burn at 1.0, 1.3 and 1.6 was recorded as
-uncited by Run 4 and removed by Run 28. It is not to be restored by this run.
+**Bands. RUN 101, THE OWNER'S ORDER, SECTION 3.1. The module now asserts a band, on the
+progress-normalized burn and on nothing else.** Provenance class **CONVENTION**.
+
+| Band | Boundary on `NormalizedBurn` |
+|---|---|
+| Green | at or below **1.0** |
+| Yellow | above 1.0 and **at or below 1.2** |
+| Amber | above 1.2 and **at or below 1.5** |
+| Red | above 1.5, **or** the contingency exhausted while work remains |
+
+Every boundary is **inclusive on its upper side** and the module's stored `band_boundary` says so
+in words. **Source, as the owner's order states it:** the owner's Run 101 order, section 3.1, on
+the owner's stated authority — a contingency drawdown that outruns progress is the condition that
+ends with no reserve and work remaining. **No standards clause fixes 1.0, 1.2 or 1.5**, which is
+why the class is CONVENTION and not CODIFIED.
+
+**The consumed fraction alone does not band.** Forty per cent consumed is healthy at half-time and
+alarming at ten per cent complete, so where no progress is reported the figures are published and
+**no band is asserted**, with the reason stored on the row. That is section 2's rule and it is not
+a failure to band.
+
+**One honest limitation, stated because it is a substitution and substitutions must be visible.**
+The Red arm reads *"contingency exhausted before substantial completion"*. **Substantial completion
+is not a figure this platform holds**: no module and no extraction contract carries the contract
+milestone or its date. The arm is therefore applied against the **reported percent complete being
+below one hundred**, and the boundary text says so in those words wherever it is printed. Where no
+progress is reported the arm cannot fire and does not.
+
+The ladder Run 4 recorded as uncited and Run 28 removed sat at 1.0, 1.3 and 1.6. **This is not
+that ladder restored**: it is the owner's, at different boundaries, with its basis recorded and
+travelling with every stored reading.
 
 **Interpretation.** The consumed fraction says how much of the reserve is gone. The normalized
 burn compares that against how much of the work is done: a figure above 1 says the reserve is
@@ -103,8 +129,28 @@ The output must be a comparable earned or installed quantity, an earned labour-h
 another explicitly equivalent production quantity. **Planned hours over actual hours alone is not
 this metric**, and with no comparable output basis the answer is not estimable.
 
-**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending
-with the standard note. What it replaced was
+**Bands. RUN 101, THE OWNER'S ORDER, SECTION 3.2.** Provenance class **CONVENTION**.
+
+| Band | Boundary on `ProductivityIndex` |
+|---|---|
+| Green | **at or above 0.95** |
+| Yellow | at or above 0.90 and **below 0.95** |
+| Amber | at or above 0.85 and **below 0.90** |
+| Red | below 0.85 |
+
+Every boundary is **inclusive on its lower side**, which is what makes 0.95 Green and 0.9499
+Yellow. The direction of favourability is **upward**. **Source, as the owner's order states it:**
+the owner's Run 101 order, section 3.2, on the owner's stated authority. **No standards clause
+fixes 0.95, 0.90 or 0.85.**
+
+**Why the quantity matches, which section 2 requires be established rather than assumed.** The
+order's words are *"earned hours over expended hours"*. What this module computes is earned output
+per actual hour over planned output per planned hour — the same ratio expressed on an
+installed-quantity basis rather than an hours basis. Numerator and denominator are both
+hours-normalised production, the time basis is the reporting period for both, and one is
+favourable upward. Quantity, denominator, time basis and direction all match.
+
+What this module replaced was
 `((actualPctComplete / 100) * plannedLaborHours) / actualLaborHours`, whose numerator is not an
 installed quantity but the planned hours scaled by a reported progress percentage — so the
 "productivity" moved with whatever percentage was typed into a monthly report. **Neither
@@ -136,8 +182,24 @@ RateVariance           = ActualRate - PlannedRate
 RelativeRateVariance   = RateVariance / PlannedRate
 ```
 
-**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending
-with the standard note. What it replaced was
+**Bands. NONE, AND THE RUN 101 ORDER RULES IT SO EXPRESSLY. NO APPROVED THRESHOLD BASIS IS
+CONFIGURED FOR THIS QUANTITY.**
+
+The owner's Run 101 order, section 3.3: *"No published construction-controls basis exists, and the
+owner has ruled against inventing one from audit-materiality convention. The module computes and
+displays its variance and trend, asserts no band, and casts no vote."*
+
+**A ±5 / ±10 / ±15 per cent ladder, or any other, is expressly forbidden here**, and section 12.1e
+of that order fails the run for attaching one. Audit-materiality convention measures a different
+thing — whether a misstatement would change a reader's decision about a financial statement — and
+applying it to a mid-execution overhead rate variance is substituting a threshold from a related
+but different measure, which section 2 forbids in terms.
+
+The module computes and displays both rates and both variances. The reason no colour accompanies
+them is **stored on the row** as `band_withheld_reason` and is carried into the decision brief's
+limitations, so a reader is told why rather than left to infer it.
+
+What this module replaced was
 `indirectCostActual / (indirectCostPlan * actualPctComplete / 100)`. There is no driver anywhere
 in that expression; overhead is absorbed over a base such as direct labour hours or direct cost,
 and the supplied contract states in terms that indirect actual over indirect plan with no
@@ -173,8 +235,34 @@ when it does, its impact is drawn from its stated distribution. The reported fig
 frozen in `canonical_v3.empirical_quantile` and reported on the result as
 `"right-continuous empirical inverse"`. The median and mean total cost are reported beside it.
 
-**Bands.** **None. This module asserts no band and none may be attached.** Calibration-pending
-with the standard note. What it replaced was `eac = bac / cpi`, then
+**Required input added by Run 101.** `bac` — the budget at completion. **It was not read before.**
+The banded quantity is the GAP between the P80 outcome and the budget at completion, so the budget
+is now part of the reading: a P80 of nine million is comfortable against a ten-million budget and
+ruinous against eight. Where no budget above zero is reported the percentiles are published and
+**no band is asserted**.
+
+**Bands. RUN 101, THE OWNER'S ORDER, SECTION 3.4.** Provenance class **CODIFIED**.
+
+| Band | Boundary on the budget at completion |
+|---|---|
+| Green | **at or above** the P80 total cost |
+| Yellow | at or above the **midpoint** of the P50-to-P80 interval, and below P80 |
+| Amber | **at or above** P50, and below that midpoint |
+| Red | below P50 |
+
+Every boundary is **inclusive on its lower side**. **Source, as the owner's order states it:** DOE
+Order 413.3B's P80 baseline requirement and the GAO Cost Estimating and Assessment Guide's
+best practice of funding to a stated confidence level.
+
+**The one place the order's four arms overlap, and how it is resolved without importing a number.**
+The order gives Yellow as *"BAC sits between P50 and P80"* and Amber as *"BAC is near or just above
+P50"* — two descriptions of the same interval. Splitting it needs a boundary the order does not
+state. Rather than import a percentage from outside, **the interval is divided at its own
+midpoint**, which is the only division expressible in the two quantiles the order itself names and
+introduces no figure not already in the ladder. **This division is a derivation and is recorded as
+one; it is not published**, and the stored `band_boundary` says so wherever it is printed.
+
+What this module replaced was `eac = bac / cpi`, then
 `uncertainty = max(0.03, abs(1 - cpi)) * 0.5` and `p80_eac = eac * (1 + uncertainty * 1.28)`: one
 closed-form multiplication of a reported cost index by the standard normal 80th percentile, with
 no component, no risk event, no probability, no impact and no trial anywhere in it. The supplied

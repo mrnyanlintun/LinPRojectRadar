@@ -841,12 +841,42 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # Nothing else moves: worst-wins, the required core, the Indeterminate gate, Conservative
 # Dominance and Run 99's `delivery_complete` are all unaltered. Results computed under
 # sim-2026.08-v45 remain valid under that stamp.
-SIMULATION_VERSION = "sim-2026.08-v46"
+#
+# ------------------------------------------------------------------ RUN 101, sim-2026.08-v46 -> v47
+#
+# THE SUCCESSOR IS MINTED BECAUSE THIS RUN CHANGES WHAT MODULES COMPUTE, and section 10.10 of
+# the owner's Run 101 order requires it. A reading stamped v46 and a reading stamped v47 are not
+# comparable, and the stamp is what says so.
+#
+# WHAT MOVED, and every item of it changes a stored reading:
+#
+#   1. EIGHT MODULES GAINED OR LOST A BAND. A3.2 Contingency Burn and A3.3 Labor Productivity now
+#      assert one; A3.6 Cost Risk P80 now READS `bac`, which it never did, and bands the gap
+#      against it; A6.1, A6.3 and A6.4 assert one where their evidence supports it; A6.2 asserts
+#      the near-miss band only. A3.5 Overhead Absorption asserts none and now records WHY on the
+#      row. A4.3 Submittal Rejection LOST its uncited 5/15/25 ladder.
+#   2. A4.2 RFI Velocity no longer bands on requests per week. The overdue count bands, against
+#      the contract's own response period. A4.6 Change Order Frequency became change IMPACT and
+#      bands on cost and schedule impact rather than reporting a frequency without a colour.
+#   3. A6.2 SAFETY IS REBUILT. One recordable rate became three measures -- frequency on both the
+#      OSHA and ILO bases, severity under the 180-day cap and the 6,000-day fatality charge, and
+#      near-miss reporting and closure -- reported separately and never composited.
+#   4. A6.4 GAINED A CORPUS PATH. `past_performance_report`'s four CPARS-shaped ratings were
+#      orphan fields no module read; they now assemble a contractor assessment record.
+#   5. EVERY BAND NOW CARRIES ITS BOUNDARY AND ITS BASIS in the stored reading
+#      (`band_boundary`, `band_basis`, `band_provenance_class`). New keys on a JSON column, so no
+#      migration -- but the stored row is genuinely different and the stamp must say so.
+#
+# Nothing else moves. Worst-wins, the required core of five, the Indeterminate gate, Conservative
+# Dominance, `delivery_complete` and `scope_signal_inputs` are all unaltered, and no stored row
+# was migrated, deleted or rewritten. Results computed under sim-2026.08-v46 remain valid under
+# that stamp.
+SIMULATION_VERSION = "sim-2026.08-v47"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
 #: sim-2026.07-v1 to this one remains valid for the results computed under it.
-SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v43"
+SIMULATION_VERSION_SUPERSEDED = "sim-2026.08-v46"
 
 #: Every stamp this analytical layer has carried, oldest first. A run that adds a stamp appends;
 #: nothing here is ever edited or removed, because each row is the audit baseline for results

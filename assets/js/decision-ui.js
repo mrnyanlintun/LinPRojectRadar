@@ -669,6 +669,21 @@
       (d.method_class ? " " + esc(d.method_class) : "") +
       '<div class="dc-note">' + esc(d.role) + "</div>" +
       (d.reading ? '<div style="font-size:12px; margin-top:2px;">' + esc(d.reading) + "</div>" : "") +
+      /* RUN 101, GOAL FOUR. THE REASONING FROM THE FIGURE TO THE FINDING, MADE VISIBLE.
+         The figure alone leaves a reader unable to tell a boundary somebody defended from one
+         somebody invented. Beneath it now stand THE BOUNDARY THE FIGURE CROSSED and WHERE THAT
+         BOUNDARY CAME FROM, both read from fields the module STORED when it asserted its band.
+         Nothing here decides anything: this function receives the composed card and prints it.
+         Where a module asserted a band and recorded no boundary, the note says exactly that
+         rather than leaving the space blank, because a blank reads as "no boundary was needed". */
+      (d.boundary ? '<div class="dc-note" style="font-size:12px; margin-top:2px;">' +
+        "Boundary: " + esc(d.boundary) + "</div>" : "") +
+      (d.boundary_basis ? '<div class="dc-note" style="font-size:12px; margin-top:2px;">' +
+        "Basis: " + esc(d.boundary_basis) +
+        (d.boundary_provenance_words ? " (" + esc(d.boundary_provenance_words) + ")" : "") +
+        "</div>" : "") +
+      (d.boundary_note ? '<div class="dc-note" style="font-size:12px; margin-top:2px;">' +
+        esc(d.boundary_note) + "</div>" : "") +
       "</li>";
   }
 
