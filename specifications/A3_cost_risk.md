@@ -65,7 +65,10 @@ Every boundary is **inclusive on its upper side** and the module's stored `band_
 in words. **Source, as the owner's order states it:** the owner's Run 101 order, section 3.1, on
 the owner's stated authority — a contingency drawdown that outruns progress is the condition that
 ends with no reserve and work remaining. **No standards clause fixes 1.0, 1.2 or 1.5**, which is
-why the class is CONVENTION and not CODIFIED.
+why the class is CONVENTION and not CODIFIED. `RESEARCH_1_threshold_bands_eight_metrics.md`
+section 30 confirms the class and weakens the boundaries further: the heuristic *"is widely
+repeated in practice, but no single standards clause fixes the 1.2/1.5 boundaries — those are
+illustrative and should be calibrated to owner history."*
 
 **The consumed fraction alone does not band.** Forty per cent consumed is healthy at half-time and
 alarming at ten per cent complete, so where no progress is reported the figures are published and
@@ -141,7 +144,8 @@ this metric**, and with no comparable output basis the answer is not estimable.
 Every boundary is **inclusive on its lower side**, which is what makes 0.95 Green and 0.9499
 Yellow. The direction of favourability is **upward**. **Source, as the owner's order states it:**
 the owner's Run 101 order, section 3.2, on the owner's stated authority. **No standards clause
-fixes 0.95, 0.90 or 0.85.**
+fixes 0.95, 0.90 or 0.85.** `RESEARCH_1` section 44 confirms the class and calls the 0.85 and 0.90
+cut points *"conventional practitioner values, not codified."*
 
 **Why the quantity matches, which section 2 requires be established rather than assumed.** The
 order's words are *"earned hours over expended hours"*. What this module computes is earned output
@@ -188,6 +192,11 @@ CONFIGURED FOR THIS QUANTITY.**
 The owner's Run 101 order, section 3.3: *"No published construction-controls basis exists, and the
 owner has ruled against inventing one from audit-materiality convention. The module computes and
 displays its variance and trend, asserts no band, and casts no vote."*
+
+`RESEARCH_1` section 58 supports the ruling rather than merely permitting it: overhead has *"no
+sourced basis for bands"*, and it lists *"leave the module bandless and report the raw variance"*
+as an option — the owner has chosen it, and section 165 calls **"no published basis found"** the
+correct answer.
 
 **A ±5 / ±10 / ±15 per cent ladder, or any other, is expressly forbidden here**, and section 12.1e
 of that order fails the run for attaching one. Audit-materiality convention measures a different
@@ -246,21 +255,33 @@ ruinous against eight. Where no budget above zero is reported the percentiles ar
 | Band | Boundary on the budget at completion |
 |---|---|
 | Green | **at or above** the P80 total cost |
-| Yellow | at or above the **midpoint** of the P50-to-P80 interval, and below P80 |
-| Amber | **at or above** P50, and below that midpoint |
+| Yellow | below P80, with a gap **at or below +10%** |
+| Amber | a gap **above +10%**, with the budget still **at or above** P50 |
 | Red | below P50 |
 
 Every boundary is **inclusive on its lower side**. **Source, as the owner's order states it:** DOE
 Order 413.3B's P80 baseline requirement and the GAO Cost Estimating and Assessment Guide's
 best practice of funding to a stated confidence level.
 
-**The one place the order's four arms overlap, and how it is resolved without importing a number.**
+**The one place the order's four arms overlap, and where the figure that divides them came from.**
 The order gives Yellow as *"BAC sits between P50 and P80"* and Amber as *"BAC is near or just above
-P50"* — two descriptions of the same interval. Splitting it needs a boundary the order does not
-state. Rather than import a percentage from outside, **the interval is divided at its own
-midpoint**, which is the only division expressible in the two quantiles the order itself names and
-introduces no figure not already in the ladder. **This division is a derivation and is recorded as
-one; it is not published**, and the stored `band_boundary` says so wherever it is printed.
+P50"* — two descriptions of the same interval, and it gives no figure for the division.
+`RESEARCH_1_threshold_bands_eight_metrics.md` sections 66–70 supply one, on the gap
+**gap = (P80 − BAC) / BAC**: Green gap ≤ 0; Yellow gap 0 to about **+10%**; Amber about +10–20%;
+Red above +20%. **The Yellow/Amber division is taken from that research at +10%.**
+
+**THE ORDER'S ORDERING WINS WHERE THE TWO DIFFER, AND THEY DIFFER AT THE BOTTOM.** The order puts
+**Red at a budget below the median**, not at a gap above twenty per cent, and that is what is
+implemented. Only the division the order left qualitative is taken from the research.
+
+**THE BASIS AND THE BOUNDARY DO NOT HAVE THE SAME PROVENANCE.** The **P80 concept is CODIFIED** —
+DOE Order 413.3B and GAO-20-195G. The **+10% gap cutoff is not**: `RESEARCH_1` section 76 calls the
+exact gap boundaries *"moderate … interpretive"*. Basis provenance **CODIFIED**; boundary
+provenance **OWNER-CALIBRATED**. Both are stored on the reading and both are printed on the card.
+
+**NEITHER FIGURE IS VERIFIED AGAINST ITS PRIMARY SOURCE.** The research reports state that a
+primary-source verification pass — including the **DOE Order 413.3B section number** — was not
+completed.
 
 What this module replaced was `eac = bac / cpi`, then
 `uncertainty = max(0.03, abs(1 - cpi)) * 0.5` and `p80_eac = eac * (1 + uncertainty * 1.28)`: one

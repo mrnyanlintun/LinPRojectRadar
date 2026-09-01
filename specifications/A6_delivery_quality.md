@@ -107,7 +107,10 @@ Governing rule: `FAR 46.2`, carried on the result as `rule`.
 
 **The published rework benchmarks measure rework cost as a proportion of contract value. That is a
 different quantity, with a different denominator — money, not requirements — and it must never be
-applied to this rate.** Section 2 of the owner's order forbids substituting a threshold from a
+applied to this rate.** `RESEARCH_1_threshold_bands_eight_metrics.md` section 89 states the
+mismatch in the order's own terms: *"These benchmarks measure rework cost as a proportion of
+contract value, which is not an inspection pass proportion. Applying them to a first-pass yield
+would be a threshold mismatch."* Section 2 of the owner's order forbids substituting a threshold from a
 related but different measure in exactly these words, and section 12.1 fails the run for it.
 
 **The one thing that does band this module is an acceptance target the project's own documents
@@ -201,21 +204,57 @@ Do not composite them — no standard supports a blended safety index."* Section
 **fails the run for compositing them**, and `combined_index` stays `None` as it always has.
 
 **Where one band must front the category, the rule is WORST-OF and the module says so on the row.**
+`RESEARCH_2` section 70 supports this in terms: combining the measures is *"used in research and
+some corporate dashboards but NOT codified by OSHA, ANSI/ASSP or ILO, which report frequency and
+severity separately. Keep them separate; if one status is required, worst-of is more defensible
+than a weighted composite."* The **Frequency-Severity Indicator** and the **Safe-T-Score** exist in
+the literature but are **research constructs, not standards**, and neither is implemented.
 
 **1. FREQUENCY RATE.** Recordable and lost-time cases per exposure hours, computed on the **OSHA
 200,000-hour base** and also expressed on the **ILO 1,000,000-hour base**, since the two differ only
 by a factor of five and the second is what international practice quotes. Both are published from
 one measurement rather than computed twice, so they cannot drift.
 
-**IT IS NOT BANDED, AND THE REASON IS A FINDING RATHER THAN AN OVERSIGHT.** The order requires the
-band to be drawn against **the published construction industry average, stored as configured data
-with its year and source, never a literal in code, because it is revised annually.** That entry
-exists — `band_reference_data.json`, key `construction_industry_recordable_rate` — and it is
-**`configured: false`**. **No industry average was supplied with the order, and the research report
-the order names as its authority for every number was not present.** Supplying a figure here would
-be inventing a threshold, which section 12.2 fails the run for. So the rate is computed, reported
-on both bases, and asserts no band. **Supply value, unit, year and source together in that entry
-and the frequency leg bands against them with no code change.**
+**IT IS BANDED AGAINST THE PUBLISHED INDUSTRY AVERAGE**, which is **configured data carrying its
+year and its source, never a literal in code** (order section 12.3, because the figure is revised
+annually): `band_reference_data.json`, key `construction_industry_recordable_rate`.
+
+**THE ANCHOR.** US Bureau of Labor Statistics, Survey of Occupational Injuries and Illnesses
+(SOII), construction, **NAICS 23**, most recent published year **2023**: total recordable case rate
+**≈ 2.4 per 100 full-time equivalent workers** — which is **the same quantity** as per 200,000
+employee hours, so it lands on the OSHA base this module already computes with no conversion.
+
+| Band | Boundary on the recordable rate per 200,000 hours |
+|---|---|
+| Green | **below 1.2** — about half the industry average |
+| Yellow | at or above 1.2 and **at or below 2.4** — at or below the industry average |
+| Amber | above 2.4 and below 4.8 |
+| Red | **at or above 4.8** — about twice the industry average |
+
+**THE ANCHOR AND THE CUTOFFS DO NOT HAVE THE SAME PROVENANCE, AND THE READING SAYS SO IN TWO
+FIELDS.** `RESEARCH_2_safety_and_environmental_severity.md`, recommendation 2, in terms: *"Band
+frequency against the published industry average, not an invented cutoff. State that **only the
+industry-average anchor is sourced**; intermediate cutoffs are platform-chosen with no published
+basis."* `RESEARCH_1_threshold_bands_eight_metrics.md` section 5 more broadly: *"There is no
+recognized standard governing how a number maps to a Green/Yellow/Amber/Red band ... all boundary
+numbers are ultimately owner design choices that should be documented, not presented as externally
+mandated."*
+
+So: **basis provenance CODIFIED** (the BLS figure and the OSHA identity);
+**boundary provenance OWNER-CALIBRATED** (the half-average, the average and the twice-average
+cutoffs). Both are stored on every reading as `band_basis_provenance_class` and
+`band_boundary_provenance_class`, and the decision card prints both whenever they differ.
+
+**THE ANCHOR IS STORED UNVERIFIED, AND THIS MATTERS FOR DEFENDING THE INSTRUMENT.** Both research
+reports flag the value `[Confirm]` and state that **a primary-source verification pass was not
+completed**; Report 2's caveats say the exact current BLS rates must be checked against the named
+primary source and the current year before publication. The entry therefore carries
+`verified: false` and names what must be checked. It is not presented as a verified figure.
+
+**A disagreement between the two reports, recorded rather than resolved by picking one silently.**
+The companion DART rate is given as **≈ 1.4** by one report and **≈ 1.5** by the other. It is stored
+with both and with the disagreement written out. **No band is drawn on the DART rate**, so the
+disagreement affects no reading today.
 
 **2. SEVERITY RATE.** Days lost per exposure hours, on both bases, **plus the mean days lost per
 lost-time case** — the figure that says whether a severity rate is many small cases or one
@@ -234,6 +273,16 @@ disabilities**. Absent them the severity leg abstains with
 `severity_disposition: "ABSTAIN_NO_DAYS_LOST_RECORDED"` and no substitute is used.
 
 **No threshold for a severity rate was supplied, so none is applied and the leg asserts no band.**
+`RESEARCH_2_safety_and_environmental_severity.md` confirms this is the correct outcome rather than
+a gap: **no published construction severity benchmark and no published good/average/bad severity
+cutoff exists.** Any cutoff drawn here would be OWNER-CALIBRATED, and section 2's rule is that
+absent a matching threshold the measure computes, displays and abstains.
+
+**A citation caveat that must travel with the 6,000-day charge.** The 180-day cap is **OSHA
+29 CFR 1904**. The 6,000-day charge for death or permanent total disability is **ANSI Z16.1's**,
+and it is real and widely used — but `RESEARCH_2` records that **Z16.1 is superseded by OSHA
+recordkeeping in US practice and the current ANSI/ASSP designation should be verified**. The
+convention is in force; its standard citation is not confirmed.
 
 **3. NEAR-MISS REPORTING. THE INTERPRETATION IS INVERTED, AND GETTING IT BACKWARDS IS A
 RUN-FAILING ERROR** (order section 12.1c). **A HIGH reporting rate indicates a healthy reporting
@@ -241,7 +290,9 @@ culture. A LOW OR ZERO rate on an active project indicates under-reporting, not 
 in this module treats a low count as favourable.
 
 No published expected near-miss rate exists for construction, so **no ladder is drawn over the raw
-count**. The reported and closed counts and the closure proportion are computed and displayed. The
+count**. `RESEARCH_2` adds a warning this specification carries: the accident-triangle ratios
+(**Heinrich 300:29:1, Bird 600:30:10:1**) are **contested and must not be hard-coded as
+predictive**. None is implemented anywhere. The reported and closed counts and the closure proportion are computed and displayed. The
 **one band** the order states in terms is asserted and no other:
 
 | Band | Boundary |
@@ -252,12 +303,14 @@ Provenance class **OWNER-CALIBRATED** — no published basis; the owner's stated
 a value here and is not treated as missing.** Above zero, reporting activity is displayed and no
 band is drawn.
 
-**4. THE EXPOSURE FLOOR.** Beneath roughly **200,000 employee hours** a rate swings entirely on
-whether one event happened, so **nothing bands beneath it** and the module says so on the row rather
+**4. THE EXPOSURE FLOOR.** Beneath roughly **200,000 employee hours** — about 100 worker-years — a
+rate swings entirely on whether one event happened, so **nothing bands beneath it** and the module says so on the row rather
 than publishing a rate a single incident dominates. The floor is configured data
 (`safety_exposure_floor_hours`), not a literal in code, and 200,000 hours is also the OSHA
 normalising base itself — beneath it a rate is an extrapolation from less than one base period.
-Provenance class **OWNER-CALIBRATED**.
+Provenance class **OWNER-CALIBRATED**, and `RESEARCH_2` section 89 states why it cannot be anything
+else: *"There is no OSHA/ANSI-published minimum-hours threshold."* Below the floor the band is
+suppressed and the reading is marked as insufficient exposure.
 
 ---
 
@@ -378,6 +431,17 @@ severity words are, verbatim:
 computes and asserts no band**, with the reason stored on the row. That is the honest state and it
 is reported as such.
 
+**The research confirms every element of this ladder and one limit on it.**
+`RESEARCH_2_safety_and_environmental_severity.md` confirms the CGP corrective-action deadline
+(**before the next storm event where practicable, no later than 7 calendar days from discovery,
+CGP Part 5**) and the inspection frequency (**every 7 calendar days, or every 14 days AND within 24
+hours of a 0.25-inch storm event, about Part 4**), both marked **[Confirm section numbers against
+the 2022 CGP text]** — the deadline is confirmed, the Part numbers are not. It confirms the
+violation/deficiency distinction. And section 142 states the limit this specification already
+records: *"no ready-made, citable construction environmental severity ladder exists. Construct one
+from statutory consequences and state plainly that the ordering is derived, not published."*
+**ISO 14001 requires significance evaluation but prescribes no numeric scale.**
+
 **A fixture trap that survives this rebuild and is recorded rather than fixed.**
 `environmental_report.compliance_rate` is validated as a **0–1 fraction** and a value of `100` is
 **rejected outright, discarding the whole document**. That is unchanged by this rebuild and it still
@@ -443,7 +507,9 @@ stated it, so a document that did not say CPARS produces a correctly-labelled **
 assessment. The derivation rule above is untouched.
 
 **Bands. RUN 101, THE OWNER'S ORDER, SECTION 3.8.** Provenance class **CODIFIED** — the five ratings
-are defined in the CPARS guidance and referenced by **FAR Subpart 42.15**.
+are defined in the CPARS guidance and referenced by **FAR Subpart 42.15 (42.1503)**, as
+`RESEARCH_1_threshold_bands_eight_metrics.md` confirms. **The exact CPARS verbatim wording is
+flagged for primary-source confirmation and has not been verified.**
 
 | CPARS rating | Band |
 |---|---|
@@ -462,7 +528,11 @@ the guidance defines as meeting contract requirements. Nothing else was merged, 
 **Worst-of across the factors, never an average.** A marginal schedule rating is not cancelled by an
 exceptional cost one. **No aggregate is computed** and `aggregate` stays `None`: inventing
 contractor-assessment weights is forbidden and no governed aggregation policy is supplied. The band
-is the worst factor's band, which is a selection rather than an aggregation.
+is the worst factor's band, which is a selection rather than an aggregation. `RESEARCH_1` section
+137 supports the refusal directly: **"CPARS does not prescribe a fixed weighting formula"** —
+assessing officials exercise judgment — so there is no published formula to implement. Section 141
+calls the four-band collapse **"a design choice, since CPARS is five-level"**, which is what this
+specification records above.
 
 **A rating that is neither one of the five words nor its number on the shipped five-point scale
 falls into no band** and the module abstains naming what it saw — boundary rule 2. A rating arrives
