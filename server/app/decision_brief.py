@@ -242,6 +242,7 @@ def _boundary_and_basis(module_id: str, mod: Mapping[str, Any]) -> dict[str, Any
     boundary gets no boundary printed, and the card says so in as many words rather than leaving
     the reader to assume one existed.
     """
+    from .simulation.models import PROVENANCE_WORDS
     boundary = mod.get("band_boundary")
     basis = mod.get("band_basis")
     provenance = mod.get("band_provenance_class")
@@ -263,12 +264,27 @@ def _boundary_and_basis(module_id: str, mod: Mapping[str, Any]) -> dict[str, Any
             "boundary_note": ("this module asserted a band without recording the boundary it "
                               "crossed or that boundary's source"),
         }
-    return {
+    # RUN 101, MID-RUN. THE BASIS AND THE BOUNDARY MAY HAVE DIFFERENT PROVENANCE, and where they
+    # do the card must say so or it presents a platform-chosen cutoff as though a standard fixed
+    # it. `RESEARCH_2_safety_and_environmental_severity.md`, recommendation 2: "State that only
+    # the industry-average anchor is sourced; intermediate cutoffs are platform-chosen with no
+    # published basis." Both classes are read from stored fields; neither is decided here.
+    basis_class = mod.get("band_basis_provenance_class") or provenance
+    boundary_class = mod.get("band_boundary_provenance_class") or provenance
+    out = {
         "boundary": boundary,
         "boundary_basis": basis,
-        "boundary_provenance": provenance,
-        "boundary_provenance_words": words,
+        "boundary_provenance": basis_class,
+        "boundary_provenance_words": (mod.get("band_provenance_words") or words),
+        "boundary_cutoff_provenance": boundary_class,
+        "boundary_cutoff_provenance_words": (mod.get("band_boundary_provenance_words")
+                                             or PROVENANCE_WORDS.get(boundary_class)),
     }
+    if boundary_class != basis_class:
+        out["boundary_provenance_split"] = (
+            f"the measure and the anchor it is drawn against are {basis_class}; the cutoffs that "
+            f"divide the bands are {boundary_class}")
+    return out
 
 
 # ------------------------------------------------------------------ 5. material drivers

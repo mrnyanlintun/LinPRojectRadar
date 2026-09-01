@@ -1,26 +1,40 @@
 {
-  "_note": "CONFIGURED REFERENCE DATA, NOT CODE. Run 101 section 12.3 fails the run for storing a revisable published industry figure as a literal in code, because it is revised annually and a literal cannot carry the year it belongs to. Every entry here carries its value, its unit, the year it describes and the source as the owner's Run 101 order states it. Nothing in this file is a boundary the platform invented.",
+  "_note": "CONFIGURED REFERENCE DATA, NOT CODE. Run 101 section 12.3 fails the run for storing a revisable published industry figure as a literal in code, because it is revised annually and a literal cannot carry the year it belongs to. Every entry here carries its value, its unit, the year it describes, the source, and ITS VERIFICATION STATUS. Nothing in this file is a boundary the platform invented. THE TWO RESEARCH REPORTS THAT SUPPLY THESE FIGURES BOTH STATE THAT A PRIMARY-SOURCE VERIFICATION PASS WAS NOT COMPLETED, so every figure taken from them carries verified: false and names what must be checked. A reader can therefore say which numbers are locked and which still need checking against the source documents, which is the whole point of section 3's provenance requirement.",
   "construction_industry_recordable_rate": {
-    "value": null,
-    "unit": "recordable cases per 200,000 employee hours",
-    "year": null,
-    "source": null,
-    "configured": false,
-    "why_absent": "No published construction industry average rate was supplied with the Run 101 order, and the accompanying research report the order names was not present. The figure is therefore NOT configured, and A6.2's frequency rate is reported without a band rather than banded against a number nobody supplied. Supply value, unit, year and source together and the frequency rate bands against them; supply none of them and it abstains."
+    "value": 2.4,
+    "unit": "total recordable cases per 100 full-time equivalent workers, which is the same quantity as per 200,000 employee hours",
+    "year": 2023,
+    "source": "US Bureau of Labor Statistics, Survey of Occupational Injuries and Illnesses (SOII), construction, NAICS 23, most recent published year 2023, as stated in RESEARCH_1_threshold_bands_eight_metrics.md and RESEARCH_2_safety_and_environmental_severity.md",
+    "provenance_class": "CODIFIED",
+    "configured": true,
+    "verified": false,
+    "verification_note": "BOTH RESEARCH REPORTS FLAG THIS VALUE [Confirm] AND STATE THAT PRIMARY-SOURCE VERIFICATION WAS NOT COMPLETED. Report 2's caveats say the exact current BLS rates must be checked against the named primary source and the current year before publication. It is stored as an UNVERIFIED published figure, not as a verified one.",
+    "companion_dart_rate": {
+      "value": 1.4,
+      "unit": "days away, restricted or transferred cases per 100 full-time equivalent workers",
+      "year": 2023,
+      "discrepancy_recorded": "THE TWO RESEARCH REPORTS DISAGREE: one states approximately 1.4 and the other approximately 1.5. The disagreement is recorded rather than resolved by picking one silently. No band is drawn on the DART rate, so the disagreement affects no reading today.",
+      "verified": false
+    }
   },
   "safety_exposure_floor_hours": {
     "value": 200000,
     "unit": "employee hours worked in the reporting period",
     "source": "the owner's Run 101 order, section 3.6: 'Below roughly 200,000 hours a rate swings entirely on whether one event happened. State a floor in the specification and abstain beneath it.' 200,000 hours is also the OSHA normalising base itself, so beneath it the rate is an extrapolation from less than one base period.",
     "provenance_class": "OWNER-CALIBRATED",
-    "configured": true
+    "configured": true,
+    "verified": false,
+    "verification_note": "RESEARCH_2 section 89 states explicitly: 'There is no OSHA/ANSI-published minimum-hours threshold.' The floor is therefore OWNER-CALIBRATED and is not presented as codified. 200,000 hours is about 100 worker-years and is the OSHA normalising base itself."
   },
   "osha_severity_conventions": {
     "days_lost_cap_per_case": 180,
     "fatality_or_ptd_day_charge": 6000,
-    "source": "the owner's Run 101 order, section 3.6: the OSHA 180-day cap per case and the standard 6,000-day charge for a fatality or permanent total disability. Both conventions are in force.",
-    "provenance_class": "CONVENTION",
-    "configured": true
+    "source": "OSHA 29 CFR 1904 caps days away and restricted days at 180 each per case. The 6,000-day charge for death or permanent total disability is ANSI Z16.1's and is widely used. Both as stated in RESEARCH_2_safety_and_environmental_severity.md.",
+    "provenance_class": "CODIFIED",
+    "configured": true,
+    "verified": false,
+    "verification_note": "RESEARCH_2 records that ANSI Z16.1 IS SUPERSEDED BY OSHA RECORDKEEPING IN US PRACTICE and that the current ANSI/ASSP designation should be verified. The 6,000-day charge is therefore a live convention whose standard citation is not confirmed.",
+    "no_severity_benchmark": "RESEARCH_2: no published construction severity benchmark and no published good/average/bad severity cutoff exists. The severity rate therefore computes and displays and asserts NO band."
   },
   "ilo_rate_base_hours": {
     "value": 1000000,
@@ -32,9 +46,12 @@
   "cgp_corrective_action_deadline_days": {
     "value": 7,
     "unit": "calendar days from discovery",
-    "source": "the owner's Run 101 order, section 3.7: the EPA Construction General Permit's corrective-action deadline, generally before the next storm event and no later than seven calendar days from discovery.",
+    "source": "EPA Construction General Permit, Part 5: corrective action before the next storm event where practicable and no later than 7 calendar days from discovery. Inspection frequency, about Part 4: every 7 calendar days, or every 14 days AND within 24 hours of a 0.25-inch storm event. Both as stated in RESEARCH_2_safety_and_environmental_severity.md.",
     "provenance_class": "CODIFIED",
-    "configured": true
+    "configured": true,
+    "verified": false,
+    "verification_note": "RESEARCH_2 marks the section numbers [Confirm section numbers against the 2022 CGP text]. The deadline itself is confirmed; the Part numbers are not.",
+    "no_published_severity_ladder": "RESEARCH_2 section 142: 'no ready-made, citable construction environmental severity ladder exists. Construct one from statutory consequences and state plainly that the ordering is derived, not published.' ISO 14001 requires significance evaluation but prescribes no numeric scale."
   },
   "rfi_contract_response_period_business_days": {
     "value": 7,
@@ -42,13 +59,45 @@
     "source": "the owner's Run 101 order, section 4: the contract's own response period. A project whose contract states a different period overrides this, and the source is then that document.",
     "provenance_class": "CODIFIED",
     "configured": true,
-    "note": "This is a DEFAULT standing in for a contract the platform has not read. Where a project supplies its own response period the project's figure governs."
+    "note": "This is a DEFAULT standing in for a contract the platform has not read. Where a project supplies its own response period the project's figure governs.",
+    "verified": false,
+    "corroboration_recorded_not_used": "Aboseif et al. (2023), Journal of Management in Engineering, derived from CII data by cross-validated CART models at 81 to 85 per cent accuracy, gives a high-performing RFI processing time of 7 days or fewer. THIS CORROBORATES THE PERIOD FROM AN EMPIRICAL DIRECTION AND IS NOT THE SOURCE: the owner's order is explicit that the basis is THE CONTRACT'S OWN RESPONSE PERIOD. The same paper's RFIs per million dollars figure measures a DIFFERENT QUANTITY and is not applied anywhere."
   },
   "change_order_contingency_reserve_fraction": {
-    "value": 0.20,
+    "value": 0.2,
     "unit": "fraction of original contract value",
     "source": "the owner's Run 101 order, section 4: a contingency reserve is conventionally around 20 per cent of contract value, so change exposure beyond 20 per cent has passed the money set aside to absorb it. Amber begins at half the reserve.",
     "provenance_class": "CONVENTION",
-    "configured": true
+    "configured": true,
+    "verified": false
+  },
+  "_provenance_of_this_file": {
+    "supplied_by": [
+      "RESEARCH_1_threshold_bands_eight_metrics.md",
+      "RESEARCH_2_safety_and_environmental_severity.md"
+    ],
+    "read_by_this_run": false,
+    "how_obtained": "The two research reports are the Run 101 order's section 0 authority for every number. THEY WERE NOT PRESENT IN THE REPOSITORY AND WERE NOT READ BY THIS RUN. Their figures reached this run RELAYED IN PROSE by the coordinating assistant mid-run, after goal one had first been implemented from the order's inline figures alone. The figures below are recorded as relayed and attributed to the named reports; no report file was opened."
+  },
+  "construction_frequency_band_cutoffs": {
+    "green_below": 1.2,
+    "yellow_at_or_below": 2.4,
+    "red_at_or_above": 4.8,
+    "unit": "recordable cases per 200,000 employee hours",
+    "derivation": "half the industry average, the industry average itself, and twice the industry average. All three are derived from the one anchor above and introduce no figure that is not already in it.",
+    "source": "the band shape recommended in RESEARCH_2_safety_and_environmental_severity.md: Green below about half the industry average (well-managed contractors commonly target below 1.0 to 1.5); Yellow at or below the BLS construction average; Amber above the industry average; Red at roughly twice the industry average or higher.",
+    "provenance_class": "OWNER-CALIBRATED",
+    "why_not_codified": "RESEARCH_2, recommendation 2, in terms: 'Band frequency against the published industry average, not an invented cutoff. State that ONLY THE INDUSTRY-AVERAGE ANCHOR IS SOURCED; intermediate cutoffs are platform-chosen with no published basis.' RESEARCH_1 section 5 more broadly: 'There is no recognized standard governing how a number maps to a Green/Yellow/Amber/Red band.' The ANCHOR is codified; these CUTOFFS are not, and the reading says so in both fields.",
+    "configured": true,
+    "verified": false
+  },
+  "p80_gap_boundary": {
+    "yellow_gap_at_or_below": 0.1,
+    "unit": "fraction, gap = (P80 total cost - budget at completion) / budget at completion",
+    "source": "RESEARCH_1_threshold_bands_eight_metrics.md sections 66 to 70 give the gap arithmetic: Green gap at or below 0; Yellow gap 0 to about +10 per cent; Amber about +10 to +20 per cent; Red above +20 per cent. THE OWNER'S ORDER'S ORDERING WINS where the two differ: the order puts Red at a budget below the median, not at a gap above 20 per cent, and that is what is implemented.",
+    "provenance_class": "OWNER-CALIBRATED",
+    "why_not_codified": "RESEARCH_1 section 76 calls the exact gap boundaries 'moderate ... interpretive'. The P80 CONCEPT is codified -- DOE Order 413.3B and GAO-20-195G -- but this cutoff is not.",
+    "configured": true,
+    "verified": false
   }
 }

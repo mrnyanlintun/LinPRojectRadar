@@ -1090,8 +1090,28 @@ PROVENANCE_WORDS: dict[str, str] = {
 BAND_PROVENANCE_CLASSES: frozenset[str] = frozenset(PROVENANCE_WORDS)
 
 
+#: RUN 101, MID-RUN. THE RESEARCH REPORTS ARRIVED AFTER GOAL ONE WAS FIRST IMPLEMENTED, AND THEY
+#: FORCED THIS DISTINCTION. `RESEARCH_2_safety_and_environmental_severity.md`, recommendation 2:
+#: "Band frequency against the published industry average, not an invented cutoff. State that ONLY
+#: THE INDUSTRY-AVERAGE ANCHOR IS SOURCED; intermediate cutoffs are platform-chosen with no
+#: published basis." `RESEARCH_1_threshold_bands_eight_metrics.md` section 5 puts it more broadly:
+#: "There is no recognized standard governing how a number maps to a Green/Yellow/Amber/Red band
+#: ... all boundary numbers are ultimately owner design choices that should be documented, not
+#: presented as externally mandated."
+#:
+#: SO ONE CLASS PER MODULE CANNOT TELL THE TRUTH ABOUT SEVERAL OF THEM. Safety's ANCHOR is the
+#: BLS construction average and the OSHA identity -- codified; its half-average and twice-average
+#: CUTOFFS are the owner's. The P80 CONCEPT is DOE O 413.3B and GAO-20-195G -- codified; the exact
+#: gap percentage that divides Yellow from Amber is, in Report 1's words, "moderate ...
+#: interpretive". Storing one class for both would present a platform-chosen cutoff as though a
+#: standard fixed it, which is the precise misrepresentation this run exists to remove.
+#:
+#: TWO FIELDS, THEREFORE. `band_basis_provenance_class` is where the MEASURE and its ANCHOR come
+#: from; `band_boundary_provenance_class` is where the CUTOFFS come from. A module whose two are
+#: the same passes one value and both are written, so nothing is lost for the simple cases.
 def banded(method_class: str, message: str, *, status_color: str, boundary: str,
-           basis: str, provenance: str, **fields: Any) -> dict[str, Any]:
+           basis: str, provenance: str, boundary_provenance: str | None = None,
+           **fields: Any) -> dict[str, Any]:
     """
     A result that DOES assert a band, carrying the boundary it crossed and that boundary's basis.
 
@@ -1104,9 +1124,11 @@ def banded(method_class: str, message: str, *, status_color: str, boundary: str,
     it raises rather than emitting a colour with no recorded basis, which is exactly the defect
     section 12.2 fails the run for.
     """
-    if provenance not in BAND_PROVENANCE_CLASSES:
-        raise ValueError(f"{method_class}: {provenance!r} is not one of the three provenance "
-                         f"classes; a band may not be stored without one")
+    boundary_provenance = boundary_provenance or provenance
+    for _p in (provenance, boundary_provenance):
+        if _p not in BAND_PROVENANCE_CLASSES:
+            raise ValueError(f"{method_class}: {_p!r} is not one of the three provenance "
+                             f"classes; a band may not be stored without one")
     if not str(basis).strip() or not str(boundary).strip():
         raise ValueError(f"{method_class}: a band may not be stored without its boundary and "
                          f"its basis")
@@ -1116,8 +1138,19 @@ def banded(method_class: str, message: str, *, status_color: str, boundary: str,
         "band_asserted": True,
         "band_boundary": boundary,
         "band_basis": basis,
+        # KEPT UNDER ITS ORIGINAL NAME so nothing that already reads it breaks; it is the
+        # BASIS class, which is what it always meant.
         "band_provenance_class": provenance,
         "band_provenance_words": PROVENANCE_WORDS[provenance],
+        "band_basis_provenance_class": provenance,
+        "band_boundary_provenance_class": boundary_provenance,
+        "band_boundary_provenance_words": PROVENANCE_WORDS[boundary_provenance],
+        "band_provenance_split_note": (
+            "the BASIS -- the measure and the anchor it is drawn against -- and the BOUNDARIES "
+            "-- the cutoffs that divide the bands -- may come from different places, and where "
+            "they do this reading says so rather than presenting a platform-chosen cutoff as "
+            "though a standard fixed it"
+            if boundary_provenance != provenance else None),
         "evidence_metric": message,
     }
     out.update(fields)

@@ -54,7 +54,7 @@ from .canonical_v4 import (
 from . import band_reference as _BR
 from .models import (
     ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT, ABSTAIN_STRUCTURE_ABSENT,
-    PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
+    PROVENANCE_CODIFIED, PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
     band_abstained, banded, calibration_pending, check_inputs, insufficient, refuse,
 )
 from .models_ext import _derived, _js_str
@@ -160,25 +160,37 @@ def _rfi_band(overdue, open_count, si: dict) -> tuple:
         f"HOLIDAYS: this platform performs no date arithmetic on requests for information and "
         f"takes the overdue count as the source document states it, so that requirement falls on "
         f"the document's author and is stated in the extraction contract. A calendar-day count "
-        f"marks every request overdue two days early")
+        f"marks every request overdue two days early. CORROBORATION RECORDED, NOT USED AS THE "
+        f"SOURCE: Aboseif et al. (2023), Journal of Management in Engineering, derived from "
+        f"Construction Industry Institute data by cross-validated CART models at 81 to 85 per "
+        f"cent accuracy, gives a high-performing RFI processing time of seven days or fewer. "
+        f"That corroborates the period from an empirical direction; THE CONTRACT REMAINS THE "
+        f"SOURCE. The same paper's requests-per-million-dollars figure measures a DIFFERENT "
+        f"QUANTITY and is applied nowhere")
+    # THE BASIS AND THE BOUNDARIES HAVE DIFFERENT PROVENANCE, and the order says so itself:
+    # "the 7-day period is contractual, the boundaries drawn from it are not". The response
+    # period is a term of a governing instrument -- CODIFIED; the four cutoffs are the owner's
+    # with no published basis -- OWNER-CALIBRATED.
     if not isinstance(overdue, (int, float)):
         return (None, None,
                 "the request log states no overdue count, so the quantity this module bands on "
                 "is not reported for this project. The issue rate and the open count are "
                 "displayed and no band is drawn from them: the published per-million-dollar "
                 "benchmark measures requests against contract value, which is a different "
-                "quantity, and it is not applied here", None)
+                "quantity, and it is not applied here", None, None)
     if not isinstance(open_count, (int, float)) or open_count <= 0:
         if overdue > 0:
-            return ("Red", _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_OWNER_CALIBRATED)
+            return ("Red", _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_CODIFIED,
+                PROVENANCE_OWNER_CALIBRATED)
         return (None, None,
                 "the request log reports no open requests, so an overdue proportion has no "
                 "denominator. With nothing open there is nothing that can be overdue, and that "
-                "is reported rather than banded as though it were compliance", None)
+                "is reported rather than banded as though it were compliance", None, None)
     ratio = overdue / open_count
     colour = ("Green" if ratio == 0 else "Yellow" if ratio <= 0.10
               else "Amber" if ratio <= 0.25 else "Red")
-    return (colour, _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_OWNER_CALIBRATED)
+    return (colour, _RFI_OVERDUE_BOUNDARY, basis, PROVENANCE_CODIFIED,
+            PROVENANCE_OWNER_CALIBRATED)
 
 
 def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
@@ -204,7 +216,7 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
             return insufficient("RFI_Velocity", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
         per_week = reading["rate_per_day"] * 7.0
         ratio = reading["overdue_ratio"]
-        _colour, _boundary, _basis, _prov = _rfi_band(
+        _colour, _boundary, _basis, _prov, _bprov = _rfi_band(
             reading["overdue"], reading["open_relevant"], si)
         evidence = (
             f"{_js_str(reading['events_counted'])} requests for information over "
@@ -240,7 +252,7 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
         if _colour is None:
             return band_abstained("RFI_Velocity", evidence, reason=_basis, **_figs)
         return banded("RFI_Velocity", evidence, status_color=_colour, boundary=_boundary,
-                      basis=_basis, provenance=_prov, **_figs)
+                      basis=_basis, provenance=_prov, boundary_provenance=_bprov, **_figs)
     count = si.get("rfiCount") if si.get("rfiCount") is not None else si.get("rfiNumber")
     days = si.get("rfiPeriodDays")
     if count is None:
@@ -282,7 +294,7 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     overdue_ratio = None
     if si.get("rfiOverdue") is not None and isinstance(_open, (int, float)) and _open > 0:
         overdue_ratio = si["rfiOverdue"] / _open
-    _colour, _boundary, _basis, _prov = _rfi_band(si.get("rfiOverdue"), _open, si)
+    _colour, _boundary, _basis, _prov, _bprov = _rfi_band(si.get("rfiOverdue"), _open, si)
     avg_response = (si.get("rfiAvgResponseDays") if si.get("rfiAvgResponseDays") is not None
                     else si.get("rfiResponseTimeDays"))
     evidence = (f"{_js_str(count)} RFIs over {_js_str(days)} days "
@@ -317,7 +329,7 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
     if _colour is None:
         return band_abstained("RFI_Velocity", evidence, reason=_basis, **_figs)
     return banded("RFI_Velocity", evidence, status_color=_colour, boundary=_boundary,
-                  basis=_basis, provenance=_prov, **_figs)
+                  basis=_basis, provenance=_prov, boundary_provenance=_bprov, **_figs)
 
 
 # ------------------------------------------------------------ A4.3 Submittal Rejection Rate
@@ -589,6 +601,8 @@ def run_co_frequency(si: dict, rand: Callable[[], float], period_cutoff) -> dict
             "at half the reserve. No standards clause fixes 5, 10 or 20 per cent. THE SCHEDULE "
             "LADDER has no published basis at all and is the owner's stated threshold."),
         provenance=PROVENANCE_CONVENTION,
+        boundary_provenance=(PROVENANCE_OWNER_CALIBRATED if _sched.get("band") == _worst
+                             else PROVENANCE_CONVENTION),
         cost_impact_band=_cost_band,
         schedule_impact_band=_sched.get("band"),
         schedule_impact_reason=_sched.get("reason"),

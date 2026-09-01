@@ -38,9 +38,10 @@ from .canonical_v3 import (
 from .models import (
     ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
     ABSTAIN_NOT_APPLICABLE, ABSTAIN_STRUCTURE_ABSENT,
-    PROVENANCE_CODIFIED, PROVENANCE_CONVENTION,
+    PROVENANCE_CODIFIED, PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
     band_abstained, banded, calibration_pending, check_inputs, eligible, insufficient, refuse,
 )
+from . import band_reference as _BR
 from .rng import clamp, js_round, num, round1, round2
 
 _DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
@@ -627,9 +628,13 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
             "percent complete is still below one hundred; substantial completion as a contract "
             "milestone is not a figure this platform holds, and the reported percent complete "
             "stands in its place in this arm and only in this arm"),
-        basis=("the owner's Run 101 order, section 3.1, on the owner's stated authority: a "
-               "contingency drawdown that outruns progress is the condition that ends with no "
-               "reserve and work remaining. No standards clause fixes 1.0, 1.2 or 1.5"),
+        basis=("the owner's Run 101 order, section 3.1, on the owner's stated authority, "
+               "confirmed as CONVENTION by RESEARCH_1_threshold_bands_eight_metrics.md section "
+               "30: the burn-at-or-below-percent-complete heuristic 'is widely repeated in "
+               "practice, but no single standards clause fixes the 1.2/1.5 boundaries -- those "
+               "are illustrative and should be calibrated to owner history'. No standards clause "
+               "fixes 1.0, 1.2 or 1.5, and the research says the specific boundaries are weaker "
+               "still than the heuristic they sit on"),
         provenance=PROVENANCE_CONVENTION,
         band_exhaustion_arm_fired=bool(exhausted),
         **figures)
@@ -686,9 +691,10 @@ def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -
         status_color=_color,
         boundary=("a productivity index at or above 0.95 is Green; at or above 0.90 and below "
                   "0.95 is Yellow; at or above 0.85 and below 0.90 is Amber; below 0.85 is Red"),
-        basis=("the owner's Run 101 order, section 3.2, on the owner's stated authority. No "
-               "standards clause fixes 0.95, 0.90 or 0.85; they are the boundaries widely used "
-               "in construction labour productivity reporting"),
+        basis=("the owner's Run 101 order, section 3.2, on the owner's stated authority, "
+               "confirmed as CONVENTION by RESEARCH_1_threshold_bands_eight_metrics.md section "
+               "44, which calls the 0.85 and 0.90 cut points 'conventional practitioner values, "
+               "not codified'. No standards clause fixes 0.95, 0.90 or 0.85"),
         provenance=PROVENANCE_CONVENTION,
         productivity_index=round2(reading["productivity_index"]),
         actual_productivity=reading["actual_productivity"],
@@ -902,33 +908,58 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
                     "eightieth percentile, so the ladder the band is drawn on does not hold "
                     "and no band is asserted"),
             **_figs)
-    _mid = _p50 + (_p80 - _p50) / 2.0
+    # RUN 101, MID-RUN. THE RESEARCH SUPPLIED THE FIGURE THE ORDER LEFT QUALITATIVE, so the
+    # midpoint derivation this run first used is replaced by it.
+    # `RESEARCH_1_threshold_bands_eight_metrics.md`, sections 66 to 70, gives the gap arithmetic
+    # gap = (P80 - BAC) / BAC and the ladder Green at or below 0, Yellow 0 to about +10 per cent,
+    # Amber about +10 to +20 per cent, Red above +20 per cent.
+    #
+    # THE ORDER'S ORDERING WINS WHERE THE TWO DIFFER, and they differ at the bottom: the order
+    # puts RED at a budget BELOW THE MEDIAN, not at a gap above twenty per cent. So the order's
+    # four arms stand and the research supplies only the Yellow/Amber division the order left as
+    # "near or just above" the median. Taking the gap boundary rather than the interval midpoint
+    # also keeps the ladder well-ordered whatever the shape of the distribution.
+    #
+    # AND THE BOUNDARY'S PROVENANCE IS NOT THE BASIS'S. Report 1 section 76 calls the exact gap
+    # boundaries "moderate ... interpretive". The P80 CONCEPT is codified -- DOE Order 413.3B's
+    # P80 baseline requirement and GAO-20-195G's fund-to-a-stated-confidence-level practice --
+    # but this ten per cent is not, and the reading says so in both provenance fields.
+    _gap_cut = _BR.entry("p80_gap_boundary").get("yellow_gap_at_or_below")
+    _gap = (_p80 - _bac) / _bac
     if _bac >= _p80:
         _color = "Green"
-    elif _bac >= _mid:
-        _color = "Yellow"
-    elif _bac >= _p50:
-        _color = "Amber"
-    else:
+    elif _bac < _p50:
         _color = "Red"
+    elif _gap_cut is not None and _gap <= _gap_cut:
+        _color = "Yellow"
+    else:
+        _color = "Amber"
     _message += (f", against a budget at completion of {_money(_bac)}"
                  f" and a median of {_money(_p50)}")
     return banded(
         "Cost_Risk_Analysis", _message,
         status_color=_color,
-        boundary=("a budget at completion at or above the eightieth-percentile total cost is "
-                  "Green; at or above the midpoint of the median-to-P80 interval and below P80 "
-                  "is Yellow; at or above the median and below that midpoint is Amber; below "
-                  "the median is Red. The order states Amber as 'near or just above' the "
-                  "median and gives no figure for it; the interval is divided at its own "
-                  "midpoint so that no number outside the two quantiles is introduced"),
-        basis=("the owner's Run 101 order, section 3.4, which states the source as DOE Order "
-               "413.3B's P80 baseline requirement and the GAO Cost Estimating and Assessment "
-               "Guide's best practice of funding to a stated confidence level. The Yellow/Amber "
-               "division inside the median-to-P80 interval is derived from those two quantiles "
-               "and is not itself published"),
+        boundary=(
+            "on the gap between the eightieth-percentile total cost and the budget at "
+            "completion, gap = (P80 - BAC) / BAC: a budget AT OR ABOVE the P80 total cost -- a "
+            "gap of zero or below -- is Green; a budget below P80 with a gap AT OR BELOW "
+            f"{_gap_cut} is Yellow; a gap above {_gap_cut} with the budget still AT OR ABOVE the "
+            "median is Amber; a budget BELOW the median is Red. THE P80 AND MEDIAN ANCHORS ARE "
+            "CODIFIED; THE TEN PER CENT GAP CUTOFF IS NOT"),
+        basis=("THE BASIS: DOE Order 413.3B's P80 baseline requirement and the GAO Cost "
+               "Estimating and Assessment Guide (GAO-20-195G) best practice of funding to a "
+               "stated confidence level, as the owner's Run 101 order section 3.4 states them "
+               "and as RESEARCH_1_threshold_bands_eight_metrics.md confirms them. THE GAP "
+               "CUTOFF: RESEARCH_1 sections 66 to 70 supply the gap arithmetic and the "
+               "boundary; section 76 calls the exact gap boundaries 'moderate ... interpretive'. "
+               "It has no published basis and is the owner's stated threshold. NEITHER FIGURE IS "
+               "VERIFIED AGAINST ITS PRIMARY SOURCE: the research reports state that a "
+               "primary-source verification pass, including the DOE Order 413.3B section number, "
+               "was not completed"),
         provenance=PROVENANCE_CODIFIED,
-        p80_p50_midpoint=_mid,
+        boundary_provenance=PROVENANCE_OWNER_CALIBRATED,
+        p80_minus_bac_gap_fraction=_gap,
+        p80_gap_yellow_cutoff=_gap_cut,
         **_figs)
 
 

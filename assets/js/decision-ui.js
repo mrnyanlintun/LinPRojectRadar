@@ -682,6 +682,10 @@
         "Basis: " + esc(d.boundary_basis) +
         (d.boundary_provenance_words ? " (" + esc(d.boundary_provenance_words) + ")" : "") +
         "</div>" : "") +
+      /* Where the ANCHOR and the CUTOFFS come from different places, the card says so. A
+         codified measure with platform-chosen boundaries must not read as wholly codified. */
+      (d.boundary_provenance_split ? '<div class="dc-note" style="font-size:12px; margin-top:2px;">' +
+        "Provenance: " + esc(d.boundary_provenance_split) + "</div>" : "") +
       (d.boundary_note ? '<div class="dc-note" style="font-size:12px; margin-top:2px;">' +
         esc(d.boundary_note) + "</div>" : "") +
       "</li>";

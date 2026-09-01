@@ -348,15 +348,21 @@ def _a6_band(module_id: str, result: dict[str, Any], structure: Mapping[str, Any
     (None, None, reason, None) when it is withheld. Never invents a figure.
     """
     if module_id == "A6.1":
-        return _band_quality_compliance(result, structure)
-    if module_id == "A6.2":
-        return _band_safety(result, structure)
-    if module_id == "A6.3":
-        return _band_environmental(result, structure)
-    if module_id == "A6.4":
-        return _band_contractor(result)
-    # C1.5 and anything else: Category 9 is metadata and casts no vote (section 34). Unchanged.
-    return (None, None, None, None)
+        out = _band_quality_compliance(result, structure)
+    elif module_id == "A6.2":
+        out = _band_safety(result, structure)
+    elif module_id == "A6.3":
+        out = _band_environmental(result, structure)
+    elif module_id == "A6.4":
+        out = _band_contractor(result)
+    else:
+        # C1.5 and anything else: Category 9 is metadata and casts no vote (section 34).
+        out = (None, None, None, None)
+    # THE FIFTH ENTRY IS THE BOUNDARY'S OWN PROVENANCE CLASS, and it is optional at the call
+    # site: a module whose basis and boundaries come from the same place returns four and both
+    # classes are written the same. Only A6.2 differs today, and it differs because the research
+    # says it must.
+    return out if len(out) == 5 else (out + (None,))
 
 
 def _band_quality_compliance(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
@@ -450,9 +456,45 @@ def _band_safety(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
                 f"floor of {floor}. Beneath it a rate turns entirely on whether a single event "
                 f"happened, so no rate is banded and none is published as though it were "
                 f"stable", None)
-    if result.get("frequency_band_reference") is not None:
-        # Reserved: when the industry average IS configured, the frequency leg bands here.
-        pass
+    # ---------------------------------------------- THE FREQUENCY LEG BANDS AGAINST THE ANCHOR
+    # RUN 101, MID-RUN. THE RESEARCH REPORTS ARRIVED AND SUPPLIED THE INDUSTRY AVERAGE THE ORDER
+    # REFERS TO: the US Bureau of Labor Statistics Survey of Occupational Injuries and Illnesses,
+    # construction NAICS 23, 2023, total recordable case rate about 2.4 per 100 full-time
+    # equivalent workers -- which is the SAME QUANTITY as per 200,000 employee hours, so it lands
+    # on the OSHA base this module already computes with no conversion.
+    #
+    # IT IS CONFIGURED DATA, NEVER A LITERAL HERE (section 12.3), and it is stored UNVERIFIED
+    # because both research reports flag it [Confirm] and state that primary-source verification
+    # was not completed.
+    #
+    # THE ANCHOR AND THE CUTOFFS HAVE DIFFERENT PROVENANCE, AND THIS IS THE MODULE THAT FORCED
+    # THE DISTINCTION. RESEARCH_2, recommendation 2: "State that ONLY THE INDUSTRY-AVERAGE ANCHOR
+    # IS SOURCED; intermediate cutoffs are platform-chosen with no published basis." So the basis
+    # class is CODIFIED, the boundary class is OWNER-CALIBRATED, and the reading carries both.
+    _anchor = _BR.configured_value("construction_industry_recordable_rate")
+    _cuts = _BR.entry("construction_frequency_band_cutoffs")
+    _rate = (result.get("frequency") or {}).get("recordable_rate_osha_200k")
+    if _anchor and _cuts.get("configured") and isinstance(_rate, (int, float)):
+        _green, _yellow, _red = (_cuts["green_below"], _cuts["yellow_at_or_below"],
+                                 _cuts["red_at_or_above"])
+        colour = ("Green" if _rate < _green else "Yellow" if _rate <= _yellow
+                  else "Amber" if _rate < _red else "Red")
+        return (colour,
+                f"on the recordable case rate per 200,000 employee hours, against the published "
+                f"construction industry average of {_anchor}: below {_green} -- about half the "
+                f"average -- is Green; at or above {_green} and AT OR BELOW the average "
+                f"{_yellow} is Yellow; above the average and below {_red} is Amber; at or above "
+                f"{_red} -- about twice the average -- is Red. THE ANCHOR IS PUBLISHED; THESE "
+                f"THREE CUTOFFS ARE NOT. Zero is a value and is not treated as missing, but a "
+                f"zero recordable count never produces a favourable system claim: severity and "
+                f"near-miss are reported separately and are never combined with this measure",
+                f"THE ANCHOR: {_BR.source_of('construction_industry_recordable_rate')}. IT IS "
+                f"STORED UNVERIFIED -- both research reports flag the value [Confirm] and state "
+                f"that primary-source verification against the BLS publication and the current "
+                f"year was not completed. THE THREE CUTOFFS have no published basis at all: "
+                f"{_cuts.get('why_not_codified')}",
+                "CODIFIED",
+                "OWNER-CALIBRATED")
     if isinstance(near, (int, float)) and active:
         if near <= 0:
             return ("Amber",
@@ -719,7 +761,8 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
         # need no column and no migration. Where no matching threshold exists the REASON is
         # stored on the row instead and the row stays bandless, which section 2 makes a correct
         # outcome rather than a failure.
-        _colour, _boundary, _basis, _prov = _a6_band(module_id, result, structure)
+        _colour, _boundary, _basis, _prov, _bprov = _a6_band(module_id, result, structure)
+        _bprov = _bprov or _prov
         if _colour is not None:
             row["status_color"] = _colour
             row["band_asserted"] = True
@@ -728,6 +771,15 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
             row["band_basis"] = _basis
             row["band_provenance_class"] = _prov
             row["band_provenance_words"] = PROVENANCE_WORDS[_prov]
+            row["band_basis_provenance_class"] = _prov
+            row["band_boundary_provenance_class"] = _bprov
+            row["band_boundary_provenance_words"] = PROVENANCE_WORDS[_bprov]
+            if _bprov != _prov:
+                row["band_provenance_split_note"] = (
+                    "the BASIS -- the measure and the published anchor it is drawn against -- and "
+                    "the BOUNDARIES -- the cutoffs that divide the bands -- come from different "
+                    "places here, and this reading says so rather than presenting a "
+                    "platform-chosen cutoff as though a standard fixed it")
             row.pop("calibration_note", None)
         elif _basis:
             row["band_withheld_reason"] = _basis
