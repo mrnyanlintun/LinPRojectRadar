@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .category_posture import category_posture
 from .fusion import fuse_signals, governed_status_semantics
 from .lineage import lineage_for, lineage_record
 from .qualification_gate import (
@@ -184,12 +185,15 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # CORE_VOTING_MODULES reached fusion, and both sit in Cost and EVM, so ten of the eleven
     # categories could not carry a status no matter what computed beneath them: a project whose
     # document signals held three computing modules still rendered grey. The rules of the
-    # rollup are unchanged -- worst status wins within a category, and the worst category wins
-    # the project -- what changed is which computed rows are allowed to reach them.
+    # rollup are, at Run 65, unchanged -- what changed then is which computed rows are allowed
+    # to reach them. RUN 104 CHANGED THE WITHIN-CATEGORY RULE and this sentence no longer
+    # describes it: A1, A2, A3 and A4 AVERAGE their banded modules' scores, A6 takes the worst,
+    # and an unassigned category keeps worst-wins. The worst category still wins the project.
     #
     # A MODULE THAT DECLINED DOES NOT VOTE AND DOES NOT DRAG ITS CATEGORY DOWN. `by_category`
-    # receives COMPUTED rows only; an abstention is an absence of a reading, not an adverse
-    # one, so a category's status is the worst of the modules that actually spoke.
+    # receives COMPUTED rows only; an abstention is an absence of a reading, not an adverse one,
+    # so a category's posture is formed from the modules that actually spoke -- and since Run 104
+    # a module that spoke without a band is not in the average either, and is never a zero.
     #
     # CORE_VOTING_MODULES IS UNCHANGED and still names the two modules whose band boundaries a
     # source specifies (Run 4). It keeps its second job here: the ABSTENTION loop below reports
@@ -229,16 +233,34 @@ def compute_project(si: dict, scenario_id: str, period: str,
         # once more than two modules can produce one. Derived from the fusion's own record --
         # the member bands inside each lineage body, plus any unresolved signal that carried the
         # band forward -- rather than re-deciding the worst band at this call site.
-        setters: list[str] = []
-        if fused and fused["status"]:
-            for b in fused["lineage_bodies"]:
-                setters += [m for m, band in zip(b["member_module_ids"], b["member_bands"])
-                            if band == fused["status"]]
-            if fused.get("unresolved_band") == fused["status"]:
-                setters += list(fused.get("unresolved_module_ids") or ())
-        setters = sorted(set(setters))
+        #
+        # RUN 104. THE POSTURE IS NO LONGER THE FUSION'S BAND. `category_posture` decides, by the
+        # owner's two rules -- A1, A2, A3 and A4 average their banded modules' scores; A6 takes
+        # the worst; an unassigned category keeps worst-wins. The fusion is STILL RUN and its
+        # record is still stored, because `conflict`, the lineage bodies and the within-body
+        # disagreement flag are read by surfaces and by the qualification record and are not
+        # this run's to remove; what it no longer does is DECIDE. That is the defect Run 103
+        # measured: the fusion treated modules declaring no lineage as independent bodies, so
+        # three Greens outvoted an Amber and the category read greener than the evidence.
+        posture = category_posture(
+            # ADMISSION IS UNCHANGED and is the gate's, not a second opinion written here:
+            # `to_fusion_signal` presents no status for a signal that may not vote, which is
+            # exactly what the fusion was handed a line above.
+            cat, [(qs.module_id, qs.to_fusion_signal()["status"]) for qs in signals])
+        setters = posture["status_set_by"]
         category_statuses[cat] = {
-            "status": fused["status"] if fused else None,
+            "status": posture["status"],
+            "posture_rule": posture["posture_rule"],
+            "posture_rule_words": posture["posture_rule_words"],
+            "posture_rule_short": posture["posture_rule_short"],
+            "posture_boundary": posture["posture_boundary"],
+            "posture_arithmetic": posture["posture_arithmetic"],
+            "posture_module_scores": posture["posture_module_scores"],
+            "posture_banded_count": posture["posture_banded_count"],
+            "posture_average": posture["posture_average"],
+            # The band the fusion would have produced, kept BESIDE the posture and never in
+            # place of it, so the change this run made is visible in a stored row.
+            "fusion_band": fused["status"] if fused else None,
             "conflict": fused["conflict"] if fused else 0.0,
             "group": group,
             "module_count": len(signals),
@@ -263,7 +285,12 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # IT CANNOT REACH THE ROLLUP IT READS. `category_statuses` is already built above and is not
     # rebuilt, so a B1.2 band computed here sets no category and reaches no project status. That
     # is the same conclusion Run 87 reached by admission in `spec_projection`, here reached
-    # structurally by ordering. Nothing in the rollup or in worst-wins is altered.
+    # structurally by ordering. Nothing in the rollup or in the project-level rule is altered.
+    #
+    # RUN 104 MEASURED B1.2's INPUT MOVING. B1.2 reads the six category postures, and this run
+    # changed how four of them are formed, so its input changed on any project where a category
+    # holds more than one banded module. Its own weights, its renormalisation and its exclusion
+    # from the rollup are untouched.
     _b12 = _weighted_voting_result(category_statuses)
     _b12_row = None
     for _bucket in ("computed", "abstained"):
@@ -300,10 +327,18 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # A4 Document Signals, A6 Delivery Quality -- carry a posture. There is no supporting tier
     # any more, and no category can create a Green merely because no documents were supplied.
     #
-    # WORST-WINS IS UNTOUCHED. `fuse_signals(voting)` above is not altered, not re-ordered and
-    # not consulted twice; `project["status"]` is exactly what it was. The gate is a condition
-    # LAYERED ON TOP, so when all four required categories are assessed the published status is
-    # byte-for-byte identical to the previous behaviour. INDETERMINATE is not a band, is not in
+    # THE PROJECT RULE ON THIS PATH IS NOT TOUCHED. `fuse_signals(voting)` above is not altered,
+    # not re-ordered and not consulted twice; `project["status"]` is exactly what it was. The
+    # gate is a condition LAYERED ON TOP, so when all five required categories are assessed the
+    # published status is byte-for-byte identical to the previous behaviour.
+    #
+    # AND IT IS NOT WORST-WINS, WHICH RUN 104 MEASURED AND RECORDS HERE RATHER THAN ASSERTING
+    # THE COMMENT THIS REPLACES. `fuse_signals` combines the CATEGORY bands by Dempster's rule
+    # across independent bodies; only the SPECIFICATION path (`spec_projection.project_status`)
+    # applies `worst_band` to the categories, and that is the path the participant page is
+    # served from. Measured on the Run 104 corpus: four Green categories and one Amber gave a
+    # SERVED status of Amber and a stored Python `project_status` of Green. Run 104's order
+    # forbids changing how the project forms its status, so this is REPORTED and not altered. INDETERMINATE is not a band, is not in
     # `BAND_SEVERITY`, and never enters a severity comparison.
     _required_missing = [k for k in _REQUIRED_CATEGORIES
                          if not (category_statuses.get(k) or {}).get("status")]

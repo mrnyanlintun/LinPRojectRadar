@@ -36,13 +36,26 @@ API from `spec_readings.reading_payload`; a category that was never called has n
 so it carries no state, and `category_statuses` simply does not have the key. The two are
 distinguishable on the wire and on the page.
 
-FUSION STAYS IN PYTHON AND IS THE EXISTING RULE. `fusion.worst_band` decides, here as in
-`spec_apply.apply_category`, and there is no second severity table in this file. A category's
-status is the worst band of the modules that COMPUTED -- an abstention is an absence of a
-reading, not an adverse one -- and the project status is the worst of the categories that
-contribute, by `compute.contributes_to_project_status`, which excludes groups C and D exactly
-as the Python rollup does. The owner's separate discussion about replacing worst-wins with
-reasoned rating is NOT this run and nothing here anticipates it.
+THE POSTURE RULE STAYS IN PYTHON AND IS THE SHARED ONE. `simulation.category_posture` decides
+a CATEGORY's posture, here as in `spec_apply.apply_category` and as in the Python rollup, and
+there is no second severity table in this file.
+
+RUN 104 REPLACED ONE RULE WITH TWO, BY CATEGORY, AND THIS FILE NO LONGER DESCRIBES ITSELF AS
+WORST-WINS THROUGHOUT, because that is no longer true of four categories out of five:
+
+  * A1 Cost and EVM, A2 Schedule, A3 Cost Risk and A4 Document-Derived Signals AVERAGE their
+    banded modules' scores -- Green +2, Yellow +1, Amber -1, Red -2 -- over only the modules
+    that asserted a band. They are performance measures and one weak module among several
+    should move the posture without dominating it.
+  * A6 Delivery Quality takes the WORST band any of its modules asserted. Quality, safety,
+    environmental and contractor performance are conformance and compliance measures; an
+    adverse reading in one of them is a finding in its own right and is not averaged against
+    three good ones.
+  * A category the owner did not assign keeps worst-wins, unchanged.
+
+An abstention is still an absence of a reading, not an adverse one, and it is NOT a zero in the
+average either. THE PROJECT STATUS IS UNCHANGED: it is still `worst_band` over the categories
+that contribute, by `compute.contributes_to_project_status`, which excludes groups C and D.
 
 `computed_results` IS NOT TOUCHED, NOT WRITTEN AND NOT DELETED. It remains the record of what
 the Python layer produced and the freeze architecture keeps referencing it. This module only
@@ -65,6 +78,7 @@ from sqlalchemy.orm import Session
 from .research_models import SpecificationReading
 from .simulation import spec_apply as sa
 from .simulation.compute import contributes_to_project_status
+from .simulation.category_posture import category_posture
 from .simulation.fusion import BAND_SEVERITY, worst_band
 from .simulation.registry import service_index
 
@@ -167,15 +181,16 @@ def abstention_rows(readings: dict[str, SpecificationReading]) -> list[dict[str,
 # ---------------------------------------------------------------------------------------------
 # RUN 87. WHICH MODULES ARE ADMITTED TO THE CATEGORY ROLLUP.
 #
-# THIS CHANGES ADMISSION, NOT THE DECISION RULE. `worst_band` still decides, here and in
-# `spec_apply.apply_category`; fusion stays parked and `server/app/simulation/` is untouched.
-# The only thing that changes is which computed module readings are handed to it.
+# THIS CHANGES ADMISSION, NOT THE DECISION RULE. The posture rule still decides, here and in
+# `spec_apply.apply_category` -- since Run 104 that rule is `category_posture`, not `worst_band`
+# alone. The only thing this set changes is which computed module readings are handed to it.
 #
 # THE DEFECT THIS CLOSES. `compute.contributes_to_project_status` is a GROUP-level predicate and
 # is correctly True for group B: B1.1 Conservative Dominance is a decision rule over the four
 # assembled arms and legitimately carries a band. There was no MODULE-level admission rule
 # anywhere on this path, so a comparison ensemble's band set its category's status and reached
-# the project status through worst-wins.
+# the project status. (RUN 104: the category rule is no longer worst-wins everywhere -- see the
+# header -- but ADMISSION is untouched by that change and this set still decides it.)
 #
 # THE SET IS ESTABLISHED FROM THE TREE, NOT INVENTED. Two texts establish it:
 #
@@ -237,18 +252,34 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
                 if isinstance(m, dict) and m.get("state") == sa.COMPUTED]
         bands = [(m.get("module_id"), _band(m.get("band"))) for m in mods
                  if admitted_to_category_rollup(m.get("module_id"))]
-        # FUSION IS `worst_band`, not a rule written here. ADMISSION is decided above.
-        fused = worst_band([b for _, b in bands if b])
+        # RUN 104. THE POSTURE RULE IS `category_posture`, not a rule written here, and it is
+        # the SAME function the Python rollup and `spec_apply` call. ADMISSION is decided above
+        # and is unchanged. A1, A2, A3 and A4 average their banded modules' scores; A6 takes the
+        # worst; a category the owner did not assign keeps worst-wins. The arithmetic is carried
+        # on the entry so the brief can show its working.
+        posture = category_posture(key, [(mid, b) for mid, b in bands if b])
+        fused = posture["status"]
         group = groups.get(key, "")
         out[key] = {
             "status": fused,
+            "posture_rule": posture["posture_rule"],
+            "posture_rule_words": posture["posture_rule_words"],
+            "posture_rule_short": posture["posture_rule_short"],
+            "posture_boundary": posture["posture_boundary"],
+            "posture_arithmetic": posture["posture_arithmetic"],
+            "posture_module_scores": posture["posture_module_scores"],
+            "posture_banded_count": posture["posture_banded_count"],
+            "posture_average": posture["posture_average"],
             # No belief-conflict coefficient is defined over a specification reading, and one is
             # not invented. 0.0 is what `governed_status_semantics` reads for "no disagreement
             # measured"; the state below is what a reader should judge the reading by.
             "conflict": 0.0,
             "group": group,
             "module_count": len(mods),
-            "status_set_by": sorted({mid for mid, b in bands if b and b == fused}),
+            # RUN 104. WHICH MODULES SET IT, as the rule that formed it defines "set". Under
+            # worst-wins that is the modules holding the worst band; under averaging every
+            # banded module set it, because there is no single setter in a mean.
+            "status_set_by": posture["status_set_by"],
             "contributes_to_project_status": contributes_to_project_status(group),
             "state": stored.state,
             "reason": stored.reason,
@@ -272,10 +303,12 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
 # publish `[]`, which is the true answer rather than a dead key. When any required category is
 # not assessed, the official status is INDETERMINATE.
 #
-# WORST-WINS IS NOT TOUCHED. `worst_band` is still the only severity rule in this file and its
-# arithmetic is not altered, not re-ordered and not consulted twice. The gate is a CONDITION
-# LAYERED ON TOP of the fused band: when all five required categories carry a posture, this
-# function returns EXACTLY what it returned before this run, byte for byte. That equality is
+# THE PROJECT-LEVEL RULE IS NOT TOUCHED. `worst_band` over the CATEGORIES is still the only
+# severity rule in this file and its arithmetic is not altered, not re-ordered and not consulted
+# twice -- Run 104 changed how a CATEGORY forms its posture and nothing about how the project
+# forms its status. The gate is a CONDITION LAYERED ON TOP of the fused band: when all five
+# required categories carry a posture, this function returns EXACTLY what it returned before
+# Run 89, byte for byte. That equality is
 # measured, not argued, in `tools/test_run89_required_core.py`.
 #
 # "INDETERMINATE" IS NOT A BAND. It is deliberately NOT added to `fusion.BAND_SEVERITY` and it

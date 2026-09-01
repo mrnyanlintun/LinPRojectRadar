@@ -174,6 +174,37 @@ def _finding(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]],
 
 # ------------------------------------------------------------------ 3. why it was produced
 
+def _posture_rules(cats: Mapping[str, Mapping[str, Any]]) -> str | None:
+    """
+    RUN 104, GOAL TWO. WHICH RULE FORMED EACH CATEGORY'S POSTURE, AND THE ARITHMETIC.
+
+    A reader who sees a Green over an Amber module needs to know why without guessing, and
+    section 10.3 fails the run for a posture that cannot show the arithmetic that produced it.
+    Every sentence here is READ BACK off the category entry -- `posture_rule_short` and
+    `posture_arithmetic`, written by `simulation.category_posture` -- so the card can never
+    claim a rule the reading does not carry.
+    """
+    lines: list[str] = []
+    for key in sorted(cats):
+        entry = cats.get(key) or {}
+        if not entry.get("status") or not entry.get("posture_arithmetic"):
+            continue
+        lines.append(
+            f"{key} {_cat_name(key)} is {_band(entry['status'])}, formed from "
+            f"{entry.get('posture_rule_short') or 'its modules'}: "
+            f"{entry['posture_arithmetic']}")
+    if not lines:
+        return None
+    return ("How each category formed its posture. "
+            "Four performance categories -- Cost and EVM, Schedule, Cost Risk and "
+            "Document-Derived Signals -- average their banded modules' scores, so one weak "
+            "module moves the posture without dominating it. Delivery Quality takes the worst "
+            "band any of its modules asserted, because quality, safety, environmental and "
+            "contractor performance are conformance and compliance measures and an adverse "
+            "reading in one of them is a finding in its own right. The project then takes the "
+            "worst across the categories. " + " ".join(lines))
+
+
 def _why(basis: Mapping[str, Any]) -> str | None:
     """The rule that produced the finding, named. Not a justification -- a derivation."""
     required = list(basis.get("required_categories") or ())
@@ -187,9 +218,11 @@ def _why(basis: Mapping[str, Any]) -> str | None:
             "posture is withheld rather than imputed. The worst band among the categories that "
             "were assessed is recorded beside it and is not used in its place.")
     return (
-        "The posture is set by Conservative Dominance: the worst band among the required "
-        f"categories decides, and every one of the required set ({', '.join(required)}) "
-        "carries a band. No category's band was averaged, weighted away or overridden.")
+        "The project posture is the worst band among the required categories: the worst "
+        f"category decides, and every one of the required set ({', '.join(required)}) carries "
+        "a band. No category's band was averaged, weighted away or overridden at project level. "
+        "How each CATEGORY formed the band it brings here is stated beside that category below, "
+        "because the platform does not use one rule for all of them.")
 
 
 # ------------------------------------------------------------------ 4. forecast and baseline
@@ -457,15 +490,17 @@ def _weighted_voting(modules: Sequence[Mapping[str, Any]]) -> dict[str, Any] | N
     """
     THE WEIGHTED VOTING DIAGNOSTIC, and it is a DIAGNOSTIC and not the status.
 
-    Conservative Dominance sets the official status. B1.2 is a comparison ensemble, admitted to
-    the card as a reading a reviewer may weigh against the official posture, and it is labelled
-    that way so it cannot be mistaken for the decision.
+    THE CATEGORY POSTURE RULES set the official status -- averaging in the four performance
+    categories, worst-wins in Delivery Quality, then worst across the categories. B1.2 is a
+    comparison ensemble, admitted to the card as a reading a reviewer may weigh against the
+    official posture, and it is labelled that way so it cannot be mistaken for the decision.
     """
     b12 = next((m for m in modules if m.get("module_id") == "B1.2"), None)
     if not b12:
         return None
     out: dict[str, Any] = {
-        "role": "diagnostic only -- Conservative Dominance sets the official status",
+        "role": ("diagnostic only -- the category posture rules and the worst category set the "
+                 "official status"),
     }
     for key in ("status_color", "evidence_metric", "class_votes", "insufficient_data",
                 "abstention_reason_code"):
@@ -549,6 +584,10 @@ def compose_decision_brief(*,
         card["finding"] = finding
 
     why = _why(basis)
+    # RUN 104, GOAL TWO. The two category rules, and the arithmetic each produced, on the card.
+    _rules = _posture_rules(cats)
+    if _rules:
+        why = (why + " " + _rules) if why else _rules
     # RUN 102, GOAL ONE. WHICH LAYER PRODUCED EACH POSTURE, NAMED ON THE CARD.
     # Section 12.1 fails the run for a fallback that does not say so. `posture_layer` is written
     # onto every merged category entry by `spec_projection.merge_python_row`, and this sentence

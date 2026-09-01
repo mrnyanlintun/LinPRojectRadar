@@ -8,8 +8,8 @@ here computes and throws away.
 
 WHAT IT DOES NOT OWN, and the boundary is the owner's ruling at section 4:
 
-  - FUSION. `spec_apply` calls `fusion.worst_band`, in Python, and this module never decides a
-    status itself.
+  - FUSION. `spec_apply` calls `simulation.category_posture`, in Python -- the owner's two
+    category rules, averaging and worst-wins -- and this module never decides a status itself.
   - THE RECOMMENDATION CHECKS. Untouched.
   - EXTRACTION, STORAGE OF FIGURES, PERIOD BINDING. Untouched; section 7 says leave them alone.
 

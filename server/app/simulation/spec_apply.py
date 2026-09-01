@@ -7,7 +7,8 @@ specification in `specifications/`; a category without one is untouched and stil
 
 WHAT THIS FILE IS NOT, and the boundary is the owner's ruling at section 4 of the Run 76 order:
 
-  - It does NOT fuse. `fusion.worst_band` decides which status wins, in Python, here as before.
+  - It does NOT fuse. `category_posture` decides which status a category carries, in Python,
+    here as before -- averaging in A1, A2, A3 and A4, worst-wins in A6 (Run 104).
     If a model decided which status wins, fusion could vary between runs on identical readings,
     and that is the one place variance would be indefensible.
   - It does NOT enforce the recommendation checks.
@@ -43,6 +44,7 @@ import urllib.request
 from typing import Any
 
 from .. import ai_provider
+from .category_posture import category_posture
 from .fusion import BAND_SEVERITY, worst_band
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -457,9 +459,22 @@ def apply_category(category_key: str, signal_inputs: dict, applier=None,
     base["state"] = COMPUTED if base["counts"][COMPUTED] else ABSTAINED
     # FUSION IS PYTHON AND STAYS PYTHON. Only modules that actually spoke, and only bands the
     # rule can rank: an abstention is an absence of a reading, not an adverse one.
-    bands = [str(r["band"]).capitalize() for r in rows
-             if r["state"] == COMPUTED and r["band"] is not None]
-    base["status"] = worst_band(bands) if bands else None
+    # RUN 104. THE POSTURE RULE IS `category_posture` and it is the SAME function the Python
+    # rollup and `spec_projection` call: A1, A2, A3 and A4 average their banded modules' scores,
+    # A6 takes the worst, and a category the owner did not assign keeps worst-wins. Only modules
+    # that actually spoke, and only bands the vocabulary can rank: an abstention is an absence of
+    # a reading, not an adverse one, and it is not a zero in the average either.
+    #
+    # THE ARITHMETIC IS NOT STORED ON THE READING. `SpecificationReading` has fixed columns and
+    # this run adds no migration; `spec_projection.category_statuses` recomputes the posture from
+    # the stored module rows by this same function, so the working is served without a column.
+    posture = category_posture(
+        category_key,
+        [(r.get("module_id"), r["band"]) for r in rows
+         if r["state"] == COMPUTED and r["band"] is not None])
+    base["status"] = posture["status"]
+    base["posture_rule"] = posture["posture_rule"]
+    base["posture_arithmetic"] = posture["posture_arithmetic"]
     return base
 
 

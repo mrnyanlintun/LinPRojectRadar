@@ -734,8 +734,10 @@
       "<ul>" + items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>");
   }
 
-  /* THE WEIGHTED VOTING DIAGNOSTIC. Labelled a diagnostic, because Conservative Dominance sets
-     the official status and this is a comparison ensemble a reviewer may weigh against it. */
+  /* THE WEIGHTED VOTING DIAGNOSTIC. Labelled a diagnostic, because the CATEGORY POSTURE RULES
+     -- averaging in the four performance categories, worst-wins in Delivery Quality, then the
+     worst category -- set the official status, and this is a comparison ensemble a reviewer may
+     weigh against it. The label itself is served on the row and is not written here. */
   function renderVoting(v) {
     if (!v) return "";
     var body = para(v.role);

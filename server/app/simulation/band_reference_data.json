@@ -111,6 +111,25 @@
     "provenance_class": "OWNER-CALIBRATED",
     "threshold_source": "owner_configured_default",
     "configured": true,
+    "verified": false,
+    "superseded_by": "pert_path_concentration_bands",
+    "superseded_note": "RUN 104. Retained as the record of what was measured before this run and NOT read by any module. The band was drawn over the criticality index of the MOST CRITICAL ACTIVITY, which on any network with a terminal milestone is critical in essentially every trial, so it banded Red on any valid network. High criticality of one path is not adverse; high uncertainty about which path controls is. See pert_path_concentration_bands."
+  },
+  "pert_path_concentration_bands": {
+    "green_at_or_above": 0.8,
+    "yellow_at_or_above": 0.6,
+    "amber_at_or_above": 0.4,
+    "red_below": 0.4,
+    "margin_no_cap_at_or_above": 0.2,
+    "margin_cap_yellow_at_or_above": 0.1,
+    "margin_cap_amber_below": 0.1,
+    "unit": "C1 = the probability of the most frequently critical PATH across the simulation trials, where the unit is the UNIQUE PATH and never a sum of activity criticality indices; M = C1 - C2, the dominance margin over the second most frequently critical path",
+    "source": "the owner's Run 104 order, section 4. OWNER-CALIBRATED: the academic basis supports what a criticality index means; it does not prescribe these boundaries. They are a documented owner tolerance and are not presented as a construction standard.",
+    "hard_override": "Red if the deterministic CPM forecast is later than an approved contractual milestone, or the controlling path has negative total float.",
+    "band_basis_id": "owner_configured_PERT_path_concentration_tolerance",
+    "provenance_class": "OWNER-CALIBRATED",
+    "threshold_source": "owner_configured_default",
+    "configured": true,
     "verified": false
   },
   "milestone_slip_ratio_bands": {

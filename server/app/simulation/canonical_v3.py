@@ -1136,6 +1136,84 @@ def pert_moments(o: float, m: float, p: float) -> dict[str, float]:
     return {"mean": (o + 4.0 * m + p) / 6.0, "variance": ((p - o) / 6.0) ** 2}
 
 
+def controlling_path(network: dict, pas: dict, durations: dict[str, float] | None = None
+                     ) -> tuple[str, ...]:
+    """
+    RUN 104. THE CONTROLLING PATH OF ONE PASS, as a SEQUENCE OF ACTIVITIES, not a set.
+
+    THE UNIT OF PATH CRITICALITY IS THE UNIQUE PATH. `critical_activities` is a SET and cannot
+    serve: an activity lying on several paths appears once in it, and the criticality indices of
+    a set of activities cannot be summed into a path probability because overlapping activities
+    are counted in every path they lie on and the total exceeds one. Run 104 section 4 forbids
+    that sum by name. So the path is RECONSTRUCTED per pass instead.
+
+    THE RECONSTRUCTION. Start at the activity that finishes the project -- the largest early
+    finish -- and walk backwards, at each step to the predecessor whose early finish EQUALS this
+    activity's early start, which is the predecessor that actually determined it. Ties are broken
+    by activity id so that one pass yields one path deterministically rather than an arbitrary
+    one; a tie is an exact-equality event and is vanishingly rare once durations are sampled
+    from continuous distributions.
+    """
+    acts = network["activities"]
+    es, ef = pas["early_start"], pas["early_finish"]
+    if not ef:
+        return ()
+    # THE END OF THE PATH IS A TERMINAL ACTIVITY WHEREVER ONE FINISHES THE PROJECT. A network
+    # ending in a zero-duration completion milestone gives that milestone and its predecessor the
+    # SAME early finish, and taking the smallest id would drop the milestone off the path and
+    # report a path one activity shorter than the deterministic controlling path A2.12 reports on
+    # the same network. Preferring an activity with no successors resolves that tie the way the
+    # network means it; the id is the tie-break only among genuine terminals.
+    _ends = [a for a in acts if abs(ef[a] - pas["project_finish"]) < 1e-9]
+    if not _ends:
+        return ()
+    _terminal = [a for a in _ends if not network["successors"][a]]
+    end = min(_terminal or _ends)
+    chain = [end]
+    seen = {end}
+    cur = end
+    while True:
+        preds = [q for q in acts[cur]["predecessors"] if abs(ef[q] - es[cur]) < 1e-9]
+        if not preds:
+            break
+        nxt = min(preds)
+        if nxt in seen:  # a cycle cannot occur in a validated network; refuse to loop anyway
+            break
+        chain.append(nxt)
+        seen.add(nxt)
+        cur = nxt
+    return tuple(reversed(chain))
+
+
+def path_criticality(paths) -> dict[str, Any]:
+    """
+    RUN 104. C1, C2 AND THE DOMINANCE MARGIN, over the UNIQUE PATHS observed across the trials.
+
+        C1 = probability of the most frequently critical path
+        C2 = probability of the second
+        M  = C1 - C2, the dominance margin
+
+    High criticality of ONE path is not adverse -- it means the schedule has a stable controlling
+    path and is predictable. High UNCERTAINTY about which path controls is what is adverse, and
+    that is what these three figures measure. Where only one path was ever critical, C2 is 0.0
+    and the margin is C1: there is no second path to hand control to.
+    """
+    seq = list(paths)
+    n = len(seq)
+    counts: dict[tuple[str, ...], int] = {}
+    for pth in seq:
+        counts[tuple(pth)] = counts.get(tuple(pth), 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    probs = [{"path": list(pth), "trials": c, "probability": (c / n if n else 0.0)}
+             for pth, c in ranked]
+    c1 = probs[0]["probability"] if probs else 0.0
+    c2 = probs[1]["probability"] if len(probs) > 1 else 0.0
+    return {"path_probabilities": probs, "unique_path_count": len(probs),
+            "c1": c1, "c2": c2, "dominance_margin": c1 - c2,
+            "most_critical_path": probs[0]["path"] if probs else [],
+            "second_path": probs[1]["path"] if len(probs) > 1 else []}
+
+
 def pert_criticality(network: dict, rand: Callable[[], float] | None = None,
                      trials: int = 2000) -> dict[str, Any]:
     """
@@ -1163,14 +1241,19 @@ def pert_criticality(network: dict, rand: Callable[[], float] | None = None,
     if rand is None or any(v is None for v in moments.values()):
         base = cpm_forward_backward(network)
         counts = {a: (1.0 if a in base["critical_activities"] else 0.0) for a in acts}
+        _det_path = controlling_path(network, base)
         return {"criticality_index": counts, "trials": 1, "deterministic": True,
                 "project_finish": base["project_finish"],
                 "critical_activities": base["critical_activities"],
-                "activity_moments": moments}
+                "activity_moments": moments,
+                **path_criticality([_det_path] if _det_path else [])}
     if trials < 1:
         raise ValueError("a criticality index needs at least one trial")
     counts = {a: 0 for a in acts}
     finishes: list[float] = []
+    # RUN 104. THE CRITICAL PATH IS RECORDED IN EVERY TRIAL, which is the recording that did not
+    # exist before this run and without which no path probability can be formed at all.
+    observed_paths: list[tuple[str, ...]] = []
     for _ in range(trials):
         drawn = {}
         for a in acts:
@@ -1180,10 +1263,12 @@ def pert_criticality(network: dict, rand: Callable[[], float] | None = None,
         finishes.append(pas["project_finish"])
         for a in pas["critical_activities"]:
             counts[a] += 1
+        observed_paths.append(controlling_path(network, pas, drawn))
     return {"criticality_index": {a: counts[a] / trials for a in acts}, "trials": trials,
             "deterministic": False, "finishes": finishes,
             "activity_moments": moments,
-            "project_finish_p80": empirical_quantile(finishes, 0.80)}
+            "project_finish_p80": empirical_quantile(finishes, 0.80),
+            **path_criticality(observed_paths)}
 
 
 def _draw(family: str, a: float, m: float, b: float,

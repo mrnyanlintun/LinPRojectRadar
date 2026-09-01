@@ -898,7 +898,32 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # Dominance, `delivery_complete` and `scope_signal_inputs` are all unaltered, and no stored row
 # was migrated, deleted or rewritten. Results computed under sim-2026.08-v47 remain valid under
 # that stamp.
-SIMULATION_VERSION = "sim-2026.09-v49"
+# RUN 104 -> sim-2026.09-v50. THE LARGEST CHANGE TO WHAT THE PLATFORM PUBLISHES SINCE THE
+# REBUILD, and section 8.10 orders the mint. Three things moved:
+#
+#   1. A CATEGORY NO LONGER FORMS ITS POSTURE BY ONE RULE. `simulation.category_posture` holds
+#      two: A1 Cost and EVM, A2 Schedule, A3 Cost Risk and A4 Document-Derived Signals AVERAGE
+#      their banded modules' scores (Green +2, Yellow +1, Amber -1, Red -2; Green at or above
+#      1.5, Yellow 0.5, Amber -0.5, Red below), and A6 Delivery Quality takes the WORST band any
+#      of its modules asserted. A module that did not band is in neither and is never a zero.
+#      The corpus project moved from Green to AMBER on this change alone, because A6.4
+#      Contractor Performance reads Amber inside it and is no longer outvoted.
+#   2. A2.1 PERT NETWORK CRITICALITY MEASURES PATH CONCENTRATION, not activity criticality.
+#      `canonical_v3.pert_criticality` now RECORDS THE CRITICAL PATH IN EVERY TRIAL and reports
+#      C1, C2 and the dominance margin over UNIQUE PATHS; the bands are inverted, a margin cap
+#      is applied after the primary band, and the hard override fires on NEGATIVE controlling
+#      float rather than on zero-or-negative. The same network that banded Red under Run 102's
+#      rule bands GREEN under this one.
+#   3. EVERY CATEGORY POSTURE NOW CARRIES ITS ARITHMETIC -- `posture_rule`, `posture_boundary`,
+#      `posture_arithmetic`, `posture_module_scores`, `posture_average` -- and the decision brief
+#      states which rule formed each one. New keys on a JSON column, so no migration; the stored
+#      row is genuinely different and the stamp must say so.
+#
+# Nothing else moves. The PROJECT rule, the required core of five, the Indeterminate gate,
+# `delivery_complete`, `scope_signal_inputs`, Run 102's layer merge and Run 103's network
+# diagnostics are all unaltered, no module was renamed, and no stored row was migrated, deleted
+# or rewritten. Results computed under sim-2026.09-v49 remain valid under that stamp.
+SIMULATION_VERSION = "sim-2026.09-v50"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -949,6 +974,11 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # what Runs 100 and 101 did not do. No stored row is recomputed and none is touched: rows
  # stamped v48 and earlier remain valid under their own stamp.
  "sim-2026.09-v49",
+ # RUN 104: two category posture rules -- averaging in A1, A2, A3 and A4, worst-wins in A6 --
+ # replacing the fusion's band; A2.1 PERT rebuilt onto PATH concentration with the dominance
+ # margin cap; every posture carrying the arithmetic that produced it. THE STAMP IS MOVED AND
+ # THIS TUPLE IS APPENDED TO IN THE SAME EDIT. No stored row is recomputed and none is touched.
+ "sim-2026.09-v50",
 )
 
 
@@ -1458,42 +1488,65 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
                             schedule_network_diagnostics=_diag_fields)
     index = reading["criticality_index"]
     top = max(index, key=lambda a: (index[a], a))
-    # ================== RUN 102, SECTION 3. THE BAND ON THE CRITICALITY INDEX, AND ITS OVERRIDE.
-    # RUN 101 ORDERED THIS MODULE LEFT BANDLESS AND THE OWNER HAS REVERSED THAT (Run 102,
-    # section 0.1). The measure matches the owner's definition exactly: criticality index = runs
-    # in which the activity or path is critical / total simulation runs, which is what
-    # `canonical_v3.pert_criticality` computes and has computed since Run 28. The direction is
-    # ADVERSE UPWARD -- an activity critical in more runs is more of a threat -- so the
-    # boundaries are inclusive on their LOWER side and Red is the open top.
+    # ============ RUN 104, GOAL THREE. THE MEASURE IS PATH CONCENTRATION, NOT ACTIVITY CRITICALITY.
     #
-    # THE HARD OVERRIDE, AND WHY IT IS NOT FIRED FROM CPM FLOAT ALONE. The owner's condition is
-    # "zero or negative total float on the controlling path", and his stated rationale is that
-    # "zero total float defines a critical condition, while negative float indicates the current
-    # schedule cannot meet its IMPOSED COMPLETION CONDITION". In a network with NO imposed
-    # completion date the critical path's total float is ZERO BY CONSTRUCTION -- that is what the
-    # backward pass does -- so firing the override from it would take EVERY project to Red and
-    # would be measuring the arithmetic rather than the schedule. The override is therefore
-    # evaluated against the IMPOSED FINISH the network states, and where the network states none
-    # the override is NOT EVALUABLE and the row says so rather than firing or silently passing.
-    _cuts = _BR.entry("pert_criticality_bands")
-    _share = index[top]
+    # THE OWNER'S RULING: the module is not removed, its MEASURE was wrong. Run 103 measured this
+    # module banding Red on any valid network, because Run 102 banded the criticality index of
+    # the MOST CRITICAL ACTIVITY -- and on any network with a terminal milestone that activity is
+    # critical in essentially every trial, so the index sat at 1.00 and 1.00 was the top of the
+    # Red arm. The reading was arithmetically correct and told the reviewer nothing.
+    #
+    # HIGH CRITICALITY OF ONE PATH IS NOT ADVERSE. It means the schedule has a stable controlling
+    # path and is predictable. HIGH UNCERTAINTY ABOUT WHICH PATH CONTROLS is what is adverse: a
+    # project whose control can pass between several near-equal paths cannot be steered by
+    # managing one of them. So the bands are INVERTED against Run 102's and are drawn over:
+    #
+    #   C1  the probability of the MOST FREQUENTLY CRITICAL PATH
+    #   C2  the probability of the second
+    #   M   = C1 - C2, the DOMINANCE MARGIN
+    #
+    # THE UNIT IS THE UNIQUE PATH AND ACTIVITY CRITICALITY INDICES ARE NEVER SUMMED. An activity
+    # lying on several paths is counted in each of them and the total exceeds one, so a sum of
+    # activity indices is not a probability at all. `canonical_v3.pert_criticality` now RECORDS
+    # THE CRITICAL PATH IN EVERY TRIAL -- a recording that did not exist before this run -- and
+    # `path_criticality` counts unique paths over those recordings. The raw path probabilities
+    # are retained in the audit record, as section 4 requires.
+    _cuts = _BR.entry("pert_path_concentration_bands")
+    _c1 = float(reading.get("c1") or 0.0)
+    _c2 = float(reading.get("c2") or 0.0)
+    _margin = float(reading.get("dominance_margin") or 0.0)
+    _paths = reading.get("path_probabilities") or []
     _imposed = structure.get("imposed_finish_day")
     _finish = reading.get("project_finish")
     if _finish is None:
         _finish = cpm_forward_backward(network)["project_finish"]
+    # The controlling path's total float against the IMPOSED completion condition the network
+    # states. Where the network imposes no date the float on the critical path is zero BY
+    # CONSTRUCTION -- that is what the backward pass does -- so the override is NOT EVALUABLE and
+    # says so rather than firing on the arithmetic.
     _controlling_float = (float(_imposed) - float(_finish)
                           if isinstance(_imposed, (int, float)) else None)
     _override_words = (
-        "HARD OVERRIDE: Red if the current deterministic schedule has zero or negative total "
-        "float on the controlling path. Zero total float defines a critical condition; negative "
-        "float means the current schedule cannot meet its imposed completion condition. It is "
-        "evaluated against the IMPOSED completion date the network states, never against the "
-        "backward pass alone, whose float on the critical path is zero by construction when no "
-        "date is imposed.")
+        "HARD OVERRIDE: Red if the deterministic CPM forecast is later than an approved "
+        "contractual milestone, or the controlling path has NEGATIVE total float. It is "
+        "evaluated against the IMPOSED completion condition the network states, never against "
+        "the backward pass alone, whose float on the critical path is zero by construction when "
+        "no date is imposed.")
     _fields = dict(
+        # RUN 104. THE PATH-LEVEL FIGURES, and the raw probabilities retained.
+        path_criticality_c1=round(_c1, 4),
+        path_criticality_c2=round(_c2, 4),
+        path_dominance_margin=round(_margin, 4),
+        most_critical_path=reading.get("most_critical_path") or [],
+        second_most_critical_path=reading.get("second_path") or [],
+        unique_critical_path_count=reading.get("unique_path_count", 0),
+        path_probabilities=[{"path": r["path"], "trials": r["trials"],
+                             "probability": round(r["probability"], 6)} for r in _paths],
+        # Kept BESIDE the path figures and no longer banded on: the activity-level index is a
+        # legitimate diagnostic and was only ever wrong as a posture.
         criticality_index={a: round(index[a], 4) for a in sorted(index)},
         most_critical_activity=top,
-        most_critical_share=round(_share, 4),
+        most_critical_share=round(index[top], 4),
         trials=reading["trials"],
         deterministic=reading["deterministic"],
         project_finish_p80=reading.get("project_finish_p80"),
@@ -1504,46 +1557,83 @@ def run_pert(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
         controlling_path_total_float=_controlling_float,
         controlling_path_float_override_evaluable=_controlling_float is not None,
     )
+    _path_words = " -> ".join(reading.get("most_critical_path") or []) or "no path"
     _message = (
-        f"Over {reading['trials']} simulated runs of the network, {top} lies on the critical "
-        f"path in {int(js_round(_share * 100))} per cent of them, the most of any activity")
+        f"Over {reading['trials']} simulated runs of the network, the path {_path_words} "
+        f"controls in {int(js_round(_c1 * 100))} per cent of them; the next most frequent path "
+        f"controls in {int(js_round(_c2 * 100))} per cent, a dominance margin of "
+        f"{round(_margin, 3)} over {reading.get('unique_path_count', 0)} distinct controlling "
+        f"paths")
     if not _cuts.get("configured"):
         return band_abstained(
             "PERT_Network_Criticality", _message,
-            reason="no criticality band is configured, so the index is displayed and no band "
-                   "is asserted",
+            reason="no path concentration band is configured, so the figures are displayed and "
+                   "no band is asserted",
             **_fields)
-    _g, _y, _a = _cuts["green_below"], _cuts["yellow_below"], _cuts["amber_below"]
-    if _controlling_float is not None and _controlling_float <= 0:
-        _colour = "Red"
+    _g = _cuts["green_at_or_above"]
+    _y = _cuts["yellow_at_or_above"]
+    _a = _cuts["amber_at_or_above"]
+    _m_free = _cuts["margin_no_cap_at_or_above"]
+    _m_yellow = _cuts["margin_cap_yellow_at_or_above"]
+    # 1. THE PRIMARY BAND, on C1. Adverse DOWNWARD: a concentrated controlling path is the good
+    #    reading and a diffuse one is the adverse reading.
+    _primary = ("Green" if _c1 >= _g else "Yellow" if _c1 >= _y
+                else "Amber" if _c1 >= _a else "Red")
+    # 2. THE DOMINANCE MARGIN CAP, applied AFTER the primary band and able only to WORSEN it. A
+    #    leading path that the second path is nearly level with is not a controlling path.
+    if _margin >= _m_free:
+        _cap = None
+    elif _margin >= _m_yellow:
+        _cap = "Yellow"
     else:
-        _colour = ("Green" if _share < _g else "Yellow" if _share < _y
-                   else "Amber" if _share < _a else "Red")
+        _cap = "Amber"
+    _severity = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
+    _capped = _primary if _cap is None else max((_primary, _cap), key=_severity.__getitem__)
+    # 3. THE HARD OVERRIDE, which can only take the reading to Red.
+    _override = bool(_controlling_float is not None and _controlling_float < 0)
+    _colour = "Red" if _override else _capped
     _boundary = (
-        f"on the criticality index -- runs in which the activity or path is critical divided by "
-        f"total simulation runs: below {_g} is Green; at or above {_g} and below {_y} is "
-        f"Yellow; at or above {_y} and below {_a} is Amber; at or above {_a} is Red. Each "
-        f"boundary is INCLUSIVE ON ITS LOWER SIDE and the direction is adverse upward. "
-        + _override_words
+        f"on PATH concentration -- C1, the probability of the most frequently critical PATH "
+        f"across the simulated runs, where the unit is the UNIQUE PATH and activity criticality "
+        f"indices are never summed: at or above {_g} is Green, one stable controlling path; at "
+        f"or above {_y} and below {_g} is Yellow, a leading path but another can take over; at "
+        f"or above {_a} and below {_y} is Amber, criticality materially split and path switching "
+        f"likely; below {_a} is Red, no stable controlling path and diffuse exposure. Each "
+        f"boundary is INCLUSIVE ON ITS LOWER SIDE and the direction is adverse DOWNWARD. "
+        f"DOMINANCE MARGIN CAP, applied after the primary band and able only to worsen it: with "
+        f"M = C1 - C2 at or above {_m_free} there is no cap; at or above {_m_yellow} and below "
+        f"{_m_free} the reading is no better than Yellow; below {_m_yellow} it is no better than "
+        f"Amber. Here C1 = {round(_c1, 4)}, C2 = {round(_c2, 4)}, M = {round(_margin, 4)}: the "
+        f"primary band is {_primary}"
+        + (" and the margin applied no cap" if _cap is None
+           else f" and the margin capped it at no better than {_cap}")
+        + f", giving {_capped}. " + _override_words
         + (f" This network states an imposed finish, and the controlling path's total float "
-           f"against it is {_controlling_float}."
+           f"against it is {_controlling_float}"
+           + (", which is negative, so the override fired and the band is Red."
+              if _override else ", which is not negative, so the override did not fire.")
            if _controlling_float is not None else
            " This network states NO imposed completion date, so the override is not evaluable "
-           "on it and was not applied; the band above rests on the criticality index alone."))
+           "on it and was not applied; the band above rests on the path figures alone."))
     return banded(
         "PERT_Network_Criticality", _message,
         status_color=_colour,
         boundary=_boundary,
-        basis=("the owner's Run 102 order, section 3, and the threshold table attached to it. "
-               "OWNER-CONFIGURED: the criticality index itself is a standard PERT/Monte Carlo "
-               "quantity, but no published standard fixes where 0.20, 0.50 and 0.80 divide the "
-               "bands. They are a documented owner tolerance and are not presented as a "
+        basis=("the owner's Run 104 order, section 4, and the threshold entry "
+               "`pert_path_concentration_bands`. The band basis identifier the owner named for "
+               "it is `owner_configured_PERT_path_concentration_tolerance`. OWNER-CALIBRATED: "
+               "the academic basis supports what a criticality index means -- the share of "
+               "simulated runs in which something lies on the critical path -- but it does not "
+               "prescribe where 0.80, 0.60 and 0.40 divide the bands, nor the dominance margin "
+               "cuts. Those are a documented owner tolerance and are not presented as a "
                "construction standard. A stricter figure stated in a project document overrides "
                "them, and none is stated by any document this project has uploaded"),
         provenance=PROVENANCE_OWNER_CALIBRATED,
         threshold_source=THRESHOLD_SOURCE_OWNER,
-        band_hard_override_fired=bool(_controlling_float is not None
-                                      and _controlling_float <= 0),
+        band_basis_id="owner_configured_PERT_path_concentration_tolerance",
+        band_primary_before_cap=_primary,
+        band_dominance_margin_cap=_cap,
+        band_hard_override_fired=_override,
         **_fields)
 
 
