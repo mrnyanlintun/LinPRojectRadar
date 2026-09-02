@@ -1940,7 +1940,25 @@ def _run69_structures(session: Session, project: Project, period: int,
                         "disposition": str(_disp),
                         "reviewer": str(_rev_by),
                         "decision_day": _day,
-                        "reporting_period": _r.get("reporting_period"),
+                        # RUN 111 REPAIR, ORDER SECTION 2.1. THE ONLY COLUMN ON THIS ROW THAT
+                        # WAS READ BY BARE EXACT KEY, and therefore the only one that was
+                        # always None.
+                        #
+                        # Every other cell above goes through `_first_of`, which matches the
+                        # headings a register actually prints, case- and separator-insensitively.
+                        # This one asked for the literal key `reporting_period`. Extraction
+                        # returns rows keyed by the document's own printed headings -- "Reporting
+                        # Period", "Period", "Report period" -- so no decision ever carried one,
+                        # and `canonical_v4.submittal_rejection` then found NO decision in the
+                        # window the register declared and refused with "No submittal in the
+                        # register provided for this project was assessed in the period being
+                        # reported". The module and the owner's ladder were sound; the join was
+                        # not. A register that prints none of these headings still carries None,
+                        # exactly as before, and the canonical function's own no-window branch
+                        # then counts every decision -- no period is invented for a row.
+                        "reporting_period": _first_of(
+                            _r, ("reporting_period", "period", "report_period",
+                                 "decision_period", "assessment_period")),
                     })
                 if _decisions:
                     _reg = {
@@ -2489,6 +2507,31 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # the governed intake is never displaced by one assembled from a document.
     for _key, _structure in _run69_structures(session, project, period, documents).items():
         si.setdefault(_key, _structure)
+
+    # RUN 111. THE RECOGNITION STEP, AND IT IS THE LAST RESORT RATHER THAN THE FIRST.
+    #
+    # Run 110 stored every extracted value as RAW evidence -- document, period, the label the
+    # document printed, and the value -- and nothing read it. This is the reader: a model is
+    # shown the labels this period's documents printed and one specification stating a quantity
+    # in plain terms, and it returns WHICH LABEL carries that quantity. The value is then read
+    # out of the evidence store by the identifier the platform itself offered, never from the
+    # model's answer, so a model cannot put a figure into a reading. See `app/recognition.py`.
+    #
+    # `setdefault`, AFTER both assemblers above and after nothing else, so a structure supplied
+    # through the governed intake or read by the declared vocabulary is never displaced.
+    #
+    # IT CANNOT FAIL THE UPLOAD and it cannot fail silently. `recognised_structures` raises
+    # nothing and returns a LOG beside the structures: what was attempted, what was recognised
+    # from which label in which document, and where nothing was attempted, the provider, the
+    # model and the environment variable that was empty. The log is written onto the signal
+    # inputs, which are stored on the result row, so the owner reads the diagnosis out of the
+    # stored record rather than out of a server log he cannot reach from a phone.
+    from .recognition import recognised_structures
+    _recognised, _recognition_log = recognised_structures(
+        session, project, period, observations, documents)
+    for _key, _structure in _recognised.items():
+        si.setdefault(_key, _structure)
+    si["recognitionLog"] = _recognition_log
 
     result = run_and_store(session, project, period, si, cutoff,
                            source_documents=[

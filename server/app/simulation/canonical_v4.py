@@ -169,11 +169,34 @@ def _day(container: Any, day_field: str, date_field: str, words: str) -> float:
     raw = (container or {}).get(day_field)
     if raw is not None:
         v = num(raw, None)
-        if v is None or not math.isfinite(v):
+        if v is not None and math.isfinite(v):
+            return float(v)
+        # RUN 111 REPAIR, ORDER SECTION 2.1. A NON-NUMERIC DAY FALLS THROUGH TO THE CALENDAR
+        # DATE INSTEAD OF REFUSING THE WHOLE REGISTER.
+        #
+        # Run 109 traced A4.3 to this branch. The assembler in `documents.py` reads the decision
+        # date out of whichever column the register printed -- `decision_day`, `decision_date`,
+        # `date` or `reviewed` -- and writes it into `decision_day`, because that is the field
+        # name the structure uses. A register that prints `2026-02-05`, which is how every
+        # register written by a person prints it, therefore arrived here as a NON-NUMBER IN THE
+        # DAY FIELD and was refused outright, with a sentence saying the register carried "a day
+        # that is not a number" -- which is true and useless, because the register carried a
+        # perfectly good date.
+        #
+        # NOTHING IS INFERRED AND NOTHING IS GUESSED. A value that is neither a number nor an
+        # ISO calendar date still refuses, below, naming both forms; and a value that IS a
+        # calendar date is read as exactly the date it prints, by the same `date.fromisoformat`
+        # the calendar branch already uses. The two accepted forms this function's docstring
+        # names are now both accepted in BOTH fields, which is what it always claimed to do.
+        text = str(raw).strip()
+        try:
+            return float(date.fromisoformat(text).toordinal())
+        except ValueError:
+            pass
+        if not str((container or {}).get(date_field) or "").strip():
             raise StructureAbsent(
-                f"The {words} provided for this project carries a day that is not a number, so "
-                f"no reading is taken from it.")
-        return float(v)
+                f"The {words} provided for this project carries a day that is neither a number "
+                f"nor a calendar date, so no reading is taken from it.")
     iso = str((container or {}).get(date_field) or "").strip()
     if not iso:
         raise StructureAbsent(

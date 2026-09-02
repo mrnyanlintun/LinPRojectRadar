@@ -130,11 +130,20 @@ except Injected as exc:
 P()
 P("2b. THE PRE-CHANGE registry.run_all, FROM THE PARENT COMMIT, WITH THE SAME FAULT")
 import subprocess, importlib.util, tempfile
+# RUN 111 REPAIR. THIS WAS PINNED TO `HEAD` AND HEAD MOVED.
+#
+# While Run 110's work was uncommitted, `HEAD:server/app/simulation/registry.py` WAS the
+# pre-change file and this comparison was sound. The moment Run 110 committed, HEAD began to
+# contain the guard, so the falsification step compared the new code against itself, found it
+# survived, and printed "SECTION 2.5: NOT PROVED" on every run -- a check that had silently
+# stopped being able to fail. It is pinned to the commit the guard was written against
+# (`966927b`, Run 109) so that it can fail honestly again.
+PRE_CHANGE_COMMIT = "966927b"
 prev = subprocess.run(["git", "-C", "/home/user/LinPRojectRadar", "show",
-                       "HEAD:server/app/simulation/registry.py"],
+                       PRE_CHANGE_COMMIT + ":server/app/simulation/registry.py"],
                       capture_output=True, text=True)
 if prev.returncode != 0:
-    P("   could not read the parent commit's registry.py:", prev.stderr.strip()[:120]); OLD_DIED = None
+    P("   could not read the pre-change registry.py at " + PRE_CHANGE_COMMIT + ":", prev.stderr.strip()[:120]); OLD_DIED = None
 else:
     # It must live INSIDE the package: it resolves its CSV from `__file__` and imports its
     # siblings relatively. Written, imported, and removed again in the `finally` below, so the
@@ -146,7 +155,8 @@ else:
         old_reg = importlib.import_module("app.simulation._registry_at_head")
     finally:
         tmp.unlink(missing_ok=True)
-    P("   loaded parent-commit registry.py, bytes:", len(prev.stdout))
+    P("   loaded pre-change registry.py at " + PRE_CHANGE_COMMIT + ", bytes:",
+      len(prev.stdout))
     P("   it contains the guard                  :", "guarded(new_id" in prev.stdout)
     old_real = old_reg.run_module
     def old_faulting(new_id, si, rand, cutoff):

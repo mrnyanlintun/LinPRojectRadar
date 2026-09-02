@@ -317,6 +317,15 @@ def _ai_provider_diagnostics() -> dict[str, Any]:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
+def _recognition_diagnostics() -> dict[str, Any]:
+    """Never raises, for the same reason `_ai_provider_diagnostics` does not."""
+    try:
+        from .recognition import recognition_diagnostics
+        return recognition_diagnostics()
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
 def a_health(session: Session, params: dict) -> dict[str, Any]:
     return {
         "ok": True,
@@ -333,6 +342,11 @@ def a_health(session: Session, params: dict) -> dict[str, Any]:
         # reported here, and the two flags above are kept because the live backend reported
         # them and callers read them.
         "aiProviders": _ai_provider_diagnostics(),
+        # Run 111. WHICH provider and model the RECOGNITION call site is configured for, whether
+        # its key is present, and which modules have a recipe. Presence only, no key value. This
+        # is the surface the owner checks BEFORE uploading: a wrong model identifier should be
+        # visible here rather than discovered from a failed upload.
+        "recognition": _recognition_diagnostics(),
         # Still literally false: there is no Drive knowledge library on this service.
         "libPresent": False,
         "libFileCount": 0,

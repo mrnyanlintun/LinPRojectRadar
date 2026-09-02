@@ -45,8 +45,19 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-# The three call sites, named. See the report's "every call site switched".
-ROLES = ("extraction", "spec", "narration")
+# The call sites, named. See the report's "every call site switched".
+#
+# RUN 111 ADDED "recognition": the step that reads the stored RAW evidence and recognises which
+# printed label carries the quantity a module's specification asks for. It is its own call site
+# because it is its own setting -- a deployment may want the reader on a different provider from
+# the extractor -- and because a reading must record WHICH model recognised it.
+#
+# IT INTRODUCES NO NEW MODEL IDENTIFIER. Every provider's recognition default is, deliberately,
+# the SAME STRING as that provider's `spec` default. Run 93's identifiers were never verified
+# against any provider's catalogue and Run 111 has no key with which to verify them either;
+# inventing a fourth unverified name per provider would have added three more things for the
+# owner to check for no gain. `AI_RECOGNITION_MODEL` overrides it.
+ROLES = ("extraction", "spec", "narration", "recognition")
 
 # --------------------------------------------------------------------------- provider table
 #
@@ -68,6 +79,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "models": {
             "extraction": "claude-opus-4-6",
             "spec": "claude-sonnet-4-5",
+            "recognition": "claude-sonnet-4-5",   # same string as `spec`; see ROLES
             "narration": "claude-3-5-haiku-latest",
         },
     },
@@ -79,6 +91,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "models": {
             "extraction": "gpt-4o",
             "spec": "gpt-4o",
+            "recognition": "gpt-4o",   # same string as `spec`; see ROLES
             "narration": "gpt-4o-mini",
         },
     },
@@ -90,6 +103,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "models": {
             "extraction": "llama-3.3-70b-versatile",
             "spec": "llama-3.3-70b-versatile",
+            "recognition": "llama-3.3-70b-versatile",   # same string as `spec`; see ROLES
             "narration": "llama-3.1-8b-instant",
         },
     },

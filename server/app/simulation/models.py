@@ -975,7 +975,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v55"
+SIMULATION_VERSION = "sim-2026.09-v56"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1060,6 +1060,13 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # RUN 110. The general guard: a module's exception becomes a failed reading rather than a dead
  # compute route. Every extracted value becomes evidence, including values no registry declares.
  "sim-2026.09-v55",
+ # RUN 111. The recognition step: a model reads the stored RAW evidence and recognises which
+ # printed label carries the quantity a specification asks for, returning an identifier the
+ # platform offered rather than a value, with every match fingerprinted and replayed so identical
+ # evidence always produces the identical reading. A4.3's two assembly defects are repaired: a
+ # calendar decision date no longer refuses the register, and the decision's reporting period is
+ # matched on the register's own heading like every other column beside it.
+ "sim-2026.09-v56",
 )
 
 

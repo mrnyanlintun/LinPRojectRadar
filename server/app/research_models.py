@@ -753,7 +753,12 @@ class Observation(Base):
     withdrawn_by_event_id: Mapped[str] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
-        CheckConstraint("kind IN ('SNAPSHOT','EVENT','DELTA','PERMANENT')",
+        # RUN 111 REPAIR. Migration 0032 widened this constraint to admit RAW and the MODEL
+        # was left declaring four values. On a database built by `alembic upgrade head` the two
+        # disagreed harmlessly, because the database's constraint is the one that is enforced --
+        # but a schema created from this metadata instead (any `create_all` path) would have
+        # rejected every RAW row Run 110 emits. The two now say the same thing.
+        CheckConstraint("kind IN ('SNAPSHOT','EVENT','DELTA','PERMANENT','RAW')",
                         name="ck_observations_kind"),
     )
 
@@ -1116,3 +1121,51 @@ class SpecificationReading(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     superseded_by: Mapped[str] = mapped_column(ULID, nullable=True)
+
+
+class RecognitionMatch(Base):
+    """
+    0033. RUN 111. WHAT A MODEL MATCHED TO WHAT, AND THE FINGERPRINT THAT MAKES IT REPLAYABLE.
+
+    THIS TABLE IS THE PLATFORM'S DETERMINISM. A model call is not a deterministic function, so
+    recognition is not re-asked: a question already answered over exactly this evidence, this
+    specification, this prompt template, this provider and this model is REPLAYED from here, and
+    the reading it produces is byte-identical for ever. See `app/recognition.py` for the full
+    reasoning, including the three alternatives that were considered and rejected as unsound.
+
+    `evidence_fingerprint` is a sha256 over every candidate offered -- document, type, sha256,
+    period, label and value -- together with the specification text, the template version, the
+    provider and the model. Change any one of them and the key changes, the question is asked
+    again, and BOTH rows remain: "why did this reading change?" is answerable from the database.
+
+    APPEND-ONLY. No row here is ever updated or deleted by the platform. `match` holds the
+    answer as it was recorded -- the candidate identifier, the label, the document it was
+    printed in, and the model's own one-sentence reason.
+
+    IT HOLDS NO VALUE READ FROM A DOCUMENT AS AN AUTHORITY. The value is always read back out of
+    `observations` by the recorded candidate; a match whose candidate is no longer in the
+    offered set is REFUSED rather than replayed, which cannot happen while the fingerprint
+    covers the candidate set and is checked anyway.
+    """
+
+    __tablename__ = "recognition_matches"
+
+    recognition_match_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    quantity_id: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    provider: Mapped[str] = mapped_column(Text, nullable=False)
+    model: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    template_version: Mapped[str] = mapped_column(Text, nullable=False)
+    match: Mapped[dict] = mapped_column(JSONType, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint("project_id", "quantity_id", "evidence_fingerprint",
+                         name="uq_recognition_match_key"),
+    )
