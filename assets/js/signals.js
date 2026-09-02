@@ -55,23 +55,6 @@
       ["field_report",          "Daily / Weekly Field Report"],
       ["commissioning_report",  "Test and Commissioning Report"]
     ]},
-    { label: "Planning and Governance Documents", types: [
-      ["airport_layout_plan",          "Airport Layout Plan (ALP)"],
-      ["airport_master_plan",          "Airport Master Plan"],
-      ["project_delivery_charter",     "Project Delivery System (PDS) Charter"],
-      ["owners_project_requirements",  "Owner's Project Requirements (OPR)"],
-      ["grant_assurances",             "Grant Assurances and Funding Compliance"],
-      ["bim_execution_plan",           "BIM Execution Plan (BEP)"],
-      ["front_end_project_manual",     "Front-End / Project Manual"],
-      ["technical_specifications",     "Technical Specifications"],
-      ["schematic_design",             "Schematic Design (SD) Sets"],
-      ["design_development",           "Design Development (DD) Sets"],
-      ["construction_documents",       "Construction Documents (CD Sets)"],
-      ["basis_of_design",              "Basis of Design (BOD)"],
-      ["construction_safety_phasing",  "Construction Safety and Phasing Plan (CSPP)"],
-      ["project_execution_plan",       "Project Execution Plan (PEP)"],
-      ["as_built_drawings",            "As-Built Drawings / Closeout Logs"]
-    ]},
     { label: "Compliance and Performance Documents", types: [
       ["safety_report",            "Safety Report"],
       ["quality_audit_report",     "Quality Audit Report"],
@@ -86,9 +69,45 @@
       ["historical_data",          "Historical Project Data"]
     ]}
   ];
+  /* RUN 114, GOAL 2. THE FIFTEEN PLANNING AND GOVERNANCE TYPES ARE OUT OF THE PICKER.
+
+     WHAT WAS MEASURED, at Run 112 and again at Run 114: not one of these fifteen is in the
+     server's DOC_TYPES, is_mapped() is false for every one, extraction short-circuits to {} and
+     emit_observations returns []. The upload succeeded, the file was stored, and exactly zero
+     project-controls signal was derived. Silence there reads as "ingested and understood".
+     The owner's ruling is that they come out of the selectable list, in his words: even a
+     quantitative document goes haywire, so not the drawings.
+
+     WHY THE LABELS STAY BEHIND. A deployment may already hold a stored document whose doc_type
+     is one of these fifteen. The picker is the only thing being closed; the stored row still
+     has to render. DOC_TYPE_LABEL is the map every surface reads to turn a stored doc_type into
+     a name -- detail.js, neural_flow.js, the merge and provenance lines below -- so a type that
+     vanished from the label map while a row still named it would print a raw snake_case key at
+     the reader, which is its own defect. These entries are therefore in DOC_TYPE_LABEL and in
+     NOTHING ELSE: not in DOC_TYPE_GROUPS, so the dropdown cannot offer them, and not in
+     DOC_TYPES, so nothing that enumerates selectable types picks them up. */
+  const RETIRED_DOC_TYPE_LABEL = {
+    airport_layout_plan:         "Airport Layout Plan (ALP)",
+    airport_master_plan:         "Airport Master Plan",
+    project_delivery_charter:    "Project Delivery System (PDS) Charter",
+    owners_project_requirements: "Owner's Project Requirements (OPR)",
+    grant_assurances:            "Grant Assurances and Funding Compliance",
+    bim_execution_plan:          "BIM Execution Plan (BEP)",
+    front_end_project_manual:    "Front-End / Project Manual",
+    technical_specifications:    "Technical Specifications",
+    schematic_design:            "Schematic Design (SD) Sets",
+    design_development:          "Design Development (DD) Sets",
+    construction_documents:      "Construction Documents (CD Sets)",
+    basis_of_design:             "Basis of Design (BOD)",
+    construction_safety_phasing: "Construction Safety and Phasing Plan (CSPP)",
+    project_execution_plan:      "Project Execution Plan (PEP)",
+    as_built_drawings:           "As-Built Drawings / Closeout Logs"
+  };
+
   // flat list (back-compat) + value→label map
   const DOC_TYPES = DOC_TYPE_GROUPS.reduce((a, g) => a.concat(g.types), []);
-  const DOC_TYPE_LABEL = DOC_TYPES.reduce((m, [k, v]) => (m[k] = v, m), {});
+  const DOC_TYPE_LABEL = DOC_TYPES.reduce((m, [k, v]) => (m[k] = v, m),
+                                          Object.assign({}, RETIRED_DOC_TYPE_LABEL));
 
   /* signalInputs rows, in display order. editable = has an overwrite pencil. */
   const FIELD_ROWS = [

@@ -195,7 +195,13 @@ HELD_NON_VOTING_UNSOURCED_BANDS: dict[str, str] = {
 #: frontend or the exporter reaching into a formula file. This is the freeze record's own copy.
 BAND_SOURCES: dict[str, str] = {
     "A1.7": (
-        "Green at or below 1.00, Amber at or below 1.10, Red above. 1.00 is definitional: "
+        "Green at or below 1.00, Yellow at or below 1.05, Amber at or below 1.10, Red above. "
+        "RUN 114: the Yellow edge of 1.05 is the OWNER'S, supplied in his Run 114 order, and is "
+        "OWNER-CALIBRATED -- no published source fixes it and none is cited for it. It is half "
+        "the Christensen and Heise stability margin above the planned efficiency, which "
+        "describes where it falls and is not a citation for it. The Green edge of 1.00 and the "
+        "Red edge of 1.10 do not move. "
+        "1.00 is definitional: "
         "Project Management Institute, A Guide to the Project Management Body of Knowledge, "
         "6th edition, 2017, section 7.4.2.2, and PMI Practice Standard for Earned Value "
         "Management, 2nd edition, 2011, define this index as the cost efficiency the remaining "
@@ -207,7 +213,14 @@ BAND_SOURCES: dict[str, str] = {
         "improvement is beyond what the remaining work is observed to deliver."
     ),
     "A1.8": (
-        "Green at or above zero per cent, Amber at or above minus 11.11 per cent, Red below. "
+        "Green at or above zero per cent, Yellow at or above minus 5.26 per cent, Amber at or "
+        "above minus 11.11 per cent, Red below. "
+        "RUN 114: the Yellow edge is the OWNER'S and is OWNER-CALIBRATED. Because this forecast "
+        "is the index-based one the percentage is an EXACT restatement of the cost performance "
+        "index, so the owner's A1.7 Yellow edge -- the planned efficiency moved by half the 0.10 "
+        "stability margin -- restates on this quantity as an index of 0.95, which is minus "
+        "5.263157894736842 per cent. No published source fixes it and none is cited for it. The "
+        "Green edge of zero and the Red edge of minus 11.11 per cent do not move. "
         "Zero is definitional: the Project Management Institute (A Guide to the Project Management "
         "Body of Knowledge, 6th edition, 2017, section 7.4.2.2; Practice Standard for Earned "
         "Value Management, 2nd edition, 2011) defines variance at completion as budget minus "

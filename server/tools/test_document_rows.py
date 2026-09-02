@@ -153,19 +153,52 @@ def main() -> None:
           f"vocab-only={sorted(set(DOC_TYPES) - set(doc_keys))}")
 
     sig_js = read("assets/js/signals.js")
-    groups_m = re.search(r"const DOC_TYPE_GROUPS = \[([\s\S]*?)\];\s*\n\s*// flat list", sig_js)
+    # RUN 114: the parser anchors on the array's own closing bracket at its own indentation,
+    # not on the comment that used to follow it. Run 114 inserted RETIRED_DOC_TYPE_LABEL between
+    # the array and the "// flat list" line, and the old anchor stopped matching -- which this
+    # suite caught, correctly, as a FAIL rather than silently scanning nothing.
+    groups_m = re.search(r"const DOC_TYPE_GROUPS = \[([\s\S]*?)\n  \];", sig_js)
     check(bool(groups_m), "DOC_TYPE_GROUPS is still findable by this test's own parser")
     dropdown_keys = re.findall(r'\[\s*"([a-z_]+)"', groups_m.group(1))
-    allowed = set(DOC_TYPES) | set(UI_ONLY_DOC_TYPES)
-    unknown_in_dropdown = sorted(set(dropdown_keys) - allowed)
+    # RUN 114, GOAL 2. THE PIN IS RE-POINTED, NOT WEAKENED. Before this run the dropdown was
+    # allowed to offer DOC_TYPES *or* UI_ONLY_DOC_TYPES, and the fifteen UI-only types were the
+    # reason the second half of that union existed. The owner ruled them out of the picker, so
+    # the union is gone: the dropdown must now be EXACTLY DOC_TYPES, and every UI-only type is
+    # checked to be absent from it by name. That is a strictly stronger condition than the one
+    # it replaces -- it rejects everything the old check rejected, and fifteen more things.
+    unknown_in_dropdown = sorted(set(dropdown_keys) - set(DOC_TYPES))
     check(not unknown_in_dropdown,
-          "every signals.js upload-dropdown key is DOC_TYPES or UI_ONLY_DOC_TYPES",
+          "every signals.js upload-dropdown key is in DOC_TYPES (the server can classify into "
+          "every type a user can select)",
           str(unknown_in_dropdown))
-    check(set(dropdown_keys) == allowed,
-          "the dropdown offers exactly DOC_TYPES + UI_ONLY_DOC_TYPES (no retired 'rfi' / bare "
-          "'submittal' entry left offering a type the server will never classify into)",
-          f"dropdown-only={sorted(set(dropdown_keys) - allowed)} "
-          f"missing-from-dropdown={sorted(allowed - set(dropdown_keys))}")
+    check(set(dropdown_keys) == set(DOC_TYPES),
+          "the dropdown offers exactly DOC_TYPES (no retired 'rfi' / bare 'submittal' entry, "
+          "and no UI-only planning or drawing type, left offering a type the server will never "
+          "classify into)",
+          f"dropdown-only={sorted(set(dropdown_keys) - set(DOC_TYPES))} "
+          f"missing-from-dropdown={sorted(set(DOC_TYPES) - set(dropdown_keys))}")
+    still_offered = sorted(set(UI_ONLY_DOC_TYPES) & set(dropdown_keys))
+    check(not still_offered,
+          "RUN 114: not one of the fifteen UI-only planning and governance types is still "
+          "selectable in the upload dropdown",
+          str(still_offered))
+
+    # RUN 114, GOAL 2. A STORED ROW NAMING A RETIRED TYPE STILL RENDERS A NAME. Removing a type
+    # from the picker while a stored document still names it would print a raw snake_case key at
+    # a reader on every surface that reads DOC_TYPE_LABEL. The labels are kept in
+    # RETIRED_DOC_TYPE_LABEL and merged into DOC_TYPE_LABEL; this check is what says so.
+    retired_m = re.search(r"const RETIRED_DOC_TYPE_LABEL = \{([\s\S]*?)\};", sig_js)
+    check(bool(retired_m), "signals.js declares RETIRED_DOC_TYPE_LABEL")
+    retired_keys = set(re.findall(r"^\s*([a-z_]+):", retired_m.group(1), re.M)) if retired_m else set()
+    check(retired_keys == set(UI_ONLY_DOC_TYPES),
+          "RETIRED_DOC_TYPE_LABEL carries a label for exactly the fifteen retired types, so a "
+          "stored document of one of them still renders a name and not a raw key",
+          f"label-only={sorted(retired_keys - set(UI_ONLY_DOC_TYPES))} "
+          f"missing-label={sorted(set(UI_ONLY_DOC_TYPES) - retired_keys)}")
+    check(bool(re.search(r"DOC_TYPE_LABEL = DOC_TYPES\.reduce\([\s\S]*?RETIRED_DOC_TYPE_LABEL",
+                         sig_js)),
+          "DOC_TYPE_LABEL is seeded from RETIRED_DOC_TYPE_LABEL, so the retired labels are "
+          "actually reachable by the surfaces that read that map")
 
     section("4. THE RFI ROW: THE LOG, NOT THE RETIRED INDIVIDUAL FORM")
 

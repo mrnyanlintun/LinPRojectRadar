@@ -185,12 +185,29 @@ CLASSIFY_HINTS: str = (
     "safety report has OSHA incidents."
 )
 
-# The "Planning & Governance Documents" optgroup from assets/js/signals.js DOC_TYPE_GROUPS
-# (lines 59-75). These 15 types are offered to the PM in the upload dropdown, but they appear in
-# NO extraction mapping, NO validTypes, and NO filename heuristic — a PM can select "BIM Execution
-# Plan", upload it, get a success response, and have contributed exactly nothing to signalInputs.
-# Silence there reads as "ingested and understood". This tuple exists so the upload response can
-# say so out loud: accepted, stored, but no project-controls signal was derived.
+# RUN 114, GOAL 2. THESE FIFTEEN ARE NO LONGER OFFERED TO ANYONE. The tuple is KEPT, and keeps
+# its name, because it is the pin: `tools/test_document_rows.py` reads it to prove the upload
+# dropdown in assets/js/signals.js offers no type the server will never classify into, and that
+# check is now the stronger one -- the dropdown must be exactly DOC_TYPES, and not one of these
+# fifteen may appear in it.
+#
+# WHAT THEY WERE. The "Planning and Governance Documents" optgroup from assets/js/signals.js
+# DOC_TYPE_GROUPS. These 15 types were offered to the PM in the upload dropdown, but they appear
+# in NO extraction mapping, NO validTypes, and NO filename heuristic — a PM could select "BIM
+# Execution Plan", upload it, get a success response, and have contributed exactly nothing to
+# signalInputs. Silence there reads as "ingested and understood".
+#
+# THE OWNER'S RULING, RUN 114: they come out of the picker. He does not want drawings read; his
+# words are that even a quantitative document goes haywire, so not the drawings. A user must
+# never be able to select a type that produces nothing.
+#
+# A STORED DOCUMENT ALREADY CARRYING ONE OF THESE TYPES IS UNAFFECTED AND STILL RENDERS. Nothing
+# in this file, in `documents.py` or in the API looks a doc_type up in a table that can refuse
+# it: `is_mapped()` returns False (as it always did for these), `extraction_fields_for()` falls
+# back to `_DEFAULT_FIELDS`, and every listing endpoint emits the stored string as it stands. The
+# only lookup that could have printed a raw snake_case key at a reader is the frontend label map,
+# and signals.js keeps all fifteen labels in `RETIRED_DOC_TYPE_LABEL`, merged into
+# DOC_TYPE_LABEL and into neither DOC_TYPE_GROUPS nor DOC_TYPES.
 UI_ONLY_DOC_TYPES: tuple[str, ...] = (
     "airport_layout_plan",
     "airport_master_plan",
@@ -320,6 +337,24 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "change_order": [
         "revised_contract_sum", "revised_completion_date", "change_order_date",
         "change_order_count", "baseline_contract_sum", "modifications_json",
+        # RUN 114, GOAL 1. THE CHANGE EVENT REGISTER, AND THE EXPOSURE IT IS MEASURED OVER.
+        #
+        # `modifications_json` above is B3.5's GOVERNANCE register -- who executed each
+        # modification and under what instrument -- and it is a different table from this one.
+        # A4.6 Change Order Frequency is defined on a change EVENT register:
+        # `canonical_v4.change_frequency` needs each change's identity, issue date, type, cause,
+        # value and DIRECTION (whether it adds to or takes away from the contract, because an
+        # omission is never adverse), plus two structure-level figures it refuses to default --
+        # the baseline contract value, which `baseline_contract_sum` above already supplies, and
+        # the EXPOSURE IN DAYS the register covers, which Run 111 measured as having no declared
+        # field anywhere in this contract. `change_exposure_days` is that field. Without it the
+        # recipe is all-or-nothing and the structure is not written at all.
+        "change_events_json", "change_exposure_days",
+        # A4.6's SCHEDULE HALF, which abstains rather than assuming zero float. Each is stated by
+        # the register or absent; nothing here is inferred from the cost half.
+        "change_related_delay_days", "change_available_total_float_days",
+        "original_contract_duration_days", "change_time_extension_approved",
+        "change_forecast_completion_moved",
     ],
     "monthly_report": [
         "earned_value", "actual_cost", "planned_value", "actual_percent_complete",
@@ -344,6 +379,30 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "weather_days_claimed", "weather_days_approved", "weather_approval_period",
         "weather_allowance_days", "weather_time_extension_granted",
         "weather_time_extension_days",
+        # RUN 114, GOAL 1. THE WEATHER EVENT TABLE, ASKED FOR AS A TABLE.
+        #
+        # Run 112 measured that no document could serve A4.5 Weather Day Impact: the OAC minutes
+        # carried the owner-APPROVED day figures Run 107 added, and not one field shaped to carry
+        # the EVENTS. `canonical_v4.weather_day_impact` is defined on a per-event record -- each
+        # event, the activity and schedule path it stopped, the days actually lost on it, the
+        # float remaining on that path, and the evidence that the weather caused it -- and it
+        # refuses a bare count of weather days in those words: "WEATHER OCCURRENCE IS NOT
+        # SCHEDULE IMPACT". So `weather_events_json` asks for the table on the
+        # `lookahead_activities_json` precedent: one object per printed row, keyed by the
+        # minutes' own column headings.
+        #
+        # THE THREE SCALARS BESIDE IT ARE THE ONES THE STRUCTURE REFUSES TO DEFAULT.
+        # `weather_allowance_days_remaining` is the allowance the contract calendar still has
+        # left, which the arithmetic absorbs lost days into before float; `weather_calendar_id`
+        # is the provenance `canonical_v3._provenance` refuses to invent; `weather_day_basis`
+        # says whether the days are working or calendar days, which Run 108 made the record
+        # state rather than have the platform guess.
+        "weather_events_json", "weather_allowance_days_remaining", "weather_calendar_id",
+        "weather_day_basis", "weather_approval_source",
+        # The three facts A4.5's HARD OVERRIDE needs, each STATED by the minutes or absent. An
+        # absent field is NOT EVALUATED; it is never read as the condition failing to hold.
+        "weather_time_extension_incorporated_in_baseline", "weather_milestone_forecast_late",
+        "weather_milestone_class",
     ],
     # THE LEGACY FALL-THROUGH IS OVER, and the two types have parted for different reasons.
     #
@@ -445,8 +504,24 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "subcontractor_ratings_json", "subcontractor_rating_scale", "subcontractor_report_date",
         "subcontractor_report_version",
     ],
+    # RUN 114, GOAL 1. THE PROCUREMENT REGISTER, WHICH IS A TABLE AND NOT FIVE COUNTS.
+    #
+    # Run 112 measured this document type as five scalars and no table, and A4.9 Procurement
+    # Lead Time as unservable by any document. The five below are counts of items in three
+    # states; `canonical_v4.procurement_slack` is defined on an ITEM-LEVEL register -- for each
+    # item the date it is required on site, the date it is forecast to arrive, the float on the
+    # activity it feeds and the criticality the register itself states -- and the supplied
+    # contract's own words are that "a count ratio alone is not the canonical item-level
+    # monitor". The five scalars are LEFT EXACTLY AS THEY WERE and the table is asked for
+    # beside them, on the `lookahead_activities_json` precedent.
+    #
+    # THE REGISTER STATES ITS OWN CRITICALITY. Run 112 established this and it is why no field
+    # here reaches toward A2.12 Critical Path Analysis: no path exists in this platform from one
+    # module's reading to another module's runner, so an item's criticality is a column the
+    # register prints or a fact this platform does not have.
     "procurement_log": [
         "long_lead_items_total", "on_schedule", "at_risk", "delayed", "report_date",
+        "procurement_items_json", "procurement_day_basis",
     ],
     # RUN 86. THE LOOK-AHEAD ACTIVITY TABLE, ASKED FOR AS A TABLE.
     #

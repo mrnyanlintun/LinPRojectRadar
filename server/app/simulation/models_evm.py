@@ -524,6 +524,25 @@ _EVM_BOUNDARY_LIMIT = (
     "read percent complete, so that condition is not enforced.")
 
 
+# RUN 114, GOAL 4. PROVENANCE PER EDGE, BECAUSE THE EDGES NO LONGER SHARE ONE PROVENANCE.
+#
+# `band_boundary_provenance_class` is a SCALAR and it describes the boundary set as a whole. It
+# was accurate while every boundary on these two ladders came from the same place. Run 114
+# inserts a rung whose edge is the OWNER'S and neither CODIFIED nor CONVENTION, and the order is
+# explicit that it must be "recorded accurately rather than inheriting the existing class for
+# it". A scalar cannot say two things, so the scalar is LEFT DESCRIBING THE EDGES IT ALWAYS
+# DESCRIBED -- the definitional 1.00 / zero per cent and the inferred 1.10 / minus 11.11 per
+# cent, neither of which moves -- and the per-edge record below carries the truth for each edge
+# separately, with `band_boundary_provenance_classes` listing every class present so nothing
+# reading one field can miss that an OWNER-CALIBRATED edge is in the ladder.
+#
+# THIS IS A JUDGEMENT AND IS FLAGGED AS ONE, on the same footing as the Run 107 classification
+# recorded above it: reported to the owner for a ruling rather than presented as settled.
+def _EDGE_CLASSES(table: dict) -> list[str]:
+    """Every provenance class present on a ladder, sorted, so one field carries the mix."""
+    return sorted({v[1] for v in table.values()})
+
+
 def _evm_band_source(module_id: str) -> str:
     """The Run 4 citation, read from its single source of truth rather than copied here."""
     from .registry import BAND_SOURCES
@@ -560,6 +579,32 @@ def _evm_band_source(module_id: str) -> str:
 _TCPI_PLANNED_EFFICIENCY = 1.00
 _TCPI_STABILITY_MARGIN = 0.10
 _TCPI_BEYOND_OBSERVED = _TCPI_PLANNED_EFFICIENCY + _TCPI_STABILITY_MARGIN
+
+# RUN 114, GOAL 4. THE YELLOW RUNG, AND IT IS THE OWNER'S NUMBER AND NOBODY ELSE'S.
+#
+# WHAT WAS WRONG WITH THREE RUNGS. Cost and EVM is the heaviest weighted category at 0.28 and
+# this module votes in it. With Green at or below 1.00 and Amber up to 1.10, a project needing
+# 1.05 cost efficiency for the remaining work read IDENTICALLY to one needing 1.10, and both
+# stepped straight from Green to Amber with nothing between. Every other ladder in this
+# platform has four rungs.
+#
+# 1.05 IS THE OWNER'S RULING, stated in his Run 114 order in these words: "A1.7 TCPI -- Green
+# <= 1.00, Yellow > 1.00 to 1.05, Amber > 1.05 to 1.10, Red > 1.10." It is HALF the Christensen
+# and Heise stability margin above the planned efficiency, which is a description of where it
+# falls and NOT a citation for it: no source fixes 1.05, and none is claimed. It is recorded as
+# OWNER-CALIBRATED and it does not inherit the CONVENTION class the 1.10 carries.
+#
+# THE EXISTING EDGES DO NOT MOVE. 1.00 is still the Green edge and 1.10 is still the Red edge.
+# This inserts a rung; it does not re-band. A project that read Green before still reads Green,
+# a project that read Red before still reads Red, and the Amber span is the part that is split.
+_TCPI_OWNER_YELLOW = 1.05
+
+#: Each edge of A1.7's ladder -> (what the edge is, which provenance class it belongs to).
+_TCPI_EDGE_PROVENANCE: dict[str, tuple[str, str]] = {
+    "green_at_or_below": ("1.00", PROVENANCE_CODIFIED),
+    "yellow_at_or_below": ("1.05", PROVENANCE_OWNER_CALIBRATED),
+    "amber_at_or_below": ("1.10", PROVENANCE_CONVENTION),
+}
 
 
 def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
@@ -657,8 +702,11 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
     # value: `_round3` is called on a copy and its result is never fed back.
     tcpi = remaining_work / remaining_budget
     color = ("Green" if tcpi <= _TCPI_PLANNED_EFFICIENCY
+             else "Yellow" if tcpi <= _TCPI_OWNER_YELLOW
              else "Amber" if tcpi <= _TCPI_BEYOND_OBSERVED else "Red")
     word = ("within the efficiency already planned" if tcpi <= _TCPI_PLANNED_EFFICIENCY
+            else "above the efficiency planned, inside the owner's tolerance"
+            if tcpi <= _TCPI_OWNER_YELLOW
             else "above the efficiency planned" if tcpi <= _TCPI_BEYOND_OBSERVED
             else "beyond the improvement a cumulative cost index is observed to make")
     tcpi_display = _round3(tcpi)
@@ -672,6 +720,9 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
         provenance=_EVM_BASIS_PROVENANCE,
         boundary_provenance=_EVM_BOUNDARY_PROVENANCE,
         threshold_source=THRESHOLD_SOURCE_EXTERNAL,
+        band_boundary_provenance_by_edge=_TCPI_EDGE_PROVENANCE,
+        band_boundary_provenance_classes=_EDGE_CLASSES(_TCPI_EDGE_PROVENANCE),
+        band_owner_inserted_edge="Yellow at or below 1.05",
         tcpi=tcpi,
         tcpi_display=tcpi_display,
     )
@@ -713,6 +764,42 @@ _VAC_STABILITY_CPI = 0.90
 _VAC_BUDGET_MET_PCT = 0.0
 _VAC_BEYOND_OBSERVED_PCT = (1 - 1 / _VAC_STABILITY_CPI) * 100
 
+# RUN 114, GOAL 4. THE YELLOW RUNG ON THIS MODULE'S OWN QUANTITY, AND HOW ITS NUMBER WAS SET.
+#
+# WHAT THE BOUNDARIES WERE, MEASURED AT THE PARENT COMMIT AND NOT ASSUMED: Green at or above
+# zero per cent, Amber at or above minus 11.11 per cent, Red below. Three rungs, the same
+# coarse shape A1.7 had.
+#
+# THE OWNER ORDERED "the same shape on its own quantity", keeping the existing Green and Red
+# edges. This module's quantity is the VAC percentage, and because the forecast is the
+# index-based one that percentage is an EXACT restatement of the cost performance index:
+# VAC% = (1 - 1/CPI) x 100. That identity is what lets the two existing edges be stated on the
+# index at all -- zero per cent IS an index of 1.00, and minus 11.11 per cent IS an index of
+# 0.90 -- and it is stated in the block above this one, not introduced here.
+#
+# SO THE ANALOGUE IS EXACT AND IS NOT AN ANALOGY. The owner set A1.7's Yellow edge at 1.05,
+# which is the planned efficiency of 1.00 moved by HALF the 0.10 stability margin. The same
+# construction on this module's own index, moved in this module's own adverse direction, is
+# 1.00 - 0.10/2 = 0.95, and restating it on the percentage by the identity above gives
+# (1 - 1/0.95) x 100 = -5.263157894736842 per cent. It lies strictly between the two existing
+# edges, and both of them stay exactly where they were.
+#
+# THIS NUMBER IS THE OWNER'S, NOT CHRISTENSEN AND HEISE'S. The 0.10 is theirs; halving it and
+# placing a rung at the half is the owner's Run 114 ruling, made on A1.7 and carried across by
+# the identity. It is recorded OWNER-CALIBRATED per edge, and it does not inherit the
+# CONVENTION class the minus 11.11 carries.
+_VAC_OWNER_YELLOW_CPI = _VAC_STABILITY_CPI + (1.0 - _VAC_STABILITY_CPI) / 2.0   # 0.95
+_VAC_OWNER_YELLOW_PCT = (1 - 1 / _VAC_OWNER_YELLOW_CPI) * 100                   # -5.2631578...
+
+#: Each edge of A1.8's ladder -> (what the edge is, which provenance class it belongs to).
+_VAC_EDGE_PROVENANCE: dict[str, tuple[str, str]] = {
+    "green_at_or_above": ("0.00 per cent (cost performance index 1.00)", PROVENANCE_CODIFIED),
+    "yellow_at_or_above": ("-5.263157894736842 per cent (cost performance index 0.95)",
+                           PROVENANCE_OWNER_CALIBRATED),
+    "amber_at_or_above": ("-11.11111111111111 per cent (cost performance index 0.90)",
+                          PROVENANCE_CONVENTION),
+}
+
 
 def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
     if not check_inputs(si, ("bac", "cpi")):
@@ -733,6 +820,7 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     if vac_pct != vac_pct:
         return insufficient("VAC")  # bac=0: JS NaN fallthrough, refused likewise
     color = ("Green" if vac_pct >= _VAC_BUDGET_MET_PCT
+             else "Yellow" if vac_pct >= _VAC_OWNER_YELLOW_PCT
              else "Amber" if vac_pct >= _VAC_BEYOND_OBSERVED_PCT else "Red")
     # RUN 35 FINAL CLOSURE. THE SAME SEPARATION, FOR THE SAME REASON.
     #
@@ -758,6 +846,11 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
         provenance=_EVM_BASIS_PROVENANCE,
         boundary_provenance=_EVM_BOUNDARY_PROVENANCE,
         threshold_source=THRESHOLD_SOURCE_EXTERNAL,
+        band_boundary_provenance_by_edge=_VAC_EDGE_PROVENANCE,
+        band_boundary_provenance_classes=_EDGE_CLASSES(_VAC_EDGE_PROVENANCE),
+        band_owner_inserted_edge=(
+            "Yellow at or above -5.26 per cent, the exact restatement of a cost performance "
+            "index of 0.95"),
         vac=vac,
         vac_pct=vac_pct,
         vac_display=int(js_round(vac)),

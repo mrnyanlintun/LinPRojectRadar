@@ -975,7 +975,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v57"
+SIMULATION_VERSION = "sim-2026.09-v58"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1075,6 +1075,17 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # provider's own catalogue: anthropic claude-sonnet-5, groq openai/gpt-oss-120b and -20b, the
  # llama identifiers having turned out not to exist in Groq's catalogue at all.
  "sim-2026.09-v57",
+ # RUN 114. THE DOCUMENT FIELDS. Three modules that no document could serve now have the table
+ # their document was missing: `weather_events_json` on the OAC minutes for A4.5 Weather Day
+ # Impact, `procurement_items_json` on the procurement log for A4.9 Procurement Lead Time, and
+ # `change_events_json` with the `change_exposure_days` Run 111 measured as undeclared on the
+ # change order for A4.6 Change Order Frequency. All three band on a real project through the
+ # real upload route. A1.7 TCPI and A1.8 Variance at Completion gain the owner's Yellow rung --
+ # 1.05 on the index, and its exact restatement on the VAC percentage at an index of 0.95 --
+ # recorded OWNER-CALIBRATED per edge, with the existing Green and Red edges unmoved. The
+ # fifteen planning and governance document types come out of the upload picker, their labels
+ # kept so a stored document of one still renders a name.
+ "sim-2026.09-v58",
 )
 
 

@@ -430,6 +430,66 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "rejected resubmittals for a critical work package where the document states that count "
         "or prints the rows to count; return null where it states neither."
     ) if "submittal_decisions_json" in fields else ""
+    # RUN 114, GOAL 1. THE THREE TABLES THAT LET A DOCUMENT SERVE A4.5, A4.6 AND A4.9.
+    #
+    # Run 112 measured all three modules as unservable by any document: their document types
+    # carried only scalars and no `*_json` field was shaped to carry what the module reads. Each
+    # hint below names the shape for the same reason the eight before it do -- unnamed, the model
+    # returns null for a table the document plainly prints -- and each forbids the same thing:
+    # the model returns the cells the document printed and computes nothing.
+    weather_events_hint = (
+        " weather_events_json, if requested and the minutes contain a WEATHER EVENT table (one "
+        "row per weather event, with the activity or schedule path it affected and the time "
+        "lost on it), is a JSON array with one object per PRINTED ROW of that table, using the "
+        "table's own column headings as keys and its values as printed; return every row the "
+        "document prints and no others. Do not add an event the document does not list, do not "
+        "decide for yourself which activity or path an event affected, and do not compute a "
+        "float, a path effect or a total -- return only the cells printed. "
+        "weather_allowance_days_remaining is the weather allowance the contract calendar still "
+        "has REMAINING as the minutes state it, which is not the same figure as the allowance "
+        "granted; weather_calendar_id is the identifier or name of the weather calendar the "
+        "minutes cite; weather_day_basis is the minutes' own word for which kind of day the "
+        "table counts, one of approved_calendar_working_days or calendar_days; "
+        "weather_approval_source is the minutes the approval is recorded in, and their date. "
+        "weather_time_extension_incorporated_in_baseline, weather_milestone_forecast_late and "
+        "weather_milestone_class are stated by the minutes or null: whether a granted time "
+        "extension has been incorporated into the baseline schedule, whether the minutes record "
+        "a milestone as forecasting late, and whether that milestone is contractual or "
+        "owner_committed. Return null for any of these the minutes do not state; never infer one "
+        "and never read the days CLAIMED as the days APPROVED."
+    ) if "weather_events_json" in fields else ""
+    procurement_items_hint = (
+        " procurement_items_json, if requested and the log contains an ITEM-LEVEL procurement "
+        "table (one row per monitored item, with the date it is required on site and the date it "
+        "is forecast to be delivered), is a JSON array with one object per PRINTED ROW of that "
+        "table, using the table's own column headings as keys and its values as printed; return "
+        "every row the document prints and no others. Do not add an item the document does not "
+        "list, do not compute a slack, a lateness or a state -- the platform computes those from "
+        "the two dates -- and do not decide for yourself whether an item is long lead or sits on "
+        "controlling or near-critical work: return the criticality word and the long-lead cell "
+        "the register prints, and omit them where it prints neither. procurement_day_basis is "
+        "the register's own word for which kind of day its dates are counted in, one of "
+        "approved_calendar_working_days or calendar_days; return null where it states neither."
+    ) if "procurement_items_json" in fields else ""
+    change_events_hint = (
+        " change_events_json, if requested and the document contains a CHANGE EVENT register "
+        "(one row per change, with its value and whether it adds to or takes away from the "
+        "contract), is a JSON array with one object per PRINTED ROW of that register, using the "
+        "register's own column headings as keys and its values as printed; return every row the "
+        "document prints and no others. Return the DIRECTION cell exactly as the register prints "
+        "it -- an addition or an omission -- and never decide the direction yourself from the "
+        "sign of a number or from the wording of a description; where the register prints no "
+        "direction for a row, return the row without one. Do not compute a frequency, a net "
+        "change, a magnitude or a percentage. change_exposure_days is the span of time in DAYS "
+        "the register covers, as the document states it; return null where it states none, and "
+        "never compute one from the dates of the changes. change_related_delay_days, "
+        "change_available_total_float_days, original_contract_duration_days, "
+        "change_time_extension_approved and change_forecast_completion_moved are stated by the "
+        "document or null: the delay days attributed to changes, the total float remaining on "
+        "the affected path, the original contract duration in days, whether a time extension has "
+        "been approved, and whether the forecast completion date has moved. Never assume a float "
+        "of zero and never infer that completion has moved."
+    ) if "change_events_json" in fields else ""
     ncr_hint = (
         " inspections_performed is the number of INSPECTIONS PERFORMED in the reporting period as "
         "the log or its covering report states it; it is not the number of items inspected and "
@@ -518,7 +578,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + submittal_hint + ncr_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + submittal_hint + ncr_hint + weather_events_hint + procurement_items_hint + change_events_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

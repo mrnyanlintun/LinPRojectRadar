@@ -388,6 +388,26 @@ def _json_rows(value):
     return [r for r in value if isinstance(r, dict)]
 
 
+def _truthy_cell(value):
+    """
+    RUN 114. A YES/NO COLUMN AS A BOOLEAN, on the words a printed register actually uses.
+
+    A register written by a person prints "Yes", "Y", "No", "-", "true", "1". `bool()` on any
+    non-empty string is True, so "No" would have read as YES and an override would have fired on
+    a register that said the opposite. The words below are the ones a register prints; anything
+    else that is not a recognised negative keeps Python's own truthiness, and a cell the document
+    did not print never reaches here at all -- `_first_of` returns None for it and the caller
+    leaves the column off the row, which is what lets a module say NOT TESTED.
+    """
+    if isinstance(value, str):
+        word = value.strip().lower()
+        if word in ("no", "n", "false", "0", "-", "none", "nil", "not applicable", "n/a", "na"):
+            return False
+        if word in ("yes", "y", "true", "1"):
+            return True
+    return bool(value)
+
+
 def _first_of(row, keys):
     """
     The first of several column headings a document might have used, matched case- and
@@ -396,7 +416,15 @@ def _first_of(row, keys):
     """
     if not isinstance(row, dict):
         return None
-    norm = {str(k).strip().lower().replace(" ", "_").replace("-", "_"): v
+    # RUN 114. THE UNIT BRACKET A PRINTED TABLE PUTS AFTER A HEADING IS PUNCTUATION, NOT A
+    # DIFFERENT COLUMN. "Total float (days)" normalised to `total_float_(days)` and matched
+    # nothing, so a register that printed its float exactly the way registers print it looked to
+    # this reader like a register with no float column at all. Only the bracket CHARACTERS are
+    # dropped -- the words inside them are kept and still have to match -- so this widens what
+    # is recognised by exactly one punctuation class and can never make one heading match a
+    # different heading's words.
+    norm = {str(k).strip().lower().replace(" ", "_").replace("-", "_")
+            .replace("(", "").replace(")", ""): v
             for k, v in row.items()}
     for key in keys:
         if key in norm and norm[key] not in (None, ""):
@@ -2039,6 +2067,164 @@ def _run69_structures(session: Session, project: Project, period: int,
                             "max_repeat_ncrs_one_root_cause_or_trade")
                     out["ncrExposureRecord"] = _rec
 
+        # ---------------------------------------------------------- RUN 114, GOAL 1
+        # A4.5's WEATHER EVENT RECORD, READ FROM THE TABLE THE MINUTES PRINT.
+        #
+        # Run 112 measured that no document could serve A4.5. Run 107 had already put the
+        # owner-APPROVED day figures on this document type and they are read below exactly as
+        # they are stated -- but `canonical_v4.weather_day_impact` is defined on EVENTS, and
+        # until this run no field on any document type carried one. The recipe is
+        # all-or-nothing: `_provenance` refuses a missing source or calendar id, `_f` refuses a
+        # missing remaining allowance, and `_rows` refuses an empty event list, so a document
+        # that prints only some of it assembles NOTHING and A4.5 goes on abstaining with the
+        # sentence naming what it needs. That is the correct outcome and not a gap.
+        #
+        # THE OWNER'S RULING STANDS AND IS VISIBLE HERE: the days APPROVED are read from
+        # `weather_days_approved`, and `weather_days_claimed` is carried beside it and is NEVER
+        # substituted for it. `weather_days_discussed` is a count of a conversation and is not
+        # read at all.
+        elif doc_type == "oac_minutes":
+            _wrows = _json_rows(ex.get("weather_events_json"))
+            _events = []
+            for _r in _wrows:
+                _eid = _first_of(_r, ("event_id", "event", "event_no", "event_number", "id",
+                                      "ref", "reference"))
+                _eday = _first_of(_r, ("event_day", "event_date", "date", "weather_date"))
+                _act = _first_of(_r, ("activity_id", "activity", "activity_no", "activity_code"))
+                _path = _first_of(_r, ("schedule_path_id", "schedule_path", "path_id", "path",
+                                       "network_path"))
+                _lost = _first_of(_r, ("actual_lost_days", "days_lost", "lost_days",
+                                       "days_claimed", "days_impacted"))
+                _flt = _first_of(_r, ("available_float_days", "float_days", "total_float",
+                                      "total_float_days", "float", "float_remaining"))
+                _ev = _first_of(_r, ("causal_evidence", "evidence", "cause", "basis",
+                                     "verification", "substantiation"))
+                # EVERY COLUMN THE CANONICAL FUNCTION REQUIRES MUST BE PRESENT ON THE ROW. A row
+                # missing one is DROPPED rather than defaulted -- `_f` and `_text` would refuse
+                # the whole record on it, and dropping the row at least lets a register whose
+                # other rows are complete still be read. Nothing is invented for the dropped row
+                # and the assembled record says how many events it carried.
+                if None in (_eid, _act, _path, _lost, _flt, _ev) or _eday is None:
+                    continue
+                _events.append({
+                    "event_id": str(_eid),
+                    "event_day": _eday,
+                    "activity_id": str(_act),
+                    "schedule_path_id": str(_path),
+                    "planned_work": _text_or_none(
+                        _first_of(_r, ("planned_work", "work_planned", "activity_description",
+                                       "description", "work"))) or "",
+                    "actual_lost_days": _lost,
+                    "available_float_days": _flt,
+                    "causal_evidence": str(_ev),
+                    "mitigation_days": _first_of(
+                        _r, ("mitigation_days", "recovery_days", "days_mitigated")),
+                    "event_start_date": _text_or_none(
+                        _first_of(_r, ("event_start_date", "start_date", "from", "period_from"))),
+                    "event_end_date": _text_or_none(
+                        _first_of(_r, ("event_end_date", "end_date", "to", "period_to"))),
+                })
+            _allow_rem = ex.get("weather_allowance_days_remaining")
+            _cal_id = _text_or_none(ex.get("weather_calendar_id"))
+            if _events and _allow_rem is not None and _cal_id:
+                _wrec = {
+                    "source": "the OAC meeting minutes uploaded for this period",
+                    "weather_calendar_id": _cal_id,
+                    "allowance_days_remaining": _allow_rem,
+                    "events": _events,
+                    "assembled_by": "document extraction",
+                    "source_document_type": doc_type,
+                }
+                for _key, _fld in (
+                        ("day_basis", "weather_day_basis"),
+                        ("weather_allowance_days", "weather_allowance_days"),
+                        ("weather_days_claimed", "weather_days_claimed"),
+                        ("weather_days_approved", "weather_days_approved"),
+                        ("approval_period", "weather_approval_period"),
+                        ("approval_source", "weather_approval_source"),
+                        ("time_extension_granted", "weather_time_extension_granted"),
+                        ("time_extension_days_granted", "weather_time_extension_days"),
+                        ("time_extension_incorporated_in_baseline",
+                         "weather_time_extension_incorporated_in_baseline"),
+                        ("milestone_forecast_late", "weather_milestone_forecast_late"),
+                        ("milestone_class", "weather_milestone_class")):
+                    if ex.get(_fld) is not None:
+                        _wrec[_key] = ex.get(_fld)
+                _prev = out.get("weatherImpactEvents")
+                if _prev is None or len(_events) > len(_prev.get("events") or []):
+                    out["weatherImpactEvents"] = _wrec
+
+        # ---------------------------------------------------------- RUN 114, GOAL 1
+        # A4.9's ITEM-LEVEL PROCUREMENT REGISTER, READ FROM THE TABLE THE LOG PRINTS.
+        #
+        # The five scalars this document type already states -- long-lead total, on schedule,
+        # at risk, delayed, report date -- are LEFT UNTOUCHED and are not read here. They are
+        # counts of items in three states, and `canonical_v4.procurement_slack` is defined on
+        # the dates of each item; the supplied contract's own words are that a count ratio alone
+        # is not this method. THE REGISTER STATES ITS OWN CRITICALITY: nothing below reaches
+        # toward Critical Path Analysis, because no path exists from one module's reading to
+        # another module's runner.
+        elif doc_type == "procurement_log":
+            _prows = _json_rows(ex.get("procurement_items_json"))
+            _pitems = []
+            for _r in _prows:
+                _iid = _first_of(_r, ("item_id", "item", "item_no", "item_number", "id",
+                                      "tag", "package"))
+                _req = _first_of(_r, ("required_on_site_day", "required_on_site_date",
+                                      "required_on_site", "required_date", "need_by",
+                                      "need_by_date", "required_on_site_by"))
+                _fc = _first_of(_r, ("forecast_delivery_day", "forecast_delivery_date",
+                                     "forecast_delivery", "forecast_date", "forecast_on_site",
+                                     "delivery_forecast"))
+                _flt = _first_of(_r, ("available_float_days", "float_days", "total_float",
+                                      "total_float_days", "float"))
+                _crit = _first_of(_r, ("criticality", "critical", "criticality_class",
+                                       "path_criticality", "schedule_criticality"))
+                _stat = _first_of(_r, ("procurement_status", "status", "state"))
+                _act = _first_of(_r, ("schedule_activity_id", "activity_id", "activity",
+                                      "activity_no", "feeds_activity"))
+                if None in (_iid, _req, _fc, _flt, _crit, _stat, _act):
+                    continue
+                _row = {
+                    "item_id": str(_iid),
+                    "required_on_site_day": _req,
+                    "forecast_delivery_day": _fc,
+                    "available_float_days": _flt,
+                    "criticality": str(_crit),
+                    "procurement_status": str(_stat),
+                    "schedule_activity_id": str(_act),
+                }
+                _unc = _first_of(_r, ("forecast_uncertainty_days", "uncertainty_days"))
+                if _unc is not None:
+                    _row["forecast_uncertainty_days"] = _unc
+                # THE OVERRIDE AND LADDER FACTS, EACH STATED BY THE REGISTER OR ABSENT. A column
+                # the register did not print is left off the row entirely, which is what lets
+                # A4.9 report the override as NOT TESTED rather than as not holding.
+                _ll = _first_of(_r, ("long_lead", "long_lead_item", "is_long_lead"))
+                if _ll is not None:
+                    _row["long_lead"] = _truthy_cell(_ll)
+                _pdm = _first_of(_r, ("protection_date_missed", "protection_date",
+                                      "milestone_protection_date_missed"))
+                if _pdm is not None:
+                    _row["protection_date_missed"] = _truthy_cell(_pdm)
+                _cml = _first_of(_r, ("causes_required_milestone_late",
+                                      "causes_milestone_late", "milestone_late"))
+                if _cml is not None:
+                    _row["causes_required_milestone_late"] = _truthy_cell(_cml)
+                _pitems.append(_row)
+            if _pitems:
+                _prec = {
+                    "source": "the procurement log uploaded for this period",
+                    "items": _pitems,
+                    "assembled_by": "document extraction",
+                    "source_document_type": doc_type,
+                }
+                if ex.get("procurement_day_basis") is not None:
+                    _prec["day_basis"] = ex.get("procurement_day_basis")
+                _prev = out.get("procurementItems")
+                if _prev is None or len(_pitems) > len(_prev.get("items") or []):
+                    out["procurementItems"] = _prec
+
         elif doc_type == "change_order":
             mods = read_modification_register(ex.get("modifications_json"))
             if mods:
@@ -2053,6 +2239,79 @@ def _run69_structures(session: Session, project: Project, period: int,
                         "assembled_by": "document extraction",
                         "source_document_type": "change_order",
                     }
+
+            # ------------------------------------------------------ RUN 114, GOAL 1
+            # A4.6's CHANGE EVENT REGISTER, WHICH IS NOT THE MODIFICATION REGISTER ABOVE.
+            #
+            # `modifications_json` is B3.5's GOVERNANCE table: who executed each modification
+            # and under what instrument. `canonical_v4.change_frequency` needs a different
+            # table -- each change's identity, issue date, type, cause, value and DIRECTION --
+            # and two structure-level figures it refuses to default: the baseline contract
+            # value and the EXPOSURE IN DAYS the register covers. Run 111 measured that
+            # `exposure_days` had no declared field anywhere in this contract; that is what
+            # `change_exposure_days` now supplies, and without it nothing is assembled.
+            #
+            # DIRECTION IS REQUIRED AND IS NEVER GUESSED. `change_frequency` refuses the whole
+            # register for a change that does not say whether it adds to or takes away from
+            # the contract, because an omission is never adverse and a value with no sign
+            # cannot be put on either side. A row whose direction column reads neither is
+            # dropped here rather than being signed by the platform.
+            _crows = _json_rows(ex.get("change_events_json"))
+            _changes = []
+            for _r in _crows:
+                _cid = _first_of(_r, ("change_id", "change", "change_no", "change_order_no",
+                                      "co_no", "pco_no", "id", "ref", "reference"))
+                _cday = _first_of(_r, ("issue_day", "issue_date", "date", "issued",
+                                       "date_issued"))
+                _ctype = _first_of(_r, ("change_type", "type", "category", "class"))
+                _cause = _first_of(_r, ("cause", "reason", "root_cause", "origin", "driver"))
+                _val = _first_of(_r, ("value", "amount", "change_value", "cost", "co_value"))
+                _dir = _first_of(_r, ("direction", "sign", "add_or_omit", "addition_or_omission",
+                                      "effect"))
+                if None in (_cid, _cday, _ctype, _cause, _val, _dir):
+                    continue
+                _d = str(_dir).strip().upper().replace(" ", "_")
+                if _d in ("ADDITIVE", "ADD", "ADDITION", "INCREASE", "ADDITIVE_CHANGE"):
+                    _d = "ADDITIVE"
+                elif _d in ("DEDUCTIVE", "DEDUCT", "OMISSION", "OMIT", "CREDIT", "DECREASE"):
+                    _d = "DEDUCTIVE"
+                else:
+                    continue
+                _changes.append({
+                    "change_id": str(_cid),
+                    "issue_day": _cday,
+                    "change_type": str(_ctype),
+                    "cause": str(_cause),
+                    "value": _val,
+                    "direction": _d,
+                    "reporting_period": _first_of(
+                        _r, ("reporting_period", "period", "report_period")),
+                })
+            _exposure = ex.get("change_exposure_days")
+            _baseline = ex.get("baseline_contract_sum")
+            if _changes and _exposure is not None and _baseline is not None:
+                _crec = {
+                    "source": "the change order register uploaded for this period",
+                    "exposure_days": _exposure,
+                    "baseline_contract_value": _baseline,
+                    "changes": _changes,
+                    "assembled_by": "document extraction",
+                    "source_document_type": "change_order",
+                }
+                # THE SCHEDULE HALF, STATED OR ABSENT. A4.6's schedule component abstains and
+                # says so where float is not stated; it does NOT assume zero, because assuming
+                # zero float would turn every project whose schedule was never measured Red.
+                for _key, _fld in (
+                        ("change_related_delay_days", "change_related_delay_days"),
+                        ("available_total_float_days", "change_available_total_float_days"),
+                        ("original_contract_duration_days", "original_contract_duration_days"),
+                        ("time_extension_approved", "change_time_extension_approved"),
+                        ("forecast_completion_moved", "change_forecast_completion_moved")):
+                    if ex.get(_fld) is not None:
+                        _crec[_key] = ex.get(_fld)
+                _prev = out.get("changeEventRegister")
+                if _prev is None or len(_changes) > len(_prev.get("changes") or []):
+                    out["changeEventRegister"] = _crec
 
     contracts: list[dict] = [d for d in documents if d.get("doc_type") == "contract_value"]
     if not contracts:
