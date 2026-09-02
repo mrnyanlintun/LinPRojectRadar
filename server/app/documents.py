@@ -1840,6 +1840,57 @@ def _run69_structures(session: Session, project: Project, period: int,
                         "assembled_by": "document extraction",
                         "source_document_type": "schedule_update",
                     }
+            # ------------------------------------------------------------ RUN 108, GOAL 2
+            # THE PROJECT'S OWN WORKING CALENDAR, ASSEMBLED FROM THE DEFINITIONS THE EXPORT
+            # PRINTS. Before this run the platform held a calendar's NAME and nothing else, so
+            # no working day could be counted anywhere and three arms across the eight modules
+            # -- A1.6's time variance, A4.9's day basis and A4.5's float share -- could not be
+            # formed. A name is not a calendar.
+            #
+            # NOTHING IS DEFAULTED HERE AND NOTHING IS INFERRED FROM THE NAME. A calendar
+            # reaches `projectCalendar` only where the export DEFINED it: an object stating
+            # which days of the week are worked. A project whose export defines none stores no
+            # calendar at all, and the three arms then say what they need. There is no five-day
+            # week in this code path and no weekend.
+            #
+            # It is assembled OUTSIDE the `if _acts` guard above on purpose: a schedule update
+            # may define its calendars without printing a readable activity network, and the
+            # calendar is a fact about the project either way.
+            _cal_defs = ex.get("schedule_calendar_json")
+            if isinstance(_cal_defs, list) and _cal_defs:
+                from .simulation.working_calendar import normalise_calendar
+                _usable = [c for c in _cal_defs if normalise_calendar(c) is not None]
+                if _usable:
+                    _existing_cal = out.get("projectCalendar")
+                    if _existing_cal is None or len(_usable) > len(_existing_cal["calendars"]):
+                        out["projectCalendar"] = {
+                            "calendars": _usable,
+                            # THE NAME THE EXPORT STATED, kept beside the definitions so a
+                            # reader can see which named calendar the definitions belong to.
+                            # It is a label and is never read as a definition.
+                            "default_calendar_id": (
+                                str(ex.get("schedule_calendar") or "").strip() or None),
+                            "stated_calendar_names": (
+                                [str(c).strip() for c in _calnames]
+                                if isinstance(_calnames := ex.get("schedule_calendars_json"),
+                                              list) else None),
+                            "assembled_by": "document extraction",
+                            "source_document_type": "schedule_update",
+                        }
+            # RUN 108. THE TWO REFERENCE DATES A1.6 COUNTS BETWEEN. The remaining planned
+            # WORKING duration is the working days from the data date to the approved baseline
+            # finish, counted on the calendar above by the one conversion function. Both dates
+            # are printed cells; neither is derived, and the day-number form of the baseline
+            # finish is NOT converted into a date.
+            _dd = str(ex.get("data_date") or "").strip()
+            _bfd = str(ex.get("schedule_baseline_finish_date") or "").strip()
+            if _dd and _bfd:
+                out.setdefault("scheduleReferenceDates", {
+                    "data_date": _dd,
+                    "baseline_finish_date": _bfd,
+                    "assembled_by": "document extraction",
+                    "source_document_type": "schedule_update",
+                })
             # RUN 103, SECTION 3. THE TWO SCALARS A2.7's SLIP RATIO NEEDS. Run 102 recorded that
             # the remaining-planned-duration denominator was stated by no document at all. It is
             # stated by this one now, on its face, with the basis beside it. Neither is derived.

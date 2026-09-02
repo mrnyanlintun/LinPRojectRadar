@@ -678,6 +678,14 @@ def weather_day_impact(structure: dict) -> dict[str, Any]:
             "available_float_days": _f(e, "available_float_days", words),
             "causal_evidence": _text(e, "causal_evidence", words),
             "mitigation_days": num(e.get("mitigation_days"), 0.0) or 0.0,
+            # RUN 108, GOAL 2. THE SPAN THE LOST DAYS WERE LOST OVER, carried through exactly as
+            # the record printed it and used by NOTHING HERE. The arithmetic above is unchanged.
+            # A4.5's float-consumed component divides a delay in days by float in working days,
+            # and where the record says its days are CALENDAR days that division is only valid
+            # once the delay is recounted on the project's calendar -- which needs a span, not a
+            # count. These two cells are that span. Absent, the recount is not attempted.
+            "event_start_date": str(e.get("event_start_date") or "").strip() or None,
+            "event_end_date": str(e.get("event_end_date") or "").strip() or None,
         }
         if row["available_float_days"] < 0:
             raise StructureAbsent(
@@ -718,6 +726,11 @@ def weather_day_impact(structure: dict) -> dict[str, Any]:
         "allowance_days_remaining_after": remaining,
         "mitigation_days_reported": sum(r["mitigation_days"] for r in prepared),
         "weather_calendar_id": prov["weather_calendar_id"],
+        # RUN 108. WHICH KIND OF DAY THIS RECORD COUNTS, read leniently -- absent rather than
+        # refused -- on the same rule as the approved-weather-day figures above, and on the same
+        # words as A4.9's `day_basis`. It is RECORDED here and acted on by the band, never by
+        # this arithmetic.
+        "day_basis": (str(structure.get("day_basis") or "").strip().lower() or None),
         "source": prov["source"],
     }
 

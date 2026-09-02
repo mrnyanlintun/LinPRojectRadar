@@ -24,6 +24,7 @@ Porting hazards specific to this file:
 
 from __future__ import annotations
 
+from datetime import date as _date
 from typing import Any, Callable
 
 from .canonical import StructureAbsent
@@ -318,12 +319,55 @@ def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> d
     # THE TIME-VARIANCE COMPONENT IS DEFINED IN WORKING DAYS AND THE CURVE IS IN PERIODS.
     # SV(t) = ES - AT comes off the planned value curve in PERIODS. The owner's ladder divides
     # it, in WORKING DAYS, by the remaining planned working duration. Converting periods to
-    # working days needs the approved calendar's working days per period, and no calendar
-    # reaches this module. Both figures are therefore read from the baseline structure or the
-    # component is NOT ASSESSED. Nothing is inferred and no period is assumed to be a month.
-    _wdpp = num(structure.get("working_days_per_period"), None)
-    _remaining = num(structure.get("remaining_planned_working_days"), None)
-    if _wdpp is not None and _wdpp > 0 and _remaining is not None and _remaining > 0:
+    # working days needs the approved calendar's working days per period. RUN 107 RECORDED THAT
+    # NO CALENDAR REACHED THIS MODULE and left the component Not Assessed on every project.
+    # RUN 108, GOAL 2. THE CALENDAR NOW REACHES THIS MODULE, and both figures are counted on
+    # it by the ONE conversion function every arm uses -- `working_calendar.working_days_between`
+    # and `working_days_per_period` -- so A1.6, A4.9 and A4.5 cannot count a working day three
+    # different ways. Nothing here reads a working-day figure a structure asserts: the platform
+    # counts the days itself, from the project's stated calendar and the schedule's own printed
+    # dates, or it counts none.
+    from .working_calendar import (CALENDAR_ABSENT_WORDS, read_project_calendar,
+                                   working_days_between, working_days_per_period)
+    _cal = read_project_calendar(si)
+    _cal_id = (_cal or {}).get("calendar_id")
+    _wdpp = None
+    _wdpp_detail = None
+    _remaining = None
+    _tv_absent = None
+    if _cal is None:
+        _tv_absent = CALENDAR_ABSENT_WORDS
+    else:
+        _wdpp_detail = working_days_per_period(_cal, baseline.get("period_labels") or [])
+        _wdpp = (_wdpp_detail or {}).get("working_days_per_period")
+        _refs = si.get("scheduleReferenceDates")
+        if isinstance(_refs, dict):
+            try:
+                _from = _date.fromisoformat(str(_refs.get("data_date") or "").strip())
+                _to = _date.fromisoformat(str(_refs.get("baseline_finish_date") or "").strip())
+                _remaining = working_days_between(_cal, _from.toordinal(), _to.toordinal())
+            except ValueError:
+                _remaining = None
+        _missing = []
+        if not _wdpp:
+            _missing.append(
+                "the date span each period covers, which is read from the period labels the "
+                "approved time-phased baseline itself prints -- an ISO month such as 2026-07 or "
+                "an ISO period-ending date -- and which this baseline's labels do not state")
+        if _remaining is None or _remaining <= 0:
+            _missing.append(
+                "the schedule update's own data date and its APPROVED baseline finish DATE, "
+                "which the working days remaining are counted between; a baseline finish "
+                "stated only as a day number on the schedule's own axis is not converted into "
+                "a date")
+        if _missing:
+            _tv_absent = ("this project states a working calendar" +
+                          (f" ({_cal_id})" if _cal_id else "") +
+                          ", but the remaining planned working duration and the working days "
+                          "per period still cannot both be counted on it. WHAT IS MISSING: " +
+                          "; and ".join(_missing) + ". NOT ASSESSED, and no period is assumed "
+                          "to be a month, a week or any number of working days.")
+    if _tv_absent is None:
         _svt_days = reading["schedule_variance_time"] * float(_wdpp)
         _late = max(0.0, -_svt_days)
         _tv = _late / float(_remaining)
@@ -337,17 +381,16 @@ def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> d
                       "late by at or below 2 per cent, is Green; above 2 and at or below 5 per "
                       "cent is Yellow; above 5 and at or below 10 per cent is Amber; above 10 "
                       "per cent is Red. Each boundary is INCLUSIVE ON ITS UPPER SIDE. Being "
-                      "AHEAD is Green and is never banded as a variance.")))
+                      "AHEAD is Green and is never banded as a variance. THE CALENDAR THE DAYS "
+                      f"WERE COUNTED ON is the one this project's own schedule update defines, "
+                      f"{_cal_id or 'unnamed'}: a "
+                      f"{_cal['working_days_per_week']}-day working week and "
+                      f"{_cal['holiday_count']} holiday"
+                      f"{'' if _cal['holiday_count'] == 1 else 's'} it states. It is the "
+                      f"project's calendar and not the platform's; no working week and no "
+                      f"holiday set is assumed anywhere.")))
     else:
-        _comps.append(_OB.component(
-            "time variance share",
-            absent_reason=(
-                "This project's time-phased baseline does not state both the approved "
-                "calendar's working days per period and the remaining planned working "
-                "duration, so the schedule variance cannot be expressed in working days and "
-                "has no denominator. NOT ASSESSED. No calendar reaches this module, a period "
-                "is not assumed to be any particular number of working days, and no figure is "
-                "substituted.")))
+        _comps.append(_OB.component("time variance share", absent_reason=_tv_absent))
     _agg = _OB.aggregate(_comps)
     _posture = _agg["band_posture_before_override"]
     # THE HARD OVERRIDE. It needs an approved milestone with the period it is required by. The
@@ -398,6 +441,11 @@ def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> d
         approval_source=baseline["approval_source"],
         working_days_per_period=_wdpp,
         remaining_planned_working_days=_remaining,
+        working_calendar_id=_cal_id,
+        working_calendar_days_per_week=(_cal or {}).get("working_days_per_week"),
+        working_calendar_holidays_stated=(_cal or {}).get("holidays_stated"),
+        working_calendar_holiday_count=(_cal or {}).get("holiday_count"),
+        working_days_per_period_detail=_wdpp_detail,
         approved_milestones=_milestones,
         milestones_forecast_late=_late_ms,
         band_hard_override_fired=_override,

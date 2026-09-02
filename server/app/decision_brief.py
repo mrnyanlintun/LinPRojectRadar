@@ -415,11 +415,12 @@ def _boundary_and_basis(module_id: str, mod: Mapping[str, Any]) -> dict[str, Any
             "boundary_note": ("this module asserted a band without recording the boundary it "
                               "crossed or that boundary's source"),
         }
-    # RUN 101, MID-RUN. THE BASIS AND THE BOUNDARY MAY HAVE DIFFERENT PROVENANCE, and where they
-    # do the card must say so or it presents a platform-chosen cutoff as though a standard fixed
-    # it. `RESEARCH_2_safety_and_environmental_severity.md`, recommendation 2: "State that only
-    # the industry-average anchor is sourced; intermediate cutoffs are platform-chosen with no
-    # published basis." Both classes are read from stored fields; neither is decided here.
+    # RUN 101. THE BASIS AND THE BOUNDARY MAY HAVE DIFFERENT PROVENANCE, and where they do the
+    # card must say so or it presents a platform-chosen cutoff as though a standard fixed it.
+    # Only an ANCHOR such as a published industry average is sourced; the intermediate cutoffs
+    # drawn around it are platform-chosen with no published basis. (RUN 108 restated this note:
+    # it quoted a research report that is not in this repository and was never read.) Both
+    # classes are read from stored fields; neither is decided here.
     basis_class = mod.get("band_basis_provenance_class") or provenance
     boundary_class = mod.get("band_boundary_provenance_class") or provenance
     out = {
@@ -580,6 +581,25 @@ def _limitations(basis: Mapping[str, Any],
         out.append(
             f"{len(pending)} readings report a figure without a status colour, because no "
             f"boundary for the quantity has been established from evidence: {names}.")
+    # RUN 108. A MODULE THAT WITHHELD ITS BAND NOW SAYS WHAT IT NEEDS, HERE, ON THE CARD.
+    #
+    # THE DEFECT THIS CLOSES, measured on the page rather than argued: a module that abstained
+    # STORED a full sentence naming exactly what was missing -- `band_withheld_reason` -- and
+    # the card printed only its method class in a list. The owner's own rule is that a module
+    # missing what it needs abstains AND SAYS WHAT IT NEEDS, and a sentence that reaches no
+    # surface says nothing to the person reading the page.
+    #
+    # The reasons are printed VERBATIM from the stored row. Nothing is summarised, nothing is
+    # composed here, and no model is asked what a module needed.
+    _withheld = [m for m in modules
+                 if m.get("status_color") is None and m.get("band_withheld_reason")
+                 and m not in held]
+    for m in _withheld[:6]:
+        out.append(f"{m.get('method_class') or m.get('module_id')} asserted no band. "
+                   f"{m['band_withheld_reason']}")
+    if len(_withheld) > 6:
+        out.append(f"{len(_withheld) - 6} further readings withheld a band and each states its "
+                   f"own reason on its row.")
     if basis.get("required_missing"):
         out.append(
             "No value was imputed for any category that could not be assessed, and no "

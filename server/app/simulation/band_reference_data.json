@@ -4,16 +4,16 @@
     "value": 2.4,
     "unit": "total recordable cases per 100 full-time equivalent workers, which is the same quantity as per 200,000 employee hours",
     "year": 2023,
-    "source": "US Bureau of Labor Statistics, Survey of Occupational Injuries and Illnesses (SOII), construction, NAICS 23, most recent published year 2023, as stated in RESEARCH_1_threshold_bands_eight_metrics.md and RESEARCH_2_safety_and_environmental_severity.md",
+    "source": "US Bureau of Labor Statistics, Survey of Occupational Injuries and Illnesses (SOII), construction, NAICS 23, most recent published year 2023. The figure was supplied to this platform by the owner's order; the BLS publication is the basis and is named so a reader can check it",
     "provenance_class": "CODIFIED",
     "configured": true,
     "verified": false,
-    "verification_note": "BOTH RESEARCH REPORTS FLAG THIS VALUE [Confirm] AND STATE THAT PRIMARY-SOURCE VERIFICATION WAS NOT COMPLETED. Report 2's caveats say the exact current BLS rates must be checked against the named primary source and the current year before publication. It is stored as an UNVERIFIED published figure, not as a verified one.",
+    "verification_note": "PRIMARY-SOURCE VERIFICATION WAS NOT COMPLETED. The exact current BLS rate must be checked against the BLS publication itself, for the current published year, before this figure is relied on. It is stored as an UNVERIFIED published figure, not as a verified one.",
     "companion_dart_rate": {
       "value": 1.4,
       "unit": "days away, restricted or transferred cases per 100 full-time equivalent workers",
       "year": 2023,
-      "discrepancy_recorded": "THE TWO RESEARCH REPORTS DISAGREE: one states approximately 1.4 and the other approximately 1.5. The disagreement is recorded rather than resolved by picking one silently. No band is drawn on the DART rate, so the disagreement affects no reading today.",
+      "discrepancy_recorded": "THE FIGURE REACHED THIS PLATFORM IN TWO CONFLICTING FORMS, approximately 1.4 and approximately 1.5. The disagreement is recorded rather than resolved by picking one silently. No band is drawn on the DART rate, so the disagreement affects no reading today.",
       "verified": false
     }
   },
@@ -24,17 +24,17 @@
     "provenance_class": "OWNER-CALIBRATED",
     "configured": true,
     "verified": false,
-    "verification_note": "RESEARCH_2 section 89 states explicitly: 'There is no OSHA/ANSI-published minimum-hours threshold.' The floor is therefore OWNER-CALIBRATED and is not presented as codified. 200,000 hours is about 100 worker-years and is the OSHA normalising base itself."
+    "verification_note": "THERE IS NO OSHA- OR ANSI-PUBLISHED MINIMUM-HOURS THRESHOLD. The floor is therefore OWNER-CALIBRATED, supplied by the owner's own order, and is not presented as codified. 200,000 hours is about 100 worker-years and is the OSHA normalising base itself."
   },
   "osha_severity_conventions": {
     "days_lost_cap_per_case": 180,
     "fatality_or_ptd_day_charge": 6000,
-    "source": "OSHA 29 CFR 1904 caps days away and restricted days at 180 each per case. The 6,000-day charge for death or permanent total disability is ANSI Z16.1's and is widely used. Both as stated in RESEARCH_2_safety_and_environmental_severity.md.",
+    "source": "OSHA 29 CFR 1904 caps days away and restricted days at 180 each per case. The 6,000-day charge for death or permanent total disability is ANSI Z16.1's and is widely used.",
     "provenance_class": "CODIFIED",
     "configured": true,
     "verified": false,
-    "verification_note": "RESEARCH_2 records that ANSI Z16.1 IS SUPERSEDED BY OSHA RECORDKEEPING IN US PRACTICE and that the current ANSI/ASSP designation should be verified. The 6,000-day charge is therefore a live convention whose standard citation is not confirmed.",
-    "no_severity_benchmark": "RESEARCH_2: no published construction severity benchmark and no published good/average/bad severity cutoff exists. The severity rate therefore computes and displays and asserts NO band."
+    "verification_note": "ANSI Z16.1 IS SUPERSEDED BY OSHA RECORDKEEPING IN US PRACTICE and the current ANSI/ASSP designation has not been verified against the standard itself. The 6,000-day charge is therefore a live convention whose standard citation is not confirmed.",
+    "no_severity_benchmark": "NO PUBLISHED CONSTRUCTION SEVERITY BENCHMARK EXISTS and no published good/average/bad severity cutoff exists. The severity rate therefore computes and displays and asserts NO band."
   },
   "ilo_rate_base_hours": {
     "value": 1000000,
@@ -46,12 +46,12 @@
   "cgp_corrective_action_deadline_days": {
     "value": 7,
     "unit": "calendar days from discovery",
-    "source": "EPA Construction General Permit, Part 5: corrective action before the next storm event where practicable and no later than 7 calendar days from discovery. Inspection frequency, about Part 4: every 7 calendar days, or every 14 days AND within 24 hours of a 0.25-inch storm event. Both as stated in RESEARCH_2_safety_and_environmental_severity.md.",
+    "source": "EPA Construction General Permit, Part 5: corrective action before the next storm event where practicable and no later than 7 calendar days from discovery. Inspection frequency, about Part 4: every 7 calendar days, or every 14 days AND within 24 hours of a 0.25-inch storm event. ",
     "provenance_class": "CODIFIED",
     "configured": true,
     "verified": false,
-    "verification_note": "RESEARCH_2 marks the section numbers [Confirm section numbers against the 2022 CGP text]. The deadline itself is confirmed; the Part numbers are not.",
-    "no_published_severity_ladder": "RESEARCH_2 section 142: 'no ready-made, citable construction environmental severity ladder exists. Construct one from statutory consequences and state plainly that the ordering is derived, not published.' ISO 14001 requires significance evaluation but prescribes no numeric scale."
+    "verification_note": "THE PART NUMBERS HAVE NOT BEEN CHECKED against the 2022 CGP text. The deadline itself is confirmed; the Part numbers are not.",
+    "no_published_severity_ladder": "NO READY-MADE, CITABLE CONSTRUCTION ENVIRONMENTAL SEVERITY LADDER EXISTS. One is constructed from statutory consequences and the ordering is stated plainly as DERIVED, not published. ISO 14001 requires significance evaluation but prescribes no numeric scale."
   },
   "rfi_contract_response_period_business_days": {
     "value": 7,
@@ -73,11 +73,10 @@
   },
   "_provenance_of_this_file": {
     "supplied_by": [
-      "RESEARCH_1_threshold_bands_eight_metrics.md",
-      "RESEARCH_2_safety_and_environmental_severity.md"
+      "the owner's own orders, Runs 101 to 108"
     ],
-    "read_by_this_run": false,
-    "how_obtained": "The two research reports are the Run 101 order's section 0 authority for every number. THEY WERE NOT PRESENT IN THE REPOSITORY AND WERE NOT READ BY THIS RUN. Their figures reached this run RELAYED IN PROSE by the coordinating assistant mid-run, after goal one had first been implemented from the order's inline figures alone. The figures below are recorded as relayed and attributed to the named reports; no report file was opened."
+    "how_obtained": "RUN 108 RESTATED THIS. Every figure in this file was supplied to the platform by the owner through his numbered orders. Earlier runs recorded two research reports, `RESEARCH_1_threshold_bands_eight_metrics.md` and `RESEARCH_2_safety_and_environmental_severity.md`, as the authority for them. NEITHER FILE IS IN THIS REPOSITORY AND NEITHER WAS EVER READ BY ANY RUN -- their content reached the platform relayed in prose -- so every citation to them named a document no reader of this code could check. The owner's ruling at Run 108 is that the research INFORMED these numbers and is NOT THEIR AUTHORITY: the boundaries are his stated tolerances, supplied by his orders. The citations are therefore removed rather than the documents supplied. Where the underlying measure or formula genuinely is codified -- the OSHA incidence-rate identity, the BLS construction benchmark, the EPA Construction General Permit deadline, DOE Order 413.3B and GAO-20-195G -- that part keeps its own accurate provenance and is named by the instrument itself, not by a report about it.",
+    "verification_still_outstanding": "Removing an unverifiable citation does not verify a figure. Every entry below that carries verified: false STILL CARRIES IT, and the primary sources named in each source string have still not been checked by any run."
   },
   "construction_frequency_band_cutoffs": {
     "green_below": 1.2,
@@ -85,18 +84,18 @@
     "red_at_or_above": 4.8,
     "unit": "recordable cases per 200,000 employee hours",
     "derivation": "half the industry average, the industry average itself, and twice the industry average. All three are derived from the one anchor above and introduce no figure that is not already in it.",
-    "source": "the band shape recommended in RESEARCH_2_safety_and_environmental_severity.md: Green below about half the industry average (well-managed contractors commonly target below 1.0 to 1.5); Yellow at or below the BLS construction average; Amber above the industry average; Red at roughly twice the industry average or higher.",
+    "source": "THE OWNER'S STATED TOLERANCE, supplied by his own order: Green below half the industry average; Yellow at or below the BLS construction average; Amber above the industry average; Red at twice the industry average or higher. Only the ANCHOR -- the BLS construction average -- is sourced; the half and double multipliers are the owner's.",
     "provenance_class": "OWNER-CALIBRATED",
-    "why_not_codified": "RESEARCH_2, recommendation 2, in terms: 'Band frequency against the published industry average, not an invented cutoff. State that ONLY THE INDUSTRY-AVERAGE ANCHOR IS SOURCED; intermediate cutoffs are platform-chosen with no published basis.' RESEARCH_1 section 5 more broadly: 'There is no recognized standard governing how a number maps to a Green/Yellow/Amber/Red band.' The ANCHOR is codified; these CUTOFFS are not, and the reading says so in both fields.",
+    "why_not_codified": "THERE IS NO RECOGNISED STANDARD GOVERNING HOW A NUMBER MAPS TO A GREEN/YELLOW/AMBER/RED BAND. Frequency is banded against the published industry average rather than an invented cutoff, and ONLY THAT INDUSTRY-AVERAGE ANCHOR IS SOURCED: the intermediate cutoffs are the OWNER'S STATED TOLERANCE, supplied by his order, with no published basis. The ANCHOR is codified; these CUTOFFS are not, and the reading says so in both fields.",
     "configured": true,
     "verified": false
   },
   "p80_gap_boundary": {
     "yellow_gap_at_or_below": 0.1,
     "unit": "fraction, gap = (P80 total cost - budget at completion) / budget at completion",
-    "source": "RESEARCH_1_threshold_bands_eight_metrics.md sections 66 to 70 give the gap arithmetic: Green gap at or below 0; Yellow gap 0 to about +10 per cent; Amber about +10 to +20 per cent; Red above +20 per cent. THE OWNER'S ORDER'S ORDERING WINS where the two differ: the order puts Red at a budget below the median, not at a gap above 20 per cent, and that is what is implemented.",
+    "source": "THE OWNER'S STATED TOLERANCE, supplied by his own orders. The gap arithmetic is gap = (P80 total cost - budget at completion) / budget at completion, and the ladder is Green at a gap at or below 0, Yellow from 0 to +10 per cent, Amber above that while the budget is still at or above the median, and Red at a budget below the median. The Red arm is the order's own and is what is implemented.",
     "provenance_class": "OWNER-CALIBRATED",
-    "why_not_codified": "RESEARCH_1 section 76 calls the exact gap boundaries 'moderate ... interpretive'. The P80 CONCEPT is codified -- DOE Order 413.3B and GAO-20-195G -- but this cutoff is not.",
+    "why_not_codified": "THE EXACT GAP BOUNDARY HAS NO PUBLISHED BASIS and is the owner's stated tolerance. The P80 CONCEPT is codified -- DOE Order 413.3B and GAO-20-195G -- but this cutoff is not.",
     "configured": true,
     "verified": false
   },

@@ -882,14 +882,20 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
             "percent complete is still below one hundred; substantial completion as a contract "
             "milestone is not a figure this platform holds, and the reported percent complete "
             "stands in its place in this arm and only in this arm"),
-        basis=("the owner's Run 101 order, section 3.1, on the owner's stated authority, "
-               "confirmed as CONVENTION by RESEARCH_1_threshold_bands_eight_metrics.md section "
-               "30: the burn-at-or-below-percent-complete heuristic 'is widely repeated in "
-               "practice, but no single standards clause fixes the 1.2/1.5 boundaries -- those "
-               "are illustrative and should be calibrated to owner history'. No standards clause "
-               "fixes 1.0, 1.2 or 1.5, and the research says the specific boundaries are weaker "
-               "still than the heuristic they sit on"),
-        provenance=PROVENANCE_CONVENTION,
+        # RUN 108, GOAL 1. RESTATED. This basis cited `RESEARCH_1_threshold_bands_eight_metrics
+        # .md` section 30 by section number and quoted text. That file is not in this repository
+        # and was never read by any run, so no reader of this code could check the citation. The
+        # owner's ruling: the research informed these numbers and is not their authority. THE
+        # BOUNDARIES ARE HIS STATED TOLERANCES, SUPPLIED BY HIS ORDER, and the class is therefore
+        # OWNER-CALIBRATED rather than CONVENTION -- the earlier class rested entirely on the
+        # uncheckable citation calling the heuristic conventional.
+        basis=("the owner's stated tolerance for this platform, supplied by his Run 101 order, "
+               "section 3.1, on his own authority. The burn-against-progress comparison itself "
+               "is a widely repeated practice, but NO STANDARDS CLAUSE FIXES 1.0, 1.2 OR 1.5. "
+               "They are not published, not externally mandated and not derived from any "
+               "instrument; they are the owner's, and a project stating its own contingency "
+               "tolerance overrides them"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
         # RUN 102, SECTION 6. The owner stated these boundaries; no project document and no
         # published instrument fixes them.
         threshold_source=THRESHOLD_SOURCE_OWNER,
@@ -952,11 +958,15 @@ def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -
         status_color=_color,
         boundary=("a productivity index at or above 0.95 is Green; at or above 0.90 and below "
                   "0.95 is Yellow; at or above 0.85 and below 0.90 is Amber; below 0.85 is Red"),
-        basis=("the owner's Run 101 order, section 3.2, on the owner's stated authority, "
-               "confirmed as CONVENTION by RESEARCH_1_threshold_bands_eight_metrics.md section "
-               "44, which calls the 0.85 and 0.90 cut points 'conventional practitioner values, "
-               "not codified'. No standards clause fixes 0.95, 0.90 or 0.85"),
-        provenance=PROVENANCE_CONVENTION,
+        # RUN 108, GOAL 1. RESTATED, for the reason recorded on A3.2 above: the citation named
+        # a file that is not in this repository and was never read.
+        basis=("the owner's stated tolerance for this platform, supplied by his Run 101 order, "
+               "section 3.2, on his own authority. A productivity index -- earned output per "
+               "hour against planned output per hour -- is a standard measure, but NO STANDARDS "
+               "CLAUSE FIXES 0.95, 0.90 OR 0.85. The cut points are not published and not "
+               "externally mandated; they are the owner's, and a project stating its own "
+               "productivity tolerance overrides them"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
         threshold_source=THRESHOLD_SOURCE_OWNER,
         # RUN 107, SECTION 3. The owner tolerance this band rests on, named so it can be
         # ADDRESSED BY NAME. Recording the class without an identifier left these bands
@@ -1250,20 +1260,17 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
                     "eightieth percentile, so the ladder the band is drawn on does not hold "
                     "and no band is asserted"),
             **_figs)
-    # RUN 101, MID-RUN. THE RESEARCH SUPPLIED THE FIGURE THE ORDER LEFT QUALITATIVE, so the
-    # midpoint derivation this run first used is replaced by it.
-    # `RESEARCH_1_threshold_bands_eight_metrics.md`, sections 66 to 70, gives the gap arithmetic
-    # gap = (P80 - BAC) / BAC and the ladder Green at or below 0, Yellow 0 to about +10 per cent,
-    # Amber about +10 to +20 per cent, Red above +20 per cent.
+    # THE GAP LADDER. gap = (P80 - BAC) / BAC, Green at or below 0, Yellow 0 to +10 per cent,
+    # Amber above that with the budget still at or above the median, RED at a budget BELOW THE
+    # MEDIAN. Taking the gap boundary rather than the interval midpoint keeps the ladder
+    # well-ordered whatever the shape of the distribution.
     #
-    # THE ORDER'S ORDERING WINS WHERE THE TWO DIFFER, and they differ at the bottom: the order
-    # puts RED at a budget BELOW THE MEDIAN, not at a gap above twenty per cent. So the order's
-    # four arms stand and the research supplies only the Yellow/Amber division the order left as
-    # "near or just above" the median. Taking the gap boundary rather than the interval midpoint
-    # also keeps the ladder well-ordered whatever the shape of the distribution.
+    # RUN 108, GOAL 1. The ten per cent was recorded at Run 101 as coming from
+    # `RESEARCH_1_threshold_bands_eight_metrics.md` sections 66 to 70. That file is not in this
+    # repository and was never read by any run. The owner's ruling is that the research informed
+    # the figure and is not its authority, so it is restated as HIS STATED TOLERANCE.
     #
-    # AND THE BOUNDARY'S PROVENANCE IS NOT THE BASIS'S. Report 1 section 76 calls the exact gap
-    # boundaries "moderate ... interpretive". The P80 CONCEPT is codified -- DOE Order 413.3B's
+    # AND THE BOUNDARY'S PROVENANCE IS NOT THE BASIS'S. The P80 CONCEPT is codified -- DOE Order 413.3B's
     # P80 baseline requirement and GAO-20-195G's fund-to-a-stated-confidence-level practice --
     # but this ten per cent is not, and the reading says so in both provenance fields.
     _gap_cut = _BR.entry("p80_gap_boundary").get("yellow_gap_at_or_below")
@@ -1290,14 +1297,11 @@ def run_cost_risk(si: dict, rand: Callable[[], float], period_cutoff) -> dict[st
             "CODIFIED; THE TEN PER CENT GAP CUTOFF IS NOT"),
         basis=("THE BASIS: DOE Order 413.3B's P80 baseline requirement and the GAO Cost "
                "Estimating and Assessment Guide (GAO-20-195G) best practice of funding to a "
-               "stated confidence level, as the owner's Run 101 order section 3.4 states them "
-               "and as RESEARCH_1_threshold_bands_eight_metrics.md confirms them. THE GAP "
-               "CUTOFF: RESEARCH_1 sections 66 to 70 supply the gap arithmetic and the "
-               "boundary; section 76 calls the exact gap boundaries 'moderate ... interpretive'. "
-               "It has no published basis and is the owner's stated threshold. NEITHER FIGURE IS "
-               "VERIFIED AGAINST ITS PRIMARY SOURCE: the research reports state that a "
-               "primary-source verification pass, including the DOE Order 413.3B section number, "
-               "was not completed"),
+               "stated confidence level, as the owner's Run 101 order section 3.4 states them. "
+               "THE GAP CUTOFF: the owner's stated tolerance, supplied by his order, with NO "
+               "PUBLISHED BASIS -- no instrument fixes the ten per cent. NEITHER FIGURE IS "
+               "VERIFIED AGAINST ITS PRIMARY SOURCE: no run has checked the DOE Order 413.3B "
+               "section number or the GAO guide against the documents themselves"),
         provenance=PROVENANCE_CODIFIED,
         boundary_provenance=PROVENANCE_OWNER_CALIBRATED,
         # RUN 102, SECTION 6, RUNG 2. The P80 requirement is a formal external instrument -- DOE

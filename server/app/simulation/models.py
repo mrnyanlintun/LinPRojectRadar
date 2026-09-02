@@ -959,7 +959,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # No stored row is recomputed, migrated, deleted or rewritten, and NO MIGRATION IS ADDED. A row
 # carrying "Indeterminate" keeps it and remains valid under the stamp it was written with.
-SIMULATION_VERSION = "sim-2026.09-v53"
+SIMULATION_VERSION = "sim-2026.09-v54"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1036,6 +1036,11 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # STAMP IS MOVED AND THIS TUPLE IS APPENDED TO IN THE SAME EDIT. No stored row is recomputed
  # and none is touched.
  "sim-2026.09-v53",
+ # RUN 108. The three bases that cited a document not in this repository are restated as
+ # the owner's stated tolerances, and A3.2 and A3.3 move from CONVENTION to OWNER-CALIBRATED
+ # with them. The project working calendar reaches the analytical layer for the first time and
+ # A1.6, A4.9 and A4.5 count working days through ONE shared conversion function.
+ "sim-2026.09-v54",
 )
 
 
@@ -1276,14 +1281,13 @@ THRESHOLD_SOURCE_WORDS: dict[str, str] = {
 THRESHOLD_SOURCES: frozenset[str] = frozenset(THRESHOLD_SOURCE_WORDS)
 
 
-#: RUN 101, MID-RUN. THE RESEARCH REPORTS ARRIVED AFTER GOAL ONE WAS FIRST IMPLEMENTED, AND THEY
-#: FORCED THIS DISTINCTION. `RESEARCH_2_safety_and_environmental_severity.md`, recommendation 2:
-#: "Band frequency against the published industry average, not an invented cutoff. State that ONLY
-#: THE INDUSTRY-AVERAGE ANCHOR IS SOURCED; intermediate cutoffs are platform-chosen with no
-#: published basis." `RESEARCH_1_threshold_bands_eight_metrics.md` section 5 puts it more broadly:
-#: "There is no recognized standard governing how a number maps to a Green/Yellow/Amber/Red band
-#: ... all boundary numbers are ultimately owner design choices that should be documented, not
-#: presented as externally mandated."
+#: RUN 101 FORCED THIS DISTINCTION and RUN 108 RESTATED WHY, because the reason as first written
+#: cited two research reports that are not in this repository and were never read by any run.
+#: THE REASON STANDS WITHOUT THEM: there is no recognised standard governing how a number maps
+#: to a Green/Yellow/Amber/Red band. Frequency is banded against the published industry average
+#: rather than an invented cutoff, and ONLY THAT INDUSTRY-AVERAGE ANCHOR IS SOURCED; the
+#: intermediate cutoffs are the owner's design choices, documented as such and never presented
+#: as externally mandated.
 #:
 #: SO ONE CLASS PER MODULE CANNOT TELL THE TRUTH ABOUT SEVERAL OF THEM. Safety's ANCHOR is the
 #: BLS construction average and the OSHA identity -- codified; its half-average and twice-average

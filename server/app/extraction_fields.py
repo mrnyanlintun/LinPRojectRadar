@@ -289,7 +289,24 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "consumed_float", "activities_planned", "activities_constrained", "lookahead_weeks",
         "milestones_json",
         "schedule_network_json", "schedule_calendar", "schedule_calendars_json",
+        # RUN 108, GOAL 2. THE CALENDAR DEFINITION, not the calendar's NAME. Run 103 asked for
+        # `schedule_calendar` (a string such as "5-day work week") and `schedule_calendars_json`
+        # (a list of such names), and Run 108 measured that a name is all the platform held: it
+        # states nothing about WHICH days are worked or WHICH days are holidays, so no working
+        # day could be counted and three arms across the eight modules could not be formed.
+        # `schedule_calendar_json` asks the export for the DEFINITIONS it prints -- one object
+        # per calendar, each with its working days of the week and its holiday dates. The two
+        # older name fields are kept and still stored, because a project whose export names a
+        # calendar but defines none should still show the name it stated.
+        "schedule_calendar_json",
         "schedule_baseline_finish_day", "schedule_imposed_finish_day", "schedule_version",
+        # RUN 108. The APPROVED baseline finish as a CALENDAR DATE where the export prints one.
+        # `schedule_baseline_finish_day` is a working-day NUMBER on the schedule's own axis, and
+        # a number on an axis cannot be counted against a calendar. A1.6's remaining planned
+        # WORKING duration is the working days from the data date to this date, counted on the
+        # project's stated calendar by the one conversion function. Where the export prints no
+        # such date the arm is Not Assessed; nothing is converted from the day number.
+        "schedule_baseline_finish_date",
         "remaining_planned_duration_days", "remaining_duration_basis",
     ],
     # RUN 69. THE MODIFICATION REGISTER, WHICH IS A TABLE AND NOT A COUNT.

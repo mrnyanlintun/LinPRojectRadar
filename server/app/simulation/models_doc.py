@@ -28,6 +28,7 @@ Porting hazards specific to this file:
 
 from __future__ import annotations
 
+from datetime import date as _date
 from typing import Any, Callable
 
 from .canonical import StructureAbsent
@@ -854,8 +855,59 @@ def run_weather_impact(si: dict, rand: Callable[[], float], period_cutoff) -> di
         if _e.get("schedule_path_id") == worst:
             _float = _e.get("available_float_days")
             break
-    if _float is not None and _float > 0:
-        _fc = reading["direct_path_effect_days"] / _float
+    # RUN 108, GOAL 2. THE TWO SIDES OF THIS RATIO MUST BE THE SAME KIND OF DAY. Total float is
+    # a working-day quantity on the project's approved calendar. Run 107 divided the delay by it
+    # without either side stating its basis, so a record counting CALENDAR days was silently
+    # divided by working-day float. This run makes the record state its basis and recounts the
+    # delay on the project's own calendar, using the one conversion function -- and where it
+    # cannot, the component says so instead of dividing two different units.
+    from .working_calendar import (CALENDAR_ABSENT_WORDS, read_project_calendar,
+                                   working_days_between)
+    _w_basis = reading.get("day_basis")
+    _w_delay = reading["direct_path_effect_days"]
+    _w_cal = None
+    _w_absent = None
+    _w_recount = None
+    if _w_basis == "calendar_days":
+        _w_cal = read_project_calendar(si, reading.get("weather_calendar_id"))
+        if _w_cal is None:
+            _w_cal = read_project_calendar(si)
+        if _w_cal is None:
+            _w_absent = ("this project's weather record counts CALENDAR days while total float "
+                         "is a working-day quantity, and " + CALENDAR_ABSENT_WORDS)
+        else:
+            _spans = []
+            for _e in reading["events"]:
+                if _e.get("schedule_path_id") != worst:
+                    continue
+                try:
+                    _a = _date.fromisoformat(str(_e.get("event_start_date") or "")).toordinal()
+                    _b = _date.fromisoformat(str(_e.get("event_end_date") or "")).toordinal()
+                except ValueError:
+                    _spans = None
+                    break
+                _spans.append((_a, _b, _e.get("actual_lost_days") or 0.0))
+            if not _spans:
+                _w_absent = (
+                    "this project's weather record counts CALENDAR days and states no start "
+                    "and end date for the events on the affected path, so the delay cannot be "
+                    "recounted in working days on this project's calendar and is not divided "
+                    "by a working-day float. WHAT IS NEEDED: event_start_date and "
+                    "event_end_date on each weather event, as calendar dates")
+            else:
+                _cal_lost = sum(l for _, _, l in _spans)
+                _work_lost = sum(working_days_between(_w_cal, a - 1, b) for a, b, _ in _spans)
+                if _cal_lost > 0:
+                    _w_recount = {"calendar_days_lost": _cal_lost,
+                                  "working_days_lost": _work_lost,
+                                  "working_calendar_id": _w_cal.get("calendar_id")}
+                    _w_delay = _w_delay * (_work_lost / _cal_lost)
+    elif _w_basis is None:
+        _w_absent = None  # basis unstated: the ratio forms as before and the reading says so.
+    if _w_absent is not None:
+        _comps.append(_OB.component("float consumed", absent_reason=_w_absent))
+    elif _float is not None and _float > 0:
+        _fc = _w_delay / _float
         _comps.append(_OB.component(
             "float consumed", value=round2(_fc),
             band=_OB.ascending(_fc, 0.50, 0.75, 1.00),
@@ -910,6 +962,10 @@ def run_weather_impact(si: dict, rand: Callable[[], float], period_cutoff) -> di
         "mitigation_days_reported": reading["mitigation_days_reported"],
         "events": reading["events"],
         "weather_calendar_id": reading["weather_calendar_id"],
+        "weather_day_basis": _w_basis,
+        "weather_day_basis_stated": _w_basis is not None,
+        "weather_delay_days_used_in_float_share": _w_delay,
+        "weather_working_day_recount": _w_recount,
         "weather_allowance_days": _allow_total,
         "weather_days_claimed": reading.get("weather_days_claimed"),
         "weather_days_approved": _approved,
@@ -1437,6 +1493,16 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
 # ------------------------------------------------------------ A4.9 Procurement Lead Time
 
 
+#: RUN 108. TELLING A CALENDAR DATE FROM A SCHEDULE-AXIS DAY NUMBER, without asking either
+#: document to declare which it printed. `canonical_v4._day` turns an ISO date into a day
+#: ORDINAL -- `date.toordinal()` -- and 1 January 1900 is ordinal 693,596 while a schedule axis
+#: counts from 0 or 1. The two ranges do not overlap for any project this platform can hold, so
+#: a figure inside the ordinal range is a real calendar date and one below it is an axis number
+#: that has no calendar day behind it and is never converted.
+_ORD_MIN = 693596      # 1900-01-01
+_ORD_MAX = 766644      # 2099-12-31
+
+
 def run_procurement_lead_time(si: dict, rand: Callable[[], float],
                               period_cutoff) -> dict[str, Any]:
     """
@@ -1459,7 +1525,35 @@ def run_procurement_lead_time(si: dict, rand: Callable[[], float],
     # --------------------------------------- RUN 107. PER ITEM, MOST ADVERSE ITEM GOVERNS.
     from .canonical_v4 import (PROCUREMENT_CRITICALITY_CONTROLLING,
                                PROCUREMENT_CRITICALITY_NOT)
-    _basis_ok = reading.get("day_basis") == "approved_calendar_working_days"
+    # RUN 108, GOAL 2. THE REGISTER THAT COUNTS CALENDAR DAYS IS NOW CONVERTED, ON THE
+    # PROJECT'S OWN CALENDAR, BY THE ONE CONVERSION FUNCTION -- not by a rule of thumb and not
+    # by this module counting days its own way. Run 107 left such a register Not Assessed
+    # because no calendar reached the analytical layer.
+    #
+    # WHAT IS CONVERTIBLE AND WHAT IS NOT, stated rather than blurred. Conversion counts the
+    # working days between the required-on-site DATE and the forecast delivery DATE. An item
+    # whose dates were printed as calendar dates carries day ORDINALS here -- that is what
+    # `canonical_v4._day` produces from an ISO date -- and those ordinals are real days on a
+    # calendar, so they convert. An item that printed a day NUMBER on the schedule's own axis
+    # while declaring a calendar-day basis carries no anchor date, and NOTHING CONVERTS IT: a
+    # guess at which axis day is which calendar day would be an invented conversion.
+    from .working_calendar import (CALENDAR_ABSENT_WORDS, read_project_calendar,
+                                   working_days_between)
+    _day_basis = reading.get("day_basis")
+    _basis_ok = _day_basis == "approved_calendar_working_days"
+    _cal = None if _basis_ok else read_project_calendar(si)
+    _converted = []
+    _convert_absent = None
+    if not _basis_ok:
+        if _day_basis is None:
+            _convert_absent = (
+                "the register does not state which kind of day it counts, so its dates cannot "
+                "be read as working days and are not converted. WHAT IS NEEDED: a procurement "
+                "register stating `day_basis` as either approved_calendar_working_days or "
+                "calendar_days")
+        elif _cal is None:
+            _convert_absent = ("the register counts calendar days and " +
+                               CALENDAR_ABSENT_WORDS)
     _items = []
     _worst_band = None
     _worst_item = None
@@ -1472,8 +1566,29 @@ def run_procurement_lead_time(si: dict, rand: Callable[[], float],
         band = None
         why = None
         if not _basis_ok:
-            why = ("the register does not state that its days are approved-calendar working "
-                   "days, and no calendar reaches this module to convert them")
+            # THE CONVERSION, ITEM BY ITEM. The dates are day ordinals where the register
+            # printed dates. `required_on_site_day` is the start of travel and
+            # `forecast_delivery_day` the end, so the working days between them, negated, is
+            # the working-day slack -- the same sign convention the calendar-day slack above
+            # already carries.
+            if _convert_absent:
+                why = _convert_absent
+            elif not (_ORD_MIN <= it["required_on_site_day"] <= _ORD_MAX
+                      and _ORD_MIN <= it["forecast_delivery_day"] <= _ORD_MAX):
+                why = ("this item states its dates as day numbers on the schedule's own axis "
+                       "while the register counts calendar days, so there is no calendar date "
+                       "to count working days between and nothing is converted. WHAT IS "
+                       "NEEDED: the required-on-site and forecast-delivery dates as calendar "
+                       "dates")
+            else:
+                _wd_slack = -working_days_between(
+                    _cal, it["required_on_site_day"], it["forecast_delivery_day"])
+                late = max(0.0, -_wd_slack)
+                _converted.append({"item_id": it["item_id"],
+                                   "calendar_day_slack": it["slack_days"],
+                                   "working_day_slack": _wd_slack})
+        if why:
+            pass
         elif late <= 0:
             band = "Green"
         elif late > 10:
@@ -1525,7 +1640,11 @@ def run_procurement_lead_time(si: dict, rand: Callable[[], float],
         "days late ON controlling or near-critical work; Red where an item is more than 10 "
         "working days late, or a late item causes a contractual or required milestone to "
         "forecast late. WHICH ITEMS SIT ON CONTROLLING OR NEAR-CRITICAL WORK IS STATED BY THE "
-        "REGISTER ITSELF. Critical Path Analysis identifies those activities, but no path "
+        "REGISTER ITSELF. WHERE THE REGISTER COUNTS CALENDAR DAYS the lateness is CONVERTED to "
+        "working days on this project's own stated calendar, by the one conversion function "
+        "every arm in this platform uses; where the project states no calendar, or an item "
+        "printed a schedule-axis day number rather than a calendar date, that item is NOT "
+        "ASSESSED and nothing is converted. Critical Path Analysis identifies those activities, but no path "
         "exists in this platform for one module's reading to reach another module's runner -- "
         "the only cross-module channel carries a module id, a method class and a status colour "
         "and no figures -- so criticality is read from the register or the arm that needs it is "
@@ -1538,6 +1657,9 @@ def run_procurement_lead_time(si: dict, rand: Callable[[], float],
         "mean_slack_days": round(reading["mean_slack_days"], 2),
         "state_counts": states,
         "day_basis": reading.get("day_basis"),
+        "day_basis_converted_on_calendar": bool(_converted),
+        "working_calendar_id": (_cal or {}).get("calendar_id"),
+        "converted_item_slacks": _converted,
         "band_item_postures": _items,
         "band_items_not_assessed": _uneval,
         "band_governing_item_id": _worst_item,
