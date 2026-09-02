@@ -1690,6 +1690,97 @@ def _text_or_none(value) -> str | None:
     return out or None
 
 
+_SOURCE_WORDS = {
+    "oac_minutes": "the OAC meeting minutes uploaded for this period",
+    "field_report": "the field report uploaded for this period",
+}
+
+
+def _weather_impact_record(ex: dict, doc_type: str) -> dict | None:
+    """
+    RUN 117, MAP ROW 17. The weather impact record a document printed, or None.
+
+    THIS IS RUN 107'S OAC READER, MOVED AND NOT CHANGED. Every column name, every refusal and the
+    all-or-nothing recipe are exactly as they were; the only edit is that the record now names
+    the document type it came off instead of asserting "the OAC meeting minutes". It is a
+    function so that the FIELD REPORT can be read by the same code, which is the owner's map row
+    17 -- "weather days recorded on site" -- served without a second implementation that could
+    drift from this one.
+
+    A row missing any column the canonical function requires is DROPPED and nothing is defaulted;
+    a document printing no complete row, no remaining allowance or no calendar id assembles
+    NOTHING and A4.5 goes on abstaining in its own words.
+    """
+    _wrows = _json_rows(ex.get("weather_events_json"))
+    _events = []
+    for _r in _wrows:
+        _eid = _first_of(_r, ("event_id", "event", "event_no", "event_number", "id",
+                              "ref", "reference"))
+        _eday = _first_of(_r, ("event_day", "event_date", "date", "weather_date"))
+        _act = _first_of(_r, ("activity_id", "activity", "activity_no", "activity_code"))
+        _path = _first_of(_r, ("schedule_path_id", "schedule_path", "path_id", "path",
+                               "network_path"))
+        _lost = _first_of(_r, ("actual_lost_days", "days_lost", "lost_days",
+                               "days_claimed", "days_impacted"))
+        _flt = _first_of(_r, ("available_float_days", "float_days", "total_float",
+                              "total_float_days", "float", "float_remaining"))
+        _ev = _first_of(_r, ("causal_evidence", "evidence", "cause", "basis",
+                             "verification", "substantiation"))
+        # EVERY COLUMN THE CANONICAL FUNCTION REQUIRES MUST BE PRESENT ON THE ROW. A row
+        # missing one is DROPPED rather than defaulted -- `_f` and `_text` would refuse
+        # the whole record on it, and dropping the row at least lets a register whose
+        # other rows are complete still be read. Nothing is invented for the dropped row
+        # and the assembled record says how many events it carried.
+        if None in (_eid, _act, _path, _lost, _flt, _ev) or _eday is None:
+            continue
+        _events.append({
+            "event_id": str(_eid),
+            "event_day": _eday,
+            "activity_id": str(_act),
+            "schedule_path_id": str(_path),
+            "planned_work": _text_or_none(
+                _first_of(_r, ("planned_work", "work_planned", "activity_description",
+                               "description", "work"))) or "",
+            "actual_lost_days": _lost,
+            "available_float_days": _flt,
+            "causal_evidence": str(_ev),
+            "mitigation_days": _first_of(
+                _r, ("mitigation_days", "recovery_days", "days_mitigated")),
+            "event_start_date": _text_or_none(
+                _first_of(_r, ("event_start_date", "start_date", "from", "period_from"))),
+            "event_end_date": _text_or_none(
+                _first_of(_r, ("event_end_date", "end_date", "to", "period_to"))),
+        })
+    _allow_rem = ex.get("weather_allowance_days_remaining")
+    _cal_id = _text_or_none(ex.get("weather_calendar_id"))
+    if _events and _allow_rem is not None and _cal_id:
+        _wrec = {
+            "source": _SOURCE_WORDS.get(doc_type, "the document uploaded for this period"),
+            "weather_calendar_id": _cal_id,
+            "allowance_days_remaining": _allow_rem,
+            "events": _events,
+            "assembled_by": "document extraction",
+            "source_document_type": doc_type,
+        }
+        for _key, _fld in (
+                ("day_basis", "weather_day_basis"),
+                ("weather_allowance_days", "weather_allowance_days"),
+                ("weather_days_claimed", "weather_days_claimed"),
+                ("weather_days_approved", "weather_days_approved"),
+                ("approval_period", "weather_approval_period"),
+                ("approval_source", "weather_approval_source"),
+                ("time_extension_granted", "weather_time_extension_granted"),
+                ("time_extension_days_granted", "weather_time_extension_days"),
+                ("time_extension_incorporated_in_baseline",
+                 "weather_time_extension_incorporated_in_baseline"),
+                ("milestone_forecast_late", "weather_milestone_forecast_late"),
+                ("milestone_class", "weather_milestone_class")):
+            if ex.get(_fld) is not None:
+                _wrec[_key] = ex.get(_fld)
+        return _wrec
+    return None
+
+
 def _run69_structures(session: Session, project: Project, period: int,
                       documents: list[dict]) -> dict:
     """
@@ -2099,75 +2190,32 @@ def _run69_structures(session: Session, project: Project, period: int,
         # `weather_days_approved`, and `weather_days_claimed` is carried beside it and is NEVER
         # substituted for it. `weather_days_discussed` is a count of a conversation and is not
         # read at all.
-        elif doc_type == "oac_minutes":
-            _wrows = _json_rows(ex.get("weather_events_json"))
-            _events = []
-            for _r in _wrows:
-                _eid = _first_of(_r, ("event_id", "event", "event_no", "event_number", "id",
-                                      "ref", "reference"))
-                _eday = _first_of(_r, ("event_day", "event_date", "date", "weather_date"))
-                _act = _first_of(_r, ("activity_id", "activity", "activity_no", "activity_code"))
-                _path = _first_of(_r, ("schedule_path_id", "schedule_path", "path_id", "path",
-                                       "network_path"))
-                _lost = _first_of(_r, ("actual_lost_days", "days_lost", "lost_days",
-                                       "days_claimed", "days_impacted"))
-                _flt = _first_of(_r, ("available_float_days", "float_days", "total_float",
-                                      "total_float_days", "float", "float_remaining"))
-                _ev = _first_of(_r, ("causal_evidence", "evidence", "cause", "basis",
-                                     "verification", "substantiation"))
-                # EVERY COLUMN THE CANONICAL FUNCTION REQUIRES MUST BE PRESENT ON THE ROW. A row
-                # missing one is DROPPED rather than defaulted -- `_f` and `_text` would refuse
-                # the whole record on it, and dropping the row at least lets a register whose
-                # other rows are complete still be read. Nothing is invented for the dropped row
-                # and the assembled record says how many events it carried.
-                if None in (_eid, _act, _path, _lost, _flt, _ev) or _eday is None:
-                    continue
-                _events.append({
-                    "event_id": str(_eid),
-                    "event_day": _eday,
-                    "activity_id": str(_act),
-                    "schedule_path_id": str(_path),
-                    "planned_work": _text_or_none(
-                        _first_of(_r, ("planned_work", "work_planned", "activity_description",
-                                       "description", "work"))) or "",
-                    "actual_lost_days": _lost,
-                    "available_float_days": _flt,
-                    "causal_evidence": str(_ev),
-                    "mitigation_days": _first_of(
-                        _r, ("mitigation_days", "recovery_days", "days_mitigated")),
-                    "event_start_date": _text_or_none(
-                        _first_of(_r, ("event_start_date", "start_date", "from", "period_from"))),
-                    "event_end_date": _text_or_none(
-                        _first_of(_r, ("event_end_date", "end_date", "to", "period_to"))),
-                })
-            _allow_rem = ex.get("weather_allowance_days_remaining")
-            _cal_id = _text_or_none(ex.get("weather_calendar_id"))
-            if _events and _allow_rem is not None and _cal_id:
-                _wrec = {
-                    "source": "the OAC meeting minutes uploaded for this period",
-                    "weather_calendar_id": _cal_id,
-                    "allowance_days_remaining": _allow_rem,
-                    "events": _events,
-                    "assembled_by": "document extraction",
-                    "source_document_type": doc_type,
-                }
-                for _key, _fld in (
-                        ("day_basis", "weather_day_basis"),
-                        ("weather_allowance_days", "weather_allowance_days"),
-                        ("weather_days_claimed", "weather_days_claimed"),
-                        ("weather_days_approved", "weather_days_approved"),
-                        ("approval_period", "weather_approval_period"),
-                        ("approval_source", "weather_approval_source"),
-                        ("time_extension_granted", "weather_time_extension_granted"),
-                        ("time_extension_days_granted", "weather_time_extension_days"),
-                        ("time_extension_incorporated_in_baseline",
-                         "weather_time_extension_incorporated_in_baseline"),
-                        ("milestone_forecast_late", "weather_milestone_forecast_late"),
-                        ("milestone_class", "weather_milestone_class")):
-                    if ex.get(_fld) is not None:
-                        _wrec[_key] = ex.get(_fld)
+        # ------------------------------------------------------------ RUN 117, MAP ROW 17
+        # THE FIELD REPORT'S WEATHER EVENTS, READ BY THE OAC MINUTES' OWN READER.
+        #
+        # The owner's ruling: A4.5 Weather Day Impact must also read the field report, because
+        # weather days are recorded on site. Run 116 measured `field_report.weather_days_lost`
+        # reaching the signal inputs and A4.5 never reading it -- stored, and stopping short.
+        #
+        # THE COUNT IS STILL NOT READ AS AN EVENT and this run does not convert it into one. A
+        # field report that prints the EVENT TABLE is read; one that prints only the count
+        # assembles nothing here, exactly as before, and A4.5 abstains with the sentence naming
+        # what it needs. The longest event list wins between the OAC minutes and the field
+        # report -- the same deterministic rule already applied between two OAC minutes, applied
+        # across the two document types rather than stitching their tables together, because a
+        # stitched register would double-count an event both documents recorded.
+        elif doc_type == "field_report":
+            _wrec = _weather_impact_record(ex, doc_type)
+            if _wrec is not None:
                 _prev = out.get("weatherImpactEvents")
-                if _prev is None or len(_events) > len(_prev.get("events") or []):
+                if _prev is None or len(_wrec["events"]) > len(_prev.get("events") or []):
+                    out["weatherImpactEvents"] = _wrec
+
+        elif doc_type == "oac_minutes":
+            _wrec = _weather_impact_record(ex, doc_type)
+            if _wrec is not None:
+                _prev = out.get("weatherImpactEvents")
+                if _prev is None or len(_wrec["events"]) > len(_prev.get("events") or []):
                     out["weatherImpactEvents"] = _wrec
 
             # ------------------------------------------------------ RUN 115, GOAL 2/3
@@ -2599,6 +2647,163 @@ def _run69_structures(session: Session, project: Project, period: int,
             continue
         for key, structure in _run80_a3_structures(ex).items():
             out.setdefault(key, structure)
+
+    # ============================================ RUN 117, SECTION 4.1. THE ENFORCEMENT NOTICE
+    #
+    # THE ESTABLISHED FACT THIS SERVES, MEASURED AT THIS HEAD BEFORE A LINE WAS WRITTEN:
+    # `models_cat89._severe_safety_events` reads `structure["severe_events"]` and
+    # `_environmental_override_findings` reads `structure["environmental_findings"]`, and NO
+    # CODE ANYWHERE IN THIS TREE WROTE EITHER KEY. Both of A6.2's and A6.3's hard overrides --
+    # the ones the owner's map says a notice must fire -- were complete, correct, tested code
+    # with no supply path. `grep -rn severe_events app/` returned the reader and the canonical
+    # pass-through and nothing else. This block is the supply path.
+    #
+    # WHAT IS AND IS NOT ADDED. No band, no threshold, no ladder and no severity word. The two
+    # vocabularies -- `_SAFETY_OVERRIDE_WORDS` and `_ENV_OVERRIDE` -- are untouched, and a
+    # severity word that is in neither matches nothing and is carried onto the record unranked,
+    # which is what both functions already do with a word they do not recognise.
+    #
+    # THE DOMAIN IS THE DOCUMENT'S OWN AND IS NEVER GUESSED. A notice that states no domain
+    # reaches neither module and is reported on the record as unrouted. Routing a notice by
+    # guessing at its severity word would put a stop-work order into whichever regime this
+    # platform found convenient, and a Red band is not a thing to reach by convenience.
+    _enf: dict[str, list[dict]] = {"safety": [], "environmental": [], "unrouted": []}
+    for d in documents:
+        ex = d.get("extraction")
+        if not isinstance(ex, dict) or d.get("doc_type") != "correspondence_notice":
+            continue
+        _sev = _text_or_none(ex.get("notice_enforcement_severity"))
+        if not _sev:
+            continue
+        _dom = (_text_or_none(ex.get("notice_enforcement_domain")) or "").strip().lower()
+        _row = {
+            "event_type": _sev.strip().lower().replace(" ", "_").replace("-", "_"),
+            "severity": _sev.strip().lower().replace(" ", "_").replace("-", "_"),
+            "stated_severity": _sev,
+            "stated_domain": _text_or_none(ex.get("notice_enforcement_domain")),
+            "authority": _text_or_none(ex.get("notice_enforcement_authority")),
+            "reference": _text_or_none(ex.get("notice_enforcement_reference")),
+            "served_on": _text_or_none(ex.get("notice_served_on")),
+            "date_served": _text_or_none(ex.get("notice_date_served")),
+            "source_document_type": "correspondence_notice",
+            "source_filename": d.get("filename"),
+            "provenance": "read from a correspondence notice uploaded for this period",
+        }
+        if "safety" in _dom or "osha" in _dom:
+            _enf["safety"].append(_row)
+        elif "environment" in _dom or "epa" in _dom or "permit" in _dom:
+            _enf["environmental"].append(_row)
+        else:
+            _enf["unrouted"].append(_row)
+
+    if _enf["safety"] or _enf["environmental"] or _enf["unrouted"]:
+        out.setdefault("enforcementNotices", {
+            "safety": _enf["safety"],
+            "environmental": _enf["environmental"],
+            "unrouted": _enf["unrouted"],
+            "unrouted_note": (
+                "these enforcement actions state no regime, so they reach neither the safety "
+                "nor the environmental override. Nothing routes them by guessing at the "
+                "severity word" if _enf["unrouted"] else None),
+            "assembled_by": "document extraction",
+            "source_document_type": "correspondence_notice",
+        })
+    # A6.2's record is assembled by `models_cat89._assemble` off the safety report's own
+    # figures, and this run does not displace that assembly with a second one. The severe
+    # events travel to it as their own signal input and are attached there, so a project with a
+    # stop-work notice and NO safety report still reaches the override and a project with both
+    # keeps every figure the safety report stated.
+    if _enf["safety"]:
+        out.setdefault("safetySevereEvents", _enf["safety"])
+    # A6.3's register IS assembled here, off the environmental report. The findings are attached
+    # to it. WHERE NO REGISTER EXISTS NOTHING IS CREATED: `canonical_v6.environmental_compliance`
+    # is defined on a permit and requirement register, and a register conjured out of one notice
+    # so that an override could fire would be this platform inventing the applicability it is
+    # forbidden to assume. That limitation is real and is stated in the run report rather than
+    # papered over.
+    if _enf["environmental"] and isinstance(out.get("environmentalRequirementRegister"), dict):
+        out["environmentalRequirementRegister"]["environmental_findings"] = _enf["environmental"]
+
+    # ================================== RUN 117, SECTION 3. THE TRADE RECORDS, AND WHOSE THEY ARE
+    #
+    # See `extraction_fields._TRADE_ATTRIBUTION_NOTE` for the row shape, the headings and what
+    # makes a row unusable. THIS ASSEMBLES AND ATTRIBUTES; IT DECIDES NOTHING. No trade record
+    # moves any firm's band in this run, because the owner has not stated how one weighs against
+    # a firm's stated rating and an invented weight is the thing this programme fails runs for.
+    #
+    # AN UNATTRIBUTED RECORD IS REPORTED, NOT DROPPED AND NOT DISTRIBUTED. That is section 3 in
+    # terms, and it is why `unattributed` is its own list on the record rather than a count that
+    # disappears into a total.
+    _tr_by_firm: dict[str, list[dict]] = {}
+    _tr_unattributed: list[dict] = []
+    _tr_unusable = 0
+    _tr_types: list[str] = []
+    for d in documents:
+        ex = d.get("extraction")
+        if not isinstance(ex, dict):
+            continue
+        _dt = d.get("doc_type") or ""
+        _rows = _json_rows(ex.get("trade_attribution_json"))
+        if not _rows:
+            continue
+        _seen_type = False
+        for _r in _rows:
+            if not isinstance(_r, dict):
+                _tr_unusable += 1
+                continue
+            _ref = _first_of(_r, ("record_reference", "reference", "record", "record_id", "ref",
+                                  "id", "number", "no", "ncr_number", "ncr_no", "item",
+                                  "item_id", "finding", "finding_id", "po", "po_number"))
+            if _ref is None or not str(_ref).strip():
+                _tr_unusable += 1
+                continue
+            _firm = _first_of(_r, ("subcontractor", "sub", "firm", "company",
+                                   "trade_contractor", "trade", "vendor", "supplier",
+                                   "responsible_firm", "responsible_party", "contractor",
+                                   "name"))
+            _rec = {"record_reference": str(_ref).strip(), "source_document_type": _dt}
+            for _k, _names in (
+                    ("record_kind", ("record_kind", "kind", "type", "record_type", "category",
+                                     "classification")),
+                    ("record_status", ("record_status", "status", "state", "disposition",
+                                       "outcome", "result")),
+                    ("record_severity", ("record_severity", "severity", "criticality", "class",
+                                         "level")),
+                    ("record_date", ("record_date", "date", "raised", "raised_on", "issued",
+                                     "issued_on", "reported"))):
+                _v = _first_of(_r, _names)
+                if _v is not None and str(_v).strip():
+                    _rec[_k] = str(_v).strip()
+            _seen_type = True
+            if _firm is not None and str(_firm).strip():
+                _name = str(_firm).strip()
+                _rec["subcontractor"] = _name
+                _tr_by_firm.setdefault(_name, []).append(_rec)
+            else:
+                # NEVER DISTRIBUTED, NEVER ASSIGNED TO THE WORST FIRM, NEVER SILENTLY DROPPED.
+                _tr_unattributed.append(_rec)
+        if _seen_type and _dt not in _tr_types:
+            _tr_types.append(_dt)
+
+    if _tr_by_firm or _tr_unattributed or _tr_unusable:
+        out.setdefault("tradeAttributionRecords", {
+            "by_subcontractor": {k: _tr_by_firm[k] for k in sorted(_tr_by_firm)},
+            "unattributed": _tr_unattributed,
+            "rows_unusable": _tr_unusable,
+            "source_document_types": sorted(_tr_types),
+            "attributed_record_count": sum(len(v) for v in _tr_by_firm.values()),
+            "unattributed_record_count": len(_tr_unattributed),
+            "posture_effect": (
+                "NONE. These records are reported beside the subcontractor performance reading "
+                "and move no firm's band. How a nonconformance, a failed inspection or a safety "
+                "incident weighs against a firm's stated rating is not established on this "
+                "platform, and no weight is invented here."),
+            "unattributed_rule": (
+                "a record naming no firm is reported as unattributed. It is never distributed "
+                "across firms, never assigned to the worst firm, and never allowed to change "
+                "any firm's posture."),
+            "assembled_by": "document extraction",
+        })
     return out
 
 

@@ -71,7 +71,8 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
                     "weather_time_extension_incorporated_in_baseline",
                     "weather_milestone_forecast_late", "weather_milestone_class",
                     "disputes_json", "disputes_recorded"),
-    "procurement_log": ("procurement_items_json", "procurement_day_basis"),
+    "procurement_log": ("procurement_items_json", "procurement_day_basis",
+                        "trade_attribution_json"),
     "submittal_register": ("submittal_decisions_json", "submittal_disposition_legend_json",
                            "submittal_reporting_period",
                            "rejected_critical_or_long_lead_late_json",
@@ -81,13 +82,33 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
                 "ncr_issued", "ncr_open", "ncr_closed", "report_period",
                 "open_critical_ncr_json", "hold_point_or_turnover_blocking_ncr_json",
                 "ncr_open_past_contractual_closure_json",
-                "max_repeat_ncrs_one_root_cause_or_trade"),
+                "max_repeat_ncrs_one_root_cause_or_trade",
+                "trade_attribution_json"),
     "subcontractor_report": ("subcontractor_ratings_json", "subcontractor_rating_scale",
                              "subcontractor_report_date", "subcontractor_report_version"),
     "schedule_update": ("schedule_network_json",),
     "contract_value": ("federal_acquisition", "agency_procedure_requires_evms",
                        "major_acquisition", "contracting_agency", "acquisition_designation",
                        "evms_clause_id", "award_date", "acquisition_id"),
+    # RUN 117. THE THREE NEW SUPPLY PATHS, DECLARED so the denominator counts them.
+    # `correspondence_notice` reaches A6.2's and A6.3's hard overrides; `field_report` reaches
+    # A4.5 through the OAC minutes' own event reader; `trade_attribution_json` reaches A4.8 on
+    # eight document types. Leaving any of them undeclared would let the completeness caveat
+    # report a project as more complete than the evidence it actually rests on.
+    #
+    # `notice_enforcement_domain` IS DECLARED EVEN THOUGH A NOTICE MAY HONESTLY STATE NO REGIME.
+    # It has a path -- it is what routes the notice -- and the denominator counts paths, not
+    # obligations. A project whose notice states no domain is genuinely less complete for the
+    # purpose of the two overrides, and the caveat says so rather than hiding it.
+    "correspondence_notice": ("notice_enforcement_domain", "notice_enforcement_severity",
+                              "notice_enforcement_authority", "notice_enforcement_reference"),
+    "field_report": ("weather_events_json", "weather_allowance_days_remaining",
+                     "weather_calendar_id", "weather_day_basis", "trade_attribution_json"),
+    "inspection_report": ("trade_attribution_json",),
+    "safety_report": ("trade_attribution_json",),
+    "quality_audit_report": ("trade_attribution_json",),
+    "environmental_report": ("trade_attribution_json",),
+    "commissioning_report": ("trade_attribution_json",),
 }
 
 

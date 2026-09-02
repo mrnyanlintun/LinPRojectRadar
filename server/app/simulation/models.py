@@ -975,7 +975,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v59"
+SIMULATION_VERSION = "sim-2026.09-v60"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1099,6 +1099,25 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # routing is unchanged. No band, category rule or project rule elsewhere is touched, and no
  # model decided any of it: there is no model key in this environment and none was simulated.
  "sim-2026.09-v59",
+ # RUN 117. THE DOCUMENTS THAT REACHED NOTHING, AND THE TWO OVERRIDES THAT COULD NOT FIRE.
+ # `correspondence_notice` gains four ENFORCEMENT fields -- the regime, the severity word the
+ # notice prints, the issuing authority and its reference -- and they are read into
+ # `safetySevereEvents` and onto `environmentalRequirementRegister.environmental_findings`.
+ # THIS CLOSES A MEASURED DEFECT: A6.2's `severe_events` and A6.3's `environmental_findings`
+ # have been read by both hard overrides since Run 102 and NOTHING IN THE TREE EVER WROTE
+ # EITHER KEY, so a stop-work order could not reach either module however it was written. No
+ # band, threshold, ladder or severity word is added: both override vocabularies are untouched,
+ # and a notice stating no regime routes to neither module and is reported unrouted rather than
+ # guessed at. `field_report` gains the WEATHER EVENT TABLE and is read by the OAC minutes' own
+ # reader, which is now one function serving both types; the weather-day COUNT is still not read
+ # as an event and nothing converts it into one. Eight trade document types gain
+ # `trade_attribution_json`, the column that NAMES THE FIRM -- not one of them carried such a
+ # field before this run -- and A4.8 reports the records attributed to each firm and the ones
+ # attributed to none. NO TRADE RECORD MOVES ANY BAND: how a nonconformance weighs against a
+ # stated rating is not established and no weight is invented. No category rule, project rule,
+ # band or threshold anywhere is changed, and no model decided any of it: there is no model key
+ # in this environment and none was simulated.
+ "sim-2026.09-v60",
 )
 
 

@@ -250,7 +250,22 @@ def _assemble(si: dict, module_id: str) -> dict | None:
         cases = si.get("oshaRecordableIncidents")
         hours = si.get("totalManhours")
         stated = si.get("oshaIncidentRate")
-        if cases is None and hours is None and stated is None:
+        # RUN 117, SECTION 4.1. THE ENFORCEMENT NOTICES THIS PERIOD SERVED.
+        #
+        # `_severe_safety_events` has read `structure["severe_events"]` since Run 102 and NOTHING
+        # IN THE TREE EVER WROTE THAT KEY -- measured at this run's start head, not cited. The
+        # owner's map says a stop-work order arrives on a correspondence notice, so
+        # `documents._run69_structures` now reads one onto `safetySevereEvents` and this is where
+        # it joins the record. The words are the notice's own: nothing here maps a severity word
+        # onto the override vocabulary, and a word outside it matches nothing and is carried
+        # unranked, which is the behaviour `_severe_safety_events` already had.
+        #
+        # A NOTICE ALONE IS ENOUGH TO BUILD THE RECORD. A project served a stop-work order and
+        # holding no safety report still reaches the override; the frequency leg then has no
+        # figures and bands nothing, which is correct and is not a reason to withhold the Red.
+        severe = si.get("safetySevereEvents")
+        severe = list(severe) if isinstance(severe, list) else []
+        if cases is None and hours is None and stated is None and not severe:
             return None
         rec: dict[str, Any] = {
             "evidence_id": "A6.2-corpus",
@@ -258,6 +273,7 @@ def _assemble(si: dict, module_id: str) -> dict | None:
             "provenance": "assembled from the project's Safety Report extraction",
             "document_stated_incident_rate": stated,
             "leading_indicators": [],
+            "severe_events": severe,
         }
         if cases is not None:
             rec["recordable_cases"] = cases

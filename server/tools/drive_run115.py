@@ -188,7 +188,15 @@ _unread = sorted(f"{t}.{f}" for t, fs in _ASSEMBLER_FIELDS.items() for f in fs
                  if f'"{f}"' not in _src)
 check(not _unread, "and is a field `documents.py` actually reads", str(_unread)[:150])
 _candidate_a = sum(len(extraction_fields_for(t)) for t in DOC_TYPES)
-check(_candidate_a == 273 and REQUIRED_TOTAL == 163,
+# RUN 117 RE-POINT, WITH THE REASON RECORDED BESIDE IT. Both numbers moved because Run 117
+# GREW THE EXTRACTION CONTRACT: `correspondence_notice` gained four enforcement fields,
+# `field_report` gained the weather event table plus the attribution column, and seven more
+# document types gained `trade_attribution_json` -- sixteen new (type, field) pairs, so
+# candidate A goes 273 -> 289. Candidate B goes 163 -> 179 because every one of those sixteen
+# now has a real path to a module and is declared in `_ASSEMBLER_FIELDS`; leaving them out
+# would have let the completeness caveat report a project as more complete than its evidence.
+# NEITHER NUMBER IS WEAKENED and the check still fails on a rename in either place.
+check(_candidate_a == 289 and REQUIRED_TOTAL == 179,
       "the two candidate denominators, measured: every field every type asks for, against the "
       "fields this platform has a path from",
       f"candidate A {_candidate_a} pairs, candidate B (chosen) {REQUIRED_TOTAL} pairs")
@@ -337,8 +345,8 @@ section("4. GOAL 4 -- the caveat, served on the real projectresults response")
 # =================================================================================================
 IC = VIEW.get("information_completeness") or {}
 check(bool(IC), "the served result carries the completeness record", str(list(IC.keys()))[:110])
-check(IC.get("required") == 163 and isinstance(IC.get("extracted"), int),
-      "the denominator is the 163 (document type, field) pairs this platform has a path from",
+check(IC.get("required") == 179 and isinstance(IC.get("extracted"), int),
+      "the denominator is the 179 (document type, field) pairs this platform has a path from",
       f"{IC.get('extracted')} of {IC.get('required')}")
 check(isinstance(IC.get("percent"), int) and 0 <= IC["percent"] <= 100,
       "and the caveat states a percentage", str(IC.get("percent")))
@@ -428,7 +436,7 @@ def _ic_holds():
     _r, _a, _si, _v, _p, _m = run_project("fic-" + str(time.time_ns()),
                                           docs(disputes=DISPUTE_ROWS))
     _ic = _v.get("information_completeness") or {}
-    return _ic.get("required") == 163 and (_ic.get("extracted") or 0) > 0
+    return _ic.get("required") == 179 and (_ic.get("extracted") or 0) > 0
 def _break_ic():
     ICM.REQUIRED_PAIRS = {"contract_value": frozenset({"original_contract_sum"})}
     ICM.REQUIRED_TOTAL = 1

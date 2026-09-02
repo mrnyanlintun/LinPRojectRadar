@@ -445,10 +445,35 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     # A REGISTER IS A TABLE, so it gains no fields at all. Its rows are read from the document
     # by `risk_register`, one decision per table rather than one per row, and asking the model
     # for them is the unbounded-output failure `milestones_json` already demonstrated.
+    # RUN 117, SECTION 4.1. THE ENFORCEMENT CONSEQUENCE, WHICH IS WHAT A STOP-WORK ORDER IS.
+    #
+    # The seven `notice_*` fields above describe a CONTRACTUAL notice -- who served it, on whom,
+    # what it claims, and which form's clock it starts. Run 116 measured that they reach a notice
+    # ledger and no module. The owner's ruling is that "correspondence notice is where a
+    # stop-work order or a fine arrives, for safety and for environmental".
+    #
+    # A6.2 AND A6.3 BOTH ALREADY CARRY THE OVERRIDE, AND BOTH OVERRIDES WERE UNREACHABLE.
+    # Measured at this head, not cited: `models_cat89._severe_safety_events` reads
+    # `structure["severe_events"]` and `_environmental_override_findings` reads
+    # `structure["environmental_findings"]`, and NOTHING IN THE TREE WROTE EITHER KEY. The
+    # override machinery the owner is asking a notice to fire was complete code with no supply
+    # path. These four fields are that supply path and nothing else: no band, no threshold and
+    # no ladder is added anywhere by this run.
+    #
+    # THE SEVERITY WORD IS READ, NEVER MAPPED. `_SAFETY_OVERRIDE_WORDS` and `_ENV_OVERRIDE` are
+    # closed vocabularies already in the tree; a word that is none of them matches nothing and is
+    # carried onto the record unranked, which is the behaviour both functions already have for a
+    # severity word they do not recognise. This run does not add a word to either set.
+    #
+    # THE DOMAIN IS THE DOCUMENT'S OWN. A notice does not become a safety notice because this
+    # platform guessed; the document says which regime issued it, and a notice that says neither
+    # reaches neither module and is reported as an unrouted enforcement action.
     "correspondence_notice": [
         "document_risk_score", "document_date",
         "notice_served_by", "notice_served_on", "notice_claim", "notice_date_served",
         "notice_contract_form", "notice_kind", "notice_references",
+        "notice_enforcement_domain", "notice_enforcement_severity",
+        "notice_enforcement_authority", "notice_enforcement_reference",
     ],
     "risk_register": ["document_risk_score", "document_date"],
     # RUN 87. THE INSPECTION ITEM TABLE, ASKED FOR AS A TABLE.
@@ -469,15 +494,48 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "items_passing_first_inspection", "critical_quality_failures_json",
         "deficiency_count", "critical_deficiency_count",
         "quality_requirements_json", "quality_register_id", "quality_register_period",
+        # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
+        "trade_attribution_json",
     ],
+    # RUN 117, MAP ROW 17. THE WEATHER EVENT TABLE, ASKED OF THE DOCUMENT THAT RECORDS THE DAY.
+    #
+    # The owner's ruling: A4.5 Weather Day Impact "must also read the field report -- weather
+    # days recorded on site". Run 116 measured `weather_days_lost` reaching the signal inputs
+    # and A4.5 never looking at it, and called it the clearest category-(2) case on the platform.
+    #
+    # A COUNT IS NOT THE RECORD, AND THIS RUN DOES NOT PRETEND IT IS. `canonical_v4.weather_day_
+    # impact` is defined on EVENTS -- for each event the day, the activity, the schedule path,
+    # the days lost, the float available on that activity and the causal evidence -- and
+    # `weather_days_lost` is one number with none of that behind it. Nothing here converts the
+    # count into an event, because an event this platform invented would carry an activity and a
+    # path nobody recorded. The count stays exactly where it is, unread by A4.5, and the TABLE is
+    # asked for beside it on the `weather_events_json` precedent the OAC minutes already set.
+    #
+    # THE READER IS THE ONE ALREADY IN THE TREE. `documents._run69_structures` reads the OAC
+    # minutes' event table into `weatherImpactEvents` with a named column vocabulary and an
+    # all-or-nothing recipe; the field report is read by that same code with the same vocabulary
+    # and the same refusals. A field report printing only some of it assembles NOTHING and A4.5
+    # goes on abstaining, which is the correct outcome.
     "field_report": [
         "document_risk_score", "document_date", "weather_days_lost", "float_remaining",
         "quality_deficiencies_noted", "safety_observations", "environmental_observations",
         "subcontractor_observations",
+        "weather_events_json", "weather_allowance_days_remaining", "weather_calendar_id",
+        "weather_day_basis",
+        "trade_attribution_json",
     ],
-    "commissioning_report": ["document_risk_score", "document_date"],
+    # RUN 117, SECTION 4.2 and SECTION 3. The attribution column is added; the CLOSEOUT FACTS
+    # are NOT. See the run report: it proposes what a commissioning report must state to close a
+    # project and deliberately ships no replacement for the cost test.
+    "commissioning_report": [
+        "document_risk_score", "document_date",
+        # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
+        "trade_attribution_json",
+    ],
     "safety_report": [
         "osha_recordable_incidents", "total_manhours", "incident_rate", "report_period",
+        # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
+        "trade_attribution_json",
     ],
     # RUN 87. THE SAME TABLE OFF THE QUALITY AUDIT REPORT, for the same reason: an audit score
     # and a findings count are the summaries the specification names, and the audit's own
@@ -485,6 +543,8 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "quality_audit_report": [
         "total_findings", "critical_findings", "deficiency_count", "audit_score", "audit_date",
         "quality_requirements_json", "quality_register_id", "quality_register_period",
+        # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
+        "trade_attribution_json",
     ],
     # RUN 87. THE FACTS THAT ESTABLISH ENVIRONMENTAL APPLICABILITY, AND THE OBSERVATION TABLE.
     #
@@ -511,6 +571,8 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         # cannot answer a timeliness question. A separate table is asked for, and it must state
         # each action, its required deadline, its closure date and its severity.
         "environmental_corrective_actions_json",
+        # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
+        "trade_attribution_json",
     ],
     "ncr_log": [
         "ncr_issued", "ncr_closed", "ncr_open", "ncr_overdue", "report_period",
@@ -519,6 +581,8 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "inspections_performed", "active_work_packages", "ncr_denominator_basis",
         "open_critical_ncr_json", "hold_point_or_turnover_blocking_ncr_json",
         "max_repeat_ncrs_one_root_cause_or_trade", "ncr_open_past_contractual_closure_json",
+        # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
+        "trade_attribution_json",
     ],
     "subcontractor_report": [
         "scheduled_deliveries", "on_time_deliveries", "compliance_score", "report_period",
@@ -546,6 +610,8 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "procurement_log": [
         "long_lead_items_total", "on_schedule", "at_risk", "delayed", "report_date",
         "procurement_items_json", "procurement_day_basis",
+        # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
+        "trade_attribution_json",
     ],
     # RUN 86. THE LOOK-AHEAD ACTIVITY TABLE, ASKED FOR AS A TABLE.
     #
@@ -689,6 +755,61 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "avg_review_days", "log_date",
     ],
 }
+
+#: RUN 117, SECTION 3. THE COLUMN THAT NAMES THE FIRM, AND WHY IT HAD TO BE ADDED.
+#:
+#: THE ESTABLISH-FIRST QUESTION THE ORDER ASKED WAS ANSWERED BY READING THE TREE, AND THE ANSWER
+#: WAS NO. At the start of this run the eight trade document types the owner's ruling names --
+#: `ncr_log`, `inspection_report`, `safety_report`, `environmental_report`, `quality_audit_report`,
+#: `procurement_log`, `field_report`, `commissioning_report` -- declared, between them, NOT ONE
+#: field that names a firm. `ncr_log` carried `max_repeat_ncrs_one_root_cause_or_trade`, which is a
+#: COUNT and attributes nothing, and `field_report` carried `subcontractor_observations`, which is
+#: narrative prose that Run 112 measured as mapped to nothing. The other six carried nothing at all.
+#: So a defect on an NCR log told this platform that a defect happened and never whose it was, and
+#: A4.8 Subcontractor Performance could not have read a trade record however it was written.
+#:
+#: THE ROW SHAPE, which is the contract the generating model must print to:
+#:
+#:   record_reference   the record's own identifier on its own document -- an NCR number, an
+#:                      inspection item, a permit condition, a purchase order. REQUIRED. A row
+#:                      without it is unusable and is dropped.
+#:   subcontractor      the FIRM THE DOCUMENT NAMES as responsible for that record. OPTIONAL, and
+#:                      its absence is the whole point of this field: a row stating a record and
+#:                      NO firm is an UNATTRIBUTED record. It is carried through, counted, and
+#:                      reported as unattributed. It is never distributed across firms, never
+#:                      assigned to the worst firm, and never allowed to move any firm's posture.
+#:   record_kind        what kind of record it is, in the document's own word -- nonconformance,
+#:                      inspection failure, safety incident, permit violation, late delivery,
+#:                      audit finding, commissioning defect. OPTIONAL; carried as printed.
+#:   record_status      open / closed / accepted / rejected, as printed. OPTIONAL.
+#:   record_severity    the severity word the record prints, if it prints one. OPTIONAL. NOTHING
+#:                      in this run ranks it, bands it, or maps it to a colour.
+#:   record_date        the date the record carries. OPTIONAL.
+#:
+#: HEADINGS THE PARSER RECOGNISES, per column, matched case-insensitively after trimming (see
+#: `documents._first_of`), in this order:
+#:   record_reference : record_reference, reference, record, record_id, ref, id, number, no,
+#:                      ncr_number, ncr_no, item, item_id, finding, finding_id, po, po_number
+#:   subcontractor    : subcontractor, sub, firm, company, trade_contractor, trade, vendor,
+#:                      supplier, responsible_firm, responsible_party, contractor, name
+#:   record_kind      : record_kind, kind, type, record_type, category, classification
+#:   record_status    : record_status, status, state, disposition, outcome, result
+#:   record_severity  : record_severity, severity, criticality, class, level
+#:   record_date      : record_date, date, raised, raised_on, issued, issued_on, reported
+#:
+#: WHAT MAKES A ROW UNUSABLE: it is not an object; or it states no `record_reference` under any
+#: of the headings above. Such a row is DROPPED, is counted in `rows_unusable` on the assembled
+#: record, and is never repaired, defaulted or guessed at.
+#:
+#: WHAT THIS RUN DOES **NOT** DO WITH THESE ROWS, and the reason is section 3's own instruction.
+#: No trade record moves any firm's band. The owner has not stated how an NCR, a failed
+#: inspection or a safety incident weighs against a firm's STATED rating, and any weight this run
+#: chose would be an invented threshold. The rows are assembled, attributed where the document
+#: named a firm, reported as unattributed where it did not, and carried onto A4.8's reading as
+#: EVIDENCE beside the band it already asserts. See the run report, section "Subcontractor
+#: attribution", for the question the owner must answer before a weight can exist.
+_TRADE_ATTRIBUTION_NOTE = "trade_attribution_json"
+
 
 # The legacy `default:` arm. Note it is the same pair as risk_register — an unknown type is
 # treated as narrative, which is the conservative choice: ask for a risk score and a date, never

@@ -528,6 +528,26 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "as printed and leave the comparison to the platform. Return an empty array only if the "
         "document has no such register."
     ) if "environmental_corrective_actions_json" in fields else ""
+    # RUN 117, SECTION 3. THE ATTRIBUTION COLUMN, AND THE INSTRUCTION NOT TO INVENT A FIRM.
+    # The whole value of this table is that it says WHO, and the whole danger of it is a model
+    # that would rather guess than leave a cell empty. Both halves are stated in terms: name the
+    # firm the document names, and where the document names none, LEAVE IT NULL. An unattributed
+    # record is a real and reportable state on this platform; a wrong attribution is not.
+    trade_attribution_hint = (
+        " trade_attribution_json, if requested and the document records individual items,"
+        " findings, nonconformances, incidents, deliveries or defects, is a JSON array with one"
+        " object per PRINTED RECORD, with these keys: record_reference (the record's own"
+        " identifier as printed -- an NCR number, an inspection item, a permit condition, a"
+        " purchase order), subcontractor (THE FIRM THE DOCUMENT NAMES as responsible for that"
+        " record), record_kind, record_status, record_severity and record_date, each as printed."
+        " record_reference is required; return no object for a record whose identifier the"
+        " document does not print. DO NOT SUPPLY A SUBCONTRACTOR THE DOCUMENT DOES NOT NAME FOR"
+        " THAT RECORD -- not from another row, not from the project's contractor list, not from"
+        " your own knowledge, and never by choosing the firm that seems most likely. Where the"
+        " record names no firm, return subcontractor as null: an unattributed record is carried"
+        " through and reported as unattributed, and a guessed name would be attributed to a firm"
+        " it does not belong to. Return an empty array where the document records no such items."
+    ) if "trade_attribution_json" in fields else ""
     # RUN 72. THE SCALE OF A RATIO FIELD, NAMED, because the general sentence below is false
     # of it. "Percentages as numbers 0-100" is correct for every 0..100 quantity in the
     # vocabulary and WRONG for a compliance rate, which the numeric contract bounds at 1.0. A
@@ -578,7 +598,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + submittal_hint + ncr_hint + weather_events_hint + procurement_items_hint + change_events_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + trade_attribution_hint + submittal_hint + ncr_hint + weather_events_hint + procurement_items_hint + change_events_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

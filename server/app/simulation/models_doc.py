@@ -1407,6 +1407,63 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
 # ------------------------------------------------------------ A4.8 Subcontractor Performance
 
 
+def _trade_attribution_block(si: dict) -> dict[str, Any]:
+    """
+    RUN 117, SECTION 3. The trade records that name a firm, carried onto A4.8's reading.
+
+    THIS MOVES NO BAND AND IT IS NOT AN OVERSIGHT. The owner has widened this module from one
+    document to eight, and the eight now carry a column that names the firm. What the owner has
+    NOT stated is how a nonconformance, a failed inspection or a safety incident WEIGHS against
+    the rating a Subcontractor Performance Report states -- how many NCRs pull a Satisfactory
+    firm to Marginal, or whether one stop-work order alone does. Every answer to that is a
+    threshold, and this platform's first standing rule is that a threshold is never invented.
+    So the records are assembled, attributed, counted and REPORTED beside the band; the band
+    itself is still the report's own normalised rating and nothing else.
+
+    AN UNATTRIBUTED RECORD IS REPORTED AS UNATTRIBUTED. It is never distributed across firms,
+    never assigned to the worst firm, and never allowed to change any firm's posture -- which is
+    trivially guaranteed here, because no record changes any posture at all.
+    """
+    rec = si.get("tradeAttributionRecords")
+    if not isinstance(rec, dict):
+        return {}
+    by_firm = rec.get("by_subcontractor") if isinstance(rec.get("by_subcontractor"), dict) else {}
+    unatt = rec.get("unattributed") if isinstance(rec.get("unattributed"), list) else []
+    return {
+        "trade_records_by_subcontractor": {k: list(v) for k, v in by_firm.items()},
+        "trade_records_unattributed": list(unatt),
+        "trade_records_attributed_count": rec.get("attributed_record_count"),
+        "trade_records_unattributed_count": rec.get("unattributed_record_count"),
+        "trade_records_rows_unusable": rec.get("rows_unusable"),
+        "trade_records_source_document_types": rec.get("source_document_types"),
+        "trade_records_posture_effect": rec.get("posture_effect"),
+        "trade_records_unattributed_rule": rec.get("unattributed_rule"),
+    }
+
+
+def _trade_attribution_sentence(block: dict[str, Any]) -> str:
+    """One sentence naming what the trade records say, or the empty string."""
+    if not block:
+        return ""
+    n_att = block.get("trade_records_attributed_count") or 0
+    n_un = block.get("trade_records_unattributed_count") or 0
+    firms = len(block.get("trade_records_by_subcontractor") or {})
+    types = block.get("trade_records_source_document_types") or []
+    if not n_att and not n_un:
+        return ""
+    parts = []
+    if n_att:
+        parts.append(f"{n_att} trade record{'' if n_att == 1 else 's'} attributed to "
+                     f"{firms} firm{'' if firms == 1 else 's'}")
+    if n_un:
+        parts.append(f"{n_un} recorded against no named firm and reported as unattributed")
+    return (" This period's trade records across "
+            + str(len(types)) + " document type" + ("" if len(types) == 1 else "s")
+            + " carry " + " and ".join(parts)
+            + ". No trade record moves any firm's band: how one weighs against a stated rating "
+              "is not established on this platform and no weight is invented here.")
+
+
 def run_subcontractor_performance(si: dict, rand: Callable[[], float],
                                   period_cutoff) -> dict[str, Any]:
     """
@@ -1434,10 +1491,12 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
     # Project Manager has reviewed it: `pm_review.resolve` decides, `status_color` stays
     # None while it is held, and the held state lives in `module_state`, which is NOT a
     # project status. See `pm_review.py` for why that is structural rather than a promise.
+    _tab = _trade_attribution_block(si)
+    _tas = _trade_attribution_sentence(_tab)
     try:
         structure = require_v4_structure(si, "A4.8")
     except StructureAbsent as absent:
-        return insufficient("Subcontractor_Performance", absent.sentence,
+        return insufficient("Subcontractor_Performance", absent.sentence + _tas,
                             ABSTAIN_STRUCTURE_ABSENT)
     _mvp = None
     _mvp_absent = None
@@ -1476,6 +1535,7 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
             "pm_review_audit_record": _audit,
             "canonical_structure": "subcontractor_reported_ratings",
             "source": _mvp["source"],
+            **_trade_attribution_block(si),
             "scope_note": (
                 "MVP scope, and it is deliberately narrow. This reading normalises the rating "
                 "the report already states. It performs no per-firm schedule, quality, safety "
@@ -1487,7 +1547,8 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
             f"{_js_str(_mvp['firm_count'])} subcontractor"
             f"{'' if _mvp['firm_count'] == 1 else 's'} carry a reported performance rating. "
             f"The most adverse is {_mvp['governing_subcontractor_id']}, rated "
-            f"{_mvp['governing_reported_rating']}, which normalises to {_norm}.")
+            f"{_mvp['governing_reported_rating']}, which normalises to {_norm}."
+            + _trade_attribution_sentence(_trade_attribution_block(si)))
         _boundary = (
             "on the rating the Subcontractor Performance Report states, normalised by "
             "the owner's Run 107 ladder: Exceptional or Very Good, or 90 to 100, is Green; "
@@ -1527,9 +1588,14 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
     try:
         reading = subcontractor_performance(structure)
     except StructureAbsent as absent:
+        # RUN 117. THE TRADE RECORDS ARE REPORTED EVEN WHERE NO RATING WAS STATED. A project
+        # whose NCR log names the firm and whose Subcontractor Performance Report never arrived
+        # still has evidence about that firm, and discarding it because no band can be asserted
+        # is the "stored, and stops short" failure Run 116 named. No band is asserted here and
+        # none is implied by the sentence.
         return insufficient(
             "Subcontractor_Performance",
-            (_mvp_absent or absent.sentence), ABSTAIN_STRUCTURE_ABSENT)
+            (_mvp_absent or absent.sentence) + _tas, ABSTAIN_STRUCTURE_ABSENT)
     return calibration_pending(
         "Subcontractor_Performance",
         f"{_js_str(reading['subcontractor_count'])} subcontractors were assessed against "
