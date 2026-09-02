@@ -68,12 +68,20 @@ print("  takes one authenticated GET per provider on its models endpoint, on the
 print()
 print("  Constants that are NOT the live path, established by reading the call sites:")
 import app.extraction_client as EC, app.simulation.spec_apply as SA, app.training_narration as TN
-check(EC.EXTRACTION_MODEL == "claude-opus-4-6",
+# RUN 113 RE-POINTED THESE THREE, AND ALSO REMOVED THE DIVERGENCE THEY MEASURED.
+# Run 111 recorded them as separate literals that could go stale behind the provider table.
+# Run 113 moved the table, so they WOULD have gone stale; they are now DERIVED from it
+# (`ai_provider.PROVIDERS["anthropic"]["models"][role]`), so the check is now that they track
+# it rather than that they hold a particular string. Not weakened: it still fails if either
+# side is edited alone.
+import app.ai_provider as _AP
+_ANT = _AP.PROVIDERS["anthropic"]["models"]
+check(EC.EXTRACTION_MODEL == _ANT["extraction"] == "claude-sonnet-5",
       "extraction_client.EXTRACTION_MODEL is a DEFAULT ARGUMENT of ProviderExtractor.__init__",
       "the live builder passes model=cfg.model and a built client, so it is never read live")
-check(SA.SPEC_MODEL == "claude-sonnet-4-5",
+check(SA.SPEC_MODEL == _ANT["spec"] == "claude-sonnet-5",
       "spec_apply.SPEC_MODEL is DEAD in the live path", "both appliers take a built client")
-check(TN.NARRATION_MODEL == "claude-3-5-haiku-latest",
+check(TN.NARRATION_MODEL == _ANT["narration"] == "claude-haiku-4-5-20251001",
       "training_narration.NARRATION_MODEL is DEAD in the live path", "load_provider is used")
 
 print()
@@ -463,28 +471,57 @@ except StructureAbsent as exc:
 H("SECTION 2.2. C1.5. MEASURED, NOT DECIDED.  REAL")
 # =============================================================================================
 from app.simulation.models_cat89 import MODULE_USE, USE_REQUIREMENTS, CAT89_CANONICAL
-check(sorted(MODULE_USE) == ["A6.1", "A6.2", "A6.3", "A6.4"],
-      "MODULE_USE declares exactly four entries and C1.5 is not among them")
-check("C1.5" in CAT89_CANONICAL, "C1.5 nevertheless dispatches through the same factory")
+# RUN 113 RE-POINTED THIS WHOLE SECTION, AND THE REASON IS THAT THE QUESTION WAS ANSWERED.
+#
+# Run 111 measured, correctly, that C1.5 was absent from MODULE_USE and that the route therefore
+# raised KeyError('C1.5') the moment a governed structure was present, and it deliberately chose
+# nothing. Run 113 established from this same file that `USE_REQUIREMENTS` ALREADY DECLARED
+# "quality_assessment", with a comment naming Category 9 and section 22's circularity, and that
+# NO MODULE CLAIMED IT. C1.5 now claims it. The checks below are inverted, not deleted: what was
+# "it crashes" is now "it computes, and its stored row names the use it was assessed for".
+check(sorted(MODULE_USE) == ["A6.1", "A6.2", "A6.3", "A6.4", "C1.5"],
+      "MODULE_USE now declares five entries and C1.5 IS among them",
+      "was four; Run 113, order section 3")
+check(MODULE_USE["C1.5"] == "quality_assessment",
+      "C1.5's use is the one this file already declared and nothing claimed")
+check(USE_REQUIREMENTS["quality_assessment"] == {},
+      "and it requires NOTHING of its evidence -- an empty set, not a relaxed one")
+check("C1.5" in CAT89_CANONICAL, "C1.5 dispatches through the same factory")
 from app.simulation import registry as REG_
 run = CAT89_CANONICAL["C1.5"][1]
-try:
-    run({"informationPackageRecord": {"package_id": "P", "components": [
-        {"component_id": "cost", "applicable": True, "required": True, "present": True,
-         "mandatory_fields": ["a"], "values": {"a": 1}}]}}, lambda: 0.5, None)
-    check(False, "C1.5 raises KeyError when a structure IS present")
-except KeyError as exc:
-    check(str(exc) == "'C1.5'", "C1.5 raises KeyError('C1.5') THE MOMENT a structure is present",
-          "MODULE_USE[module_id] at models_cat89.py:928")
+_r = run({"informationPackageRecord": {"package_id": "P", "components": [
+    {"component_id": "cost", "applicable": True, "required": True, "present": True,
+     "mandatory_fields": ["a"], "values": {"a": 1}}]}}, lambda: 0.5, None)
+check(_r.get("canonical_disposition") == "CANONICAL_RESULT",
+      "C1.5 now COMPUTES when a governed package record is supplied",
+      "Run 109/110/111 measured KeyError('C1.5') at models_cat89.py:928 here")
+check((_r.get("qualification") or {}).get("requested_use") == "quality_assessment",
+      "and the STORED row names the use it was assessed for, as the four A6 rows do",
+      "which is why dropping the lookup was the wrong fix: `use` reaches the row")
+check(_r.get("band_asserted") is False and _r.get("status_color") is None,
+      "no band is invented for it; it stays metadata, as Category 9 must")
 r_absent = run({}, lambda: 0.5, None)
 check(r_absent.get("insufficient_data") is True,
-      "with NO structure it abstains cleanly BEFORE reaching that line",
-      "which is why the census shows it abstaining rather than failing")
+      "with NO structure it still abstains cleanly, unchanged",
+      "which is why the census is unmoved by this repair")
 print()
-print("  The four uses, and what each requires of its evidence:")
+print("  FALSIFICATION -- the pre-change MODULE_USE, on the SAME structure. A local copy of the")
+print("  four-entry table is used, NOT the current one, so this cannot read the fix as the old")
+print("  code (the defect that made Run 110's guard driver print a false NOT PROVED).")
+_PRE_MODULE_USE = {"A6.1": "requirement_conformance", "A6.2": "safety_measurement",
+                   "A6.3": "environmental_conformance",
+                   "A6.4": "official_assessment_ingestion"}
+try:
+    _PRE_MODULE_USE["C1.5"]
+    check(False, "the pre-change table refuses C1.5")
+except KeyError as exc:
+    check(str(exc) == "'C1.5'",
+          "the PRE-CHANGE table raises KeyError('C1.5') on the same lookup",
+          "exactly what Run 109 measured escaping run_all")
+print()
+print("  The five uses, and what each requires of its evidence:")
 for mid, use in sorted(MODULE_USE.items()):
     print(f"    {mid}  {use:<34} requires {USE_REQUIREMENTS.get(use) or '{} (nothing)'}")
-print("  The question for the owner is printed in the report. NOTHING WAS CHOSEN HERE.")
 
 
 # =============================================================================================

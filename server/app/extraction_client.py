@@ -68,7 +68,11 @@ ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 
 # Accuracy over speed, deliberately. See the module docstring.
-EXTRACTION_MODEL = "claude-opus-4-6"
+# RUN 113. DERIVED FROM THE PROVIDER TABLE, NEVER RESTATED. Runs 93-112 left this a
+# LITERAL COPY of the Anthropic default, so when Run 113 repointed the table this line
+# would have silently gone stale -- a second, wrong answer to the question 'what model'.
+# It is now the SAME OBJECT the table holds, so the divergence class cannot recur.
+EXTRACTION_MODEL = ai_provider.PROVIDERS["anthropic"]["models"]["extraction"]
 
 # Ten concurrent calls. Chosen to sit well inside the provider's per-minute limits while still
 # collapsing a 27-document period from >2 minutes to well under half a minute.

@@ -975,7 +975,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v56"
+SIMULATION_VERSION = "sim-2026.09-v57"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1067,6 +1067,14 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # calendar decision date no longer refuses the register, and the decision's reporting period is
  # matched on the register's own heading like every other column beside it.
  "sim-2026.09-v56",
+ # RUN 113 (numbered 113, not 112: the owner headed the order "Run 112" and 112 was already
+ # committed as f69e187). C1.5 claims the use this platform had already declared and no module
+ # had claimed -- "quality_assessment", requiring nothing of its evidence -- so Information
+ # Completeness Ratio computes when a governed package record is supplied instead of raising
+ # KeyError. The provider defaults are repointed to identifiers the owner measured against each
+ # provider's own catalogue: anthropic claude-sonnet-5, groq openai/gpt-oss-120b and -20b, the
+ # llama identifiers having turned out not to exist in Groq's catalogue at all.
+ "sim-2026.09-v57",
 )
 
 

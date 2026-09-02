@@ -33,9 +33,12 @@ from .extraction_client import ANTHROPIC_URL, ANTHROPIC_VERSION
 
 log = logging.getLogger("opus-gubernatio-server")
 
-# Run 93: the live path reads the model from configuration via `ai_provider`
-# (role "narration", default claude-3-5-haiku-latest). Kept as the documented default.
-NARRATION_MODEL = "claude-3-5-haiku-latest"
+# Run 93: the live path reads the model from configuration via `ai_provider`.
+# RUN 113. DERIVED FROM THE PROVIDER TABLE, NEVER RESTATED. Runs 93-112 left this a
+# LITERAL COPY of the Anthropic default, so when Run 113 repointed the table this line
+# would have silently gone stale -- a second, wrong answer to the question 'what model'.
+# It is now the SAME OBJECT the table holds, so the divergence class cannot recur.
+NARRATION_MODEL = ai_provider.PROVIDERS["anthropic"]["models"]["narration"]
 NARRATION_MAX_TOKENS = 300
 NARRATION_TIMEOUT_S = 20
 

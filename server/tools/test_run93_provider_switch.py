@@ -14,9 +14,14 @@ as any model's behaviour.
 
 What is proved:
 
-  1. THE DEFAULT IS TODAY'S BEHAVIOUR. With nothing configured, all three call sites resolve
-     anthropic and exactly the three model identifiers that were literals in the source before
-     this run: claude-opus-4-6, claude-sonnet-4-5, claude-3-5-haiku-latest.
+  1. THE DEFAULT IS THE CONFIGURED DEFAULT. With nothing configured, all three call sites
+     resolve anthropic and the identifiers the provider table holds.
+     RE-POINTED BY RUN 113, AND THE REASON MATTERS. Until Run 113 these were "the literals that
+     were in the source before Run 93" -- never checked against any catalogue. The owner has now
+     queried both catalogues from his deployment; anthropic moved to claude-sonnet-5 (narration
+     to claude-haiku-4-5-20251001, the one identifier he did not name) and groq to
+     openai/gpt-oss-*, because the llama identifiers ARE NOT IN GROQ'S CATALOGUE AT ALL. This
+     suite is re-pointed, not weakened: it still asserts an EXACT string per role per provider.
   2. THE SWITCH IS A SETTING. The same functions, from the same unmodified source file, resolve
      a different provider, endpoint, key variable and model when the environment says so. The
      sha256 of every switched source file is taken once and re-taken after the switch and is
@@ -101,9 +106,27 @@ class Captured:
         self.seen: list[tuple[dict, dict]] = []
 
     def install(self, client):
+        # RUN 113 DEFECT, FOUND BY WATCHING THE SOCKET, NOT BY READING THE FILE.
+        #
+        # Three call sites in section 5 and section 8 passed the APPLIER here, not the client:
+        # `o_cap.install(ProviderSpecApplier(build_client(...)))`. `_request` was then set on the
+        # applier, which has no such method and never calls one, while the real client underneath
+        # was left untouched -- so this file, whose first printed line is "NO MODEL IS CALLED IN
+        # THIS FILE", made THREE LIVE HTTPS POSTS to https://api.groq.com/openai/v1/chat/
+        # completions carrying the string "present-not-a-real-key" as a bearer token, on every
+        # run since Run 93. The checks still passed, because `provider` and `model_id` are read
+        # off the applier BEFORE the call and the resulting ProviderCallError is caught by
+        # `apply_category` as state "failed" -- a check passing for the wrong reason.
+        # The three sites now install on the CLIENT. This guard makes the mistake impossible to
+        # repeat silently.
         def _request(request_body, headers):
             self.seen.append((request_body, headers))
             return self.body
+        if not hasattr(client, "_request"):
+            raise TypeError(
+                f"Captured.install was handed a {type(client).__name__}, which has no _request "
+                f"to replace. Install on the CLIENT, not on the applier that wraps it: doing "
+                f"otherwise leaves the real transport live and posts to the real provider.")
         client._request = _request
         return client
 
@@ -120,18 +143,21 @@ def main() -> int:
         print(f"  key present in this environment: {name} = "
               f"{bool((os.environ.get(name) or '').strip())}")
 
-    print("\n1. THE DEFAULT IS TODAY'S BEHAVIOUR (nothing configured)")
+    print("\n1. THE DEFAULT IS THE CONFIGURED DEFAULT (nothing set; re-pointed by Run 113)")
     bare: dict[str, str] = {}
-    for role, model in (("extraction", "claude-opus-4-6"),
-                        ("spec", "claude-sonnet-4-5"),
-                        ("narration", "claude-3-5-haiku-latest")):
+    # RUN 113: re-pointed to the owner's measured identifiers. See the docstring.
+    for role, model in (("extraction", "claude-sonnet-5"),
+                        ("spec", "claude-sonnet-5"),
+                        ("narration", "claude-haiku-4-5-20251001")):
         cfg = ap.load_provider(role, bare)
         check(f"{role} provider defaults to anthropic", cfg.provider, "anthropic")
-        check(f"{role} model is the pre-run-93 literal", cfg.model, model)
+        check(f"{role} model is the owner's measured identifier", cfg.model, model)
         check(f"{role} endpoint unchanged", cfg.url, "https://api.anthropic.com/v1/messages")
         check(f"{role} key variable", cfg.key_env, "ANTHROPIC_API_KEY")
-    check("module literals still name today's models",
-          (ec.EXTRACTION_MODEL, sa.SPEC_MODEL), ("claude-opus-4-6", "claude-sonnet-4-5"))
+    # RUN 113: these two are no longer literals at all -- they are DERIVED from the provider
+    # table, so they cannot go stale behind it. The assertion is kept and re-pointed.
+    check("the module-level constants track the provider table",
+          (ec.EXTRACTION_MODEL, sa.SPEC_MODEL), ("claude-sonnet-5", "claude-sonnet-5"))
 
     print("\n2. THE SWITCH IS A SETTING -- SAME SOURCE, DIFFERENT PROVIDER")
     before = source_digest()
@@ -147,7 +173,7 @@ def main() -> int:
     check("spec provider under AI_PROVIDER=anthropic", claude["spec"].provider, "anthropic")
     check("attribution string differs between the two",
           (claude["spec"].attribution, groq["spec"].attribution),
-          ("anthropic/claude-sonnet-4-5", "groq/llama-3.3-70b-versatile"))
+          ("anthropic/claude-sonnet-5", "groq/openai/gpt-oss-120b"))
 
     print("   the key variable NAME is itself a setting (the owner's Groq variable may differ)")
     named = ap.load_provider("spec", {"AI_PROVIDER": "groq", "AI_GROQ_KEY_ENV": "Groq"})
@@ -196,7 +222,7 @@ def main() -> int:
           "PROMPT")
     check("the model named in the body is the configured one, per provider",
           (a_body["model"], o_body["model"]),
-          ("claude-sonnet-4-5", "llama-3.3-70b-versatile"))
+          ("claude-sonnet-5", "openai/gpt-oss-120b"))
     check("NO KEY APPEARS IN EITHER REQUEST BODY",
           "present-not-a-real-key" in json.dumps(a_body) + json.dumps(o_body), False)
     check("the prompt reaching both providers is byte-identical",
@@ -262,18 +288,18 @@ def main() -> int:
           all(t in mig for t in ('"specification_readings", sa.Column("provider"',
                                  '"documents", sa.Column("extraction_provider"')), True)
 
-    row = sa.apply_category("A1", {"x": 1}, o_cap.install(
-        sa.ProviderSpecApplier(ap.build_client(groq["spec"], environ=ENV_GROQ))))
+    row = sa.apply_category("A1", {"x": 1}, sa.ProviderSpecApplier(
+        o_cap.install(ap.build_client(groq["spec"], environ=ENV_GROQ))))
     check("apply_category records the provider that answered", row["provider"], "groq")
     check("apply_category records the model beside it", row["model_id"],
-          "llama-3.3-70b-versatile")
+          "openai/gpt-oss-120b")
     stored = SpecificationReading(
         reading_id="r93", category_key="A1", state="failed", counts={}, modules=[],
         missing_upstream=[], served_by=row["served_by"], provider=row["provider"],
         model_id=row["model_id"], simulation_version="t")
     payload = sr.reading_payload(stored)
     check("the stored row reaches the client carrying its provider",
-          (payload["provider"], payload["modelId"]), ("groq", "llama-3.3-70b-versatile"))
+          (payload["provider"], payload["modelId"]), ("groq", "openai/gpt-oss-120b"))
 
     print("\n6. TRUNCATION AND ERRORS SURFACE AS THE PLATFORM'S OWN TYPES")
     trunc_a = Captured({"content": [{"type": "text", "text": "{"}], "stop_reason": "max_tokens"})
@@ -372,8 +398,8 @@ def main() -> int:
               line in spec_src.read_bytes(), False)
         import importlib
         sa2 = importlib.reload(importlib.import_module("app.simulation.spec_apply"))
-        blind = sa2.apply_category("A1", {"x": 1}, o_cap.install(
-            sa2.ProviderSpecApplier(ap.build_client(groq["spec"], environ=ENV_GROQ))))
+        blind = sa2.apply_category("A1", {"x": 1}, sa2.ProviderSpecApplier(
+            o_cap.install(ap.build_client(groq["spec"], environ=ENV_GROQ))))
         check("WITH ATTRIBUTION NEUTRALISED the row cannot say which provider (check can fail)",
               blind["provider"], None)
     finally:
@@ -383,8 +409,8 @@ def main() -> int:
         check("spec_apply.py restored byte-for-byte",
               hashlib.sha256(spec_src.read_bytes()).hexdigest(),
               hashlib.sha256(spec_original).hexdigest())
-        again = sa3.apply_category("A1", {"x": 1}, o_cap.install(
-            sa3.ProviderSpecApplier(ap.build_client(groq["spec"], environ=ENV_GROQ))))
+        again = sa3.apply_category("A1", {"x": 1}, sa3.ProviderSpecApplier(
+            o_cap.install(ap.build_client(groq["spec"], environ=ENV_GROQ))))
         check("baseline rechecked: attribution is recorded again", again["provider"], "groq")
 
     passed = CHECKS - len(FAILURES)

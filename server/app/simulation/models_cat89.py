@@ -80,6 +80,29 @@ MODULE_USE: dict[str, str] = {
     "A6.2": "safety_measurement",
     "A6.3": "environmental_conformance",
     "A6.4": "official_assessment_ingestion",
+    # RUN 113, ORDER SECTION 3. C1.5's USE, WHICH THIS FILE ALREADY DECLARED AND NOTHING CLAIMED.
+    #
+    # Run 109 measured `_route` raising `KeyError: 'C1.5'` here the moment a governed
+    # `informationPackageRecord` was supplied. Run 111 proposed stopping the lookup on the
+    # ground that an ungated route never uses the result. THAT READING IS HALF RIGHT AND THE
+    # HALF IT MISSES IS THE DECIDING ONE. `use` is consumed TWICE, not once:
+    #
+    #   * `_qualification_block(ev, use)` -- which becomes `row["qualification"]`, so `use` is
+    #     STORED on the ledger row as `requested_use` and `eligible_for_use`; and
+    #   * `if gated and not ev.eligible_for(use)` -- the gate, which C1.5 is routed past.
+    #
+    # And `_qualify` (line 137) performs the SAME lookup independently, before the gate is ever
+    # reached, so removing the line at the route would not stop the KeyError at all. Dropping
+    # the use would mean inventing a null `requested_use` for a row that the four Category-8
+    # rows all fill -- inventing an input, which section 1 forbids.
+    #
+    # `USE_REQUIREMENTS` below already carries "quality_assessment", with a comment naming
+    # Category 9 and section 22's circularity, and NO MODULE NAMED IT. The vocabulary was
+    # written for this module and left unclaimed. C1.5 claims it. It requires NOTHING of its
+    # evidence -- an empty requirement set, not a relaxed one -- and the route stays
+    # `gated=False`, so eligibility still blocks nothing; what changes is that the stored row
+    # now names the use it was assessed for instead of the module crashing.
+    "C1.5": "quality_assessment",
 }
 
 #: What each use requires of its evidence. Section 21 forbids one global rule; these are the

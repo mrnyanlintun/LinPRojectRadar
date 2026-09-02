@@ -64,11 +64,34 @@ ROLES = ("extraction", "spec", "narration", "recognition")
 # `wire` is the request/response shape, not the vendor: Groq serves the OpenAI chat-completions
 # shape at its own host, so it shares that boundary and differs only in endpoint, key and models.
 #
-# DEFAULTS ARE TODAY'S BEHAVIOUR. With nothing configured the platform resolves provider
-# "anthropic" and exactly the three model identifiers that were literals in the source before
-# this module existed: claude-opus-4-6 for extraction, claude-sonnet-4-5 for specification
-# application, claude-3-5-haiku-latest for training narration. A deployment that sets nothing
-# keeps behaving as it did.
+# RUN 113: THE DEFAULTS ARE NOW IDENTIFIERS THE OWNER MEASURED AGAINST EACH PROVIDER'S OWN
+# CATALOGUE FROM HIS DEPLOYMENT. They are no longer "today's behaviour carried forward".
+#
+# Run 93 froze whatever literals happened to be in the source, and Runs 93-112 all had no key
+# with which to check them. The owner has now queried both catalogues:
+#
+#   * anthropic -- `claude-opus-4-6` and `claude-sonnet-4-5` are real but two generations old.
+#     His choice is `claude-sonnet-5` for extraction, spec and recognition.
+#   * groq -- `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` ARE NOT IN GROQ'S CATALOGUE
+#     AT ALL, so every Groq deployment out of the box was calling a model that does not exist.
+#     His choice is `openai/gpt-oss-120b` for extraction, spec and recognition, and
+#     `openai/gpt-oss-20b` for narration.
+#   * openai -- `gpt-4o` / `gpt-4o-mini` came from the SAME keyless session as the two above and
+#     ARE STILL UNVERIFIED. They are deliberately left alone rather than changed on a guess.
+#     They are checked the same way the other two were:
+#         curl -s https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"
+#     (groq: same, against https://api.groq.com/openai/v1/models with $GROQ_API_KEY;
+#      anthropic: https://api.anthropic.com/v1/models with -H "x-api-key: $ANTHROPIC_API_KEY"
+#      -H "anthropic-version: 2023-06-01".)
+#
+# NOT ONE OF THESE IDENTIFIERS WAS EXERCISED AGAINST A MODEL IN THE RUN THAT SET IT. There is no
+# key in the verification environment, so what is proved here is that the platform RESOLVES and
+# REPORTS them; whether a provider answers to them is proved only on the owner's deployment.
+#
+# ANTHROPIC NARRATION IS THE ONE IDENTIFIER THE OWNER DID NOT NAME. He named extraction, spec
+# and recognition. `claude-haiku-4-5-20251001` is taken from his OWN measured availability list
+# and is the only entry on it in the same small/fast tier as the `claude-3-5-haiku-latest` it
+# replaces; nothing was invented and `AI_NARRATION_MODEL` overrides it in one variable.
 
 PROVIDERS: dict[str, dict[str, Any]] = {
     "anthropic": {
@@ -77,10 +100,11 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "path": "/v1/messages",
         "key_env": "ANTHROPIC_API_KEY",
         "models": {
-            "extraction": "claude-opus-4-6",
-            "spec": "claude-sonnet-4-5",
-            "recognition": "claude-sonnet-4-5",   # same string as `spec`; see ROLES
-            "narration": "claude-3-5-haiku-latest",
+            "extraction": "claude-sonnet-5",
+            "spec": "claude-sonnet-5",
+            "recognition": "claude-sonnet-5",   # same string as `spec`; see ROLES
+            # NOT NAMED BY THE OWNER. See the note above the table.
+            "narration": "claude-haiku-4-5-20251001",
         },
     },
     "openai": {
@@ -89,6 +113,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "path": "/chat/completions",
         "key_env": "OPENAI_API_KEY",
         "models": {
+            # UNVERIFIED, and left unverified deliberately. See the note above the table.
             "extraction": "gpt-4o",
             "spec": "gpt-4o",
             "recognition": "gpt-4o",   # same string as `spec`; see ROLES
@@ -101,10 +126,10 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "path": "/chat/completions",
         "key_env": "GROQ_API_KEY",
         "models": {
-            "extraction": "llama-3.3-70b-versatile",
-            "spec": "llama-3.3-70b-versatile",
-            "recognition": "llama-3.3-70b-versatile",   # same string as `spec`; see ROLES
-            "narration": "llama-3.1-8b-instant",
+            "extraction": "openai/gpt-oss-120b",
+            "spec": "openai/gpt-oss-120b",
+            "recognition": "openai/gpt-oss-120b",   # same string as `spec`; see ROLES
+            "narration": "openai/gpt-oss-20b",
         },
     },
 }
