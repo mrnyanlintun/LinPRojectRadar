@@ -548,6 +548,23 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         " through and reported as unattributed, and a guessed name would be attributed to a firm"
         " it does not belong to. Return an empty array where the document records no such items."
     ) if "trade_attribution_json" in fields else ""
+    # RUN 118, SECTION 1.4. THE DENOMINATOR TABLE. A rate needs a population, and a population
+    # is a number the DOCUMENT counts. The instruction below is written to make an absent
+    # denominator an ACCEPTABLE answer, because a guessed one silently decides a firm's band.
+    trade_denominator_hint = (
+        " trade_denominators_json, if requested, is a JSON array with one object per FIRM the"
+        " document states a population for, with these keys: subcontractor (required, and the"
+        " SAME NAME used in trade_attribution_json), inspections_performed (inspections of that"
+        " firm's work this period, EXCLUDING reinspections), exposure_hours (hours that firm"
+        " worked, rolling twelve months), recordable_incidents (that firm's OSHA recordables"
+        " over the same twelve months), environmental_actions_due, audits_covering_firm,"
+        " items_due, field_reports_covering_firm and systems_tested, each as the document"
+        " states it. OMIT ANY KEY THE DOCUMENT DOES NOT STATE FOR THAT FIRM -- do not compute"
+        " it, do not total it from another table, do not carry it over from another firm and"
+        " do not estimate it. A missing denominator is a correct and expected answer and the"
+        " platform handles it; an invented one decides a firm's performance band. Return an"
+        " empty array where the document states no per-firm population."
+    ) if "trade_denominators_json" in fields else ""
     # RUN 72. THE SCALE OF A RATIO FIELD, NAMED, because the general sentence below is false
     # of it. "Percentages as numbers 0-100" is correct for every 0..100 quantity in the
     # vocabulary and WRONG for a compliance rate, which the numeric contract bounds at 1.0. A
@@ -598,7 +615,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "not a cost-basis percentage. If you cannot point to the specific label in the document "
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
-        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + trade_attribution_hint + submittal_hint + ncr_hint + weather_events_hint + procurement_items_hint + change_events_hint +
+        "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + trade_attribution_hint + trade_denominator_hint + submittal_hint + ncr_hint + weather_events_hint + procurement_items_hint + change_events_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "

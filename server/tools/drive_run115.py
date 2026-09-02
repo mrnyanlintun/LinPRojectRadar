@@ -196,7 +196,17 @@ _candidate_a = sum(len(extraction_fields_for(t)) for t in DOC_TYPES)
 # now has a real path to a module and is declared in `_ASSEMBLER_FIELDS`; leaving them out
 # would have let the completeness caveat report a project as more complete than its evidence.
 # NEITHER NUMBER IS WEAKENED and the check still fails on a rename in either place.
-check(_candidate_a == 289 and REQUIRED_TOTAL == 179,
+# RUN 118 RE-POINT, WITH THE REASON RECORDED BESIDE THE RUN 117 ONE, WHICH IS LEFT STANDING.
+# Both numbers moved again because Run 118 GREW THE EXTRACTION CONTRACT ONCE MORE: the same
+# EIGHT trade document types that Run 117 gave `trade_attribution_json` now also ask for
+# `trade_denominators_json`, the per-firm population table without which not one of the owner's
+# factor ladders can be evaluated. Eight new (type, field) pairs, so candidate A goes 289 -> 297.
+# Candidate B goes 179 -> 187 because all eight are declared in `_ASSEMBLER_FIELDS`: the factor
+# ladders are a real path from the field to a module, and leaving them undeclared would have let
+# the completeness caveat report a project as MORE COMPLETE than its evidence -- which is the
+# exact failure this check exists to catch. NEITHER NUMBER IS WEAKENED, nothing is deleted, and
+# the check still fails on a rename in either place.
+check(_candidate_a == 297 and REQUIRED_TOTAL == 187,
       "the two candidate denominators, measured: every field every type asks for, against the "
       "fields this platform has a path from",
       f"candidate A {_candidate_a} pairs, candidate B (chosen) {REQUIRED_TOTAL} pairs")
@@ -345,8 +355,8 @@ section("4. GOAL 4 -- the caveat, served on the real projectresults response")
 # =================================================================================================
 IC = VIEW.get("information_completeness") or {}
 check(bool(IC), "the served result carries the completeness record", str(list(IC.keys()))[:110])
-check(IC.get("required") == 179 and isinstance(IC.get("extracted"), int),
-      "the denominator is the 179 (document type, field) pairs this platform has a path from",
+check(IC.get("required") == 187 and isinstance(IC.get("extracted"), int),
+      "the denominator is the 187 (document type, field) pairs this platform has a path from",
       f"{IC.get('extracted')} of {IC.get('required')}")
 check(isinstance(IC.get("percent"), int) and 0 <= IC["percent"] <= 100,
       "and the caveat states a percentage", str(IC.get("percent")))
@@ -436,7 +446,7 @@ def _ic_holds():
     _r, _a, _si, _v, _p, _m = run_project("fic-" + str(time.time_ns()),
                                           docs(disputes=DISPUTE_ROWS))
     _ic = _v.get("information_completeness") or {}
-    return _ic.get("required") == 179 and (_ic.get("extracted") or 0) > 0
+    return _ic.get("required") == 187 and (_ic.get("extracted") or 0) > 0
 def _break_ic():
     ICM.REQUIRED_PAIRS = {"contract_value": frozenset({"original_contract_sum"})}
     ICM.REQUIRED_TOTAL = 1

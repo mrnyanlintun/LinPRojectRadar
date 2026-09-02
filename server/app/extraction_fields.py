@@ -496,6 +496,9 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "quality_requirements_json", "quality_register_id", "quality_register_period",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     # RUN 117, MAP ROW 17. THE WEATHER EVENT TABLE, ASKED OF THE DOCUMENT THAT RECORDS THE DAY.
     #
@@ -523,6 +526,9 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "weather_events_json", "weather_allowance_days_remaining", "weather_calendar_id",
         "weather_day_basis",
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     # RUN 117, SECTION 4.2 and SECTION 3. The attribution column is added; the CLOSEOUT FACTS
     # are NOT. See the run report: it proposes what a commissioning report must state to close a
@@ -531,11 +537,17 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "document_risk_score", "document_date",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     "safety_report": [
         "osha_recordable_incidents", "total_manhours", "incident_rate", "report_period",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     # RUN 87. THE SAME TABLE OFF THE QUALITY AUDIT REPORT, for the same reason: an audit score
     # and a findings count are the summaries the specification names, and the audit's own
@@ -545,6 +557,9 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "quality_requirements_json", "quality_register_id", "quality_register_period",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     # RUN 87. THE FACTS THAT ESTABLISH ENVIRONMENTAL APPLICABILITY, AND THE OBSERVATION TABLE.
     #
@@ -573,6 +588,9 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "environmental_corrective_actions_json",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     "ncr_log": [
         "ncr_issued", "ncr_closed", "ncr_open", "ncr_overdue", "report_period",
@@ -583,6 +601,9 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "max_repeat_ncrs_one_root_cause_or_trade", "ncr_open_past_contractual_closure_json",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     "subcontractor_report": [
         "scheduled_deliveries", "on_time_deliveries", "compliance_score", "report_period",
@@ -612,6 +633,9 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "procurement_items_json", "procurement_day_basis",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
+        # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
+        # ladders need a population and this is the table that states it.
+        "trade_denominators_json",
     ],
     # RUN 86. THE LOOK-AHEAD ACTIVITY TABLE, ASKED FOR AS A TABLE.
     #
@@ -808,7 +832,116 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
 #: named a firm, reported as unattributed where it did not, and carried onto A4.8's reading as
 #: EVIDENCE beside the band it already asserts. See the run report, section "Subcontractor
 #: attribution", for the question the owner must answer before a weight can exist.
+#: ============================================================================================
+#: RUN 118, SECTION 1.4. FIVE MORE COLUMNS ON THE SAME ROW, AND A SECOND TABLE FOR THE
+#: DENOMINATORS. Run 117 asked the document who a record belongs to. The owner's eight factor
+#: ladders need to know, for each record, WHICH ARM OF ITS FACTOR IT IS IN, and they need a
+#: DENOMINATOR that Run 117 never asked for. Both are grown here.
+#:
+#: THE FIVE NEW OPTIONAL COLUMNS ON `trade_attribution_json`, each traceable to one owner
+#: sentence in section 1.2 and to nothing else. Every one is OPTIONAL, and a row that omits one
+#: is NOT counted into the arm that needs it -- never counted in by default, and never dropped:
+#: the exclusion is reported on the factor.
+#:
+#:   record_new_this_period            "NEWLY OPENED ONLY -- an older NCR is not counted again
+#:                                     for remaining open." A row not stating it is excluded
+#:                                     from the nonconformance numerator and counted in
+#:                                     `rows_newness_not_stated`.
+#:   record_is_reinspection            "First outcome only -- a reinspection neither expands the
+#:                                     denominator nor counts again", and "failing FIRST
+#:                                     acceptance test". A row marked as a reinspection or a
+#:                                     retest enters neither numerator.
+#:   record_confirmed                  "CONFIRMED defect observations ... not every comment --
+#:                                     only confirmed defect observations after review." A field
+#:                                     observation not marked confirmed is not counted.
+#:   record_days_late                  the days-late FLOOR arm of the procurement factor: "1 to
+#:                                     5 working days at least Yellow; 6 to 10 at least Amber;
+#:                                     more than 10 Red". WORKING DAYS, as the owner states it.
+#:   record_milestone_forecast_late    the procurement hard override: "Red if any late delivery
+#:                                     causes a contractual, turnover or approved critical-path
+#:                                     milestone to forecast late."
+#:   record_repeat_after_closed_action the nonconformance hard override's last clause: "a repeat
+#:                                     NCR for the same root cause after a corrective action was
+#:                                     recorded closed."
+#:
+#: HEADINGS RECOGNISED for the six, matched the same way as the first six columns:
+#:   record_new_this_period            : record_new_this_period, new_this_period, newly_opened,
+#:                                       new, opened_this_period, newly_raised
+#:   record_is_reinspection            : record_is_reinspection, reinspection, is_reinspection,
+#:                                       retest, is_retest, reinspection_flag
+#:   record_confirmed                  : record_confirmed, confirmed, verified, confirmed_defect,
+#:                                       review_outcome
+#:   record_days_late                  : record_days_late, days_late, days_overdue,
+#:                                       working_days_late, late_days, delay_days
+#:   record_milestone_forecast_late    : record_milestone_forecast_late, milestone_forecast_late,
+#:                                       milestone_late, critical_path_impact, milestone_impact
+#:   record_repeat_after_closed_action : record_repeat_after_closed_action, repeat_ncr,
+#:                                       repeat_after_closure, repeat_root_cause, repeat
+#:
+#: `record_kind` NOW DECIDES WHICH FACTOR COUNTS THE ROW, so the words matter and are listed
+#: here. A row whose kind is none of them is counted by NO factor -- never spread across them
+#: and never assigned to the nearest -- and is reported in `rows_of_no_factor`:
+#:   nonconformance / non_conformance / ncr / nonconformity     -> Nonconformances
+#:   inspection_failure / failed_inspection / inspection_fail   -> Failed inspections
+#:   environmental_action / environmental / permit_violation    -> Environmental
+#:   audit_finding / finding / quality_audit_finding            -> Quality audit
+#:   late_delivery / delivery / procurement / procurement_item  -> Procurement
+#:   defect_observation / field_observation / site_observation / observation / defect
+#:                                                              -> Field observations
+#:   commissioning_defect / commissioning_failure / acceptance_test_failure
+#:                                                              -> Commissioning
+#: SAFETY IS THE EXCEPTION AND READS NO KIND: its rate is a formula over two numbers on the
+#: denominator table, and its override reads every open record's severity word.
+#:
+#: ============================================================================================
+#: `trade_denominators_json` -- THE DENOMINATORS, ONE ROW PER FIRM. This is the field Run 117
+#: did not ask for and without which not one of the owner's eight ladders can be evaluated: a
+#: rate needs a population, and a population is a number the DOCUMENT counts, never one this
+#: platform derives from the rows it happened to be shown. A firm with records and no
+#: denominator row gets NO RATE BANDING and its hard overrides only -- which is section 1.3's
+#: "a zero denominator never produces a rate", reached honestly.
+#:
+#:   subcontractor                 REQUIRED, and it must be the SAME NAME the attribution rows
+#:                                 use. A row without it is unusable and is dropped.
+#:   inspections_performed         inspections of THAT FIRM'S work this period, EXCLUDING
+#:                                 reinspections. The denominator of BOTH the nonconformance
+#:                                 factor and the failed-inspection factor -- the owner names
+#:                                 the same population for both.
+#:   exposure_hours                hours worked by that firm, ROLLING TWELVE MONTHS. The safety
+#:                                 factor's denominator.
+#:   recordable_incidents          that firm's OSHA recordables over the same rolling twelve
+#:                                 months. The safety factor's numerator -- it is a COUNT the
+#:                                 safety report states, not a row-count of attribution records.
+#:   environmental_actions_due     that firm's environmental actions DUE this period.
+#:   audits_covering_firm          the number of audits covering that firm.
+#:   items_due                     that firm's procurement items DUE.
+#:   field_reports_covering_firm   field reports covering that firm's ACTIVE WORK.
+#:   systems_tested                that firm's systems or items TESTED.
+#:
+#: HEADINGS RECOGNISED, per column:
+#:   subcontractor               : subcontractor, sub, firm, company, trade_contractor, trade,
+#:                                 vendor, supplier, responsible_firm, contractor, name
+#:   inspections_performed       : inspections_performed, inspections, inspections_of_firm_work,
+#:                                 inspection_count, inspections_this_period
+#:   exposure_hours              : exposure_hours, hours_worked, manhours, man_hours,
+#:                                 total_manhours, hours, labour_hours, labor_hours
+#:   recordable_incidents        : recordable_incidents, recordables, osha_recordables,
+#:                                 recordable_count, osha_recordable_incidents
+#:   environmental_actions_due   : environmental_actions_due, environmental_actions,
+#:                                 actions_due, environmental_due
+#:   audits_covering_firm        : audits_covering_firm, audits, audit_count, audits_covering
+#:   items_due                   : items_due, procurement_items_due, items, deliveries_due,
+#:                                 scheduled_deliveries
+#:   field_reports_covering_firm : field_reports_covering_firm, field_reports, reports_covering,
+#:                                 field_report_count
+#:   systems_tested              : systems_tested, items_tested, systems, tests_performed,
+#:                                 acceptance_tests
+#:
+#: DENOMINATORS FOR THE SAME FIRM ON SEVERAL DOCUMENTS ARE SUMMED PER COLUMN, and which
+#: documents contributed is recorded. They are never averaged and never overwritten: two
+#: inspection reports covering one firm inspected that firm twice over.
 _TRADE_ATTRIBUTION_NOTE = "trade_attribution_json"
+_TRADE_DENOMINATOR_NOTE = "trade_denominators_json"
 
 
 # The legacy `default:` arm. Note it is the same pair as risk_register — an unknown type is

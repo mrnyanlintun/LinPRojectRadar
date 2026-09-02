@@ -975,7 +975,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v60"
+SIMULATION_VERSION = "sim-2026.09-v61"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1118,6 +1118,32 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # band or threshold anywhere is changed, and no model decided any of it: there is no model key
  # in this environment and none was simulated.
  "sim-2026.09-v60",
+ # RUN 118. THE TRADE RECORDS REACH THE FIRM. Run 117 attributed a trade record to the firm the
+ # document names and moved no band, because the weights were not stated. The owner has stated
+ # them, and `simulation/trade_factors.py` now holds every one of them and is the only place any
+ # of them exists. EIGHT FACTORS, not the seven the order's prose counts -- the order LISTS eight
+ # and the discrepancy is reported rather than resolved by dropping one: nonconformances, failed
+ # inspections, safety, environmental, quality audit, procurement, field observations and
+ # commissioning. Each produces a band from its own rate against its own denominator; the bands
+ # AVERAGE on `category_posture.BAND_SCORE` and `category_posture.band_average`, IMPORTED and not
+ # copied, so there is no second set of cuts to drift. A factor that fires its HARD OVERRIDE sets
+ # the firm Red and bypasses the average; a STOP-WORK ORDER sets Red, bypasses the average and no
+ # factor pulls it back, and is recorded as its own class. The small-denominator safeguard is the
+ # owner's: 25 or more bands normally, 10 to 24 bands and is labelled limited exposure, fewer than
+ # 10 does not band a rate at all and the hard overrides still fire; safety instead shows its rate
+ # with a small-exposure warning below 10,000 hours rather than a raw count. A closed record stops
+ # counting immediately. `trade_denominators_json` is added to the same eight document types, and
+ # six new optional columns are added to `trade_attribution_json`; every one is declared in
+ # `information_completeness._ASSEMBLER_FIELDS`. Section 1.4's behaviour change is real and is
+ # named on the reading: a firm with trade records and NO stated rating is now assessed from those
+ # records and can therefore govern A4.8. The OSHA recordable-incident-rate FORMULA is codified and
+ # the cuts on it are the owner's, and the two provenances are recorded separately.
+ # THRESHOLD_SOURCES is not widened; `_SAFETY_OVERRIDE_WORDS` and `_ENV_OVERRIDE` are not widened.
+ # THE CENSUS IS UNCHANGED MODULE BY MODULE at band 17 | computed-no-band 1 | abstain 13 | no row 0.
+ # Section 2's four wirings and the budget re-basing disclosure are NOT built and are reported as
+ # not built. No model decided any of it: there is no model key in this environment and none was
+ # simulated.
+ "sim-2026.09-v61",
 )
 
 

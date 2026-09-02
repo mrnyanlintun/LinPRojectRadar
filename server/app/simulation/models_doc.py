@@ -57,6 +57,7 @@ from .canonical_v4 import (
 from . import band_reference as _BR
 from . import owner_bands as _OB
 from . import pm_review as _PMR
+from . import trade_factors as _TF
 from .models import (
     ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT, ABSTAIN_STRUCTURE_ABSENT,
     PROVENANCE_CODIFIED, PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
@@ -1457,11 +1458,190 @@ def _trade_attribution_sentence(block: dict[str, Any]) -> str:
                      f"{firms} firm{'' if firms == 1 else 's'}")
     if n_un:
         parts.append(f"{n_un} recorded against no named firm and reported as unattributed")
+    # RUN 118. The closing clause of this sentence was true in Run 117 and is now false. It is
+    # replaced, not left standing beside behaviour that contradicts it.
     return (" This period's trade records across "
             + str(len(types)) + " document type" + ("" if len(types) == 1 else "s")
             + " carry " + " and ".join(parts)
-            + ". No trade record moves any firm's band: how one weighs against a stated rating "
-              "is not established on this platform and no weight is invented here.")
+            + ". These records move a firm's band through the owner's eight factor ladders, "
+              "each against the denominator its own document states. A record naming no firm "
+              "enters no numerator and no denominator.")
+
+
+# ============================================ RUN 118, SECTION 1. THE RECORDS REACH THE FIRM
+#
+# Every ladder, every override, the averaging rule and the stop-work bypass live in
+# `simulation/trade_factors.py`. NOTHING BELOW RESTATES A THRESHOLD -- this is the wiring that
+# takes the assembled records and denominators, hands them to that module firm by firm, and
+# takes back a posture. If a number appears here it is a defect.
+
+
+def _trade_newness(rec) -> bool | None:
+    """
+    Whether a record is NEWLY OPENED THIS PERIOD, as the record itself states it.
+
+    THE DATE FALLBACK IS NOT BUILT AND THAT IS A REAL LIMITATION, stated rather than hidden.
+    Deciding newness from `record_date` needs a period START, and no document in this contract
+    states one -- `report_period` is a label, not a window. So only the explicit column is read,
+    and every row that omits it is reported in `rows_newness_not_stated` on the factor.
+    """
+    return _TF._truthy(rec.get("record_new_this_period"))
+
+
+def _trade_postures(si: dict, rated: dict[str, str]) -> dict[str, Any]:
+    """
+    One adjusted posture per firm that has trade records, and the governing one across firms.
+
+    `rated` maps a firm name to the band its STATED rating normalised to. A firm in the records
+    and not in `rated` has NO starting band -- section 1.4, "a firm with trade records and no
+    stated rating is assessed from the records" -- and is assessed from its factors alone.
+    """
+    rec = si.get("tradeAttributionRecords")
+    if not isinstance(rec, dict):
+        return {}
+    by_firm = rec.get("by_subcontractor") if isinstance(rec.get("by_subcontractor"), dict) else {}
+    denoms = rec.get("denominators_by_subcontractor")
+    denoms = denoms if isinstance(denoms, dict) else {}
+    # RUN 118, ITERATION 5, AND IT IS A REAL DEFECT CAUGHT BY A FALSIFICATION.
+    #
+    # This read `set(by_firm) | set(denoms)`, so a DENOMINATOR ROW ALONE created a firm -- and a
+    # firm with a population and no records is clean on all eight factors, which published a
+    # MANUFACTURED GREEN for a firm about which the documents said nothing. `drive_run118_route`
+    # case E measured it: a project whose attribution rows named no firm at all still produced a
+    # Green posture, purely off the denominator table.
+    #
+    # A DENOMINATOR IS NOT EVIDENCE OF PERFORMANCE. It is the population a rate would be taken
+    # over. A firm is assessed here only where it carries an ATTRIBUTED RECORD or a STATED
+    # RATING; a denominator with neither is carried on the record and assesses nobody. This is
+    # the same reasoning `category_posture` records for not counting a non-banding module as
+    # zero: a fabricated reading is indistinguishable from a measured one once it is banded.
+    names = sorted(set(by_firm) | set(rated))
+    if not names:
+        return {}
+    postures = [_TF.firm_posture(subcontractor=n, starting_band=rated.get(n),
+                                 records=by_firm.get(n) or [], denominators=denoms.get(n) or {},
+                                 newness=_trade_newness)
+                for n in names]
+    gov = _TF.governing(postures)
+    return {
+        "trade_firm_postures": postures,
+        "trade_governing_firm": (gov or {}).get("subcontractor"),
+        "trade_governing_posture": (gov or {}).get("adjusted_posture"),
+        "trade_governing_rule": (gov or {}).get("adjustment_rule"),
+        "trade_firms_without_stated_rating": [n for n in names if n not in rated],
+        "trade_factor_rule_version": "run118.subcontractor_trade_factors.v1",
+        "trade_across_firms_rule": (
+            "ACROSS FIRMS THE MOST ADVERSE ADJUSTED POSTURE GOVERNS -- Run 115's rule, "
+            "unchanged. A firm carrying trade records and NO stated rating is assessed from "
+            "those records and can therefore govern, which is a real behaviour change: an "
+            "unrated firm appearing only in an NCR log can now set this module's band, and "
+            "through it the Document Signals category and the project status."),
+    }
+
+
+def _trade_only_reading(si: dict):
+    """
+    A4.8 read from the trade records ALONE, or None where they produce no band.
+
+    CALLED FROM TWO PLACES and that is the point: a project with NO subcontractor
+    performance report at all never reaches `require_v4_structure`, so a path that only
+    existed after it would have been unreachable on exactly the projects section 1.4 is
+    about. Measured unreachable by `drive_run118_route.py` case D before this was lifted
+    out; see the run report, iteration 4.
+    """
+    # ==================== RUN 118, SECTION 1.4. NO STATED RATING, BUT THERE ARE TRADE RECORDS.
+    #
+    # The owner's ruling: "A firm with trade records and no stated rating is assessed from the
+    # records. The trade record is itself an assessment checklist, so a rating is produced from
+    # it rather than the firm being left unassessed." Run 117 reported those records and
+    # abstained. This bands from them.
+    #
+    # THE SAME HOLD APPLIES. An Amber or Red posture reached this way is `pending_pm_review`
+    # exactly as one reached from a stated rating is: Run 107's hold is a property of the
+    # POSTURE, not of where it came from, and exempting this path would be a quiet way of
+    # letting an unreviewed Red out.
+    _tp_only = _trade_postures(si, {})
+    if not _tp_only.get("trade_governing_posture"):
+        return None
+    if True:
+        _norm = _tp_only["trade_governing_posture"]
+        _gov_firm = _tp_only["trade_governing_firm"]
+        _gp = next((q for q in _tp_only["trade_firm_postures"]
+                    if q["subcontractor"] == _gov_firm), None)
+        _res = _PMR.resolve(_norm, _module_review(si, "A4.8"))
+        _audit = _PMR.audit_record(
+            normalised_posture=_norm, source_rating="none stated",
+            source_document_id=None, source_document_version=None, period=None,
+            normalisation_rule="the owner's Run 118 trade factor ladders",
+            normalisation_rule_version=_tp_only["trade_factor_rule_version"],
+            resolution=_res)
+        _audit.update({
+            "trade_factor_rates": _gp["factor_rates"],
+            "trade_factor_bands": _gp["factor_bands"],
+            "trade_overrides_fired": _gp["overrides_fired"],
+            "trade_override_detail": _gp["override_detail"],
+            "trade_stop_work_orders": _gp["stop_work_orders"],
+            "trade_calculated_adjustment": _gp["adjustment"],
+            "trade_adjustment_rule": _gp["adjustment_rule"],
+            "trade_factor_mean_score": _gp["factor_mean_score"],
+            "trade_source_rating_band": None,
+            "trade_rule_version": _tp_only["trade_factor_rule_version"],
+            "source_rating_never_altered": (
+                "No rating was stated for any firm here, so none was altered. The posture is "
+                "produced from the trade records alone and the record says so."),
+        })
+        _f2 = {
+            "normalised_posture": _norm,
+            "reported_rating_posture": None,
+            "governing_subcontractor_id": _gov_firm,
+            "governing_reported_rating": None,
+            "module_state": _res["module_state"],
+            "module_state_words": _res["module_state_words"],
+            "pm_review_required": _res["review_required"],
+            "pm_review_audit_record": _audit,
+            "canonical_structure": "subcontractor_trade_factors",
+            "source": "trade records attributed on this project's documents",
+            **_tp_only,
+            **_trade_attribution_block(si),
+            "scope_note": (
+                "NO SUBCONTRACTOR PERFORMANCE REPORT STATED A RATING FOR ANY FIRM ON THIS "
+                "PROJECT. This posture is produced from the trade records alone, which is the "
+                "owner's section 1.4 ruling: the trade record is itself an assessment "
+                "checklist. No rating is inferred, invented or carried over from another "
+                "document; where the records produce no factor band either, the module goes on "
+                "abstaining."),
+        }
+        _b2 = ("on the owner's eight trade factor ladders alone, because no report stated a "
+               "rating for any firm. " + _TF.AVERAGE_WORDS + " A factor that fires its HARD "
+               "OVERRIDE sets the firm Red outright. " + _TF.STOP_WORK_WORDS + " With no "
+               "starting band, the nonconformance factor's displacement rungs have nothing to "
+               "move and produce no band; only its Red rung, which is stated absolutely, bands "
+               "it. ACROSS FIRMS THE MOST ADVERSE ADJUSTED POSTURE GOVERNS. HELD FOR REVIEW: an "
+               "Amber or Red posture is not a finding until a Project Manager records a "
+               "disposition, exactly as for a posture reached from a stated rating.")
+        _m2 = (f"No performance report states a rating for any firm on this project. "
+               f"{len(_tp_only['trade_firm_postures'])} firm"
+               f"{'' if len(_tp_only['trade_firm_postures']) == 1 else 's'} carry trade records "
+               f"and are assessed from them. The most adverse is {_gov_firm} at {_norm}, by "
+               f"{_gp['adjustment_rule'].replace('_', ' ')}."
+               + _trade_attribution_sentence(_trade_attribution_block(si)))
+        if _res["posture"] is None:
+            return band_abstained(
+                "Subcontractor_Performance", _m2,
+                reason=_res.get("not_assessed_reason") or _res["module_state_words"],
+                band_basis_id=_TF.OWNER_BASIS_ID, band_boundary_if_reviewed=_b2, **_f2)
+        return banded(
+            "Subcontractor_Performance", _m2, status_color=_res["posture"],
+            boundary=_b2,
+            basis=("the owner's Run 118 order, section 1. Every threshold in the eight ladders "
+                   "is OWNER-CONFIGURED and carries the identifier the owner named for it, "
+                   "`owner_configured_construction_quality_tolerance`. The one exception is the "
+                   "OSHA recordable incident rate FORMULA, which is codified; the cuts on that "
+                   "rate are the owner's and the two provenances are recorded separately on the "
+                   "safety factor."),
+            provenance=PROVENANCE_OWNER_CALIBRATED,
+            threshold_source=THRESHOLD_SOURCE_OWNER,
+            band_basis_id=_TF.OWNER_BASIS_ID, **_f2)
 
 
 def run_subcontractor_performance(si: dict, rand: Callable[[], float],
@@ -1496,6 +1676,12 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
     try:
         structure = require_v4_structure(si, "A4.8")
     except StructureAbsent as absent:
+        # RUN 118. NO SUBCONTRACTOR PERFORMANCE REPORT ON THIS PROJECT AT ALL -- and section
+        # 1.4 says a firm with trade records is still assessed. This is the arm that reaches
+        # exactly those projects; without it the trade-only reading is dead code.
+        _tr_only = _trade_only_reading(si)
+        if _tr_only is not None:
+            return _tr_only
         return insufficient("Subcontractor_Performance", absent.sentence + _tas,
                             ABSTAIN_STRUCTURE_ABSENT)
     _mvp = None
@@ -1505,7 +1691,11 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
     except StructureAbsent as absent:
         _mvp_absent = absent.sentence
     if _mvp is not None:
-        _norm = _mvp["normalised_posture"]
+        # RUN 118. THE STATED RATING IS THE STARTING BAND; THE FACTORS ADJUST IT.
+        _rated = {f["subcontractor_id"]: f["normalised_posture"] for f in _mvp["firms"]}
+        _tp = _trade_postures(si, _rated)
+        _norm = _tp.get("trade_governing_posture") or _mvp["normalised_posture"]
+        _gov_firm = _tp.get("trade_governing_firm") or _mvp["governing_subcontractor_id"]
         _review = _module_review(si, "A4.8")
         _res = _PMR.resolve(_norm, _review)
         _audit = _PMR.audit_record(
@@ -1518,12 +1708,36 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
             normalisation_rule=_mvp["governing_normalisation_rule"],
             normalisation_rule_version=_mvp["normalisation_rule_version"],
             resolution=_res)
+        # THE AUDIT RECORD THE OWNER'S SECTION 1.4 ENUMERATES: the source rating (already on it,
+        # verbatim and never altered), EVERY FACTOR RATE, WHICH OVERRIDES FIRED, THE CALCULATED
+        # ADJUSTMENT, and the PM's disposition, rationale and evidence references (already on
+        # it, from `pm_review.audit_record`). The four new ones are added here rather than
+        # inside `pm_review`, which is a general facility and knows nothing about trade factors.
+        _gp = next((p for p in (_tp.get("trade_firm_postures") or [])
+                    if p["subcontractor"] == _gov_firm), None)
+        _audit.update({
+            "trade_factor_rates": (_gp or {}).get("factor_rates"),
+            "trade_factor_bands": (_gp or {}).get("factor_bands"),
+            "trade_overrides_fired": (_gp or {}).get("overrides_fired"),
+            "trade_override_detail": (_gp or {}).get("override_detail"),
+            "trade_stop_work_orders": (_gp or {}).get("stop_work_orders"),
+            "trade_calculated_adjustment": (_gp or {}).get("adjustment"),
+            "trade_adjustment_rule": (_gp or {}).get("adjustment_rule"),
+            "trade_factor_mean_score": (_gp or {}).get("factor_mean_score"),
+            "trade_source_rating_band": (_gp or {}).get("source_rating_band"),
+            "trade_rule_version": _tp.get("trade_factor_rule_version"),
+            "source_rating_never_altered": (
+                "The rating the report stated is carried above, verbatim. The adjusted posture "
+                "is recorded BESIDE it and never over it."),
+        })
         _fields = {
             "firms": _mvp["firms"],
             "firm_count": _mvp["firm_count"],
             "normalised_posture": _norm,
-            "governing_subcontractor_id": _mvp["governing_subcontractor_id"],
+            "reported_rating_posture": _mvp["normalised_posture"],
+            "governing_subcontractor_id": _gov_firm,
             "governing_reported_rating": _mvp["governing_reported_rating"],
+            **_tp,
             "normalisation_rule": _mvp["governing_normalisation_rule"],
             "normalisation_rule_version": _mvp["normalisation_rule_version"],
             "rating_scale": _mvp["rating_scale"],
@@ -1543,11 +1757,52 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
                 "adjustment, no trade-level scoring, no two-Ambers-make-a-Red policy and no "
                 "automatic default or termination reading."),
         }
+        _adj = ""
+        if _gp is not None:
+            _adj = (f" {_gp['subcontractor']}'s stated rating band of "
+                    f"{_gp['source_rating_band'] or 'none'} was adjusted by "
+                    f"{len(_gp['factors_banded'])} of eight trade factors "
+                    f"({', '.join(_gp['factors_banded']) or 'none'}) to "
+                    f"{_gp['adjusted_posture']}"
+                    + (f", by {_gp['adjustment_rule'].replace('_', ' ')}" )
+                    # RUN 118, THE AUDIT OF THE FIRST ATTEMPT'S OWN WORK, AND THE SHARPEST
+                    # EDGE ON THIS RUN. The averaging rule makes the stated rating ONE VOICE
+                    # AMONG EIGHT, so seven clean factors OUTVOTE it: a firm the performance
+                    # report rated Unsatisfactory, with clean records and full denominators,
+                    # is lifted three bands to Green -- measured, and reported to the owner
+                    # under "anything found and not fixed". NO FLOOR IS INVENTED HERE: the
+                    # owner said the factors adjust the rating and did not say the adjustment
+                    # is one-way, and inventing "never better than the stated rating" would be
+                    # inventing a rule. What IS done is that the DIRECTION and SIZE of the
+                    # movement are named in the sentence a reader reads, because a lift that
+                    # is silent is a lift nobody can question -- and an IMPROVED posture is
+                    # NOT held for PM review, so this sentence is the only place it surfaces.
+                    + (f" -- {_gp['adjustment']}" if _gp.get("adjustment") else "")
+                    + (f"; the stop-work order bypasses the average and no factor pulls it back"
+                       if _gp["stop_work_bypass"] else
+                       (f"; the hard override on "
+                        f"{', '.join(_gp['overrides_fired'])} bypasses the average"
+                        if _gp["overrides_fired"] else
+                        (f"; the mean factor score is {_gp['factor_mean_score']}"
+                         if _gp["factor_mean_score"] is not None else "")))
+                    + ".")
         _msg = (
             f"{_js_str(_mvp['firm_count'])} subcontractor"
             f"{'' if _mvp['firm_count'] == 1 else 's'} carry a reported performance rating. "
+            # RUN 118, SECOND ATTEMPT, AND THIS IS A REGRESSION THE FIRST ATTEMPT INTRODUCED.
+            #
+            # The first attempt replaced this clause with "The most adverse posture is X's, at
+            # <band>", which DELETED the reported rating and the platform's own mapping of it
+            # from the sentence the participant's card renders. `drive_run107.py` measured it
+            # -- 90/92, on the two checks that read the RENDERED CARD for "rated Marginal" and
+            # "normalises to Amber". Those checks are RIGHT and were not re-pointed: the
+            # owner's section 1.4 says the SOURCE RATING IS NEVER ALTERED, and a rating that
+            # has vanished from the only sentence a reader sees has been altered in the way
+            # that matters. The stated rating and its normalisation are restored here, and the
+            # adjustment is reported AFTER them rather than INSTEAD of them.
             f"The most adverse is {_mvp['governing_subcontractor_id']}, rated "
-            f"{_mvp['governing_reported_rating']}, which normalises to {_norm}."
+            f"{_mvp['governing_reported_rating']}, which normalises to "
+            f"{_mvp['normalised_posture']}." + _adj
             + _trade_attribution_sentence(_trade_attribution_block(si)))
         _boundary = (
             "on the rating the Subcontractor Performance Report states, normalised by "
@@ -1561,7 +1816,13 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
             "governs. HELD FOR REVIEW: an Amber or Red normalised posture is not a finding "
             "until a Project Manager records a disposition; the module asserts no band while "
             "it is held and the category is formed from the modules that are available. "
-            f"Here the rule applied was {_mvp['governing_normalisation_rule']}.")
+            f"Here the rule applied was {_mvp['governing_normalisation_rule']}."
+            " RUN 118: THE STATED RATING IS NOW THE STARTING BAND AND THE TRADE RECORDS ADJUST "
+            "IT. " + _TF.AVERAGE_WORDS + " A factor that fires its HARD OVERRIDE sets the firm "
+            "Red outright and is not one voice among eight. " + _TF.STOP_WORK_WORDS
+            + " Where NO factor produces a band the stated rating stands unadjusted. The eight "
+            "ladders, their denominators and their overrides are printed on each factor of "
+            "`trade_firm_postures`.")
         _basis = (
             "the owner's Run 107 order, section 2, A4.8. The band basis identifier the owner "
             "named for it is `source_report_rating_normalization`. OWNER-CALIBRATED: the "
@@ -1585,6 +1846,9 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
             threshold_source=THRESHOLD_SOURCE_OWNER,
             band_basis_id="source_report_rating_normalization",
             **_fields)
+    _tr_only = _trade_only_reading(si)
+    if _tr_only is not None:
+        return _tr_only
     try:
         reading = subcontractor_performance(structure)
     except StructureAbsent as absent:

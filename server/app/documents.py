@@ -2770,7 +2770,30 @@ def _run69_structures(session: Session, project: Project, period: int,
                     ("record_severity", ("record_severity", "severity", "criticality", "class",
                                          "level")),
                     ("record_date", ("record_date", "date", "raised", "raised_on", "issued",
-                                     "issued_on", "reported"))):
+                                     "issued_on", "reported")),
+                    # RUN 118, SECTION 1.4. The six columns the owner's factor ladders need in
+                    # order to tell one arm of a factor from another. See
+                    # `extraction_fields._TRADE_ATTRIBUTION_NOTE` for the sentence each one
+                    # comes from. All OPTIONAL, all carried as printed, none defaulted: a row
+                    # that omits one is excluded from the arm that needs it and the exclusion is
+                    # reported on the factor rather than hidden.
+                    ("record_new_this_period", ("record_new_this_period", "new_this_period",
+                                                "newly_opened", "new", "opened_this_period",
+                                                "newly_raised")),
+                    ("record_is_reinspection", ("record_is_reinspection", "reinspection",
+                                                "is_reinspection", "retest", "is_retest",
+                                                "reinspection_flag")),
+                    ("record_confirmed", ("record_confirmed", "confirmed", "verified",
+                                          "confirmed_defect", "review_outcome")),
+                    ("record_days_late", ("record_days_late", "days_late", "days_overdue",
+                                          "working_days_late", "late_days", "delay_days")),
+                    ("record_milestone_forecast_late", ("record_milestone_forecast_late",
+                                                        "milestone_forecast_late",
+                                                        "milestone_late", "critical_path_impact",
+                                                        "milestone_impact")),
+                    ("record_repeat_after_closed_action", ("record_repeat_after_closed_action",
+                                                           "repeat_ncr", "repeat_after_closure",
+                                                           "repeat_root_cause", "repeat"))):
                 _v = _first_of(_r, _names)
                 if _v is not None and str(_v).strip():
                     _rec[_k] = str(_v).strip()
@@ -2785,7 +2808,76 @@ def _run69_structures(session: Session, project: Project, period: int,
         if _seen_type and _dt not in _tr_types:
             _tr_types.append(_dt)
 
-    if _tr_by_firm or _tr_unattributed or _tr_unusable:
+    # ============================ RUN 118, SECTION 1.4. THE DENOMINATORS, WHICH RUN 117 NEVER ASKED
+    #
+    # Not one of the owner's eight ladders can be evaluated without a population, and a
+    # population is a number the DOCUMENT counts. NOTHING HERE DERIVES ONE: a denominator is not
+    # inferred from how many attribution rows happened to arrive, is not carried over from
+    # another firm, and is not defaulted to the count of rows. A firm with records and no
+    # denominator gets NO RATE BANDING and its hard overrides only, which is section 1.3 reached
+    # honestly rather than papered over.
+    #
+    # SUMMED PER COLUMN ACROSS DOCUMENTS, never averaged and never overwritten: two inspection
+    # reports covering one firm inspected that firm twice over. Which documents contributed is
+    # recorded per firm so the sum can be taken apart again.
+    _TD_COLS = (
+        ("inspections_performed", ("inspections_performed", "inspections",
+                                   "inspections_of_firm_work", "inspection_count",
+                                   "inspections_this_period")),
+        ("exposure_hours", ("exposure_hours", "hours_worked", "manhours", "man_hours",
+                            "total_manhours", "hours", "labour_hours", "labor_hours")),
+        ("recordable_incidents", ("recordable_incidents", "recordables", "osha_recordables",
+                                  "recordable_count", "osha_recordable_incidents")),
+        ("environmental_actions_due", ("environmental_actions_due", "environmental_actions",
+                                       "actions_due", "environmental_due")),
+        ("audits_covering_firm", ("audits_covering_firm", "audits", "audit_count",
+                                  "audits_covering")),
+        ("items_due", ("items_due", "procurement_items_due", "items", "deliveries_due",
+                       "scheduled_deliveries")),
+        ("field_reports_covering_firm", ("field_reports_covering_firm", "field_reports",
+                                         "reports_covering", "field_report_count")),
+        ("systems_tested", ("systems_tested", "items_tested", "systems", "tests_performed",
+                            "acceptance_tests")),
+    )
+    _td_by_firm: dict[str, dict] = {}
+    _td_sources: dict[str, list[str]] = {}
+    _td_unusable = 0
+    for d in documents:
+        ex = d.get("extraction")
+        if not isinstance(ex, dict):
+            continue
+        _dt = d.get("doc_type") or ""
+        for _r in _json_rows(ex.get("trade_denominators_json")):
+            if not isinstance(_r, dict):
+                _td_unusable += 1
+                continue
+            _firm = _first_of(_r, ("subcontractor", "sub", "firm", "company", "trade_contractor",
+                                   "trade", "vendor", "supplier", "responsible_firm",
+                                   "contractor", "name"))
+            if _firm is None or not str(_firm).strip():
+                # A DENOMINATOR NAMING NO FIRM IS UNUSABLE, not "the project's". It cannot be
+                # attributed and it is never spread across firms.
+                _td_unusable += 1
+                continue
+            _name = str(_firm).strip()
+            _slot = _td_by_firm.setdefault(_name, {})
+            _used = False
+            for _col, _names in _TD_COLS:
+                _v = _first_of(_r, _names)
+                if _v is None or not str(_v).strip():
+                    continue
+                try:
+                    _f = float(str(_v).strip().replace(",", ""))
+                except ValueError:
+                    continue
+                if _f != _f or _f in (float("inf"), float("-inf")):
+                    continue
+                _slot[_col] = _slot.get(_col, 0.0) + _f
+                _used = True
+            if _used and _dt not in _td_sources.setdefault(_name, []):
+                _td_sources[_name].append(_dt)
+
+    if _tr_by_firm or _tr_unattributed or _tr_unusable or _td_by_firm:
         out.setdefault("tradeAttributionRecords", {
             "by_subcontractor": {k: _tr_by_firm[k] for k in sorted(_tr_by_firm)},
             "unattributed": _tr_unattributed,
@@ -2793,16 +2885,31 @@ def _run69_structures(session: Session, project: Project, period: int,
             "source_document_types": sorted(_tr_types),
             "attributed_record_count": sum(len(v) for v in _tr_by_firm.values()),
             "unattributed_record_count": len(_tr_unattributed),
+            # RUN 118. THIS SENTENCE WAS TRUE IN RUN 117 AND IS NOW FALSE, so it is replaced
+            # rather than left standing beside behaviour that contradicts it.
             "posture_effect": (
-                "NONE. These records are reported beside the subcontractor performance reading "
-                "and move no firm's band. How a nonconformance, a failed inspection or a safety "
-                "incident weighs against a firm's stated rating is not established on this "
-                "platform, and no weight is invented here."),
+                "THESE RECORDS NOW MOVE THE BAND. The owner has supplied the eight factor "
+                "ladders, their denominators, their hard overrides and the averaging rule; they "
+                "live in `simulation/trade_factors.py` and nowhere else. A record still moves "
+                "nothing on its own: it moves a firm's posture only through the factor whose "
+                "kind it carries, against the denominator the document states."),
             "unattributed_rule": (
                 "a record naming no firm is reported as unattributed. It is never distributed "
                 "across firms, never assigned to the worst firm, and never allowed to change "
-                "any firm's posture."),
+                "any firm's posture. RUN 118 does not relax this: an unattributed record enters "
+                "no factor numerator and no denominator."),
             "assembled_by": "document extraction",
+            # RUN 118. The denominators, beside the records they are the population for.
+            "denominators_by_subcontractor": {k: dict(_td_by_firm[k])
+                                              for k in sorted(_td_by_firm)},
+            "denominator_source_document_types": {k: sorted(v) for k, v in _td_sources.items()},
+            "denominator_rows_unusable": _td_unusable,
+            "denominator_rule": (
+                "a denominator is a number the document counts. It is never derived from how "
+                "many attribution rows arrived, never carried over from another firm and never "
+                "defaulted. Where a firm has records and no denominator, no rate is formed and "
+                "only the hard overrides apply. Denominators for the same firm on several "
+                "documents are SUMMED per column, never averaged and never overwritten."),
         })
     return out
 
