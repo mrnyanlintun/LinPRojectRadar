@@ -1171,6 +1171,21 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # in `information_completeness._ASSEMBLER_FIELDS` (187 -> 189). A report stating some items
  # outstanding is NOT Complete and the served reading states how many remain. Complete is still
  # applied AHEAD of the required-core gate, measured again this run.
+ #   GOAL 2. A4.4 NCR Rate now reads THREE documents -- the NCR log, the quality audit report
+ # and the field report -- as ONE RATE over a POOLED numerator and a POOLED denominator, not as
+ # three rates averaged: the owner's "same evidence of the same thing" is one population, and
+ # averaging rates would weight a document covering five inspections like one covering five
+ # hundred. A document stating findings and no exposure contributes NEITHER half and is named as
+ # excluded. The two denominator units are never mixed and the owner's own fallback precedence
+ # decides which pools. `inspections_performed` and `active_work_packages` are added to the two
+ # new document types under the SAME names the NCR log uses. The ladder and its four overrides
+ # are unchanged. PRECEDENCE CHANGED and the record says so.
+ #   GOAL 6. THE BUDGET RE-BASING IS DISCLOSED. `compute.budget_rebasing` composes the original
+ # contract sum, the change orders that re-based it and the resulting budget ON THE SERVER; the
+ # detail page prints it and computes nothing. Where no change order moved the budget it is None
+ # and no node renders -- an unchanged budget is never a re-basing of nought. TCPI and Variance
+ # at Completion are NOT recalculated and still compute against the revised budget. Proved from
+ # the DOM of the page the owner loads, with nothing supplied to a renderer.
  # No stored row is recomputed and none is touched.
  "sim-2026.09-v62",
 )

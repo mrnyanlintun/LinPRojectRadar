@@ -94,6 +94,7 @@ from .document_evidence import document_evidence
 from .evm_consistency import consistency_findings
 from .decision_brief import compose_decision_brief
 from .information_completeness import information_completeness
+from .simulation.compute import budget_rebasing
 from .recommendation_basis import recommendation_basis
 from . import spec_projection
 from .risk_exposure import register_exposure
@@ -1806,6 +1807,71 @@ def _run69_structures(session: Session, project: Project, period: int,
             continue
         doc_type = d.get("doc_type")
 
+        # ---------------------------------------------------------- RUN 119, SECTION 2
+        # THE RATE AVERAGES ACROSS THREE DOCUMENTS, AND IT IS POOLED, NOT AVERAGED OVER RATES.
+        #
+        # THE OWNER'S RULING: A4.4 "averages across the NCR log, the quality audit report and
+        # the field report. Audit findings and site-observed defects are the same evidence of
+        # the same thing."
+        #
+        # POOLED NUMERATOR AND DENOMINATOR, NOT THREE RATES AVERAGED, AND THE OWNER'S OWN
+        # SENTENCE DECIDES IT. "The same evidence of the same thing" is one population, not
+        # three independent opinions; and the order names the consequence itself -- "the
+        # difference shows on a project where one document covers far more work than another".
+        # Averaging three rates gives a field report covering five inspections the same weight
+        # as an NCR log covering five hundred, which is the fabricated-neutral failure
+        # `category_posture` refuses for the same reason. Pooling weights each document by the
+        # work it actually covers, which is what a rate means.
+        #
+        # A DOCUMENT THAT STATES A NUMERATOR AND NO DENOMINATOR CONTRIBUTES NOTHING -- NEITHER
+        # HALF. Adding its findings to the pooled numerator without adding its exposure to the
+        # denominator would inflate the rate on evidence the document never supplied. It is
+        # recorded on the result as excluded, and why.
+        #
+        # THE TWO DENOMINATOR UNITS ARE NEVER MIXED. That is Run 106's existing rule and it is
+        # the owner's: active work packages is the FALLBACK "where inspections cannot be
+        # reliably identified". So where documents state both units, the INSPECTIONS documents
+        # pool and the fallback-unit documents are excluded and named -- the owner's own
+        # precedence, applied, not a new one invented here.
+        #
+        # PRECEDENCE CHANGED, AND IT IS SAID PLAINLY. Before this run `ncrExposureRecord` came
+        # from the NCR log alone. It is now pooled across up to three document types, so a
+        # project whose quality audit report or field report states an exposure will produce a
+        # different denominator -- and a different rate -- from the same NCR log. The record
+        # names every contributing document.
+        if doc_type in ("ncr_log", "quality_audit_report", "field_report"):
+            _num_field = {"ncr_log": "ncr_issued",
+                          "quality_audit_report": "total_findings",
+                          "field_report": "quality_deficiencies_noted"}[doc_type]
+            _insp = ex.get("inspections_performed")
+            _awp = ex.get("active_work_packages")
+            _cunit = ("inspections" if _insp is not None
+                      else ("active_work_packages" if _awp is not None else None))
+            _cqty = _insp if _insp is not None else _awp
+            _cnum = ex.get(_num_field)
+            if _cnum is not None:
+                try:
+                    _cn = float(_cnum)
+                    _cq = float(_cqty) if _cunit else -1.0
+                except (TypeError, ValueError):
+                    _cn = _cq = -1.0
+                _contrib = {
+                    "source_document_type": doc_type,
+                    "numerator_field": _num_field,
+                    "numerator": int(_cn) if _cn >= 0 and _cn == int(_cn) else None,
+                    "denominator_unit": _cunit,
+                    "denominator": _cq if (_cunit and _cq > 0) else None,
+                }
+                if _contrib["numerator"] is None:
+                    _contrib["excluded_because"] = (
+                        f"the document states {_num_field} as something other than a whole "
+                        f"count at or above nought, so nothing is read from it")
+                elif _contrib["denominator"] is None:
+                    _contrib["excluded_because"] = (
+                        "the document states what it found but not the exposure it found it "
+                        "over, so it can supply no rate; its findings are NOT added to a "
+                        "denominator it did not state")
+                out.setdefault("ncrRateContributions", []).append(_contrib)
         if doc_type == "resource_report":
             # A2.9. ONE DOCUMENT SUPPLIES THE PROFILE, the longest of them, on the same
             # deterministic rule `_baseline_structures` states: stitching two resource reports'
@@ -3437,6 +3503,91 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     # ASSEMBLED BEFORE the governed project-data merge, so a structure a project typed in never
     # displaces evidence read from the project's own documents. That is rule 5 of project_data.py
     # applied here rather than restated.
+    # ------------------------------------------------------------------- RUN 119, SECTION 2
+    # THE POOLED RATE ACROSS THE THREE DOCUMENTS, FORMED HERE, AFTER EVERY DOCUMENT IS READ.
+    #
+    # It must be here and not in the per-document loop: a pool is a fact about the SET of
+    # documents this period holds, and no single document can know what the others stated.
+    #
+    # It runs BEFORE the NCR-log-alone record is preferred below and REPLACES it where two or
+    # more documents contributed -- that is the precedence change, and it is stated on the
+    # record itself in `ncr_rate_pooling`. Where only ONE document contributes, the pooled
+    # record is arithmetically identical to the single-document one and is still labelled, so a
+    # reader always sees which documents the denominator came from.
+    _contribs = si.get("ncrRateContributions") or []
+    _usable = [c for c in _contribs if c.get("numerator") is not None
+               and c.get("denominator") is not None]
+    if _usable:
+        # THE TWO UNITS ARE NEVER MIXED, and the owner's own precedence decides which wins:
+        # active work packages is the FALLBACK, used "where inspections cannot be reliably
+        # identified", so a project stating inspections anywhere pools the inspections and
+        # excludes the fallback-unit documents by name.
+        _units = {c["denominator_unit"] for c in _usable}
+        _chosen = "inspections" if "inspections" in _units else "active_work_packages"
+        _pool = [c for c in _usable if c["denominator_unit"] == _chosen]
+        _off_unit = [c for c in _usable if c["denominator_unit"] != _chosen]
+        _num = sum(int(c["numerator"]) for c in _pool)
+        _den = sum(float(c["denominator"]) for c in _pool)
+        if _den > 0:
+            _excluded = [c for c in _contribs if c not in _pool]
+            _prev = si.get("ncrExposureRecord")
+            _rec2 = {
+                "source": ("the nonconformance log, the quality audit report and the field "
+                           "report uploaded for this period, pooled"),
+                "exposure_unit": _chosen,
+                "exposure_quantity": _den,
+                "ncr_count": _num,
+                "ncr_count_basis": ("nonconformances, audit findings and site-observed "
+                                    "defects raised in the reporting period, pooled over the "
+                                    "exposure each document stated"),
+                "assembled_by": "document extraction",
+                "reporting_period": (_prev or {}).get("reporting_period"),
+            }
+            # The NCR log's own override columns and open/closed counts are carried through
+            # UNCHANGED where it supplied them. Pooling changes the RATE, not the overrides:
+            # an open critical NCR is Red regardless of how many documents were pooled.
+            for _k, _v in (_prev or {}).items():
+                if _k in ("open_count", "closed_count",
+                          "open_critical_life_safety_structural_or_code_ncr",
+                          "hold_point_or_commissioning_or_required_inspection_blocking_turnover",
+                          "ncr_open_past_contractual_closure_date",
+                          "max_repeat_ncrs_one_root_cause_or_trade"):
+                    _rec2[_k] = _v
+            _rec2["ncr_rate_pooling"] = {
+                "rule": ("ONE RATE OVER A POOLED NUMERATOR AND A POOLED DENOMINATOR, not three "
+                         "rates averaged. Audit findings and site-observed defects are the same "
+                         "evidence of the same thing, so they join one population; averaging "
+                         "three rates would give a document covering five inspections the same "
+                         "weight as one covering five hundred."),
+                "denominator_unit_rule": ("the two denominator units are never mixed; active "
+                                          "work packages is the fallback used only where "
+                                          "inspections cannot be reliably identified, so where "
+                                          "any document states inspections the inspections "
+                                          "documents pool"),
+                "contributing_documents": [
+                    {"source_document_type": c["source_document_type"],
+                     "numerator_field": c["numerator_field"],
+                     "numerator": c["numerator"], "denominator": c["denominator"]}
+                    for c in _pool],
+                "excluded_documents": [
+                    {"source_document_type": c["source_document_type"],
+                     "numerator_field": c["numerator_field"],
+                     "why": c.get("excluded_because") or (
+                         f"the document states its exposure in "
+                         f"{c['denominator_unit']}, which is not the unit this project's rate "
+                         f"is drawn over, and the two units are never mixed")}
+                    for c in _excluded],
+                "precedence_change": (
+                    "Before Run 119 this record came from the NCR log alone. It is now pooled "
+                    "across the NCR log, the quality audit report and the field report, so a "
+                    "project whose audit report or field report states an exposure produces a "
+                    "different denominator -- and a different rate -- from the same NCR log."),
+                "documents_pooled": len(_pool),
+                "documents_excluded": len(_excluded),
+                "off_unit_documents": len(_off_unit),
+            }
+            si["ncrExposureRecord"] = _rec2
+
     _ncr_issued = si.get("ncrIssued")
     _inspected = si.get("itemsInspected")
     if (_ncr_issued is not None and _inspected is not None
@@ -5188,6 +5339,18 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
     # evidence there is, which a participant must know before forming a judgement, and it
     # carries no recommendation, no course and no action.
     view["information_completeness"] = information_completeness(_period_docs)
+
+    # RUN 119, GOAL 6. THE BUDGET RE-BASING, COMPOSED ON THE SERVER AND SERVED BESIDE THE ROW.
+    #
+    # It is placed here, on the same view the completeness caveat is placed on, because it is
+    # the same kind of statement: a fact about what the figures rest on, carrying no band and
+    # casting no vote. It touches neither `project_status` nor `category_statuses`, and TCPI and
+    # Variance at Completion are not recomputed -- they still compute against the revised budget.
+    # WHERE NOTHING WAS RE-BASED THIS IS None AND NO KEY IS SET, so the card renders nothing at
+    # all rather than a re-basing of nought.
+    _reb = budget_rebasing(row.signal_inputs)
+    if _reb is not None:
+        view["budget_rebasing"] = _reb
 
     return {
         "ok": True,

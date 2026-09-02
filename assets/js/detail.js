@@ -1414,6 +1414,13 @@
       if (resp.result.consistency_findings && !p.storedResult.consistency_findings) {
         p.storedResult.consistency_findings = resp.result.consistency_findings;
       }
+      // RUN 119, GOAL 6, AND IT IS THE SAME GRAFT FOR THE SAME MEASURED REASON. The budget
+      // re-basing disclosure is served on THIS response and is not on the list projection, and
+      // `rowFor` prefers `storedResult`. Measured before this line existed: the server composed
+      // the disclosure, the response carried it, and the DOM node never appeared.
+      if (resp.result.budget_rebasing && !p.storedResult.budget_rebasing) {
+        p.storedResult.budget_rebasing = resp.result.budget_rebasing;
+      }
       // THE SIXTH FIELD, RUN 91, AND IT MADE RUN 89'S ENTIRE INDETERMINATE BRIEF DEAD CODE.
       // `project_status_basis` -- the required-core verdict, carrying `required_missing` and
       // `required_missing_detail` -- is on the served result (documents.py `_result_view`) and
@@ -2045,6 +2052,41 @@
       + '<p class="eb-route-note" data-completeness-caveat="1">' + esc(ic.caveat) + '</p>'
       + '<p class="eb-route-note eb-completeness-basis">' + esc(ic.denominator_basis || "") + '</p>'
       + '</div>';
+  }
+
+  /* ============================================================
+     RUN 119, GOAL 6. THE BUDGET RE-BASING, DISCLOSED.
+     ============================================================
+     TCPI and Variance at Completion compute against the REVISED budget, correctly -- money
+     added by an approved change order is authorised money. What was missing is that nothing
+     told the reader the budget had been re-based at all: one figure with no history.
+
+     NOTHING IS COMPUTED HERE. The server composes the sentence and the three figures in
+     `simulation/compute.budget_rebasing` and serves them on the row; this prints them. That is
+     the Run 69 rule for this file -- a browser that re-derives a figure is a browser that can
+     state one the server does not stand behind -- and the Run 115 precedent for the caveat.
+
+     WHERE NO CHANGE ORDER RE-BASED THE BUDGET THE SERVER SENDS NOTHING and this renders
+     nothing. An unchanged budget must not render as a re-basing of nought. */
+  function briefBudgetRebasingHtml(project) {
+    if (!project) return "";
+    let row = null;
+    try { row = window.LinResults && window.LinResults.rowFor ? window.LinResults.rowFor(project) : null; }
+    catch (e) { row = null; }
+    const rb = row && row.budget_rebasing;
+    if (!rb || !rb.words) return "";
+    const money = (v) => (Number(v) < 0 ? "-$" : "$")
+      + Math.abs(Math.round(Number(v))).toLocaleString("en-US");
+    return '<div class="eb-section eb-rebasing" data-brief-rebasing="1">'
+      + '<p class="eb-sec-head">The budget was re-based</p>'
+      + '<p class="eb-route-note" data-budget-rebasing="1">' + esc(rb.words) + '</p>'
+      + '<p class="eb-route-note eb-rebasing-figures" data-budget-rebasing-figures="1">'
+      + 'Original contract sum ' + esc(money(rb.original_contract_sum))
+      + ' | ' + esc(String(rb.change_order_count))
+      + ' approved change order' + (Number(rb.change_order_count) === 1 ? "" : "s") + " "
+      + esc(money(rb.change_order_movement))
+      + ' | Budget used ' + esc(money(rb.revised_budget))
+      + '</p></div>';
   }
 
   /* RUN 91, SECTION 3.5. THE ROUTE FROM THE END OF THE BRIEF TO THE DECISION CARD.
@@ -2868,8 +2910,12 @@
        from a card that a project manager was reading, which is precisely the case where knowing
        how much the assessment rests on matters most. So it is appended to the ready body here,
        once, rather than inside one of the three bodies. */
+    /* RUN 119, GOAL 6. The re-basing disclosure rides on the SAME ready body as the caveat,
+       and for the same measured reason: a disclosure attached to the structured path alone
+       would be absent from the card a project manager is actually reading whenever the
+       scripted brief fails the Run 70 gate. */
     const withCaveat = (html) => {
-      const cav = briefCompletenessCaveatHtml(project);
+      const cav = briefCompletenessCaveatHtml(project) + briefBudgetRebasingHtml(project);
       if (!cav) return html;
       const at = html.lastIndexOf("</div>");
       return at < 0 ? html + cav : html.slice(0, at) + cav + html.slice(at);

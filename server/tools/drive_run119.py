@@ -307,6 +307,77 @@ st, basis, si = status_of("PRJ-R119-C5E", [cx_doc(48, 50)])
 ck("the record is refused and the project is not Complete",
    (basis.get("commissioning_clearance"), st == "Complete"), (None, False))
 
+
+# ==========================================================================================
+# SECTION 2. NCR RATE AVERAGES THREE DOCUMENTS.
+# ==========================================================================================
+def ncr_docs(*, log=True, qa=None, fr=None, log_unit="inspections_performed", log_qty=200):
+    d = []
+    if log:
+        d.append(("ncr", "ncr_log", {"ncr_issued": 3, "ncr_closed": 1, "ncr_open": 2,
+                                     "report_period": "2026-03", log_unit: log_qty}))
+    if qa is not None:
+        d.append(("qa", "quality_audit_report",
+                  dict({"total_findings": qa[0], "critical_findings": 0, "audit_score": 96,
+                        "audit_date": END}, **({qa[2]: qa[1]} if qa[1] is not None else {}))))
+    if fr is not None:
+        d.append(("fr", "field_report",
+                  dict({"document_date": END, "document_risk_score": 0.1,
+                        "quality_deficiencies_noted": fr[0]},
+                       **({fr[2]: fr[1]} if fr[1] is not None else {}))))
+    return d
+
+def a44(pid, docs):
+    res, ab, st, cats, si = build(pid + "-" + STAMP, pid, docs)
+    return (res.get("A4.4") or ab.get("A4.4") or {}), (si.get("ncrExposureRecord") or {})
+
+print("\n2A. THE THREE DOCUMENTS POOL: 3+4+2 findings over 200+50+100 inspections")
+r, rec = a44("PRJ-R119-N2A", ncr_docs(qa=(4, 50, "inspections_performed"),
+                                      fr=(2, 100, "inspections_performed")))
+ck("one rate over a pooled numerator and a pooled denominator",
+   (rec.get("ncr_count"), rec.get("exposure_quantity")), (9, 350.0))
+ck("9 of 350 is 2.57 per cent -> Yellow on the owner's unchanged ladder",
+   r.get("status_color"), "Yellow")
+ck("all three documents are named as contributors",
+   sorted(c["source_document_type"] for c in
+          (rec.get("ncr_rate_pooling") or {}).get("contributing_documents") or []),
+   ["field_report", "ncr_log", "quality_audit_report"])
+
+print("\n2B. THE NCR LOG ALONE, unchanged: 3 of 200 is 1.5 per cent -> Green")
+r, rec = a44("PRJ-R119-N2B", ncr_docs())
+ck("the ladder and its overrides are untouched by this run",
+   (r.get("status_color"), rec.get("ncr_count"), rec.get("exposure_quantity")),
+   ("Green", 3, 200.0))
+
+print("\n2C. A DOCUMENT STATING FINDINGS AND NO EXPOSURE CONTRIBUTES NEITHER HALF")
+r, rec = a44("PRJ-R119-N2C", ncr_docs(qa=(40, None, "inspections_performed")))
+ck("40 audit findings with no stated exposure do NOT inflate the rate",
+   (rec.get("ncr_count"), rec.get("exposure_quantity"), r.get("status_color")),
+   (3, 200.0, "Green"))
+_ex = (rec.get("ncr_rate_pooling") or {}).get("excluded_documents") or []
+ck("and the exclusion is named on the record with its reason",
+   ([e["source_document_type"] for e in _ex],
+    "not the exposure it found it over" in str(_ex)), (["quality_audit_report"], True))
+
+print("\n2D. THE TWO DENOMINATOR UNITS ARE NEVER MIXED")
+r, rec = a44("PRJ-R119-N2D", ncr_docs(qa=(4, 50, "active_work_packages"),
+                                      fr=(2, 100, "inspections_performed")))
+ck("the inspections documents pool; the fallback-unit document is excluded and named",
+   (rec.get("exposure_unit"), rec.get("ncr_count"), rec.get("exposure_quantity"),
+    [e["source_document_type"] for e in
+     (rec.get("ncr_rate_pooling") or {}).get("excluded_documents") or []]),
+   ("inspections", 5, 300.0, ["quality_audit_report"]))
+
+print("\n2E. FALSIFY -- THE POOL CHANGES THE BAND. The same NCR log with a field report")
+print("    stating 30 defects over 20 inspections: 33 of 220 is 15 per cent -> Red")
+r, rec = a44("PRJ-R119-N2E", ncr_docs(fr=(30, 20, "inspections_performed")))
+ck("the third document moved the band from Green to Red -- the pool is not decorative",
+   (r.get("status_color"), rec.get("ncr_count"), rec.get("exposure_quantity")),
+   ("Red", 33, 220.0))
+ck("and the precedence change is stated on the record",
+   "Before Run 119 this record came from the NCR log alone"
+   in str((rec.get("ncr_rate_pooling") or {}).get("precedence_change")), True)
+
 print()
 print("=" * 100)
 print(f"RUN 119 DRIVER: {P} passed, {F} failed")

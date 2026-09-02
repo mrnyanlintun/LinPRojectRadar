@@ -160,6 +160,65 @@ def _as_number(value):
     return out if out == out and out not in (float("inf"), float("-inf")) else None
 
 
+# ================================ RUN 119, GOAL 6. THE BUDGET RE-BASING IS DISCLOSED.
+#
+# WHAT WAS MISSING AND WHAT IS NOT. TCPI and Variance at Completion compute against the REVISED
+# budget, and correctly: money added by an approved change order is genuinely authorised. Run 117
+# established that `baselineContractSum` already carries the original separately, and
+# `field_registry.WRITER_TIERS` keeps the two figures in separate fields with separate writer
+# precedence. NOTHING IS RECALCULATED HERE. This is a DISPLAY fact and only a display fact:
+# TCPI and Variance at Completion keep computing against the revised budget exactly as before.
+#
+# WHAT IS ADDED is that a reader is told the budget was re-based, and sees the movement rather
+# than one figure with no history: the original contract sum, the change orders that re-based
+# it, and the resulting budget.
+#
+# WHERE NO CHANGE ORDER EXISTS THERE IS NOTHING TO DISCLOSE. This returns None -- not a
+# re-basing of nought -- so the card says nothing at all, which is the owner's explicit
+# instruction. It also returns None where the two figures are equal: a change order that moved
+# no money re-based no budget, and printing "0 added" would be a disclosure of nothing dressed
+# as a disclosure of something.
+#
+# THE SENTENCE IS COMPOSED HERE, ON THE SERVER, for the reason Run 69 recorded for the key
+# drivers and Run 115 for the completeness caveat: a browser that composes its own sentence over
+# figures it has re-derived is a browser that can state a figure the server does not stand
+# behind. The client prints this string and does no arithmetic.
+def budget_rebasing(signal_inputs: dict | None) -> dict[str, Any] | None:
+    """
+    The movement from the original contract sum to the budget the analysis uses, or None.
+
+    None means THERE IS NOTHING TO DISCLOSE -- no original on record, no revised figure, no
+    change order, or no movement between them. It never means nought.
+    """
+    si = signal_inputs or {}
+    original = _as_number(si.get("baselineContractSum"))
+    revised = _as_number(si.get("bac"))
+    if original is None or revised is None or original <= 0:
+        return None
+    count = _as_number(si.get("changeOrderCount"))
+    if count is None or count <= 0:
+        return None
+    movement = revised - original
+    if movement == 0:
+        return None
+    n = int(count) if count == int(count) else count
+    return {
+        "original_contract_sum": original,
+        "change_order_count": n,
+        "change_order_movement": movement,
+        "revised_budget": revised,
+        "words": (
+            f"This project's budget has been re-based. The original contract sum was "
+            f"{original:,.0f}; {n} approved change order{'' if n == 1 else 's'} "
+            f"{'added' if movement > 0 else 'removed'} {abs(movement):,.0f}; the budget the "
+            f"analysis uses is {revised:,.0f}. Every figure computed against the budget -- the "
+            f"To Complete Performance Index and the Variance at Completion among them -- is "
+            f"computed against the REVISED budget, because money added by an approved change "
+            f"order is authorised money. Nothing here is recalculated; the movement is "
+            f"disclosed so the figure is read with its history."),
+    }
+
+
 def _cost_identity_complete(si: dict) -> bool:
     """
     THE COST IDENTITY. Earned value, planned value and actual cost all exactly equal to a

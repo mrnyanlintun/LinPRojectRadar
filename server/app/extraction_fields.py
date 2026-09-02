@@ -522,6 +522,15 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "field_report": [
         "document_risk_score", "document_date", "weather_days_lost", "float_remaining",
         "quality_deficiencies_noted", "safety_observations", "environmental_observations",
+        # RUN 119, SECTION 2. THE OWNER'S RULING: A4.4's rate "averages across the NCR log, the
+        # quality audit report and the field report -- audit findings and site-observed defects
+        # are the same evidence of the same thing". A rate needs a DENOMINATOR, and this
+        # document type stated none, so the SAME TWO the owner's ladder is already drawn over
+        # are asked of it: inspections performed, or -- only where inspections cannot be
+        # reliably identified -- active work packages. The field names are `ncr_log`'s own,
+        # reused rather than duplicated under new spellings, so the pooled denominator cannot
+        # come to mean two different things.
+        "inspections_performed", "active_work_packages",
         "subcontractor_observations",
         "weather_events_json", "weather_allowance_days_remaining", "weather_calendar_id",
         "weather_day_basis",
@@ -567,6 +576,15 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     # findings/requirements schedule is the population it summarises.
     "quality_audit_report": [
         "total_findings", "critical_findings", "deficiency_count", "audit_score", "audit_date",
+        # RUN 119, SECTION 2. THE OWNER'S RULING: A4.4's rate "averages across the NCR log, the
+        # quality audit report and the field report -- audit findings and site-observed defects
+        # are the same evidence of the same thing". A rate needs a DENOMINATOR, and this
+        # document type stated none, so the SAME TWO the owner's ladder is already drawn over
+        # are asked of it: inspections performed, or -- only where inspections cannot be
+        # reliably identified -- active work packages. The field names are `ncr_log`'s own,
+        # reused rather than duplicated under new spellings, so the pooled denominator cannot
+        # come to mean two different things.
+        "inspections_performed", "active_work_packages",
         "quality_requirements_json", "quality_register_id", "quality_register_period",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",

@@ -1616,90 +1616,91 @@ def _trade_only_reading(si: dict):
     _tp_only = _trade_postures(si, {})
     if not _tp_only.get("trade_governing_posture"):
         return None
-    if True:
-        _norm = _tp_only["trade_governing_posture"]
-        _gov_firm = _tp_only["trade_governing_firm"]
-        _gp = next((q for q in _tp_only["trade_firm_postures"]
-                    if q["subcontractor"] == _gov_firm), None)
-        # RUN 119, GOAL 1. NO STARTING POSTURE IS PASSED HERE AND THAT IS DELIBERATE: this arm
-        # is reached only where NO report stated a rating for any firm, so there is no band the
-        # reading was lifted ABOVE. A movement with no origin is not a movement, and reading the
-        # absence of a rating as a starting Red would be inventing the very assessment the owner
-        # said the records may overturn.
-        _res = _PMR.resolve(_norm, _module_review(si, "A4.8"), None)
-        _audit = _PMR.audit_record(
-            normalised_posture=_norm, source_rating="none stated",
-            source_document_id=None, source_document_version=None, period=None,
-            normalisation_rule="the owner's Run 118 trade factor ladders",
-            normalisation_rule_version=_tp_only["trade_factor_rule_version"],
-            resolution=_res)
-        _audit.update({
-            "trade_factor_rates": _gp["factor_rates"],
-            "trade_factor_bands": _gp["factor_bands"],
-            "trade_overrides_fired": _gp["overrides_fired"],
-            "trade_override_detail": _gp["override_detail"],
-            "trade_stop_work_orders": _gp["stop_work_orders"],
-            "trade_calculated_adjustment": _gp["adjustment"],
-            "trade_adjustment_rule": _gp["adjustment_rule"],
-            "trade_factor_mean_score": _gp["factor_mean_score"],
-            "trade_source_rating_band": None,
-            "trade_rule_version": _tp_only["trade_factor_rule_version"],
-            "source_rating_never_altered": (
-                "No rating was stated for any firm here, so none was altered. The posture is "
-                "produced from the trade records alone and the record says so."),
-        })
-        _f2 = {
-            "normalised_posture": _norm,
-            "reported_rating_posture": None,
-            "governing_subcontractor_id": _gov_firm,
-            "governing_reported_rating": None,
-            "module_state": _res["module_state"],
-            "module_state_words": _res["module_state_words"],
-            "pm_review_required": _res["review_required"],
-            "pm_review_audit_record": _audit,
-            "canonical_structure": "subcontractor_trade_factors",
-            "source": "trade records attributed on this project's documents",
-            **_tp_only,
-            **_trade_attribution_block(si),
-            "scope_note": (
-                "NO SUBCONTRACTOR PERFORMANCE REPORT STATED A RATING FOR ANY FIRM ON THIS "
-                "PROJECT. This posture is produced from the trade records alone, which is the "
-                "owner's section 1.4 ruling: the trade record is itself an assessment "
-                "checklist. No rating is inferred, invented or carried over from another "
-                "document; where the records produce no factor band either, the module goes on "
-                "abstaining."),
-        }
-        _b2 = ("on the owner's eight trade factor ladders alone, because no report stated a "
-               "rating for any firm. " + _TF.AVERAGE_WORDS + " A factor that fires its HARD "
-               "OVERRIDE sets the firm Red outright. " + _TF.STOP_WORK_WORDS + " With no "
-               "starting band, the nonconformance factor's displacement rungs have nothing to "
-               "move and produce no band; only its Red rung, which is stated absolutely, bands "
-               "it. ACROSS FIRMS THE MOST ADVERSE ADJUSTED POSTURE GOVERNS. HELD FOR REVIEW: an "
-               "Amber or Red posture is not a finding until a Project Manager records a "
-               "disposition, exactly as for a posture reached from a stated rating.")
-        _m2 = (f"No performance report states a rating for any firm on this project. "
-               f"{len(_tp_only['trade_firm_postures'])} firm"
-               f"{'' if len(_tp_only['trade_firm_postures']) == 1 else 's'} carry trade records "
-               f"and are assessed from them. The most adverse is {_gov_firm} at {_norm}, by "
-               f"{_gp['adjustment_rule'].replace('_', ' ')}."
-               + _trade_attribution_sentence(_trade_attribution_block(si)))
-        if _res["posture"] is None:
-            return band_abstained(
-                "Subcontractor_Performance", _m2,
-                reason=_res.get("not_assessed_reason") or _res["module_state_words"],
-                band_basis_id=_TF.OWNER_BASIS_ID, band_boundary_if_reviewed=_b2, **_f2)
-        return banded(
-            "Subcontractor_Performance", _m2, status_color=_res["posture"],
-            boundary=_b2,
-            basis=("the owner's Run 118 order, section 1. Every threshold in the eight ladders "
-                   "is OWNER-CONFIGURED and carries the identifier the owner named for it, "
-                   "`owner_configured_construction_quality_tolerance`. The one exception is the "
-                   "OSHA recordable incident rate FORMULA, which is codified; the cuts on that "
-                   "rate are the owner's and the two provenances are recorded separately on the "
-                   "safety factor."),
-            provenance=PROVENANCE_OWNER_CALIBRATED,
-            threshold_source=THRESHOLD_SOURCE_OWNER,
-            band_basis_id=_TF.OWNER_BASIS_ID, **_f2)
+    # RUN 119. Run 118 left a vestigial `if True:` wrapping this block; removed here,
+    # in the function this run edited anyway. The block is unchanged.
+    _norm = _tp_only["trade_governing_posture"]
+    _gov_firm = _tp_only["trade_governing_firm"]
+    _gp = next((q for q in _tp_only["trade_firm_postures"]
+                if q["subcontractor"] == _gov_firm), None)
+    # RUN 119, GOAL 1. NO STARTING POSTURE IS PASSED HERE AND THAT IS DELIBERATE: this arm
+    # is reached only where NO report stated a rating for any firm, so there is no band the
+    # reading was lifted ABOVE. A movement with no origin is not a movement, and reading the
+    # absence of a rating as a starting Red would be inventing the very assessment the owner
+    # said the records may overturn.
+    _res = _PMR.resolve(_norm, _module_review(si, "A4.8"), None)
+    _audit = _PMR.audit_record(
+        normalised_posture=_norm, source_rating="none stated",
+        source_document_id=None, source_document_version=None, period=None,
+        normalisation_rule="the owner's Run 118 trade factor ladders",
+        normalisation_rule_version=_tp_only["trade_factor_rule_version"],
+        resolution=_res)
+    _audit.update({
+        "trade_factor_rates": _gp["factor_rates"],
+        "trade_factor_bands": _gp["factor_bands"],
+        "trade_overrides_fired": _gp["overrides_fired"],
+        "trade_override_detail": _gp["override_detail"],
+        "trade_stop_work_orders": _gp["stop_work_orders"],
+        "trade_calculated_adjustment": _gp["adjustment"],
+        "trade_adjustment_rule": _gp["adjustment_rule"],
+        "trade_factor_mean_score": _gp["factor_mean_score"],
+        "trade_source_rating_band": None,
+        "trade_rule_version": _tp_only["trade_factor_rule_version"],
+        "source_rating_never_altered": (
+            "No rating was stated for any firm here, so none was altered. The posture is "
+            "produced from the trade records alone and the record says so."),
+    })
+    _f2 = {
+        "normalised_posture": _norm,
+        "reported_rating_posture": None,
+        "governing_subcontractor_id": _gov_firm,
+        "governing_reported_rating": None,
+        "module_state": _res["module_state"],
+        "module_state_words": _res["module_state_words"],
+        "pm_review_required": _res["review_required"],
+        "pm_review_audit_record": _audit,
+        "canonical_structure": "subcontractor_trade_factors",
+        "source": "trade records attributed on this project's documents",
+        **_tp_only,
+        **_trade_attribution_block(si),
+        "scope_note": (
+            "NO SUBCONTRACTOR PERFORMANCE REPORT STATED A RATING FOR ANY FIRM ON THIS "
+            "PROJECT. This posture is produced from the trade records alone, which is the "
+            "owner's section 1.4 ruling: the trade record is itself an assessment "
+            "checklist. No rating is inferred, invented or carried over from another "
+            "document; where the records produce no factor band either, the module goes on "
+            "abstaining."),
+    }
+    _b2 = ("on the owner's eight trade factor ladders alone, because no report stated a "
+           "rating for any firm. " + _TF.AVERAGE_WORDS + " A factor that fires its HARD "
+           "OVERRIDE sets the firm Red outright. " + _TF.STOP_WORK_WORDS + " With no "
+           "starting band, the nonconformance factor's displacement rungs have nothing to "
+           "move and produce no band; only its Red rung, which is stated absolutely, bands "
+           "it. ACROSS FIRMS THE MOST ADVERSE ADJUSTED POSTURE GOVERNS. HELD FOR REVIEW: an "
+           "Amber or Red posture is not a finding until a Project Manager records a "
+           "disposition, exactly as for a posture reached from a stated rating.")
+    _m2 = (f"No performance report states a rating for any firm on this project. "
+           f"{len(_tp_only['trade_firm_postures'])} firm"
+           f"{'' if len(_tp_only['trade_firm_postures']) == 1 else 's'} carry trade records "
+           f"and are assessed from them. The most adverse is {_gov_firm} at {_norm}, by "
+           f"{_gp['adjustment_rule'].replace('_', ' ')}."
+           + _trade_attribution_sentence(_trade_attribution_block(si)))
+    if _res["posture"] is None:
+        return band_abstained(
+            "Subcontractor_Performance", _m2,
+            reason=_res.get("not_assessed_reason") or _res["module_state_words"],
+            band_basis_id=_TF.OWNER_BASIS_ID, band_boundary_if_reviewed=_b2, **_f2)
+    return banded(
+        "Subcontractor_Performance", _m2, status_color=_res["posture"],
+        boundary=_b2,
+        basis=("the owner's Run 118 order, section 1. Every threshold in the eight ladders "
+               "is OWNER-CONFIGURED and carries the identifier the owner named for it, "
+               "`owner_configured_construction_quality_tolerance`. The one exception is the "
+               "OSHA recordable incident rate FORMULA, which is codified; the cuts on that "
+               "rate are the owner's and the two provenances are recorded separately on the "
+               "safety factor."),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id=_TF.OWNER_BASIS_ID, **_f2)
 
 
 def run_subcontractor_performance(si: dict, rand: Callable[[], float],

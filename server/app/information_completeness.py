@@ -102,12 +102,21 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
     # purpose of the two overrides, and the caveat says so rather than hiding it.
     "correspondence_notice": ("notice_enforcement_domain", "notice_enforcement_severity",
                               "notice_enforcement_authority", "notice_enforcement_reference"),
+    # RUN 119, SECTION 2. The three fields the pooled NCR rate reads off a field report: what it
+    # observed, and the exposure it observed it over. Declared because the assembler really does
+    # read them; leaving them out would let the caveat report a project as more complete than
+    # the evidence its rate actually rests on.
     "field_report": ("weather_events_json", "weather_allowance_days_remaining",
                      "weather_calendar_id", "weather_day_basis", "trade_attribution_json",
-                     "trade_denominators_json"),
+                     "trade_denominators_json",
+                     "quality_deficiencies_noted", "inspections_performed",
+                     "active_work_packages"),
     "inspection_report": ("trade_attribution_json", "trade_denominators_json"),
     "safety_report": ("trade_attribution_json", "trade_denominators_json"),
-    "quality_audit_report": ("trade_attribution_json", "trade_denominators_json"),
+    # RUN 119, SECTION 2. The same three off a quality audit report.
+    "quality_audit_report": ("trade_attribution_json", "trade_denominators_json",
+                             "total_findings", "inspections_performed",
+                             "active_work_packages"),
     "environmental_report": ("trade_attribution_json", "trade_denominators_json"),
     # RUN 119, SECTION 5. The two closeout figures the commissioning completion path reads.
     # Declared here so the denominator counts the path: a project whose commissioning report
