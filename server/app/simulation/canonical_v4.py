@@ -41,6 +41,7 @@ result. Its lineage names the sensitivity model it was derived from.
 
 from __future__ import annotations
 
+import json
 import math
 from datetime import date
 from typing import Any, Sequence
@@ -953,6 +954,194 @@ DISPUTE_RECORD_CONTRACT: dict[str, Any] = {
                     "count of them; where they state both, the list governs and the "
                     "disagreement is reported rather than hidden"),
 }
+
+
+# ============================================ RUN 119, GOAL 3. THE MEASURE BECOMES A DURATION.
+#
+# THE OWNER'S RULING, RUN 119 SECTION 3, REPLACING RUN 115'S COUNT LADDER OUTRIGHT:
+#
+#   Green -- no open dispute, or a dispute resolved
+#   Yellow -- a dispute open
+#   Amber -- open more than one week
+#   Red  -- open more than two weeks
+#
+# A RESOLVED DISPUTE RETURNS TO GREEN. It stops counting the moment it is resolved -- the same
+# rule the owner gave for a closed trade record at Run 118, and it is applied the same way: the
+# row is carried on the record, named, and contributes nothing to the band.
+#
+# ACROSS SEVERAL DISPUTES THE MOST ADVERSE GOVERNS, and because the ladder is monotone in
+# duration that is the OLDEST OPEN dispute. The oldest is found rather than asserted.
+#
+# WORKING DAYS, NOT CALENDAR DAYS, AND THE OWNER'S OWN SENTENCE DECIDES IT: "A dispute open over
+# a holiday weekend must not become Amber because nobody worked." Counting calendar days is
+# exactly what would do that. So the duration is counted through `working_calendar.
+# working_days_between` -- the ONE conversion Run 108 built, imported and not reimplemented --
+# on the PROJECT'S OWN calendar, and there is no default calendar anywhere: a project whose
+# schedule update defines none cannot form this duration and the module says so rather than
+# substituting calendar days.
+#
+# AND THE WEEK IS THE CALENDAR'S OWN WEEK. "One week" is not converted to five days by this
+# platform, because five is not the owner's number and a six-day week is not a five-day week.
+# It is the count of working days the PROJECT'S calendar declares in a week --
+# `working_days_per_week`, which `normalise_calendar` already derives from the working days the
+# schedule export printed. Amber is more than one of those; Red is more than two.
+DISPUTE_DURATION_WEEK_CUTS: tuple[tuple[int, str], ...] = ((2, "Red"), (1, "Amber"))
+
+#: THE STATUS WORDS THIS PLATFORM HOLDS, and NOTHING ELSE. A status column printing a word that
+#: is not here is NOT read as open and NOT read as resolved: it is reported unreadable and the
+#: dispute enters no band. This is the `compliance_register` precedent -- "a row printing
+#: neither is outstanding and enters no ratio" -- and it is the rule that keeps silence from
+#: becoming a reading. Matching is case-insensitive on the stripped word.
+DISPUTE_STATUS_RESOLVED: frozenset[str] = frozenset({"resolved", "closed", "settled",
+                                                     "withdrawn"})
+DISPUTE_STATUS_OPEN: frozenset[str] = frozenset({"open", "outstanding", "unresolved"})
+
+DISPUTE_DURATION_BOUNDARY = (
+    "on the duration of the OLDEST OPEN dispute, counted in WORKING DAYS on the project's own "
+    "approved calendar: no open dispute -- because none is recorded or because every one "
+    "recorded is resolved -- is Green; a dispute open is Yellow; open more than one week is "
+    "Amber; open more than two weeks is Red. A WEEK is the number of working days the "
+    "project's own calendar declares in a week, not a number this platform chose, and holidays "
+    "and non-working days are not counted, so a dispute open over a holiday weekend does not "
+    "become Amber because nobody worked. A resolved dispute stops counting the moment it is "
+    "resolved and returns the measure to Green. Across several disputes the most adverse "
+    "governs, which on a ladder monotone in duration is the oldest open one.")
+
+#: THE DOCUMENT CONTRACT FOR THE DURATION READING, printed here so the shape is in the code.
+DISPUTE_DURATION_CONTRACT: dict[str, Any] = {
+    "structure_key": "disputeRecord",
+    "required_on_the_record": ["source", "disputes", "as_of_day"],
+    "required_per_dispute": ["dispute_id", "raised_day", "status"],
+    "optional_per_dispute": ["subject", "parties", "recorded_in"],
+    "as_of_day": ("the date the record speaks as of -- the meeting minutes' own document date. "
+                  "A duration is measured from the day a dispute was raised TO a stated day, "
+                  "and the system clock is never that day: the same documents must produce the "
+                  "same reading whenever they are run."),
+    "status_vocabulary": {
+        "resolved": sorted(DISPUTE_STATUS_RESOLVED),
+        "open": sorted(DISPUTE_STATUS_OPEN),
+        "anything_else": ("not read as open and not read as resolved; the dispute is reported "
+                          "unreadable and enters no band"),
+    },
+    "calendar": ("the project's own approved working calendar, from the schedule update's "
+                 "`schedule_calendar_json`. There is no default calendar and calendar days are "
+                 "never substituted for working days."),
+}
+
+
+def _dispute_status_class(word: Any) -> str | None:
+    """`resolved`, `open`, or None where the word is one this platform does not hold."""
+    key = str(word or "").strip().lower()
+    if key in DISPUTE_STATUS_RESOLVED:
+        return "resolved"
+    if key in DISPUTE_STATUS_OPEN:
+        return "open"
+    return None
+
+
+def dispute_duration(structure: dict, calendar: dict | None) -> dict[str, Any]:
+    """
+    How long the oldest OPEN dispute has been open, in working days on the project's calendar.
+
+    ORACLE (owner's Run 119 order, section 3): no open dispute -> Green; open -> Yellow; open
+    more than one week -> Amber; open more than two weeks -> Red.
+
+    NOTHING IS INFERRED. A record with no as-of day, no calendar, or no readable dispute row
+    raises `StructureAbsent` with the sentence saying which. Silence is never read as no
+    dispute and never read as a resolved one.
+    """
+    from .working_calendar import CALENDAR_ABSENT_WORDS, working_days_between
+    words = "a record of the disputes the meeting minutes recorded"
+    rows = structure.get("disputes")
+    rows = rows if isinstance(rows, list) else []
+    if not rows:
+        raise StructureAbsent(
+            "The meeting minutes provided for this project record no dispute ROWS, so no "
+            "dispute duration is formed from them. A duration is measured on each dispute, and "
+            "a total with no rows behind it states nothing about how long anything has been "
+            "open. Silence is not read as no dispute.")
+    if structure.get("as_of_day") is None and structure.get("as_of_date") is None:
+        raise StructureAbsent(
+            "The meeting minutes provided for this project state no date they speak as of, so "
+            "there is no day to measure a dispute's duration against and none is invented. The "
+            "system clock is not that day: the same documents must produce the same reading "
+            "whenever they are run.")
+    as_of = _day(structure, "as_of_day", "as_of_date", words)
+    if not calendar:
+        raise StructureAbsent(
+            "A dispute's duration is counted in working days and " + CALENDAR_ABSENT_WORDS)
+    per_week = int(calendar.get("working_days_per_week") or 0)
+    if per_week <= 0:
+        raise StructureAbsent(
+            "The project's calendar declares no working day of the week, so a week has no "
+            "length on it and the owner's one-week and two-week rungs cannot be placed.")
+
+    assessed, unreadable = [], []
+    for i, row in enumerate(rows):
+        if not isinstance(row, dict):
+            unreadable.append({"dispute_id": None, "why": "the row is not a dispute record"})
+            continue
+        did = str(row.get("dispute_id") or "").strip() or None
+        cls = _dispute_status_class(row.get("status"))
+        if cls is None:
+            unreadable.append({
+                "dispute_id": did,
+                "status_as_printed": row.get("status"),
+                "why": ("the status column prints a word this platform does not hold, so the "
+                        "dispute is read as neither open nor resolved")})
+            continue
+        if cls == "resolved":
+            assessed.append({"dispute_id": did, "status_class": "resolved",
+                             "open_working_days": None, "subject": row.get("subject"),
+                             "why": ("resolved, so it stops counting from the moment it was "
+                                     "resolved and contributes no duration")})
+            continue
+        try:
+            raised = _day(row, "raised_day", "raised_date", words)
+        except StructureAbsent:
+            unreadable.append({
+                "dispute_id": did, "status_as_printed": row.get("status"),
+                "why": ("the dispute is open but the record states no day it was raised, so "
+                        "its duration cannot be measured and none is assumed")})
+            continue
+        assessed.append({
+            "dispute_id": did, "status_class": "open",
+            "raised_day": raised,
+            "open_working_days": working_days_between(calendar, raised, as_of),
+            "subject": row.get("subject"),
+        })
+
+    if not assessed:
+        raise StructureAbsent(
+            "No dispute the meeting minutes record could be read as open or as resolved, so no "
+            "duration is formed. " + json.dumps(unreadable, sort_keys=True))
+
+    open_rows = [d for d in assessed if d["status_class"] == "open"]
+    oldest = max(open_rows, key=lambda d: d["open_working_days"]) if open_rows else None
+    if oldest is None:
+        band, days = "Green", None
+    else:
+        days = oldest["open_working_days"]
+        band = "Yellow"
+        for weeks, colour in DISPUTE_DURATION_WEEK_CUTS:
+            if days > weeks * per_week:
+                band = colour
+                break
+    return {
+        "posture": band,
+        "as_of_day": as_of,
+        "working_days_per_week": per_week,
+        "amber_after_working_days": per_week,
+        "red_after_working_days": 2 * per_week,
+        "calendar_id": calendar.get("calendar_id"),
+        "disputes": assessed,
+        "open_count": len(open_rows),
+        "resolved_count": len([d for d in assessed if d["status_class"] == "resolved"]),
+        "unreadable": unreadable,
+        "governing_dispute_id": (oldest or {}).get("dispute_id"),
+        "governing_open_working_days": days,
+        "source": _provenance(structure, words, "source")["source"],
+    }
 
 
 def dispute_count(structure: dict) -> dict[str, Any]:

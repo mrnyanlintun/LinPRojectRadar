@@ -2281,6 +2281,20 @@ def _run69_structures(session: Session, project: Project, period: int,
                         _drec["stated_total"] = _dstated
                     if ex.get("report_period") is not None:
                         _drec["reporting_period"] = ex.get("report_period")
+                    # ------------------------------------------------ RUN 119, GOAL 3
+                    # THE DAY THE RECORD SPEAKS AS OF, which is what the duration measure was
+                    # missing and the ONLY thing the contract had to grow for it.
+                    #
+                    # A duration is measured from the day a dispute was raised TO some day, and
+                    # the system clock is never that day: nothing in this analytical layer reads
+                    # it, because the same documents must produce the same reading on any day
+                    # they are run. The minutes' OWN `document_date` is that day -- the minutes
+                    # state the disputes as they stood when they were written -- and it is
+                    # already extracted for this document type, so NO NEW EXTRACTION FIELD IS
+                    # ASKED FOR. Where the minutes state no document date, no as-of day is
+                    # carried and A4.7 says so rather than inventing one.
+                    if ex.get("document_date") is not None:
+                        _drec["as_of_day"] = ex.get("document_date")
                     _prev = out.get("disputeRecord")
                     if _prev is None or _dcount >= (_prev.get("dispute_count") or 0):
                         out["disputeRecord"] = _drec

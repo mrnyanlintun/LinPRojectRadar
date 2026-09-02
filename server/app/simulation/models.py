@@ -975,7 +975,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v61"
+SIMULATION_VERSION = "sim-2026.09-v62"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1144,6 +1144,19 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # not built. No model decided any of it: there is no model key in this environment and none was
  # simulated.
  "sim-2026.09-v61",
+ # RUN 119. THE LIFT IS HELD FOR REVIEW. Run 118 measured and reported a firm rated
+ # Unsatisfactory, with clean trade records and full denominators, publishing GREEN -- up three
+ # bands, unheld, because an improved posture is not adverse and Run 107's hold caught Amber and
+ # Red only. The owner's ruling: a lift of two or more bands is held for PM review exactly as an
+ # adverse move is; a lift of one band is not. RUN 107'S HOLD WAS EXTENDED AT ITS OWN DECISION
+ # POINT rather than a second hold being written beside it: `pm_review.resolve` now takes the
+ # STARTING posture as well, because a lift is a property of the MOVEMENT and no set of posture
+ # names can see it. `POSTURES_REQUIRING_REVIEW` is untouched; the band ordering is
+ # `fusion.BAND_SEVERITY`, imported and not restated; the number two is the owner's. Everything
+ # else about the hold is unchanged -- `pending_pm_review`, no band asserted, the source rating
+ # preserved beside the adjusted posture, the audit record carrying both, and now the size and
+ # direction of the movement as well. No stored row is recomputed and none is touched.
+ "sim-2026.09-v62",
 )
 
 

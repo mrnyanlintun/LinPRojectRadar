@@ -37,7 +37,9 @@ from .canonical_v4 import (
     agent_supply_chain,
     change_frequency,
     des_process_model,
+    DISPUTE_DURATION_BOUNDARY,
     dispute_count,
+    dispute_duration,
     dispute_escalation,
     ncr_rate,
     procurement_slack,
@@ -57,6 +59,10 @@ from .canonical_v4 import (
 from . import band_reference as _BR
 from . import owner_bands as _OB
 from . import pm_review as _PMR
+# RUN 119, GOAL 3. A dispute's duration is counted in WORKING days on the project's own
+# calendar, through Run 108's ONE conversion. Imported at module level because A4.7 needs the
+# calendar on its main path, not inside a branch.
+from .working_calendar import read_project_calendar as _read_project_calendar
 from . import trade_factors as _TF
 from .models import (
     ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT, ABSTAIN_STRUCTURE_ABSENT,
@@ -1261,41 +1267,88 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
                 "reached. No dispute count is read from any other document, and silence is "
                 "never read as no dispute.",
                 ABSTAIN_STRUCTURE_ABSENT)
+        # ============================ RUN 119, GOAL 3. THE MEASURE IS A DURATION, NOT A COUNT.
+        #
+        # THE SPECIFICATION CHANGED, so this arm changed with it. Run 115's count ladder -- none
+        # Green, one Amber, more than one Red -- is REPLACED by the owner's duration ladder: no
+        # open dispute or a dispute resolved is Green, a dispute open is Yellow, open more than
+        # one week is Amber, open more than two weeks is Red. The oldest open dispute governs.
+        #
+        # `canonical_v4.dispute_count` IS NOT DELETED. Run 115 recorded that six suites and a
+        # driver in this tree read the escalation structure by name and that deleting it would
+        # delete checks rather than dead code; the same is true here of the count function, and
+        # the count is still what `dispute_count_basis` and the count-disagreement sentence are
+        # derived from. It is computed BESIDE the duration and reported, and it no longer sets a
+        # band. Nothing in production reads the count for a posture any more.
+        #
+        # THE COUNT IS STILL READ FOR ONE THING: the disagreement between the list the minutes
+        # print and the total they state. That is a property of the record, not of the measure,
+        # and losing it would have been a real loss.
         try:
             _cr = dispute_count(_record)
+        except StructureAbsent:
+            _cr = None
+        try:
+            _dd = dispute_duration(_record, _read_project_calendar(si))
         except StructureAbsent as absent:
             return insufficient("Dispute_Escalation", absent.sentence,
                                 ABSTAIN_STRUCTURE_ABSENT)
-        _n = _cr["dispute_count"]
-        _cmsg = (f"The meeting minutes record {_js_str(_n)} "
-                 f"{'dispute' if _n == 1 else 'disputes'} on this project.")
-        _cladder = (
-            "the number of disputes the meeting minutes record: none recorded is Green, one is "
-            "Amber, and more than one is Red. This is a COUNT of what a document states and not "
-            "a position on any escalation ladder -- no stage is read, inferred or invented, and "
-            "the count is taken from the minutes alone. A dispute recorded against a "
-            "subcontractor is not the measure either: the subcontractor dispute figure this "
-            "platform already stores is narrower than the disputes this counts and is never "
-            "substituted for it.")
+        _gov = _dd["governing_open_working_days"]
+        if _dd["open_count"] == 0:
+            _cmsg = (f"The meeting minutes record no OPEN dispute on this project: "
+                     f"{_js_str(_dd['resolved_count'])} recorded and every one resolved."
+                     if _dd["resolved_count"] else
+                     "The meeting minutes record no open dispute on this project.")
+        else:
+            _cmsg = (
+                f"The oldest open dispute on this project, "
+                f"{_dd['governing_dispute_id'] or 'unidentified'}, has been open "
+                f"{_js_str(_gov)} working days on the project's own calendar "
+                f"({_dd['calendar_id'] or 'unnamed'}), which declares "
+                f"{_js_str(_dd['working_days_per_week'])} working days a week -- so one week is "
+                f"{_js_str(_dd['amber_after_working_days'])} working days and two weeks is "
+                f"{_js_str(_dd['red_after_working_days'])}. "
+                f"{_js_str(_dd['open_count'])} open, "
+                f"{_js_str(_dd['resolved_count'])} resolved and no longer counting.")
+        if _dd["unreadable"]:
+            _cmsg += (f" {_js_str(len(_dd['unreadable']))} recorded dispute(s) could be read as "
+                      f"neither open nor resolved and entered no band; they are named on the "
+                      f"record.")
         return banded(
             "Dispute_Escalation", _cmsg,
-            status_color=_cr["posture"],
-            boundary=_cladder + (" " + _cr["count_disagreement"]
-                                 if _cr["count_disagreement"] else ""),
-            basis=("the owner's Run 115 order, section 3. OWNER-CALIBRATED: the three rungs are "
-                   "the owner's own ruling and no published standard fixes them."),
+            status_color=_dd["posture"],
+            boundary=DISPUTE_DURATION_BOUNDARY + (
+                " " + _cr["count_disagreement"]
+                if (_cr and _cr["count_disagreement"]) else ""),
+            basis=("the owner's Run 119 order, section 3, which REPLACES the count ladder of "
+                   "his Run 115 order. OWNER-CALIBRATED: the four rungs and the one-week and "
+                   "two-week durations are the owner's own ruling and no published standard "
+                   "fixes them. The WEEK is the project's own calendar's week and is read from "
+                   "the calendar, not chosen here."),
             provenance=PROVENANCE_OWNER_CALIBRATED,
             threshold_source=THRESHOLD_SOURCE_OWNER,
-            band_basis_id="owner_configured_dispute_count",
-            dispute_count=_n,
-            dispute_count_basis=_cr["count_basis"],
-            disputes=_cr["disputes"],
-            listed_count=_cr["listed_count"],
-            stated_total=_cr["stated_total"],
-            count_disagreement=_cr["count_disagreement"],
+            band_basis_id="owner_configured_dispute_duration",
+            dispute_open_working_days=_gov,
+            governing_dispute_id=_dd["governing_dispute_id"],
+            dispute_open_count=_dd["open_count"],
+            dispute_resolved_count=_dd["resolved_count"],
+            dispute_unreadable=_dd["unreadable"],
+            dispute_as_of_day=_dd["as_of_day"],
+            dispute_working_days_per_week=_dd["working_days_per_week"],
+            dispute_amber_after_working_days=_dd["amber_after_working_days"],
+            dispute_red_after_working_days=_dd["red_after_working_days"],
+            dispute_calendar_id=_dd["calendar_id"],
+            disputes=_dd["disputes"],
+            dispute_count=(_cr or {}).get("dispute_count"),
+            dispute_count_basis=(_cr or {}).get("count_basis"),
+            listed_count=(_cr or {}).get("listed_count"),
+            stated_total=(_cr or {}).get("stated_total"),
+            count_disagreement=(_cr or {}).get("count_disagreement"),
             canonical_structure="dispute_record",
-            source=_cr["source"],
-            band_aggregation_rule="the count of disputes the minutes record")
+            source=_dd["source"],
+            band_aggregation_rule=("the duration of the OLDEST OPEN dispute, in working days on "
+                                   "the project's own calendar; a resolved dispute stops "
+                                   "counting"))
     try:
         reading = dispute_escalation(require_v4_structure(si, "A4.7"))
     except StructureAbsent as absent:
@@ -1568,7 +1621,12 @@ def _trade_only_reading(si: dict):
         _gov_firm = _tp_only["trade_governing_firm"]
         _gp = next((q for q in _tp_only["trade_firm_postures"]
                     if q["subcontractor"] == _gov_firm), None)
-        _res = _PMR.resolve(_norm, _module_review(si, "A4.8"))
+        # RUN 119, GOAL 1. NO STARTING POSTURE IS PASSED HERE AND THAT IS DELIBERATE: this arm
+        # is reached only where NO report stated a rating for any firm, so there is no band the
+        # reading was lifted ABOVE. A movement with no origin is not a movement, and reading the
+        # absence of a rating as a starting Red would be inventing the very assessment the owner
+        # said the records may overturn.
+        _res = _PMR.resolve(_norm, _module_review(si, "A4.8"), None)
         _audit = _PMR.audit_record(
             normalised_posture=_norm, source_rating="none stated",
             source_document_id=None, source_document_version=None, period=None,
@@ -1697,7 +1755,14 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
         _norm = _tp.get("trade_governing_posture") or _mvp["normalised_posture"]
         _gov_firm = _tp.get("trade_governing_firm") or _mvp["governing_subcontractor_id"]
         _review = _module_review(si, "A4.8")
-        _res = _PMR.resolve(_norm, _review)
+        # RUN 119, GOAL 1. THE STARTING POSTURE IS THE GOVERNING FIRM'S OWN STATED RATING BAND.
+        # `_gp["source_rating_band"]` is the band that firm's reported rating normalised to
+        # before any factor adjusted it; where the governing firm stated no rating it is None
+        # and no movement is measured. A lift of two or more bands above it holds the reading.
+        _gp_pre = next((p for p in (_tp.get("trade_firm_postures") or [])
+                        if p["subcontractor"] == (_tp.get("trade_governing_firm")
+                                                  or _mvp["governing_subcontractor_id"])), None)
+        _res = _PMR.resolve(_norm, _review, (_gp_pre or {}).get("source_rating_band"))
         _audit = _PMR.audit_record(
             normalised_posture=_norm,
             source_rating=_mvp["governing_reported_rating"],

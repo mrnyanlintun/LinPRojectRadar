@@ -32,6 +32,11 @@ from __future__ import annotations
 
 from typing import Any
 
+#: The severity ordering the size of a movement is counted on -- `fusion.BAND_SEVERITY`,
+#: IMPORTED and not restated, so the distance between two bands cannot come to mean one thing
+#: here and another in `category_posture` or `project_posture`.
+from .fusion import BAND_SEVERITY as _BAND_SEVERITY
+
 #: The module-level states. NOT project statuses and never assigned to `status_color`.
 MODULE_STATE_STANDS = "stands"
 MODULE_STATE_PENDING = "pending_pm_review"
@@ -42,6 +47,59 @@ MODULE_STATES: tuple[str, ...] = (MODULE_STATE_STANDS, MODULE_STATE_PENDING,
 
 #: The postures that require a review before they are a finding. The owner's words.
 POSTURES_REQUIRING_REVIEW: frozenset[str] = frozenset({"Amber", "Red"})
+
+# ============================================================ RUN 119, GOAL 1. THE LIFT IS HELD.
+#
+# THE DEFECT RUN 118 MEASURED AND REPORTED UNDER "ANYTHING FOUND AND NOT FIXED". A firm the
+# performance report rated Unsatisfactory, with clean trade records and full denominators, was
+# lifted three bands to Green by the averaging rule -- and published, unheld, because an improved
+# posture is not adverse and the hold above catches Amber and Red only.
+#
+# THE OWNER'S RULING, RUN 119 SECTION 1: "a lift of two or more bands is held for PM review,
+# exactly as an adverse move is. The stated rating is his assessment; records may overturn it,
+# but not silently. A lift of one band is not held. Only two or more."
+#
+# WHY THE DECISION POINT CHANGED SHAPE RATHER THAN GAINING A MEMBER. `POSTURES_REQUIRING_REVIEW`
+# is a set of POSTURES and it is asked one question: is the band we are about to publish one the
+# owner holds? A LIFT IS NOT A POSTURE. It is a property of the MOVEMENT from where the reading
+# started to where it ended, and no set of band names can see it -- Green is held when it was
+# reached from Red and is not held when it was reached from Yellow, and the two Greens are the
+# same string. So `resolve` now takes the STARTING POSTURE as well, and the decision is "which
+# posture, OR which movement". The set is untouched and still decides the adverse arm alone;
+# there is no second hold beside the first, and every existing caller that passes no starting
+# posture behaves exactly as it did before, because a movement with no origin is not a movement.
+#
+# THE NUMBER IS THE OWNER'S. Two bands, from his own words. Nothing here invents a size, and a
+# lift of one band is explicitly not held.
+LIFT_BANDS_REQUIRING_REVIEW: int = 2
+
+
+def lift_bands(source_posture: str | None, final_posture: str | None) -> int | None:
+    """
+    How many bands BETTER `final_posture` is than `source_posture`, or None where no movement
+    can be measured.
+
+    Positive is an improvement, negative an adverse move, zero no move. None where either end is
+    absent or is not one of the four bands: a reading with no starting posture has not MOVED,
+    and silence is never read as a starting Green.
+    """
+    a = _BAND_SEVERITY.get(str(source_posture)) if source_posture is not None else None
+    b = _BAND_SEVERITY.get(str(final_posture)) if final_posture is not None else None
+    if a is None or b is None:
+        return None
+    return a - b
+
+
+#: THE SENTENCE A MODULE HELD FOR A LIFT CARRIES. Composed here for the same reason
+#: `PENDING_WORDS` is: one hold, one form of words, wherever it is rendered.
+LIFT_PENDING_WORDS = (
+    "This reading was lifted two or more bands above the rating its source document stated, and "
+    "the owner has ruled that a lift of two or more bands is held for Project Manager review "
+    "exactly as an adverse move is. The stated rating is the owner's own assessment; the records "
+    "may overturn it, but not silently. The module is held pending that review: it asserts no "
+    "band, it does not enter the Document Signals category posture, and the category is formed "
+    "from the modules that are available. The source rating is preserved beside the adjusted "
+    "posture and both are on the audit record.")
 
 #: THE SENTENCE A HELD MODULE CARRIES. Composed here once so the ledger, the census, the brief
 #: and the card cannot each write a different one.
@@ -84,26 +142,51 @@ DISPOSITION_EFFECT: dict[str, dict[str, Any]] = {
 DEFER_LIMITATION = "Pending PM evidence review"
 
 
-def resolve(normalised_posture: str, review: dict | None) -> dict[str, Any]:
+def resolve(normalised_posture: str, review: dict | None,
+            source_posture: str | None = None) -> dict[str, Any]:
     """
-    What this module publishes, given its normalised posture and the review (if any) on record.
+    What this module publishes, given its normalised posture, the posture it STARTED from, and
+    the review (if any) on record.
 
     Returns `posture` (the band to assert, or None for Not Assessed), `module_state`, and the
     audit fields the owner's order requires to be visible. THE SOURCE RATING IS NEVER ALTERED:
     it is carried through untouched and the PM's posture is carried BESIDE it, never over it.
+
+    RUN 119, GOAL 1. `source_posture` is the band the reading STARTED from -- for A4.8 the band
+    the performance report's stated rating normalised to. It is OPTIONAL and defaults to None:
+    a caller that has no starting band passes none, `lift_bands` returns None, and the decision
+    is exactly the posture test it was before this run. Where a starting band IS known and the
+    reading was lifted `LIFT_BANDS_REQUIRING_REVIEW` bands or more above it, the reading is held
+    for review on the SAME hold, with the same `pending_pm_review` state, the same "no band
+    asserted" behaviour and the same disposition vocabulary. There is no second hold.
     """
-    if normalised_posture not in POSTURES_REQUIRING_REVIEW:
+    _lift = lift_bands(source_posture, normalised_posture)
+    _held_for_lift = _lift is not None and _lift >= LIFT_BANDS_REQUIRING_REVIEW
+    _movement = {
+        "source_posture": source_posture,
+        "lift_bands": _lift,
+        "held_for_lift": _held_for_lift,
+        "lift_rule": (
+            f"A lift of {LIFT_BANDS_REQUIRING_REVIEW} or more bands above the posture the "
+            f"source document's own rating normalised to is held for Project Manager review, "
+            f"exactly as an adverse posture is. A lift of one band is not held. Where no "
+            f"starting posture is known there is no movement to measure and none is inferred."),
+    }
+    if normalised_posture not in POSTURES_REQUIRING_REVIEW and not _held_for_lift:
         return {"posture": normalised_posture, "module_state": MODULE_STATE_STANDS,
-                "review_required": False, "review": None,
+                "review_required": False, "review": None, **_movement,
                 "module_state_words": (
-                    "the normalised posture is not one the owner holds for review, so it "
-                    "stands; a Project Manager's acknowledgement is optional and none is "
+                    "the normalised posture is not one the owner holds for review, and it was "
+                    "not lifted two or more bands above the rating its source document stated, "
+                    "so it stands; a Project Manager's acknowledgement is optional and none is "
                     "required for this reading to enter its category")}
+    _words = LIFT_PENDING_WORDS if (
+        _held_for_lift and normalised_posture not in POSTURES_REQUIRING_REVIEW) else PENDING_WORDS
     if not review:
         return {"posture": None, "module_state": MODULE_STATE_PENDING,
-                "review_required": True, "review": None,
-                "not_assessed_reason": PENDING_WORDS,
-                "module_state_words": PENDING_WORDS}
+                "review_required": True, "review": None, **_movement,
+                "not_assessed_reason": _words,
+                "module_state_words": _words}
     disposition = str(review.get("disposition") or "")
     effect = DISPOSITION_EFFECT.get(disposition)
     if effect is None:
@@ -111,12 +194,12 @@ def resolve(normalised_posture: str, review: dict | None) -> dict[str, Any]:
         # rather than falling to the normalised band, because a record nobody can interpret is
         # not a review.
         return {"posture": None, "module_state": MODULE_STATE_PENDING,
-                "review_required": True, "review": review,
+                "review_required": True, "review": review, **_movement,
                 "not_assessed_reason": (
                     "A review was recorded against this reading carrying a disposition this "
                     "platform does not hold, so it is not read as a review and the reading "
-                    "stays held. " + PENDING_WORDS),
-                "module_state_words": PENDING_WORDS}
+                    "stays held. " + _words),
+                "module_state_words": _words}
     pm_posture = review.get("pm_posture")
     posture: str | None
     if effect["not_assessed"]:
@@ -130,6 +213,7 @@ def resolve(normalised_posture: str, review: dict | None) -> dict[str, Any]:
         "module_state": MODULE_STATE_REVIEWED,
         "review_required": True,
         "review": review,
+        **_movement,
         "disposition": disposition,
         "disposition_label": effect["label"],
         "disposition_effect_words": effect["words"],
@@ -167,6 +251,13 @@ def audit_record(*, normalised_posture: str, source_rating: str, source_document
         "normalisation_rule": normalisation_rule,
         "normalisation_rule_version": normalisation_rule_version,
         "platform_mapped_posture": normalised_posture,
+        # RUN 119, GOAL 1. THE MOVEMENT, ON THE AUDIT RECORD. A held lift must be readable as a
+        # lift: the band the source rating normalised to, how many bands the reading moved above
+        # it, and whether that movement is what held it.
+        "source_rating_posture": resolution.get("source_posture"),
+        "lift_bands": resolution.get("lift_bands"),
+        "held_for_lift": resolution.get("held_for_lift"),
+        "lift_rule": resolution.get("lift_rule"),
         "pm_participant_id": review.get("recorded_by"),
         "pm_recorded_at": review.get("recorded_at"),
         "disposition": review.get("disposition"),

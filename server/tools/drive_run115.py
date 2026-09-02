@@ -78,9 +78,19 @@ CHANGE_ROWS = [
 ]
 
 
+#: RUN 119, GOAL 3. THE PROJECT CALENDAR, ADDED AS AN OPT-IN DOCUMENT AND USED ONLY BY THE
+#: DISPUTE SECTION. A4.7's measure was REDEFINED from a count to a DURATION in working days on
+#: the project's own calendar, so the section below needs a calendar to read against; every
+#: other section's fixture is left exactly as Run 115 wrote it so nothing else moves.
+R119_CALENDAR = [{"calendar_id": "5-day work week",
+                  "working_days_of_week": ["monday", "tuesday", "wednesday", "thursday",
+                                           "friday"],
+                  "holidays": []}]
+
+
 def docs(*, ratings=RATING_ROWS, scale="owner_five_point_label",
          disputes=None, disputes_total=None, changes=CHANGE_ROWS, contingency=None,
-         drop_report_version=False):
+         drop_report_version=False, calendar=None):
     oac = {"document_date": END, "document_risk_score": 0.10,
            "outstanding_action_items": 2, "subcontractor_disputes": 0,
            "report_period": "2026-03"}
@@ -103,7 +113,7 @@ def docs(*, ratings=RATING_ROWS, scale="owner_five_point_label",
     if contingency is not None:
         pay["original_contingency"] = contingency[0]
         pay["remaining_contingency"] = contingency[1]
-    return [
+    out = [
         ("contract", "contract_value", {"original_contract_sum": BAC,
                                         "project_start_date": "2026-01-01",
                                         "project_end_date": "2027-06-30"}),
@@ -112,6 +122,10 @@ def docs(*, ratings=RATING_ROWS, scale="owner_five_point_label",
         ("subr", "subcontractor_report", sub),
         ("co", "change_order", co),
     ]
+    if calendar is not None:
+        out.append(("sched", "schedule_update", {"data_date": END,
+                                                 "schedule_calendar_json": calendar}))
+    return out
 
 
 def run_project(tag, doclist):
@@ -313,20 +327,49 @@ check(state(_r, _a, "A1.11") == "BANDS GREEN"
       "and is never netted into a discount", state(_r, _a, "A1.11"))
 
 # =================================================================================================
-section("3. A4.7 DISPUTE ESCALATION INDEX -- the count the OAC minutes record")
+section("3. A4.7 DISPUTE ESCALATION INDEX -- the DURATION the OAC minutes record")
 # =================================================================================================
-for tag, kwargs, want, n in (
-        ("zero", {"disputes_total": 0}, "Green", 0),
-        ("one", {"disputes": [DISPUTE_ROWS[0]]}, "Amber", 1),
-        ("two", {"disputes": DISPUTE_ROWS}, "Red", 2)):
-    _r, _a, _si, _v, _p, _m = run_project("disp-" + tag, docs(**kwargs))
+# RUN 119, GOAL 3. RE-POINTED, NOT WEAKENED AND NOT DELETED. The owner REPLACED Run 115's count
+# ladder (none Green, one Amber, more than one Red) with a DURATION ladder: no open dispute or a
+# dispute resolved is Green, a dispute open is Yellow, open more than one week is Amber, open
+# more than two weeks is Red, the oldest open dispute governing. These checks asserted the count
+# rungs, which the platform no longer has, so they now assert the four duration rungs -- the same
+# number of checks over the same module through the same real route, plus the two the redefinition
+# added (a resolved dispute returning to Green, and the calendar the duration is counted on).
+# END is 2026-03-31 and is the minutes' document date, which is the day the record speaks as of.
+_D = lambda no, raised, status: {"Dispute No": no, "Subject": "Differing site conditions",
+                                 "Parties": "Owner and General Contractor",
+                                 "Date raised": raised, "Status": status, "Minute item": "5.2"}
+for tag, rows, want, days in (
+        ("resolved", [_D("D-01", "2026-01-05", "Resolved")], "Green", None),
+        ("yellow", [_D("D-01", "2026-03-27", "Open")], "Yellow", 2.0),
+        ("amber", [_D("D-01", "2026-03-20", "Open")], "Amber", 7.0),
+        ("red", [_D("D-01", "2026-03-06", "Open")], "Red", 17.0)):
+    _r, _a, _si, _v, _p, _m = run_project("disp-" + tag,
+                                          docs(disputes=rows, calendar=R119_CALENDAR))
     check(state(_r, _a, "A4.7") == "BANDS " + want.upper(),
-          f"{n} dispute(s) recorded bands {want}", state(_r, _a, "A4.7"))
-    check((_r.get("A4.7") or {}).get("dispute_count") == n,
-          f"and the count it banded on is {n}, read from the minutes",
-          str((_r.get("A4.7") or {}).get("dispute_count")))
+          f"a dispute {tag} bands {want} on the owner's duration ladder", state(_r, _a, "A4.7"))
+    check((_r.get("A4.7") or {}).get("dispute_open_working_days") == days,
+          f"and the duration it banded on is {days} working days on the project's own calendar",
+          str((_r.get("A4.7") or {}).get("dispute_open_working_days")))
 
-_r, _a, _si, _v, _p, _m = run_project("disp-none", docs())
+_r, _a, _si, _v, _p, _m = run_project("disp-oldest",
+                                      docs(disputes=[_D("D-01", "2026-03-06", "Open"),
+                                                     _D("D-02", "2026-03-27", "Open")],
+                                           calendar=R119_CALENDAR))
+check((_r.get("A4.7") or {}).get("governing_dispute_id") == "D-01"
+      and state(_r, _a, "A4.7") == "BANDS RED",
+      "across several disputes the OLDEST OPEN one governs and the most adverse band results",
+      str((_r.get("A4.7") or {}).get("governing_dispute_id")))
+
+_r, _a, _si, _v, _p, _m = run_project("disp-nocal", docs(disputes=DISPUTE_ROWS))
+check(state(_r, _a, "A4.7") == "ABSTAINS"
+      and "working calendar" in str((_a.get("A4.7") or {}).get("reason") or ""),
+      "with NO project calendar the duration is not counted in calendar days instead: it "
+      "abstains and the sentence names the calendar",
+      str((_a.get("A4.7") or {}).get("reason"))[:90])
+
+_r, _a, _si, _v, _p, _m = run_project("disp-none", docs(calendar=R119_CALENDAR))
 check(state(_r, _a, "A4.7") == "ABSTAINS",
       "minutes that were never asked the question abstain: silence is not read as no dispute",
       state(_r, _a, "A4.7"))
@@ -336,20 +379,25 @@ check("subcontractor" in str((_a.get("A4.7") or {}).get("reason") or "").lower()
       str((_a.get("A4.7") or {}).get("reason"))[:110])
 
 _r, _a, _si, _v, _p, _m = run_project("disp-scoped",
-                                      docs(disputes=None, disputes_total=None))
+                                      docs(disputes=None, disputes_total=None,
+                                           calendar=R119_CALENDAR))
 check(state(_r, _a, "A4.7") == "ABSTAINS",
       "`subcontractor_disputes` = 0 on the same minutes does NOT produce a Green: the "
-      "subcontractor-scoped figure is never substituted for the owner's count",
+      "subcontractor-scoped figure is never substituted for the owner's measure",
       state(_r, _a, "A4.7"))
 
 _r, _a, _si, _v, _p, _m = run_project("disp-disagree",
-                                      docs(disputes=DISPUTE_ROWS, disputes_total=1))
+                                      docs(disputes=[_D("D-01", "2026-03-06", "Open"),
+                                                     _D("D-02", "2026-03-27", "Open")],
+                                           disputes_total=1, calendar=R119_CALENDAR))
 check(state(_r, _a, "A4.7") == "BANDS RED"
       and (_r.get("A4.7") or {}).get("count_disagreement"),
       "where the list and the stated total disagree the LIST governs and the disagreement is "
-      "reported rather than reconciled",
+      "still reported rather than reconciled -- the count survives the redefinition as a "
+      "property of the record, and no longer sets a band",
       str((_r.get("A4.7") or {}).get("count_disagreement"))[:90])
 
+# =================================================================================================
 # =================================================================================================
 section("4. GOAL 4 -- the caveat, served on the real projectresults response")
 # =================================================================================================
@@ -429,14 +477,21 @@ falsify("A1.11 reads the register's own approval column",
 
 # 6.3 A4.7 -- collapse the owner's count ladder INSIDE THE LIVE canonical module.
 from app.simulation import canonical_v4 as CV4
-_REAL_BANDS = CV4.DISPUTE_COUNT_BANDS
+# RUN 119, GOAL 3. RE-POINTED at the ladder that now decides the band. Collapsing
+# DISPUTE_COUNT_BANDS can no longer make this check fail, because the count no longer bands
+# anything -- so the fault is introduced into DISPUTE_DURATION_WEEK_CUTS instead, which is where
+# the owner's one-week and two-week rungs now live.
+_REAL_BANDS = CV4.DISPUTE_DURATION_WEEK_CUTS
 def _a47_holds():
-    _r, _a, _si, _v, _p, _m = run_project("f47-" + str(time.time_ns()),
-                                          docs(disputes=[DISPUTE_ROWS[0]]))
+    _r, _a, _si, _v, _p, _m = run_project(
+        "f47-" + str(time.time_ns()),
+        docs(disputes=[{"Dispute No": "D-01", "Subject": "s", "Parties": "p",
+                        "Date raised": "2026-03-20", "Status": "Open"}],
+             calendar=R119_CALENDAR))
     return state(_r, _a, "A4.7") == "BANDS AMBER"
-falsify("A4.7's one-dispute rung is Amber and not Green",
-        lambda: setattr(CV4, "DISPUTE_COUNT_BANDS", ((0, "Green"), (1, "Green"))),
-        lambda: setattr(CV4, "DISPUTE_COUNT_BANDS", _REAL_BANDS),
+falsify("A4.7's more-than-one-week rung is Amber and not Yellow",
+        lambda: setattr(CV4, "DISPUTE_DURATION_WEEK_CUTS", ((2, "Red"), (99, "Amber"))),
+        lambda: setattr(CV4, "DISPUTE_DURATION_WEEK_CUTS", _REAL_BANDS),
         _a47_holds)
 
 # 6.4 GOAL 4 -- empty the required-field declaration INSIDE THE LIVE completeness module.
