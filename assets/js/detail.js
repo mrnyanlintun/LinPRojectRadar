@@ -1405,6 +1405,12 @@
       // brief and the courses-of-action card both read the served consistency findings off
       // whatever `rowFor` returns, and `rowFor` prefers `storedResult`. Without this graft a
       // disagreement the server had already established would never reach either surface.
+      // RUN 115, GOAL 4. The completeness caveat is served on THIS response and is not on the
+      // list projection, and the brief renders from whatever `rowFor` returns, which prefers
+      // `storedResult`. Without this graft the caveat would arrive and never render.
+      if (resp.result.information_completeness && !p.storedResult.information_completeness) {
+        p.storedResult.information_completeness = resp.result.information_completeness;
+      }
       if (resp.result.consistency_findings && !p.storedResult.consistency_findings) {
         p.storedResult.consistency_findings = resp.result.consistency_findings;
       }
@@ -1959,7 +1965,7 @@
     return "none";
   }
 
-  function briefSectionsHtml(parsed) {
+  function briefSectionsHtml(parsed, project) {
     const section = (head, inner) => inner
       ? `<div class="eb-section"><p class="eb-sec-head">${esc(head)}</p>${inner}</div>` : "";
 
@@ -2007,6 +2013,38 @@
       section("Required Actions", actionItems ? `<ul class="eb-actions">${actionItems}</ul>` : "") +
       briefDecisionRouteHtml() +
       `</div>`;
+  }
+
+  /* RUN 115, GOAL 4. THE CAVEAT AT THE BOTTOM OF THE RECOMMENDATION.
+
+     THE OWNER'S RULING. The measure is data extracted / data required, it never feeds the
+     project status, it casts no vote, and what it does instead is state at the bottom of the
+     recommendation what proportion of the required information the assessment rests on.
+
+     IT IS A STATEMENT OF RELIABILITY AND NOT AN ADVERSE CONDITION. A project at 60 per cent is
+     not a project in trouble; it is a project this platform knows less about. So this block
+     carries NO colour class, no status dot, no severity word and no action -- it is rendered in
+     the same muted note style as the route note above it, and it never appears in the flags
+     block, which is where adverse conditions go.
+
+     THE SENTENCE IS NOT COMPOSED HERE. The server composes it in
+     `information_completeness.py` and this prints it, so the browser cannot state a different
+     figure or a different qualification from the one the server stands behind. Where the server
+     sent nothing -- an older stored row, a period with no documents -- nothing renders, which
+     is correct: a missing caveat is silence, and a caveat reading "0 per cent" would be a claim
+     this platform did not make. */
+  function briefCompletenessCaveatHtml(project) {
+    if (!project) return "";
+    let row = null;
+    try { row = window.LinResults && window.LinResults.rowFor ? window.LinResults.rowFor(project) : null; }
+    catch (e) { row = null; }
+    const ic = row && row.information_completeness;
+    if (!ic || !ic.caveat) return "";
+    return '<div class="eb-section eb-completeness" data-brief-completeness="1">'
+      + '<p class="eb-sec-head">How much this rests on</p>'
+      + '<p class="eb-route-note" data-completeness-caveat="1">' + esc(ic.caveat) + '</p>'
+      + '<p class="eb-route-note eb-completeness-basis">' + esc(ic.denominator_basis || "") + '</p>'
+      + '</div>';
   }
 
   /* RUN 91, SECTION 3.5. THE ROUTE FROM THE END OF THE BRIEF TO THE DECISION CARD.
@@ -2822,6 +2860,20 @@
     }
     // Ready: render the structured 4 sections when the brief follows the format,
     // otherwise fall back to the brief text as a single paragraph.
+    /* RUN 115, GOAL 4. THE CAVEAT GOES ON WHICHEVER READY BODY RENDERED.
+
+       MEASURED, not assumed: on the first fixture this run drove in Chromium the scripted brief
+       failed the Run 70 gate and the card rendered `briefRejectionHtml` instead of
+       `briefSectionsHtml`. A caveat attached to the structured path alone was therefore absent
+       from a card that a project manager was reading, which is precisely the case where knowing
+       how much the assessment rests on matters most. So it is appended to the ready body here,
+       once, rather than inside one of the three bodies. */
+    const withCaveat = (html) => {
+      const cav = briefCompletenessCaveatHtml(project);
+      if (!cav) return html;
+      const at = html.lastIndexOf("</div>");
+      return at < 0 ? html + cav : html.slice(0, at) + cav + html.slice(at);
+    };
     const text = (brief && brief.text) ? brief.text : "";
     const parsed = parseBrief(text);
     if (parsed && (parsed.recommendation || parsed.pattern.length || parsed.drivers.length || parsed.actions.length)) {
@@ -2835,13 +2887,13 @@
           const gate = briefGate(parsed, ev);
           if (!gate.ok) {
             recordBriefRejection(project, gate, brief);
-            return briefRejectionHtml(ev, gate.failures);
+            return withCaveat(briefRejectionHtml(ev, gate.failures));
           }
         }
       }
-      return briefSectionsHtml(parsed);
+      return withCaveat(briefSectionsHtml(parsed, project));
     }
-    return `<div class="eb-body">${esc(text)}</div>`;
+    return withCaveat(`<div class="eb-body">${esc(text)}</div>`);
   }
 
   // Deterministic flags block — rendered regardless of the LLM brief so a

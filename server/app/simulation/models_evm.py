@@ -31,7 +31,8 @@ from .canonical import StructureAbsent
 from .canonical_v3 import (
     bayesian_eac_model, budget_execution, cpi_reference_class, cpi_shrinkage,
     earned_schedule, expenditure_baseline_to_date, forecast_arima, identify_arima,
-    independent_eac_reconciliation, kalman_state_space_model, require_v3_structure,
+    independent_eac_reconciliation, kalman_state_space_model, pending_change_exposure,
+    require_v3_structure,
     time_phased_baseline,
 )
 from . import owner_bands as _OB
@@ -1046,6 +1047,134 @@ def run_cpi_shrinkage(si: dict, rand: Callable[[], float], period_cutoff) -> dic
 # ------------------------------------------- A1.11 Independent EAC Reconciliation Index
 
 
+def _pending_change_reconciliation(si: dict, structure: dict) -> dict[str, Any]:
+    """
+    RUN 115. The owner's redefined A1.11: pending change exposure against the approved budget.
+
+    WHETHER THE RUN 107 LADDER SURVIVES, WHICH THE ORDER REQUIRED BE ESTABLISHED RATHER THAN
+    ASSUMED. Run 107 gave this module TWO components on one ladder of 3, 5 and 10 per cent:
+
+      (1) the spread between the two forecasts, over BAC;
+      (2) the HIGHER forecast above BAC, over BAC.
+
+    Under the redefinition the two forecasts are the approved budget itself and the approved
+    budget plus pending exposure. Component (1) is then
+    |(BAC + pending) - BAC| / BAC = |pending| / BAC, and component (2) is
+    max(0, (BAC + pending) - BAC) / BAC = max(0, pending) / BAC. THEY ARE THE SAME QUANTITY on
+    every project whose pending exposure is additive, and they differ only in sign handling
+    where it is net deductive. Reporting them as two components would put one measurement on
+    the card twice and let an aggregation rule treat it as corroboration. So component (1) is
+    NOT carried, component (2) survives verbatim, and the module reports ONE component.
+
+    NO NEW LADDER IS INVENTED AND NONE IS NEEDED. The surviving component is the owner's own
+    Run 107 rung set on the identical quantity it was set on -- a forecast standing above the
+    budget, as a percentage of the budget -- so the owner is not asked to supply one.
+
+    A NET DEDUCTIVE PENDING POSITION IS GREEN AND IS NEVER NEGATIVE. Pending credits do not earn
+    a project a better posture than nought exposure, and they are not netted into a discount.
+    """
+    try:
+        reading = pending_change_exposure(structure)
+    except StructureAbsent as absent:
+        return insufficient("Independent_EAC_Reconciliation", absent.sentence,
+                            ABSTAIN_STRUCTURE_ABSENT)
+    _bac = num(si.get("bac"), None)
+    _pending = reading["pending_change_value"]
+    _fac = None if _bac is None else float(_bac) + _pending
+    _ladder = ("at or below 3 per cent is Green; above 3 and at or below 5 is Yellow; above 5 "
+               "and at or below 10 is Amber; above 10 is Red. Each boundary is INCLUSIVE ON "
+               "ITS UPPER SIDE")
+    _comps = []
+    if _bac is not None and _bac > 0:
+        _over = max(0.0, _pending / float(_bac))
+        _comps.append(_OB.component(
+            "pending change exposure above the approved budget", value=round(_over * 100, 2),
+            band=_OB.ascending(_over * 100, 3.0, 5.0, 10.0),
+            boundary=("the value of the changes the contractor has submitted and the owner has "
+                      "not yet approved, divided by the approved budget at completion, on the "
+                      "owner's Run 107 ladder: " + _ladder + ". A net deductive pending "
+                      "position is nought per cent above the budget and is Green; the quantity "
+                      "is never negative and pending credits are never netted into a "
+                      "discount.")))
+    else:
+        _comps.append(_OB.component(
+            "pending change exposure above the approved budget",
+            absent_reason=("The approved budget at completion has not been reported for this "
+                           "period, and the measure is stated as a proportion of it, so it has "
+                           "no denominator. NOT ASSESSED. No other figure is used in its "
+                           "place.")))
+    _agg = _OB.aggregate(_comps)
+    _posture = _agg["band_posture_before_override"]
+    _cont = num(si.get("remainingContingency"), None)
+    _gap = None if _bac is None or _bac <= 0 else max(0.0, _pending)
+    _override = (_gap is not None and _gap > 0 and _cont is not None and _cont < _gap)
+    if _override:
+        _posture = _OB.at_least_as_adverse_as(_posture, "Red")
+    _override_words = (
+        "HARD OVERRIDE: Red if the pending changes would carry the forecast above the approved "
+        "budget and the remaining approved contingency cannot cover the gap. ")
+    if _gap is None:
+        _override_words += ("No approved budget was reported, so the override was NOT "
+                            "EVALUABLE.")
+    elif _gap <= 0:
+        _override_words += ("The pending position does not carry the forecast above the "
+                            "budget, so it did not fire.")
+    elif _cont is None:
+        _override_words += ("The pending position carries the forecast above the budget but no "
+                            "remaining approved contingency was reported, so the override was "
+                            "NOT EVALUABLE and an unreported contingency was not treated as "
+                            "sufficient.")
+    elif _override:
+        _override_words += "It fired: the remaining contingency is smaller than the exposure."
+    else:
+        _override_words += "The remaining contingency covers the exposure, so it did not fire."
+    _fields = dict(
+        pending_change_value=_pending,
+        pending_change_count=reading["pending_change_count"],
+        approved_change_count=reading["approved_change_count"],
+        change_count=reading["change_count"],
+        pending_changes=reading["pending_changes"],
+        approved_budget=_bac,
+        forecast_at_completion=_fac,
+        remaining_contingency=_cont,
+        eac_gap_above_bac=_gap,
+        band_hard_override_fired=_override,
+        band_hard_override_evaluable=(_gap is not None and (_gap <= 0 or _cont is not None)),
+        canonical_structure="pending_change_exposure",
+        source=reading["source"],
+        measure_note=(
+            "The forecast at completion on this path is the approved budget plus the changes "
+            "submitted and not yet approved. It is not a second, independently prepared "
+            "estimate and is never presented as one."),
+        **_agg)
+    _msg = (
+        f"{_js_str(reading['pending_change_count'])} of "
+        f"{_js_str(reading['change_count'])} changes on the register "
+        f"{'is' if reading['pending_change_count'] == 1 else 'are'} still awaiting approval, "
+        f"worth {_money(_pending)}"
+        + ("" if _fac is None else
+           f", which would carry the forecast at completion to {_money(_fac)} against an "
+           f"approved budget of {_money(_bac)}"))
+    if _posture is None:
+        return band_abstained(
+            "Independent_EAC_Reconciliation", _msg,
+            reason=("Not Assessed. " + _comps[0]["not_assessed_reason"]),
+            band_basis_id=_RUN107_BASIS_ID, **_fields)
+    return banded(
+        "Independent_EAC_Reconciliation", _msg,
+        status_color=_posture,
+        boundary=(" ".join(c["boundary"] for c in _comps if c["boundary"])
+                  + " " + _override_words),
+        basis=_run107_basis("section 1, A1.11",
+                            "3, 5 and 10 per cent of the approved budget, on the owner's Run "
+                            "115 redefinition of the measure as pending change exposure "
+                            "against that budget"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id=_RUN107_BASIS_ID,
+        **_fields)
+
+
 def run_independent_eac_reconciliation(si: dict, rand: Callable[[], float],
                                        period_cutoff) -> dict[str, Any]:
     """
@@ -1069,6 +1198,48 @@ def run_independent_eac_reconciliation(si: dict, rand: Callable[[], float],
     Where the pair is absent, incomplete, or not genuinely distinct, the module ABSTAINS. No band
     is asserted: reconciliation bands are named in the contract as calibration dependent.
     """
+    # ============================================ RUN 115, GOAL 2. THE OWNER'S REDEFINITION.
+    #
+    # THE MEASURE HAS CHANGED, and this comment is the record of what it was and what it is.
+    #
+    # BEFORE: two genuinely provenance-distinct forecasts, IER = Independent / Management, with
+    # independence checked on five lineage fields. Run 109 classified the module UNSERVABLE: no
+    # document type carries a second estimate at all, and no document can establish that a
+    # second estimate was prepared independently of the first. That is a property of documents,
+    # not of the implementation, and no assembler could have fixed it.
+    #
+    # AFTER, in the owner's Run 115 words: the forecast at completion is the approved contract
+    # plus the change orders the contractor has submitted and the owner has not yet approved.
+    # Once a change order is approved it becomes part of the budget. So the comparison is the
+    # budget as it stands against the budget as it will stand if the pending changes go through
+    # -- PENDING CHANGE EXPOSURE AGAINST THE APPROVED BUDGET. Both figures are already on the
+    # platform: the approved budget is `bac`, and the pending side comes off the change order
+    # register's own approval column, which Run 115 added because Run 114's assembler carried
+    # identity, issue day, type, cause, value and direction and nothing that distinguished an
+    # approved change from a pending one.
+    #
+    # THE OLD PATH IS NOT DELETED. `independentEacPair` is referenced by name in six suites and
+    # a driver in this tree, so the order's condition for retiring it -- "only if nothing else
+    # reads it" -- is NOT met, and it also carries strictly more information than the new
+    # measure where a project genuinely has two forecasts. A project supplying the pair is read
+    # on the pair; every other project is read on its pending exposure.
+    _pair = si.get("independentEacPair")
+    _exposure_structure = si.get("pendingChangeExposure")
+    if _pair is None and isinstance(_exposure_structure, dict):
+        return _pending_change_reconciliation(si, _exposure_structure)
+    if _pair is None:
+        # THE ABSTENTION SENTENCE NAMES BOTH PATHS, because both now serve this module and a
+        # sentence naming only the pair would tell a project manager to obtain a document no
+        # document type on this platform carries.
+        return insufficient(
+            "Independent_EAC_Reconciliation",
+            "Awaiting the change orders submitted and not yet approved. This measure compares "
+            "the approved budget with the budget as it would stand if the pending changes go "
+            "through, so it needs a change order register stating, for every change, its value "
+            "and whether the owner has approved it. A project that instead holds two "
+            "separately prepared forecasts of the cost at completion is read on those. Neither "
+            "was provided, and no other figure is used in their place.",
+            ABSTAIN_STRUCTURE_ABSENT)
     try:
         structure = require_v3_structure(si, "A1.11")
         reading = independent_eac_reconciliation(structure.get("management_eac"),

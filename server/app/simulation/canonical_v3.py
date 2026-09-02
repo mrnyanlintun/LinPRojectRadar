@@ -1048,6 +1048,63 @@ def independent_eac_reconciliation(management: dict, independent: dict) -> dict[
             "independent_lineage": {f: str(independent.get(f)) for f in _IER_LINEAGE_FIELDS}}
 
 
+# ------------------------------------------ 1.11 REDEFINED: PENDING CHANGE EXPOSURE (RUN 115)
+
+
+#: THE DOCUMENT CONTRACT, PRINTED HERE SO THE SHAPE IS IN THE CODE AND NOT ONLY IN A REPORT.
+PENDING_CHANGE_EXPOSURE_CONTRACT: dict[str, Any] = {
+    "structure_key": "pendingChangeExposure",
+    "assembled_from": "change_events_json on the change order document",
+    "required_on_the_record": ["source", "pending_change_value", "pending_change_count",
+                               "change_count"],
+    "required_per_change": ["change_id", "issue_day", "change_type", "cause", "value",
+                            "direction", "approval_status"],
+    "eligibility": ("every change on the register must state whether it is APPROVED or "
+                    "PENDING and must carry a numeric value; one that does not means the "
+                    "register cannot be split into the two sides and nothing is assembled"),
+}
+
+
+def pending_change_exposure(structure: dict) -> dict[str, Any]:
+    """
+    THE OWNER'S RUN 115 REDEFINITION of A1.11, and it is a different measure from v3's.
+
+    v3 required two separately prepared forecasts and a claim that the second was prepared
+    independently of the first. No document type on this platform carries a second estimate and
+    no document can establish independence, which is why Run 109 classified the module
+    unservable. `independent_eac_reconciliation` above is UNTOUCHED and still serves any project
+    that supplies the pair.
+
+    THE OWNER'S DEFINITION: the forecast at completion is the approved contract plus the change
+    orders the contractor has submitted and the owner has NOT yet approved. Once a change is
+    approved it becomes part of the budget. So the comparison is the budget as it stands against
+    the budget as it will stand if the pending changes go through.
+
+    NOTHING IS INFERRED. The approved budget is not read here -- it is `bac`, read by the module
+    off the signal inputs -- and the pending side must be stated by the register's own approval
+    column. An unstated status is never read as pending and never as approved.
+    """
+    words = "a change order register stating which of its changes are still awaiting approval"
+    prov = _provenance(structure, words, "source")
+    value = _f(structure, "pending_change_value", words)
+    count = structure.get("pending_change_count")
+    total = structure.get("change_count")
+    if not isinstance(count, int) or not isinstance(total, int) or count < 0 or total < count:
+        raise StructureAbsent(
+            "The change order register provided for this project does not state how many of "
+            "its changes are still awaiting approval, so the pending exposure cannot be "
+            "separated from the approved budget and no reading is taken.")
+    return {
+        "pending_change_value": value,
+        "pending_change_count": count,
+        "approved_change_count": total - count,
+        "change_count": total,
+        "pending_changes": (structure.get("pending_changes")
+                            if isinstance(structure.get("pending_changes"), list) else []),
+        "source": prov["source"],
+    }
+
+
 # =================================================================================================
 # CATEGORY 2 -- ALL FIVE NETWORK METHODS READ ONE GOVERNED SCHEDULE NETWORK.
 # =================================================================================================

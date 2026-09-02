@@ -123,6 +123,21 @@ ALL_FIELDS: tuple[str, ...] = (
     # revision and the decision date, so the earliest decision for each submittal is identifiable.
     "submittal_decisions_json", "submittal_disposition_legend_json",
     "submittal_reporting_period",
+    # RUN 115, GOAL 3. THE DISPUTES THE OAC MEETING MINUTES RECORD, AND WHY THEY ARE NOT
+    # `subcontractor_disputes`.
+    #
+    # `subcontractor_disputes` was already here and is NOT inert: `field_registry` declares
+    # `subcontractorDisputes` a SNAPSHOT, `extraction_merge` emits it, and `document_evidence`
+    # prints it with the bearing "open disputes". It is SUBCONTRACTOR-SCOPED. The owner's Run
+    # 115 measure is a count of the disputes the minutes record, with no qualification, and a
+    # project whose only dispute is with the designer or the owner would count zero on the
+    # subcontractor field. Reusing it would quietly change what a stored figure means, so a
+    # SECOND field is asked for beside it and neither is substituted for the other.
+    #
+    # Two forms, because minutes print disputes either way, and the register wins where both
+    # are present: a list of the disputes the minutes actually record is the thing recorded,
+    # and a stated total is the minutes' own count of it.
+    "disputes_json", "disputes_recorded",
     # A4.3's three Red overrides, each a printed table rather than a judgement.
     "rejected_critical_or_long_lead_late_json", "rejected_blocking_past_deadline_json",
     "critical_package_rejected_resubmittals",
@@ -349,6 +364,12 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         # the EXPOSURE IN DAYS the register covers, which Run 111 measured as having no declared
         # field anywhere in this contract. `change_exposure_days` is that field. Without it the
         # recipe is all-or-nothing and the structure is not written at all.
+        # RUN 115, GOAL 2. The register's rows now also state APPROVAL STATUS. No new field
+        # name is needed for it -- it is a COLUMN on `change_events_json`, printed per change --
+        # and Run 115 measured the Run 114 assembler reading identity, issue day, type, cause,
+        # value and direction and nothing else, so a pending change and an approved one were
+        # indistinguishable once stored. A1.11's redefined measure is pending exposure against
+        # the approved budget, and it cannot be taken without that column.
         "change_events_json", "change_exposure_days",
         # A4.6's SCHEDULE HALF, which abstains rather than assuming zero float. Each is stated by
         # the register or absent; nothing here is inferred from the cost half.
@@ -379,6 +400,9 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "weather_days_claimed", "weather_days_approved", "weather_approval_period",
         "weather_allowance_days", "weather_time_extension_granted",
         "weather_time_extension_days",
+        # RUN 115, GOAL 3. THE DISPUTES THE MINUTES RECORD. See ALL_FIELDS for why these sit
+        # BESIDE `subcontractor_disputes` above rather than replacing it.
+        "disputes_json", "disputes_recorded",
         # RUN 114, GOAL 1. THE WEATHER EVENT TABLE, ASKED FOR AS A TABLE.
         #
         # Run 112 measured that no document could serve A4.5 Weather Day Impact: the OAC minutes

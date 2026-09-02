@@ -975,7 +975,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v58"
+SIMULATION_VERSION = "sim-2026.09-v59"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1086,6 +1086,19 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # fifteen planning and governance document types come out of the upload picker, their labels
  # kept so a stored document of one still renders a name.
  "sim-2026.09-v58",
+ # RUN 115. THE LAST FOUR MODULES. A4.8 Subcontractor Performance is assembled from the per-firm
+ # rating table its report already printed, so it is served from the document with no model key.
+ # A1.11 Independent EAC Reconciliation is REDEFINED on the owner's ruling: the forecast at
+ # completion is the approved contract plus the changes submitted and not yet approved, so the
+ # measure is pending change exposure against the approved budget, read off a new APPROVAL
+ # STATUS column on the change event register. A4.7 Dispute Escalation Index gains a second
+ # path -- the count of disputes the OAC minutes record, none Green, one Amber, more than one
+ # Red -- beside its governed escalation ladder, which is kept because six suites read it. And
+ # the recommendation now carries a completeness caveat stating the proportion of the required
+ # information the assessment rests on; it carries no band and casts no vote, and C1.5's own
+ # routing is unchanged. No band, category rule or project rule elsewhere is touched, and no
+ # model decided any of it: there is no model key in this environment and none was simulated.
+ "sim-2026.09-v59",
 )
 
 

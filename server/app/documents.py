@@ -93,6 +93,7 @@ from .research_models import (
 from .document_evidence import document_evidence
 from .evm_consistency import consistency_findings
 from .decision_brief import compose_decision_brief
+from .information_completeness import information_completeness
 from .recommendation_basis import recommendation_basis
 from . import spec_projection
 from .risk_exposure import register_exposure
@@ -430,6 +431,21 @@ def _first_of(row, keys):
         if key in norm and norm[key] not in (None, ""):
             return norm[key]
     return None
+
+
+def _num_or_none(value):
+    """
+    A finite number, or None. RUN 115: a change whose value is not a number cannot be put on
+    either side of the approved/pending split, and the exposure structure is refused rather
+    than the row being treated as nought -- nought is a figure, and absence is not one.
+    """
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        n = float(str(value).replace(",", "").replace("$", "").strip())
+    except (TypeError, ValueError):
+        return None
+    return n if n == n and n not in (float("inf"), float("-inf")) else None
 
 
 def _period_documents(session: Session, project: Project, period: int) -> list[dict]:
@@ -2154,6 +2170,73 @@ def _run69_structures(session: Session, project: Project, period: int,
                 if _prev is None or len(_events) > len(_prev.get("events") or []):
                     out["weatherImpactEvents"] = _wrec
 
+            # ------------------------------------------------------ RUN 115, GOAL 2/3
+            # A4.7's DISPUTE RECORD, WHICH IS A COUNT AND NOT AN ESCALATION LADDER.
+            #
+            # The owner's Run 115 ruling: disputes are recorded in the OAC meeting minutes and
+            # the measure is a count -- none Green, one Amber, more than one Red. There is no
+            # governed escalation process behind this path and none is invented.
+            #
+            # `subcontractor_disputes` IS NOT READ HERE. It was already on this document type
+            # and it is subcontractor-scoped; `document_evidence` prints it as "subcontractor
+            # disputes were recorded in the meeting". The owner's count is of the disputes the
+            # minutes record, unqualified, so reading the narrower field as the wider count
+            # would silently change what that stored figure means and would read Green on a
+            # project whose only dispute is with the designer.
+            #
+            # PRECEDENCE, AND IT IS THE DOCUMENT'S OWN. Where the minutes print a REGISTER of
+            # disputes, its rows are the disputes recorded and their count is the count. Where
+            # they print only a total, the total is read. Where they print both and disagree,
+            # the register wins, because the register is the thing recorded and the total is a
+            # statement about it -- and the disagreement is carried on the record so A4.7 can
+            # say so rather than hiding it.
+            _drows = _json_rows(ex.get("disputes_json"))
+            _disputes = []
+            for _r in _drows:
+                _did = _first_of(_r, ("dispute_id", "dispute", "dispute_no", "id", "ref",
+                                      "reference", "item", "item_no"))
+                if _did is None:
+                    continue
+                _drow = {"dispute_id": str(_did)}
+                for _k, _names in (
+                        ("subject", ("subject", "description", "matter", "issue", "title")),
+                        ("parties", ("parties", "between", "party", "with")),
+                        ("raised_day", ("raised_day", "raised_date", "date_raised", "date",
+                                        "raised")),
+                        ("status", ("status", "state", "position")),
+                        ("recorded_in", ("recorded_in", "minute_reference", "minute_item",
+                                         "agenda_item"))):
+                    _v = _first_of(_r, _names)
+                    if _v is not None and str(_v).strip():
+                        _drow[_k] = str(_v).strip()
+                _disputes.append(_drow)
+            _dstated = ex.get("disputes_recorded")
+            if _disputes or _dstated is not None:
+                _dcount = len(_disputes) if _disputes else None
+                if _dcount is None:
+                    try:
+                        _n = float(_dstated)
+                    except (TypeError, ValueError):
+                        _n = -1.0
+                    _dcount = int(_n) if _n >= 0 and _n == int(_n) else None
+                if _dcount is not None:
+                    _drec = {
+                        "source": "the OAC meeting minutes uploaded for this period",
+                        "dispute_count": _dcount,
+                        "count_basis": ("the disputes the minutes list" if _disputes
+                                        else "the count of disputes the minutes state"),
+                        "disputes": _disputes,
+                        "assembled_by": "document extraction",
+                        "source_document_type": doc_type,
+                    }
+                    if _dstated is not None:
+                        _drec["stated_total"] = _dstated
+                    if ex.get("report_period") is not None:
+                        _drec["reporting_period"] = ex.get("report_period")
+                    _prev = out.get("disputeRecord")
+                    if _prev is None or _dcount >= (_prev.get("dispute_count") or 0):
+                        out["disputeRecord"] = _drec
+
         # ---------------------------------------------------------- RUN 114, GOAL 1
         # A4.9's ITEM-LEVEL PROCUREMENT REGISTER, READ FROM THE TABLE THE LOG PRINTS.
         #
@@ -2225,6 +2308,81 @@ def _run69_structures(session: Session, project: Project, period: int,
                 if _prev is None or len(_pitems) > len(_prev.get("items") or []):
                     out["procurementItems"] = _prec
 
+        # ---------------------------------------------------------- RUN 115, GOAL 1
+        # A4.8's PER-FIRM RATING RECORD, READ FROM THE TABLE THE REPORT PRINTS.
+        #
+        # Run 107 put `subcontractor_ratings_json`, `subcontractor_rating_scale`,
+        # `subcontractor_report_date` and `subcontractor_report_version` on this document type.
+        # Run 112 measured all four reaching the evidence store and STOPPING: nothing assembled
+        # `subcontractorAssessments`, so A4.8 abstained even when the report stated every firm,
+        # every period and every rating. This is the assembler, built exactly as Run 114 built
+        # Weather, Procurement and Change Order, and it needs no model key.
+        #
+        # NOTHING IS INFERRED. `canonical_v4.subcontractor_reported_ratings` requires a rating
+        # scale, a report date and a report version on the record and identity, period and a
+        # mappable rating on every firm row, and it is ALL-OR-NOTHING by the owner's own
+        # eligibility rule. A row missing identity or period is carried through UNCHANGED so
+        # that rule fires there rather than being softened here -- this assembler drops nothing
+        # and defaults nothing. `compliance_score` is a single opaque project-wide number and is
+        # NOT read as a rating, exactly as Run 107 ruled.
+        #
+        # THE MODEL PATH IS LEFT IN PLACE. `recognition_recipes` can also produce this structure
+        # where a key exists; see the Run 115 report for which serves the module when both could.
+        elif doc_type == "subcontractor_report":
+            _srows = _json_rows(ex.get("subcontractor_ratings_json"))
+            _firms = []
+            for _r in _srows:
+                _fid = _first_of(_r, ("subcontractor_id", "subcontractor", "firm", "company",
+                                      "trade_contractor", "vendor", "name"))
+                _per = _first_of(_r, ("assessment_period", "period", "reporting_period",
+                                      "evaluation_period", "rating_period"))
+                _lab = _first_of(_r, ("rating_label", "rating", "performance_rating",
+                                      "overall_rating", "label"))
+                _sc = _first_of(_r, ("rating_score", "score", "rating_value",
+                                     "performance_score", "points"))
+                if _fid is None or _per is None:
+                    continue
+                _row = {"subcontractor_id": str(_fid), "assessment_period": str(_per)}
+                if _lab is not None and str(_lab).strip():
+                    _row["rating_label"] = str(_lab).strip()
+                if _sc is not None:
+                    _row["rating_score"] = _sc
+                for _k, _names in (
+                        ("work_package", ("work_package", "package", "scope", "trade")),
+                        ("assessor", ("assessor", "evaluator", "assessed_by", "rated_by")),
+                        ("source_document_reference",
+                         ("source_document_reference", "reference", "source_reference", "ref")),
+                        ("comments", ("comments", "comment", "remarks", "notes")),
+                        ("rating_scale", ("rating_scale", "scale"))):
+                    _v = _first_of(_r, _names)
+                    if _v is not None and str(_v).strip():
+                        _row[_k] = str(_v).strip()
+                _map = _r.get("scale_mapping") if isinstance(_r, dict) else None
+                if isinstance(_map, dict) and _map:
+                    _row["scale_mapping"] = _map
+                _firms.append(_row)
+            _scale = _text_or_none(ex.get("subcontractor_rating_scale"))
+            _rdate = _text_or_none(ex.get("subcontractor_report_date"))
+            _rver = _text_or_none(ex.get("subcontractor_report_version"))
+            if _firms and _scale and _rdate and _rver:
+                _arec = {
+                    "source": "the subcontractor performance report uploaded for this period",
+                    "rating_scale": _scale,
+                    "report_date": _rdate,
+                    "report_version": _rver,
+                    "reported_ratings": _firms,
+                    "assembled_by": "document extraction",
+                    "source_document_type": doc_type,
+                }
+                # NO REPORT-LEVEL SCALE MAPPING IS READ. The extraction contract declares no
+                # such field, so reading one would be a dead read that no document could ever
+                # satisfy. A report stating its own mapping states it on the RATING ROWS, inside
+                # `subcontractor_ratings_json`, and that per-row mapping is carried above and
+                # still wins over the owner's default ladder.
+                _prev = out.get("subcontractorAssessments")
+                if _prev is None or len(_firms) > len(_prev.get("reported_ratings") or []):
+                    out["subcontractorAssessments"] = _arec
+
         elif doc_type == "change_order":
             mods = read_modification_register(ex.get("modifications_json"))
             if mods:
@@ -2277,7 +2435,24 @@ def _run69_structures(session: Session, project: Project, period: int,
                     _d = "DEDUCTIVE"
                 else:
                     continue
-                _changes.append({
+                # RUN 115, GOAL 2. THE APPROVAL COLUMN. Run 115 measured this assembler
+                # reading identity, issue day, type, cause, value and direction and NOTHING
+                # ELSE, so a pending change and an approved one were indistinguishable once
+                # stored. A1.11's redefined measure is pending exposure against the approved
+                # budget and it turns entirely on this column. It is NEVER guessed: a row whose
+                # status reads neither approved nor pending carries no `approval_status` at all,
+                # and the exposure structure below is then not assembled.
+                _appr = _first_of(_r, ("approval_status", "approval", "status", "state",
+                                       "owner_approval", "disposition"))
+                _a = str(_appr or "").strip().upper().replace(" ", "_")
+                if _a in ("APPROVED", "EXECUTED", "ACCEPTED", "APPROVED_BY_OWNER", "SIGNED"):
+                    _a = "APPROVED"
+                elif _a in ("PENDING", "SUBMITTED", "UNDER_REVIEW", "IN_REVIEW",
+                            "AWAITING_APPROVAL", "NOT_APPROVED", "PROPOSED", "OPEN"):
+                    _a = "PENDING"
+                else:
+                    _a = None
+                _row_c = {
                     "change_id": str(_cid),
                     "issue_day": _cday,
                     "change_type": str(_ctype),
@@ -2286,7 +2461,10 @@ def _run69_structures(session: Session, project: Project, period: int,
                     "direction": _d,
                     "reporting_period": _first_of(
                         _r, ("reporting_period", "period", "report_period")),
-                })
+                }
+                if _a is not None:
+                    _row_c["approval_status"] = _a
+                _changes.append(_row_c)
             _exposure = ex.get("change_exposure_days")
             _baseline = ex.get("baseline_contract_sum")
             if _changes and _exposure is not None and _baseline is not None:
@@ -2312,6 +2490,47 @@ def _run69_structures(session: Session, project: Project, period: int,
                 _prev = out.get("changeEventRegister")
                 if _prev is None or len(_changes) > len(_prev.get("changes") or []):
                     out["changeEventRegister"] = _crec
+
+            # ------------------------------------------------------ RUN 115, GOAL 2
+            # A1.11's PENDING CHANGE EXPOSURE, ON THE OWNER'S REDEFINITION.
+            #
+            # The owner has redefined the measure. It is no longer two separately prepared
+            # forecasts -- no document carries a second estimate and no document can establish
+            # that it was prepared independently, which is why Run 109 called the module
+            # unservable. It is now: the forecast at completion is the APPROVED CONTRACT plus
+            # the changes the contractor has SUBMITTED AND THE OWNER HAS NOT YET APPROVED. Once
+            # a change is approved it is part of the budget and is not exposure.
+            #
+            # THE APPROVED BUDGET IS NOT READ HERE. It is `bac`, which the module reads off the
+            # signal inputs, so the approved side comes from whatever document the platform's
+            # own writer precedence selected for it and is not re-sourced from the change order.
+            #
+            # ALL-OR-NOTHING ON THE APPROVAL COLUMN. Every change on the register must state
+            # whether it is approved or pending. One that does not means the register cannot be
+            # split into the two sides at all, and an unstated status is NEVER read as pending
+            # (which would overstate exposure) nor as approved (which would understate it).
+            _priced = [c for c in _changes if _num_or_none(c.get("value")) is not None]
+            if _changes and len(_priced) == len(_changes) and all(
+                    c.get("approval_status") in ("APPROVED", "PENDING") for c in _changes):
+                _pending = [c for c in _changes if c["approval_status"] == "PENDING"]
+                _signed = sum(
+                    (1.0 if c["direction"] == "ADDITIVE" else -1.0) * _num_or_none(c["value"])
+                    for c in _pending)
+                _erec = {
+                    "source": "the change order register uploaded for this period",
+                    "pending_change_value": _signed,
+                    "pending_change_count": len(_pending),
+                    "approved_change_count": len(_changes) - len(_pending),
+                    "change_count": len(_changes),
+                    "pending_changes": _pending,
+                    "assembled_by": "document extraction",
+                    "source_document_type": "change_order",
+                }
+                if ex.get("baseline_contract_sum") is not None:
+                    _erec["baseline_contract_value"] = ex.get("baseline_contract_sum")
+                _prev = out.get("pendingChangeExposure")
+                if _prev is None or len(_changes) > (_prev.get("change_count") or 0):
+                    out["pendingChangeExposure"] = _erec
 
     contracts: list[dict] = [d for d in documents if d.get("doc_type") == "contract_value"]
     if not contracts:
@@ -4597,10 +4816,28 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
     # management review" in a findings sentence left it green). The check that does hold this
     # to account is `test_period_picker_and_evidence.py` section 6, which scans every sentence
     # this table can generate against the same leak vocabulary and is proven able to fail.
+    _period_docs = _period_documents(session, project, row.period)
     view["document_evidence"] = document_evidence(
-        _period_documents(session, project, row.period),
+        _period_docs,
         risks=_period_risks(session, project, row.period),
         notices=_period_notices(session, project, row.period))
+
+    # RUN 115, GOAL 4. HOW MUCH OF WHAT THIS ASSESSMENT NEEDS THE PLATFORM HOLDS.
+    #
+    # Same class as `document_evidence` immediately above and derived the same way: a PURE
+    # FUNCTION of the period's LIVE documents, read at display time, writing nothing. A replaced
+    # document stops counting the moment it is replaced.
+    #
+    # IT CARRIES NO BAND AND CASTS NO VOTE. It does not touch `project_status` or
+    # `category_statuses`, which are read from the stored row above, and C1.5's routing is
+    # untouched -- the module still abstains from its category exactly as it did before this
+    # run. This is the caveat the owner ordered at the bottom of the recommendation and it is a
+    # statement of reliability, not a finding.
+    #
+    # NOT GATED BY THE REVEAL, for the same reason `document_evidence` is not: it says how much
+    # evidence there is, which a participant must know before forming a judgement, and it
+    # carries no recommendation, no course and no action.
+    view["information_completeness"] = information_completeness(_period_docs)
 
     return {
         "ok": True,

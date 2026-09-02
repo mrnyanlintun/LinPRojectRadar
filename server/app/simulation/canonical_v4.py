@@ -927,6 +927,78 @@ DISPUTE_ESCALATION_CLASSES: dict[str, tuple[str, str]] = {
 
 
 
+#: RUN 115, GOAL 3. THE OWNER'S COUNT LADDER, AND IT IS A DIFFERENT MEASURE FROM THE ONE ABOVE.
+#:
+#: The owner's Run 115 ruling: disputes are recorded in the OAC meeting minutes and the measure
+#: is a count -- no dispute recorded is Green, one is Amber, more than one is Red. There is no
+#: escalation stage, no governed process record and no `claimDisputeRegister` on this path, and
+#: none is invented for it. OWNER-CALIBRATED: no published standard fixes these three rungs.
+#:
+#: WHY BOTH PATHS EXIST. `dispute_escalation` above reads a project's OWN GOVERNED escalation
+#: process where one is supplied, which is strictly more information than a count. Run 115
+#: established that the structure key it reads is referenced by six suites and a driver in this
+#: tree, so it is NOT retired; the module prefers it where a project supplies it and falls back
+#: to this count otherwise. See the Run 115 report.
+DISPUTE_COUNT_BANDS: tuple[tuple[int, str], ...] = ((0, "Green"), (1, "Amber"))
+
+#: THE DOCUMENT CONTRACT, PRINTED HERE SO THE SHAPE IS IN THE CODE AND NOT ONLY IN A REPORT.
+DISPUTE_RECORD_CONTRACT: dict[str, Any] = {
+    "structure_key": "disputeRecord",
+    "record_field": "dispute_count",
+    "required_on_the_record": ["source", "dispute_count", "count_basis"],
+    "optional_record_field": "disputes",
+    "optional_per_dispute": ["dispute_id", "subject", "parties", "raised_day", "status",
+                             "recorded_in"],
+    "eligibility": ("the minutes must state either a list of the disputes they record or a "
+                    "count of them; where they state both, the list governs and the "
+                    "disagreement is reported rather than hidden"),
+}
+
+
+def dispute_count(structure: dict) -> dict[str, Any]:
+    """
+    The number of disputes the meeting minutes record. A COUNT, not a stage.
+
+    ORACLE (owner's Run 115 order, section 3): none recorded -> Green; one -> Amber; more than
+    one -> Red.
+
+    A COUNT IS NEVER INFERRED FROM SILENCE ELSEWHERE. The structure must state the count, or
+    state the disputes it is a count of. A project whose minutes were never asked the question
+    has no record here and the module abstains rather than reading nought.
+    """
+    words = "a record of the disputes the meeting minutes recorded"
+    n = num(structure.get("dispute_count"), None)
+    if n is None or not math.isfinite(n) or n < 0 or n != int(n):
+        raise StructureAbsent(
+            "The meeting minutes provided for this project do not state how many disputes they "
+            "record, so no count is taken and silence is not read as no dispute.")
+    n = int(n)
+    band = "Red"
+    for floor, colour in DISPUTE_COUNT_BANDS:
+        if n == floor:
+            band = colour
+            break
+    listed = structure.get("disputes")
+    listed = listed if isinstance(listed, list) else []
+    stated = num(structure.get("stated_total"), None)
+    disagreement = None
+    if listed and stated is not None and int(stated) != len(listed):
+        disagreement = (
+            f"The minutes list {len(listed)} disputes and state a total of {int(stated)}. The "
+            f"list governs, because the list is the record and the total is a statement about "
+            f"it, and the disagreement is reported rather than reconciled.")
+    return {
+        "dispute_count": n,
+        "posture": band,
+        "count_basis": str(structure.get("count_basis") or words),
+        "disputes": listed,
+        "listed_count": len(listed),
+        "stated_total": None if stated is None else int(stated),
+        "count_disagreement": disagreement,
+        "source": _provenance(structure, words, "source")["source"],
+    }
+
+
 def dispute_escalation(structure: dict) -> dict[str, Any]:
     """
     The state of the project's claims on the project's OWN governed escalation process.

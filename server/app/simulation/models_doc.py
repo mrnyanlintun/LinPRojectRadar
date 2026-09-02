@@ -37,6 +37,7 @@ from .canonical_v4 import (
     agent_supply_chain,
     change_frequency,
     des_process_model,
+    dispute_count,
     dispute_escalation,
     ncr_rate,
     procurement_slack,
@@ -1234,6 +1235,66 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
     count at 0.3 and the document risk score at 0.4. None of the three is dispute evidence, and
     none of the three is read here.
     """
+    # ---------------------------------------------- RUN 115, GOAL 3. TWO PATHS, IN ORDER.
+    #
+    # THE OWNER'S RUN 115 RULING removes this module's blocker: disputes are recorded in the OAC
+    # meeting minutes and the measure is a COUNT -- none Green, one Amber, more than one Red --
+    # with no governed escalation process required.
+    #
+    # WHY THE GOVERNED PATH IS STILL FIRST, AND WHY `claimDisputeRegister` IS NOT RETIRED. The
+    # order permits retiring it "only if nothing else reads it". Run 115 established that six
+    # suites in this tree and one driver read that structure key by name, so retiring it would
+    # delete checks rather than dead code. It also carries strictly MORE information than a
+    # count -- which stage each dispute has reached on the project's own declared process -- so
+    # where a project supplies it, it governs, and the count is the path for every project that
+    # does not. A project supplying neither abstains, and the sentence names BOTH.
+    _register = si.get("claimDisputeRegister")
+    if _register is None:
+        _record = si.get("disputeRecord")
+        if _record is None or not isinstance(_record, dict):
+            return insufficient(
+                "Dispute_Escalation",
+                "Awaiting a record of the disputes on this project. Either the meeting minutes "
+                "state the disputes they record, or the project supplies its own governed "
+                "claim and dispute register with the escalation stage each dispute has "
+                "reached. No dispute count is read from any other document, and silence is "
+                "never read as no dispute.",
+                ABSTAIN_STRUCTURE_ABSENT)
+        try:
+            _cr = dispute_count(_record)
+        except StructureAbsent as absent:
+            return insufficient("Dispute_Escalation", absent.sentence,
+                                ABSTAIN_STRUCTURE_ABSENT)
+        _n = _cr["dispute_count"]
+        _cmsg = (f"The meeting minutes record {_js_str(_n)} "
+                 f"{'dispute' if _n == 1 else 'disputes'} on this project.")
+        _cladder = (
+            "the number of disputes the meeting minutes record: none recorded is Green, one is "
+            "Amber, and more than one is Red. This is a COUNT of what a document states and not "
+            "a position on any escalation ladder -- no stage is read, inferred or invented, and "
+            "the count is taken from the minutes alone. A dispute recorded against a "
+            "subcontractor is not the measure either: the subcontractor dispute figure this "
+            "platform already stores is narrower than the disputes this counts and is never "
+            "substituted for it.")
+        return banded(
+            "Dispute_Escalation", _cmsg,
+            status_color=_cr["posture"],
+            boundary=_cladder + (" " + _cr["count_disagreement"]
+                                 if _cr["count_disagreement"] else ""),
+            basis=("the owner's Run 115 order, section 3. OWNER-CALIBRATED: the three rungs are "
+                   "the owner's own ruling and no published standard fixes them."),
+            provenance=PROVENANCE_OWNER_CALIBRATED,
+            threshold_source=THRESHOLD_SOURCE_OWNER,
+            band_basis_id="owner_configured_dispute_count",
+            dispute_count=_n,
+            dispute_count_basis=_cr["count_basis"],
+            disputes=_cr["disputes"],
+            listed_count=_cr["listed_count"],
+            stated_total=_cr["stated_total"],
+            count_disagreement=_cr["count_disagreement"],
+            canonical_structure="dispute_record",
+            source=_cr["source"],
+            band_aggregation_rule="the count of disputes the minutes record")
     try:
         reading = dispute_escalation(require_v4_structure(si, "A4.7"))
     except StructureAbsent as absent:
