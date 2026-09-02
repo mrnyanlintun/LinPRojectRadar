@@ -392,15 +392,21 @@ def _boundary_and_basis(module_id: str, mod: Mapping[str, Any]) -> dict[str, Any
     basis = mod.get("band_basis")
     provenance = mod.get("band_provenance_class")
     words = mod.get("band_provenance_words")
-    if not basis:
-        # The Run 4 mechanism, for the two modules that predate this one.
-        from .simulation.registry import BAND_SOURCES
-        legacy = BAND_SOURCES.get(module_id)
-        if legacy:
-            boundary = boundary or legacy
-            basis = legacy
-            provenance = provenance or "CODIFIED"
-            words = words or "a standard, regulation or agency requirement"
+    # RUN 107, SECTION 3. THE FALLBACK IS REMOVED, AND REMOVING IT IS THE POINT.
+    #
+    # What stood here read `registry.BAND_SOURCES` when a row stored no basis and STAMPED
+    # "CODIFIED" onto it. It existed for exactly two modules, A1.7 and A1.8, whose bands were
+    # stored without provenance. Both now return through `models.banded` and store their basis,
+    # their two provenance classes and their threshold source in the row itself, so the fallback
+    # has nothing left to serve -- and while it stood, ANY module that banded without recording
+    # a provenance class would have been printed as though a standard fixed its boundary, which
+    # is the concealment Run 106 found rather than a compatibility shim.
+    #
+    # WHAT THIS MEANS FOR A ROW STORED BEFORE THIS RUN, stated plainly rather than hidden: a
+    # pre-Run-107 A1.7 or A1.8 row recorded no basis, and the card will now say so in as many
+    # words instead of printing a citation the row never held. That is the true statement about
+    # that row. Nothing rewrites a stored row, and `registry.BAND_SOURCES` is unchanged and is
+    # still the single source of the citation -- `models_evm._evm_band_source` reads it.
     if not provenance:
         return {
             "boundary": None,
@@ -555,7 +561,20 @@ def _limitations(basis: Mapping[str, Any],
         out.append(
             f"{_cat_name(str(key))} ({key}) could not be assessed: "
             f"{detail.get('missing')}.")
-    pending = [m for m in modules if m.get("calibration_pending")]
+    # RUN 107. A READING HELD FOR A PROJECT MANAGER'S REVIEW IS NOT A READING WITH NO
+    # THRESHOLD, and printing it under that sentence would say something false about it: its
+    # boundary IS established and the owner has ruled that its result is not a finding until a
+    # human has reviewed it. The two are separated here so the card states the right reason.
+    held = [m for m in modules
+            if m.get("module_state") == "pending_pm_review"]
+    if held:
+        names = ", ".join(sorted({str(m.get("method_class")) for m in held}))
+        out.append(
+            f"{len(held)} reading{'' if len(held) == 1 else 's'} normalised to a posture the "
+            f"owner holds for Project Manager review and assert no band until a disposition is "
+            f"recorded: {names}. The category was formed from the modules that are available; "
+            f"an unreviewed reading holds neither the category nor the project.")
+    pending = [m for m in modules if m.get("calibration_pending") and m not in held]
     if pending:
         names = ", ".join(sorted({str(m.get("method_class")) for m in pending}))
         out.append(

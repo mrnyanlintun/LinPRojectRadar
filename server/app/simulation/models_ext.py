@@ -497,6 +497,10 @@ def run_lookahead_health(si: dict, rand: Callable[[], float], period_cutoff) -> 
                    "constraint left on the critical path is the failure the measure is for"),
             provenance=PROVENANCE_OWNER_CALIBRATED,
             threshold_source=THRESHOLD_SOURCE_OWNER,
+            # RUN 107, SECTION 3. The owner tolerance this band rests on, named so it can be
+            # ADDRESSED BY NAME. Recording the class without an identifier left these bands
+            # unaddressable: an owner could not say "raise this one" and be understood.
+            band_basis_id="owner_configured_lookahead_readiness_tolerance",
             band_hard_override_fired=True,
             **_fields)
     if not _cuts.get("configured"):
@@ -525,6 +529,10 @@ def run_lookahead_health(si: dict, rand: Callable[[], float], period_cutoff) -> 
                "project has uploaded"),
         provenance=PROVENANCE_OWNER_CALIBRATED,
         threshold_source=THRESHOLD_SOURCE_OWNER,
+        # RUN 107, SECTION 3. The owner tolerance this band rests on, named so it can be
+        # ADDRESSED BY NAME. Recording the class without an identifier left these bands
+        # unaddressable: an owner could not say "raise this one" and be understood.
+        band_basis_id="owner_configured_lookahead_readiness_tolerance",
         band_hard_override_fired=False,
         **_fields)
 
@@ -620,6 +628,10 @@ def run_resource_loading(si: dict, rand: Callable[[], float], period_cutoff) -> 
                    "no float has nowhere to absorb the shortfall"),
             provenance=PROVENANCE_OWNER_CALIBRATED,
             threshold_source=THRESHOLD_SOURCE_OWNER,
+            # RUN 107, SECTION 3. The owner tolerance this band rests on, named so it can be
+            # ADDRESSED BY NAME. Recording the class without an identifier left these bands
+            # unaddressable: an owner could not say "raise this one" and be understood.
+            band_basis_id="owner_configured_resource_peak_load_tolerance",
             band_hard_override_fired=True,
             **_fields)
     if not _cuts.get("configured"):
@@ -650,6 +662,10 @@ def run_resource_loading(si: dict, rand: Callable[[], float], period_cutoff) -> 
                "this project has uploaded"),
         provenance=PROVENANCE_OWNER_CALIBRATED,
         threshold_source=THRESHOLD_SOURCE_OWNER,
+        # RUN 107, SECTION 3. The owner tolerance this band rests on, named so it can be
+        # ADDRESSED BY NAME. Recording the class without an identifier left these bands
+        # unaddressable: an owner could not say "raise this one" and be understood.
+        band_basis_id="owner_configured_resource_peak_load_tolerance",
         band_hard_override_fired=False,
         **_fields)
 
@@ -877,6 +893,10 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
         # RUN 102, SECTION 6. The owner stated these boundaries; no project document and no
         # published instrument fixes them.
         threshold_source=THRESHOLD_SOURCE_OWNER,
+        # RUN 107, SECTION 3. The owner tolerance this band rests on, named so it can be
+        # ADDRESSED BY NAME. Recording the class without an identifier left these bands
+        # unaddressable: an owner could not say "raise this one" and be understood.
+        band_basis_id="owner_configured_contingency_burn_tolerance",
         band_exhaustion_arm_fired=bool(exhausted),
         **figures)
 
@@ -938,6 +958,10 @@ def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -
                "not codified'. No standards clause fixes 0.95, 0.90 or 0.85"),
         provenance=PROVENANCE_CONVENTION,
         threshold_source=THRESHOLD_SOURCE_OWNER,
+        # RUN 107, SECTION 3. The owner tolerance this band rests on, named so it can be
+        # ADDRESSED BY NAME. Recording the class without an identifier left these bands
+        # unaddressable: an owner could not say "raise this one" and be understood.
+        band_basis_id="owner_configured_labor_productivity_tolerance",
         productivity_index=round2(reading["productivity_index"]),
         actual_productivity=reading["actual_productivity"],
         planned_productivity=reading["planned_productivity"],

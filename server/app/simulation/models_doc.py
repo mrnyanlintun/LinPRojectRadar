@@ -47,11 +47,14 @@ from .canonical_v4 import (
     sensitivity_analysis,
     specification_conflict_density,
     subcontractor_performance,
+    subcontractor_reported_ratings,
     submittal_rejection,
     tornado_ranking,
     weather_day_impact,
 )
 from . import band_reference as _BR
+from . import owner_bands as _OB
+from . import pm_review as _PMR
 from .models import (
     ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT, ABSTAIN_STRUCTURE_ABSENT,
     PROVENANCE_CODIFIED, PROVENANCE_CONVENTION, PROVENANCE_OWNER_CALIBRATED,
@@ -62,6 +65,23 @@ from .models_ext import _derived, _js_str
 from .rng import js_round, num, round1, round2
 
 _RANK = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
+
+
+def _module_review(si: dict, module_id: str) -> dict | None:
+    """
+    RUN 107. The Project Manager's recorded review of THIS module's reading, if one is on record.
+
+    IT IS READ FROM THE SIGNAL INPUTS, not from the database, because a module reads `si` and
+    nothing else -- that is the boundary the whole layer is built on. `documents.run_and_store`
+    merges the recorded reviews onto `si` under `moduleReviews` before computation, from the
+    append-only `audit_events` table, which is where every participant decision this platform
+    holds already lives. Nothing here writes, and a module never records a review.
+    """
+    reviews = si.get("moduleReviews")
+    if not isinstance(reviews, dict):
+        return None
+    entry = reviews.get(module_id)
+    return entry if isinstance(entry, dict) else None
 
 
 def _and_list(items: list[str]) -> str:
@@ -796,24 +816,144 @@ def run_weather_impact(si: dict, rand: Callable[[], float], period_cutoff) -> di
         return insufficient("Weather_Impact", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
     paths = reading["path_effect_days"]
     worst = max(paths, key=lambda p: (paths[p], p))
-    return calibration_pending(
-        "Weather_Impact",
+    # ------------------------------------------------- RUN 107, THE OWNER'S TWO COMPONENTS
+    # "Use any component whose denominator exists; worst-of the available." A component whose
+    # denominator is absent is NOT ASSESSED and is not counted as favourable.
+    _comps = []
+    _allow_total = reading.get("weather_allowance_days")
+    _approved = reading.get("weather_days_approved")
+    if _allow_total is not None and _allow_total > 0 and _approved is not None:
+        _consumed = _approved / _allow_total
+        _comps.append(_OB.component(
+            "allowance consumed", value=round2(_consumed),
+            band=_OB.ascending(_consumed, 0.80, 1.00, 1.20),
+            boundary=("weather-delay days used divided by weather allowance days: at or below "
+                      "0.80 is Green; above 0.80 and at or below 1.00 is Yellow; above 1.00 and "
+                      "at or below 1.20 is Amber; above 1.20 is Red. Each boundary is INCLUSIVE "
+                      "ON ITS UPPER SIDE. The numerator is the days the OWNER APPROVED, "
+                      "recorded in the OAC meeting minutes; a figure the contractor claimed is "
+                      "never substituted for it, and a weather log alone is not an approval")))
+    else:
+        _comps.append(_OB.component(
+            "allowance consumed",
+            absent_reason=(
+                "This project's weather record does not state both the weather allowance the "
+                "contract calendar grants and the weather days the owner APPROVED in the OAC "
+                "meeting minutes, so the share of the allowance consumed has no denominator or "
+                "no numerator and is Not Assessed. Neither figure is inferred and the days "
+                "claimed are not read in place of the days approved.")))
+    # THE FLOAT DENOMINATOR, AND WHERE IT COMES FROM. It is the float the WEATHER RECORD ITSELF
+    # states for the affected path. A2.12 Critical Path Analysis computes total float, but no
+    # path exists from one module's reading to another module's runner -- `registry.run_all`
+    # dispatches every flat-input module from `signal_inputs` alone, and the only cross-module
+    # channel, `signal_package.array_entry`, carries a module id, a method class and a status
+    # colour and no figures at all. So this arm bands on the record's own stated float or not
+    # at all; it never reaches into A2.12, and it never infers a float figure.
+    _float = None
+    for _e in reading["events"]:
+        if _e.get("schedule_path_id") == worst:
+            _float = _e.get("available_float_days")
+            break
+    if _float is not None and _float > 0:
+        _fc = reading["direct_path_effect_days"] / _float
+        _comps.append(_OB.component(
+            "float consumed", value=round2(_fc),
+            band=_OB.ascending(_fc, 0.50, 0.75, 1.00),
+            boundary=("weather-caused forecast delay days divided by remaining total float "
+                      "days on the affected path: at or below 0.50 is Green; above 0.50 and at "
+                      "or below 0.75 is Yellow; above 0.75 and at or below 1.00 is Amber; above "
+                      "1.00 is Red. Each boundary is INCLUSIVE ON ITS UPPER SIDE. The float is "
+                      "the figure the weather record itself states for the affected path; it is "
+                      "NOT read from Critical Path Analysis, which no path connects to this "
+                      "module")))
+    else:
+        _comps.append(_OB.component(
+            "float consumed",
+            absent_reason=(
+                "This project's weather record states no remaining total float above zero on "
+                "the affected path, so the share of float consumed has no denominator and is "
+                "Not Assessed. Critical Path Analysis computes total float but its reading does "
+                "not reach this module: no path exists in this platform for one module's "
+                "reading to reach another module's runner, so no float figure is taken from it "
+                "and none is inferred.")))
+    _agg = _OB.aggregate(_comps)
+    _posture = _agg["band_posture_before_override"]
+    # THE HARD OVERRIDE, APPLIED AFTER COMPONENT BANDING AND ABLE ONLY TO WORSEN.
+    _late = reading.get("milestone_forecast_late")
+    _te_in = reading.get("time_extension_incorporated_in_baseline")
+    _mclass = (reading.get("milestone_class") or "").strip().lower()
+    _override = bool(_late) and _mclass in ("contractual", "owner_committed", "owner-committed") \
+        and not _te_in
+    _override_words = (
+        "HARD OVERRIDE: Red if a documented weather event causes a contractual or "
+        "owner-committed milestone to forecast late and no approved time extension has been "
+        "incorporated into the baseline. All three facts must be STATED by the weather record: "
+        "that a milestone forecasts late, which class of milestone it is, and whether a granted "
+        "extension is in the baseline. ")
+    if _late is None:
+        _override_words += ("This project's weather record states nothing about a milestone "
+                            "forecasting late, so the override was NOT EVALUABLE and silence "
+                            "was not read as the condition being absent.")
+    elif _override:
+        _override_words += "It fired: the record states all three."
+    else:
+        _override_words += "It did not fire on this record."
+    if _override:
+        _posture = _OB.at_least_as_adverse_as(_posture, "Red")
+    _fields = {
+        "direct_path_effect_days": reading["direct_path_effect_days"],
+        "path_effect_days": paths,
+        "worst_path_id": worst,
+        "event_count": reading["event_count"],
+        "total_lost_days": reading["total_lost_days"],
+        "allowance_days_remaining_after": reading["allowance_days_remaining_after"],
+        "mitigation_days_reported": reading["mitigation_days_reported"],
+        "events": reading["events"],
+        "weather_calendar_id": reading["weather_calendar_id"],
+        "weather_allowance_days": _allow_total,
+        "weather_days_claimed": reading.get("weather_days_claimed"),
+        "weather_days_approved": _approved,
+        "approval_period": reading.get("approval_period"),
+        "approval_source": reading.get("approval_source"),
+        "time_extension_granted": reading.get("time_extension_granted"),
+        "time_extension_days_granted": reading.get("time_extension_days_granted"),
+        "time_extension_incorporated_in_baseline": _te_in,
+        "milestone_forecast_late": _late,
+        "milestone_class": reading.get("milestone_class") or None,
+        "band_hard_override_fired": _override,
+        "band_hard_override_evaluable": _late is not None,
+        "canonical_structure": "weather_impact_events",
+        "source": reading["source"],
+        **_agg,
+    }
+    _msg = (
         f"{_js_str(reading['event_count'])} verified weather events lost "
         f"{_js_str(reading['total_lost_days'])} days. After the weather allowance and the float "
         f"on each path, the direct effect on the schedule is "
-        f"{_js_str(reading['direct_path_effect_days'])} days, on the path called {worst}.",
-        direct_path_effect_days=reading["direct_path_effect_days"],
-        path_effect_days=paths,
-        worst_path_id=worst,
-        event_count=reading["event_count"],
-        total_lost_days=reading["total_lost_days"],
-        allowance_days_remaining_after=reading["allowance_days_remaining_after"],
-        mitigation_days_reported=reading["mitigation_days_reported"],
-        events=reading["events"],
-        weather_calendar_id=reading["weather_calendar_id"],
-        canonical_structure="weather_impact_events",
-        source=reading["source"],
-    )
+        f"{_js_str(reading['direct_path_effect_days'])} days, on the path called {worst}.")
+    if _posture is None:
+        return band_abstained(
+            "Weather_Impact", _msg,
+            reason=("Not Assessed. Neither of the two components the owner's ladder is defined "
+                    "on could be formed from this project's weather record: "
+                    + " ".join(c["not_assessed_reason"] for c in _comps
+                               if c.get("not_assessed_reason"))),
+            band_basis_id="owner_configured_construction_control_tolerance",
+            **_fields)
+    return banded(
+        "Weather_Impact", _msg,
+        status_color=_posture,
+        boundary=(" ".join(c["boundary"] for c in _comps if c["boundary"])
+                  + " " + _agg["band_aggregation_words"] + " " + _override_words),
+        basis=("the owner's Run 107 order, section 2, A4.5. The band basis identifier is "
+               "`owner_configured_construction_control_tolerance`. OWNER-CALIBRATED: no "
+               "published standard fixes 0.80, 1.00 and 1.20 on allowance consumption, nor "
+               "0.50, 0.75 and 1.00 on float consumption. They are a documented owner tolerance "
+               "and are not presented as a construction standard"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id="owner_configured_construction_control_tolerance",
+        **_fields)
 
 
 # ------------------------------------------------------------ A4.6 Change Order Frequency
@@ -1010,6 +1150,15 @@ def _schedule_impact(structure: dict, reading: dict) -> dict[str, Any]:
     return out
 
 
+#: RUN 107, A4.7. The basis, stated once because two call sites print it.
+_BASIS_A47 = (
+    "the owner's Run 107 order, section 2, A4.7. The band basis identifier is "
+    "`owner_configured_construction_control_tolerance`. OWNER-CALIBRATED: the four stages are "
+    "the owner's own description of dispute escalation and no published standard fixes which "
+    "posture each carries. The ladder is ORDINAL: a count of disputes is not a position on it, "
+    "and no arithmetic is performed on the events")
+
+
 # ------------------------------------------------------------ A4.7 Dispute Escalation Index
 
 
@@ -1033,27 +1182,109 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
         reading = dispute_escalation(require_v4_structure(si, "A4.7"))
     except StructureAbsent as absent:
         return insufficient("Dispute_Escalation", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
-        "Dispute_Escalation",
+    # -------------------------------------------- RUN 107, THE ORDINAL LADDER. NOT A COUNT.
+    # "Ordinal. Never average event counts. The posture is the highest documented open stage."
+    from .canonical_v4 import DISPUTE_ESCALATION_CLASSES as _DEC
+    _open = [i for i in reading["issues"] if not i.get("resolved")]
+    _classed = [(i, _DEC[i["escalation_class"]][0]) for i in _open if i.get("escalation_class")]
+    _unclassed = [i["issue_id"] for i in _open if not i.get("escalation_class")]
+    _msg = (
         f"Of {_js_str(reading['issue_count'])} issues on the "
-        f"{reading['process_id']} process, the furthest has reached the stage called "
-        f"{reading['highest_stage_id']}, which is step "
+        f"{reading['process_id']} process, {_js_str(len(_open))} "
+        f"{'is' if len(_open) == 1 else 'are'} open, and the furthest has reached the stage "
+        f"called {reading['highest_stage_id']}, which is step "
         f"{_js_str(reading['highest_stage_rank'])} of "
-        f"{_js_str(reading['stage_count'])} on that process.",
-        highest_stage_id=reading["highest_stage_id"],
-        highest_stage_rank=reading["highest_stage_rank"],
-        escalation_position=round(reading["escalation_position"], 4),
-        process_id=reading["process_id"],
-        process_version=reading["process_version"],
-        stage_count=reading["stage_count"],
-        issue_count=reading["issue_count"],
-        issues_at_highest=reading["issues_at_highest"],
-        total_claim_value=reading["total_claim_value"],
-        max_unresolved_age_days=reading["max_unresolved_age_days"],
-        issues=reading["issues"],
-        canonical_structure="claim_dispute_register",
-        source=reading["source"],
-    )
+        f"{_js_str(reading['stage_count'])} on that process.")
+    _fields = {
+        "highest_stage_id": reading["highest_stage_id"],
+        "highest_stage_rank": reading["highest_stage_rank"],
+        "escalation_position": round(reading["escalation_position"], 4),
+        "process_id": reading["process_id"],
+        "process_version": reading["process_version"],
+        "stage_count": reading["stage_count"],
+        "issue_count": reading["issue_count"],
+        "issues_at_highest": reading["issues_at_highest"],
+        "open_issue_count": len(_open),
+        "open_issues": reading["open_issues"],
+        "stage_escalation_classes": reading["stage_escalation_classes"],
+        "issues_without_escalation_class": _unclassed,
+        "total_claim_value": reading["total_claim_value"],
+        "max_unresolved_age_days": reading["max_unresolved_age_days"],
+        "issues": reading["issues"],
+        "canonical_structure": "claim_dispute_register",
+        "source": reading["source"],
+    }
+    _override_issues = [i["issue_id"] for i in _open
+                        if i.get("prevents_controlling_or_near_critical_progress")]
+    _override_stated = any(
+        i.get("prevents_controlling_or_near_critical_progress") is not None for i in _open)
+    _override_words = (
+        "HARD OVERRIDE: Red if any documented dispute prevents progress on a controlling or "
+        "near-critical activity. The register must STATE that it does. ")
+    if _override_issues:
+        _override_words += (f"It fired: {_and_list(_override_issues)} "
+                            f"{'states' if len(_override_issues) == 1 else 'state'} it.")
+    elif _override_stated:
+        _override_words += "No open issue states it, so it did not fire."
+    else:
+        _override_words += ("No open issue states the fact either way, so the override was NOT "
+                            "EVALUABLE on this register and silence was not read as the "
+                            "condition being absent.")
+    _ladder = ("the posture is the HIGHEST DOCUMENTED OPEN STAGE on the owner's ordinal ladder, "
+               "and event counts are NEVER averaged: "
+               + "; ".join(f"{band} -- {words}" for _k, (band, words) in _DEC.items())
+               + ". Which of these four a project's own stage is must be DECLARED by the "
+                 "process record. A stage is never read from its name, from sentiment or from "
+                 "narrative tone, and only source-record language is used. " + _override_words)
+    if not _classed:
+        _reason = (
+            "Not Assessed. This project's dispute process does not place its stages in the "
+            "owner's four escalation classes, so no open issue can be placed on the ordinal "
+            "ladder. A stage is never inferred from its name or from narrative tone."
+            if not reading["escalation_classes_declared"] else
+            ("Not Assessed. No open issue on this register sits at a stage the process places "
+             "in one of the owner's four escalation classes."
+             if _open else
+             "Not Assessed. This register records no OPEN issue, and the owner's ladder is "
+             "defined on the highest documented OPEN stage. A closed register is not read as "
+             "Green, because Green is a statement that items were resolved through normal "
+             "project administration and this register was not asked that question."))
+        if _override_issues:
+            return banded(
+                "Dispute_Escalation", _msg, status_color="Red",
+                boundary=_ladder, basis=_BASIS_A47,
+                provenance=PROVENANCE_OWNER_CALIBRATED,
+                threshold_source=THRESHOLD_SOURCE_OWNER,
+                band_basis_id="owner_configured_construction_control_tolerance",
+                band_hard_override_fired=True,
+                band_posture_before_override=None, **_fields)
+        return band_abstained(
+            "Dispute_Escalation", _msg, reason=_reason,
+            band_basis_id="owner_configured_construction_control_tolerance",
+            band_hard_override_fired=bool(_override_issues), **_fields)
+    _posture = _OB.worst([b for _i, b in _classed])
+    _before = _posture
+    if _override_issues:
+        _posture = _OB.at_least_as_adverse_as(_posture, "Red")
+    _governing = max(_classed, key=lambda pair: (_OB.BAND_ORDER.index(pair[1]),
+                                                 pair[0]["issue_id"]))[0]
+    return banded(
+        "Dispute_Escalation", _msg,
+        status_color=_posture,
+        boundary=_ladder + (f" The highest documented open stage is "
+                            f"{_governing['current_stage_id']}, on issue "
+                            f"{_governing['issue_id']}."),
+        basis=_BASIS_A47,
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id="owner_configured_construction_control_tolerance",
+        band_posture_before_override=_before,
+        band_hard_override_fired=bool(_override_issues),
+        governing_issue_id=_governing["issue_id"],
+        governing_stage_id=_governing["current_stage_id"],
+        governing_escalation_class=_governing["escalation_class"],
+        band_aggregation_rule="highest documented open stage",
+        **_fields)
 
 
 # ------------------------------------------------------------ A4.8 Subcontractor Performance
@@ -1073,11 +1304,115 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
     the extraction pipeline -- and banded it, with no criteria, no ratings, no evaluator, no
     weights and no provenance behind it.
     """
+    # ------------------------------------------------ RUN 107. THE MVP, AND IT IS THE BAND.
+    # The owner's Run 107 order rules the four-factor composite OUT OF SCOPE. The composite
+    # below still COMPUTES where a project supplies the weighted assessment -- it is not
+    # removed, and this run adds nothing to it: no per-firm factor extraction, no
+    # critical-path adjustment, no trade-level scoring, no "two Ambers make a Red", no
+    # automatic default or termination reading. WHAT THIS RUN ADDS is one narrow reading:
+    # the rating the Subcontractor Performance Report already states, normalised onto the
+    # owner's ladder, with the most adverse valid reported posture governing across firms.
+    #
+    # AND THE BAND IS HELD. An Amber or Red normalised posture is not a finding until a
+    # Project Manager has reviewed it: `pm_review.resolve` decides, `status_color` stays
+    # None while it is held, and the held state lives in `module_state`, which is NOT a
+    # project status. See `pm_review.py` for why that is structural rather than a promise.
     try:
-        reading = subcontractor_performance(require_v4_structure(si, "A4.8"))
+        structure = require_v4_structure(si, "A4.8")
     except StructureAbsent as absent:
         return insufficient("Subcontractor_Performance", absent.sentence,
                             ABSTAIN_STRUCTURE_ABSENT)
+    _mvp = None
+    _mvp_absent = None
+    try:
+        _mvp = subcontractor_reported_ratings(structure)
+    except StructureAbsent as absent:
+        _mvp_absent = absent.sentence
+    if _mvp is not None:
+        _norm = _mvp["normalised_posture"]
+        _review = _module_review(si, "A4.8")
+        _res = _PMR.resolve(_norm, _review)
+        _audit = _PMR.audit_record(
+            normalised_posture=_norm,
+            source_rating=_mvp["governing_reported_rating"],
+            source_document_id=_mvp["source"],
+            source_document_version=_mvp["report_version"],
+            period=next((f["assessment_period"] for f in _mvp["firms"]
+                         if f["subcontractor_id"] == _mvp["governing_subcontractor_id"]), None),
+            normalisation_rule=_mvp["governing_normalisation_rule"],
+            normalisation_rule_version=_mvp["normalisation_rule_version"],
+            resolution=_res)
+        _fields = {
+            "firms": _mvp["firms"],
+            "firm_count": _mvp["firm_count"],
+            "normalised_posture": _norm,
+            "governing_subcontractor_id": _mvp["governing_subcontractor_id"],
+            "governing_reported_rating": _mvp["governing_reported_rating"],
+            "normalisation_rule": _mvp["governing_normalisation_rule"],
+            "normalisation_rule_version": _mvp["normalisation_rule_version"],
+            "rating_scale": _mvp["rating_scale"],
+            "report_date": _mvp["report_date"],
+            "report_version": _mvp["report_version"],
+            "module_state": _res["module_state"],
+            "module_state_words": _res["module_state_words"],
+            "pm_review_required": _res["review_required"],
+            "pm_review_audit_record": _audit,
+            "canonical_structure": "subcontractor_reported_ratings",
+            "source": _mvp["source"],
+            "scope_note": (
+                "MVP scope, and it is deliberately narrow. This reading normalises the rating "
+                "the report already states. It performs no per-firm schedule, quality, safety "
+                "or commercial factor extraction, no critical-path or near-critical "
+                "adjustment, no trade-level scoring, no two-Ambers-make-a-Red policy and no "
+                "automatic default or termination reading."),
+        }
+        _msg = (
+            f"{_js_str(_mvp['firm_count'])} subcontractor"
+            f"{'' if _mvp['firm_count'] == 1 else 's'} carry a reported performance rating. "
+            f"The most adverse is {_mvp['governing_subcontractor_id']}, rated "
+            f"{_mvp['governing_reported_rating']}, which normalises to {_norm}.")
+        _boundary = (
+            "on the rating the Subcontractor Performance Report states, normalised by "
+            "the owner's Run 107 ladder: Exceptional or Very Good, or 90 to 100, is Green; "
+            "Satisfactory, or 80 to 89, is Yellow; Marginal, or 70 to 79, is Amber; "
+            "Unsatisfactory, or below 70, is Red. Each numeric boundary is INCLUSIVE ON ITS "
+            "LOWER SIDE. Where the report states its own scale, that scale's documented "
+            "mapping is used in its place. Where no mappable rating or score is present the "
+            "reading is Not Assessed and a rating is NEVER inferred from narrative text or "
+            "from another document. Across firms the MOST ADVERSE valid reported posture "
+            "governs. HELD FOR REVIEW: an Amber or Red normalised posture is not a finding "
+            "until a Project Manager records a disposition; the module asserts no band while "
+            "it is held and the category is formed from the modules that are available. "
+            f"Here the rule applied was {_mvp['governing_normalisation_rule']}.")
+        _basis = (
+            "the owner's Run 107 order, section 2, A4.8. The band basis identifier the owner "
+            "named for it is `source_report_rating_normalization`. OWNER-CALIBRATED: the "
+            "report's own rating is the measure and the platform does not re-rate it, but no "
+            "published standard fixes which of the four postures each label or score band "
+            "maps onto. That mapping is the owner's stated decision. Where the report states "
+            "its own documented scale mapping, that mapping is rung 1 and wins.")
+        if _res["posture"] is None:
+            return band_abstained(
+                "Subcontractor_Performance", _msg,
+                reason=_res.get("not_assessed_reason") or _res["module_state_words"],
+                band_basis_id="source_report_rating_normalization",
+                band_boundary_if_reviewed=_boundary,
+                **_fields)
+        return banded(
+            "Subcontractor_Performance", _msg,
+            status_color=_res["posture"],
+            boundary=_boundary,
+            basis=_basis,
+            provenance=PROVENANCE_OWNER_CALIBRATED,
+            threshold_source=THRESHOLD_SOURCE_OWNER,
+            band_basis_id="source_report_rating_normalization",
+            **_fields)
+    try:
+        reading = subcontractor_performance(structure)
+    except StructureAbsent as absent:
+        return insufficient(
+            "Subcontractor_Performance",
+            (_mvp_absent or absent.sentence), ABSTAIN_STRUCTURE_ABSENT)
     return calibration_pending(
         "Subcontractor_Performance",
         f"{_js_str(reading['subcontractor_count'])} subcontractors were assessed against "
@@ -1121,23 +1456,135 @@ def run_procurement_lead_time(si: dict, rand: Callable[[], float],
     except StructureAbsent as absent:
         return insufficient("Procurement_Lead_Time", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
     states = reading["state_counts"]
-    return calibration_pending(
-        "Procurement_Lead_Time",
+    # --------------------------------------- RUN 107. PER ITEM, MOST ADVERSE ITEM GOVERNS.
+    from .canonical_v4 import (PROCUREMENT_CRITICALITY_CONTROLLING,
+                               PROCUREMENT_CRITICALITY_NOT)
+    _basis_ok = reading.get("day_basis") == "approved_calendar_working_days"
+    _items = []
+    _worst_band = None
+    _worst_item = None
+    _uneval = []
+    for it in reading["items"]:
+        late = max(0.0, -it["slack_days"])
+        crit = str(it.get("criticality") or "").strip().lower().replace(" ", "_")
+        on_controlling = (True if crit in PROCUREMENT_CRITICALITY_CONTROLLING
+                          else False if crit in PROCUREMENT_CRITICALITY_NOT else None)
+        band = None
+        why = None
+        if not _basis_ok:
+            why = ("the register does not state that its days are approved-calendar working "
+                   "days, and no calendar reaches this module to convert them")
+        elif late <= 0:
+            band = "Green"
+        elif late > 10:
+            band = "Red"
+        elif late >= 6:
+            band = "Amber"
+        elif on_controlling is None:
+            why = ("this item is 1 to 5 working days late and the register does not state "
+                   "whether it sits on controlling or near-critical work, so Yellow cannot be "
+                   "told from Amber. Criticality is never guessed")
+        else:
+            band = "Amber" if on_controlling else "Yellow"
+        # THE MILESTONE ARM OF RED. Stated by the item, never inferred.
+        if it.get("causes_required_milestone_late") and late > 0:
+            band = _OB.at_least_as_adverse_as(band, "Red")
+        _items.append({"item_id": it["item_id"], "days_late": late,
+                       "on_controlling_or_near_critical": on_controlling,
+                       "band": band, "not_assessed_reason": why})
+        if why:
+            _uneval.append(it["item_id"])
+        if band and (_worst_band is None
+                     or _OB.BAND_ORDER.index(band) > _OB.BAND_ORDER.index(_worst_band)):
+            _worst_band, _worst_item = band, it["item_id"]
+    # THE HARD OVERRIDE, after item banding, able only to worsen.
+    _override_items = [it["item_id"] for it in reading["items"]
+                       if it.get("long_lead")
+                       and it.get("protection_date_missed") is True]
+    _override_stated = any(it.get("protection_date_missed") is not None
+                           for it in reading["items"])
+    _before = _worst_band
+    if _override_items:
+        _worst_band = _OB.at_least_as_adverse_as(_worst_band, "Red")
+    _override_words = (
+        "HARD OVERRIDE: Red when a long-lead item is not approved, released, fabricated or "
+        "shipped by the latest date required to protect a contractual milestone, on the "
+        "project's own schedule logic. The register must STATE that the protecting date was "
+        "missed, because that date is a product of the project's schedule logic and this "
+        "module holds no schedule. ")
+    _override_words += (
+        f"It fired on {_and_list(_override_items)}." if _override_items
+        else "No item states it was missed, so it did not fire." if _override_stated
+        else "No item states the fact either way, so the override was NOT EVALUABLE on this "
+             "register and silence was not read as the condition being absent.")
+    _boundary = (
+        "per item, in approved-calendar working days, forecast delivery date less required-on-"
+        "site date, with the MOST ADVERSE ITEM governing: Green where every item is on or "
+        "before required-on-site; Yellow where an item is 1 to 5 working days late and NOT on "
+        "controlling or near-critical work; Amber where an item is 6 to 10 days late, or 1 to 5 "
+        "days late ON controlling or near-critical work; Red where an item is more than 10 "
+        "working days late, or a late item causes a contractual or required milestone to "
+        "forecast late. WHICH ITEMS SIT ON CONTROLLING OR NEAR-CRITICAL WORK IS STATED BY THE "
+        "REGISTER ITSELF. Critical Path Analysis identifies those activities, but no path "
+        "exists in this platform for one module's reading to reach another module's runner -- "
+        "the only cross-module channel carries a module id, a method class and a status colour "
+        "and no figures -- so criticality is read from the register or the arm that needs it is "
+        "not evaluated. Criticality is never guessed. " + _override_words)
+    _fields = {
+        "items": reading["items"],
+        "item_count": reading["item_count"],
+        "minimum_slack_days": reading["minimum_slack_days"],
+        "worst_item_id": reading["worst_item_id"],
+        "mean_slack_days": round(reading["mean_slack_days"], 2),
+        "state_counts": states,
+        "day_basis": reading.get("day_basis"),
+        "band_item_postures": _items,
+        "band_items_not_assessed": _uneval,
+        "band_governing_item_id": _worst_item,
+        "band_posture_before_override": _before,
+        "band_hard_override_fired": bool(_override_items),
+        "band_hard_override_evaluable": _override_stated,
+        "band_aggregation_rule": "most adverse item",
+        "canonical_structure": "procurement_items",
+        "source": reading["source"],
+    }
+    _msg = (
         f"Across {_js_str(reading['item_count'])} procurement items the tightest slack is "
         f"{_js_str(reading['minimum_slack_days'])} days, on the item called "
         f"{reading['worst_item_id']}. {_js_str(states['LATE'])} items are forecast to arrive "
         f"after they are required, {_js_str(states['AT_RISK'])} arrive inside the float that "
         f"protects them and {_js_str(states['ON_TIME'])} arrive with room to spare. Every item "
-        f"is counted once.",
-        items=reading["items"],
-        item_count=reading["item_count"],
-        minimum_slack_days=reading["minimum_slack_days"],
-        worst_item_id=reading["worst_item_id"],
-        mean_slack_days=round(reading["mean_slack_days"], 2),
-        state_counts=states,
-        canonical_structure="procurement_items",
-        source=reading["source"],
-    )
+        f"is counted once.")
+    _a49_basis = (
+        "the owner's Run 107 order, section 2, A4.9. The band basis identifier is "
+        "`owner_configured_construction_control_tolerance`. OWNER-CALIBRATED: no published "
+        "standard fixes 5 and 10 working days, nor the criticality split between Yellow and "
+        "Amber. They are a documented owner tolerance")
+    if _worst_band is None:
+        return band_abstained(
+            "Procurement_Lead_Time", _msg,
+            reason=("Not Assessed. No item on this register could be banded on the owner's "
+                    "ladder: "
+                    + "; ".join(sorted({i["not_assessed_reason"] for i in _items
+                                        if i["not_assessed_reason"]}))
+                    + ". No day count is converted between bases and no criticality is "
+                      "guessed."),
+            band_basis_id="owner_configured_construction_control_tolerance",
+            **_fields)
+    return banded(
+        "Procurement_Lead_Time", _msg,
+        status_color=_worst_band,
+        boundary=_boundary
+        + (f" {len(_uneval)} of {reading['item_count']} items could not be banded and are "
+           f"absent from the aggregation rather than counted as favourable."
+           if _uneval else ""),
+        basis=_a49_basis,
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id="owner_configured_construction_control_tolerance",
+        **_fields)
+
+
 
 
 # ------------------------------------------------------------ A4.10 Spec Conflict Density

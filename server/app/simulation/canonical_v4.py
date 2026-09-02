@@ -698,8 +698,19 @@ def weather_day_impact(structure: dict) -> dict[str, Any]:
     for row in prepared:
         row["path_effect_days"] = path_effect[row["schedule_path_id"]]
     direct = max(path_effect.values()) if path_effect else 0.0
+    # RUN 107. THE OWNER'S RULING ON WHERE THE FIGURES COME FROM. "A weather day is claimed by
+    # the contractor and approved by the owner, and that approval is recorded in OAC meeting
+    # minutes. The module reads the approved figure, not a weather log alone."
+    #
+    # These are read LENIENTLY -- absent rather than refused -- because the schedule-impact
+    # reading above is a different quantity and was computing before this run. What depends on
+    # them is the RUN 107 BAND, and the module states which of its arms could not be formed
+    # rather than substituting the claimed figure for the approved one or the lost-day count
+    # for the allowance.
+    approved = _approved_weather_days(structure)
     return {
         "direct_path_effect_days": direct,
+        **approved,
         "path_effect_days": dict(sorted(path_effect.items())),
         "events": prepared,
         "event_count": len(prepared),
@@ -711,10 +722,66 @@ def weather_day_impact(structure: dict) -> dict[str, Any]:
     }
 
 
+# -------------------------------------------------------------------------------------------
+# RUN 107. THE OAC MEETING MINUTES CONTRACT FOR WEATHER DAYS, PRINTED HERE AS THE SHAPE.
+#
+# THE OWNER'S RULING: the module reads the APPROVED figure, not a weather log alone. What the
+# minutes must state is exactly four things -- the days CLAIMED, the days APPROVED, the PERIOD
+# the approval covers, and whether a TIME EXTENSION was granted -- plus, for the hard override,
+# whether any granted extension has been INCORPORATED INTO THE BASELINE, because an extension
+# granted but not incorporated leaves the milestone forecast late on the schedule in force.
+OAC_MINUTES_WEATHER_CONTRACT: dict[str, Any] = {
+    "structure_key": "weatherImpactEvents",
+    "required_for_the_allowance_arm": [
+        "weather_allowance_days   -- the allowance the contract calendar grants, in days",
+        "weather_days_approved    -- days approved by the owner in the OAC minutes",
+    ],
+    "required_beside_them": [
+        "weather_days_claimed     -- days claimed by the contractor",
+        "approval_period          -- the period the approval covers",
+        "approval_source          -- the minutes the approval is recorded in, and their date",
+        "time_extension_granted   -- whether a time extension was granted",
+    ],
+    "required_for_the_hard_override": [
+        "time_extension_days_granted",
+        "time_extension_incorporated_in_baseline",
+        "milestone_forecast_late  -- stated by the record; never inferred",
+        "milestone_class          -- contractual or owner_committed",
+    ],
+    "rule": ("the module reads the APPROVED figure. A claimed figure is never substituted for "
+             "an approved one, and a raw weather log is not a weather-day approval."),
+}
+
+
+def _approved_weather_days(structure: dict) -> dict[str, Any]:
+    """The owner-approved weather-day facts recorded in the OAC minutes, or None for each."""
+    def _n(field):
+        v = num(structure.get(field), None)
+        return float(v) if v is not None and math.isfinite(v) else None
+
+    def _b(field):
+        v = structure.get(field)
+        return None if v is None else bool(v)
+
+    return {
+        "weather_allowance_days": _n("weather_allowance_days"),
+        "weather_days_claimed": _n("weather_days_claimed"),
+        "weather_days_approved": _n("weather_days_approved"),
+        "approval_period": str(structure.get("approval_period") or "").strip() or None,
+        "approval_source": str(structure.get("approval_source") or "").strip() or None,
+        "time_extension_granted": _b("time_extension_granted"),
+        "time_extension_days_granted": _n("time_extension_days_granted"),
+        "time_extension_incorporated_in_baseline":
+            _b("time_extension_incorporated_in_baseline"),
+        "milestone_forecast_late": _b("milestone_forecast_late"),
+        "milestone_class": str(structure.get("milestone_class") or "").strip() or None,
+    }
+
+
+
 # =================================================================================================
 # 4.6 CHANGE ORDER FREQUENCY
 # =================================================================================================
-
 
 def change_frequency(structure: dict) -> dict[str, Any]:
     """
@@ -804,6 +871,25 @@ def change_frequency(structure: dict) -> dict[str, Any]:
 # 4.7 DISPUTE ESCALATION INDEX
 # =================================================================================================
 
+#: RUN 107. THE OWNER'S FOUR ESCALATION CLASSES, VERBATIM FROM THE ORDER, AND THE POSTURE EACH
+#: CARRIES. This is an ORDINAL ladder: event counts are never averaged and the posture is the
+#: highest documented OPEN stage. A project's own process names its stages whatever it names
+#: them; the process record says which of these four each stage is, and this platform never
+#: reads a stage name, a sentiment or a narrative tone to decide.
+DISPUTE_ESCALATION_CLASSES: dict[str, tuple[str, str]] = {
+    "normal_administration": (
+        "Green", "no open dispute; items resolved through normal project administration"),
+    "open_issue_or_reservation": (
+        "Yellow", "open issue, unresolved potential claim, or written reservation of rights"),
+    "formal_notice_or_escalation": (
+        "Amber", "formal notice of claim, disputed change or PCO, executive escalation, or "
+                 "unresolved mediation request"),
+    "legal_or_stoppage": (
+        "Red", "arbitration, litigation, termination or default process, formal work stoppage, "
+               "or a dispute preventing critical-path work"),
+}
+
+
 
 def dispute_escalation(structure: dict) -> dict[str, Any]:
     """
@@ -827,9 +913,25 @@ def dispute_escalation(structure: dict) -> dict[str, Any]:
     prov = _provenance(structure, words, "source", "process_id", "process_version")
     stages = _rows(structure, "process_stages", words)
     order: dict[str, int] = {}
+    stage_class: dict[str, str] = {}
     for s in stages:
         stage_id = _text(s, "stage_id", words)
         rank = _int(s, "rank", words)
+        # RUN 107. WHICH OF THE OWNER'S FOUR ESCALATION CLASSES THIS PROJECT'S OWN STAGE IS.
+        # THE PROCESS DECLARES IT; THE PLATFORM NEVER INFERS IT. The owner's order: "Use only
+        # source-record language -- correspondence, notice records, meeting minutes, formally
+        # logged PCO disputes. Never infer a stage from sentiment or narrative tone." A stage
+        # name is project language; the four classes are the owner's. Mapping one onto the
+        # other is a judgement, and it must be made by whoever governs the process, in the
+        # record, not by this function reading a stage name for keywords.
+        cls = str(s.get("escalation_class") or "").strip().lower()
+        if cls:
+            if cls not in DISPUTE_ESCALATION_CLASSES:
+                raise StructureAbsent(
+                    "The dispute process provided for this project places one of its stages in "
+                    "an escalation class this platform does not hold, so no posture is read "
+                    "from it.")
+            stage_class[stage_id] = cls
         if stage_id in order:
             raise StructureAbsent(
                 "The dispute process provided for this project names the same stage twice, so "
@@ -858,6 +960,17 @@ def dispute_escalation(structure: dict) -> dict[str, Any]:
             "claim_value": num(i.get("claim_value"), None),
             "evidence_source": _text(i, "evidence_source", words),
             "stage_history": history if isinstance(history, list) else [],
+            # RUN 107. THE POSTURE IS THE HIGHEST DOCUMENTED OPEN STAGE. An issue the register
+            # records as resolved is not an open dispute. Absent, an issue is OPEN: a register
+            # that does not say an item closed has not said it closed.
+            "resolved": bool(i.get("resolved")),
+            "escalation_class": stage_class.get(stage_id),
+            # The hard override's fact, and it must be STATED. Where no issue states it either
+            # way the override is NOT EVALUABLE on this register, which the module says rather
+            # than reading silence as the condition being absent.
+            "prevents_controlling_or_near_critical_progress":
+                (None if i.get("prevents_controlling_or_near_critical_progress") is None
+                 else bool(i.get("prevents_controlling_or_near_critical_progress"))),
             "unresolved_age_days": (as_of - _day(i, "raised_day", "raised_date", words)
                                     if as_of is not None else None),
         })
@@ -880,6 +993,9 @@ def dispute_escalation(structure: dict) -> dict[str, Any]:
         "total_claim_value": sum(p["claim_value"] for p in prepared
                                  if p["claim_value"] is not None),
         "max_unresolved_age_days": max(ages) if ages else None,
+        "open_issues": [p["issue_id"] for p in prepared if not p["resolved"]],
+        "escalation_classes_declared": bool(stage_class),
+        "stage_escalation_classes": dict(sorted(stage_class.items())),
         "source": prov["source"],
     }
 
@@ -971,9 +1087,193 @@ def subcontractor_performance(structure: dict) -> dict[str, Any]:
     }
 
 
+# -------------------------------------------------------------------------------------------
+# RUN 107. A4.8 MVP -- THE REPORTED RATING, NORMALISED. THIS IS NOT THE COMPOSITE ABOVE.
+#
+# THE OWNER'S RUN 107 RULING, AND IT IS DELIBERATELY NARROW. The four-factor composite is OUT OF
+# SCOPE. Nothing here extracts a per-firm schedule, quality, safety or commercial factor;
+# nothing here adjusts for critical or near-critical work; nothing here scores a trade from
+# requests, nonconformances, safety reports, change orders or field reports; there is no
+# "two Ambers make a Red" policy and no automatic default or termination reading. THE MODULE
+# READS ONE DOCUMENT -- the Subcontractor Performance Report -- AND NORMALISES THE RATING THAT
+# IS ALREADY IN IT.
+#
+# `subcontractor_performance` above is untouched and still computes the weighted composite where
+# a project supplies one. The two are DIFFERENT READINGS of the same structure and this run
+# BANDS ONLY THIS ONE, because this is the one the owner has given a ladder for.
+#
+# THE RATING IS NEVER INFERRED. Narrative text is not read. Another document is not read. A
+# firm whose record carries no mappable rating is NOT ASSESSED, and where the report states its
+# own scale that scale's documented mapping is used in place of the owner's default one.
+
+#: THE OWNER'S DEFAULT NORMALISATION, RUN 107, SECTION 2, A4.8. Label form and numeric form, and
+#: the numeric bands are the owner's own figures. Labels are matched case-insensitively on the
+#: report's own words after whitespace is squeezed; nothing else about the label is interpreted.
+SUBCONTRACTOR_RATING_LABELS: dict[str, str] = {
+    "exceptional": "Green",
+    "very good": "Green",
+    "satisfactory": "Yellow",
+    "marginal": "Amber",
+    "unsatisfactory": "Red",
+}
+
+#: The numeric arm of the same ladder, inclusive on its LOWER side: 90-100 Green, 80-89 Yellow,
+#: 70-79 Amber, below 70 Red. A score above 100 is out of the stated domain and is refused
+#: rather than clamped into Green, which is the direction a clamp would always fall.
+SUBCONTRACTOR_RATING_SCORE_BANDS: tuple[tuple[float, str], ...] = (
+    (90.0, "Green"), (80.0, "Yellow"), (70.0, "Amber"),
+)
+
+#: The scale types this normalisation recognises WITHOUT a mapping being supplied. A report on
+#: any other scale must state its own mapping; otherwise the firm is Not Assessed.
+RECOGNISED_RATING_SCALES: frozenset[str] = frozenset({
+    "cpars", "cpars_five_point", "owner_five_point_label", "percent_100", "score_100",
+})
+
+#: THE DOCUMENT CONTRACT, PRINTED HERE SO THE SHAPE IS IN THE CODE AND NOT ONLY IN A REPORT.
+SUBCONTRACTOR_REPORT_CONTRACT: dict[str, Any] = {
+    "structure_key": "subcontractorAssessments",
+    "record_field": "reported_ratings",
+    "required_on_the_record": ["report_date", "report_version", "rating_scale", "source"],
+    "required_per_firm": ["subcontractor_id", "assessment_period",
+                          "rating_label OR rating_score"],
+    "optional_per_firm": ["work_package", "assessor", "source_document_reference", "comments",
+                          "rating_scale", "scale_mapping"],
+    "eligibility": ("every firm record must carry identity, assessment period and a mappable "
+                    "rating; one that does not makes the module Not Assessed rather than "
+                    "reducing the population silently"),
+}
+
+
+def _normalise_rating(row: dict, scale: str, mapping: dict | None,
+                      words: str) -> tuple[str | None, str, str]:
+    """(band, the rule applied, the value read). band is None where nothing maps."""
+    label = str(row.get("rating_label") or "").strip()
+    score = num(row.get("rating_score"), None)
+    if mapping:
+        # RUNG 1: THE REPORT'S OWN DOCUMENTED MAPPING WINS. The owner's words are "Where the
+        # report states its own scale, use its documented mapping".
+        for key, band in mapping.items():
+            if label and str(key).strip().lower() == label.lower():
+                if band not in ("Green", "Yellow", "Amber", "Red"):
+                    raise StructureAbsent(
+                        f"The {words} provided for this project maps one of its own rating "
+                        f"labels onto a posture this platform does not use, so no reading is "
+                        f"normalised from it.")
+                return band, "the report's own documented scale mapping", label
+    if label:
+        band = SUBCONTRACTOR_RATING_LABELS.get(" ".join(label.lower().split()))
+        if band is not None:
+            return band, "the owner's Run 107 label ladder", label
+    if score is not None and math.isfinite(score):
+        if score < 0 or score > 100:
+            raise StructureAbsent(
+                f"The {words} provided for this project reports a rating score outside nought "
+                f"to one hundred, so it is not read as a rating and is not pulled back to the "
+                f"nearest score this ladder covers.")
+        for floor, band in SUBCONTRACTOR_RATING_SCORE_BANDS:
+            if score >= floor:
+                return band, "the owner's Run 107 numeric ladder", f"{score:g} out of 100"
+        return "Red", "the owner's Run 107 numeric ladder", f"{score:g} out of 100"
+    return None, "", label or ("" if score is None else f"{score:g}")
+
+
+def subcontractor_reported_ratings(structure: dict) -> dict[str, Any]:
+    """
+    The rating each firm's own performance report states, normalised onto the owner's ladder.
+
+    ORACLE (owner's Run 107 order, section 2, A4.8): "Exceptional or Very Good, or 90-100 ->
+    Green; Satisfactory, or 80-89 -> Yellow; Marginal, or 70-79 -> Amber; Unsatisfactory, or
+    below 70 -> Red." Across firms the MOST ADVERSE valid reported posture governs.
+
+    NOT ASSESSED, NOT GREEN, is the answer where the rating is absent or does not map. The
+    module is eligible only where EVERY firm record carries identity, period and a mappable
+    rating, which is the owner's own eligibility rule and is checked here rather than by the
+    module, so no caller can relax it.
+    """
+    words = V4_STRUCTURE_WORDS["A4.8"]
+    rows = structure.get("reported_ratings")
+    if not isinstance(rows, list) or not rows:
+        raise StructureAbsent(
+            "The subcontractor performance report provided for this project states no rating "
+            "for any firm, so nothing is normalised and no posture is read. A rating is never "
+            "inferred from narrative text or from another document.")
+    prov = _provenance(structure, words, "source", "report_date", "report_version",
+                       "rating_scale")
+    default_scale = str(prov["rating_scale"]).strip().lower()
+    default_mapping = structure.get("scale_mapping")
+    default_mapping = default_mapping if isinstance(default_mapping, dict) else None
+    if default_mapping is None and default_scale not in RECOGNISED_RATING_SCALES:
+        raise StructureAbsent(
+            "The subcontractor performance report provided for this project is on a rating "
+            "scale this platform does not recognise and states no mapping of its own, so its "
+            "ratings are not normalised and no posture is read from them.")
+    firms = []
+    for r in _rows(structure, "reported_ratings", words):
+        scale = str(r.get("rating_scale") or default_scale).strip().lower()
+        mapping = r.get("scale_mapping")
+        mapping = mapping if isinstance(mapping, dict) else default_mapping
+        band, rule, value = _normalise_rating(r, scale, mapping, words)
+        firm = {
+            "subcontractor_id": _text(r, "subcontractor_id", words),
+            "assessment_period": _text(r, "assessment_period", words),
+            "rating_scale": scale,
+            "reported_rating": value,
+            "rating_label": str(r.get("rating_label") or "").strip() or None,
+            "rating_score": num(r.get("rating_score"), None),
+            "normalised_posture": band,
+            "normalisation_rule": rule or None,
+            "work_package": str(r.get("work_package") or "").strip() or None,
+            "assessor": str(r.get("assessor") or "").strip() or None,
+            "source_document_reference": (
+                str(r.get("source_document_reference") or "").strip() or None),
+            "comments": str(r.get("comments") or "").strip() or None,
+        }
+        if band is None:
+            raise StructureAbsent(
+                f"The subcontractor performance report provided for this project states no "
+                f"mappable rating for {firm['subcontractor_id']}, so no posture is read for "
+                f"that firm and none is inferred from narrative text. The module is eligible "
+                f"only where every firm record carries a mappable rating.")
+        firms.append(firm)
+    _unique_ids(firms, "subcontractor_id", words)
+    order = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
+    governing = max(firms, key=lambda f: (order[f["normalised_posture"]],
+                                          f["subcontractor_id"]))
+    return {
+        "firms": firms,
+        "firm_count": len(firms),
+        "normalised_posture": governing["normalised_posture"],
+        "governing_subcontractor_id": governing["subcontractor_id"],
+        "governing_reported_rating": governing["reported_rating"],
+        "governing_normalisation_rule": governing["normalisation_rule"],
+        "normalisation_rule_version": "run107.subcontractor_reported_rating.v1",
+        "report_date": prov["report_date"],
+        "report_version": prov["report_version"],
+        "rating_scale": prov["rating_scale"],
+        "source": prov["source"],
+    }
+
+
 # =================================================================================================
 # 4.9 PROCUREMENT LEAD TIME MONITOR
 # =================================================================================================
+
+#: RUN 107. The two day bases a procurement register may state. `approved_calendar_working_days`
+#: is the one the owner's ladder is defined on; `calendar_days` is accepted and RECORDED, and
+#: the day-count arms of the band are then not evaluated rather than converted by a guess.
+PROCUREMENT_DAY_BASES: frozenset[str] = frozenset({
+    "approved_calendar_working_days", "calendar_days"})
+
+#: The criticality words a register may state for an item. `controlling` and `near_critical` are
+#: the two the owner's Yellow/Amber split turns on; `not_critical` is the explicit negative. An
+#: item stating anything else, or stating nothing this platform holds, is treated as CRITICALITY
+#: NOT STATED and the arms that need it are not evaluated for that item.
+PROCUREMENT_CRITICALITY_CONTROLLING: frozenset[str] = frozenset({
+    "controlling", "critical", "critical_path", "near_critical", "near-critical"})
+PROCUREMENT_CRITICALITY_NOT: frozenset[str] = frozenset({
+    "not_critical", "non_critical", "noncritical", "not critical"})
+
 
 
 def procurement_slack(structure: dict) -> dict[str, Any]:
@@ -992,6 +1292,18 @@ def procurement_slack(structure: dict) -> dict[str, Any]:
     """
     words = V4_STRUCTURE_WORDS["A4.9"]
     prov = _provenance(structure, words, "source")
+    # RUN 107. WHICH KIND OF DAY THE REGISTER'S DATES ARE COUNTED IN. The owner's order measures
+    # lateness "in approved-calendar working days". A day INDEX exported by a schedule tool is
+    # normally already on the project calendar; a CALENDAR DATE is not, and the difference
+    # between two calendar dates is calendar days. Nothing here converts one into the other: no
+    # approved calendar reaches this function, so a conversion would be a guess at which days
+    # are working days. The register STATES its basis, and where it does not, or states calendar
+    # days, the day-count band arms are not evaluated and the module says so.
+    day_basis = str(structure.get("day_basis") or "").strip().lower() or None
+    if day_basis is not None and day_basis not in PROCUREMENT_DAY_BASES:
+        raise StructureAbsent(
+            "The procurement register provided for this project counts its days on a basis "
+            "this platform does not hold, so no lateness in working days is read from it.")
     items = _rows(structure, "items", words)
     results = []
     for it in items:
@@ -1019,6 +1331,18 @@ def procurement_slack(structure: dict) -> dict[str, Any]:
             "status": _text(it, "procurement_status", words),
             "schedule_activity_id": _text(it, "schedule_activity_id", words),
             "forecast_uncertainty_days": num(it.get("forecast_uncertainty_days"), None),
+            # RUN 107. THE FACTS THE OWNER'S BAND AND ITS OVERRIDE NEED, EACH STATED BY THE
+            # REGISTER OR ABSENT. `long_lead` and `protection_date_missed` carry the override --
+            # the latest date that protects a contractual milestone is a product of the
+            # project's own schedule logic and no schedule reaches this function, so the
+            # register states whether it was missed rather than this code deriving it.
+            # `causes_required_milestone_late` is the Red arm of the ladder itself.
+            "long_lead": bool(it.get("long_lead")),
+            "protection_date_missed": (None if it.get("protection_date_missed") is None
+                                       else bool(it.get("protection_date_missed"))),
+            "causes_required_milestone_late": (
+                None if it.get("causes_required_milestone_late") is None
+                else bool(it.get("causes_required_milestone_late"))),
             "state": state,
         })
     _unique_ids(results, "item_id", words)
@@ -1033,6 +1357,7 @@ def procurement_slack(structure: dict) -> dict[str, Any]:
         "worst_item_id": worst["item_id"],
         "mean_slack_days": sum(r["slack_days"] for r in results) / len(results),
         "state_counts": states,
+        "day_basis": day_basis,
         "source": prov["source"],
     }
 

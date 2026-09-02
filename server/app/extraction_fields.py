@@ -90,6 +90,29 @@ ALL_FIELDS: tuple[str, ...] = (
     # inspection or on a re-inspection after rework, and those are different quantities. So a
     # field is added that says so on its face rather than reinterpreting one that does not.
     "items_passing_first_inspection", "critical_quality_failures_json",
+    # RUN 107, SECTION 2. TWO DOCUMENTS GAIN FIELDS, AND NEITHER IS A NEW DOCUMENT TYPE:
+    # `oac_minutes` and `subcontractor_report` both already exist.
+    #
+    # A4.5 WEATHER-DAY IMPACT. The owner's ruling: "A weather day is claimed by the contractor
+    # and approved by the owner, and that approval is recorded in OAC meeting minutes. The
+    # module reads the approved figure, not a weather log alone." The minutes already carried
+    # `weather_days_discussed`, which is a COUNT OF A CONVERSATION and is not an approval; it is
+    # left exactly as it is and is not reinterpreted, for the same reason `items_passed` was not
+    # reinterpreted as first-pass acceptance. What the band needs is stated on its face: the
+    # days CLAIMED, the days APPROVED, the PERIOD the approval covers, the ALLOWANCE the
+    # contract calendar grants, and whether a time extension was granted and for how long.
+    "weather_days_claimed", "weather_days_approved", "weather_approval_period",
+    "weather_allowance_days", "weather_time_extension_granted", "weather_time_extension_days",
+    #
+    # A4.8 SUBCONTRACTOR PERFORMANCE, MVP. The module reads ONE document and normalises the
+    # rating already in it. The report already carried `compliance_score`, a single opaque
+    # project-wide number with no firm, no period and no scale behind it; it is left as it is
+    # and is NOT read as a per-firm rating. A rating is per FIRM, so it is asked for as a TABLE
+    # -- the same decision `submittal_decisions_json` records -- carrying, per row, the firm,
+    # the assessment period, the rating label or numeric score, and the scale it is on. The
+    # scale, the report date and the report version are asked for once for the whole report.
+    "subcontractor_ratings_json", "subcontractor_rating_scale", "subcontractor_report_date",
+    "subcontractor_report_version",
     # RUN 106, SECTION 3. THE TWO OWNER-SUPPLIED BANDS NEED FIELDS THE CONTRACT DID NOT ASK FOR.
     #
     # A4.3 First-review submittal rejection is defined on submittals RECEIVING A FIRST REVIEW,
@@ -299,6 +322,11 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "outstanding_action_items", "subcontractor_disputes", "safety_incidents_discussed",
         "safety_actions_open", "environmental_issues_discussed", "quality_issues_discussed",
         "weather_days_discussed",
+        # RUN 107, SECTION 2. The owner-approved weather-day facts. See ALL_FIELDS for why
+        # `weather_days_discussed` is not reinterpreted as an approval.
+        "weather_days_claimed", "weather_days_approved", "weather_approval_period",
+        "weather_allowance_days", "weather_time_extension_granted",
+        "weather_time_extension_days",
     ],
     # THE LEGACY FALL-THROUGH IS OVER, and the two types have parted for different reasons.
     #
@@ -394,6 +422,11 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     ],
     "subcontractor_report": [
         "scheduled_deliveries", "on_time_deliveries", "compliance_score", "report_period",
+        # RUN 107, SECTION 2. The Subcontractor Performance Report's own per-firm ratings, as a
+        # TABLE. `compliance_score` is a single opaque number with no firm, no period and no
+        # scale behind it and is NOT read as a rating.
+        "subcontractor_ratings_json", "subcontractor_rating_scale", "subcontractor_report_date",
+        "subcontractor_report_version",
     ],
     "procurement_log": [
         "long_lead_items_total", "on_schedule", "at_risk", "delayed", "report_date",

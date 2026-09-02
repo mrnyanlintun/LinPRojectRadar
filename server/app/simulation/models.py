@@ -959,7 +959,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # No stored row is recomputed, migrated, deleted or rewritten, and NO MIGRATION IS ADDED. A row
 # carrying "Indeterminate" keeps it and remains valid under the stamp it was written with.
-SIMULATION_VERSION = "sim-2026.09-v52"
+SIMULATION_VERSION = "sim-2026.09-v53"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1024,6 +1024,18 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # supplied boundaries. THE STAMP IS MOVED AND THIS TUPLE IS APPENDED TO IN THE SAME EDIT. No
  # stored row is recomputed and none is touched.
  "sim-2026.09-v52",
+ # RUN 107: the eight thresholds. A1.5, A1.6, A1.9, A1.11, A4.5, A4.7, A4.8 and A4.9 band for
+ # the first time on the owner's supplied ladders, each on the most adverse component posture
+ # with hard overrides applied after component banding and a component with no denominator
+ # returning Not Assessed rather than Green. A4.8 becomes the narrow MVP -- the rating the
+ # Subcontractor Performance Report already states, normalised -- and an Amber or Red result is
+ # HELD `pending_pm_review`, a MODULE state and never a project status, until a Project Manager
+ # records one of the same five dispositions the Governance Decision card offers. A1.7 TCPI and
+ # A1.8 VAC return through `banded` and store their provenance and threshold source for the
+ # first time, and the decision brief's legacy fallback that concealed the gap is removed. THE
+ # STAMP IS MOVED AND THIS TUPLE IS APPENDED TO IN THE SAME EDIT. No stored row is recomputed
+ # and none is touched.
+ "sim-2026.09-v53",
 )
 
 

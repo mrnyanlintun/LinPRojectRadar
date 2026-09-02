@@ -29,14 +29,31 @@ from typing import Any, Callable
 from .canonical import StructureAbsent
 from .canonical_v3 import (
     bayesian_eac_model, budget_execution, cpi_reference_class, cpi_shrinkage,
-    earned_schedule, expenditure_baseline_to_date, identify_arima,
+    earned_schedule, expenditure_baseline_to_date, forecast_arima, identify_arima,
     independent_eac_reconciliation, kalman_state_space_model, require_v3_structure,
     time_phased_baseline,
 )
+from . import owner_bands as _OB
 from .models import (
     ABSTAIN_INSUFFICIENT_HISTORY, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
-    ABSTAIN_STRUCTURE_ABSENT, calibration_pending, check_inputs, insufficient,
+    ABSTAIN_STRUCTURE_ABSENT, PROVENANCE_CODIFIED, PROVENANCE_CONVENTION,
+    PROVENANCE_OWNER_CALIBRATED, THRESHOLD_SOURCE_EXTERNAL, THRESHOLD_SOURCE_OWNER,
+    band_abstained, banded, calibration_pending, check_inputs, insufficient,
 )
+
+#: RUN 107. The one basis sentence the owner's order attaches to every band in it, composed
+#: once so four modules cannot each write a slightly different one. The module names its own
+#: section; the tolerance identifier and the provenance claim are the same in all four.
+_RUN107_BASIS_ID = "owner_configured_construction_control_tolerance"
+
+
+def _run107_basis(section: str, numbers: str) -> str:
+    return (f"the owner's Run 107 order, {section}. The band basis identifier is "
+            f"`{_RUN107_BASIS_ID}`. OWNER-CALIBRATED: no published standard fixes {numbers}. "
+            f"They are a documented owner tolerance, stated as the owner's own decision and "
+            f"not presented as a construction standard. A stricter figure stated in a project "
+            f"document would take precedence, and none is stated by any document this project "
+            f"has uploaded")
 from .models_ext import _js_date_ms, _js_str, _money
 from .rng import clamp, js_round, num, round1
 
@@ -192,16 +209,45 @@ def run_arima_forecast(si: dict, rand: Callable[[], float], period_cutoff) -> di
         model = identify_arima(history)
     except StructureAbsent as absent:
         return insufficient("ARIMA_Forecast", absent.sentence, ABSTAIN_INSUFFICIENT_HISTORY)
+    # ------------------------------------------------- RUN 107. THREE PERIODS, WORST OF THREE.
+    # The owner's order: "Forecast CPI for the next three periods; band the worst of the three.
+    # ... A near-term Green does not offset a third-period Red." The three come from the SAME
+    # identified model recursed forward -- see `forecast_arima` -- not from three fits.
+    _path = forecast_arima(model, 3)
+    _bands = [_OB.descending(v, 0.95, 0.90, 0.85) for v in _path]
+    _worst = _OB.worst(_bands)
+    _worst_i = max(range(3), key=lambda i: _OB.BAND_ORDER.index(_bands[i]))
     order = f"({model['p']},{model['d']},{model['q']})"
     interval = ""
     if model.get("interval_low") is not None:
         interval = (f", with a 95 per cent prediction interval from "
                     f"{_js_str(_round3(model['interval_low']))} to "
                     f"{_js_str(_round3(model['interval_high']))}")
-    return calibration_pending(
+    return banded(
         "ARIMA_Forecast",
-        f"Cost performance forecast {_js_str(_round3(model['forecast']))} one period ahead "
-        f"from an identified {order} model over {model['history']} readings{interval}",
+        f"Cost performance is forecast at "
+        f"{', '.join(_js_str(_round3(v)) for v in _path)} over the next three periods from an "
+        f"identified {order} model over {model['history']} readings{interval}. The worst of the "
+        f"three is period {_worst_i + 1} at {_js_str(_round3(_path[_worst_i]))}.",
+        status_color=_worst,
+        boundary=(
+            "on the FORECAST cost performance index for each of the next three periods, with "
+            "the WORST OF THE THREE governing: at or above 0.95 is Green; at or above 0.90 and "
+            "below 0.95 is Yellow; at or above 0.85 and below 0.90 is Amber; below 0.85 is Red. "
+            "Each boundary is INCLUSIVE ON ITS LOWER SIDE and the direction is adverse "
+            "DOWNWARD. A NEAR-TERM GREEN DOES NOT OFFSET A THIRD-PERIOD RED: the three periods "
+            "are never averaged. Here the three forecasts band "
+            + ", ".join(f"period {i + 1} {b}" for i, b in enumerate(_bands)) + "."),
+        basis=_run107_basis("section 1, A1.5",
+                            "0.95, 0.90 and 0.85 on a forecast cost performance index"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id=_RUN107_BASIS_ID,
+        forecast_path=[_round3(v) for v in _path],
+        forecast_path_bands=_bands,
+        forecast_horizon=3,
+        band_governing_period=_worst_i + 1,
+        band_aggregation_rule="worst-of the three forecast periods",
         forecast_cpi=_round3(model["forecast"]),
         arima_p=model["p"], arima_d=model["d"], arima_q=model["q"],
         ar_coefficients=[_round3(v) for v in model["phi"]],
@@ -259,12 +305,90 @@ def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> d
             "Earned_Schedule",
             "The time phased baseline provided carries a figure that is not a number, so no "
             "schedule position is read from it.", ABSTAIN_MALFORMED_INPUT)
-    return calibration_pending(
-        "Earned_Schedule",
-        f"Earned schedule {_js_str(_round3(reading['earned_schedule']))} periods against "
-        f"{_js_str(_round3(reading['actual_time']))} elapsed, a time based schedule index of "
-        f"{_js_str(_round3(reading['spi_time']))} and a schedule variance of "
-        f"{_js_str(_round3(reading['schedule_variance_time']))} periods",
+    # ------------------------------------------------ RUN 107. TWO COMPONENTS, WORST-OF.
+    _comps = []
+    _spit = reading["spi_time"]
+    _comps.append(_OB.component(
+        "SPI(t) = ES / AT", value=_round3(_spit),
+        band=_OB.descending(_spit, 0.95, 0.90, 0.85),
+        boundary=("earned schedule divided by actual time: at or above 0.95 is Green; at or "
+                  "above 0.90 and below 0.95 is Yellow; at or above 0.85 and below 0.90 is "
+                  "Amber; below 0.85 is Red. Each boundary is INCLUSIVE ON ITS LOWER SIDE and "
+                  "the direction is adverse DOWNWARD.")))
+    # THE TIME-VARIANCE COMPONENT IS DEFINED IN WORKING DAYS AND THE CURVE IS IN PERIODS.
+    # SV(t) = ES - AT comes off the planned value curve in PERIODS. The owner's ladder divides
+    # it, in WORKING DAYS, by the remaining planned working duration. Converting periods to
+    # working days needs the approved calendar's working days per period, and no calendar
+    # reaches this module. Both figures are therefore read from the baseline structure or the
+    # component is NOT ASSESSED. Nothing is inferred and no period is assumed to be a month.
+    _wdpp = num(structure.get("working_days_per_period"), None)
+    _remaining = num(structure.get("remaining_planned_working_days"), None)
+    if _wdpp is not None and _wdpp > 0 and _remaining is not None and _remaining > 0:
+        _svt_days = reading["schedule_variance_time"] * float(_wdpp)
+        _late = max(0.0, -_svt_days)
+        _tv = _late / float(_remaining)
+        _comps.append(_OB.component(
+            "time variance share", value=round(_tv * 100, 2),
+            band=("Green" if _tv <= 0.02 else "Yellow" if _tv <= 0.05
+                  else "Amber" if _tv <= 0.10 else "Red"),
+            boundary=("the absolute schedule variance in working days -- SV(t) = ES - AT, "
+                      "converted on the approved calendar's working days per period -- divided "
+                      "by the remaining planned working duration: ON OR AHEAD OF SCHEDULE, or "
+                      "late by at or below 2 per cent, is Green; above 2 and at or below 5 per "
+                      "cent is Yellow; above 5 and at or below 10 per cent is Amber; above 10 "
+                      "per cent is Red. Each boundary is INCLUSIVE ON ITS UPPER SIDE. Being "
+                      "AHEAD is Green and is never banded as a variance.")))
+    else:
+        _comps.append(_OB.component(
+            "time variance share",
+            absent_reason=(
+                "This project's time-phased baseline does not state both the approved "
+                "calendar's working days per period and the remaining planned working "
+                "duration, so the schedule variance cannot be expressed in working days and "
+                "has no denominator. NOT ASSESSED. No calendar reaches this module, a period "
+                "is not assumed to be any particular number of working days, and no figure is "
+                "substituted.")))
+    _agg = _OB.aggregate(_comps)
+    _posture = _agg["band_posture_before_override"]
+    # THE HARD OVERRIDE. It needs an approved milestone with the period it is required by. The
+    # forecast period for a milestone planned at period m is m / SPI(t), the standard earned
+    # schedule projection; the milestone is late when that exceeds the period the milestone is
+    # REQUIRED by, as the baseline states it. Where the baseline declares no approved milestone
+    # the override is NOT EVALUABLE and this reading says so.
+    _milestones = structure.get("approved_milestones")
+    _milestones = _milestones if isinstance(_milestones, list) else []
+    _late_ms = []
+    for _m in _milestones:
+        if not isinstance(_m, dict):
+            continue
+        _pi = num(_m.get("planned_period_index"), None)
+        _ri = num(_m.get("required_period_index"), _pi)
+        if _pi is None or _ri is None or _spit <= 0:
+            continue
+        if (_pi / _spit) > _ri + 1e-9:
+            _late_ms.append({"milestone_id": str(_m.get("milestone_id") or ""),
+                             "milestone_class": str(_m.get("milestone_class") or ""),
+                             "planned_period_index": _pi,
+                             "required_period_index": _ri,
+                             "forecast_period_index": round(_pi / _spit, 3)})
+    _override = bool(_late_ms)
+    if _override:
+        _posture = _OB.at_least_as_adverse_as(_posture, "Red")
+    _override_words = (
+        "HARD OVERRIDE: Red when the Earned Schedule forecast shows an approved contractual, "
+        "turnover, owner-committed or required milestone late. A milestone planned at period m "
+        "is forecast at m divided by SPI(t), and it is late when that exceeds the period the "
+        "baseline states it is required by. ")
+    if not _milestones:
+        _override_words += ("This project's time-phased baseline declares no approved "
+                            "milestone, so the override was NOT EVALUABLE and its absence was "
+                            "not read as no milestone being late.")
+    elif _override:
+        _override_words += (f"It fired on "
+                            f"{', '.join(m['milestone_id'] for m in _late_ms)}.")
+    else:
+        _override_words += "No approved milestone forecasts late, so it did not fire."
+    _fields = dict(
         earned_schedule=_round3(reading["earned_schedule"]),
         spi_time=_round3(reading["spi_time"]),
         schedule_variance_time=_round3(reading["schedule_variance_time"]),
@@ -272,8 +396,90 @@ def run_earned_schedule(si: dict, rand: Callable[[], float], period_cutoff) -> d
         curve_periods=reading["periods"],
         baseline_version=baseline["baseline_version"],
         approval_source=baseline["approval_source"],
+        working_days_per_period=_wdpp,
+        remaining_planned_working_days=_remaining,
+        approved_milestones=_milestones,
+        milestones_forecast_late=_late_ms,
+        band_hard_override_fired=_override,
+        band_hard_override_evaluable=bool(_milestones),
         canonical_structure="time_phased_baseline",
-    )
+        **_agg)
+    _msg = (
+        f"Earned schedule {_js_str(_round3(reading['earned_schedule']))} periods against "
+        f"{_js_str(_round3(reading['actual_time']))} elapsed, a time based schedule index of "
+        f"{_js_str(_round3(reading['spi_time']))} and a schedule variance of "
+        f"{_js_str(_round3(reading['schedule_variance_time']))} periods")
+    if _posture is None:
+        return band_abstained("Earned_Schedule", _msg,
+                              reason="Not Assessed: no component could be formed.",
+                              band_basis_id=_RUN107_BASIS_ID, **_fields)
+    return banded(
+        "Earned_Schedule", _msg,
+        status_color=_posture,
+        boundary=(" ".join(c["boundary"] for c in _comps if c["boundary"])
+                  + " " + _agg["band_aggregation_words"] + " " + _override_words),
+        basis=_run107_basis("section 1, A1.6",
+                            "0.95, 0.90 and 0.85 on SPI(t), nor 2, 5 and 10 per cent on the "
+                            "time variance share"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id=_RUN107_BASIS_ID,
+        **_fields)
+
+
+
+
+
+# =============================================================================================
+# RUN 107, SECTION 3. THE PROVENANCE GAP ON A1.7 AND A1.8, AND ITS REPAIR.
+#
+# WHAT RUN 106 FOUND. These two are the only modules in service that BAND while storing no
+# `band_provenance_class` and no `threshold_source`. They returned a bare dict with a
+# `status_color` on it and never went through `models.banded`, which is the function that makes
+# a band and its provenance impossible to store apart. `decision_brief._boundary_and_basis` then
+# concealed it, falling back to `registry.BAND_SOURCES` and STAMPING "CODIFIED" onto a row that
+# recorded nothing, so the card read complete while the row was not. They carry Cost and EVM,
+# the heaviest weighted category.
+#
+# THE FIX IS TO THE STORAGE, WHICH IS WHAT THE ORDER ASKS FOR. Both now return through `banded`,
+# and the citation each already carried -- verbatim, from `registry.BAND_SOURCES`, unchanged --
+# is what is stored as the basis. NO BOUNDARY MOVES. NO CITATION IS REWRITTEN. The arithmetic,
+# the colours and the rendered sentence are byte-identical.
+#
+# THE TWO PROVENANCE CLASSES ARE NOT THE SAME, AND THAT IS WHY BOTH ARE WRITTEN. The split
+# `models.banded` provides for exactly this case is used rather than flattening it:
+#
+#   band_basis_provenance_class = CODIFIED. The MEASURE and its ANCHOR are fixed by a standards
+#   body: PMI defines TCPI as the efficiency the remaining work must achieve, and defines
+#   variance at completion as budget less forecast. 1.00 and 0 per cent are DEFINITIONAL
+#   boundaries of the metrics themselves, stated by the source.
+#
+#   band_boundary_provenance_class = CONVENTION. The SECOND boundary of each -- 1.10, and the
+#   -11.11 per cent that restates a cost index of 0.90 -- rests on Christensen and Heise's
+#   empirical 0.10 stability finding APPLIED BY INFERENCE. A journal study is a published basis,
+#   so this is not OWNER-CALIBRATED; it is not a standards clause fixing a band edge, so it is
+#   not CODIFIED. Comparing a required efficiency against the index stability finding is what
+#   defence earned-value practice does, which is what CONVENTION means in this vocabulary.
+#
+#   threshold_source = formal_external_basis, for both: the figures came from published
+#   instruments and a journal, not from a project document and not from the owner's default
+#   table. `THRESHOLD_SOURCES` is NOT widened; this is one of the three values it already holds.
+#
+# THIS CLASSIFICATION IS A JUDGEMENT AND IS FLAGGED AS ONE. The order says to record what can be
+# recorded; the boundary class above is the honest reading of a sourced-number-applied-by-
+# inference, and it is reported to the owner for a ruling rather than presented as settled.
+_EVM_BASIS_PROVENANCE = PROVENANCE_CODIFIED
+_EVM_BOUNDARY_PROVENANCE = PROVENANCE_CONVENTION
+_EVM_BOUNDARY_LIMIT = (
+    "The stated limit of this citation: the 0.10 cumulative cost index stability finding is "
+    "conditional on the project being past twenty per cent complete, and this measure does not "
+    "read percent complete, so that condition is not enforced.")
+
+
+def _evm_band_source(module_id: str) -> str:
+    """The Run 4 citation, read from its single source of truth rather than copied here."""
+    from .registry import BAND_SOURCES
+    return BAND_SOURCES[module_id]
 
 
 # ------------------------------------------------------------ A1.7 TCPI
@@ -408,16 +614,19 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
             else "above the efficiency planned" if tcpi <= _TCPI_BEYOND_OBSERVED
             else "beyond the improvement a cumulative cost index is observed to make")
     tcpi_display = _round3(tcpi)
-    return {
-        "method_class": "TCPI",
-        "status_color": color,
-        "tcpi": tcpi,
-        "tcpi_display": tcpi_display,
-        "evidence_metric": (
-            f"TCPI: {_js_str(tcpi_display)}, the cost efficiency the remaining work must achieve "
-            f"to finish within budget, {word}"
-        ),
-    }
+    return banded(
+        "TCPI",
+        (f"TCPI: {_js_str(tcpi_display)}, the cost efficiency the remaining work must achieve "
+         f"to finish within budget, {word}"),
+        status_color=color,
+        boundary=_evm_band_source("A1.7"),
+        basis=_evm_band_source("A1.7") + " " + _EVM_BOUNDARY_LIMIT,
+        provenance=_EVM_BASIS_PROVENANCE,
+        boundary_provenance=_EVM_BOUNDARY_PROVENANCE,
+        threshold_source=THRESHOLD_SOURCE_EXTERNAL,
+        tcpi=tcpi,
+        tcpi_display=tcpi_display,
+    )
 
 
 # ------------------------------------------------------------ A1.8 Variance at Completion
@@ -491,18 +700,21 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     # VOTING DIRECTION ARE UNCHANGED: negative is still a forecast overrun, the band edges are
     # the same two sourced boundaries, and the displayed sentence is byte-identical to what it
     # rendered before, because it was already built from the unrounded value.
-    return {
-        "method_class": "VAC",
-        "status_color": color,
-        "vac": vac,
-        "vac_pct": vac_pct,
-        "vac_display": int(js_round(vac)),
-        "vac_pct_display": round1(vac_pct),
-        "evidence_metric": (
-            f"VAC: {_money(abs(vac))} {'over' if vac < 0 else 'under'} budget "
-            f"({_js_str(round1(abs(vac_pct)))}%)"
-        ),
-    }
+    return banded(
+        "VAC",
+        (f"VAC: {_money(abs(vac))} {'over' if vac < 0 else 'under'} budget "
+         f"({_js_str(round1(abs(vac_pct)))}%)"),
+        status_color=color,
+        boundary=_evm_band_source("A1.8"),
+        basis=_evm_band_source("A1.8") + " " + _EVM_BOUNDARY_LIMIT,
+        provenance=_EVM_BASIS_PROVENANCE,
+        boundary_provenance=_EVM_BOUNDARY_PROVENANCE,
+        threshold_source=THRESHOLD_SOURCE_EXTERNAL,
+        vac=vac,
+        vac_pct=vac_pct,
+        vac_display=int(js_round(vac)),
+        vac_pct_display=round1(vac_pct),
+    )
 
 
 # ------------------------------------------------------------ A1.9 Budget Execution Rate
@@ -544,19 +756,91 @@ def run_budget_execution(si: dict, rand: Callable[[], float], period_cutoff) -> 
         reading = budget_execution(profile["expected_spend"], num(si.get("ac"), None))
     except StructureAbsent as absent:
         return insufficient("Budget_Execution_Rate", absent.sentence, ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
-        "Budget_Execution_Rate",
-        f"Spending is {_money(reading['actual_cost'])} against the "
-        f"{_money(reading['expected_spend'])} the approved expenditure baseline plans by this "
-        f"point, an execution ratio of {_js_str(_round3(reading['execution_ratio']))}",
+    # ---------------------------------------------- RUN 107. TWO COMPONENTS, WORST-OF.
+    #
+    # THE LADDER BANDS OVER-EXECUTION ONLY, AND THIS RUN CORRECTS RUN 106'S CENSUS, WHICH
+    # RECORDED THE QUANTITY AS TWO-SIDED. The owner's Run 107 order: "The owner's ladder bands
+    # over-execution only. Under-execution is not adverse here." A ratio well BELOW 1.05 is
+    # Green -- spending less than the approved profile plans is not banded as a fault by this
+    # measure, and the ladder's shape says so by construction rather than by a note.
+    _comps = []
+    _cum = reading["execution_ratio"]
+    _boundary_words = ("at or below 1.05 is Green; above 1.05 and at or below 1.10 is Yellow; "
+                       "above 1.10 and at or below 1.15 is Amber; above 1.15 is Red. Each "
+                       "boundary is INCLUSIVE ON ITS UPPER SIDE. OVER-EXECUTION ONLY: a ratio "
+                       "below 1.05, however far below, is Green, because under-execution is "
+                       "not adverse on this measure")
+    _comps.append(_OB.component(
+        "cumulative actual over cumulative planned", value=_round3(_cum),
+        band=_OB.ascending(_cum, 1.05, 1.10, 1.15),
+        boundary="cumulative actual divided by cumulative planned: " + _boundary_words + "."))
+    _pexp = profile.get("period_expected_spend")
+    _pact = num(structure.get("period_actual_cost"), None)
+    if _pexp is not None and _pexp > 0 and _pact is not None and _pact >= 0:
+        _pr = _pact / _pexp
+        _comps.append(_OB.component(
+            "this period's actual over this period's planned", value=_round3(_pr),
+            band=_OB.ascending(_pr, 1.05, 1.10, 1.15),
+            boundary="this period's actual divided by this period's planned: "
+                     + _boundary_words + "."))
+    else:
+        _comps.append(_OB.component(
+            "this period's actual over this period's planned",
+            absent_reason=(
+                "This project's approved expenditure baseline does not state the actual cost "
+                "incurred in this period beside the amount planned for it, so the period ratio "
+                "has no numerator. NOT ASSESSED. The cumulative actual is not divided by the "
+                "period plan and no period figure is inferred from the cumulative one.")))
+    _agg = _OB.aggregate(_comps)
+    _posture = _agg["band_posture_before_override"]
+    _limit = num(structure.get("approved_cumulative_funding_limit"), None)
+    if _limit is None:
+        _limit = num(structure.get("approved_cash_flow_limit"), None)
+    _override = _limit is not None and _limit > 0 and reading["actual_cost"] > _limit
+    if _override:
+        _posture = _OB.at_least_as_adverse_as(_posture, "Red")
+    _override_words = (
+        "HARD OVERRIDE: Red if actual expenditure exceeds the approved cumulative funding or "
+        "cash-flow limit for the reporting date. ")
+    _override_words += (
+        "This project's expenditure baseline states no approved cumulative funding or cash-flow "
+        "limit, so the override was NOT EVALUABLE and its absence was not read as the limit "
+        "being met." if _limit is None
+        else "It fired: actual expenditure is above the stated limit." if _override
+        else "Actual expenditure is at or below the stated limit, so it did not fire.")
+    _fields = dict(
         execution_ratio=_round3(reading["execution_ratio"]),
         execution_deviation=_round3(reading["execution_deviation"]),
         expected_spend=reading["expected_spend"],
         actual_cost=reading["actual_cost"],
+        period_expected_spend=_pexp,
+        period_actual_cost=_pact,
+        approved_cumulative_funding_limit=_limit,
         baseline_version=profile["baseline_version"],
         approval_source=profile["approval_source"],
+        band_hard_override_fired=_override,
+        band_hard_override_evaluable=_limit is not None,
+        band_direction_note=("this ladder bands OVER-execution only; under-execution is not "
+                             "adverse on this measure and is Green"),
         canonical_structure="expenditure_baseline",
-    )
+        **_agg)
+    _msg = (
+        f"Spending is {_money(reading['actual_cost'])} against the "
+        f"{_money(reading['expected_spend'])} the approved expenditure baseline plans by this "
+        f"point, an execution ratio of {_js_str(_round3(reading['execution_ratio']))}")
+    return banded(
+        "Budget_Execution_Rate", _msg,
+        status_color=_posture,
+        boundary=(" ".join(c["boundary"] for c in _comps if c["boundary"])
+                  + " " + _agg["band_aggregation_words"] + " " + _override_words),
+        basis=_run107_basis("section 1, A1.9",
+                            "1.05, 1.10 and 1.15 on a budget execution ratio"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id=_RUN107_BASIS_ID,
+        **_fields)
+
+
 
 
 # ------------------------------------------------------------ A1.10 CPI Shrinkage Forecast
@@ -651,20 +935,101 @@ def run_independent_eac_reconciliation(si: dict, rand: Callable[[], float],
     except StructureAbsent as absent:
         return insufficient("Independent_EAC_Reconciliation", absent.sentence,
                             ABSTAIN_STRUCTURE_ABSENT)
-    return calibration_pending(
-        "Independent_EAC_Reconciliation",
-        f"The independent forecast of {_money(reading['independent_eac'])} stands at "
-        f"{_js_str(_round3(reading['ier']))} times the management forecast of "
-        f"{_money(reading['management_eac'])}, a divergence of "
-        f"{_js_str(round1(reading['divergence'] * 100))} per cent",
+    # ---------------------------------------------- RUN 107. TWO COMPONENTS, WORST-OF.
+    _bac = num(si.get("bac"), None)
+    _comps = []
+    _ladder = ("at or below 3 per cent is Green; above 3 and at or below 5 is Yellow; above 5 "
+               "and at or below 10 is Amber; above 10 is Red. Each boundary is INCLUSIVE ON "
+               "ITS UPPER SIDE")
+    _higher = max(reading["management_eac"], reading["independent_eac"])
+    if _bac is not None and _bac > 0:
+        _spread = abs(reading["independent_eac"] - reading["management_eac"]) / float(_bac)
+        _comps.append(_OB.component(
+            "spread between the two forecasts", value=round(_spread * 100, 2),
+            band=_OB.ascending(_spread * 100, 3.0, 5.0, 10.0),
+            boundary=("the absolute difference between the independent and the control "
+                      "forecast, divided by the budget at completion: " + _ladder + ".")))
+        _over = max(0.0, (_higher - float(_bac)) / float(_bac))
+        _comps.append(_OB.component(
+            "higher forecast above budget at completion", value=round(_over * 100, 2),
+            band=_OB.ascending(_over * 100, 3.0, 5.0, 10.0),
+            boundary=("the higher of the two forecasts less the budget at completion, divided "
+                      "by the budget at completion, on the SAME ladder: " + _ladder + ". A "
+                      "higher forecast at or below the budget is nought per cent above it and "
+                      "is Green; the quantity is never negative.")))
+    else:
+        _absent = ("The budget at completion has not been reported for this period, and both of "
+                   "the owner's components are measured against it, so neither has a "
+                   "denominator. NOT ASSESSED. Neither forecast is used as a denominator in "
+                   "its place.")
+        _comps.append(_OB.component("spread between the two forecasts", absent_reason=_absent))
+        _comps.append(_OB.component("higher forecast above budget at completion",
+                                    absent_reason=_absent))
+    _agg = _OB.aggregate(_comps)
+    _posture = _agg["band_posture_before_override"]
+    # THE HARD OVERRIDE: the higher forecast exceeds BAC and remaining approved contingency
+    # cannot cover the gap. Both facts must be present; the contingency figure is the project's
+    # own reported remaining contingency and is not inferred from the original one.
+    _cont = num(si.get("remainingContingency"), None)
+    _gap = (_higher - float(_bac)) if _bac is not None and _bac > 0 else None
+    _override = (_gap is not None and _gap > 0 and _cont is not None and _cont < _gap)
+    if _override:
+        _posture = _OB.at_least_as_adverse_as(_posture, "Red")
+    _override_words = (
+        "HARD OVERRIDE: Red if the higher forecast exceeds the budget at completion and the "
+        "remaining approved contingency cannot cover the gap. ")
+    if _gap is None:
+        _override_words += ("No budget at completion was reported, so the override was NOT "
+                            "EVALUABLE.")
+    elif _gap <= 0:
+        _override_words += "The higher forecast does not exceed the budget, so it did not fire."
+    elif _cont is None:
+        _override_words += ("The higher forecast exceeds the budget but no remaining approved "
+                            "contingency was reported, so the override was NOT EVALUABLE and "
+                            "an unreported contingency was not treated as sufficient.")
+    elif _override:
+        _override_words += "It fired: the remaining contingency is smaller than the gap."
+    else:
+        _override_words += "The remaining contingency covers the gap, so it did not fire."
+    _fields = dict(
         ier=_round3(reading["ier"]),
         divergence=_round3(reading["divergence"]),
         management_eac=reading["management_eac"],
         independent_eac=reading["independent_eac"],
         management_lineage=reading["management_lineage"],
         independent_lineage=reading["independent_lineage"],
+        bac=_bac,
+        higher_eac=_higher,
+        eac_gap_above_bac=_gap,
+        remaining_contingency=_cont,
+        band_hard_override_fired=_override,
+        band_hard_override_evaluable=(_gap is not None and (_gap <= 0 or _cont is not None)),
         canonical_structure="independent_eac_pair",
-    )
+        **_agg)
+    _msg = (
+        f"The independent forecast of {_money(reading['independent_eac'])} stands at "
+        f"{_js_str(_round3(reading['ier']))} times the management forecast of "
+        f"{_money(reading['management_eac'])}, a divergence of "
+        f"{_js_str(round1(reading['divergence'] * 100))} per cent")
+    if _posture is None:
+        return band_abstained(
+            "Independent_EAC_Reconciliation", _msg,
+            reason=("Not Assessed. " + _comps[0]["not_assessed_reason"]),
+            band_basis_id=_RUN107_BASIS_ID, **_fields)
+    return banded(
+        "Independent_EAC_Reconciliation", _msg,
+        status_color=_posture,
+        boundary=(" ".join(c["boundary"] for c in _comps if c["boundary"])
+                  + " " + _agg["band_aggregation_words"] + " " + _override_words),
+        basis=_run107_basis("section 1, A1.11",
+                            "3, 5 and 10 per cent on either an estimate spread or a forecast "
+                            "overrun above budget"),
+        provenance=PROVENANCE_OWNER_CALIBRATED,
+        threshold_source=THRESHOLD_SOURCE_OWNER,
+        band_basis_id=_RUN107_BASIS_ID,
+        **_fields)
+
+
 
 
 A1_EXTENSIONS: dict[str, tuple[str, Callable]] = {

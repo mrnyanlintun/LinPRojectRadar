@@ -2539,6 +2539,20 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
     if _supplied:
         si["projectDataStructures"] = _supplied
 
+    # RUN 107. THE RECORDED PM REVIEWS, MERGED HERE AND NOWHERE ELSE.
+    #
+    # A module reads `si` and nothing else. A Project Manager's review of a held reading lives
+    # in the append-only `audit_events` table -- it is a human act with an identity, a server
+    # timestamp and a rationale, and it must survive the recomputation that rewrites
+    # `module_results` -- so this is the one place it reaches a computation.
+    #
+    # PERIOD-SCOPED, so a review recorded against one period cannot resolve another period's
+    # reading. THE KEY IS ABSENT WHERE NOTHING WAS RECORDED, so a project with no review stores
+    # exactly the record it stored before this existed and no module sees a new empty key.
+    _reviews = latest_module_reviews(session, project, period)
+    if _reviews:
+        si["moduleReviews"] = _reviews
+
     # RUN 29, A4.1 DOCUMENT RISK SCORE: THE GOVERNED EVIDENCE OUTRANKS THE OPAQUE SCALAR.
     #
     # The supplied contract for A4.1 states that there is no universal scalar document risk score
@@ -4837,6 +4851,180 @@ def a_projectdecisions(session: Session, payload: dict, secret: str,
     }
 
 
+# =============================================================================================
+# RUN 107. THE PM REVIEW OF A HELD MODULE READING -- ONE APPEND-ONLY WRITE, ONE READ-BACK.
+#
+# WHY NO MIGRATION WAS ADDED, AND WHY THIS IS NOT A KEY ON `module_results`. A PM disposition is
+# a HUMAN ACT with an identity, a server timestamp and a rationale, and it must survive
+# recomputation. `computed_results.module_results` is rewritten every time the project is
+# recomputed, so a disposition stored there would be erased by the next compute. `audit_events`
+# is the append-only table where every participant decision this platform holds already lives,
+# its `event_metadata` is an existing JSON column, and rows in it are never rewritten. So the
+# review is stored exactly the way `a_projectdecisionrecord` stores a Governance Decision -- one
+# audit row -- and NO SCHEMA CHANGE WAS NEEDED.
+#
+# THE VOCABULARY IS NOT A SECOND ONE. `research_decision.PROJECT_DECISION_DISPOSITIONS` is the
+# same five the Governance Decision card offers, imported rather than restated, and
+# `simulation.pm_review.DISPOSITION_EFFECT` is keyed on exactly those five codes.
+def a_projectmodulereview(session: Session, payload: dict, secret: str,
+                          ttl: int) -> dict[str, Any]:
+    """
+    Record ONE Project Manager review of one module reading held for review.
+
+    RATIONALE IS REQUIRED FOR `modify` AND `reject`, because the owner's Run 107 order states it
+    in those words for Modify finding and Override finding. It is not required for the other
+    three, matching `a_projectdecisionrecord`, which requires none.
+
+    THE PLATFORM'S OWN MAPPED POSTURE IS READ FROM THE STORED ROW, never accepted from the
+    client, so the audit row cannot claim a normalisation the platform never made. The source
+    rating and its document identity and version are read from the same row for the same reason.
+    """
+    from .research_decision import PROJECT_DECISION_DISPOSITIONS
+    from .simulation.pm_review import DISPOSITION_EFFECT
+
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectmodulereview")
+    if problem:
+        return problem
+
+    module_id = str(payload.get("moduleId") or payload.get("module_id") or "").strip()
+    if not module_id:
+        return err("moduleId is required")
+    allowed = [c for c, _ in PROJECT_DECISION_DISPOSITIONS]
+    disposition = str(payload.get("disposition") or "").strip()
+    if disposition not in allowed:
+        return err("disposition must be one of: " + ", ".join(allowed))
+    effect = DISPOSITION_EFFECT[disposition]
+
+    rationale = payload.get("rationale")
+    rationale = str(rationale).strip() if rationale is not None else None
+    if effect["requires_rationale"] and not rationale:
+        return err(f"a rationale is required for the disposition '{effect['label']}'")
+
+    pm_posture = payload.get("pmPosture", payload.get("pm_posture"))
+    pm_posture = str(pm_posture).strip() if pm_posture else None
+    if pm_posture is not None and pm_posture not in ("Green", "Yellow", "Amber", "Red"):
+        return err("pmPosture must be one of: Green, Yellow, Amber, Red")
+    if effect["takes_pm_posture"] and pm_posture is None and not effect.get(
+            "allows_not_assessed"):
+        return err(f"the disposition '{effect['label']}' requires a posture")
+
+    period = payload.get("period")
+    try:
+        period = int(period) if period is not None else None
+    except (TypeError, ValueError):
+        return err("period must be a whole number")
+
+    # THE PLATFORM'S OWN MAPPING, READ OFF THE STORED ROW. A review recorded against a reading
+    # the platform never produced is refused rather than stored against nothing.
+    result = _live_result(session, project, period) if period is not None else None
+    stored = None
+    if result is not None:
+        for m in (result.module_results or []):
+            if isinstance(m, dict) and m.get("module_id") == module_id:
+                stored = m
+                break
+    if stored is None:
+        return err(f"no reading for {module_id} is stored for period {period} on this project, "
+                   f"so there is nothing to review")
+
+    event = AuditEvent(
+        participant_id=caller.participant_id,
+        event_type="module_review_recorded",
+        event_metadata={
+            "project_id": project.legacy_id,
+            "period": period,
+            "module_id": module_id,
+            "disposition": disposition,
+            "disposition_label": effect["label"],
+            "pm_posture": pm_posture,
+            "rationale": rationale,
+            "evidence_references": payload.get("evidenceReferences",
+                                               payload.get("evidence_references")),
+            "recorded_by": caller.participant_id,
+            # PRESERVED VERBATIM, NEVER ALTERED OR ERASED: what the platform mapped, from what
+            # source rating, on which document and version.
+            "platform_mapped_posture": stored.get("normalised_posture"),
+            "source_rating": stored.get("governing_reported_rating"),
+            "source_document_id": stored.get("source"),
+            "source_document_version": stored.get("report_version"),
+            "normalisation_rule": stored.get("normalisation_rule"),
+            "normalisation_rule_version": stored.get("normalisation_rule_version"),
+        },
+    )
+    session.add(event)
+    session.flush()
+    recorded_at = event.server_ts
+    session.commit()
+    return {
+        "ok": True, "project_id": project.legacy_id, "module_id": module_id,
+        "event_id": event.event_id, "disposition": disposition,
+        "disposition_label": effect["label"], "pm_posture": pm_posture,
+        "period": period, "rationale": rationale,
+        "platform_mapped_posture": stored.get("normalised_posture"),
+        "recorded_at": recorded_at.isoformat() if recorded_at else None,
+        "recompute_required": True,
+        "recompute_words": ("the reading is republished when the project's signals are "
+                            "generated again; nothing here rewrites a stored result"),
+        "server_time": now_iso(),
+    }
+
+
+def a_projectmodulereviews(session: Session, payload: dict, secret: str,
+                           ttl: int) -> dict[str, Any]:
+    """READS ONLY. The module reviews recorded on this project, out of the append-only table."""
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectmodulereviews")
+    if problem:
+        return problem
+    return {"ok": True, "project_id": project.legacy_id,
+            "reviews": _module_reviews_for(session, project, payload.get("period")),
+            "server_time": now_iso()}
+
+
+def _module_reviews_for(session: Session, project: Project,
+                        period: Any) -> list[dict[str, Any]]:
+    """Every recorded module review for this project, newest first. Filtered in Python on the
+    JSON metadata for the reason `a_projectdecisions` states: it is a portable JSON column and
+    this platform runs on both SQLite and Postgres."""
+    try:
+        period = int(period) if period is not None else None
+    except (TypeError, ValueError):
+        period = None
+    rows = session.scalars(
+        select(AuditEvent).where(AuditEvent.event_type == "module_review_recorded")
+        .order_by(AuditEvent.server_ts.desc())
+    ).all()
+    out = []
+    for r in rows:
+        m = r.event_metadata or {}
+        if m.get("project_id") != project.legacy_id:
+            continue
+        if period is not None and m.get("period") != period:
+            continue
+        out.append({**m, "event_id": r.event_id,
+                    "recorded_at": r.server_ts.isoformat() if r.server_ts else None})
+    return out
+
+
+def latest_module_reviews(session: Session, project: Project, period: Any) -> dict[str, dict]:
+    """module_id -> the MOST RECENT review recorded for that module in this period.
+
+    Append-only means a module may carry several reviews; the latest is the one in force, and
+    the earlier ones stay in the table exactly as written. Nothing is deleted or overwritten.
+    """
+    latest: dict[str, dict] = {}
+    for row in _module_reviews_for(session, project, period):
+        mid = row.get("module_id")
+        if mid and mid not in latest:  # rows arrive newest first
+            latest[mid] = row
+    return latest
+
+
 DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectupload": a_projectupload,
     # The calendar picker's read-only preview: a date in, the period it names out. Same rule the
@@ -4867,4 +5055,8 @@ DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     # a recorded disposition, and the read-back that proves it landed.
     "projectdecisionrecord": a_projectdecisionrecord,
     "projectdecisions": a_projectdecisions,
+    # RUN 107. The Project Manager's review of a module reading held pending review, and the
+    # read-back that proves it landed. Append-only audit rows; no migration.
+    "projectmodulereview": a_projectmodulereview,
+    "projectmodulereviews": a_projectmodulereviews,
 }

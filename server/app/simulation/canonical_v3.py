@@ -671,6 +671,7 @@ def identify_arima(series: Sequence[float], max_p: int = 2, max_q: int = 1,
                 "aicc": float("-inf"), "n": len(work), "constant_series": True,
                 "residual_acf1": 0.0, "ljung_box_lag1": 0.0,
                 "sigma2": 0.0, "history": len(values),
+                "w": list(work), "residuals": [], "level_last": values[-1],
                 "forecast": values[-1] + (work[0] if d == 1 else 0.0)}
 
     best: dict[str, Any] | None = None
@@ -720,8 +721,58 @@ def identify_arima(series: Sequence[float], max_p: int = 2, max_q: int = 1,
             "c": best["c"], "aicc": best["aicc"], "n": n, "constant_series": False,
             "residual_acf1": r1, "ljung_box_lag1": ljung, "sigma2": sigma2,
             "history": len(values), "forecast": forecast,
+            # RUN 107. What `forecast_arima` needs to project the SAME model further forward:
+            # the working (possibly differenced) series, its residuals, and the last level the
+            # differences integrate back onto.
+            "w": list(best["w"]), "residuals": list(residuals), "level_last": values[-1],
             "interval_low": forecast - half, "interval_high": forecast + half,
             "interval_mass": 0.95}
+
+
+def forecast_arima(model: dict, horizon: int = 3) -> list[float]:
+    """
+    RUN 107. THE NEXT `horizon` PERIODS FROM AN ALREADY-IDENTIFIED MODEL.
+
+    `identify_arima` returns the one-step forecast because that is all any caller needed until
+    the owner's Run 107 order asked for three periods and the worst of the three. This recurses
+    the SAME identified model -- the same p, d, q, the same coefficients, the same residuals --
+    rather than re-identifying at each step, which is the standard multi-step form:
+
+        w_hat(t+h) = c + sum_i phi_i * w(t+h-i) + sum_j theta_j * e(t+h-j)
+
+    where a future w is its own forecast and a FUTURE ERROR IS ZERO, because the expectation of
+    an unobserved innovation is zero. Where d = 1 the differences are integrated back onto the
+    level. NO NEW THRESHOLD AND NO NEW ESTIMATOR IS INTRODUCED: this is the identified model
+    projected forward, and a caller wanting one period gets exactly what it got before.
+
+    A constant series forecasts its own constant at every horizon, which is what a drift-free
+    random walk or a constant mean says about every future period, not just the next one.
+    """
+    if horizon < 1:
+        return []
+    if model.get("constant_series"):
+        return [float(model["forecast"])] * horizon
+    p, q, d = model["p"], model["q"], model["d"]
+    phi, theta = list(model["phi"]), list(model["theta"])
+    c = model["c"]
+    w = list(model.get("w") or [])
+    e = list(model.get("residuals") or [])
+    level = float(model["level_last"])
+    out: list[float] = []
+    for _h in range(horizon):
+        w_hat = c
+        for i in range(p):
+            w_hat += phi[i] * (w[-1 - i] if len(w) > i else 0.0)
+        for j in range(q):
+            w_hat += theta[j] * (e[-1 - j] if len(e) > j else 0.0)
+        w.append(w_hat)
+        e.append(0.0)      # a future innovation has expectation zero
+        if d == 1:
+            level = level + w_hat
+            out.append(level)
+        else:
+            out.append(w_hat)
+    return out
 
 
 def _fit_arma(w: Sequence[float], p: int, q: int) -> dict[str, Any] | None:
@@ -865,7 +916,22 @@ def expenditure_baseline_to_date(structure: dict, period_index: float) -> dict[s
         raise StructureAbsent(
             "The approved expenditure baseline provided does not reach the period being "
             "reported, so it states no amount planned to have been spent by this point.")
-    return {"expected_spend": at, "periods": len(ordered), **meta}
+    # RUN 107. THIS PERIOD'S OWN PLANNED SPEND, for the owner's second component -- this
+    # period's actual over this period's planned. It is the DIFFERENCE between the cumulative
+    # figure at the status period and the cumulative figure at the period before it, which is
+    # the only place a period amount exists in a cumulative profile. Where the status period is
+    # the FIRST on the profile there is no earlier cumulative figure, so the period amount is
+    # the cumulative one; where the profile skips the status period the two figures read the
+    # same row and the difference is zero, which is reported as absent rather than as a
+    # denominator of nought.
+    prior = None
+    for row in ordered:
+        if _f(row, "period_index", words) < period_index:
+            prior = _f(row, "expected_spend", words)
+    period_expected = at - prior if prior is not None else at
+    return {"expected_spend": at, "periods": len(ordered),
+            "period_expected_spend": (period_expected if period_expected > 0 else None),
+            **meta}
 
 
 # ------------------------------------------------------------ 1.10 CPI Shrinkage Forecast
