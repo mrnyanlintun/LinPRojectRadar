@@ -71,8 +71,8 @@ from typing import Any
 
 from .extraction_fields import UNMAPPED, canonical_doc_type, is_mapped
 from .field_registry import (
-    DELTA, EVENT, FIELD_KINDS, IDENTITY_FIELDS, NEEDS, PERMANENT, SNAPSHOT, UNEMITTABLE_FIELDS,
-    writer_tier,
+    DELTA, EVENT, FIELD_KINDS, IDENTITY_FIELDS, NEEDS, PERMANENT, RAW, SNAPSHOT,
+    UNEMITTABLE_FIELDS, is_raw_field, raw_field_name, writer_tier,
 )
 
 __all__ = [
@@ -1002,6 +1002,42 @@ def emit_observations(doc: dict) -> list[dict]:
                            / _coerce_numeric(ex.get("scheduled_deliveries")))
         if comp is not None:
             emit("subcontractorComplianceScore", comp)
+
+    # ------------------------------------------------------- RUN 110, SECTION 2.1: EVIDENCE
+    #
+    # EVERY EXTRACTED VALUE BECOMES EVIDENCE, INCLUDING THE ONES NO REGISTRY DECLARES.
+    #
+    # Everything above this line is the DECLARED vocabulary: a fixed map from a document type's
+    # key to a `signalInputs` field, gated a second time by `field_registry.FIELD_KINDS`. A
+    # value the model extracted and the document stated, for which no such mapping exists, was
+    # simply dropped -- not refused, not reported, dropped. Run 110 measured seventy-four such
+    # (document type, key) pairs on a twenty-one document fixture, among them the six weather
+    # fields Run 107 added to `oac_minutes` for A4.5 and the four rating fields it added to
+    # `subcontractor_report` for A4.8. Both sets reached `documents.extraction` and stopped.
+    #
+    # From here every key in the extraction is ALSO emitted verbatim, as a RAW row carrying the
+    # four things the owner's ruling names: WHICH DOCUMENT (document_id, sha256, doc_type),
+    # WHICH PERIOD (the caller's, at persistence), WHAT THE DOCUMENT CALLED IT (the label, kept
+    # exactly as extracted) and THE VALUE (untouched -- not coerced, not rounded, not renamed).
+    #
+    # IT IS ADDITIVE AND IT CHANGES NO READING. A RAW row's field name is
+    # `evidence:<doc_type>:<label>`, which contains a colon and therefore cannot equal any name
+    # in `field_registry.ALL_SI_FIELDS`; `select_signal_inputs` iterates `_KEY_ORDER` and so
+    # cannot select one. Every declared emission above is untouched, and a key that WAS consumed
+    # above is deliberately still transcribed here rather than skipped: "what the document said"
+    # and "what the platform made of it" are two different records, and keeping the first
+    # complete is what makes the second checkable.
+    #
+    # WHAT IT IS NOT. It is not a matching layer and it does not serve a module. Nothing here
+    # decides that `weather_days_approved` is the quantity A4.5 asks for. That recognition is
+    # the model-driven step of the owner's ruling, and it is NOT built: there is no model key in
+    # this environment. This is the evidence the step would read, and nothing more.
+    for label in sorted(ex):
+        if is_raw_field(str(label)):
+            continue          # cannot happen from an extraction; refuses a doubly-prefixed name
+        out.append({**base, "field": raw_field_name(doc_type, str(label)),
+                    "value": ex[label], "kind": RAW, "tier": None, "as_of": as_of,
+                    "entity_key": "", "entity_state": None})
 
     return out
 

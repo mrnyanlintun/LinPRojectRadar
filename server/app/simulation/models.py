@@ -959,7 +959,23 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # No stored row is recomputed, migrated, deleted or rewritten, and NO MIGRATION IS ADDED. A row
 # carrying "Indeterminate" keeps it and remains valid under the stamp it was written with.
-SIMULATION_VERSION = "sim-2026.09-v54"
+# RUN 110. TWO CHANGES REACH COMPUTATION, AND NEITHER MOVES A BOUNDARY.
+#
+# 1. THE GENERAL GUARD (order section 2.5). A module that raises during `registry.run_all` is
+#    now recorded as a FAILED READING carrying `module_failed`, the exception type and message,
+#    and the reason code `module_execution_failed`. Before this, one module's exception escaped
+#    `run_module` and 500-ed the whole compute route, so NOTHING computed and no result row was
+#    stored for that project. No figure is substituted for a failed module and no band is
+#    asserted for one.
+# 2. RAW EVIDENCE (order section 2.1). Every value an extraction returns is now stored as an
+#    observation carrying its document, period, label and value, including values no registry
+#    declares. RAW rows are not selected into `signalInputs` and no module reads one, so no
+#    reading changes because of them; the stamp moves because the evidence store's contents
+#    changed and a row must say which store it was computed against.
+#
+# NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
+# them -- there is no model key in this environment and none was simulated.
+SIMULATION_VERSION = "sim-2026.09-v55"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1041,6 +1057,9 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # with them. The project working calendar reaches the analytical layer for the first time and
  # A1.6, A4.9 and A4.5 count working days through ONE shared conversion function.
  "sim-2026.09-v54",
+ # RUN 110. The general guard: a module's exception becomes a failed reading rather than a dead
+ # compute route. Every extracted value becomes evidence, including values no registry declares.
+ "sim-2026.09-v55",
 )
 
 

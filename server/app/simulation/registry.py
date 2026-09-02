@@ -13,7 +13,9 @@ signal array that nobody notices is the same failure wearing a quieter coat.
 from __future__ import annotations
 
 import csv
+import logging
 import pathlib
+import traceback
 from typing import Any, Callable
 
 from .parameters import (  # noqa: F401
@@ -29,6 +31,15 @@ from .signal_package import (
     ADAPTER_TIERS, CATEGORY_9_DEVIATION, NESTED_INPUT_MODULES, SIGNAL_QUALIFICATION,
     WIRING_NOTE, adapt, array_entry, build_signals, decision_snapshot, supplied_and_absent,
 )
+
+log = logging.getLogger(__name__)
+
+#: RUN 110, SECTION 2.5. The stable machine code for "the module itself failed", beside the
+#: sentence that says so in words. It is a NEW code and not a reuse of an evidence-absence code,
+#: because a defect and an absence are different findings and the analysis must be able to tell
+#: them apart. Like every other reason code it never reaches a participant surface.
+MODULE_FAILED_CODE = "module_execution_failed"
+
 
 CSV_PATH = pathlib.Path(__file__).resolve().parents[3] / "p0-baseline" / "module_renumbering_map.csv"
 
@@ -697,10 +708,16 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             # refusal that names a fault total but not the rows is not the diagnostics object
             # the order asks for. `module_results` and `abstained` are both JSONType, so this
             # needs no column and no migration.
+            # RUN 110, SECTION 2.5. `module_failed` and `module_failure` travel onto the row
+            # so a FAILED READING is distinguishable from an abstention on every surface that
+            # reads the ledger. An abstention says the evidence was absent; a failure says the
+            # module itself broke. Conflating them would let a defect hide as missing data,
+            # which is exactly how C1.5's KeyError went unnoticed until Run 109.
             for _k in ("result_source", "canonical_disposition", "canonical_structure",
                        "structure_provenance", "abstention_reason", "lineage",
                        "canonical_state", "operational", "schedule_network_diagnostics",
-                       "activities_without_three_point_durations"):
+                       "activities_without_three_point_durations",
+                       "module_failed", "module_failure"):
                 if out.get(_k) is not None:
                     entry[_k] = out[_k]
             abstained.append(entry)
@@ -753,6 +770,48 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             out["category_9_deviation"] = CATEGORY_9_DEVIATION
         results.append(out)
 
+    # ------------------------------------------------------------------ RUN 110: THE GUARD
+    #
+    # ONE MODULE'S FAULT MUST NEVER TAKE DOWN THE COMPUTE ROUTE. Run 109 measured
+    # `models_cat89._route` raising `KeyError: 'C1.5'` on `MODULE_USE[module_id]` the moment a
+    # governed `informationPackageRecord` was supplied. That exception escaped `run_module`,
+    # escaped `run_all`, and 500-ed the whole `projectcomputeall` route -- so NO module computed
+    # and NO `computed_results` row was stored for that project. A single defective module
+    # silenced thirty sound ones.
+    #
+    # WHAT THIS IS AND IS NOT. It is a containment boundary, not an error swallower:
+    #
+    #   * The failure becomes a LEDGER ROW carrying `module_failed`, the exception's type and
+    #     message, and a stable reason code. It is not silent and it is not an abstention.
+    #   * The sentence a reader sees states plainly that the module failed and that no figure
+    #     was produced or used in its place. NOTHING IS SUBSTITUTED for the missing reading --
+    #     no default, no band, no last-known value. A failed module contributes nothing.
+    #   * The full traceback is logged at ERROR, so the defect is as visible in the logs as it
+    #     was when it crashed the route.
+    #   * `BaseException` is deliberately NOT caught. A KeyboardInterrupt or a MemoryError is
+    #     not a module fault and must not be reported as one.
+    #
+    # It cannot mask a routing mistake either: `MissingModuleError` for an id absent from the
+    # registry is raised by `run_module` before any module is reached, and `run_all` only ever
+    # iterates ids the registry yielded, so that path is unreachable from here.
+    def guarded(new_id: str, si_arg: dict) -> dict[str, Any]:
+        try:
+            return run_module(new_id, si_arg, rand, period_cutoff)
+        except Exception as exc:  # noqa: BLE001 -- deliberate containment, see above
+            log.error("module %s failed during run_all; recorded as a failed reading\n%s",
+                      new_id, traceback.format_exc())
+            return {
+                "insufficient_data": True,
+                "status_color": None,
+                "evidence_metric": (
+                    "This measure could not be produced: the module failed while it was being "
+                    "computed, so no figure was produced from the evidence supplied and no "
+                    "figure is used in its place."),
+                "module_failed": True,
+                "module_failure": {"type": type(exc).__name__, "message": str(exc)[:500]},
+                "abstention_reason_code": MODULE_FAILED_CODE,
+            }
+
     # ------------------------------------------------------------------ pass 1: flat inputs
     # Every module whose input contract is the flat signalInputs dictionary, in exactly the
     # order, and against exactly the shared generator, it always ran in. The fourteen
@@ -762,7 +821,7 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
     # results provably byte-identical to a run without this adapter.
     flat_ids = [i for i in ids if i not in NESTED_INPUT_MODULES]
     for new_id in flat_ids:
-        record(new_id, run_module(new_id, si, rand, period_cutoff))
+        record(new_id, guarded(new_id, si))
 
     # ------------------------------------------------- passes 2 to 4: the assembled package
     # ONE adapter, three tiers, because each tier's input is the tier before it: the signal
@@ -781,7 +840,7 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
             adapted_si = adapt(si, signals, decision=decision,
                                signal_array=[array_entry(r) for r in results])
             for new_id in tier_ids:
-                record(new_id, run_module(new_id, adapted_si, rand, period_cutoff), adapted=note)
+                record(new_id, guarded(new_id, adapted_si), adapted=note)
             if decision is None:
                 decision = decision_snapshot(
                     next((r for r in results if r.get("module_id") == "B1.1"), None))

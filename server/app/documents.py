@@ -64,7 +64,7 @@ from .extraction_fields import UNMAPPED, is_mapped
 from .extraction_merge import (
     assembly_report, document_as_of, emit_observations, select_signal_inputs,
 )
-from .field_registry import IDENTITY_FIELDS
+from .field_registry import IDENTITY_FIELDS, is_raw_field
 from .jdrive_tree import (
     CLASS_ANALYSED, CLASS_FILED, CLASS_REFERENCE, FILING_CLASS_LABELS, needs_review,
     reference_kind, resolve_destination,
@@ -2366,6 +2366,19 @@ def _evidence_qualification(period: int, observations: list[dict]) -> dict | Non
         if o.get("field") is None:
             continue
         if str(o["field"]) in NOT_A_SHARED_ASSERTION:
+            continue
+        # RUN 110. A RAW EVIDENCE ROW IS NOT AN ASSERTION ABOUT A SHARED QUANTITY, so the
+        # conflict rule above has nothing to apply to it. Its field name is not a platform
+        # quantity at all: it is the label ONE DOCUMENT PRINTED, transcribed verbatim. The
+        # `docRiskScore` argument holds here in a stronger form -- two documents printing a
+        # column called `report_period` have not been established to be answering one question,
+        # and nothing in the platform has yet said they are. Recognising that two labels name
+        # one quantity is the model-driven step of the owner's ruling, which is not built (no
+        # model key). Until it is, treating a coincidence of column headings as a documentary
+        # contradiction would push real projects into REVIEW_REQUIRED and block every gated
+        # module for a disagreement no one has shown exists -- a false refusal, which the note
+        # above records as being as much a defect as a false pass.
+        if is_raw_field(str(o["field"])):
             continue
         per_field.setdefault(str(o["field"]), []).append(o)
 

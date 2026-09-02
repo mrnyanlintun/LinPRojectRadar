@@ -37,6 +37,42 @@ PERMANENT = "PERMANENT"
 
 KINDS = frozenset({SNAPSHOT, EVENT, DELTA, PERMANENT})
 
+# --------------------------------------------------------------------------- RUN 110: RAW
+#
+# THE FIFTH KIND, AND IT IS NOT A FIFTH BEHAVIOUR. `RAW` marks a row that is a VERBATIM
+# TRANSCRIPTION of something one document printed under its own label -- the document, the
+# period, the label the document used, and the value. It has no selection behaviour at all,
+# because it is not selected: `select_signal_inputs` iterates `_KEY_ORDER` and a RAW row's field
+# name cannot appear there (see `RAW_PREFIX`).
+#
+# WHY IT EXISTS. Run 110 measured seventy-four of the one hundred and fifty-eight stored
+# (document type, extracted key) pairs on a twenty-one document fixture producing NO observation
+# whatsoever: they were extracted, they were paid for, they were written to
+# `documents.extraction`, and the evidence store did not hold them. The owner's ruling is that if
+# a value is extracted it is stored as evidence. This is that store.
+#
+# WHAT IT DOES NOT DO. It supplies no module, satisfies no specification and changes no reading.
+# It is the record of what the documents said. Recognising that a value stored here is the
+# quantity a specification asks for is a MODEL-DRIVEN step which this run did not build, because
+# there is no model key in this environment; see the Run 110 report.
+RAW = "RAW"
+
+#: Every RAW row's field name is ``evidence:<doc_type>:<label as the document printed it>``.
+#: The colon is what makes a collision with a signalInputs field impossible -- no name in
+#: `ALL_SI_FIELDS` contains one -- so no RAW row can be mistaken for, or selected as, a
+#: declared field, whatever a document chooses to call a column.
+RAW_PREFIX = "evidence:"
+
+
+def raw_field_name(doc_type: str, label: str) -> str:
+    """The field name a RAW evidence row carries. Total, and never a declared field name."""
+    return f"{RAW_PREFIX}{doc_type}:{label}"
+
+
+def is_raw_field(field: str) -> bool:
+    return str(field).startswith(RAW_PREFIX)
+
+
 
 # --------------------------------------------------------------------------- field kinds
 #
