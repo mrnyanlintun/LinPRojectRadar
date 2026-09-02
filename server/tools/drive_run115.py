@@ -220,7 +220,12 @@ _candidate_a = sum(len(extraction_fields_for(t)) for t in DOC_TYPES)
 # the completeness caveat report a project as MORE COMPLETE than its evidence -- which is the
 # exact failure this check exists to catch. NEITHER NUMBER IS WEAKENED, nothing is deleted, and
 # the check still fails on a rename in either place.
-check(_candidate_a == 297 and REQUIRED_TOTAL == 187,
+# RUN 119, SECTION 5. Candidate A 297 -> 299 and candidate B 187 -> 189: `commissioning_items_total`
+# and `commissioning_items_cleared`
+# are declared in `_ASSEMBLER_FIELDS`, because the commissioning completion path reads them. The
+# pin MOVES with the declaration, which is the whole point of pinning it -- a field added to the
+# contract and NOT declared would leave this number where it was and hide the new path.
+check(_candidate_a == 299 and REQUIRED_TOTAL == 189,
       "the two candidate denominators, measured: every field every type asks for, against the "
       "fields this platform has a path from",
       f"candidate A {_candidate_a} pairs, candidate B (chosen) {REQUIRED_TOTAL} pairs")
@@ -403,8 +408,8 @@ section("4. GOAL 4 -- the caveat, served on the real projectresults response")
 # =================================================================================================
 IC = VIEW.get("information_completeness") or {}
 check(bool(IC), "the served result carries the completeness record", str(list(IC.keys()))[:110])
-check(IC.get("required") == 187 and isinstance(IC.get("extracted"), int),
-      "the denominator is the 187 (document type, field) pairs this platform has a path from",
+check(IC.get("required") == 189 and isinstance(IC.get("extracted"), int),
+      "the denominator is the 189 (document type, field) pairs this platform has a path from",
       f"{IC.get('extracted')} of {IC.get('required')}")
 check(isinstance(IC.get("percent"), int) and 0 <= IC["percent"] <= 100,
       "and the caveat states a percentage", str(IC.get("percent")))
@@ -501,7 +506,7 @@ def _ic_holds():
     _r, _a, _si, _v, _p, _m = run_project("fic-" + str(time.time_ns()),
                                           docs(disputes=DISPUTE_ROWS))
     _ic = _v.get("information_completeness") or {}
-    return _ic.get("required") == 187 and (_ic.get("extracted") or 0) > 0
+    return _ic.get("required") == 189 and (_ic.get("extracted") or 0) > 0
 def _break_ic():
     ICM.REQUIRED_PAIRS = {"contract_value": frozenset({"original_contract_sum"})}
     ICM.REQUIRED_TOTAL = 1

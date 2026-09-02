@@ -360,6 +360,8 @@ def category_statuses(readings: dict[str, SpecificationReading]) -> dict[str, di
 from .simulation.project_posture import project_posture  # noqa: E402
 from .simulation.compute import (  # noqa: E402
     _COMPLETE as COMPLETE,
+    _cost_identity_complete,
+    commissioning_clearance,
     delivery_complete,
     _AWAITING as AWAITING,
     _awaiting_reason,
@@ -455,6 +457,17 @@ def project_status_basis(cats: dict[str, dict[str, Any]],
                           if not complete and (missing or not fused) else None),
         "official": complete or not missing,
         "delivery_complete": complete,
+        # RUN 119, SECTION 5. The SAME function the Python rollup calls, for the same reason
+        # `delivery_complete` itself is imported rather than restated.
+        "commissioning_clearance": commissioning_clearance(signal_inputs),
+        "commissioning_clearance_words": (commissioning_clearance(signal_inputs)
+                                          or {}).get("words"),
+        # WHICH of the two paths completed the project, so a reader is never left to work out
+        # whether a Complete came from the cost identity or from the commissioning report.
+        "delivery_complete_basis": (
+            "the cost identity" if _cost_identity_complete(signal_inputs or {})
+            else ("every item on the commissioning report cleared for testing"
+                  if complete else None)),
         "status": (COMPLETE if complete
                    else (AWAITING if (missing or not fused) else fused)),
     }

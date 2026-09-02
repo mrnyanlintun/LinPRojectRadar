@@ -46,6 +46,7 @@ with S() as s:
     s.commit()
 admin = post({"action": "researchlogin", "access_token": ADMIN})["session_token"]
 
+LAST = {}
 def build(pid, name, docs):
     def raw(t): return f"%PDF-1.4 R119 {STAMP} {pid} {t}\n".encode()
     set_extractor_override(StubExtractor(
@@ -59,6 +60,7 @@ def build(pid, name, docs):
               "pseudonymous_code": f"R119-{pid}", "role": "Participant",
               "account_type": "operational"})
     pm = post({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
+    LAST["pm"] = pm; LAST["pid"] = pid
     post({"action": "adminmemberadd", "session_token": admin, "id": pid,
           "participant_id": c["participant_id"], "project_role": "PM"})
     for t, ty, ex in docs:
@@ -234,6 +236,76 @@ res, ab, st, cats, si = build("PRJ-R119-D3I-" + STAMP, "3I", [
 r = res.get("A4.7") or ab.get("A4.7") or {}
 ck("it abstains rather than reading the system clock",
    (r.get("status_color"), "as of" in str(r.get("reason") or "")), (None, True))
+
+
+# ==========================================================================================
+# SECTION 5. THE COMMISSIONING REPORT COMPLETES THE PROJECT.
+# ==========================================================================================
+BAC = 4_000_000
+COST_IDENTITY = [
+    ("contract", "contract_value", {"original_contract_sum": BAC,
+                                    "project_start_date": "2026-01-01",
+                                    "project_end_date": "2026-12-31"}),
+    ("tps", "time_phased_schedule", {"planned_value_to_date": BAC,
+                                     "planned_percent_complete": 100.0,
+                                     "data_date": END, "document_date": END}),
+    ("pay", "pay_application", {"amount_paid_to_date": BAC, "completed_to_date": BAC,
+                                "percent_complete_verified": 100.0,
+                                "application_date": END, "document_date": END}),
+]
+def cx_doc(total, cleared):
+    return ("comm", "commissioning_report",
+            {"document_date": END, "document_risk_score": 0.1,
+             "commissioning_items_total": total, "commissioning_items_cleared": cleared})
+
+def status_of(pid, docs):
+    """
+    THE PROJECT STATUS AND THE COMPLETION BASIS, READ OFF THE REAL `projectresults` RESPONSE --
+    the same response the page the owner loads is built from. Nothing is supplied to it.
+    """
+    res, ab, st, cats, si = build(pid + "-" + STAMP, pid, docs)
+    view = post({"action": "projectresults", "session_token": LAST["pm"],
+                 "id": LAST["pid"], "period": 1})
+    result = (view.get("result") or {})
+    basis = (result.get("project_status_basis") or {})
+    return result.get("project_status") or st, basis, si
+
+print("\n5A. EVERY ITEM CLEARED, AND NO COST IDENTITY AT ALL -> COMPLETE")
+st, basis, si = status_of("PRJ-R119-C5A", [cx_doc(48, 48)])
+ck("the project publishes Complete on the commissioning path alone",
+   (st, basis.get("delivery_complete_basis")),
+   ("Complete", "every item on the commissioning report cleared for testing"))
+ck("the clearance record reached the served response",
+   (basis.get("commissioning_clearance") or {}).get("all_cleared"), True)
+ck("COMPLETE IS APPLIED AHEAD OF THE REQUIRED-CORE GATE -- Run 112's measurement still holds: "
+   "this project has NO assessed category at all and still publishes Complete",
+   (basis.get("official"), st), (True, "Complete"))
+
+print("\n5B. SOME ITEMS OUTSTANDING -> NOT COMPLETE, and the reading says how many remain")
+st, basis, si = status_of("PRJ-R119-C5B", [cx_doc(48, 45)])
+ck("not Complete", st != "Complete", True)
+ck("the reading states how many remain",
+   (basis.get("commissioning_clearance") or {}).get("outstanding"), 3)
+ck("and it says so in words",
+   "3 remain" in str(basis.get("commissioning_clearance_words")), True)
+
+print("\n5C. THE COST TEST IS UNTOUCHED -- a project satisfying it stays Complete")
+st, basis, si = status_of("PRJ-R119-C5C", COST_IDENTITY)
+ck("Complete, on the cost identity, with no commissioning report at all",
+   (st, basis.get("delivery_complete_basis"),
+    basis.get("commissioning_clearance")),
+   ("Complete", "the cost identity", None))
+
+print("\n5D. FALSIFY -- A COMMISSIONING REPORT THAT STATES NEITHER FIGURE COMPLETES NOTHING")
+st, basis, si = status_of("PRJ-R119-C5D", [
+    ("comm", "commissioning_report", {"document_date": END, "document_risk_score": 0.1})])
+ck("no clearance record is assembled and the project is not Complete",
+   ("commissioningClearance" in (si or {}), st == "Complete"), (False, False))
+
+print("\n5E. FALSIFY -- MORE CLEARED THAN EXIST IS NOT A READING")
+st, basis, si = status_of("PRJ-R119-C5E", [cx_doc(48, 50)])
+ck("the record is refused and the project is not Complete",
+   (basis.get("commissioning_clearance"), st == "Complete"), (None, False))
 
 print()
 print("=" * 100)

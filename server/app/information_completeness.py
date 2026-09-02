@@ -109,7 +109,11 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
     "safety_report": ("trade_attribution_json", "trade_denominators_json"),
     "quality_audit_report": ("trade_attribution_json", "trade_denominators_json"),
     "environmental_report": ("trade_attribution_json", "trade_denominators_json"),
-    "commissioning_report": ("trade_attribution_json", "trade_denominators_json"),
+    # RUN 119, SECTION 5. The two closeout figures the commissioning completion path reads.
+    # Declared here so the denominator counts the path: a project whose commissioning report
+    # states neither is genuinely less complete for the purpose of that path.
+    "commissioning_report": ("trade_attribution_json", "trade_denominators_json",
+                             "commissioning_items_total", "commissioning_items_cleared"),
 }
 
 

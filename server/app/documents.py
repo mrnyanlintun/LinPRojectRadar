@@ -2174,6 +2174,30 @@ def _run69_structures(session: Session, project: Project, period: int,
                             "max_repeat_ncrs_one_root_cause_or_trade")
                     out["ncrExposureRecord"] = _rec
 
+        # ---------------------------------------------------------- RUN 119, SECTION 5
+        # THE COMMISSIONING REPORT'S CLEARANCE FIGURES.
+        #
+        # The owner's ruling: "when every item on the commissioning report is cleared for
+        # testing, the project is Complete." Two figures answer that and both must be STATED --
+        # `simulation.compute.commissioning_clearance` refuses a record that is not whole, not
+        # positive or in which more items are cleared than exist, and a report stating neither
+        # figure assembles nothing here and completes nothing. NOTHING IS COUNTED OR INFERRED:
+        # the outstanding count is total minus cleared and is derived there, not extracted.
+        elif doc_type == "commissioning_report":
+            _ct = ex.get("commissioning_items_total")
+            _cc = ex.get("commissioning_items_cleared")
+            if _ct is not None and _cc is not None:
+                _crec = {
+                    "source": "the commissioning report uploaded for this period",
+                    "commissioning_items_total": _ct,
+                    "commissioning_items_cleared": _cc,
+                    "assembled_by": "document extraction",
+                    "source_document_type": doc_type,
+                }
+                if ex.get("document_date") is not None:
+                    _crec["document_date"] = ex.get("document_date")
+                out["commissioningClearance"] = _crec
+
         # ---------------------------------------------------------- RUN 114, GOAL 1
         # A4.5's WEATHER EVENT RECORD, READ FROM THE TABLE THE MINUTES PRINT.
         #

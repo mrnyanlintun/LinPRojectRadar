@@ -1155,7 +1155,23 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # `fusion.BAND_SEVERITY`, imported and not restated; the number two is the owner's. Everything
  # else about the hold is unchanged -- `pending_pm_review`, no band asserted, the source rating
  # preserved beside the adjusted posture, the audit record carrying both, and now the size and
- # direction of the movement as well. No stored row is recomputed and none is touched.
+ # direction of the movement as well.
+ #   GOAL 3. A4.7 Dispute Escalation is REDEFINED from Run 115's count to the owner's DURATION
+ # ladder -- no open dispute or a dispute resolved is Green, a dispute open is Yellow, open more
+ # than one week is Amber, open more than two weeks is Red -- with the OLDEST OPEN dispute
+ # governing and a resolved dispute stopping the moment it is resolved. Counted in WORKING DAYS
+ # on the project's OWN calendar through Run 108's single conversion, because the owner's own
+ # sentence rules out calendar days; a week is the number of working days that calendar declares.
+ # The contract grew by one fact, the as-of day, and it is the minutes' existing `document_date`.
+ # `dispute_count` is kept and still supplies the list-versus-total disagreement.
+ #   GOAL 5. THE COMMISSIONING REPORT COMPLETES THE PROJECT. `compute.delivery_complete` gains a
+ # SECOND path -- every item on the commissioning report cleared for testing -- and the cost
+ # identity is untouched, so a project satisfying it stays Complete. Two extraction fields, not
+ # Run 117's seven: `commissioning_items_total` and `commissioning_items_cleared`, both declared
+ # in `information_completeness._ASSEMBLER_FIELDS` (187 -> 189). A report stating some items
+ # outstanding is NOT Complete and the served reading states how many remain. Complete is still
+ # applied AHEAD of the required-core gate, measured again this run.
+ # No stored row is recomputed and none is touched.
  "sim-2026.09-v62",
 )
 

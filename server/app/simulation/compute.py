@@ -160,15 +160,15 @@ def _as_number(value):
     return out if out == out and out not in (float("inf"), float("-inf")) else None
 
 
-def delivery_complete(signal_inputs: dict | None) -> bool:
+def _cost_identity_complete(si: dict) -> bool:
     """
-    The owner's Complete condition, in one place, read by BOTH status paths.
+    THE COST IDENTITY. Earned value, planned value and actual cost all exactly equal to a
+    positive budget, at 100 per cent complete. Any missing figure is False: an absent number is
+    not evidence of completion.
 
-    True when the budget is a positive number, earned value, planned value and actual cost are
-    all exactly equal to it, and the recorded percent complete is 100. Any missing figure is
-    False: an absent number is not evidence of completion.
+    RUN 119 DOES NOT TOUCH THIS. The owner's ruling is to ADD a path, not to replace one: a
+    project that satisfies the cost identity stays Complete exactly as it was.
     """
-    si = signal_inputs or {}
     bac = _as_number(si.get("bac"))
     if bac is None or bac <= 0:
         return False
@@ -180,6 +180,102 @@ def delivery_complete(signal_inputs: dict | None) -> bool:
     if pct is None:
         pct = _as_number(si.get("pctComplete"))
     return pct == 100.0
+
+
+# ================ RUN 119, GOAL 5. THE COMMISSIONING REPORT COMPLETES THE PROJECT.
+#
+# RUN 117 ESTABLISHED THE DEFECT AND THIS RUN CLOSES IT ON THE OWNER'S OPTION (a). The cost
+# identity is "a financial test wearing the name of a physical one": a project finishing UNDER
+# budget is never Complete, and one spending its budget exactly while unfinished is. The owner's
+# ruling: "when every item on the commissioning report is cleared for testing, the project is
+# Complete." EITHER path completes a project. A path is added; none is removed.
+#
+# WHAT "EVERY ITEM CLEARED" ACTUALLY NEEDS, AND IT IS TWO NUMBERS. Run 117 proposed seven
+# fields -- status, completion date, systems total and accepted, outstanding punch list with a
+# blocking flag, certifying party, certificate reference. The question this test asks is
+# "is every item cleared", and exactly two facts answer it: HOW MANY ITEMS the report covers and
+# HOW MANY OF THEM ARE CLEARED FOR TESTING. The other five are provenance and narrative, and a
+# field this platform does not need is a field the owner's generating model can get wrong; the
+# report's own `document_date` already dates the reading and is not asked for twice.
+#
+# NEVER INFERRED FROM A DOCUMENT THAT DOES NOT STATE IT. Both numbers must be present, whole,
+# and the total positive. A commissioning report that states neither completes nothing. A report
+# stating some items outstanding is NOT Complete, and the reading says HOW MANY REMAIN.
+#
+# THE ORDER OF THE TWO PATHS IS IMMATERIAL AND IS NOT A PRECEDENCE. They are ORed: neither can
+# make the other false, so nothing about which document "wins" a field arises here.
+COMMISSIONING_CLEARANCE_CONTRACT: dict[str, Any] = {
+    "document_type": "commissioning_report",
+    "structure_key": "commissioningClearance",
+    "extraction_fields": {
+        "commissioning_items_total": (
+            "The total number of items, systems or assemblies the commissioning report covers, "
+            "as the report itself states it. A whole number above nought. Return null where the "
+            "report states no total -- do not count rows to make one."),
+        "commissioning_items_cleared": (
+            "How many of those items the report states are CLEARED FOR TESTING. A whole number "
+            "at or above nought and not above the total. Return null where the report does not "
+            "state it. Do not read 'complete', 'accepted' or 'turned over' as cleared unless "
+            "the report itself uses those words for clearance for testing."),
+    },
+    "rule": ("the project is Complete when the total is stated, positive, and every item is "
+             "cleared. Where some remain, the project is NOT Complete and the reading states "
+             "how many remain."),
+}
+
+
+def commissioning_clearance(signal_inputs: dict | None) -> dict[str, Any] | None:
+    """
+    What the commissioning report states about clearance, or None where it states nothing.
+
+    Returns `total`, `cleared`, `outstanding`, `all_cleared` and the sentence a surface prints.
+    None means the report was not provided or did not state the two numbers -- which is NOT the
+    same as stating that items remain, and the two are never conflated.
+    """
+    rec = (signal_inputs or {}).get("commissioningClearance")
+    if not isinstance(rec, dict):
+        return None
+    total = _as_number(rec.get("commissioning_items_total"))
+    cleared = _as_number(rec.get("commissioning_items_cleared"))
+    if total is None or cleared is None:
+        return None
+    if total <= 0 or cleared < 0 or cleared > total:
+        return None
+    if total != int(total) or cleared != int(cleared):
+        return None
+    total, cleared = int(total), int(cleared)
+    outstanding = total - cleared
+    return {
+        "total": total,
+        "cleared": cleared,
+        "outstanding": outstanding,
+        "all_cleared": outstanding == 0,
+        "source": rec.get("source"),
+        "document_date": rec.get("document_date"),
+        "words": (
+            f"The commissioning report states {cleared} of {total} items cleared for testing"
+            + (", so every item on it is cleared and the project is Complete by the owner's "
+               "commissioning path."
+               if outstanding == 0 else
+               f", so {outstanding} remain. The project is not Complete on this path; "
+               f"completion is never inferred from a document that does not state it.")),
+    }
+
+
+def delivery_complete(signal_inputs: dict | None) -> bool:
+    """
+    The owner's Complete condition, in one place, read by BOTH status paths.
+
+    TWO PATHS, EITHER OF WHICH COMPLETES A PROJECT (Run 119, section 5):
+      * THE COST IDENTITY -- earned value, planned value and actual cost all exactly equal to a
+        positive budget, at 100 per cent complete. Unchanged by this run.
+      * THE COMMISSIONING REPORT -- every item on it cleared for testing.
+    """
+    si = signal_inputs or {}
+    if _cost_identity_complete(si):
+        return True
+    rec = commissioning_clearance(si)
+    return bool(rec and rec["all_cleared"])
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
 
 
@@ -445,6 +541,13 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # RUN 99. The Complete promotion, decided by the one function above and applied identically
     # on the specification path in `spec_projection`. Ahead of the gate; see the note there.
     _complete = delivery_complete(si)
+    # RUN 119, SECTION 5. THE READING SAYS HOW MANY REMAIN. A commissioning report stating some
+    # items outstanding does not complete the project, and the record must say so in words
+    # rather than leaving the reader to infer it from a project that simply is not Complete.
+    _cx = commissioning_clearance(si)
+    _complete_basis = ("the cost identity" if _cost_identity_complete(si)
+                       else ("every item on the commissioning report cleared for testing"
+                             if _complete else None))
     # RUN 106, GOAL TWO. A project with no posture publishes "Awaiting analysis" -- and it does
     # so BOTH when a required category is unassessed and when the weighted rule formed no band
     # at all. The second arm cannot be reached while the first stands (no posture at all means
@@ -511,6 +614,9 @@ def compute_project(si: dict, scenario_id: str, period: str,
             "status_reason": _status_reason,
             "official": _complete or not _required_missing,
             "delivery_complete": _complete,
+            "delivery_complete_basis": _complete_basis,
+            "commissioning_clearance": _cx,
+            "commissioning_clearance_words": (_cx or {}).get("words"),
             "status": _published,
         },
         # The band the WEIGHTED RULE produced, kept under its own name so nothing that needs

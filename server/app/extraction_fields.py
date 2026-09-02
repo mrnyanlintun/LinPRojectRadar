@@ -533,8 +533,21 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     # RUN 117, SECTION 4.2 and SECTION 3. The attribution column is added; the CLOSEOUT FACTS
     # are NOT. See the run report: it proposes what a commissioning report must state to close a
     # project and deliberately ships no replacement for the cost test.
+    #
+    # RUN 119, SECTION 5. THE CLOSEOUT FACTS, NOW -- AND THERE ARE TWO OF THEM, NOT SEVEN.
+    # The owner's ruling is that "when every item on the commissioning report is cleared for
+    # testing, the project is Complete". The question is "is every item cleared", and exactly
+    # two facts answer it: how many items the report covers and how many are cleared for
+    # testing. Run 117's other five proposed fields -- status, completion date, certifying
+    # party, certificate reference, a blocking flag on the punch list -- are provenance and
+    # narrative, not the test, and a field this platform does not need is a field the owner's
+    # generating model can get wrong. `document_date` already dates the reading and is not asked
+    # for twice. The outstanding count is DERIVED (total minus cleared) rather than asked for,
+    # so the two figures can never disagree with a third. See
+    # `simulation.compute.COMMISSIONING_CLEARANCE_CONTRACT` for the words the model is given.
     "commissioning_report": [
         "document_risk_score", "document_date",
+        "commissioning_items_total", "commissioning_items_cleared",
         # RUN 117, SECTION 3. See `_TRADE_ATTRIBUTION_NOTE`.
         "trade_attribution_json",
         # RUN 118, SECTION 1.4. See `_TRADE_DENOMINATOR_NOTE`: the factor
