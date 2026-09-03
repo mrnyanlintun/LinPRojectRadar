@@ -975,7 +975,30 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 #
 # NO BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, and no model decides any of
 # them -- there is no model key in this environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v62"
+# RUN 120. A6.4 CONTRACTOR PERFORMANCE READS FIRM-LEVEL DELIVERY RECORDS, and this moves a
+# reading on projects whose documents state the four populations. NO MIGRATION IS ADDED.
+#
+# The owner's ruling dissolves Run 119's Goal 4 blocker rather than choosing a side: a
+# contractor is a DELIVERY ACTOR, not a quality signal, so A6.4 reads firm-level project
+# records and NO module posture. Four factors -- schedule reliability 0.40, quality execution
+# 0.25, safety 0.20, commercial and administration 0.15 -- band on the owner's own ladders,
+# score a severity of Green 0 / Yellow 1 / Amber 2 / Red 3 (`fusion.BAND_SEVERITY`, imported and
+# not restated), and the weighted result bands on the owner's cuts. Overrides apply AFTER the
+# weighted calculation and the final posture is the WORSE of the two. The calculation is
+# ELIGIBLE ONLY WHERE ALL FOUR FACTORS CAN BE CALCULATED; otherwise it is discarded whole and
+# the project-supplied source rating stands, never blended with it. Across firms the worst
+# posture among firms with ACTIVE WORK governs. An Amber or Red four-factor posture is held for
+# PM review on Run 107's hold, and a lift of two or more bands above a stated rating is held on
+# Run 119's extension of it.
+#
+# THE STAMP MOVES BECAUSE A6.4'S READING CAN NOW COME FROM A DIFFERENT MEASURE. On the owner's
+# corpus it does not: no firm there states the four populations, so A6.4 takes the fallback and
+# the census is unchanged at band 17 / computed-no-band 1 / abstain 13 / no row 0.
+#
+# NO EXISTING BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, `THRESHOLD_SOURCES`
+# stays three values wide, and no model decides any of them -- there is no model key in this
+# environment and none was simulated.
+SIMULATION_VERSION = "sim-2026.09-v63"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1188,6 +1211,12 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # the DOM of the page the owner loads, with nothing supplied to a renderer.
  # No stored row is recomputed and none is touched.
  "sim-2026.09-v62",
+ # RUN 120. A6.4 Contractor Performance became a reading of FIRM-LEVEL DELIVERY RECORDS: four
+ # owner factors, a weighted severity, four hard overrides applied after it, an all-four-or-none
+ # eligibility rule with the source rating as the fallback, and the worst active firm across
+ # firms. `simulation/contractor_factors.py` holds every threshold and nothing else does. No
+ # module posture is read anywhere in it, so nothing is counted twice inside Delivery Quality.
+ "sim-2026.09-v63",
 )
 
 

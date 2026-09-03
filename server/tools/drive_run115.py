@@ -230,7 +230,18 @@ _candidate_a = sum(len(extraction_fields_for(t)) for t in DOC_TYPES)
 # and `field_report` -- four asked-for pairs -- and declares those two plus each type's own
 # numerator (`total_findings`, `quality_deficiencies_noted`) in `_ASSEMBLER_FIELDS`, because the
 # pooled NCR rate really does read all of them.
-check(_candidate_a == 303 and REQUIRED_TOTAL == 193,
+# RUN 120, SECTION 6. Candidate A 303 -> 311 and candidate B 193 -> 201. A6.4's four factors
+# read firm-attributed delivery records off FOUR MORE DOCUMENT TYPES -- `schedule_update`,
+# `submittal_register`, `rfi_log` and `change_order` -- so each of them now asks for
+# `trade_attribution_json` and `trade_denominators_json`: eight new asked-for pairs, and all
+# eight are declared in `_ASSEMBLER_FIELDS` because the factor engine really does read them.
+# THE PIN MOVES WITH THE DECLARATION, which is the whole point of pinning it: a field added to
+# the contract and NOT declared would have left this number where it was and hidden the new
+# path, letting the completeness caveat report a project as more complete than its evidence.
+# NEITHER NUMBER IS WEAKENED, nothing is deleted, and the check still fails on a rename in
+# either place. The six columns Run 120 adds INSIDE `trade_denominators_json` move neither
+# number, and correctly: they are cells of a field that was already declared, not new fields.
+check(_candidate_a == 311 and REQUIRED_TOTAL == 201,
       "the two candidate denominators, measured: every field every type asks for, against the "
       "fields this platform has a path from",
       f"candidate A {_candidate_a} pairs, candidate B (chosen) {REQUIRED_TOTAL} pairs")
@@ -413,8 +424,8 @@ section("4. GOAL 4 -- the caveat, served on the real projectresults response")
 # =================================================================================================
 IC = VIEW.get("information_completeness") or {}
 check(bool(IC), "the served result carries the completeness record", str(list(IC.keys()))[:110])
-check(IC.get("required") == 193 and isinstance(IC.get("extracted"), int),
-      "the denominator is the 193 (document type, field) pairs this platform has a path from",
+check(IC.get("required") == 201 and isinstance(IC.get("extracted"), int),
+      "the denominator is the 201 (document type, field) pairs this platform has a path from",
       f"{IC.get('extracted')} of {IC.get('required')}")
 check(isinstance(IC.get("percent"), int) and 0 <= IC["percent"] <= 100,
       "and the caveat states a percentage", str(IC.get("percent")))
@@ -511,7 +522,7 @@ def _ic_holds():
     _r, _a, _si, _v, _p, _m = run_project("fic-" + str(time.time_ns()),
                                           docs(disputes=DISPUTE_ROWS))
     _ic = _v.get("information_completeness") or {}
-    return _ic.get("required") == 193 and (_ic.get("extracted") or 0) > 0
+    return _ic.get("required") == 201 and (_ic.get("extracted") or 0) > 0
 def _break_ic():
     ICM.REQUIRED_PAIRS = {"contract_value": frozenset({"original_contract_sum"})}
     ICM.REQUIRED_TOTAL = 1

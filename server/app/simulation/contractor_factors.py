@@ -386,9 +386,16 @@ def factor_schedule_reliability(records, denominators) -> dict[str, Any]:
     num = _n(d.get("packages_completed_on_time"))
     den = _n(d.get("packages_due"))
     rows = [r for r in records if _w(r.get("record_kind")) in _KIND_SCHEDULE]
+    # THE OVERRIDE READS THE FIRM'S OWN SCHEDULE RECORDS AND NOT EVERY RECORD, and that is a
+    # separation the owner's own two sentences make: a WORK PACKAGE OR MILESTONE that forecasts
+    # late is this factor's override; an unfulfilled SUBMITTAL or PROCUREMENT COMMITMENT that
+    # blocks the controlling path is the commercial factor's. Reading every record here would
+    # fire both overrides on one record and report one delay as two findings. A record whose
+    # kind is neither family fires NEITHER and is reported in `rows_of_no_factor` -- never
+    # assigned to the nearest.
     hits = [f"{r.get('record_reference')}: causes a controlling-path activity or a contractual "
             f"milestone to forecast late"
-            for r in records if _truthy(r.get("record_milestone_forecast_late")) is True]
+            for r in rows if _truthy(r.get("record_milestone_forecast_late")) is True]
     pct = _pct(num, den)
     band = _ladder_high_is_good(pct, _SCHEDULE_CUTS, "Red")
     why = None
@@ -420,7 +427,12 @@ def factor_schedule_reliability(records, denominators) -> dict[str, Any]:
                         "milestone to forecast late."),
         unavailable_reason=why,
         evidence_references=[str(r.get("record_reference")) for r in rows],
-        extra={"schedule_records_considered": len(rows)})
+        extra={"schedule_records_considered": len(rows),
+               "rows_of_no_factor": sum(
+                   1 for r in records
+                   if _w(r.get("record_kind")) not in _KIND_SCHEDULE
+                   and _w(r.get("record_kind")) not in _KIND_COMMITMENT
+                   and _w(r.get("record_kind")) not in _KIND_NCR)})
 
 
 def factor_quality_execution(records, denominators) -> dict[str, Any]:

@@ -945,6 +945,314 @@ def _cpars_word(value: Any) -> str:
     return ""
 
 
+
+# =================================================================================================
+# RUN 120. A6.4 READS FIRM-LEVEL DELIVERY RECORDS. Section 1, and the whole of this run.
+#
+# NOTHING BELOW RESTATES A THRESHOLD. Every ladder, every override, the weights, the cuts on the
+# weighted severity, the all-four-or-none eligibility rule and the worst-active-firm rule live in
+# `simulation/contractor_factors.py` and nowhere else. This is the WIRING that takes the
+# assembled records and denominators -- Run 118's tables, reused and not rebuilt -- hands them to
+# that module firm by firm, and takes back a posture. If a number appears here it is a defect.
+#
+# NO MODULE POSTURE IS READ. Section 7.2 asks for that confirmation and it is checkable by
+# reading this function: `si["tradeAttributionRecords"]` is document extraction and
+# `si["subcontractorAssessments"]` is a document's own stated rating. Neither is a module's band.
+# =================================================================================================
+
+
+def _contractor_source_postures(si: dict) -> tuple[dict[str, str], dict[str, Any]]:
+    """
+    Per firm, the band the PROJECT-SUPPLIED SOURCE RATING normalises to -- Run 115's ladder,
+    unchanged and NOT recomputed here: `canonical_v4.subcontractor_reported_ratings` is called.
+
+    Returns (firm -> band, firm -> the whole stated rating row). Empty where the project supplies
+    no subcontractor performance report, which is a normal outcome and not a failure.
+    """
+    from .canonical_v4 import StructureAbsent as _V4Absent
+    from .canonical_v4 import subcontractor_reported_ratings
+    structure = si.get("subcontractorAssessments")
+    if not isinstance(structure, dict):
+        return {}, {}
+    try:
+        mvp = subcontractor_reported_ratings(structure)
+    except (_V4Absent, Exception):
+        return {}, {}
+    bands, rows = {}, {}
+    for f in mvp.get("firms") or []:
+        fid = f.get("subcontractor_id")
+        if fid and f.get("normalised_posture"):
+            bands[str(fid)] = f["normalised_posture"]
+            rows[str(fid)] = f
+    return bands, rows
+
+
+def _contractor_delivery(si: dict) -> dict[str, Any] | None:
+    """
+    A6.4's four-factor reading across firms, or None where the project carries no firm records
+    and no per-firm denominators at all.
+
+    A FIRM IS ASSESSED HERE ONLY WHERE IT CARRIES AN ATTRIBUTED RECORD, A DENOMINATOR ROW OR A
+    STATED RATING. Run 118 iteration 5 caught the defect of letting a denominator row alone
+    create a clean firm; here a denominator row IS admitted, because unlike Run 118's averaging
+    engine this one cannot manufacture a Green out of an empty record set -- every factor's
+    NUMERATOR is a stated figure too, so a firm with a bare population produces four unavailable
+    factors, fails the eligibility rule and takes the fallback or Not Assessed. That difference
+    is the reason the two engines share no arithmetic.
+    """
+    from . import contractor_factors as _CF
+    rec = si.get("tradeAttributionRecords")
+    rec = rec if isinstance(rec, dict) else {}
+    by_firm = rec.get("by_subcontractor") if isinstance(rec.get("by_subcontractor"), dict) else {}
+    denoms = rec.get("denominators_by_subcontractor")
+    denoms = denoms if isinstance(denoms, dict) else {}
+    rated, rating_rows = _contractor_source_postures(si)
+    names = sorted(set(by_firm) | set(denoms) | set(rated))
+    if not names:
+        return None
+    postures = [
+        _CF.firm_posture(
+            firm=n,
+            records=by_firm.get(n) or [],
+            denominators=denoms.get(n) or {},
+            source_posture=rated.get(n),
+            source_rating=(rating_rows.get(n) or {}).get("reported_rating"),
+            reporting_period=(rating_rows.get(n) or {}).get("assessment_period"))
+        for n in names]
+    out = _CF.across_firms(postures)
+    out["contractor_records_unattributed_count"] = rec.get("unattributed_record_count")
+    out["contractor_unattributed_rule"] = rec.get("unattributed_rule")
+    out["contractor_source_document_types"] = rec.get("source_document_types")
+    out["contractor_weighted_boundary_words"] = _CF.WEIGHTED_BOUNDARY_WORDS
+    out["contractor_override_words"] = _CF.OVERRIDE_WORDS
+    out["contractor_eligibility_words"] = _CF.ELIGIBILITY_WORDS
+    return out
+
+
+#: Section 5. The postures the owner holds for review, and the sentence that says why. This is
+#: RUN 107'S HOLD, reused unchanged -- `pm_review.resolve` -- not a second one.
+def _contractor_hold(si: dict, block: dict[str, Any]) -> dict[str, Any]:
+    """
+    Green and Yellow enter Delivery Quality immediately; Amber and Red are `pending_pm_review`.
+
+    RUN 119'S LIFT EXTENSION APPLIES HERE AND IT IS NOT A FORMALITY. Section 4 forbids BLENDING
+    the four-factor calculation with the source rating, and nothing here blends them: the source
+    rating contributes NOTHING to the arithmetic. But where a firm is four-factor eligible AND
+    the same project states a rating for it, the two are both known, and a four-factor posture
+    two or more bands BETTER than the rating the document states is exactly the silent overturn
+    Run 119's hold was built for. So the governing firm's `source_rating_posture` is passed as
+    the starting band, and where none is stated `lift_bands` returns None and the decision is
+    the posture test alone, unchanged.
+    """
+    from . import pm_review as _PMR
+    gov = next((p for p in block["contractor_firm_postures"]
+                if p["firm"] == block.get("contractor_governing_firm")), None)
+    review = None
+    reviews = si.get("moduleReviews")
+    if isinstance(reviews, dict) and isinstance(reviews.get("A6.4"), dict):
+        review = reviews["A6.4"]
+    return _PMR.resolve(block.get("contractor_governing_posture"), review,
+                        (gov or {}).get("source_rating_posture")), gov
+
+
+def _apply_contractor(si: dict, row: dict[str, Any], block: dict[str, Any]) -> dict[str, Any]:
+    """
+    Put the four-factor reading onto A6.4's row, WHERE AND ONLY WHERE it governs.
+
+    IT GOVERNS ONLY ON THE FOUR-FACTOR BASIS. Where the governing firm's posture came from the
+    source-rating FALLBACK, this function attaches the working as evidence and leaves the band
+    exactly where the module already put it -- which is the same source rating, read through the
+    module's own already-proven path. Nothing is banded twice and nothing is blended.
+    """
+    row.update(block)
+    row["contractor_delivery_actor_words"] = (
+        "A contractor is a DELIVERY ACTOR, not a quality signal. A firm that misses planned "
+        "workfront dates, cannot staff planned work, delays material release or fails to "
+        "complete predecessor work moves the controlling path directly, which is why schedule "
+        "reliability carries 0.40 of the weight and quality execution 0.25. This reading is "
+        "taken from firm-level project records and from no module's posture, so nothing is "
+        "counted twice inside Delivery Quality and no adversity is imported from another "
+        "category.")
+    _four = block.get("contractor_governing_basis") == "four_factor_calculation"
+    # THE PRECEDENCE, AND IT IS THE ORDER'S SECTION 4 READ ONTO A MODULE THAT ALREADY HAD A
+    # SOURCE-RATING PATH. The four-factor calculation governs wherever it is ELIGIBLE. Where it
+    # is not, A6.4's OWN already-proven source-rating path -- the governed contractor assessment
+    # record, banded by `_a6_band` -- is the project-supplied fallback and keeps the band it
+    # already asserted; nothing here displaces it and the census cannot move on this change.
+    # Only where THAT structure is absent too does the per-firm rating a Subcontractor
+    # Performance Report states become the fallback, which is section 4's "if one exists"
+    # reached honestly rather than by preferring the newer source.
+    if not _four and row.get("band_asserted"):
+        row["contractor_band_governs"] = False
+        row["contractor_fallback_note"] = (
+            "The four-factor calculation is not eligible for the governing firm, so it is "
+            "DISCARDED ENTIRELY and this module's band is the project-supplied source rating it "
+            "already reads. The two are never blended; the four-factor working is carried here "
+            "as evidence and moves nothing.")
+        return row
+    if not _four:
+        # THE FALLBACK, WHERE NO GOVERNED ASSESSMENT RECORD EXISTS EITHER. The band is the
+        # source rating, unchanged, on Run 115's ladder. No factor and no override touches it.
+        row["contractor_band_governs"] = False
+        row["contractor_fallback_note"] = (
+            "No governed contractor assessment record exists for this project and the "
+            "four-factor calculation is not eligible for the governing firm, so the band is the "
+            "source rating a Subcontractor Performance Report states for that firm, unchanged "
+            "on the owner's Run 115 ladder. The four-factor working is carried as evidence and "
+            "moves nothing: the two are never blended.")
+        row["status_color"] = block["contractor_governing_posture"]
+        row["band_asserted"] = True
+        row["calibration_pending"] = False
+        row["band_boundary"] = (
+            "on the rating the project's Subcontractor Performance Report states for the "
+            "governing firm, normalised by the owner's Run 115 ladder: Exceptional or Very "
+            "Good, or 90 to 100, is Green; Satisfactory, or 80 to 89, is Yellow; Marginal, or "
+            "70 to 79, is Amber; Unsatisfactory, or below 70, is Red. Each numeric boundary is "
+            "INCLUSIVE ON ITS LOWER SIDE. " + block["contractor_eligibility_words"] + " "
+            + block["contractor_active_work_rule"])
+        row["band_basis"] = (
+            "the owner's Run 120 order, section 4. OWNER-CONFIGURED: the report's own rating is "
+            "the measure and this platform does not re-rate it, but no published standard fixes "
+            "which posture each label maps onto. That mapping is the owner's stated decision.")
+        for k in ("band_provenance_class", "band_basis_provenance_class",
+                  "band_boundary_provenance_class"):
+            row[k] = "OWNER-CALIBRATED"
+        row["band_provenance_words"] = PROVENANCE_WORDS["OWNER-CALIBRATED"]
+        row["band_boundary_provenance_words"] = PROVENANCE_WORDS["OWNER-CALIBRATED"]
+        row["threshold_source"] = THRESHOLD_SOURCE_OWNER
+        row["threshold_source_words"] = THRESHOLD_SOURCE_WORDS[THRESHOLD_SOURCE_OWNER]
+        row.pop("calibration_note", None)
+        row.pop("band_withheld_reason", None)
+        _gov = next((p for p in block["contractor_firm_postures"]
+                     if p["firm"] == block.get("contractor_governing_firm")), None)
+        row["evidence_metric"] = _contractor_sentence(
+            block, _gov, {"posture": row["status_color"]})
+        return row
+    resolution, gov = _contractor_hold(si, block)
+    row["contractor_band_governs"] = True
+    row["module_state"] = resolution["module_state"]
+    row["module_state_words"] = resolution["module_state_words"]
+    row["pm_review_required"] = resolution["review_required"]
+    row["pm_review_audit_record"] = _contractor_audit(block, gov, resolution)
+    posture = resolution["posture"]
+    row["contractor_calculated_posture"] = block["contractor_governing_posture"]
+    boundary = (block["contractor_weighted_boundary_words"] + " "
+                + block["contractor_override_words"] + " "
+                + block["contractor_eligibility_words"] + " "
+                + block["contractor_active_work_rule"])
+    basis = ("the owner's Run 120 order, sections 2 and 3. OWNER-CONFIGURED: every threshold "
+             "here is the owner's own configured tolerance except the OSHA recordable incident "
+             "rate FORMULA, which is codified and whose CUTS are still his. The band basis "
+             "identifier the owner named for it is "
+             "`owner_configured_contractor_delivery_tolerance`.")
+    if posture is None:
+        row["status_color"] = None
+        row["band_asserted"] = False
+        row["band_withheld_reason"] = (resolution.get("not_assessed_reason")
+                                       or resolution["module_state_words"])
+        row["band_boundary_if_reviewed"] = boundary
+        row.pop("threshold_source", None)
+        row.pop("threshold_source_words", None)
+    else:
+        row["status_color"] = posture
+        row["band_asserted"] = True
+        row["calibration_pending"] = False
+        row["band_boundary"] = boundary
+        row["band_basis"] = basis
+        row["band_provenance_class"] = "OWNER-CALIBRATED"
+        row["band_provenance_words"] = PROVENANCE_WORDS["OWNER-CALIBRATED"]
+        row["band_basis_provenance_class"] = "OWNER-CALIBRATED"
+        row["band_boundary_provenance_class"] = "OWNER-CALIBRATED"
+        row["band_boundary_provenance_words"] = PROVENANCE_WORDS["OWNER-CALIBRATED"]
+        row["threshold_source"] = THRESHOLD_SOURCE_OWNER
+        row["threshold_source_words"] = THRESHOLD_SOURCE_WORDS[THRESHOLD_SOURCE_OWNER]
+        row.pop("calibration_note", None)
+        row.pop("band_withheld_reason", None)
+    row["evidence_metric"] = _contractor_sentence(block, gov, resolution)
+    return row
+
+
+def _contractor_audit(block: dict[str, Any], gov: dict[str, Any] | None,
+                      resolution: dict[str, Any]) -> dict[str, Any]:
+    """
+    THE AUDIT RECORD SECTION 5 ENUMERATES, assembled in one place so a surface cannot render a
+    partial one. Every field the order names is a key here, and a field with nothing behind it is
+    None rather than absent, so a reader can see it was asked for.
+    """
+    from . import pm_review as _PMR
+    g = gov or {}
+    base = _PMR.audit_record(
+        normalised_posture=block.get("contractor_governing_posture"),
+        source_rating=g.get("source_rating"),
+        source_document_id=None,
+        source_document_version=None,
+        period=g.get("reporting_period"),
+        normalisation_rule="contractor_four_factor_weighted_severity",
+        normalisation_rule_version=block.get("contractor_factor_rule_version"),
+        resolution=resolution)
+    base.update({
+        "project_firm": g.get("firm"),
+        "reporting_period": g.get("reporting_period"),
+        "active_work": g.get("active_work"),
+        "active_work_stated": g.get("active_work_stated"),
+        "factor_values": g.get("factor_values"),
+        "factor_bands": g.get("factor_bands"),
+        "factor_evidence_references": {f["factor"]: f["evidence_references"]
+                                       for f in (g.get("factors") or [])},
+        "factors_unavailable": g.get("factors_unavailable"),
+        "weighted_severity": g.get("weighted_severity"),
+        "weighted_posture": g.get("weighted_posture"),
+        "weighted_arithmetic": g.get("weighted_arithmetic"),
+        "overrides_fired": g.get("overrides_fired"),
+        "override_detail": g.get("override_detail"),
+        "final_calculated_posture": g.get("final_posture"),
+        "posture_basis": g.get("posture_basis"),
+        "eligibility_rule": g.get("eligibility_words"),
+        "source_rating_where_fallback_used": (
+            g.get("source_rating") if g.get("posture_basis") == "source_rating_fallback"
+            else None),
+        "calculation_version": block.get("contractor_factor_rule_version"),
+        "threshold_version": "owner_configured_contractor_delivery_tolerance",
+        "firms_excluded_no_active_work": block.get(
+            "contractor_firms_excluded_no_active_work"),
+    })
+    return base
+
+
+def _contractor_sentence(block: dict[str, Any], gov: dict[str, Any] | None,
+                         resolution: dict[str, Any]) -> str:
+    """The reader's sentence. Never a legal claim, and it names every reading's source."""
+    g = gov or {}
+    firms = block.get("contractor_firm_postures") or []
+    parts = [f"{len(firms)} firm{'' if len(firms) == 1 else 's'} carry delivery records or a "
+             f"stated rating on this project."]
+    if g:
+        vals = g.get("factor_values") or {}
+        bands = g.get("factor_bands") or {}
+        parts.append(
+            f"The worst active firm is {g.get('firm')}: schedule reliability "
+            f"{vals.get('schedule_reliability')} per cent ({bands.get('schedule_reliability')}), "
+            f"quality execution {vals.get('quality_execution')} per cent "
+            f"({bands.get('quality_execution')}), safety TRIR {vals.get('safety')} "
+            f"({bands.get('safety')}), commercial and administration "
+            f"{vals.get('commercial_administration')} per cent "
+            f"({bands.get('commercial_administration')}) -- weighted severity "
+            f"{g.get('weighted_severity')}, which bands {g.get('weighted_posture')}.")
+        if g.get("overrides_fired"):
+            parts.append(
+                "The hard override on " + ", ".join(g["overrides_fired"])
+                + " fired AFTER the weighted calculation and the final posture is the worse of "
+                  "the two, at " + str(g.get("final_posture")) + ".")
+    excl = block.get("contractor_firms_excluded_no_active_work") or []
+    if excl:
+        parts.append(f"{len(excl)} firm(s) stated no active work this period and are out of the "
+                     f"comparison: {', '.join(excl)}.")
+    if resolution.get("posture") is None:
+        parts.append(str(resolution.get("not_assessed_reason")
+                         or resolution.get("module_state_words")))
+    return " ".join(parts)
+
+
 def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any]],
            *, gated: bool) -> Callable:
     """
@@ -954,6 +1262,11 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
     """
 
     def run(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
+        # RUN 120. A6.4's four-factor reading is taken BEFORE the governed assessment record is
+        # required, because the owner's chain starts at FIRM-LEVEL RECORDS: a project with
+        # delivery records and no past-performance evaluation must still reach a posture, and
+        # requiring the evaluation first would make that path dead code.
+        _cd = _contractor_delivery(si) if module_id == "A6.4" else None
         try:
             structure = v6_structure(si, module_id)
         except StructureAbsent as exc:
@@ -962,6 +1275,18 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
             # evidence supports, or None when it supports none.
             structure = _assemble(si, module_id)
             if structure is None:
+                if _cd is not None and _cd.get("contractor_governing_posture"):
+                    _row = {
+                        "method_class": method_class,
+                        "status_color": None,
+                        "band_asserted": False,
+                        "calibration_pending": True,
+                        "result_source": RESULT_SOURCE,
+                        "canonical_disposition": DISPOSITION_COMPUTED,
+                        "canonical_structure": "contractorDeliveryRecords",
+                        "measure": "contractor_delivery_factors",
+                    }
+                    return _apply_contractor(si, _row, _cd)
                 return _abstain(module_id, method_class, exc.sentence,
                                 DISPOSITION_STRUCTURE_ABSENT)
         use = MODULE_USE[module_id]
@@ -1044,6 +1369,12 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
             row["category_9_metadata_only"] = True
             row["voting_eligible"] = False
         row["evidence_metric"] = _sentence(module_id, result)
+        # RUN 120. A6.4, AND ONLY WHERE THE FOUR-FACTOR CALCULATION IS ELIGIBLE. Where it is
+        # not, `_apply_contractor` attaches the working as evidence and leaves the band exactly
+        # where `_a6_band` put it -- which IS the project-supplied source rating, the fallback
+        # section 4 names. The two are never blended and the row is never banded twice.
+        if _cd is not None:
+            row = _apply_contractor(si, row, _cd)
         return row
 
     run.__name__ = f"run_{module_id.replace('.', '_')}"
