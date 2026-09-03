@@ -41,9 +41,12 @@ var LinFiles = (function () {
     return (window.LinAuth && typeof LinAuth.getToken === "function")
       ? LinAuth.getToken() : null;
   }
-  function call(action, extra) {
+  /* `timeoutMs` is optional and defaults to the 60s the reads on this tab have always used.
+     The document upload passes LinStore.UPLOAD_TIMEOUT_MS at its own call site; see the note
+     on the same helper in workspace.js and the sizing note in store.js. */
+  function call(action, extra, timeoutMs) {
     return LinStore.postWithTimeout(
-      Object.assign({ action: action, session_token: token() }, extra || {}), 60000);
+      Object.assign({ action: action, session_token: token() }, extra || {}), timeoutMs || 60000);
   }
   function projectId() {
     var sel = $("ws-files-project");
@@ -345,7 +348,7 @@ var LinFiles = (function () {
       id: pid, period: pnum,
       period_end: (endEl && endEl.value) ? endEl.value : null,
       documents: payload
-    });
+    }, LinStore.UPLOAD_TIMEOUT_MS);
     if (!resp || resp.ok !== true) {
       // The upload panel's existing dialog is the error surface for extraction failures; a
       // request that did not land at all is reported here because there is no per-file result

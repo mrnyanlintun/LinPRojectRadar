@@ -275,7 +275,43 @@
      Unlike apiPost, this deliberately does NOT throw on {ok:false}. The caller
      inspects the resolved body, because the backend reports a rate limit inside
      a 200 response ("Auto extraction failed: ... 429 ... rate_limit_error"). */
-  const RESILIENT_TIMEOUT_MS = 45000;
+  /* WHAT THIS CLOCK BOUNDS, AND WHY IT IS 180s AND NOT 45s.
+
+     It bounds ONE POST. The document surfaces are not all the same shape, so read this with
+     UPLOAD_TIMEOUT_MS below:
+
+       - `signals.js` processOne posts action:"extractsignals", ONE FILE PER REQUEST, files
+         spaced 2.5s apart, and passes no timeout — so this default is the clock on a single
+         document's extraction. Server-side that one model call is bounded by
+         `extraction_client.REQUEST_TIMEOUT_S = 120`.
+       - `workspace.js` and `files.js` post action:"projectupload" with MANY documents in one
+         request; those two pass UPLOAD_TIMEOUT_MS explicitly.
+
+     45000 WAS BELOW THE SERVER'S OWN PER-CALL BOUND. A single extraction the server was still
+     legitimately waiting on at 45s was aborted in the browser while the model call had 75s of
+     its permitted 120s left, and Run 124's raise of MAX_TOKENS from 1536 to 8192 made long
+     replies the normal case for a register-bearing document rather than the exception. So the
+     fix for truncation made this abort more likely, not less.
+
+     180000 = REQUEST_TIMEOUT_S (120s, the server's own hard bound on one model call) + 60s of
+     headroom for base64 transfer, decode, the database write and the response. A single
+     extraction therefore cannot reach this clock by construction; anything that does is a
+     genuinely hung request, which is what the timeout exists to make visible. */
+  const RESILIENT_TIMEOUT_MS = 180000;
+
+  /* THE BATCH CLOCK. `documents.py` caps one upload at MAX_BATCH_DOCUMENTS = 30 documents;
+     `extract_many` runs DEFAULT_CONCURRENCY = 10 at a time, so 30 never-seen documents run
+     three sequential waves, each wave bounded by REQUEST_TIMEOUT_S = 120s. The guaranteed
+     worst case is therefore 3 x 120 = 360s, and 420000 is that plus 60s of the same headroom.
+     Both halves are required and in this order: the server-side cap is what makes the worst
+     case finite, and this number is sized to that cap rather than chosen and hoped for.
+
+     OUTSIDE THE APPLICATION, NOTHING IN THIS REPOSITORY BOUNDS THE REQUEST. render.yaml sets
+     no timeout flag, there is no Procfile and no gunicorn, and uvicorn's --timeout-keep-alive
+     governs idle connections rather than request duration. Render's own platform ingress
+     limit is a dashboard setting and is not in the tree; if it is shorter than this, it
+     becomes the binding limit. See REPORT_2026-09-03_upload_timeout.md. */
+  const UPLOAD_TIMEOUT_MS = 420000;
   const RESILIENT_BACKOFF_MS = [20000, 40000, 60000]; // before attempts 2, 3, 4
 
   function isRateLimited(x) {
@@ -743,7 +779,7 @@
     post: apiPost,
     // resilient POST — 45s per-attempt timeout + 20/40/60s rate-limit backoff.
     // Used by the document upload path; see the comment above postResilient.
-    postResilient, postWithTimeout, isRateLimited,
+    postResilient, postWithTimeout, isRateLimited, UPLOAD_TIMEOUT_MS,
     // sync mirror accessors used by render code
     cachedActive, cachedArchived, getCached, listActive: cachedActive,
     hasSignals, errored, configured, banner, loading

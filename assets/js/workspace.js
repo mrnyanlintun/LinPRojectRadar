@@ -141,9 +141,14 @@
 
   function token() { return window.LinAuth ? LinAuth.getToken() : null; }
 
-  function call(action, extra) {
+  /* `timeoutMs` is optional and defaults to the 60s that every read on this tab has always
+     used. The document upload passes LinStore.UPLOAD_TIMEOUT_MS instead, because 60s is far
+     below what a batch of never-seen documents legitimately costs — see store.js. It is passed
+     at that ONE call site rather than raised here, so a hung status read stays visible in a
+     minute instead of hiding behind an upload-sized clock. */
+  function call(action, extra, timeoutMs) {
     var payload = Object.assign({ action: action, session_token: token() }, extra || {});
-    return LinStore.postWithTimeout(payload, 60000);
+    return LinStore.postWithTimeout(payload, timeoutMs || 60000);
   }
 
   /* ---------- state ---------- */
@@ -645,7 +650,7 @@
     var stated = selectedPeriod();
     var resp = await call("projectupload", {
       id: pid, period: stated.period, period_end: stated.periodEnd, documents: documents
-    });
+    }, LinStore.UPLOAD_TIMEOUT_MS);
 
     progress.style.display = "none";
     $("ws-upload-input").value = "";

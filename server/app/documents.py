@@ -109,6 +109,25 @@ log = logging.getLogger("opus-gubernatio-server")
 MAX_FILE_BYTES = 20 * 1024 * 1024
 MAX_BASE64_CHARS = 5_000_000
 
+# HOW MANY DOCUMENTS ONE UPLOAD MAY CARRY. Per-file, above; per-BATCH, here. Until this run
+# there was no batch bound at all: `MAX_FILE_BYTES` and `MAX_BASE64_CHARS` each guard one file,
+# and the `jobs` list below is built by an unbounded loop, so a caller could put a hundred
+# documents under one request and one browser clock.
+#
+# THIRTY IS THREE WAVES, and that is where the number comes from rather than from roundness.
+# `extract_many` runs `extraction_client.DEFAULT_CONCURRENCY = 10` jobs at a time, so a batch of
+# N never-seen documents runs ceil(N/10) sequential waves, and each individual call is bounded
+# by `extraction_client.REQUEST_TIMEOUT_S = 120`. Three waves is therefore 360 seconds of
+# guaranteed worst case, which is what `UPLOAD_TIMEOUT_MS` in assets/js/store.js is sized
+# against. A fourth wave would push the guaranteed bound past eight minutes for a batch nobody
+# in the corpus sends.
+#
+# THIRTY IS ALSO ABOVE A LEGITIMATE PERIOD. `extraction_fields.DOC_TYPES` holds 27 analytical
+# document types, so a period carrying one of every type in the vocabulary fits with three
+# slots spare, and the repository defines no larger recurring set. Nothing here forces a PM to
+# split one reporting period across two uploads.
+MAX_BATCH_DOCUMENTS = 30
+
 # `compute_portfolio` needs at least two projects with signal data (simulation/portfolio.py:56).
 # Below that the snapshot is stored as NULL — distinct from "computed and came back empty".
 PORTFOLIO_MIN_PROJECTS = 2
@@ -4190,6 +4209,14 @@ def a_projectupload(session: Session, payload: dict, secret: str, ttl: int) -> d
     entries = payload.get("documents")
     if not isinstance(entries, list) or not entries:
         return err("documents must be a non-empty list")
+    # THE BATCH BOUND, refused before a single file is decoded so an over-large batch costs
+    # nothing. It names the limit and the count, in the register of the per-file refusals just
+    # above it, because a PM must be able to act on it without reading this file.
+    if len(entries) > MAX_BATCH_DOCUMENTS:
+        return err(
+            f"Too many documents in one upload. The maximum is {MAX_BATCH_DOCUMENTS} and "
+            f"{len(entries)} were sent. Please upload them in smaller batches."
+        )
 
     decoded: list[dict] = []
     for entry in entries:
