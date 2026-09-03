@@ -98,8 +98,16 @@ r_not = [{"record_reference": "NCR-3", "record_kind": "nonconformance",
 r_word = [{"record_reference": "NCR-4", "record_kind": "nonconformance",
            "record_severity": "cosmetic", "record_status": "open"}]
 p = one(r_fire); q = one(r_not); w = one(r_word)
-ck("quality override FIRES on an OPEN critical life-safety nonconformance",
-   (p["overrides_fired"], p["final_posture"]), (["quality_execution"], "Red"))
+# RE-POINTED BY RUN 121, GOAL 3, AND THE CHANGE IS THE POINT OF THE CHECK. The owner has ruled
+# that an open critical nonconformance also makes the firm's SCHEDULE RELIABILITY adverse -- "if
+# there is an issue in quality, the substantial completion date will be delayed; a defect must
+# be rectified, and rectification takes time". So the same record now fires TWO overrides. The
+# quality half is asserted exactly as Run 120 asserted it and is not weakened; the schedule half
+# is added, and `drive_run121.py` proves it able to fail.
+ck("quality override FIRES on an OPEN critical life-safety nonconformance, AND (Run 121) the "
+   "schedule override fires on the same record",
+   (sorted(p["overrides_fired"]), p["final_posture"]),
+   (["quality_execution", "schedule_reliability"], "Red"))
 ck("quality override does NOT fire once the same nonconformance is CLOSED",
    (q["overrides_fired"], q["final_posture"]), ([], "Green"))
 ck("a severity word outside the owner's closed set fires NOTHING and is not dropped to the "

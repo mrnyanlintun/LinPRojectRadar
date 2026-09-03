@@ -375,9 +375,11 @@ def factor_schedule_reliability(records, denominators) -> dict[str, Any]:
     due in the period x 100.
 
     THE OVERRIDE: Red if the firm causes a CONTROLLING-PATH ACTIVITY or a CONTRACTUAL MILESTONE
-    to forecast late. That is read off `record_milestone_forecast_late`, the column Run 118
-    already asks for and whose recognised headings already include `critical_path_impact`. It is
-    not rebuilt.
+    to forecast late, ON AN OPEN RECORD ONLY (Run 121, goal 2), OR if an OPEN CRITICAL
+    nonconformance is attributed to the firm (Run 121, goal 3). The first is read off
+    `record_milestone_forecast_late`, the column Run 118 already asks for and whose recognised
+    headings already include `critical_path_impact`; the second off the same `_KIND_NCR` /
+    `_QUALITY_OVERRIDE` population the quality factor reads. Neither is rebuilt.
 
     THE OVERRIDE IS EVALUATED WHATEVER THE FACTOR'S AVAILABILITY. A controlling-path delay is a
     finding whether or not the document also stated a package population.
@@ -393,9 +395,58 @@ def factor_schedule_reliability(records, denominators) -> dict[str, Any]:
     # fire both overrides on one record and report one delay as two findings. A record whose
     # kind is neither family fires NEITHER and is reported in `rows_of_no_factor` -- never
     # assigned to the nearest.
+    #
+    # ===================================== RUN 121, GOAL 2. A CLOSED RECORD DOES NOT FIRE THIS.
+    #
+    # WHAT RUN 120 MEASURED AND REPORTED. This override fired on ANY record flagged as causing a
+    # controlling-path activity or contractual milestone to forecast late, closed or not,
+    # because the owner's Run 120 sentence stated "open" only for the quality override and Run
+    # 120 correctly refused to add a filter he had not stated.
+    #
+    # HE HAS NOW STATED IT: "A closed record does not fire the schedule override." That is the
+    # same rule he gave at Run 118 -- once a record is closed, its impact washes off
+    # immediately. `is_open` is the platform's ONE reading of that, already used by the quality,
+    # safety and commercial overrides here and by all eight of Run 118's, and it is reused
+    # rather than restated. A RECORD PRINTING NO STATUS IS STILL TREATED AS OPEN: assuming
+    # closure would silently discard evidence.
+    #
+    # THE FACTOR'S OWN PERCENTAGE IS UNTOUCHED. `packages_completed_on_time / packages_due` is
+    # the document's own stated population and this filter is not applied to it; a closed record
+    # stops firing the OVERRIDE, it does not retrospectively edit a count the document made.
+    _open_rows = [r for r in rows if is_open(r)]
     hits = [f"{r.get('record_reference')}: causes a controlling-path activity or a contractual "
             f"milestone to forecast late"
-            for r in rows if _truthy(r.get("record_milestone_forecast_late")) is True]
+            for r in _open_rows if _truthy(r.get("record_milestone_forecast_late")) is True]
+    # ============= RUN 121, GOAL 3. AN OPEN CRITICAL NONCONFORMANCE MAKES THE SCHEDULE UNRELIABLE.
+    #
+    # THE OWNER'S REASONING, IN HIS WORDS: "if there is an issue in quality, the substantial
+    # completion date will be delayed. A defect must be rectified, and rectification takes time."
+    # He has chosen the CONTAINED form: an open critical nonconformance attributed to a firm
+    # makes THAT FIRM'S schedule reliability factor adverse. It does not touch the Schedule
+    # category -- Critical Path Analysis, Milestone Trend and the rest are unchanged -- and NO
+    # FORECAST DATE IS MOVED, because no document states how long a rectification takes and
+    # inferring a duration is exactly what this platform is built not to do.
+    #
+    # WHICH RECORDS QUALIFY. `_QUALITY_OVERRIDE` and `_KIND_NCR`, the SAME population and the
+    # SAME critical vocabulary the quality override already reads, filtered by the SAME
+    # `is_open`. The owner's Run 121 sentence says "an issue in quality" and does not name a
+    # wider set; the tree settles nothing wider; his order says to use the critical set and say
+    # so where it does not. THIS RUN CHOSE THE CRITICAL SET AND SAYS SO, here and in the report.
+    # Reading a WIDER set here would make this factor adverse on evidence the owner's own
+    # quality override does not treat as critical -- inventing a threshold.
+    #
+    # HOW ADVERSE. It fires THIS OVERRIDE, which is Red outright, exactly as it fires the
+    # quality one. That is not a default: it is the only mechanism in this engine that does not
+    # require a number the owner has not given. "Move it by a band" needs a displacement rule --
+    # from which band, by how much, floored where -- and every one of those is a threshold he
+    # has not stated. The override is stated absolutely and needs none.
+    _ncr_open_critical = [r for r in records
+                          if _w(r.get("record_kind")) in _KIND_NCR and is_open(r)
+                          and any(w in _QUALITY_OVERRIDE for w in _words_of(r))]
+    hits += [f"{r.get('record_reference')}: an open critical nonconformance attributed to this "
+             f"firm -- a defect must be rectified and rectification takes time, so the firm's "
+             f"schedule reliability is adverse"
+             for r in _ncr_open_critical]
     pct = _pct(num, den)
     band = _ladder_high_is_good(pct, _SCHEDULE_CUTS, "Red")
     why = None
@@ -424,10 +475,22 @@ def factor_schedule_reliability(records, denominators) -> dict[str, Any]:
                   "path directly."),
         override_hits=hits,
         override_words=("Red if the firm causes a controlling-path activity or a contractual "
-                        "milestone to forecast late."),
+                        "milestone to forecast late, ON AN OPEN RECORD ONLY -- a closed record "
+                        "does not fire it, because once a record is closed its impact washes "
+                        "off immediately, and a record printing no status is treated as open. "
+                        "RUN 121: Red ALSO for an OPEN CRITICAL structural, life-safety, code, "
+                        "hold-point or commissioning-blocking nonconformance attributed to this "
+                        "firm -- a defect must be rectified and rectification takes time, so a "
+                        "quality problem is a schedule problem. The same nonconformance fires "
+                        "the quality execution override as well, and both are real."),
         unavailable_reason=why,
-        evidence_references=[str(r.get("record_reference")) for r in rows],
+        evidence_references=([str(r.get("record_reference")) for r in rows]
+                             + [str(r.get("record_reference")) for r in _ncr_open_critical]),
         extra={"schedule_records_considered": len(rows),
+               "schedule_records_open": len(_open_rows),
+               "schedule_records_closed_not_counted": len(rows) - len(_open_rows),
+               "open_critical_nonconformances": [str(r.get("record_reference"))
+                                                 for r in _ncr_open_critical],
                "rows_of_no_factor": sum(
                    1 for r in records
                    if _w(r.get("record_kind")) not in _KIND_SCHEDULE
