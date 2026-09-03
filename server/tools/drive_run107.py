@@ -300,11 +300,21 @@ for mid in EIGHT:
         print(f"         module_state = {m['module_state']}")
 print()
 _banded = [m for m in EIGHT if (RES.get(m) or {}).get("status_color")]
+# RE-POINTED BY RUN 121, AND THE REASON IS THE OWNER'S RULING, NOT A CONVENIENCE. Run 107's
+# hold asserted that an Amber A4.8 was `pending_pm_review` and published no band. The owner has
+# ruled that Project Manager feedback on contractor performance is a DISCRETE EVENT, so nothing
+# waits on a review. THE CHECKS ARE NOT WEAKENED AND NOT DELETED: each one now asserts the
+# OPPOSITE, positive fact -- the module STANDS and PUBLISHES its computed Amber -- and
+# `drive_run121.py` proves that assertion able to fail by putting the hold back.
 _held = [m for m in EIGHT if (RES.get(m) or {}).get("module_state") == "pending_pm_review"]
 check(len(_banded) >= 6, f"at least six of the eight band on this real project", str(_banded))
-check("A4.8" in _held, "A4.8 is HELD pending PM review, not banded", str(_held))
-check((RES.get("A4.8") or {}).get("status_color") is None,
-      "and a held module asserts NO band")
+check(_held == [], "RUN 121: NO module is held -- `pending_pm_review` is no longer producible",
+      str(_held))
+check((RES.get("A4.8") or {}).get("module_state") == "stands",
+      "A4.8 STANDS and is not held", repr((RES.get("A4.8") or {}).get("module_state")))
+check((RES.get("A4.8") or {}).get("status_color") == "Amber",
+      "and it PUBLISHES the Amber it computed, rather than asserting no band",
+      repr((RES.get("A4.8") or {}).get("status_color")))
 check((RES.get("A4.8") or {}).get("normalised_posture") == "Amber",
       "while the platform's own normalised posture is preserved on the row",
       repr((RES.get("A4.8") or {}).get("normalised_posture")))
@@ -326,9 +336,13 @@ check(CATS.get("A4") is not None,
       "Document Signals still carries a posture, formed from the modules that are available",
       repr(CATS.get("A4")))
 _a4_scores = ((RES.get("A4.2") or {}), )
-check("A4.8" not in json.dumps([m for k, m in RES.items()
-                                if k == "A4.8" and m.get("status_color")]),
-      "and the held module contributed no band to it")
+# RE-POINTED BY RUN 121. The old check read "the held module contributed no band". A4.8 now
+# contributes its band like any other module, which is the ruling; what still must hold is that
+# the MACHINE NAME of the removed state reaches no category.
+check("pending_pm_review" not in json.dumps(CATS),
+      "and no category carries the removed hold state")
+check((RES.get("A4.8") or {}).get("status_color") == "Amber",
+      "and A4.8 now contributes its own band to Document Signals, as the owner ruled")
 
 sock = socket.socket(); sock.bind(("127.0.0.1", 0)); PORT = sock.getsockname()[1]; sock.close()
 import uvicorn
@@ -395,12 +409,18 @@ print("PAGE, BEFORE THE REVIEW -- the assessment-limitations block:")
 _lim = CARD_BEFORE[CARD_BEFORE.find("ASSESSMENT LIMITATIONS"):][:900]
 print(_lim)
 check(bool(CARD_BEFORE), "the card rendered BEFORE any review was recorded")
-check("Project Manager review" in CARD_BEFORE,
-      "and the RENDERED card says the reading is held for Project Manager review")
-check("Subcontractor_Performance" in CARD_BEFORE or "Subcontractor" in CARD_BEFORE.title(),
-      "and names the held module")
-check("A4.8 " not in CARD_BEFORE.split("ADVERSE READINGS")[-1][:2000],
-      "and the held module is NOT named as an adverse reading, because it asserts no band")
+# RE-POINTED BY RUN 121. The card no longer says a reading is held, because none is. Both
+# checks are inverted rather than dropped: the held-for-review limitation must be GONE from the
+# rendered page, and A4.8 -- an Amber that now asserts its band -- must appear among the adverse
+# readings, which is exactly what the hold used to suppress.
+check("holds for Project Manager review" not in CARD_BEFORE
+      and "assert no band until a disposition" not in CARD_BEFORE,
+      "and the RENDERED card no longer says any reading is held for Project Manager review")
+check("Subcontractor" in CARD_BEFORE,
+      "and the module is still named on the card")
+check("A4.8" in CARD_BEFORE.split("ADVERSE READINGS")[-1][:2000],
+      "and A4.8 IS now named as an adverse reading, because it asserts its band",
+      CARD_BEFORE.split("ADVERSE READINGS")[-1][:200])
 check("pending_pm_review" not in (OUT_BEFORE.get("pageText") or ""),
       "and the machine name of the held state appears nowhere on the rendered page")
 
@@ -617,8 +637,10 @@ check(r.get("status_color") is None,
 
 # A4.8 -- the normalisation, the eligibility rule, and the refusal to infer.
 r = run_subcontractor_performance(SI(), None, CUT)
-check(r.get("normalised_posture") == "Amber" and r.get("status_color") is None,
-      "A4.8 Marginal normalises to Amber and is HELD")
+# RE-POINTED BY RUN 121: the normalisation is unchanged; the hold that followed it is gone.
+check(r.get("normalised_posture") == "Amber" and r.get("status_color") == "Amber",
+      "A4.8 Marginal normalises to Amber and PUBLISHES it -- nothing is held",
+      repr((r.get("normalised_posture"), r.get("status_color"))))
 _s = copy.deepcopy(STRUCTURES["subcontractorAssessments"])
 _s["reported_ratings"][1]["rating_label"] = "Unsatisfactory"
 r = run_subcontractor_performance(SI(subcontractorAssessments=_s), None, CUT)

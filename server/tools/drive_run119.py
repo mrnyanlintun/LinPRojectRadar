@@ -116,18 +116,27 @@ ck("the stated rating still normalises to Red", a.get("reported_rating_posture")
 ck("the factors still lift the firm to Green -- NOTHING about the arithmetic changed",
    gp.get("adjusted_posture"), "Green")
 ck("the lift is three bands and is measured", (a.get("pm_review_audit_record") or {}).get("lift_bands"), 3)
-ck("HELD: the module asserts NO band and is pending_pm_review",
-   (a.get("status_color"), a.get("module_state")), (None, "pending_pm_review"))
-ck("held BY THE MOVEMENT, not by the posture",
-   (a.get("pm_review_audit_record") or {}).get("held_for_lift"), True)
+# RE-POINTED BY RUN 121. Run 119 answered the silent three-band lift with a HOLD; the owner has
+# ruled the hold off and required the DISCLOSURE to survive it. So the measurement Run 119 built
+# is asserted unchanged above -- the lift is still three bands -- and what changes here is only
+# the consequence: the module publishes Green AND says on its reading that it was lifted.
+ck("RUN 121: NOT held -- the module publishes the Green it computed",
+   (a.get("status_color"), a.get("module_state")), ("Green", "stands"))
+ck("the movement is DISCLOSED rather than held",
+   ((a.get("pm_review_audit_record") or {}).get("lift_disclosed"),
+    (a.get("pm_review_audit_record") or {}).get("held_for_lift")), (True, False))
+ck("AND THE DISCLOSURE IS IN THE SENTENCE A READER READS, not only on the audit record",
+   "DISCLOSED LIFT: this reading is two or more bands BETTER" in str(a.get("evidence_metric")),
+   True)
 ck("the source rating is preserved beside the adjusted posture, verbatim",
    (a.get("pm_review_audit_record") or {}).get("source_rating"), "Unsatisfactory")
 ck("the audit record carries the band the source rating normalised to",
    (a.get("pm_review_audit_record") or {}).get("source_rating_posture"), "Red")
-ck("the held sentence names the lift",
-   "lifted two or more bands" in str(a.get("module_state_words")), True)
-ck("A4 forms without it -- the hold does not drag the category",
-   "pending_pm_review" not in json.dumps(cats or {}), True)
+ck("the disclosure sentence names the lift",
+   "two or more bands BETTER" in str(a.get("module_state_words")), True)
+ck("A4 carries the module rather than forming without it, and the removed state reaches nothing",
+   ("pending_pm_review" not in json.dumps(cats or {}), cats.get("A4") is not None),
+   (True, True))
 print("        category statuses:", cats, "| project status:", st)
 
 # ITERATION 1 OF THIS CASE USED "Marginal", which normalises to Amber; the clean records lift
@@ -142,8 +151,10 @@ print("        stated=", b.get("reported_rating_posture"), " adjusted=", gpb.get
       " state=", b.get("module_state"), " band=", b.get("status_color"))
 ck("a one-band lift is NOT held, and the module bands",
    ((b.get("pm_review_audit_record") or {}).get("lift_bands"),
-    (b.get("pm_review_audit_record") or {}).get("held_for_lift"),
+    (b.get("pm_review_audit_record") or {}).get("lift_disclosed"),
     b.get("status_color"), b.get("module_state")), (1, False, "Green", "stands"))
+ck("and a one-band lift carries NO disclosure sentence -- the disclosure discriminates",
+   "DISCLOSED LIFT" in str(b.get("evidence_metric")), False)
 
 print("\n1C. FALSIFY -- A GREEN-RATED FIRM WITH CLEAN RECORDS DOES NOT MOVE AND IS NOT HELD")
 res, ab, st, cats, si = build("PRJ-R119C-" + STAMP, "1C", rating_docs("Very Good"))

@@ -1,32 +1,43 @@
 """
-RUN 107. THE PM REVIEW STATE -- A MODULE-LEVEL STATE, NOT A SEVENTH PROJECT STATUS.
+RUN 121. THE HOLD COMES OFF. PM REVIEW IS A DISCRETE EVENT, NOT A GATE.
 
-THE OWNER'S RULING, RUN 107, SECTION 2, A4.8. "An Amber or Red normalised result is not a
-finding until a Project Manager has reviewed it." Green or Yellow stands and acknowledgement is
-optional; Amber or Red puts the MODULE into `pending_pm_review` and it does not enter the
-Document Signals category posture until a disposition is recorded. The category proceeds
-without it.
+THE OWNER'S RULING, RUN 121, SECTION 1, IN HIS OWN WORDS. "PM feedback on contractor
+performance is a discrete event. Otherwise the rest goes as planned until the PM flags there is
+an issue with the contractor." So NOTHING WAITS ON REVIEW. A computed posture -- Amber, Red, or
+any other -- asserts its band and flows to its category as normal. The PM flags an issue when
+there is one, and that flag is the event, not the absence of one.
 
-WHY THIS IS NOT A NEW PROJECT STATUS, AND HOW THAT IS KEPT TRUE STRUCTURALLY. Run 106 fixed the
-project status vocabulary at exactly six -- Complete, Green, Yellow, Amber, Red, Awaiting
-analysis. `pending_pm_review` is NEVER written to `status_color`, never to `project_status` and
-never to a category's `status`. A held module returns `status_color = None`, which is the
-platform's existing, proven meaning of "this row asserts no band": `category_posture` averages
-only banded modules, so a row with no band contributes nothing, cannot drag its category down
-and cannot lift it. The held state lives in its own key, `module_state`, beside the reading. A
-reader who greps for the six statuses will never find this string among them.
+WHAT THIS REVERSES. Run 107 introduced `pending_pm_review` for A4.8: an adverse normalised
+posture asserted no band until a disposition was recorded. Run 118 applied it to the eight-factor
+subcontractor engine, Run 119 extended it to catch a lift of two or more bands, and Run 120
+applied it to A6.4's four-factor chain. The owner's ruling covers all four. The PENDING exit is
+GONE from `resolve` and `pending_pm_review` is no longer a state this platform can produce.
 
-WHY THE HOLD IS NOT `EXCLUDED_FROM_CATEGORY_ROLLUP`. That set is a PERMANENT property of a
-module -- B1.2 is derived from the rollup it would feed, so it may never enter it, on any
-project, in any period. This is a PER-READING state: the same module on the same project enters
-the rollup the moment a disposition is recorded, and enters it on a Green reading without any
-review at all. Putting it in that set would hold A4.8 out of Document Signals forever, which is
-the opposite of the owner's ruling.
+WHAT DID NOT GO, AND WHY EACH SURVIVED THE DELETION UNTOUCHED.
 
-THE PLATFORM NEVER ACTS. It states the finding; the human decides. Nothing here issues a
-notice, changes a payment, directs corrective action or makes a contractual determination, and
-the source rating is never altered or erased -- the audit record carries it verbatim beside the
-PM's own posture, and both are rendered.
+  * THE REVIEW ROUTE. `documents.a_projectmodulereview` never consulted the hold: it validates
+    the disposition against `research_decision.PROJECT_DECISION_DISPOSITIONS`, reads the
+    platform's own mapping off the stored row and appends one `audit_events` row. It refuses a
+    review only where no reading is stored, never because a reading was or was not held. A PM
+    can still record a disposition on any reading, held or not, and always could.
+  * THE RECORDED DISPOSITION'S AUTHORITY. `DISPOSITION_EFFECT` is unchanged and so is the
+    REVIEWED exit below. Where a PM has modified or overridden a posture, `takes_pm_posture`
+    puts the PM's band in place of the computed one exactly as it did before this run. That exit
+    was ALREADY independent of the hold -- it fired whenever a review existed -- so removing the
+    PENDING exit did not touch it.
+  * THE AUDIT RECORD. `audit_record` below is unchanged in every field the owner enumerates: the
+    source rating, the factor values, the overrides that fired, the computed posture, the
+    disposition, the rationale and the timestamp.
+  * THE LIFT DISCLOSURE. Run 119 built the hold so a firm rated Unsatisfactory could not
+    SILENTLY publish Green. The hold goes; the silence does not come back. `lift_bands` is
+    unchanged, the movement is still measured, still on the audit record, and a lift of
+    `LIFT_BANDS_REQUIRING_DISCLOSURE` bands or more now composes `LIFT_DISCLOSURE_WORDS` into
+    the sentence a reader reads. The reading publishes AND says it was lifted.
+
+THE PLATFORM NEVER ACTS. It states the finding; the human decides. Nothing here issues a notice,
+changes a payment, directs corrective action or makes a contractual determination, and the source
+rating is never altered or erased -- the audit record carries it verbatim beside the PM's own
+posture, and both are rendered.
 """
 from __future__ import annotations
 
@@ -38,46 +49,46 @@ from typing import Any
 from .fusion import BAND_SEVERITY as _BAND_SEVERITY
 
 #: The module-level states. NOT project statuses and never assigned to `status_color`.
+#:
+#: RUN 121. `MODULE_STATE_PENDING` / `pending_pm_review` IS DELETED, not merely unused. A
+#: constant left behind is a hold waiting to be re-wired by the next run that greps for it, and
+#: `drive_run121.py` asserts the name is absent from this module's executing code. There are now
+#: exactly two module states: a reading STANDS, or a Project Manager has REVIEWED it.
 MODULE_STATE_STANDS = "stands"
-MODULE_STATE_PENDING = "pending_pm_review"
 MODULE_STATE_REVIEWED = "reviewed_by_pm"
 
-MODULE_STATES: tuple[str, ...] = (MODULE_STATE_STANDS, MODULE_STATE_PENDING,
-                                  MODULE_STATE_REVIEWED)
+MODULE_STATES: tuple[str, ...] = (MODULE_STATE_STANDS, MODULE_STATE_REVIEWED)
 
-#: The postures that require a review before they are a finding. The owner's words.
-POSTURES_REQUIRING_REVIEW: frozenset[str] = frozenset({"Amber", "Red"})
+# ======================================================= RUN 121. THE LIFT IS DISCLOSED, NOT HELD.
+#
+# THE DEFECT RUN 118 MEASURED. A firm the performance report rated Unsatisfactory, with clean
+# trade records and full denominators, was lifted three bands to Green by the averaging rule --
+# and published, SILENTLY, because an improved posture is not adverse.
+#
+# RUN 119 ANSWERED IT WITH A HOLD. The owner has now ruled the hold off: "PM feedback on
+# contractor performance is a discrete event." Run 121 therefore keeps the WHOLE of Run 119's
+# measurement -- `lift_bands`, the two-band size, the audit fields -- and changes only what
+# happens when it fires. The reading PUBLISHES ITS BAND and SAYS IT WAS LIFTED.
+#
+# WHY THE DISCLOSURE IS NOT ALSO DELETED, WHEN THE HOLD IT SERVED IS. The owner's Run 121 order
+# names it under "what must NOT be lost", in terms: "The hold goes; the disclosure must not. A
+# posture two or more bands better than the stated rating still says so on the reading, in the
+# sentence a reader reads." So the reader-facing sentence is the whole of the mechanism now, and
+# it is the thing `drive_run121.py` proves able to fail.
+#
+# THE NUMBER IS STILL THE OWNER'S. Two bands, from his Run 119 words. Nothing here invents a
+# size, and a lift of one band is not disclosed, exactly as it was not held.
+LIFT_BANDS_REQUIRING_DISCLOSURE: int = 2
 
-# ============================================================ RUN 119, GOAL 1. THE LIFT IS HELD.
-#
-# THE DEFECT RUN 118 MEASURED AND REPORTED UNDER "ANYTHING FOUND AND NOT FIXED". A firm the
-# performance report rated Unsatisfactory, with clean trade records and full denominators, was
-# lifted three bands to Green by the averaging rule -- and published, unheld, because an improved
-# posture is not adverse and the hold above catches Amber and Red only.
-#
-# THE OWNER'S RULING, RUN 119 SECTION 1: "a lift of two or more bands is held for PM review,
-# exactly as an adverse move is. The stated rating is his assessment; records may overturn it,
-# but not silently. A lift of one band is not held. Only two or more."
-#
-# WHY THE DECISION POINT CHANGED SHAPE RATHER THAN GAINING A MEMBER. `POSTURES_REQUIRING_REVIEW`
-# is a set of POSTURES and it is asked one question: is the band we are about to publish one the
-# owner holds? A LIFT IS NOT A POSTURE. It is a property of the MOVEMENT from where the reading
-# started to where it ended, and no set of band names can see it -- Green is held when it was
-# reached from Red and is not held when it was reached from Yellow, and the two Greens are the
-# same string. So `resolve` now takes the STARTING POSTURE as well, and the decision is "which
-# posture, OR which movement". The set is untouched and still decides the adverse arm alone;
-# there is no second hold beside the first, and every existing caller that passes no starting
-# posture behaves exactly as it did before, because a movement with no origin is not a movement.
-#
-# THE NUMBER IS THE OWNER'S. Two bands, from his own words. Nothing here invents a size, and a
-# lift of one band is explicitly not held.
-LIFT_BANDS_REQUIRING_REVIEW: int = 2
+#: RUN 121. The Run 119 name, kept as an alias so no caller and no suite silently reads a
+#: DIFFERENT number than the one the owner stated. It is the same integer, not a second one.
+LIFT_BANDS_REQUIRING_REVIEW: int = LIFT_BANDS_REQUIRING_DISCLOSURE
 
 
 def lift_bands(source_posture: str | None, final_posture: str | None) -> int | None:
     """
     How many bands BETTER `final_posture` is than `source_posture`, or None where no movement
-    can be measured.
+    can be measured. UNCHANGED BY RUN 121.
 
     Positive is an improvement, negative an adverse move, zero no move. None where either end is
     absent or is not one of the four bands: a reading with no starting posture has not MOVED,
@@ -90,25 +101,34 @@ def lift_bands(source_posture: str | None, final_posture: str | None) -> int | N
     return a - b
 
 
-#: THE SENTENCE A MODULE HELD FOR A LIFT CARRIES. Composed here for the same reason
-#: `PENDING_WORDS` is: one hold, one form of words, wherever it is rendered.
-LIFT_PENDING_WORDS = (
-    "This reading was lifted two or more bands above the rating its source document stated, and "
-    "the owner has ruled that a lift of two or more bands is held for Project Manager review "
-    "exactly as an adverse move is. The stated rating is the owner's own assessment; the records "
-    "may overturn it, but not silently. The module is held pending that review: it asserts no "
-    "band, it does not enter the Document Signals category posture, and the category is formed "
-    "from the modules that are available. The source rating is preserved beside the adjusted "
-    "posture and both are on the audit record.")
+#: RUN 121. THE SENTENCE A LIFTED READING CARRIES ONTO THE PAGE. Composed here once so the
+#: ledger, the census, the brief and the card cannot each write a different one -- the same
+#: reason `LIFT_PENDING_WORDS` was composed here when the lift was held.
+LIFT_DISCLOSURE_WORDS = (
+    "DISCLOSED LIFT: this reading is two or more bands BETTER than the rating its source "
+    "document stated, and the owner requires that to be said rather than published silently. "
+    "The stated rating is the owner's own assessment and the records may overturn it; where they "
+    "do, the size and direction of the movement are stated here and the source rating is "
+    "preserved beside the adjusted posture on the audit record. The reading is NOT held: a "
+    "Project Manager's review is a discrete event he records when there is an issue, and the "
+    "absence of one holds nothing.")
 
-#: THE SENTENCE A HELD MODULE CARRIES. Composed here once so the ledger, the census, the brief
-#: and the card cannot each write a different one.
-PENDING_WORDS = (
-    "This reading normalised to a posture the owner has ruled is not a finding until a Project "
-    "Manager has reviewed it. The module is held pending that review: it asserts no band, it "
-    "does not enter the Document Signals category posture, and the category is formed from the "
-    "modules that are available. A single unreviewed subcontractor rating holds neither the "
-    "category nor the project.")
+#: RUN 121. The rule sentence carried on every resolution and every audit record, replacing Run
+#: 119's hold sentence. It states the size, what happens at it, and what is NOT inferred.
+LIFT_RULE_WORDS = (
+    f"A lift of {LIFT_BANDS_REQUIRING_DISCLOSURE} or more bands above the posture the source "
+    f"document's own rating normalised to is DISCLOSED on the reading a person reads. It is not "
+    f"held: the owner has ruled that Project Manager feedback is a discrete event and that "
+    f"nothing waits on the absence of one. A lift of one band is not disclosed. Where no "
+    f"starting posture is known there is no movement to measure and none is inferred.")
+
+#: RUN 121. The sentence a reading that is NOT lifted carries, so a reader can tell the two
+#: apart and cannot read silence as "we did not check".
+STANDS_WORDS = (
+    "This reading stands: the owner has ruled that Project Manager feedback on contractor "
+    "performance is a discrete event, so no computed posture waits on a review. The band below "
+    "is asserted and enters its category as normal. A Project Manager may record a disposition "
+    "against it at any time, and where he does, that disposition governs.")
 
 #: WHAT EACH DISPOSITION DOES TO THE POSTURE. The five codes are `research_decision.
 #: PROJECT_DECISION_DISPOSITIONS` -- the SAME five the Governance Decision card offers, reused
@@ -148,58 +168,54 @@ def resolve(normalised_posture: str, review: dict | None,
     What this module publishes, given its normalised posture, the posture it STARTED from, and
     the review (if any) on record.
 
-    Returns `posture` (the band to assert, or None for Not Assessed), `module_state`, and the
-    audit fields the owner's order requires to be visible. THE SOURCE RATING IS NEVER ALTERED:
-    it is carried through untouched and the PM's posture is carried BESIDE it, never over it.
+    RUN 121. THERE ARE NOW TWO EXITS WHERE THERE WERE THREE, AND THE ONE THAT WENT IS THE HOLD.
 
-    RUN 119, GOAL 1. `source_posture` is the band the reading STARTED from -- for A4.8 the band
-    the performance report's stated rating normalised to. It is OPTIONAL and defaults to None:
-    a caller that has no starting band passes none, `lift_bands` returns None, and the decision
-    is exactly the posture test it was before this run. Where a starting band IS known and the
-    reading was lifted `LIFT_BANDS_REQUIRING_REVIEW` bands or more above it, the reading is held
-    for review on the SAME hold, with the same `pending_pm_review` state, the same "no band
-    asserted" behaviour and the same disposition vocabulary. There is no second hold.
+      * STANDS -- no interpretable review on record. The COMPUTED POSTURE IS PUBLISHED, whatever
+        it is. Before this run an Amber or Red posture, or a posture lifted two or more bands,
+        returned `posture: None` here and waited. It no longer waits.
+      * REVIEWED -- a review is on record carrying one of the five dispositions, and
+        `DISPOSITION_EFFECT` decides. THIS EXIT IS BYTE-FOR-BYTE WHAT IT WAS: it never consulted
+        the hold, it fired whenever a review existed, and a PM who has modified or overridden a
+        posture still governs the computed one exactly as before.
+
+    A REVIEW CARRYING A DISPOSITION THIS PLATFORM DOES NOT HOLD no longer leaves the module
+    held -- there is nothing to be held by. It is reported as an uninterpretable record and the
+    COMPUTED POSTURE STANDS, which is the same answer the platform now gives to no review at all,
+    because a record nobody can interpret is not a review.
+
+    THE SOURCE RATING IS NEVER ALTERED: it is carried through untouched and the PM's posture is
+    carried BESIDE it, never over it. THE LIFT IS STILL MEASURED and, at two bands or more, is
+    disclosed in `module_state_words` and on the audit record.
     """
     _lift = lift_bands(source_posture, normalised_posture)
-    _held_for_lift = _lift is not None and _lift >= LIFT_BANDS_REQUIRING_REVIEW
+    _disclosed = _lift is not None and _lift >= LIFT_BANDS_REQUIRING_DISCLOSURE
     _movement = {
         "source_posture": source_posture,
         "lift_bands": _lift,
-        "held_for_lift": _held_for_lift,
-        "lift_rule": (
-            f"A lift of {LIFT_BANDS_REQUIRING_REVIEW} or more bands above the posture the "
-            f"source document's own rating normalised to is held for Project Manager review, "
-            f"exactly as an adverse posture is. A lift of one band is not held. Where no "
-            f"starting posture is known there is no movement to measure and none is inferred."),
+        "lift_disclosed": _disclosed,
+        # RUN 121. KEPT AND ALWAYS FALSE, deliberately, rather than deleted. Every stored audit
+        # record written between Runs 119 and 120 carries `held_for_lift`, and a reader
+        # comparing an old record with a new one is entitled to see the field answer "no" rather
+        # than vanish and leave him unable to tell a lift that was not held from a field that
+        # was never asked. Nothing branches on it.
+        "held_for_lift": False,
+        "lift_rule": LIFT_RULE_WORDS,
     }
-    if normalised_posture not in POSTURES_REQUIRING_REVIEW and not _held_for_lift:
+    _lift_sentence = (" " + LIFT_DISCLOSURE_WORDS) if _disclosed else ""
+    if not review:
         return {"posture": normalised_posture, "module_state": MODULE_STATE_STANDS,
                 "review_required": False, "review": None, **_movement,
-                "module_state_words": (
-                    "the normalised posture is not one the owner holds for review, and it was "
-                    "not lifted two or more bands above the rating its source document stated, "
-                    "so it stands; a Project Manager's acknowledgement is optional and none is "
-                    "required for this reading to enter its category")}
-    _words = LIFT_PENDING_WORDS if (
-        _held_for_lift and normalised_posture not in POSTURES_REQUIRING_REVIEW) else PENDING_WORDS
-    if not review:
-        return {"posture": None, "module_state": MODULE_STATE_PENDING,
-                "review_required": True, "review": None, **_movement,
-                "not_assessed_reason": _words,
-                "module_state_words": _words}
+                "module_state_words": STANDS_WORDS + _lift_sentence}
     disposition = str(review.get("disposition") or "")
     effect = DISPOSITION_EFFECT.get(disposition)
     if effect is None:
-        # A disposition outside the five is not resolved into a posture. The module stays held
-        # rather than falling to the normalised band, because a record nobody can interpret is
-        # not a review.
-        return {"posture": None, "module_state": MODULE_STATE_PENDING,
-                "review_required": True, "review": review, **_movement,
-                "not_assessed_reason": (
+        return {"posture": normalised_posture, "module_state": MODULE_STATE_STANDS,
+                "review_required": False, "review": review, **_movement,
+                "uninterpretable_review": True,
+                "module_state_words": (
                     "A review was recorded against this reading carrying a disposition this "
-                    "platform does not hold, so it is not read as a review and the reading "
-                    "stays held. " + _words),
-                "module_state_words": _words}
+                    "platform does not hold, so it is not read as a review and it changes "
+                    "nothing. " + STANDS_WORDS + _lift_sentence)}
     pm_posture = review.get("pm_posture")
     posture: str | None
     if effect["not_assessed"]:
@@ -211,7 +227,7 @@ def resolve(normalised_posture: str, review: dict | None,
     out = {
         "posture": posture,
         "module_state": MODULE_STATE_REVIEWED,
-        "review_required": True,
+        "review_required": False,
         "review": review,
         **_movement,
         "disposition": disposition,
@@ -221,7 +237,7 @@ def resolve(normalised_posture: str, review: dict | None,
             f"A Project Manager reviewed this reading and recorded the disposition "
             f"'{effect['label']}': {effect['words']}. The platform's own normalised posture "
             f"was {normalised_posture} and is preserved beside the Project Manager's, never "
-            f"replaced by it."),
+            f"replaced by it." + _lift_sentence),
     }
     if effect["not_assessed"]:
         out["not_assessed_reason"] = DEFER_LIMITATION
@@ -251,12 +267,14 @@ def audit_record(*, normalised_posture: str, source_rating: str, source_document
         "normalisation_rule": normalisation_rule,
         "normalisation_rule_version": normalisation_rule_version,
         "platform_mapped_posture": normalised_posture,
-        # RUN 119, GOAL 1. THE MOVEMENT, ON THE AUDIT RECORD. A held lift must be readable as a
-        # lift: the band the source rating normalised to, how many bands the reading moved above
-        # it, and whether that movement is what held it.
+        # RUN 119, GOAL 1, KEPT BY RUN 121. THE MOVEMENT, ON THE AUDIT RECORD. A lift must be
+        # readable as a lift: the band the source rating normalised to, how many bands the
+        # reading moved above it, and whether that movement was large enough to be disclosed.
         "source_rating_posture": resolution.get("source_posture"),
         "lift_bands": resolution.get("lift_bands"),
         "held_for_lift": resolution.get("held_for_lift"),
+        # RUN 121. THE HOLD IS GONE AND THE DISCLOSURE IS THE RECORD OF THE MOVEMENT.
+        "lift_disclosed": resolution.get("lift_disclosed"),
         "lift_rule": resolution.get("lift_rule"),
         "pm_participant_id": review.get("recorded_by"),
         "pm_recorded_at": review.get("recorded_at"),

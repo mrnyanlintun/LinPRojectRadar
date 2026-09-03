@@ -562,20 +562,19 @@ def _limitations(basis: Mapping[str, Any],
         out.append(
             f"{_cat_name(str(key))} ({key}) could not be assessed: "
             f"{detail.get('missing')}.")
-    # RUN 107. A READING HELD FOR A PROJECT MANAGER'S REVIEW IS NOT A READING WITH NO
-    # THRESHOLD, and printing it under that sentence would say something false about it: its
-    # boundary IS established and the owner has ruled that its result is not a finding until a
-    # human has reviewed it. The two are separated here so the card states the right reason.
-    held = [m for m in modules
-            if m.get("module_state") == "pending_pm_review"]
-    if held:
-        names = ", ".join(sorted({str(m.get("method_class")) for m in held}))
-        out.append(
-            f"{len(held)} reading{'' if len(held) == 1 else 's'} normalised to a posture the "
-            f"owner holds for Project Manager review and assert no band until a disposition is "
-            f"recorded: {names}. The category was formed from the modules that are available; "
-            f"an unreviewed reading holds neither the category nor the project.")
-    pending = [m for m in modules if m.get("calibration_pending") and m not in held]
+    # RUN 121. THE HELD-READING LIMITATION IS DELETED, NOT LEFT BEHIND AS A GUARD.
+    #
+    # Run 107 printed a separate limitation for a reading held pending a Project Manager's
+    # review, because such a reading withheld its band for a reason that was NOT "no threshold
+    # was established". The owner has ruled the hold off: Project Manager feedback is a discrete
+    # event and no computed posture waits on one, so `pending_pm_review` is no longer a state
+    # this platform can produce and `pm_review.MODULE_STATE_PENDING` no longer exists.
+    #
+    # A dead `if` that can never be true is a limitation nobody can ever see fail, so it is
+    # removed rather than kept "just in case". A reading that DOES withhold its band now does so
+    # for exactly the reasons the two blocks below state, and `band_withheld_reason` -- which a
+    # PM's own Defer or Override still writes -- is printed verbatim by the third.
+    pending = [m for m in modules if m.get("calibration_pending")]
     if pending:
         names = ", ".join(sorted({str(m.get("method_class")) for m in pending}))
         out.append(
@@ -592,8 +591,7 @@ def _limitations(basis: Mapping[str, Any],
     # The reasons are printed VERBATIM from the stored row. Nothing is summarised, nothing is
     # composed here, and no model is asked what a module needed.
     _withheld = [m for m in modules
-                 if m.get("status_color") is None and m.get("band_withheld_reason")
-                 and m not in held]
+                 if m.get("status_color") is None and m.get("band_withheld_reason")]
     for m in _withheld[:6]:
         out.append(f"{m.get('method_class') or m.get('module_id')} asserted no band. "
                    f"{m['band_withheld_reason']}")

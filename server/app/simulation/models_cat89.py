@@ -1029,20 +1029,25 @@ def _contractor_delivery(si: dict) -> dict[str, Any] | None:
     return out
 
 
-#: Section 5. The postures the owner holds for review, and the sentence that says why. This is
-#: RUN 107'S HOLD, reused unchanged -- `pm_review.resolve` -- not a second one.
+#: Section 5, as RUN 121 leaves it. This is `pm_review.resolve` -- the platform's one review
+#: facility, reused and not duplicated -- and it no longer holds anything.
 def _contractor_hold(si: dict, block: dict[str, Any]) -> dict[str, Any]:
     """
-    Green and Yellow enter Delivery Quality immediately; Amber and Red are `pending_pm_review`.
+    RUN 121. EVERY POSTURE ENTERS DELIVERY QUALITY IMMEDIATELY. Run 120 held Amber and Red here
+    as `pending_pm_review`; the owner has ruled that Project Manager feedback on contractor
+    performance is a DISCRETE EVENT, so the four-factor posture is published whatever it is. The
+    call is kept, not removed, because a disposition a Project Manager records still governs the
+    computed posture and the audit record is still assembled from what `resolve` returns.
 
-    RUN 119'S LIFT EXTENSION APPLIES HERE AND IT IS NOT A FORMALITY. Section 4 forbids BLENDING
+    RUN 119'S LIFT MEASUREMENT APPLIES HERE AND IT IS NOT A FORMALITY -- it now DISCLOSES rather
+    than holds. Section 4 forbids BLENDING
     the four-factor calculation with the source rating, and nothing here blends them: the source
     rating contributes NOTHING to the arithmetic. But where a firm is four-factor eligible AND
     the same project states a rating for it, the two are both known, and a four-factor posture
     two or more bands BETTER than the rating the document states is exactly the silent overturn
     Run 119's hold was built for. So the governing firm's `source_rating_posture` is passed as
-    the starting band, and where none is stated `lift_bands` returns None and the decision is
-    the posture test alone, unchanged.
+    the starting band, and where none is stated `lift_bands` returns None and there is no
+    movement to disclose. Nothing is inferred from the absence of a rating.
     """
     from . import pm_review as _PMR
     gov = next((p for p in block["contractor_firm_postures"]
@@ -1247,6 +1252,12 @@ def _contractor_sentence(block: dict[str, Any], gov: dict[str, Any] | None,
     if excl:
         parts.append(f"{len(excl)} firm(s) stated no active work this period and are out of the "
                      f"comparison: {', '.join(excl)}.")
+    # RUN 121, GOAL 1. THE LIFT DISCLOSURE, IN THE SENTENCE A READER READS. The hold that used
+    # to make a two-band lift visible is off; this is now the whole of the mechanism for A6.4
+    # exactly as it is for A4.8.
+    if resolution.get("lift_disclosed"):
+        from . import pm_review as _PMR
+        parts.append(_PMR.LIFT_DISCLOSURE_WORDS)
     if resolution.get("posture") is None:
         parts.append(str(resolution.get("not_assessed_reason")
                          or resolution.get("module_state_words")))

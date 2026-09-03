@@ -1609,10 +1609,11 @@ def _trade_only_reading(si: dict):
     # it rather than the firm being left unassessed." Run 117 reported those records and
     # abstained. This bands from them.
     #
-    # THE SAME HOLD APPLIES. An Amber or Red posture reached this way is `pending_pm_review`
-    # exactly as one reached from a stated rating is: Run 107's hold is a property of the
-    # POSTURE, not of where it came from, and exempting this path would be a quiet way of
-    # letting an unreviewed Red out.
+    # RUN 121. THERE IS NO LONGER A HOLD TO APPLY. Runs 107 and 118 held an Amber or Red
+    # posture reached this way exactly as one reached from a stated rating; the owner has ruled
+    # the hold off and `pm_review.resolve` now publishes the computed posture on every path.
+    # `resolve` is still called, because the disposition a Project Manager records still governs
+    # and the audit record is still assembled from its result.
     _tp_only = _trade_postures(si, {})
     if not _tp_only.get("trade_governing_posture"):
         return None
@@ -1675,9 +1676,11 @@ def _trade_only_reading(si: dict):
            "OVERRIDE sets the firm Red outright. " + _TF.STOP_WORK_WORDS + " With no "
            "starting band, the nonconformance factor's displacement rungs have nothing to "
            "move and produce no band; only its Red rung, which is stated absolutely, bands "
-           "it. ACROSS FIRMS THE MOST ADVERSE ADJUSTED POSTURE GOVERNS. HELD FOR REVIEW: an "
-           "Amber or Red posture is not a finding until a Project Manager records a "
-           "disposition, exactly as for a posture reached from a stated rating.")
+           "it. ACROSS FIRMS THE MOST ADVERSE ADJUSTED POSTURE GOVERNS. RUN 121: NOTHING IS "
+           "HELD FOR REVIEW. The owner has ruled that Project Manager feedback on contractor "
+           "performance is a discrete event, so the computed posture is published and enters "
+           "its category; a disposition a Project Manager records governs it when he records "
+           "one.")
     _m2 = (f"No performance report states a rating for any firm on this project. "
            f"{len(_tp_only['trade_firm_postures'])} firm"
            f"{'' if len(_tp_only['trade_firm_postures']) == 1 else 's'} carry trade records "
@@ -1726,10 +1729,11 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
     # the rating the Subcontractor Performance Report already states, normalised onto the
     # owner's ladder, with the most adverse valid reported posture governing across firms.
     #
-    # AND THE BAND IS HELD. An Amber or Red normalised posture is not a finding until a
-    # Project Manager has reviewed it: `pm_review.resolve` decides, `status_color` stays
-    # None while it is held, and the held state lives in `module_state`, which is NOT a
-    # project status. See `pm_review.py` for why that is structural rather than a promise.
+    # RUN 121. THE BAND IS NO LONGER HELD. Run 107 held an Amber or Red normalised posture
+    # until a Project Manager reviewed it; the owner has ruled that feedback is a DISCRETE
+    # EVENT and nothing waits on the absence of one. `pm_review.resolve` still decides --
+    # a recorded disposition still governs and still writes `module_state` -- but with no
+    # review on record the computed posture is PUBLISHED. See `pm_review.py`.
     _tab = _trade_attribution_block(si)
     _tas = _trade_attribution_sentence(_tab)
     try:
@@ -1869,6 +1873,11 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
             f"The most adverse is {_mvp['governing_subcontractor_id']}, rated "
             f"{_mvp['governing_reported_rating']}, which normalises to "
             f"{_mvp['normalised_posture']}." + _adj
+            # RUN 121, GOAL 1. THE LIFT DISCLOSURE, IN THE SENTENCE A READER READS. Run 119
+            # answered a silent three-band lift with a hold; the hold is off, so THIS is the
+            # whole of the mechanism. It is appended to the participant-facing sentence, not
+            # to a key no surface renders.
+            + (" " + _PMR.LIFT_DISCLOSURE_WORDS if _res.get("lift_disclosed") else "")
             + _trade_attribution_sentence(_trade_attribution_block(si)))
         _boundary = (
             "on the rating the Subcontractor Performance Report states, normalised by "
@@ -1879,9 +1888,13 @@ def run_subcontractor_performance(si: dict, rand: Callable[[], float],
             "mapping is used in its place. Where no mappable rating or score is present the "
             "reading is Not Assessed and a rating is NEVER inferred from narrative text or "
             "from another document. Across firms the MOST ADVERSE valid reported posture "
-            "governs. HELD FOR REVIEW: an Amber or Red normalised posture is not a finding "
-            "until a Project Manager records a disposition; the module asserts no band while "
-            "it is held and the category is formed from the modules that are available. "
+            "governs. RUN 121: NOTHING IS HELD FOR REVIEW. Runs 107, 118 and 119 held an "
+            "Amber or Red normalised posture, and a lift of two or more bands, until a Project "
+            "Manager recorded a disposition. The owner has ruled that feedback is a DISCRETE "
+            "EVENT: the computed posture is published and enters the Document Signals category "
+            "as normal, and a recorded disposition governs it where one exists. A lift of two "
+            "or more bands above the stated rating is DISCLOSED on this reading rather than "
+            "held. "
             f"Here the rule applied was {_mvp['governing_normalisation_rule']}."
             " RUN 118: THE STATED RATING IS NOW THE STARTING BAND AND THE TRADE RECORDS ADJUST "
             "IT. " + _TF.AVERAGE_WORDS + " A factor that fires its HARD OVERRIDE sets the firm "

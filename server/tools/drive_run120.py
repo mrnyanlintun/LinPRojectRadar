@@ -388,9 +388,11 @@ ck("commercial 37/40 = 92.5% -> Yellow",
    (gov or {})["factor_bands"]["commercial_administration"], "Yellow")
 ck("weighted severity 0.40x2 + 0.25x2 + 0.20x2 + 0.15x1 = 1.85 -> Amber",
    ((gov or {})["weighted_severity"], (gov or {})["weighted_posture"]), (1.85, "Amber"))
-ck("an Amber posture is HELD for PM review and asserts no band",
+# RE-POINTED BY RUN 121: the owner's ruling that PM feedback is a discrete event. The weighted
+# arithmetic above is untouched; only what happens to the Amber it produces has changed.
+ck("RUN 121: the Amber is NOT held -- A6.4 stands and asserts it",
    ((row or {}).get("status_color"), (row or {}).get("module_state")),
-   (None, "pending_pm_review"))
+   ("Amber", "stands"))
 ck("the audit record carries the four factor values",
    sorted(((row or {}).get("pm_review_audit_record") or {}).get("factor_values") or {}),
    ["commercial_administration", "quality_execution", "safety", "schedule_reliability"])
@@ -464,12 +466,17 @@ LIFT_DOCS = [
 row4, _ = run_case("d", LIFT_DOCS)
 print("   7.4 four Green factors against a stated Unsatisfactory rating -- Run 119's lift hold")
 ck("the calculated posture is Green", (row4 or {}).get("contractor_calculated_posture"), "Green")
-ck("a three-band lift is HELD, not published",
+# RE-POINTED BY RUN 121: published AND disclosed, rather than held.
+ck("RUN 121: a three-band lift is PUBLISHED, not held",
    ((row4 or {}).get("status_color"), (row4 or {}).get("module_state")),
-   (None, "pending_pm_review"))
-ck("the audit record names the lift",
+   ("Green", "stands"))
+ck("the audit record names the lift and marks it disclosed, not held",
    (((row4 or {}).get("pm_review_audit_record") or {}).get("lift_bands"),
-    ((row4 or {}).get("pm_review_audit_record") or {}).get("held_for_lift")), (3, True))
+    ((row4 or {}).get("pm_review_audit_record") or {}).get("lift_disclosed"),
+    ((row4 or {}).get("pm_review_audit_record") or {}).get("held_for_lift")), (3, True, False))
+ck("and A6.4's OWN reader sentence carries the disclosure",
+   "DISCLOSED LIFT: this reading is two or more bands BETTER"
+   in str((row4 or {}).get("evidence_metric")), True)
 ck("the source rating is preserved beside it, never over it",
    ((row4 or {}).get("pm_review_audit_record") or {}).get("source_rating"), "Unsatisfactory")
 

@@ -152,8 +152,11 @@ c = res.get("A4.8") or ab.get("A4.8") or {}
 gp = (c.get("trade_firm_postures") or [{}])[0]
 ck("the firm is Red and the average is bypassed",
    (gp.get("adjusted_posture"), gp.get("adjustment_rule")), ("Red", "stop_work_order"))
-ck("Red is HELD for PM review: the module asserts no band",
-   (c.get("status_color"), c.get("module_state")), (None, "pending_pm_review"))
+# RE-POINTED BY RUN 121. The owner has ruled Project Manager feedback a DISCRETE EVENT, so a
+# Red no longer waits: it publishes. The check is inverted, not relaxed -- it now asserts the
+# stronger fact that a stop-work-order Red REACHES the page, which is what the hold suppressed.
+ck("RUN 121: Red is NOT held -- it stands and asserts its band",
+   (c.get("status_color"), c.get("module_state")), ("Red", "stands"))
 ck("the stop-work order is on the audit record",
    len((c.get("pm_review_audit_record") or {}).get("trade_stop_work_orders") or []), 1)
 
