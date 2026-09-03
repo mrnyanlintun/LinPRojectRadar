@@ -268,9 +268,12 @@ try:
         activity("D700", "Tender documents", "01-Sep-26", "30-Nov-26", "0%", "30-Nov-26"),
     ]
     P1_EX = {"data_date": "2026-03-31", "planned_percent_complete": 40.0,
-             "activities_planned": 5, "milestones_json": P1_TABLE}
+             "activities_planned": 5, "milestones_json": P1_TABLE,
+             # RUN 126. The recording states its own row count, as a compliant reply must.
+             "register_row_counts": {"milestones_json": len(P1_TABLE)}}
     P2_EX = {"data_date": "2026-04-30", "planned_percent_complete": 50.0,
-             "activities_planned": 5, "milestones_json": P2_TABLE}
+             "activities_planned": 5, "milestones_json": P2_TABLE,
+             "register_row_counts": {"milestones_json": len(P2_TABLE)}}
 
     def doc_bytes(tag: str) -> bytes:
         return f"%PDF-1.4 SCHEDULE {tag}\n".encode()

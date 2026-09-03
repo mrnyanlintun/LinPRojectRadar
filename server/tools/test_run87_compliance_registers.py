@@ -147,6 +147,12 @@ RECORDED = {
         "document_risk_score": 0.3, "document_date": "2026-07-31",
         "items_inspected": 10, "items_passed": 6, "items_failed": 2,
         "deficiency_count": 2, "critical_deficiency_count": 1,
+        # RUN 126. THE RECORDING STATES ITS OWN ROW COUNT, because a compliant model reply
+        # now does: `extraction_merge.validate_register_row_counts` refuses a register that
+        # is not the size the same reply claims, and a recording without the count is the
+        # shape an ignored instruction takes. The count is written from len(), so it cannot
+        # drift from the rows above.
+        "register_row_counts": {"quality_requirements_json": len(QUALITY_ROWS)},
         "quality_requirements_json": QUALITY_ROWS,
         "quality_register_id": "IR-2026-014",
         "quality_register_period": "2026-07",
@@ -158,6 +164,7 @@ RECORDED = {
         "permitting_authority": "EPA",
         "permit_id": "AKR10ABCD", "permit_version": "CGP 2022",
         "permit_site_id": "SITE-FBX-01", "operator_status": "Primary operator",
+        "register_row_counts": {"environmental_requirements_json": len(ENV_ROWS)},
         "environmental_requirements_json": ENV_ROWS,
     }),
     ENVHALF_SHA: ("environmental_report", {
@@ -165,6 +172,7 @@ RECORDED = {
         "report_date": "2026-07-31",
         "environmental_jurisdiction": "State of Alaska",
         "permitting_authority": None,
+        "register_row_counts": {"environmental_requirements_json": len(ENV_ROWS[:3])},
         "environmental_requirements_json": ENV_ROWS[:3],
     }),
 }

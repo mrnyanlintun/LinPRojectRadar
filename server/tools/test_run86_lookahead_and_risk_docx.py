@@ -126,6 +126,8 @@ RISK_SHA = hashlib.sha256(RISK_DOCX).hexdigest()
 RECORDED = {
     LOOKAHEAD_SHA: ("lookahead_schedule", {
         "activities_planned": 10, "activities_constrained": 3, "lookahead_weeks": 3,
+        # RUN 126. The recording states its own row count, as a compliant reply now must.
+        "register_row_counts": {"lookahead_activities_json": len(_ROWS)},
         "lookahead_activities_json": _ROWS,
         "lookahead_horizon": "3 weeks", "lookahead_status_date": "2026-07-31",
     }),
