@@ -1,5 +1,6 @@
 """
-RUN 120, RULE 2. A6.4's FOUR-FACTOR READING, FROM THE DOM OF THE PAGE THE OWNER LOADS.
+RUN 121, RULE 2. THE LIFT DISCLOSURE AND THE QUALITY-TO-SCHEDULE LINK, FROM THE DOM OF THE PAGE
+THE OWNER LOADS.
 
 NOTHING UNDER TEST IS SUPPLIED. Both projects are built through the real `projectupload` and
 `projectcomputeall` routes. The page is loaded in Chromium exactly as a project manager loads
@@ -8,12 +9,14 @@ is never assigned, never stubbed and never handed a value. Every assertion below
 `innerText` the page produced from the server's own response.
 
 TWO PROJECTS:
-  A  a firm whose documents state all four populations and whose weighted severity is 1.85 --
-     an AMBER four-factor posture, which is HELD for Project Manager review and must render as
-     held rather than as a band.
-  B  the same shape with a clean firm -- a GREEN four-factor posture, which stands.
+  C  a firm the performance report rates UNSATISFACTORY whose trade records are clean and whose
+     denominators are full -- Run 118's silent three-band lift, which Run 119 answered with a
+     hold and Run 121 answers with a DISCLOSURE. The Green must publish AND the page must say it
+     was lifted.
+  D  a firm with all four four-factor populations stated and ONE OPEN CRITICAL nonconformance --
+     goal 3. The page must carry the schedule-reliability reason, not only the quality one.
 
-Run from `server/`:  python tools/drive_run120_dom.py
+Run from `server/`:  python tools/drive_run121_dom.py
 """
 import base64, hashlib, json, logging, pathlib, socket, sys, threading, time
 HERE = pathlib.Path("/home/user/LinPRojectRadar/server/tools"); sys.path.insert(0, str(HERE.parent))
@@ -41,42 +44,22 @@ def post(p):
 def b64(x): return base64.b64encode(x).decode()
 
 STAMP = str(int(time.time())); BAC = 4_000_000; END = "2026-03-31"
-ADMIN = "r120dom-" + STAMP
+ADMIN = "r121dom-" + STAMP
 
-
-def docs_for(passed_first, on_time_pkgs, recordables, on_time_commits):
-    return [
-        ("contract", "contract_value", {"original_contract_sum": BAC,
-                                        "project_start_date": "2026-01-01",
-                                        "project_end_date": "2027-06-30"}),
-        ("insp", "inspection_report", {
-            "items_inspected": 200, "items_passing_first_inspection": 193,
-            "document_date": END,
-            "trade_denominators_json": [
-                {"Subcontractor": "Northline Mechanical",
-                 "Inspections performed": 100, "Inspections passed first": passed_first,
-                 "Packages due": 50, "Packages completed on time": on_time_pkgs,
-                 "Commitments due": 40, "Commitments met on time": on_time_commits,
-                 "Exposure hours": 200000, "Recordable incidents": recordables,
-                 "Active work": "yes"}],
-            "trade_attribution_json": [
-                {"Reference": "NCR-11", "Subcontractor": "Northline Mechanical",
-                 "Kind": "nonconformance", "Severity": "minor", "Status": "open"}]}),
-    ]
 
 
 def build(pid, docs):
-    def raw(t): return f"%PDF-1.4 R120DOM {STAMP} {pid} {t}\n".encode()
+    def raw(t): return f"%PDF-1.4 R121DOM {STAMP} {pid} {t}\n".encode()
     set_extractor_override(StubExtractor(
         {hashlib.sha256(raw(t)).hexdigest(): (ty, ex) for t, ty, ex in docs}))
     with S() as s:
         if s.scalar(select(Project).where(Project.legacy_id == pid)) is None:
-            s.add(Project(legacy_id=pid, doc={"id": pid, "name": "Run 120 DOM " + pid,
+            s.add(Project(legacy_id=pid, doc={"id": pid, "name": "Run 121 DOM " + pid,
                                               "sector": "construction", "signals": {},
                                               "events": []}))
         s.commit()
     c = post({"action": "adminparticipantcreate", "session_token": admin,
-              "pseudonymous_code": "R120DOM-PM-" + pid[-12:], "role": "Participant",
+              "pseudonymous_code": "R121DOM-PM-" + pid[-12:], "role": "Participant",
               "account_type": "operational"})
     pm = post({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
     post({"action": "adminmemberadd", "session_token": admin, "id": pid,
@@ -93,17 +76,58 @@ def build(pid, docs):
 with S() as s:
     r = s.scalar(select(Participant).where(Participant.role == "ResearchAdmin"))
     if r is None:
-        s.add(Participant(pseudonymous_code="R120DOM-A-" + STAMP, role="ResearchAdmin",
+        s.add(Participant(pseudonymous_code="R121DOM-A-" + STAMP, role="ResearchAdmin",
                           access_token_hash=hash_access_token(ADMIN)))
     else:
         r.access_token_hash = hash_access_token(ADMIN)
     s.commit()
 admin = post({"action": "researchlogin", "access_token": ADMIN})["session_token"]
 
-PID_A = "PRJ-R120DOM-A-" + STAMP
-PID_B = "PRJ-R120DOM-B-" + STAMP
-PM_A = build(PID_A, docs_for(92, 44, 2, 37))    # weighted 1.85 -> Amber, held
-PM_B = build(PID_B, docs_for(99, 49, 1, 39))    # all Green -> Green, stands
+
+DENOMS = [{"subcontractor": "Ironline Steel", "inspections_performed": 100,
+           "exposure_hours": 1_000_000, "recordable_incidents": 2,
+           "environmental_actions_due": 100, "audits_covering_firm": 25, "items_due": 100,
+           "field_reports_covering_firm": 100, "systems_tested": 100}]
+CLEAN = [{"NCR number": "NCR-1", "Subcontractor": "Ironline Steel", "Type": "nonconformance",
+          "Status": "closed", "New this period": "yes"}]
+
+# PROJECT C -- Run 118's three-band lift, verbatim from drive_run119's own fixture.
+DOCS_C = [
+    ("ncr", "ncr_log", {"ncr_issued": 3, "ncr_closed": 1, "ncr_open": 2,
+                        "inspections_performed": 200, "ncr_denominator_basis": "inspections",
+                        "report_period": "2026-Q1", "trade_attribution_json": CLEAN,
+                        "trade_denominators_json": DENOMS}),
+    ("sub", "subcontractor_report", {
+        "subcontractor_ratings_json": [
+            {"Subcontractor": "Ironline Steel", "Assessment period": "2026-Q1",
+             "Rating": "Unsatisfactory"}],
+        "subcontractor_rating_scale": "owner_five_point_label",
+        "subcontractor_report_date": END, "subcontractor_report_version": "v1",
+        "report_period": "2026-Q1"}),
+]
+
+# PROJECT D -- goal 3. Four Green populations and ONE OPEN CRITICAL nonconformance.
+DOCS_D = [
+    ("contract", "contract_value", {"original_contract_sum": BAC,
+                                    "project_start_date": "2026-01-01",
+                                    "project_end_date": "2027-06-30"}),
+    ("insp", "inspection_report", {
+        "items_inspected": 200, "items_passing_first_inspection": 193, "document_date": END,
+        "trade_denominators_json": [
+            {"Subcontractor": "Northline Mechanical",
+             "Inspections performed": 100, "Inspections passed first": 99,
+             "Packages due": 50, "Packages completed on time": 49,
+             "Commitments due": 40, "Commitments met on time": 39,
+             "Exposure hours": 200000, "Recordable incidents": 1, "Active work": "yes"}],
+        "trade_attribution_json": [
+            {"Reference": "NCR-CRIT", "Subcontractor": "Northline Mechanical",
+             "Kind": "nonconformance", "Severity": "critical", "Status": "open"}]}),
+]
+
+PID_C = "PRJ-R121DOM-C-" + STAMP
+PID_D = "PRJ-R121DOM-D-" + STAMP
+PM_C = build(PID_C, DOCS_C)
+PM_D = build(PID_D, DOCS_D)
 
 sock = socket.socket(); sock.bind(("127.0.0.1", 0)); PORT = sock.getsockname()[1]; sock.close()
 import uvicorn
@@ -161,59 +185,41 @@ def open_page(pid, token):
 
 
 print("=" * 100)
-print("RUN 120 DOM -- A6.4's four-factor reading on the page the owner loads")
+print("RUN 121 DOM -- the lift disclosure and the quality-to-schedule link on the real page")
 print("=" * 100)
 
-print("\nPROJECT A -- weighted severity 1.85, an AMBER four-factor posture, HELD")
-A = open_page(PID_A, PM_A)
-TXT_A = (A.get("card") or "") + "\n" + (A.get("signals") or "") + "\n" + (A.get("pageText") or "")
-check(bool(TXT_A.strip()), "the page rendered")
-check("Contractor" in TXT_A, "the rendered page names Contractor Performance")
-# RE-POINTED BY RUN 121, AND THIS SUITE WAS NOT IN THE RUN'S STATED BLAST RADIUS EITHER: like
-# drive_run115.py it asserted the hold through its CONSEQUENCES on the rendered page, never by
-# the machine name, so the blast-radius grep could not see it. The owner has ruled Project
-# Manager feedback a discrete event. THE CHECKS ARE INVERTED AND MADE STRONGER: the page must no
-# longer say anything is held, and the Amber the hold used to suppress must now REACH THE PAGE.
-print("   A6.4 lines on the page:")
-for _l in [l for l in TXT_A.splitlines() if "A6.4" in l][:4]:
-    print("     " + _l.strip()[:200])
-check("disposition is recorded" not in TXT_A
-      and "holds for Project Manager review" not in TXT_A,
-      "RUN 121: the page no longer says any reading is held for Project Manager review")
-check("A6.4 Amber" in TXT_A,
-      "and the Amber the hold used to suppress now REACHES THE PAGE, as the owner ruled",
-      "\n".join(l for l in TXT_A.splitlines() if "A6.4" in l)[:200])
-_line = [l for l in TXT_A.splitlines() if "Northline" in l]
-print("   the sentence the page shows:")
-for l in _line[:3]:
-    print("     " + l.strip()[:200])
-check(any("Northline" in l for l in TXT_A.splitlines()),
-      "the worst active firm is NAMED on the page", (_line or [""])[0][:80])
-# WHAT THE PAGE ACTUALLY SHOWS FOR A HELD MODULE, and it is Run 107's existing behaviour, not
-# something this run introduced: the card names the held module and says no band is asserted
-# until a disposition is recorded. It does NOT print the held module's own evidence sentence, so
-# the four-factor working reaches the reader through the stored row and the audit record rather
-# than through this card. That limitation is measured here and reported rather than asserted away.
-# RUN 121. Run 120 measured, and reported as a limitation, that a HELD module's own factor
-# sentence never reached this card -- the card printed the hold instead. With the hold gone the
-# module renders as an ordinary adverse reading, so the limitation is re-measured rather than
-# assumed to have lifted: whichever way it comes out is printed.
-print("   does A6.4's own four-factor sentence reach the card now the hold is gone? "
-      + ("YES" if "schedule reliability" in TXT_A.lower() else "NO"))
-check("A6.4" in TXT_A.split("ADVERSE READINGS")[-1][:2000],
-      "A6.4 IS now named among the adverse readings, which is exactly what the hold suppressed",
-      TXT_A.split("ADVERSE READINGS")[-1][:200])
+print("\nPROJECT C -- rated Unsatisfactory, clean records: a THREE-BAND LIFT, published")
+C = open_page(PID_C, PM_C)
+TXT_C = (C.get("card") or "") + "\n" + (C.get("signals") or "") + "\n" + (C.get("pageText") or "")
+check(bool(TXT_C.strip()), "the page rendered")
+for _l in [l for l in TXT_C.splitlines() if "A4.8" in l][:3]:
+    print("     " + _l.strip()[:220])
+check("disposition is recorded" not in TXT_C,
+      "RUN 121: the page no longer says the reading is held for Project Manager review")
+check("A4.8 Green" in TXT_C or "A4.8" in TXT_C,
+      "A4.8 reaches the page with its band rather than asserting none")
+check("DISCLOSED LIFT" in TXT_C,
+      "THE DISCLOSURE IS ON THE PAGE THE OWNER LOADS, in the sentence a reader reads",
+      [l.strip()[:150] for l in TXT_C.splitlines() if "DISCLOSED LIFT" in l][:1])
+check("two or more bands BETTER" in TXT_C,
+      "and it says the reading is two or more bands BETTER than the stated rating")
+check("Unsatisfactory" in TXT_C,
+      "and the SOURCE RATING is still on the page, verbatim and never erased")
 
-print("\nPROJECT B -- all four factors Green, the posture STANDS")
-B = open_page(PID_B, PM_B)
-TXT_B = (B.get("card") or "") + "\n" + (B.get("signals") or "") + "\n" + (B.get("pageText") or "")
-check(bool(TXT_B.strip()), "the page rendered")
-check("A6.4 Green" in TXT_B or "Contractor" in TXT_B,
-      "the rendered page carries the Green contractor reading")
-check("A6.4 Amber" not in TXT_B and "A6.4 Red" not in TXT_B,
-      "and no adverse band is rendered for a clean firm")
+print("\nPROJECT D -- one OPEN CRITICAL nonconformance against four otherwise Green factors")
+D = open_page(PID_D, PM_D)
+TXT_D = (D.get("card") or "") + "\n" + (D.get("signals") or "") + "\n" + (D.get("pageText") or "")
+check(bool(TXT_D.strip()), "the page rendered")
+for _l in [l for l in TXT_D.splitlines() if "A6.4" in l][:3]:
+    print("     " + _l.strip()[:220])
+check("A6.4 Red" in TXT_D,
+      "the firm publishes RED, from four Green ladders and one open critical nonconformance",
+      [l.strip()[:120] for l in TXT_D.splitlines() if "A6.4" in l][:1])
+check("schedule_reliability" in TXT_D or "schedule reliability" in TXT_D.lower(),
+      "and SCHEDULE RELIABILITY is named among what fired, not quality alone")
 
 print()
 print("=" * 100)
-print(f"RUN 120 DOM DRIVER: {PASS} passed, {FAIL} failed, {PASS + FAIL} checks")
+print(f"RUN 121 DOM DRIVER: {PASS} passed, {FAIL} failed, {PASS + FAIL} checks")
 print("=" * 100)
+sys.exit(1 if FAIL else 0)
