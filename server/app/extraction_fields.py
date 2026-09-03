@@ -1078,6 +1078,134 @@ _TRADE_DENOMINATOR_NOTE = "trade_denominators_json"
 _DEFAULT_FIELDS: list[str] = ["document_risk_score", "document_date"]
 
 
+# =============================================================================================
+# RUN 126. THE REGISTER'S OWN ROW COUNT, ASKED FOR AS A FIELD.
+#
+# THE FAILURE THIS CLOSES. Run 125 established that an UNDER-READ register -- one where the
+# model closes the JSON array early on its own, with no truncation, no malformed JSON and no
+# provider signal -- is undetectable at every defence this pipeline has. `parse_json_response`
+# sees complete JSON; `describe_json_truncation` sees a closed value; `validate_numeric_fields`
+# sees nothing numeric; the readers below see a shorter but perfectly well-formed table. A6.1
+# then bands a 26-row inspection register on eighteen rows and the stored row looks whole to
+# any later audit. Run 125 measured the obvious fix -- compare the register against a total the
+# document states -- and found it UNSOUND: a stated total is absent on thirteen of eighteen real
+# registers and counts a different population on four of the remaining five.
+#
+# WHAT IS ASKED INSTEAD. The model states, IN THE SAME REPLY, how many rows it is returning for
+# each register. `extraction_merge.validate_register_row_counts` compares that against
+# `len(the array it actually returned)`. There is no cross-population inference, no second
+# document and no stated-total ambiguity: it is a reply checked against itself.
+#
+# WHY ONE OBJECT FIELD AND NOT ONE SCALAR FIELD PER REGISTER. Thirteen of the nineteen
+# register-bearing types carry more than one register (`schedule_update` and
+# `submittal_register` carry six each), so a single scalar cannot work and the count must be per
+# register. Both shapes give that; the object field is chosen for four reasons that are
+# properties of this code, not preferences:
+#   1. `extraction_client.ProviderExtractor.extract_with_confidence` filters the reply to
+#      `k in set(fields)`. ONE name survives that filter and carries every register's count;
+#      twenty-odd scalar names would each have to be declared per type and each is another way
+#      for a per-type list and the counted-register set to drift apart.
+#   2. THE PROMPT. Run 124 measured output length as the binding constraint on large registers
+#      (~4004 tokens for a 46-row submittal register). One field name plus one instruction
+#      paragraph is a fixed cost on every call; a scalar per register grows the JSON field list
+#      and needs a separate sentence tying each count to its array.
+#   3. THE COMMITMENT CAN BE ORDERED. The count is only worth anything if it is stated BEFORE
+#      the arrays (see the prompt instruction in `extraction_client.build_prompt`). One object
+#      returned as the first key is one thing to instruct and one thing to read; twenty-odd
+#      scalars each needing to precede their own array is not instructable.
+#   4. It is INERT everywhere else. The numeric contract is a declared table
+#      (`extraction_merge._numeric_keys_for`), the emission tables are declared, and
+#      `information_completeness._required_pairs` intersects declared paths with declared
+#      fields -- so one undeclared-elsewhere name changes no denominator and no emission.
+#
+# IT IS DELIBERATELY NOT IN `ALL_FIELDS`. `ALL_FIELDS` is the vocabulary of figures A DOCUMENT
+# STATES -- `build_prompt`'s own reasoning rests on that ("every name in that list is a total, a
+# date, a rating, a percentage or a count a construction report states directly"). This field is
+# a statement about THE REPLY, not about the document, so putting it there would falsify that
+# sentence. Names in `_EXTRACTION_FIELDS` that are not in `ALL_FIELDS` are long-standing here
+# (see the note above the table), so nothing requires it.
+REGISTER_ROW_COUNT_FIELD = "register_row_counts"
+
+#: THE REGISTERS THE COUNT COVERS. Each is a POPULATION table: one object per printed row, where
+#: the whole point of the field is that every printed row is returned, and where returning fewer
+#: silently narrows a population a module bands on. Absence of one of these means "the document
+#: has no such table" -- it does not mean anything else -- so no claim is lost by counting it.
+COUNTED_REGISTERS: frozenset[str] = frozenset({
+    "baseline_curve_json",
+    "change_events_json",
+    "disputes_json",
+    "environmental_corrective_actions_json",
+    "environmental_requirements_json",
+    "lookahead_activities_json",
+    "milestones_json",
+    "modifications_json",
+    "procurement_items_json",
+    "quality_requirements_json",
+    "reference_class_json",
+    "resource_profile_json",
+    "schedule_calendar_json",
+    "schedule_network_json",
+    "subcontractor_ratings_json",
+    "submittal_decisions_json",
+    "trade_attribution_json",
+    "trade_denominators_json",
+    "weather_events_json",
+})
+
+#: THE `*_json` FIELDS THE COUNT MUST NOT TOUCH, each with the reason IN THE CODE that excludes
+#: it. A count field on any of these would either be meaningless or would destroy a distinction
+#: the platform reports.
+#:
+#: THE SIX OVERRIDE TABLES -- absent and empty are DIFFERENT CLAIMS. `documents.py` reads them as
+#: TESTED / NOT TESTED: `if ex.get(_fld) is not None: _rec[key] = bool(_json_rows(...))` at
+#: documents.py:2179-2186 and 2225-2237. An absent field leaves the key OFF the record, which
+#: A4.3 and A4.4 disclose as "not tested"; `[]` writes False, which is "tested, and it did not
+#: hold". Asking the model for a row count on these invites it to answer 0 and return `[]` where
+#: the honest answer was to omit the field, which collapses the two into one. FORBIDDEN.
+#: (`critical_quality_failures_json` is excluded with them for the same prompt-pressure reason,
+#: although its ONE call site -- documents.py:1937-1939, through
+#: `compliance_register.read_critical_failure_rows` -- happens to collapse absent to `[]` already.
+#: That is a finding of Run 126, recorded here so the next reader does not mistake the reason.)
+#:
+#: `submittal_disposition_legend_json` IS NOT AN ARRAY. It is the register's disposition LEGEND,
+#: a JSON object, and documents.py:2172-2174 reads it with `isinstance(_legend, dict)`. A row
+#: count of a mapping is not a row count of anything.
+#:
+#: `schedule_calendars_json` IS A LIST OF NAMES, NOT OF ROWS. documents.py:2029-2034 and
+#: 2076-2079 stringify it into `calendars` / `stated_calendar_names`, and the code beside it says
+#: in terms that the name "is a label and is never read as a definition". Nothing bands on its
+#: length. The calendar DEFINITIONS -- `schedule_calendar_json` -- are a real population and ARE
+#: counted, above.
+UNCOUNTED_REGISTERS: frozenset[str] = frozenset({
+    "critical_quality_failures_json",
+    "hold_point_or_turnover_blocking_ncr_json",
+    "ncr_open_past_contractual_closure_json",
+    "open_critical_ncr_json",
+    "rejected_blocking_past_deadline_json",
+    "rejected_critical_or_long_lead_late_json",
+    "schedule_calendars_json",
+    "submittal_disposition_legend_json",
+})
+
+# EVERY `*_json` FIELD ANY TYPE ASKS FOR IS RULED ON, one way or the other. This is an executable
+# assert rather than a comment so that a register added to a type in a later run cannot quietly
+# escape the count: adding one without deciding fails the import.
+_ALL_JSON_FIELDS = {f for _fields in _EXTRACTION_FIELDS.values()
+                    for f in _fields if f.endswith("_json")}
+assert not (_ALL_JSON_FIELDS - COUNTED_REGISTERS - UNCOUNTED_REGISTERS), (
+    "a *_json register was added to a document type without deciding whether its row count is "
+    "stated: " + ", ".join(sorted(_ALL_JSON_FIELDS - COUNTED_REGISTERS - UNCOUNTED_REGISTERS)))
+assert not (COUNTED_REGISTERS & UNCOUNTED_REGISTERS)
+
+# THE FIELD IS ADDED TO EVERY TYPE THAT ASKS FOR AT LEAST ONE COUNTED REGISTER, and it is added
+# by CODE READING THE SAME SET the validator reads, so the prompt and the check cannot disagree
+# about which types carry it. It is inserted FIRST so the field list the prompt prints names it
+# before any register -- the same ordering the instruction asks the model to answer in.
+for _dt, _fields in _EXTRACTION_FIELDS.items():
+    if any(f in COUNTED_REGISTERS for f in _fields):
+        _fields.insert(0, REGISTER_ROW_COUNT_FIELD)
+
+
 def extraction_fields_for(doc_type: str) -> list[str]:
     """Fields to request from the extractor for `doc_type`.
 

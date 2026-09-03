@@ -55,6 +55,8 @@ from typing import Any, Callable
 from . import ai_provider
 from .extraction_fields import (
     CLASSIFY_HINTS,
+    COUNTED_REGISTERS,
+    REGISTER_ROW_COUNT_FIELD,
     DOC_TYPES,
     UNMAPPED,
     extraction_fields_for,
@@ -633,6 +635,50 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "document states no rating for one of these, return null for it. "
     ) if _ordinal else ""
 
+    # RUN 126. THE REGISTER'S OWN ROW COUNT, AND WHY IT IS ASKED FOR BEFORE THE ROWS.
+    #
+    # BEFORE, NOT AFTER, AND THIS IS THE WHOLE INSTRUMENT. A count written AFTER the arrays is
+    # worth nothing: generation is left-to-right, so a model that has already closed a register
+    # at eighteen rows can simply write 18 and the check agrees with itself forever. That is a
+    # check that cannot fail, which is worse than no check. Stated FIRST, the count is a
+    # COMMITMENT made while the document is being read and before a single row has been
+    # written, and closing the array early then contradicts a number already on the page.
+    # `register_row_counts` is therefore first in the field list (see `extraction_fields`) and
+    # the instruction below asks for it as the first key, in those words.
+    #
+    # IT IS A STATEMENT ABOUT THE REPLY, NOT ABOUT THE DOCUMENT, and the instruction says so
+    # twice, in both directions: the number must equal the rows the document prints AND must
+    # equal the rows the answer returns, so counting twenty-six and returning eighteen is
+    # explicitly not an available answer. The model is told what to do instead of shortening a
+    # register -- return it whole -- because an answer that runs out of room is caught by the
+    # truncation defences (`ai_provider` on stop_reason/finish_reason, and
+    # `describe_json_truncation` here) and those report a fixable fault, whereas a quietly
+    # shortened register reports nothing at all.
+    #
+    # ONLY THE COUNTED REGISTERS ARE NAMED. `extraction_fields.UNCOUNTED_REGISTERS` records why
+    # the others are excluded; the six override tables in particular must keep the difference
+    # between an absent field ("not tested") and `[]` ("tested, did not hold"), and asking for
+    # a count on them would push the model to answer 0 and return `[]`.
+    _counted = [k for k in sorted(COUNTED_REGISTERS) if k in fields]
+    register_count_hint = (
+        " " + REGISTER_ROW_COUNT_FIELD + " MUST BE THE FIRST KEY of the JSON object you "
+        "return, written before any register array. It is a JSON object stating, for each of "
+        "the register fields listed here that this document contains a table for, the NUMBER "
+        "OF ROWS YOU ARE ABOUT TO RETURN in that register: " + ", ".join(_counted) + ". "
+        "For example: {\"" + _counted[0] + "\": 26}. State the count for a register only "
+        "where you are returning an array for it, and state it for EVERY register you return "
+        "an array for, including one you return as an empty array. "
+        "THE NUMBER IS A STATEMENT ABOUT YOUR OWN ANSWER. It must equal the number of rows the "
+        "document prints in that table, and it must equal the number of objects you actually "
+        "put in that array -- these are the same number, and there is no answer in which they "
+        "differ. Do not count the rows in the document and then return fewer of them; do not "
+        "stop a register early, summarise it, sample it, abbreviate it or return only the rows "
+        "you judge important; and do not write the count to match a shortened array after the "
+        "fact. If a register is long, return every row of it anyway. Where the document has no "
+        "such table, return null for that register and omit it from " +
+        REGISTER_ROW_COUNT_FIELD + " entirely."
+    ) if REGISTER_ROW_COUNT_FIELD in fields and _counted else ""
+
     _ratio = [k for k in ratio_scaled_extraction_keys() if k in fields]
     ratio_hint = (
         " " + ", ".join(_ratio) + (" is" if len(_ratio) == 1 else " are") +
@@ -655,6 +701,7 @@ def build_prompt(doc_type: str, fields: list[str]) -> str:
         "that names this field, return null for it. Counting entries in the document's own table "
         "is reading a stated fact, not inferring one, when the field name plainly refers to that "
         "table (for example, a count of rows in a schedule or activity table)." + milestones_hint + baseline_hint + resource_hint + modifications_hint + reference_class_hint + lookahead_hint + schedule_network_hint + quality_register_hint + environmental_hint + first_pass_hint + corrective_hint + trade_attribution_hint + trade_denominator_hint + submittal_hint + ncr_hint + weather_events_hint + procurement_items_hint + change_events_hint +
+        register_count_hint +
         " Use null for any field genuinely not present in the document. Never guess, invent, or "
         "carry a value over from a different field or a different document. Do not compute "
         "indices. "
@@ -1046,7 +1093,9 @@ def extract_many(extractor, jobs: list[dict],
 
     # Imported inside the function, as documents.py does with the simulation package: it keeps
     # the module-level direction client -> fields only, and this is the one call site.
-    from .extraction_merge import validate_doc_risk_score, validate_numeric_fields
+    from .extraction_merge import (
+        validate_doc_risk_score, validate_numeric_fields, validate_register_row_counts,
+    )
 
     def run(job: dict) -> dict:
         started = time.monotonic()
@@ -1087,6 +1136,19 @@ def extract_many(extractor, jobs: list[dict],
             # are absent from the emission because `_coerce_numeric` gives None for them. This
             # is the owner's ruling of Run 80 section 3 item 3, overriding the whole-document
             # refusal that stood here since D2. See `validate_numeric_fields` for what it costs.
+            # RUN 126, THE SAME BOUNDARY AND THE `NumericRangeError` SIDE OF IT. A register
+            # holding fewer rows than the SAME REPLY says it holds refuses the whole document
+            # here, before documents.py writes a Document row, because an under-read register
+            # is readable, well-formed and wrong in the REASSURING direction -- it raises a
+            # compliance rate and calms a band -- and nothing downstream can tell it from a
+            # short document. That is the distinction `extraction_merge.py`'s numeric-contract
+            # note draws between a field that cannot be read (reported, document kept) and a
+            # value that reads perfectly and is impossible (refused whole), and this belongs on
+            # the second side. The `except` below turns the raise into the per-file
+            # {ok: False, error} shape the PM's "Extraction failed" dialog already renders, so
+            # the reason -- the document, the register, the count stated, the count returned --
+            # reaches the uploader through machinery that exists.
+            validate_register_row_counts(extraction, filename=job.get("filename") or None)
             unreadable = validate_numeric_fields(doc_type, extraction,
                                                  filename=job.get("filename") or None)
             return {"sha256": job["sha256"], "ok": True, "doc_type": doc_type,

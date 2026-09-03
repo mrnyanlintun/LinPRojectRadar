@@ -66,6 +66,7 @@ observation rows is documents.py's job.
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from typing import Any
 
@@ -86,6 +87,7 @@ __all__ = [
     "DocRiskScoreRangeError",
     "MalformedNumericError",
     "NumericRangeError",
+    "RegisterRowCountError",
     "SIGNAL_INPUT_KEYS",
     "ratio_scaled_extraction_keys",
     "CPARS_RATING_SCALE",
@@ -94,6 +96,7 @@ __all__ = [
     "read_ordinal_word",
     "validate_doc_risk_score",
     "validate_numeric_fields",
+    "validate_register_row_counts",
     "validate_signal_value",
 ]
 
@@ -332,6 +335,158 @@ class MalformedNumericError(ValueError):
 
 class NumericRangeError(ValueError):
     """A numeric extraction field parses, but sits outside the field's permitted range."""
+
+
+class RegisterRowCountError(ValueError):
+    """
+    A register the model returned disagrees with the row count the SAME REPLY stated for it.
+
+    RUN 126. WHAT THIS CATCHES THAT NOTHING ELSE COULD. An UNDER-READ register -- the model
+    closes the JSON array early on its own -- is complete JSON, well-formed, in range, readable
+    by every reader, and WRONG IN THE REASSURING DIRECTION: a 26-row inspection register read as
+    eighteen rows produces a higher compliance rate and a calmer band, and leaves a stored row
+    that looks whole to any later audit. `parse_json_response` cannot see it, the provider's
+    stop_reason cannot see it, `describe_json_truncation` cannot see it and
+    `validate_numeric_fields` cannot see it. Run 125 proved that and proved that comparing the
+    register against a total the DOCUMENT states is unsound (absent on thirteen of eighteen real
+    registers, a different population on four of the remaining five).
+
+    WHY IT RAISES RATHER THAN REPORTING AN UNREADABLE FIELD. This is the `NumericRangeError`
+    side of the split, not the `unreadable_fields` side, and for that class's own stated reason:
+    the Run 80 override is about a field that CANNOT BE READ, where absence is honest and
+    abstention follows. An under-read register can be read perfectly; it is simply a different,
+    smaller population than the one the reply says it is returning. Carrying it on as "one bad
+    field" would let the shortened register assemble and band. The whole document is refused
+    before any `Document` row exists.
+    """
+
+
+def _row_count_of(value: Any) -> int | None:
+    """
+    The number of rows the model RETURNED, or None if this value is not a returned array.
+
+    `len(the parsed array)`, PRE-READ, and that is deliberate. Every reader below drops rows it
+    cannot use -- `documents._json_rows` drops a non-object row, `compliance_register`'s readers
+    drop the same, and `trade_attribution` drops a row printing no `record_reference` and counts
+    it in `rows_unusable`. Those drops are a REAL and REPORTED property of a register that was
+    incomplete as authored, and comparing a post-drop count against the model's stated count
+    would refuse documents for a fault the platform already reports honestly elsewhere. What is
+    compared here is what the model handed over, nothing later.
+
+    A JSON STRING OF AN ARRAY IS ACCEPTED, because `documents._json_rows` accepts one and so a
+    register arriving in that shape is a register that assembles.
+    """
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (ValueError, TypeError):
+            return None
+    return len(value) if isinstance(value, list) else None
+
+
+def validate_register_row_counts(extraction: Any, *, filename: str | None = None) -> None:
+    """
+    Refuse a reply whose register does not hold the number of rows the same reply states for it.
+    Returns None, or raises `RegisterRowCountError`.
+
+    THREE FAULTS, ALL REFUSED, AND THE SYMMETRY IS DELIBERATE:
+
+      SHORT -- stated 26, returned 18. The failure this instrument exists for.
+
+      LONG -- stated 18, returned 26. Refused too, and refused for a reason rather than for
+      symmetry's sake: one of the two numbers is wrong and this reply does not say which, so
+      accepting the array would be choosing. Accepting the longer array would also make the
+      contract one-sided, and a one-sided contract is satisfiable by stating a low count and
+      returning whatever was produced -- which is the check that cannot fail, again.
+
+      MISSING -- an array returned with no count stated for it. Refused, because this is exactly
+      the shape an ignored instruction takes, and a register that carries no count is a register
+      with no defence at all. The prompt asks for the count on EVERY register returned,
+      including an empty one, so a compliant reply never reaches this branch.
+
+    NOT COUNTED, AND THE ABSENCE IS NOT A FAULT: a register returned as null (the document has
+    no such table) needs no count and is skipped; the eight fields in
+    `extraction_fields.UNCOUNTED_REGISTERS` are never looked at, and the six override tables
+    among them MUST NOT BE, because there `[]` and absent are different claims. A count stated
+    for a register that is not counted, or for a field the type never asked for, is ignored --
+    it decides nothing, and refusing on it would refuse a reply that volunteered more than it
+    was asked for.
+    """
+    from .extraction_fields import COUNTED_REGISTERS, REGISTER_ROW_COUNT_FIELD
+
+    ex = extraction if isinstance(extraction, dict) else {}
+    stated_raw = ex.get(REGISTER_ROW_COUNT_FIELD)
+    if isinstance(stated_raw, str):
+        try:
+            stated_raw = json.loads(stated_raw)
+        except (ValueError, TypeError):
+            stated_raw = None
+    stated = stated_raw if isinstance(stated_raw, dict) else {}
+    where = f" in {filename}" if filename else ""
+
+    for register in sorted(COUNTED_REGISTERS):
+        returned = _row_count_of(ex.get(register)) if register in ex else None
+        has_count = register in stated
+        if returned is None and not has_count:
+            continue
+        if returned is None:
+            # A count stated for a register no array was returned for. Zero is the one honest
+            # reading of "no rows returned", so a stated zero agrees and passes; any other
+            # number is a reply claiming rows it did not hand over.
+            n = _stated_count(stated.get(register))
+            if n in (None, 0):
+                continue
+            raise RegisterRowCountError(
+                f"the extraction{where} states that {register} holds {n} "
+                f"{'row' if n == 1 else 'rows'}, but the answer returned no rows for it at all. "
+                f"The reply contradicts itself, so the register cannot be trusted to be "
+                f"complete. Nothing was stored for this document and no figures from it were "
+                f"used. Re-run the extraction."
+            )
+        if not has_count:
+            raise RegisterRowCountError(
+                f"the extraction{where} returned {returned} "
+                f"{'row' if returned == 1 else 'rows'} for {register} but stated no row count "
+                f"for it, so there is no way to tell whether the register is complete. Nothing "
+                f"was stored for this document and no figures from it were used. Re-run the "
+                f"extraction."
+            )
+        n = _stated_count(stated.get(register))
+        if n is None:
+            raise RegisterRowCountError(
+                f"the extraction{where} states the row count of {register} as "
+                f"{stated.get(register)!r}, which is not a whole number of rows. Nothing was "
+                f"stored for this document and no figures from it were used. Re-run the "
+                f"extraction."
+            )
+        if n != returned:
+            shortfall = ("stopped short of" if returned < n else "went beyond")
+            raise RegisterRowCountError(
+                f"the extraction{where} states that {register} holds {n} "
+                f"{'row' if n == 1 else 'rows'}, but the answer returned {returned}: it "
+                f"{shortfall} the register it said it was returning. A register that is not the "
+                f"size the reply claims cannot be read as the whole population, and the figures "
+                f"drawn from it would be measured against the wrong number of rows. Nothing was "
+                f"stored for this document and no figures from it were used. Re-run the "
+                f"extraction."
+            )
+
+
+def _stated_count(v: Any) -> int | None:
+    """A stated count as a whole non-negative number of rows, or None if it is not one.
+    `True` is not 1 here: a boolean is not a count and reading it as one would let a reply
+    state `true` and pass a one-row register."""
+    if isinstance(v, bool) or v is None:
+        return None
+    if isinstance(v, int):
+        return v if v >= 0 else None
+    if isinstance(v, float):
+        return int(v) if v.is_integer() and v >= 0 else None
+    if isinstance(v, str):
+        t = v.strip()
+        if t.isdigit():
+            return int(t)
+    return None
 
 
 # --------------------------------------------------------------- ordinal word scales

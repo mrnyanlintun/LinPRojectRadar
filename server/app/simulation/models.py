@@ -1005,7 +1005,20 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # because results computed after this line can be assembled from registers that previously could
 # not be extracted at all, so a result under v65 may rest on evidence a v64 result could not see.
 # No model call was made or simulated: there is no key in this environment.
-SIMULATION_VERSION = "sim-2026.09-v65"
+# RUN 126, sim-2026.09-v66. THE REGISTER NOW STATES ITS OWN ROW COUNT, AND A REGISTER THAT
+# DISAGREES WITH THAT COUNT IS REFUSED. `extraction_fields.REGISTER_ROW_COUNT_FIELD` is asked of
+# the nineteen register-bearing document types, and `extraction_merge.validate_register_row_counts`
+# refuses the whole document, at `extract_many.run` before any `Document` row exists, when the
+# rows a register holds differ from the number the SAME REPLY states for it. NO BAND, THRESHOLD,
+# WEIGHT, CATEGORY RULE, PROJECT RULE OR MODULE POPULATION IS TOUCHED and no census figure
+# changes. The stamp moves because production BEHAVIOUR changes in both directions: a document
+# whose model under-read a register no longer assembles at all where under v65 it assembled
+# short and banded on a partial population, so a v66 result rests on registers that were
+# self-consistent when read and a v65 result carries no such assurance. The six override tables
+# that distinguish absent ("not tested") from `[]` ("tested, did not hold") are excluded by name
+# and their semantics are unchanged. No model call was made or simulated: there is no key in
+# this environment.
+SIMULATION_VERSION = "sim-2026.09-v66"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1251,7 +1264,7 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # over the old cap -- so no reader's heading list was touched. NO BAND, THRESHOLD, WEIGHT,
  # CATEGORY RULE, PROJECT RULE OR MODULE POPULATION CHANGED and no census figure moves.
  # NO MIGRATION WAS ADDED. No model call was made or simulated.
- "sim-2026.09-v65",
+ "sim-2026.09-v65", "sim-2026.09-v66",
 )
 
 
