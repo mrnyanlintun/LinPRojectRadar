@@ -78,7 +78,46 @@ EXTRACTION_MODEL = ai_provider.PROVIDERS["anthropic"]["models"]["extraction"]
 # collapsing a 27-document period from >2 minutes to well under half a minute.
 DEFAULT_CONCURRENCY = 10
 
-MAX_TOKENS = 1536
+# RUN 124. 1536 -> 8192. THE OUTPUT BUDGET, SIZED FROM MEASUREMENT RATHER THAN LEFT AT A LITERAL.
+#
+# WHERE 1536 CAME FROM: the file's own creation commit (fc7be2c, "Training upgrade run 1"),
+# as a bare literal with NO recorded reasoning, no comment, and no cost or latency rationale
+# anywhere in the history. It was never a deliberate cost decision that this run is overriding;
+# it was a default that no register-bearing document had yet tested. It is raised here for a
+# measured reason, and the measurement is recorded so the next reader does not have to guess.
+#
+# WHY IT HAD TO MOVE. Every document type carrying a MULTI-ROW REGISTER exceeds 1536 tokens of
+# output before it has printed its rows. Measured offline with cl100k_base (an ESTIMATE -- it is
+# OpenAI's tokenizer, not the extraction model's -- on register payloads built from the headings
+# `compliance_register._HEADINGS` and `documents.py`'s `_first_of` lists actually accept):
+#   inspection_report, 26-row quality_requirements_json x 9 columns  ~2784 tok
+#   submittal_register, 46-row submittal_decisions_json x 7 columns  ~4004 tok
+# plus the sibling scalar fields of the same reply. Both are past the old cap by 2x to 3x, and
+# the provider raises ProviderTruncated rather than returning them.
+#
+# WHY NOT A SHORTER KEY CONTRACT INSTEAD. The prompt asks for the table's OWN column headings as
+# keys, repeated once per row, and the obvious hypothesis was that key repetition -- not data --
+# was spending the budget. IT IS NOT. Measured across terse and verbose values, compact and
+# indented, replacing every heading with a short fixed key saves only 7% to 11%: the best case
+# for the 26-row register is ~1666 tokens, STILL OVER 1536. A key-contract change could not have
+# fixed this and would have put every `_first_of` reader at risk for nothing. The contract stands.
+#
+# WHY 8192. Twice the largest measured reply, so a register roughly double the corpus's largest
+# still completes. It is not an invented ceiling: `simulation/spec_apply.py` already issues 8192
+# through these same clients against the same provider, so this value is proven on this wire.
+# `ai_provider.PROVIDERS` carries no per-provider or per-model output limit, so nothing in this
+# codebase bounds the constant independently of this line.
+#
+# COST. Output tokens are billed as generated, not as budgeted: a scalar-only document that
+# answers in 300 tokens costs exactly what it cost before. The cap is a ceiling, not a purchase.
+# What DOES change is latency -- a 4000-token reply takes materially longer to generate than a
+# truncated 1536-token one -- and that interacts with the 45s browser-side abort in
+# `assets/js/store.js:278`, which this run did NOT change. See the Run 124 report.
+#
+# NOT IN THE CACHE KEY, DELIBERATELY LEFT SO. `extraction_contract_fingerprint` hashes the
+# PROMPT, and this constant is not in it, so raising it does not restale a single stored
+# extraction: the eleven documents that already succeeded are not re-extracted and not re-billed.
+MAX_TOKENS = 8192
 REQUEST_TIMEOUT_S = 120
 
 

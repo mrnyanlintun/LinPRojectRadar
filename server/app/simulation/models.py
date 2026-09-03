@@ -998,7 +998,14 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # NO EXISTING BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, `THRESHOLD_SOURCES`
 # stays three values wide, and no model decides any of them -- there is no model key in this
 # environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v64"
+# RUN 124, sim-2026.09-v65. THE EXTRACTION OUTPUT BUDGET MOVED: `extraction_client.MAX_TOKENS`
+# 1536 -> 8192, because every register-bearing document type exceeded 1536 tokens of output and
+# was refused by the provider before it finished. NO BAND, THRESHOLD, WEIGHT, CATEGORY RULE,
+# PROJECT RULE OR MODULE POPULATION IS TOUCHED and no census figure changes. The stamp moves
+# because results computed after this line can be assembled from registers that previously could
+# not be extracted at all, so a result under v65 may rest on evidence a v64 result could not see.
+# No model call was made or simulated: there is no key in this environment.
+SIMULATION_VERSION = "sim-2026.09-v65"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1233,6 +1240,18 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # The Schedule category is untouched and no forecast completion date is moved.
  # No stored row is recomputed and none is touched. NO MIGRATION WAS ADDED.
  "sim-2026.09-v64",
+ # RUN 124, THE EXTRACTION OUTPUT BUDGET. `extraction_client.MAX_TOKENS` 1536 -> 8192.
+ # 1536 entered in the file's creation commit as a bare literal with no recorded reasoning, and
+ # every register-bearing document type -- schedule update, look-ahead, inspection report,
+ # environmental report, submittal register -- exceeds it before it has finished printing its
+ # rows (measured offline: ~2784 tok for a 26-row quality register, ~4004 tok for a 46-row
+ # submittal decision table). Those documents were REFUSED, not silently truncated: both
+ # provider wires test stop_reason/finish_reason and raise. A shorter key contract was measured
+ # as the alternative and REJECTED -- it saves only 7-11% and leaves the 26-row register still
+ # over the old cap -- so no reader's heading list was touched. NO BAND, THRESHOLD, WEIGHT,
+ # CATEGORY RULE, PROJECT RULE OR MODULE POPULATION CHANGED and no census figure moves.
+ # NO MIGRATION WAS ADDED. No model call was made or simulated.
+ "sim-2026.09-v65",
 )
 
 
