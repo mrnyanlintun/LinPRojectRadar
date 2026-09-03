@@ -62,7 +62,8 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
     "change_order": ("modifications_json", "change_events_json", "change_exposure_days",
                      "baseline_contract_sum", "change_related_delay_days",
                      "change_available_total_float_days", "original_contract_duration_days",
-                     "change_time_extension_approved", "change_forecast_completion_moved"),
+                     "change_time_extension_approved", "change_forecast_completion_moved",
+                     "trade_attribution_json", "trade_denominators_json"),
     "oac_minutes": ("weather_events_json", "weather_allowance_days_remaining",
                     "weather_calendar_id", "weather_day_basis", "weather_allowance_days",
                     "weather_days_claimed", "weather_days_approved", "weather_approval_period",
@@ -77,7 +78,8 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
                            "submittal_reporting_period",
                            "rejected_critical_or_long_lead_late_json",
                            "rejected_blocking_past_deadline_json",
-                           "critical_package_rejected_resubmittals"),
+                           "critical_package_rejected_resubmittals",
+                           "trade_attribution_json", "trade_denominators_json"),
     "ncr_log": ("inspections_performed", "active_work_packages", "ncr_denominator_basis",
                 "ncr_issued", "ncr_open", "ncr_closed", "report_period",
                 "open_critical_ncr_json", "hold_point_or_turnover_blocking_ncr_json",
@@ -86,7 +88,12 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
                 "trade_attribution_json", "trade_denominators_json"),
     "subcontractor_report": ("subcontractor_ratings_json", "subcontractor_rating_scale",
                              "subcontractor_report_date", "subcontractor_report_version"),
-    "schedule_update": ("schedule_network_json",),
+    # RUN 120, SECTION 6. Four more types now carry the trade attribution and denominator
+    # tables, because A6.4's four factors read firm-attributed delivery records off them.
+    # Declared here so the completeness denominator counts the path: a project whose
+    # schedule update states no firm packages is genuinely less complete for A6.4.
+    "schedule_update": ("schedule_network_json", "trade_attribution_json",
+                        "trade_denominators_json"),
     "contract_value": ("federal_acquisition", "agency_procedure_requires_evms",
                        "major_acquisition", "contracting_agency", "acquisition_designation",
                        "evms_clause_id", "award_date", "acquisition_id"),
@@ -111,6 +118,10 @@ _ASSEMBLER_FIELDS: dict[str, tuple[str, ...]] = {
                      "trade_denominators_json",
                      "quality_deficiencies_noted", "inspections_performed",
                      "active_work_packages"),
+    # RUN 120. The RFI log had no declared assembler path at all before this run; it has one
+    # now, because A6.4's commercial and administration factor reads RFI responses as
+    # commitments off exactly these two tables.
+    "rfi_log": ("trade_attribution_json", "trade_denominators_json"),
     "inspection_report": ("trade_attribution_json", "trade_denominators_json"),
     "safety_report": ("trade_attribution_json", "trade_denominators_json"),
     # RUN 119, SECTION 2. The same three off a quality audit report.

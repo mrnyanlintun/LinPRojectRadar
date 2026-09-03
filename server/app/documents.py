@@ -2942,6 +2942,32 @@ def _run69_structures(session: Session, project: Project, period: int,
                                          "reports_covering", "field_report_count")),
         ("systems_tested", ("systems_tested", "items_tested", "systems", "tests_performed",
                             "acceptance_tests")),
+        # RUN 120, SECTION 6. THE TWO POPULATIONS RUN 118 DID NOT CARRY, and the stated
+        # first-pass numerator. See `extraction_fields` for the sentence each comes from. The
+        # A6.4 quality and safety factors need NOTHING NEW -- `inspections_performed`,
+        # `exposure_hours` and `recordable_incidents` are already above and are reused.
+        ("packages_due", ("packages_due", "work_packages_due", "packages", "milestones_due",
+                          "activities_due", "workfronts_due", "planned_packages")),
+        ("packages_completed_on_time", ("packages_completed_on_time", "packages_on_time",
+                                        "completed_on_time", "milestones_on_time",
+                                        "on_time_completions",
+                                        "packages_completed_by_committed_date")),
+        ("inspections_passed_first", ("inspections_passed_first", "passed_first_inspection",
+                                      "first_pass_inspections", "inspections_passed",
+                                      "first_time_pass", "passed_on_first")),
+        ("commitments_due", ("commitments_due", "commitments", "submittals_due", "rfis_due",
+                             "responses_due", "obligations_due")),
+        ("commitments_met_on_time", ("commitments_met_on_time", "commitments_on_time",
+                                     "commitments_met", "on_time_commitments",
+                                     "responses_on_time")),
+    )
+    #: RUN 120. `active_work` IS NOT SUMMED. Every column above is a COUNT and two documents
+    #: covering one firm are added together; active work is a STATEMENT about the firm in the
+    #: period, and adding "yes" to "yes" is meaningless. It is carried as the document printed
+    #: it, and the FIRST document that states it wins -- a later blank never erases it.
+    _TD_FLAGS = (
+        ("active_work", ("active_work", "active", "has_active_work", "working_this_period",
+                         "on_site", "mobilised", "mobilized")),
     )
     _td_by_firm: dict[str, dict] = {}
     _td_sources: dict[str, list[str]] = {}
@@ -2977,6 +3003,12 @@ def _run69_structures(session: Session, project: Project, period: int,
                 if _f != _f or _f in (float("inf"), float("-inf")):
                     continue
                 _slot[_col] = _slot.get(_col, 0.0) + _f
+                _used = True
+            for _col, _names in _TD_FLAGS:
+                _v = _first_of(_r, _names)
+                if _v is None or not str(_v).strip():
+                    continue
+                _slot.setdefault(_col, str(_v).strip())
                 _used = True
             if _used and _dt not in _td_sources.setdefault(_name, []):
                 _td_sources[_name].append(_dt)

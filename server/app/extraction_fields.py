@@ -340,6 +340,11 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         # such date the arm is Not Assessed; nothing is converted from the day number.
         "schedule_baseline_finish_date",
         "remaining_planned_duration_days", "remaining_duration_basis",
+    
+        # RUN 120, SECTION 6. A6.4 reads this document type for firm-attributed
+        # delivery records and the populations they are measured over.
+        "trade_attribution_json",
+        "trade_denominators_json",
     ],
     # RUN 69. THE MODIFICATION REGISTER, WHICH IS A TABLE AND NOT A COUNT.
     #
@@ -376,6 +381,11 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "change_related_delay_days", "change_available_total_float_days",
         "original_contract_duration_days", "change_time_extension_approved",
         "change_forecast_completion_moved",
+    
+        # RUN 120, SECTION 6. A6.4 reads this document type for firm-attributed
+        # delivery records and the populations they are measured over.
+        "trade_attribution_json",
+        "trade_denominators_json",
     ],
     "monthly_report": [
         "earned_value", "actual_cost", "planned_value", "actual_percent_complete",
@@ -389,6 +399,11 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
         "submittal_reporting_period",
         "rejected_critical_or_long_lead_late_json", "rejected_blocking_past_deadline_json",
         "critical_package_rejected_resubmittals",
+    
+        # RUN 120, SECTION 6. A6.4 reads this document type for firm-attributed
+        # delivery records and the populations they are measured over.
+        "trade_attribution_json",
+        "trade_denominators_json",
     ],
     "oac_minutes": [
         "document_risk_score", "document_date", "subcontractor_issues_discussed",
@@ -804,6 +819,11 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
     "rfi_log": [
         "rfi_total", "rfi_open", "rfi_answered", "rfi_overdue", "avg_response_days",
         "rfi_period_days", "oldest_open_days", "log_date",
+    
+        # RUN 120, SECTION 6. A6.4 reads this document type for firm-attributed
+        # delivery records and the populations they are measured over.
+        "trade_attribution_json",
+        "trade_denominators_json",
     ],
     "rfa_log": [
         "rfa_total", "rfa_approved", "rfa_rejected", "rfa_resubmit", "rfa_open",
@@ -967,6 +987,83 @@ _EXTRACTION_FIELDS: dict[str, list[str]] = {
 #:                                 field_report_count
 #:   systems_tested              : systems_tested, items_tested, systems, tests_performed,
 #:                                 acceptance_tests
+#:
+#: ============================================================================================
+#: RUN 120, SECTION 6. SIX MORE COLUMNS ON `trade_denominators_json`, AND NOT ONE NEW COLUMN ON
+#: `trade_attribution_json`.
+#:
+#: WHAT WAS ALREADY THERE, AND IS NOT REBUILT. The owner's A6.4 quality-execution factor needs
+#: `inspections_performed` and his safety factor needs `exposure_hours` and
+#: `recordable_incidents`. ALL THREE ALREADY EXIST above, on eight document types, from Run 118.
+#: The schedule override needs "causes a controlling-path activity or a contractual milestone to
+#: forecast late" and the commercial override needs "directly blocks a controlling-path
+#: activity": BOTH are `record_milestone_forecast_late`, which already exists and whose
+#: recognised headings already include `critical_path_impact`. The quality override reads
+#: `record_kind`, `record_severity` and `record_status`, which already exist. So the attribution
+#: table grows NO FIELD -- it grows only two new families of RECOGNISED `record_kind` VALUES,
+#: listed at the end of this note.
+#:
+#: WHAT WAS GENUINELY MISSING was the SCHEDULE-RELIABILITY and COMMERCIAL-COMMITMENT
+#: POPULATIONS, a stated first-pass inspection numerator, and a statement of ACTIVE WORK.
+#:
+#:   packages_due                  firm work packages or milestones DUE in the reporting period.
+#:                                 The schedule reliability factor's denominator.
+#:   packages_completed_on_time    of those, the number COMPLETED ON OR BEFORE THEIR COMMITTED
+#:                                 DATE. The schedule reliability factor's numerator, and it is
+#:                                 a COUNT THE DOCUMENT STATES -- never derived from how many
+#:                                 attribution rows happened to arrive.
+#:   inspections_passed_first      firm inspections PASSED ON FIRST INSPECTION. The quality
+#:                                 execution factor's numerator, over the existing
+#:                                 `inspections_performed` denominator. FIRST OUTCOME ONLY: a
+#:                                 reinspection neither expands the denominator nor counts
+#:                                 again. IT IS NOT DERIVED as `inspections_performed` minus the
+#:                                 failed rows: on a document that states an inspection count
+#:                                 and carries no inspection rows that arithmetic would yield
+#:                                 "every inspection passed", a manufactured Green out of
+#:                                 silence.
+#:   commitments_due               firm COMMITMENTS DUE in the reporting period. A commitment is
+#:                                 the owner's own list: a required submittal, an RFI response,
+#:                                 a procurement release or delivery, a corrective-action
+#:                                 closure, or a required change-document response.
+#:   commitments_met_on_time       of those, the number MET ON TIME. Stated, never derived.
+#:   active_work                   whether the firm had ACTIVE WORK in the reporting period.
+#:                                 A firm the document states had NONE is excluded from the
+#:                                 worst-firm comparison. A firm that states NOTHING is carried
+#:                                 in the comparison and the silence is reported: excluding on
+#:                                 silence would let an adverse firm vanish from a reading.
+#:
+#: HEADINGS RECOGNISED, per column:
+#:   packages_due                : packages_due, work_packages_due, packages, milestones_due,
+#:                                 activities_due, workfronts_due, planned_packages
+#:   packages_completed_on_time  : packages_completed_on_time, packages_on_time,
+#:                                 completed_on_time, milestones_on_time, on_time_completions,
+#:                                 packages_completed_by_committed_date
+#:   inspections_passed_first    : inspections_passed_first, passed_first_inspection,
+#:                                 first_pass_inspections, inspections_passed,
+#:                                 first_time_pass, passed_on_first
+#:   commitments_due             : commitments_due, commitments, submittals_due, rfis_due,
+#:                                 responses_due, obligations_due
+#:   commitments_met_on_time     : commitments_met_on_time, commitments_on_time,
+#:                                 commitments_met, on_time_commitments, responses_on_time
+#:   active_work                 : active_work, active, has_active_work, working_this_period,
+#:                                 on_site, mobilised, mobilized
+#:
+#: A ROW IS UNUSABLE, exactly as before, where it names no firm: it cannot be attributed and it
+#: is never spread across firms. A column whose cell is blank or is not a number is skipped and
+#: the factor that needs it is UNAVAILABLE -- never zero, never Green.
+#:
+#: TWO NEW FAMILIES OF `record_kind` VALUES, on the EXISTING `trade_attribution_json` field:
+#:   work_package / workpackage / package / milestone / schedule_activity / activity /
+#:   workfront / planned_workfront / predecessor / schedule_commitment
+#:                                                              -> A6.4 schedule reliability
+#:   submittal / required_submittal / submittal_response / rfi / rfi_response / rfi_answer /
+#:   procurement / procurement_release / procurement_item / delivery / material_release /
+#:   late_delivery / late_item / corrective_action / corrective_action_closure / capa /
+#:   change_document / change_document_response / change_order_response / change_response /
+#:   commitment / administrative_commitment
+#:                                                              -> A6.4 commercial and admin
+#: These kinds carry the EVIDENCE REFERENCES behind those two factors and the records their
+#: overrides read. THEY ARE NEVER A POPULATION: no factor's denominator is a count of them.
 #:
 #: DENOMINATORS FOR THE SAME FIRM ON SEVERAL DOCUMENTS ARE SUMMED PER COLUMN, and which
 #: documents contributed is recorded. They are never averaged and never overwritten: two
