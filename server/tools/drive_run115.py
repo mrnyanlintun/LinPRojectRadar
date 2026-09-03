@@ -272,10 +272,17 @@ check(str(_a48.get("source") or "").startswith("the subcontractor performance re
       "the reading names the document it was read from", str(_a48.get("source"))[:70])
 
 _Rh, _Ah, _SIh, _Vh, _Ph, _Mh = run_project("held", docs(ratings=ADVERSE_ROWS))
-check(state(_Rh, _Ah, "A4.8") == "COMPUTED, NO BAND"
-      and (_Rh.get("A4.8") or {}).get("pm_review_required") is True,
-      "an ADVERSE reported posture is HELD for Project Manager review and asserts no band, "
-      "which is Run 107's rule and is not worked around here",
+# RE-POINTED BY RUN 121, AND THIS SUITE WAS NOT IN THE RUN'S STATED BLAST RADIUS. The three
+# names the blast-radius grep was run on -- `pending_pm_review`, `MODULE_STATE_PENDING`,
+# `POSTURES_REQUIRING_REVIEW` -- appear nowhere in this file: it asserted the hold through its
+# CONSEQUENCES, "COMPUTED, NO BAND" and `pm_review_required is True`, and so was invisible to
+# the grep and found only by running it. The owner's Run 121 ruling makes PM feedback a discrete
+# event; the check is inverted, not deleted.
+check(state(_Rh, _Ah, "A4.8") == "BANDS AMBER"
+      and (_Rh.get("A4.8") or {}).get("pm_review_required") is False
+      and (_Rh.get("A4.8") or {}).get("module_state") == "stands",
+      "RUN 121: an ADVERSE reported posture is NOT held -- it stands and asserts its band, "
+      "and no review is required for it to enter its category",
       state(_Rh, _Ah, "A4.8"))
 
 _R2, _A2, _SI2, _V2, _P2, _M2 = run_project("noversion", docs(drop_report_version=True))
