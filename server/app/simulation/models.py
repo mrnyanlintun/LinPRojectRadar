@@ -998,7 +998,7 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # NO EXISTING BAND, THRESHOLD, CATEGORY RULE OR PROJECT RULE IS TOUCHED, `THRESHOLD_SOURCES`
 # stays three values wide, and no model decides any of them -- there is no model key in this
 # environment and none was simulated.
-SIMULATION_VERSION = "sim-2026.09-v63"
+SIMULATION_VERSION = "sim-2026.09-v64"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1217,6 +1217,22 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # firms. `simulation/contractor_factors.py` holds every threshold and nothing else does. No
  # module posture is read anywhere in it, so nothing is counted twice inside Delivery Quality.
  "sim-2026.09-v63",
+ # RUN 121. THE PM REVIEW HOLD COMES OFF. The owner ruled PM feedback on contractor performance
+ # a DISCRETE EVENT, so nothing waits on a review: `pm_review.resolve` loses its PENDING exit and
+ # `pending_pm_review` is deleted rather than left unused. The review route, the five
+ # dispositions and their authority over the computed posture, and the audit record are all
+ # unchanged -- the REVIEWED exit never consulted the hold. Run 119's two-band lift is KEPT and
+ # becomes a DISCLOSURE in the sentence a reader reads on A4.8 and A6.4 instead of a hold.
+ #   GOAL 2. A closed record does not fire the schedule override. Of the twelve overrides in the
+ # two engines, ELEVEN ALREADY APPLIED THE RULE -- measured, not assumed; A6.4's schedule
+ # override was the only one that did not. A record printing no status is still treated as OPEN.
+ #   GOAL 3. An OPEN CRITICAL nonconformance now also fires the firm's SCHEDULE RELIABILITY
+ # override, on the SAME critical vocabulary and population the quality override reads: a defect
+ # must be rectified and rectification takes time. It fires the override -- Red outright -- and
+ # contributes NOTHING to the weighted severity, because overrides apply after it as a worst-of.
+ # The Schedule category is untouched and no forecast completion date is moved.
+ # No stored row is recomputed and none is touched. NO MIGRATION WAS ADDED.
+ "sim-2026.09-v64",
 )
 
 
