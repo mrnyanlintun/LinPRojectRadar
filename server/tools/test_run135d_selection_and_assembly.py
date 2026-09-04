@@ -195,10 +195,99 @@ def h3_r3() -> None:
           unresolved_value_conflicts(decided) == [], str(unresolved_value_conflicts(decided)))
 
 
+# --------------------------------- H4, the archive filter reaches every store and reader
+#
+# THE ONLY DB-BACKED CHECK IN THIS FILE. It needs a migrated schema, so it is SKIPPED rather
+# than failed where `DATABASE_URL` is unset; the count is reported either way and a skip is
+# never counted as a pass. Point it at a throwaway SQLite file and run `alembic upgrade head`
+# first:
+#     DATABASE_URL=sqlite:///./run135d.db python -m alembic upgrade head
+#     DATABASE_URL=sqlite:///./run135d.db python tools/test_run135d_selection_and_assembly.py
+def h4() -> None:
+    import os
+    import uuid
+    from datetime import datetime, timezone
+
+    print()
+    print("H4. the archive filter reaches every projection store and reader")
+    if not os.environ.get("DATABASE_URL"):
+        print("  SKIP  DATABASE_URL is unset; this check needs a migrated throwaway database")
+        return
+
+    from app.db import build_engine, build_session_factory
+    from app.documents import (
+        _milestone_history, _period_documents, _persist_schedule_activities,
+        _schedule_display, _schedule_snapshot,
+    )
+    from app.models import Project
+    from app.research_models import Document, DocumentUpload
+    from app.settings import load_settings
+
+    session = build_session_factory(build_engine(load_settings()))()
+    milestones = [
+        {"Activity ID": "D100", "Description": "Foundations",
+         "Baseline Start": "2026-01-05", "Baseline Finish": "2026-02-20",
+         "Current Finish": "2026-04-30", "Percent Complete": 40},
+        {"Activity ID": "D200", "Description": "Steel",
+         "Baseline Start": "2026-02-01", "Baseline Finish": "2026-03-15",
+         "Current Finish": "2026-05-30", "Percent Complete": 10},
+    ]
+
+    def _one(archived: bool):
+        project = Project(id=uuid.uuid4(), legacy_id=f"PRJ-135D-{uuid.uuid4().hex[:10]}",
+                          doc={})
+        session.add(project)
+        session.flush()
+        doc = Document(sha256=uuid.uuid4().hex * 2, filename="schedule.xlsx",
+                       doc_type="schedule_update",
+                       extraction={"data_date": "2026-03-31",
+                                   "milestones_json": milestones})
+        session.add(doc)
+        session.flush()
+        up = DocumentUpload(project_id=project.id, period=1, document_id=doc.document_id,
+                            uploaded_by="run135d", uploaded_at=datetime.now(timezone.utc))
+        if archived:
+            up.archived_at = datetime.now(timezone.utc)
+        session.add(up)
+        session.flush()
+        inserted = _persist_schedule_activities(session, project, 1)
+        session.flush()
+        return {
+            "period_documents": len(_period_documents(session, project, 1)),
+            "inserted": inserted,
+            "snapshot": _schedule_snapshot(session, project, 1),
+            "display": _schedule_display(session, project, 1),
+            "history": len(_milestone_history(session, project, 1)),
+        }
+
+    try:
+        arch = _one(archived=True)
+        check("_period_documents sees nothing of the archived document",
+              arch["period_documents"] == 0, str(arch["period_documents"]))
+        check("_persist_schedule_activities stores nothing from it",
+              arch["inserted"] == 0, str(arch["inserted"]))
+        check("_schedule_snapshot returns nothing from it",
+              arch["snapshot"] is None, str(arch["snapshot"]))
+        check("_schedule_display returns nothing from it",
+              arch["display"] is None, str(arch["display"]))
+        check("milestoneHistory -- A2.7's input -- carries no snapshot from it",
+              arch["history"] == 0, str(arch["history"]))
+        # The filter must not over-block: an ordinary live document is untouched.
+        live = _one(archived=False)
+        check("a LIVE document still reaches all five",
+              (live["period_documents"], live["inserted"], live["history"]) == (1, 2, 1)
+              and live["snapshot"] is not None and live["display"] is not None,
+              str((live["period_documents"], live["inserted"], live["history"])))
+    finally:
+        session.rollback()
+        session.close()
+
+
 def main() -> int:
     h5()
     m4()
     h3_r3()
+    h4()
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)}")

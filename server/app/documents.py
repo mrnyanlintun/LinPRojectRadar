@@ -544,6 +544,43 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
     return out
 
 
+def _live_document_ids(session: Session, project: Project, period: int) -> set[str]:
+    """
+    THE DOCUMENT IDS OF THIS PERIOD'S LIVE SET, taken FROM `_period_documents` ITSELF.
+
+    RUN 135, H4. The document control has two rules -- supersession and archival -- and
+    `_period_documents` was written as the ONE SEAM that applies them, in as many words: "no
+    module can hold a value that came only from an archived document, because the observations
+    were never emitted". That is true of the observation path and was FALSE EVERYWHERE ELSE.
+    Three projection stores (`_persist_schedule_activities`, `_persist_project_risks`,
+    `_persist_project_notices`) issued their own `Document`/`DocumentUpload` join with no
+    archive filter at all, and three readers (`_schedule_snapshot`, `_schedule_display`, and
+    `_milestone_history` through the first) filtered on supersession alone.
+
+    Measured: one ARCHIVED `schedule_update` gave `_period_documents` an EMPTY set while
+    `_persist_schedule_activities` inserted its two activities, `_schedule_snapshot` returned
+    them as THE ENTIRE PERIOD SNAPSHOT, and `milestoneHistory` -- A2.7's input -- carried it.
+    The uploads surface printed `contributes: False` for the same document at the same moment.
+
+    THIS IS NOT A SECOND COPY OF THE FILTER. It calls `_period_documents` and takes the ids of
+    what survives, so membership of the live set has exactly one definition and a future rule
+    added there reaches all seven callers without being remembered. It costs one extra read of a
+    set the same request has usually already assembled, and that is the price of not having the
+    rule written down twice.
+
+    ONE DELIBERATE CONSEQUENCE, STATED RATHER THAN DISCOVERED LATER. `_period_documents` also
+    excludes SUPERSEDED documents, so the three stores stop projecting rows for a document a
+    later upload in the same period replaced. Their docstrings previously said superseded
+    documents were projected on purpose, "because storage retains and selection excludes"; the
+    retention is untouched -- no row is ever deleted or updated in place, and every row already
+    stored stays readable -- and what changes is only that a NEW row is no longer written for a
+    document the document control has withdrawn from the period. The readers already excluded
+    superseded documents, so this makes the store agree with its own readers.
+    """
+    return {str(d["document_id"]) for d in _period_documents(session, project, period)
+            if d.get("document_id")}
+
+
 def _identity_observations_before(session: Session, project: Project,
                                   period: int) -> list[dict]:
     """
@@ -782,8 +819,14 @@ def _persist_project_notices(session: Session, project: Project, period: int) ->
             .where(ProjectNotice.project_id == project.id, ProjectNotice.period == period)
         ).all()
     }
+    # RUN 135, H4. THE LIVE SET, from `_period_documents` and not from a filter copied here.
+    # This store issued its own join with NO archive filter, so an ARCHIVED document was
+    # projected into the store and read back out of it. See `_live_document_ids`.
+    live = _live_document_ids(session, project, period)
     inserted = 0
     for d, _supersedes in rows:
+        if d.document_id not in live:
+            continue
         if (d.doc_type or "") != "correspondence_notice" or d.document_id in existing:
             continue
         ex = d.extraction if isinstance(d.extraction, dict) else {}
@@ -866,8 +909,14 @@ def _persist_project_risks(session: Session, project: Project, period: int) -> i
             .where(ProjectRisk.project_id == project.id, ProjectRisk.period == period)
         ).all()
     }
+    # RUN 135, H4. THE LIVE SET, from `_period_documents` and not from a filter copied here.
+    # This store issued its own join with NO archive filter, so an ARCHIVED document was
+    # projected into the store and read back out of it. See `_live_document_ids`.
+    live = _live_document_ids(session, project, period)
     inserted = 0
     for d, _supersedes in rows:
+        if d.document_id not in live:
+            continue
         ex = d.extraction if isinstance(d.extraction, dict) else {}
         # THE READER TAKES THE ROWS, from the document's own stored bytes. Twenty risks and five
         # hundred cost the same, and no row can be silently mistyped on the way. There is
@@ -931,8 +980,14 @@ def _persist_schedule_activities(session: Session, project: Project, period: int
                    ScheduleActivity.period == period)
         ).all()
     }
+    # RUN 135, H4. THE LIVE SET, from `_period_documents` and not from a filter copied here.
+    # This store issued its own join with NO archive filter, so an ARCHIVED document was
+    # projected into the store and read back out of it. See `_live_document_ids`.
+    live = _live_document_ids(session, project, period)
     inserted = 0
     for d, _supersedes in rows:
+        if d.document_id not in live:
+            continue
         ex = d.extraction or {}
         if not isinstance(ex, dict):
             continue
@@ -984,7 +1039,12 @@ def _schedule_snapshot(session: Session, project: Project, period: int) -> dict 
     are two accounts of the same activities, not two populations to merge. Merging them would
     let one document's `D100` and another's `D200` describe a schedule that never existed.
     """
-    superseded = _superseded_document_ids(session, project, period)
+    # RUN 135, H4. `_superseded_document_ids` alone was HALF THE DOCUMENT CONTROL: an ARCHIVED
+    # document's activities were returned here as the entire period snapshot, and
+    # `milestoneHistory` -- A2.7's input -- carried them, while the uploads surface printed
+    # `contributes: False` for the same document. Membership of the live set is decided in
+    # `_period_documents` and read here through `_live_document_ids`, never restated.
+    live = _live_document_ids(session, project, period)
     rows = [
         r for r in session.scalars(
             select(ScheduleActivity).where(
@@ -992,7 +1052,7 @@ def _schedule_snapshot(session: Session, project: Project, period: int) -> dict 
                 ScheduleActivity.period == period,
             )
         ).all()
-        if r.document_id not in superseded
+        if r.document_id in live
     ]
     if not rows:
         return None
@@ -1040,7 +1100,9 @@ def _schedule_display(session: Session, project: Project, period: int) -> dict |
     The previous period's rows are read only to decide what MOVED, and only from periods
     strictly earlier than this one, which is the same bound `_milestone_history` keeps.
     """
-    superseded = _superseded_document_ids(session, project, period)
+    # RUN 135, H4. The live set, from the one seam. Same defect and same fix as
+    # `_schedule_snapshot` above: supersession was applied here and archival was not.
+    live = _live_document_ids(session, project, period)
 
     def rows_for(p: int) -> list[dict]:
         return [
@@ -1053,7 +1115,7 @@ def _schedule_display(session: Session, project: Project, period: int) -> dict |
                 select(ScheduleActivity).where(ScheduleActivity.project_id == project.id,
                                                ScheduleActivity.period == p)
             ).all()
-            if r.document_id not in superseded or p != period
+            if r.document_id in live or p != period
         ]
 
     current = rows_for(period)
