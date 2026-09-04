@@ -577,6 +577,13 @@ print("headings:", out.get("headings"))
 print("row carried a decision_brief:", out.get("rowHasBrief"))
 
 _card = out.get("text") or ""
+# RUN 135C, M8. The Run 106 guard, copied here. `out.get("text") or ""` coerces a panel that did
+# not render into the empty string, after which "no imperative on card", "every band cites its
+# boundary" and "every boundary cites its basis" are all trivially true -- three terminal checks
+# passing on a card nobody saw. drive_run106.py:466 already carries this guard; these three
+# omitted it. A missing card is now a FAILURE before the three checks are reached.
+check(bool(_card), "the Governance Decision card rendered on the real page",
+      f"panel text was {out.get('text')!r}")
 _hits = scan_imperative(_card)
 check(not _hits, "no action, instruction, deadline, remedy or authority appears on the card",
       str(_hits[:4]))
