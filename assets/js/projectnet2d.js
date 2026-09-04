@@ -828,15 +828,43 @@
          used to cover them. The reader must always be able to read the status, and on most
          current rows that word is "Awaiting analysis" (Run 106 goal two; it was
          "Indeterminate" until the owner ruled the seventh word out). */
+      /* THE PLATE IS GONE, AND A HALO STANDS IN ITS PLACE -- WHICH IS NOT A COSMETIC
+         SUBSTITUTION BUT THE ONLY ONE THE MEASUREMENT ALLOWS.
+
+         What stood here was an opaque scrim -- `alpha(TH.surface, 0.86)` filled as a
+         `fillRect` sized to the wider of the two lines -- and it read as a separate dark
+         element pasted over the sun, which no other label on this canvas has.
+
+         MEASURED IN THE RENDERED CANVAS, not read off the stylesheet, on `newyork` with an
+         Amber row (the painted pixel under the glyphs, sampled with getImageData):
+
+           plate pixel rgb(49,38,25)
+           "PROJECT STATUS" in TH.text (#f2e7c9) on the plate ......... 11.99:1
+           the band word in `hcol` (#ff8c1a) on the plate .............. 6.34:1
+
+         Remove the plate and paint on the sun itself and the band word DISAPPEARS: the sun
+         body gradient's mid stop IS `hcol`, the same token the word is painted in, so the
+         ratio is 1.00:1 -- the word rendered in its own background. "PROJECT STATUS" drops
+         to 1.89:1, also below anything usable. A bare removal is therefore not shippable and
+         the band word's colour is not negotiable (it is the status token; changing it would
+         make this surface disagree with every status pill on the page).
+
+         So the FILL is removed and the legibility is carried by a text shadow instead --
+         the canvas equivalent of `.lnf-halo` on the sibling Signal Flow panel, which strokes
+         a surface-coloured outline under every one of its glyphs for exactly this reason.
+         Six passes because one pass of `shadowBlur` is far too faint to hold against a lit
+         disc; the shadow accumulates, the glyph does not move. No rectangle is painted, both
+         lines are kept, and the band word keeps its colour. */
       ctx.textAlign = "center";
-      ctx.fillStyle = alpha(TH.surface, 0.86);
-      var lw = Math.max(ctx.measureText("PROJECT STATUS").width,
-                        ctx.measureText(String(sys.health || "no status")).width) + 16;
-      ctx.fillRect(hp.x - lw / 2, hp.y - 18, lw, 36);
-      ctx.fillStyle = TH.text; ctx.font = "600 12px system-ui, sans-serif";
-      ctx.fillText("PROJECT STATUS", hp.x, hp.y - 4);
+      ctx.font = "600 12px system-ui, sans-serif";
+      ctx.save();
+      ctx.shadowColor = alpha(TH.surface, 0.95);
+      ctx.shadowBlur = 5;
+      ctx.fillStyle = TH.text;
+      for (var hs = 0; hs < 6; hs++) ctx.fillText("PROJECT STATUS", hp.x, hp.y - 4);
       ctx.fillStyle = hcol || TH.muted;
-      ctx.fillText(String(sys.health || "no status"), hp.x, hp.y + 12);
+      for (var hs2 = 0; hs2 < 6; hs2++) ctx.fillText(String(sys.health || "no status"), hp.x, hp.y + 12);
+      ctx.restore();
 
       ctx.textAlign = "left";
       LAST_SCENE = scene;
