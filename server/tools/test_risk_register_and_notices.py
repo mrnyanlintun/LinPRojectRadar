@@ -144,8 +144,16 @@ def main() -> None:
     check(banded.value is None and banded.band == "High",
           "self-test: a word is NOT read as a probability", str(banded))
 
+    # RUN 136, F4, UNDER R2. `("0", 0.0)` and `("1", 1.0)` stood here and asserted the defect
+    # Run 135's M5 repaired as correct: bare "1" and "0" were coerced to certainty and
+    # impossibility while every other bare integer refused. The expectation below is NOT taken
+    # from `parse_probability`; its source is the RULE M5 implemented -- refuse a bare integer
+    # where the register states no scale, because on a 1-to-5 likelihood register the
+    # lowest-likelihood rows would otherwise read as certain, which is the reassuring direction
+    # -- recorded at `app/risk_values.py:102-121` and in Run 135 D's report, section M5. Both
+    # cases move to the bare-integer refusal below, which is where 2 through 5 already are.
     HANDLED = [("30%", 0.30), ("30 %", 0.30), ("30 per cent", 0.30), ("0.3", 0.30),
-               (".3", 0.30), ("0", 0.0), ("1", 1.0)]
+               (".3", 0.30)]
     for raw, expected in HANDLED:
         got = parse_probability(raw)
         check(getattr(got, "value", None) == expected,
@@ -157,6 +165,13 @@ def main() -> None:
         got = parse_probability(raw)
         check(getattr(got, "value", None) is None and getattr(got, "band", None),
               f"recorded as a band, refused as a number: {raw!r}", str(got))
+
+    # RUN 136, F4. A DECIMAL POINT IS THE UNIT STATEMENT; a bare integer is not, and 1 and 0
+    # are bare integers. Source as above: the rule M5 implemented, not the parser.
+    for raw in ("0", "1", "2", "5"):
+        got = parse_probability(raw)
+        check(type(got).__name__ == "ValueRefusal" and "ordinal" in getattr(got, "reason", ""),
+              f"a bare integer with no unit REFUSES as a probability: {raw!r}", str(got))
 
     bare = parse_probability("40")
     check(type(bare).__name__ == "ValueRefusal",
