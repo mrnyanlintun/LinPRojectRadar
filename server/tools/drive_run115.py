@@ -447,9 +447,17 @@ for word in ("red", "amber", "green", "yellow", "escalate", "investigate", "risk
         break
 else:
     check(True, "the caveat carries no colour, no severity and no action word")
-check(VIEW.get("project_status") == (VIEW.get("project_status") or None)
-      and "information_completeness" not in json.dumps(VIEW.get("category_statuses") or {}),
-      "and it casts no vote: it is not in the category statuses")
+# RUN 135C, L3. The first conjunct was `VIEW.get("project_status") == (VIEW.get("project_status")
+# or None)`, which is x == (x or None): true for every value except a falsy non-None one, so it
+# asserted nothing about C1.5 and weakened the conjunction it stood in. It is replaced by the
+# comparison it was evidently meant to make -- that C1.5 does not appear in the project status
+# either -- so both halves of "it casts no vote" are now real.
+check("information_completeness" not in json.dumps(VIEW.get("project_status") or "")
+      and "C1.5" not in json.dumps(VIEW.get("project_status") or "")
+      and "information_completeness" not in json.dumps(VIEW.get("category_statuses") or {})
+      and "C1.5" not in json.dumps(VIEW.get("category_statuses") or {}),
+      "and it casts no vote: it is in neither the category statuses nor the project status",
+      json.dumps(VIEW.get("project_status"))[:120])
 check(state(R, A, "C1.5") == "ABSTAINS",
       "C1.5's own routing is untouched -- it still abstains from its category",
       state(R, A, "C1.5"))
