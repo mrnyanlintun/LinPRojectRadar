@@ -27,6 +27,7 @@ from __future__ import annotations
 from datetime import date as _date
 from typing import Any, Callable
 
+from .band_display import band_figure
 from .canonical import StructureAbsent
 from .canonical_v3 import (
     bayesian_eac_model, budget_execution, cpi_reference_class, cpi_shrinkage,
@@ -710,7 +711,25 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
             if tcpi <= _TCPI_OWNER_YELLOW
             else "above the efficiency planned" if tcpi <= _TCPI_BEYOND_OBSERVED
             else "beyond the improvement a cumulative cost index is observed to make")
-    tcpi_display = _round3(tcpi)
+    # RUN 135, FINDING H6. THE SENTENCE PRINTS THE FIGURE THE BAND WAS MADE ON, TO A PRECISION
+    # THAT CLEARS THE BOUNDARY IT WAS MADE AGAINST.
+    #
+    # `tcpi_display` was `_round3(tcpi)` flat. Run 35 had already separated the band from the
+    # display, so the BAND was right -- and the sentence beside it said otherwise: a TCPI of
+    # 1.0004 bands Yellow and printed "TCPI: 1", directly beside a boundary reading "Green at or
+    # below 1.00". Likewise 1.0504 printed "1.05" under Amber and 1.1004 printed "1.1" under Red.
+    # Each of the three rounded ONTO an edge the value had crossed, so the row contradicted
+    # itself in the reader's hands on all three of this ladder's boundaries.
+    #
+    # THE BAND IS NOT ROUNDED TO MATCH THE DISPLAY -- that would be the Run 35 defect again, and
+    # `tcpi` above is untouched. The DISPLAY is given the precision it needs: `band_figure`
+    # returns the fewest decimals, never fewer than the three `_round3` gave, that keep the
+    # printed figure on the same side of every edge of this ladder as `tcpi` itself. A reading
+    # that is not near an edge renders exactly as it always did. The rule is shared with A1.8,
+    # A2.8, A3.3, A3.5, A4.3, A4.4 and A6.3 -- see `band_display` -- because Run 135 found this
+    # same contradiction at all of them and separate fixes would drift apart.
+    tcpi_display = band_figure(
+        tcpi, (_TCPI_PLANNED_EFFICIENCY, _TCPI_OWNER_YELLOW, _TCPI_BEYOND_OBSERVED), 3)
     return banded(
         "TCPI",
         (f"TCPI: {_js_str(tcpi_display)}, the cost efficiency the remaining work must achieve "
