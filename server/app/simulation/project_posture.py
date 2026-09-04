@@ -68,15 +68,37 @@ PROJECT_CATEGORY_WEIGHTS: dict[str, float] = {
 }
 
 #: Executable, so the profile cannot lose its normalisation to an edit that forgets to check.
-assert abs(sum(PROJECT_CATEGORY_WEIGHTS.values()) - 1.0) < 1e-9, \
-    "the owner's weight profile must sum to one"
+#:
+#: RUN 135. THESE TWO INVARIANTS WERE `assert` STATEMENTS AND ARE NOW EXPLICIT RAISES.
+#:
+#: The comments beside them said "executable, so the profile cannot ..." -- and under `python -O`
+#: they are not executable at all: the interpreter discards an `assert` at compile time, both
+#: checks vanish, and a weight profile that does not sum to one, or that has acquired Data
+#: Integrity as a criterion, is loaded in silence. Neither of these is a debugging aid. The first
+#: is what makes the project rule a WEIGHTED VOTE rather than an arbitrary scaling of one, and the
+#: second is the standing ruling that Data Integrity is a PRECONDITION for using the criteria and
+#: never a criterion in them. An invariant whose violation changes every published project status
+#: is not something to check only when the interpreter feels like it.
+#:
+#: They raise at import, exactly as the asserts did, and the message each carried is preserved.
+if abs(sum(PROJECT_CATEGORY_WEIGHTS.values()) - 1.0) >= 1e-9:
+    raise ValueError(
+        "the owner's weight profile must sum to one: "
+        f"{' + '.join(f'{k} {w:g}' for k, w in PROJECT_CATEGORY_WEIGHTS.items())} = "
+        f"{sum(PROJECT_CATEGORY_WEIGHTS.values()):.12g}. The project rule is a WEIGHTED VOTE "
+        f"over the five category postures and a profile that does not sum to one makes it a "
+        f"scaled one, so every published project status would move. Nothing was loaded.")
 
 #: Data Integrity is a precondition for using the criteria, never a criterion in them. Executable,
-#: so the profile cannot acquire it by an edit that forgets the rule.
+#: so the profile cannot acquire it by an edit that forgets the rule. See the Run 135 note above
+#: for why this is a raise and not an `assert`.
 PROJECT_EXCLUDED_CATEGORIES: frozenset[str] = frozenset({"C1"})
 
-assert not (set(PROJECT_CATEGORY_WEIGHTS) & PROJECT_EXCLUDED_CATEGORIES), \
-    "Data Integrity is a precondition for using the criteria, not a criterion in them."
+if set(PROJECT_CATEGORY_WEIGHTS) & PROJECT_EXCLUDED_CATEGORIES:
+    raise ValueError(
+        "Data Integrity is a precondition for using the criteria, not a criterion in them. "
+        f"The weight profile names {sorted(set(PROJECT_CATEGORY_WEIGHTS) & PROJECT_EXCLUDED_CATEGORIES)}, "
+        f"which is excluded from the project vote. Nothing was loaded.")
 
 WEIGHT_PROVENANCE = ("the owner's stated authority, Run 95 section 3 restated at Run 106 section "
                      "1: his decision, not a derived or literature value and not calibrated")
