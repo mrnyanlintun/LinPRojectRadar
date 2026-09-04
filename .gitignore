@@ -30,3 +30,7 @@ server/dev_fixtures/
 research_fixtures/**/_scratch/
 research_fixtures/**/_regen/
 research_fixtures/**/*.tmp
+
+# RUN 135C, M14. Generators write here by default; the committed artefact is only
+# overwritten with --write-artifact. See server/tools/artifact_write.py.
+.artifact_scratch/

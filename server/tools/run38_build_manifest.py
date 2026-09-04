@@ -16,6 +16,8 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import artifact_write as AW  # noqa: E402
 AUDIT = ROOT / "code_audit"
 sys.path.insert(0, str(ROOT / "server"))
 sys.path.insert(0, str(ROOT / "server" / "tools"))
@@ -202,8 +204,14 @@ manifest = {
                                  "nothing here is empirical validation."),
 }
 
-out = ROOT / "research/study_execution/STUDY_EXECUTION_READINESS_MANIFEST.json"
+# RUN 135C, M14. This manifest rewrote itself in place whenever the generator ran, and
+# it regenerates at a NEWER identity than the one committed -- so a casual run silently
+# proposed a new launch identity and dirtied the tree. It now writes to a scratch path
+# unless --write-artifact (or RUN135_WRITE_ARTIFACT=1) is given. See tools/artifact_write.py.
+_committed = ROOT / "research/study_execution/STUDY_EXECUTION_READINESS_MANIFEST.json"
+out = AW.artifact_target(_committed, ROOT)
 out.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+AW.report_artifact_write(_committed, out)
 print(json.dumps({k: manifest[k] for k in
                   ("blocker_count", "final_disposition", "controlled_study_population",
                    "fault_campaign", "browser_qualification_result")}, indent=2))
