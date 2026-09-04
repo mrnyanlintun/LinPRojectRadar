@@ -53,6 +53,14 @@ def post(payload: dict) -> dict:
     return r.json()
 
 
+def seed(payload: dict) -> dict:
+    """A seeding call whose response is asserted. See the S7 note at the end of this section."""
+    out = post(payload)
+    assert out.get("ok") is not False, (
+        f"seed call {payload.get('action')!r} was refused: {out.get('error')!r}")
+    return out
+
+
 # ---------------------------------------------------------------- seed a real run
 
 ADMIN = "b6-bootstrap-admin"
@@ -96,42 +104,58 @@ for family, branch, state in (("escalate", "B-REC", "ST-RECOVERY"), ("accept", "
 
 
 def run(group, final_1, pre_conf, final_conf, rationale):
-    c = post({"action": "adminparticipantcreate", "session_token": admin})
-    tok = post({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
-    post({"action": "consentgrant", "session_token": tok, "consent_version": "v1.0"})
+    c = seed({"action": "adminparticipantcreate", "session_token": admin})
+    tok = seed({"action": "researchlogin", "access_token": c["access_token"]})["session_token"]
+    seed({"action": "consentgrant", "session_token": tok, "consent_version": "v1.0"})
     # T4: a_researchprejudgment now requires a completed intake questionnaire.
-    post({"action": "intakesave", "session_token": tok,
+    seed({"action": "intakesave", "session_token": tok,
           "responses": {"experience_level": "mid", "years_experience": 8}})
-    post({"action": "adminassign", "session_token": admin, "participant_id": c["participant_id"],
+    seed({"action": "adminassign", "session_token": admin, "participant_id": c["participant_id"],
           "order_group": group, "scenario_set": "SET-B6", "scenario_ids": [scenario]})
     with Session() as s:
         aid = s.scalar(select(Assignment).where(
             Assignment.participant_id == c["participant_id"])).assignment_id
-    post({"action": "adminpackageattach", "session_token": admin, "assignment_id": aid,
+    seed({"action": "adminpackageattach", "session_token": admin, "assignment_id": aid,
           "package_id": pkg["package_id"]})
     # period 1
-    post({"action": "researchevidenceget", "session_token": tok})
+    seed({"action": "researchevidenceget", "session_token": tok})
     time.sleep(0.05)
-    post({"action": "researchprejudgment", "session_token": tok, "pre_action": "monitor",
+    seed({"action": "researchprejudgment", "session_token": tok, "pre_action": "monitor",
           "pre_confidence": pre_conf})
-    post({"action": "researchreveal", "session_token": tok})
+    seed({"action": "researchreveal", "session_token": tok})
     time.sleep(0.05)
-    post({"action": "researchdecision", "session_token": tok, "final_action": final_1,
+    seed({"action": "researchdecision", "session_token": tok, "final_action": final_1,
           "disposition": "modify", "final_confidence": final_conf, "rationale": rationale})
-    post({"action": "researchadvance", "session_token": tok})
+    seed({"action": "researchadvance", "session_token": tok})
     # period 2
-    post({"action": "researchevidenceget", "session_token": tok})
-    post({"action": "researchprejudgment", "session_token": tok, "pre_action": "monitor",
+    seed({"action": "researchevidenceget", "session_token": tok})
+    seed({"action": "researchprejudgment", "session_token": tok, "pre_action": "monitor",
           "pre_confidence": 40})
-    post({"action": "researchreveal", "session_token": tok})
-    post({"action": "researchdecision", "session_token": tok, "final_action": "monitor",
+    seed({"action": "researchreveal", "session_token": tok})
+    seed({"action": "researchdecision", "session_token": tok, "final_action": "monitor",
           "disposition": "accept", "final_confidence": 45, "rationale": "period two"})
     return c["participant_id"], tok
 
 
 pa_id, pa_tok = run("GA", "escalate", 50, 80, "escalated after review")
 pb_id, pb_tok = run("GB", "monitor", 60, 55, "held position")
-check(True, "two participants completed two periods each")
+# RUN 135C, S7. Derived from what is stored, not asserted. This line was `check(True, ...)`: a
+# literal PASS standing in for the twenty-odd seeding calls above it, none of whose responses was
+# examined. A refusal anywhere in the seed left this suite green with no data behind it. The seed
+# calls now go through `seed()`, which asserts each response, and the completion claim is derived
+# here from the stored decision rows. Two participants, two periods each, is four decision rows
+# across two participants; anything less and the seed did not do what the rest of this file
+# assumes it did.
+with Session() as _s:
+    _rows = _s.execute(
+        select(Assignment.participant_id, Decision.period)
+        .join(Decision, Decision.assignment_id == Assignment.assignment_id)
+        .where(Assignment.participant_id.in_([pa_id, pb_id]))).all()
+_periods = sorted((str(a), str(b)) for a, b in _rows)
+check(len(_periods) == 4 and len({q for q, _ in _periods}) == 2
+      and all(len({j for q, j in _periods if q == who}) == 2 for who in (pa_id, pb_id)),
+      "two participants completed two periods each",
+      f"{len(_periods)} decision rows: {_periods}")
 
 print()
 print("=" * 78)

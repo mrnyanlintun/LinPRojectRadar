@@ -13,6 +13,24 @@ Writes code_audit/run32_b3_fault_injection.csv.
 """
 from __future__ import annotations
 
+# ---------------------------------------------------------------------------------------------
+# RUN 135C. RETIRED ARTEFACT. This script is kept for the record and is NOT executed.
+#
+# Ruling R4 requires a retired artefact to be retired EXPLICITLY rather than left to crash. Its
+# subject is B3.2,B3.3,B3.4,B3.5 -- 4 module ids removed from the registry at Run 96 or Run 97 and no module
+# in service -- so there is nothing here for it to qualify. Before this guard it died with
+# campaign_safety.CampaignTreeDirty: tree dirty at start of run32_b3_fault_campaign.py:  M REPORT_2026-08-14_run27-98-module-remediation-matrix.md;  M a
+# which prints no RESULT line and reads, in a scan of fleet output, exactly like a clean run.
+#
+# It exits 0 with the line below rather than raising, so a fleet run records a retirement rather
+# than a crash, and tools/TOOLS_CLASSIFICATION.csv excludes it from qualification coverage.
+# Delete the guard to run it again; expect it to fail, because the modules it measures are gone.
+import sys as _sys135c
+print("RETIRED: run32_b3_fault_campaign.py measures B3.2,B3.3,B3.4,B3.5, removed at Run 96/97 (88e6ca0); excluded from qualification coverage "
+      "by tools/TOOLS_CLASSIFICATION.csv")
+_sys135c.exit(0)
+# ---------------------------------------------------------------------------------------------
+
 import csv, os, pathlib, re, shutil, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent

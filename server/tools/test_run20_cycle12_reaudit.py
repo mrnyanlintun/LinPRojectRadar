@@ -30,6 +30,24 @@ TEST AND AUDIT ONLY. This file computes nothing that any production surface read
 
 from __future__ import annotations
 
+# ---------------------------------------------------------------------------------------------
+# RUN 135C. RETIRED ARTEFACT. This script is kept for the record and is NOT executed.
+#
+# Ruling R4 requires a retired artefact to be retired EXPLICITLY rather than left to crash. Its
+# subject is A3.4,D1.1,D1.2,D1.3,D1.4,D1.5 -- 6 module ids removed from the registry at Run 96 or Run 97 and no module
+# in service -- so there is nothing here for it to qualify. Before this guard it died with
+# ImportError: cannot import name 'portfolio' from 'app.simulation' (/home/user/LinPRojectRadar/.claude/worktrees/agent-af3ef56c9dde2a90e/server/app/sim
+# which prints no RESULT line and reads, in a scan of fleet output, exactly like a clean run.
+#
+# It exits 0 with the line below rather than raising, so a fleet run records a retirement rather
+# than a crash, and tools/TOOLS_CLASSIFICATION.csv excludes it from qualification coverage.
+# Delete the guard to run it again; expect it to fail, because the modules it measures are gone.
+import sys as _sys135c
+print("RETIRED: test_run20_cycle12_reaudit.py measures A3.4,D1.1,D1.2,D1.3,D1.4,D1.5, removed at Run 96/97 (88e6ca0); excluded from qualification coverage "
+      "by tools/TOOLS_CLASSIFICATION.csv")
+_sys135c.exit(0)
+# ---------------------------------------------------------------------------------------------
+
 import collections
 import csv
 import datetime

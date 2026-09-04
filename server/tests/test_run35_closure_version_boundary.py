@@ -200,9 +200,17 @@ o, n = both("run_tcpi", BOUNDARY)
 d2 = check(o["status_color"] != n["status_color"],
            "DIVERGENCE 2: A1.7 assigns a DIFFERENT BAND on the boundary fixture -- premature "
            "rounding decided a status", f"v22 {o['status_color']} -> v23 {n['status_color']}")
-check(o["status_color"] == "Green" and n["status_color"] == "Amber",
+# RUN 135C, H8. Was `n["status_color"] == "Amber"`, the pre-Run-114 answer for an index just
+# above 1.00. Run 114 (fc9d60c) inserted the owner-calibrated Yellow rung -- its report, section
+# 6, states the A1.7 ladder as "Green | <= 1.00 / Yellow | > 1.00 to 1.05 / Amber | > 1.05 to
+# 1.10 / Red | > 1.10" -- so an index of 1.0001 is Yellow. The expectation is taken from that
+# order, not from the ladder under test. What this check is FOR is unchanged and is not weakened:
+# v22 must answer Green where the full-precision index is above 1.00, and v23 must answer
+# something adverse; the adverse band is now named as the Run 114 order names it.
+check(o["status_color"] == "Green" and n["status_color"] == "Yellow",
       "and the direction is the one the pre-change measurement recorded: v22 answered Green "
-      "where the full-precision index is above 1.00",
+      "where the full-precision index is above 1.00, and v23 answers the Run 114 Yellow rung "
+      "(fc9d60c REPORT_2026-09-02_run114.md s6)",
       f"{o['status_color']} -> {n['status_color']}")
 row("DIVERGENCE", "A1.7", "band-boundary fixture bac=1e6 ev=989999 ac=990000",
     f"tcpi={o['tcpi']} band={o['status_color']}", f"tcpi={n['tcpi']} band={n['status_color']}",

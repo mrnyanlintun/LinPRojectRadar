@@ -5,6 +5,24 @@ that changes bytes without changing behaviour is not a survivor to be counted as
 the battery asserts the bytes actually moved, and any mutation the suites let through is printed
 as a survivor.
 """
+
+# ---------------------------------------------------------------------------------------------
+# RUN 135C. RETIRED ARTEFACT. This script is kept for the record and is NOT executed.
+#
+# Ruling R4 requires a retired artefact to be retired EXPLICITLY rather than left to crash. Its
+# subject is B2.1 -- 1 module id removed from the registry at Run 96 or Run 97 and no module
+# in service -- so there is nothing here for it to qualify. Before this guard it died with
+# exit 1
+# which prints no RESULT line and reads, in a scan of fleet output, exactly like a clean run.
+#
+# It exits 0 with the line below rather than raising, so a fleet run records a retirement rather
+# than a crash, and tools/TOOLS_CLASSIFICATION.csv excludes it from qualification coverage.
+# Delete the guard to run it again; expect it to fail, because the modules it measures are gone.
+import sys as _sys135c
+print("RETIRED: run20_cycle7_mutation_battery.py measures B2.1, removed at Run 96/97 (88e6ca0); excluded from qualification coverage "
+      "by tools/TOOLS_CLASSIFICATION.csv")
+_sys135c.exit(0)
+# ---------------------------------------------------------------------------------------------
 import os
 import subprocess
 import sys

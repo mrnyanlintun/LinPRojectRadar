@@ -56,12 +56,21 @@ FAULTS = [
       + PH + '",'),
      "run37doc.record_has_no_placeholder",
      "the FINAL RELEASE RECORD contains no placeholder"),
-    (2, "the false repository-wide zero-occurrence sentence is restored to the report",
-     (REPORT, "### Scope of the placeholder statement",
-      "No `" + PH + "` placeholder is used anywhere in this release.\n\n"
-      "### Scope of the placeholder statement"),
-     "run37doc.report_makes_no_repository_wide_claim",
-     "does not claim the whole repository is free of the placeholder"),
+    # RUN 135C, M10. FAULT 2 IS REMOVED. It injected the false repository-wide zero-occurrence
+    # sentence back into INSTRUMENT_FINAL_FREEZE_REPORT.md and expected
+    # `run37doc.report_makes_no_repository_wide_claim` to go red. That guard's BODY was retired by
+    # Run 59 -- test_run37_documentation_scope.py:118, RETIRED_RUN59_DOCUMENT_WORDING = True,
+    # under the owner's 2026-08-25 ruling that no markdown document in this repository carries
+    # authority -- so the guard has not executed since. The fault landed in the bytes and nothing
+    # could see it. The committed CSV recorded RED,YES,COUNTED for a guard that never ran;
+    # regenerating gives GREEN,NO,NOT_COUNTED, which is the finding.
+    #
+    # REMOVED RATHER THAN RESTORED, and this is the decision. Restoring the guard would reverse an
+    # owner's standing ruling on documentation authority, which a fault campaign is not entitled
+    # to do. What the fault was reaching for is not lost: the placeholder's ACTUAL occurrences in
+    # the tree are counted against the tree in section 1 of the guard file, which Run 59 left
+    # untouched and which faults 1 and 4 still exercise. So there are FOURTEEN fault classes here,
+    # not fifteen, and the campaign no longer claims a coverage it does not have.
     (3, "the explanation of the historical candidate placeholder is removed",
      # REPOINTED. The first injection removed the tail of the explanatory sentence, but the report
      # carries a SECOND self-reference sentence about the release record, and the check's substring

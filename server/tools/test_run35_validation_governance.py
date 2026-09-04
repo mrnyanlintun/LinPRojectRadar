@@ -547,7 +547,13 @@ def g30_report_counts_match_the_artifacts():
     from collections import Counter
     reports = sorted(ROOT.glob("REPORT_*_run35-*.md"))
     if not reports:
-        return True, "no Run-35 report is committed yet; nothing to reconcile"
+        # RUN 135C, S9. This returned True -- a missing required report read as a PASSED guard.
+        # It was latent only because the file happens to exist. A guard that reports success when
+        # its subject is absent is the exact failure mode this campaign exists to detect, and it
+        # matters now: the queued consolidation run reroutes this glob, and a reroute that finds
+        # nothing must fail loudly rather than turn the guard green on the way past.
+        return False, ("REQUIRED: no REPORT_*_run35-*.md is present under "
+                       f"{ROOT}; this guard has nothing to reconcile against and cannot pass")
     text = reports[-1].read_text(encoding="utf-8")
     res = rows("run35_empirical_validation_results.csv")
     disp = rows("run35_operational_disposition.csv")

@@ -11,11 +11,23 @@ import sys
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
 from app.simulation import (  # noqa: E402
-    SIMULATION_VERSION, MissingModuleError, PortfolioModuleError, available_modules,
+    SIMULATION_VERSION, MissingModuleError, available_modules,
     compute_project, contributes_to_project_status, dst_fuse, unported_modules,
 )
 from app.simulation.models import VALIDATED, insufficient  # noqa: E402
-from app.simulation.portfolio import PORTFOLIO_VALIDATED  # noqa: E402
+
+# RUN 135C, H9. `PortfolioModuleError` and `app.simulation.portfolio` were removed by 88e6ca0 at
+# Run 97, together with the twenty Group D / B2 / B3 / B4 modules and the D1 Portfolio Health
+# category. This file has not executed a single one of its checks since. The import is repaired by
+# dropping the two removed names, and the checks that were ABOUT the removed feature are restated
+# as checks that it is GONE, taking their expectation from tools/run96_removed.py -- the record of
+# what was removed -- and not from the registry those checks audit. That independence is the whole
+# point of run96_removed.py and it is what makes putting a retired row back a failure here.
+import importlib.util as _il  # noqa: E402
+_spec = _il.spec_from_file_location(
+    "run96_removed", pathlib.Path(__file__).resolve().parent / "run96_removed.py")
+run96_removed = _il.module_from_spec(_spec)
+_spec.loader.exec_module(run96_removed)  # noqa: E402
 from app.simulation.registry import registry_index, run_module  # noqa: E402
 from app.simulation.rng import make_rng, seed_from  # noqa: E402
 
@@ -53,11 +65,26 @@ print("=" * 78)
 # directly, so this check fails if available_modules() and the CSV ever disagree.
 _CSV = pathlib.Path(__file__).resolve().parents[2] / "p0-baseline" / "module_renumbering_map.csv"
 with _CSV.open(encoding="utf-8-sig", newline="") as _fh:
-    _RETIRED_FROM_CSV = {r["new_id"] for r in csv.DictReader(_fh)
-                         if str(r.get("notes") or "").strip().upper().startswith("RETIRED")}
-check(len(_RETIRED_FROM_CSV) > 0,
-      f"the registry CSV records retirements, read here rather than imported "
-      f"({len(_RETIRED_FROM_CSV)})", str(len(_RETIRED_FROM_CSV)))
+    _ROWS = list(csv.DictReader(_fh))
+# RUN 135C. This read looked for RETIRED in the `notes` column and found nothing, so the retired
+# set was silently empty and the two checks below compared available_modules() against the whole
+# of VALIDATED -- weaker than intended, and unnoticed because the file has not run since Run 97.
+# The CSV marks a retirement by writing RETIRED in `new_id`, not in `notes`. Both conventions are
+# read here so the check survives either, and the count is REPORTED rather than required to be
+# positive: a registry with nothing retired is a legitimate state and must not read as a defect.
+_RETIRED_FROM_CSV = {str(r["new_id"]).strip() for r in _ROWS
+                     if str(r.get("notes") or "").strip().upper().startswith("RETIRED")
+                     or str(r["new_id"]).strip().upper() == "RETIRED"} - {"RETIRED", ""}
+_RETIRED_ROWS = [r for r in _ROWS if str(r["new_id"]).strip().upper() == "RETIRED"]
+print(f"  NOTE  registry CSV carries {len(_ROWS)} rows, {len(_RETIRED_ROWS)} marked RETIRED, "
+      f"{len(_RETIRED_FROM_CSV)} retired ids still carrying a module id")
+# The intent of the deleted `> 0` check was that the retired set be DERIVED from the CSV rather
+# than imported from the code it audits. That intent is kept, and made non-vacuous, by requiring
+# the CSV-derived set and the registry's own answer to agree in both directions.
+from app.simulation import registry as _registry  # noqa: E402
+check(set(_registry.retired_modules()) == _RETIRED_FROM_CSV,
+      "the registry's retired set and the CSV-derived retired set agree",
+      f"registry={sorted(_registry.retired_modules())} csv={sorted(_RETIRED_FROM_CSV)}")
 check(set(available_modules()) == set(VALIDATED) - _RETIRED_FROM_CSV,
       f"available == validated minus the retired, derived from the CSV "
       f"({len(set(VALIDATED) - _RETIRED_FROM_CSV)} modules)",
@@ -77,19 +104,34 @@ check(not (set(available_modules()) & _RETIRED_FROM_CSV),
 # six where exactly one is. That workaround is gone. unported_modules() now subtracts
 # PORTFOLIO_VALIDATED and is asked directly, which is the only way this check can notice the
 # function regressing.
-check(unported_modules() == ["A4.1"],
-      "exactly one declared computation is unported, and it is A4.1",
+# RUN 135C. Was `unported_modules() == ["A4.1"]`. A4.1 is one of the seventy-one modules removed
+# at Runs 96 and 97, so it is no longer declared and cannot be unported. The expectation comes
+# from run96_removed.py, not from unported_modules().
+assert "A4.1" in run96_removed.REMOVED
+check(unported_modules() == [],
+      "no declared computation is unported (A4.1, the last one, was removed at Run 96/97)",
       str(unported_modules()))
-check(len(VALIDATED) + len(PORTFOLIO_VALIDATED) == 100,
-      "the server registers 100 computations",
-      str(len(VALIDATED) + len(PORTFOLIO_VALIDATED)))
+# RUN 135C. Was `len(VALIDATED) + len(PORTFOLIO_VALIDATED) == 100`. PORTFOLIO_VALIDATED is gone,
+# and so is the hardcoded 101: the CSV now carries 33 declared rows, not 101, because Runs 96 and
+# 97 removed their rows outright rather than marking them retired. The population is therefore
+# re-derived from the CSV -- the declared set -- and cross-checked against run96_removed.py, which
+# is independent of the registry. A removed id reappearing in the CSV fails the second check.
+_DECLARED_FROM_CSV = {str(r["new_id"]).strip() for r in _ROWS
+                      if str(r["new_id"]).strip()} - {"RETIRED"}
+check(len(VALIDATED) == len(_DECLARED_FROM_CSV),
+      f"the server registers every declared computation "
+      f"({len(_DECLARED_FROM_CSV)} rows in module_renumbering_map.csv)",
+      str(sorted(_DECLARED_FROM_CSV ^ set(VALIDATED))))
+_readmitted = sorted(_DECLARED_FROM_CSV & set(run96_removed.REMOVED))
+check(_readmitted == [],
+      "not one of the 71 modules removed at Runs 96 and 97 is declared in the registry CSV",
+      str(_readmitted))
 # The registry and the two implementation sets must partition the CSV with nothing left over and
 # nothing counted twice. This is what catches a Group D id being dropped from PORTFOLIO_VALIDATED,
 # which the equality above would report only as a longer unported list.
-check(set(registry_index()) == set(VALIDATED) | set(PORTFOLIO_VALIDATED) | set(unported_modules()),
+check(set(registry_index()) == set(VALIDATED) | set(unported_modules()),
       "registered plus unported accounts for every declared computation, exactly once",
-      str(sorted(set(registry_index()) ^ (set(VALIDATED) | set(PORTFOLIO_VALIDATED)
-                                          | set(unported_modules())))))
+      str(sorted(set(registry_index()) ^ (set(VALIDATED) | set(unported_modules())))))
 # Taken from unported_modules() directly now that it is correct. It cannot yield a Group D id:
 # those are subtracted, so run_module cannot raise PortfolioModuleError here, which the except
 # clause below does not catch.
@@ -98,18 +140,21 @@ check(set(registry_index()) == set(VALIDATED) | set(PORTFOLIO_VALIDATED) | set(u
 # instead of failing, and a crashed suite prints no RESULT line and reads exactly like a clean
 # run. Fault injection produced precisely that: over-subtracting in unported_modules() emptied the
 # list and killed this file silently. An empty list is now a red check, not a traceback.
+# RUN 135C. The refusal guarantee is kept but its SUBJECT is changed, because the old subject no
+# longer exists. Every declared module is implemented today, so unported_modules() is empty and
+# the block below could only ever record a red check about its own missing fixture -- a check
+# whose subject is gone is a retired check, not a failing one. The guarantee that matters is
+# unchanged: an id the registry does not serve must be REFUSED, not approximated. The subject is
+# now a retired id taken from run96_removed.py, which is what a caller would actually send.
 _unported = unported_modules()
-if not _unported:
-    check(False, "there is an unported module to test the refusal with",
-          "unported_modules() is empty; nothing declared-but-unimplemented remains")
-else:
-    still_unported = _unported[0]
-    try:
-        run_module(still_unported, HEALTHY, make_rng(1), CUTOFF)
-        check(False, "an unported module raises rather than approximating", "no raise")
-    except MissingModuleError as exc:
-        check("refuses to compute" in str(exc),
-              f"unported {still_unported} raises MissingModuleError", str(exc)[:70])
+check(_unported == [],
+      "every declared computation is implemented (nothing unported to refuse)", str(_unported))
+_refusal_subject = run96_removed.REMOVED[0]
+try:
+    run_module(_refusal_subject, HEALTHY, make_rng(1), CUTOFF)
+    check(False, f"retired {_refusal_subject} raises rather than approximating", "no raise")
+except MissingModuleError as exc:
+    check(True, f"retired {_refusal_subject} raises MissingModuleError", str(exc)[:70])
 
 print()
 print("=" * 78)
@@ -195,15 +240,36 @@ print()
 print("=" * 78)
 print("GUARANTEE 5: Group D is unreachable from a single-project path")
 print("=" * 78)
-d_ids = [k for k, v in registry_index().items() if v["group"] == "D"]
-check(len(d_ids) == 5, f"registry has 5 Group D modules", str(len(d_ids)))
-try:
-    run_module(d_ids[0], HEALTHY, make_rng(1), CUTOFF)
-    check(False, "Group D raises on a single-project path", "no raise")
-except PortfolioModuleError as exc:
-    check("3 or more projects" in str(exc), "Group D raises PortfolioModuleError",
-          str(exc)[:70])
-check(all(m["group"] != "D" for m in run["modules"]), "no Group D module appears in a run")
+# RUN 135C, H9. THIS GUARANTEE IS RESTATED, NOT DELETED. Group D and the D1 Portfolio Health
+# category were removed by 88e6ca0 at Run 97 along with PortfolioModuleError, so "Group D is
+# unreachable from a single-project path" is now the stronger fact that Group D is not reachable
+# from ANY path because it is not in the registry at all. The five ids and the category name come
+# from run96_removed.py, which is the record of the removal and does not change when the registry
+# changes -- so a Group D row written back into the CSV fails here rather than being adopted.
+_d_ids = [k for k, v in registry_index().items() if v["group"] == "D"]
+check(_d_ids == [], "the registry has no Group D module (all five removed at Run 97)",
+      str(_d_ids))
+check("D1" in run96_removed.REMOVED_CATEGORIES_AT_RUN97,
+      "run96_removed.py still records D1 Portfolio Health as removed at Run 97")
+_d_back = sorted(m for m in run96_removed.REMOVED_AT_RUN97 if m in registry_index())
+check(_d_back == [], "not one module removed at Run 97 is back in the registry", str(_d_back))
+for _mid in run96_removed.REMOVED_AT_RUN97:
+    try:
+        run_module(_mid, HEALTHY, make_rng(1), CUTOFF)
+        check(False, f"{_mid} is refused on the single-project path", "no raise")
+    except MissingModuleError:
+        pass
+    except Exception as exc:  # noqa: BLE001
+        check(False, f"{_mid} is refused with MissingModuleError",
+              f"{type(exc).__name__}: {exc}"[:70])
+# RUN 135C. Was `m["group"]`; the module rows a run publishes carry no "group" key, so this line
+# died with a KeyError the moment the file was made to execute again. The group is a property of
+# the REGISTRY row, not of the published module row, so it is looked up there.
+_idx = registry_index()
+check(all(_idx.get(m.get("module_id"), {}).get("group") != "D" for m in run["modules"]),
+      "no Group D module appears in a run",
+      str(sorted({m.get("module_id") for m in run["modules"]
+                  if _idx.get(m.get("module_id"), {}).get("group") == "D"})))
 
 print()
 print("=" * 78)

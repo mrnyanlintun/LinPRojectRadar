@@ -78,14 +78,61 @@ def registry_name(mid):
     return None
 
 
+# ============================================================ RUN 135C, H8: THE RUN 114 LADDER
+# This file's A1.7 expectations were hardcoded against the PRE-RUN-114 three-rung ladder, where
+# anything above 1.00 up to 1.10 was Amber. Run 114 inserted an owner-calibrated Yellow rung and
+# the suite has been red ever since -- 10 of 15 -- while remaining the only executable proof over
+# A1.7's boundary population. It is repointed here.
+#
+# UNDER R2 THE EXPECTATION MUST NOT COME FROM THE LADDER UNDER TEST. It is taken from the Run 114
+# ORDER, quoted verbatim from the report committed at fc9d60c, section 6, "A1.7 TCPI -- the
+# owner's numbers, taken as given":
+#
+#     | Green  | <= 1.00        |
+#     | Yellow | > 1.00 to 1.05 |
+#     | Amber  | > 1.05 to 1.10 |
+#     | Red    | > 1.10         |
+#
+# and the provenance recorded there beside each edge:
+#     A1.7   green_at_or_below   1.00   CODIFIED
+#            yellow_at_or_below  1.05   OWNER-CALIBRATED
+#            amber_at_or_below   1.10   CONVENTION
+#
+# The rungs are transcribed below with that source against each. They are NOT read from
+# models_evm.py, from `_TCPI_OWNER_YELLOW`, or from the module's own output, so this file keeps
+# its independence from the code it audits -- and, deliberately, from the computation path: Run
+# 135 is changing how VAC is computed under A1.7/A1.8, and an expectation taken from the Run 114
+# order rather than from the function survives that change by construction.
+RUN114_TCPI_RUNGS = (
+    (1.00, "Green",  "fc9d60c REPORT_2026-09-02_run114.md s6: 'Green | <= 1.00' (CODIFIED)"),
+    (1.05, "Yellow", "fc9d60c REPORT_2026-09-02_run114.md s6: 'Yellow | > 1.00 to 1.05' "
+                     "(OWNER-CALIBRATED)"),
+    (1.10, "Amber",  "fc9d60c REPORT_2026-09-02_run114.md s6: 'Amber | > 1.05 to 1.10' "
+                     "(CONVENTION)"),
+)
+RUN114_TCPI_ABOVE = ("Red", "fc9d60c REPORT_2026-09-02_run114.md s6: 'Red | > 1.10'")
+
+
+def band_from_run114_tcpi(value):
+    """The band the RUN 114 ORDER assigns to a TCPI. Not the module's answer -- the order's."""
+    for edge, band, _src in RUN114_TCPI_RUNGS:
+        if value <= edge:
+            return band
+    return RUN114_TCPI_ABOVE[0]
+
+
 # ================================================================= the fifteen named guards
 def g01_tcpi_bands_from_full_precision():
     """FAULT 1. A1.7 bands from the rounded value."""
     bad = []
     row = run("A1.7", BOUNDARY)
-    if row.get("status_color") != "Amber":
-        bad.append(f"boundary fixture banded {row.get('status_color')}, not Amber; the "
-                   f"full-precision index {row.get('tcpi')} is above 1.00")
+    # RUN 135C, H8. Was a hardcoded "Amber", the pre-Run-114 answer for an index just above 1.00.
+    # The expectation is the Run 114 order's rung for the fixture's full-precision index.
+    _expected = band_from_run114_tcpi(row.get("tcpi"))
+    if row.get("status_color") != _expected:
+        bad.append(f"boundary fixture banded {row.get('status_color')}, not {_expected}; the "
+                   f"full-precision index {row.get('tcpi')} sits on the Run 114 rung "
+                   f"{_expected} (source: fc9d60c report s6)")
     if row.get("tcpi_display") == row.get("tcpi"):
         bad.append("the display value equals the canonical value here, so this fixture no "
                    "longer distinguishes the two and the guard would be vacuous")
@@ -110,8 +157,10 @@ def g03_display_value_is_not_the_vote_input():
     row = run("A1.7", BOUNDARY)
     disp = row.get("tcpi_display")
     canon = row.get("tcpi")
-    band_from_disp = ("Green" if disp <= 1.00 else "Amber" if disp <= 1.10 else "Red")
-    band_from_canon = ("Green" if canon <= 1.00 else "Amber" if canon <= 1.10 else "Red")
+    # RUN 135C, H8. Both expressions transcribed the PRE-RUN-114 three-rung ladder inline. They
+    # now go through the Run 114 rungs, whose source is recorded against each edge above.
+    band_from_disp = band_from_run114_tcpi(disp)
+    band_from_canon = band_from_run114_tcpi(canon)
     if band_from_disp == band_from_canon:
         bad.append("this fixture does not separate the two bands, so the guard is vacuous")
     if row["status_color"] != band_from_canon:
@@ -129,9 +178,15 @@ def g04_boundary_population_bands_correctly():
         return False, "the pre-change measurement recorded no boundary fixture to re-check"
     for f in fixtures:
         row = run("A1.7", f["inputs"])
-        if row.get("status_color") != f["band_from_full_precision"]:
-            bad.append(f"{f['inputs']} -> {row.get('status_color')}, expected "
-                       f"{f['band_from_full_precision']}")
+        # RUN 135C, H8. `band_from_full_precision` in the sealed pre-change measurement was
+        # computed under the PRE-RUN-114 ladder and records Amber where Run 114's Yellow rung now
+        # sits. The fixture's own full-precision index is still the fact the artefact carries and
+        # is used; the band expected of it is re-derived through the Run 114 order's rungs.
+        _expected = band_from_run114_tcpi(f["full_precision_tcpi_float"])
+        if row.get("status_color") != _expected:
+            bad.append(f"{f['inputs']} -> {row.get('status_color')}, expected {_expected} "
+                       f"(Run 114 rung for index {f['full_precision_tcpi_float']}; the sealed "
+                       f"pre-change band {f['band_from_full_precision']} is pre-Run-114)")
         if row.get("status_color") == f["band_production_assigned"]:
             bad.append(f"{f['inputs']} still assigns the v22 band "
                        f"{f['band_production_assigned']}")
@@ -209,9 +264,15 @@ def g09_cost_recovery_reads_analytical_results():
     row = run("A1.7", BOUNDARY)
     if "status_color" not in row:
         bad.append("A1.7 emits no analytical status for fusion to read")
-    if row["status_color"] != "Amber":
-        bad.append(f"the analytical status reaching fusion is {row['status_color']}, which is "
-                   f"the band the FORMATTED value implies, not the analytical one")
+    # RUN 135C, H8. Was a hardcoded "Amber", the pre-Run-114 answer. The point of the guard is
+    # that the band reaching fusion follows the ANALYTICAL index and not the formatted string;
+    # the expected band is the Run 114 rung for that index, and the formatted string's rung is
+    # named in the failure so the two are distinguishable.
+    _expected9 = band_from_run114_tcpi(row["tcpi"])
+    if row["status_color"] != _expected9:
+        bad.append(f"the analytical status reaching fusion is {row['status_color']}, not "
+                   f"{_expected9}; the FORMATTED value 1 sits on rung "
+                   f"{band_from_run114_tcpi(1.0)}")
     if row["evidence_metric"].split(",")[0] != "TCPI: 1":
         bad.append("this fixture no longer has a display string that disagrees with the "
                    "analytical band, so the guard is vacuous")
@@ -294,10 +355,20 @@ def g14_label_expectation_comes_from_the_registry_authority():
     green while both drifted together away from the authority; this one cannot.
     """
     bad = []
+    # RUN 135C, H8. B4.4 was removed from the registry at Run 96/97 (tools/run96_removed.py), so
+    # `registry_name("B4.4")` is None and the guard reported "no name in the registry authority"
+    # -- a true statement about a module that no longer exists, not a defect in the artifacts.
+    # The pair is narrowed to the modules still in service, and a module that has left the
+    # registry is required to have left the client artifacts too, which is the stronger condition
+    # and keeps this guard non-vacuous rather than merely quiet.
     for mid in ("B1.2", "B4.4"):
         authority = registry_name(mid)
         if not authority:
-            bad.append(f"{mid} has no name in the registry authority")
+            for art in ("assets/js/categories.js", "assets/js/taxonomy.js"):
+                text = (ROOT / art).read_text(encoding="utf-8", errors="ignore")
+                if f"module_id: '{mid}'" in text:
+                    bad.append(f"{mid} has left the registry authority but is still presented "
+                               f"in {art}")
             continue
         for art in ("assets/js/categories.js", "assets/js/taxonomy.js"):
             text = (ROOT / art).read_text(encoding="utf-8", errors="ignore")
@@ -316,7 +387,13 @@ def g14_label_expectation_comes_from_the_registry_authority():
     if len(rec) != 2:
         bad.append(f"the reconciliation artifact carries {len(rec)} rows, not exactly two")
     for r in rec:
-        if r["canonical_method"] != registry_name(r["module_id"]):
+        _auth = registry_name(r["module_id"])
+        if _auth is None:
+            # RUN 135C, H8. The row's module has left the registry. The reconciliation artefact is
+            # a sealed Run 35 record and is not rewritten for that; what must still hold is that
+            # the client artifacts no longer present it, which the loop above asserts.
+            continue
+        if r["canonical_method"] != _auth:
             bad.append(f"{r['module_id']} reconciliation names a method the registry does not")
         if r["implementation_changed"] != "NO":
             bad.append(f"{r['module_id']} reports an implementation change")

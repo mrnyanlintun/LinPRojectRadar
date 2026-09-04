@@ -313,9 +313,14 @@ try:
         check(not det["selects"],
               "and NO period selector exists on this page: ruling 5 adds no control",
               str(det["selects"]))
-        check(not re.search(r"\bperiod\s+\d", det["text"] or "", re.I)
-              or True,
-              "the panel period text check is reported below rather than asserted here")
+        # RUN 135C, L7. The `or True` is removed. The label conceded that the check was
+        # "reported below rather than asserted here", which is what an `or True` amounts to --
+        # a check that occupies a line in the pass count and tests nothing. The assertion is
+        # now made where it stands, and its subject is stated in the label.
+        _period_text = re.search(r"\bperiod\s+\d", det["text"] or "", re.I)
+        check(not _period_text,
+              "the detail panel states no period number",
+              (_period_text.group(0) if _period_text else ""))
 
         print()
         print("=" * 90)
