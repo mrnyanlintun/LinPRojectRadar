@@ -67,17 +67,54 @@ def key_for(path: str) -> str:
     return path[len("server/"):] if path.startswith("server/") else path
 
 
+def _fresh_database(db_dir: pathlib.Path, stem: str) -> str | None:
+    """Migrate an empty SQLite file for one script and return its DATABASE_URL, or None.
+
+    RUN 136, F9. THE FLEET'S OWN LARGEST FAULT. Every script used to share one database, so a
+    script's starting state was whatever the two hundred before it had left behind. That is not a
+    neutral environment: many drivers bootstrap "the" ResearchAdmin by ROLE and then sign in with
+    their own hardcoded pseudonymous code, which matches only while no other script has created an
+    admin -- and `a_researchlogin` refuses on the username mismatch, so the driver dies reading
+    `session_token` or `access_token` off an error dict. Measured on Run 136's baseline: of five
+    scripts that crashed in the shared-database run, four completed unchanged on a database of
+    their own (test_auth_session 52/52, test_run40_serve_content_security 11/11,
+    test_run41_security_acceptance 11/11, drive_run21_participant 73/77).
+
+    OFF BY DEFAULT, DELIBERATELY. Turning it on changes what the coverage figure measures, and a
+    figure taken under a different harness cannot be compared with the run that went before it.
+    Run 136 reports the shared-database figure so it is like-for-like with its own baseline; the
+    next run should take one measurement each way and then adopt this as the default.
+    """
+    db_dir.mkdir(parents=True, exist_ok=True)
+    db = db_dir / f"{stem}.db"
+    if db.exists():
+        db.unlink()
+    url = f"sqlite:///{db}"
+    env = dict(os.environ, DATABASE_URL=url)
+    proc = subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"],
+                          cwd=SERVER, capture_output=True, env=env)
+    if proc.returncode != 0:
+        print(f"           (could not migrate {db}: alembic exited {proc.returncode})")
+        return None
+    return url
+
+
 def run_active(paths: list[str], fleet_dir: pathlib.Path, timeout: int,
-               exit_tsv: pathlib.Path) -> None:
+               exit_tsv: pathlib.Path, db_dir: pathlib.Path | None = None) -> None:
     fleet_dir.mkdir(parents=True, exist_ok=True)
     lines = []
     for i, p in enumerate(paths, 1):
         k = key_for(p)
         stem = k.replace("/", "_")
         print(f"  [{i}/{len(paths)}] {k}", flush=True)
+        env = dict(os.environ)
+        if db_dir is not None:
+            url = _fresh_database(db_dir, stem)
+            if url:
+                env["DATABASE_URL"] = url
         try:
             proc = subprocess.run([sys.executable, k], cwd=SERVER, timeout=timeout,
-                                  capture_output=True, env=dict(os.environ))
+                                  capture_output=True, env=env)
             code, out, err = proc.returncode, proc.stdout, proc.stderr
         except subprocess.TimeoutExpired as exc:
             code, out, err = 124, exc.stdout or b"", exc.stderr or b""
@@ -94,6 +131,10 @@ def main() -> int:
     ap.add_argument("--run", action="store_true")
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--fresh-db", default=None, metavar="DIR",
+                    help="give every script its own migrated SQLite database under DIR, instead "
+                         "of letting all 237 share whatever DATABASE_URL names. Off by default: "
+                         "see _fresh_database for why, and for the measurement that motivates it.")
     args = ap.parse_args()
 
     if not CSV_PATH.exists():
@@ -111,7 +152,8 @@ def main() -> int:
         if fleet_dir is None:
             print("FAIL  --run requires --fleet-dir")
             return 2
-        run_active(paths, fleet_dir, args.timeout, exit_tsv)
+        run_active(paths, fleet_dir, args.timeout, exit_tsv,
+                   pathlib.Path(args.fresh_db) if args.fresh_db else None)
 
     if fleet_dir is None or exit_tsv is None or not exit_tsv.exists():
         print("FAIL  no fleet evidence: pass --fleet-dir and --exit-tsv, or --run")
