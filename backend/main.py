@@ -177,9 +177,14 @@ def _compute(si: dict) -> dict:
     ev, ac, pv = _num(si.get("ev")), _num(si.get("ac")), _num(si.get("pv"))
     cpi = si.get("cpi")
     spi = si.get("spi")
-    if cpi is None and ev and ac:
+    # Run 135B / S4. `ev and ac` suppressed a real zero EV: ev=0, ac=100 is a CPI of
+    # exactly 0.0 — every dollar spent, nothing earned — and it published as None, an
+    # absent index, which is the reassuring direction. Presence is `is not None`; the
+    # denominator is the only value that must additionally be non-zero, and that
+    # exclusion is arithmetic, not a judgement about the figure.
+    if cpi is None and ev is not None and ac not in (None, 0):
         cpi = round(ev / ac, 3)
-    if spi is None and ev and pv:
+    if spi is None and ev is not None and pv not in (None, 0):
         spi = round(ev / pv, 3)
     return {"cpi": cpi, "spi": spi}
 
