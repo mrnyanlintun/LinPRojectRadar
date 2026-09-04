@@ -455,8 +455,14 @@ with sync_playwright() as pw:
           ".detail-reset selectors, and the check is NOT vacuous because the rule existed at "
           f"{BASE_COMMIT} (section 1 above)",
           str(_re57.findall(r"\.detail-reset\b", CSS_BASE)))
-    check(".pe-msg" in CSS_NOW or True,
-          "(the survivor's own status region is .pe-msg in ingest.js; its styling is untouched)")
+    # RUN 135C, L7. The `or True` is removed. The parenthetical label made this read as a note
+    # rather than a check, but it was counted as a check that passed. The fact it means to record
+    # -- that the survivor's own status region keeps its styling across the removal -- is a real
+    # assertion, so it is asserted.
+    check(".pe-msg" in CSS_NOW,
+          "the survivor's own status region .pe-msg still carries styling in radar.css after "
+          "the .detail-reset removal",
+          f"present in base: {'.pe-msg' in CSS_BASE}")
     _live = [l for l in DET_NOW.splitlines() if "detail-reset" in l
              and not l.strip().startswith(("//", "*", "/*"))
              and "RUN 57" not in l]

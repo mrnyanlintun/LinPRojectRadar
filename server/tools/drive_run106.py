@@ -380,8 +380,16 @@ for mid in SERVICE:
     print(f"  {mid:<7} {state:<20} {str(band or '-'):<8} {(m.get('method_class') or '-')}")
 check(len(SERVICE) == 31, f"the population is the registry's service index ({len(SERVICE)})",
       str(len(SERVICE)))
-check(all(r[1] != "NOT RUN THIS PERIOD" for r in rows) or True,
-      "every module in service was reached on this corpus or is reported as not reached")
+# RUN 135C, M9. The `or True` is removed. This is the driver that sets the weighted project
+# status, and "every module in service was reached" was the one check standing over its
+# population coverage -- ORed with True it could not fail whatever the corpus reached. The
+# disjunction in the label ("or is reported as not reached") is dropped too: reporting a
+# module as not reached is what the printed table above already does, and folding it into the
+# assertion is what made the assertion empty.
+_not_reached = [r[0] for r in rows if r[1] == "NOT RUN THIS PERIOD"]
+check(not _not_reached,
+      "every module in service was reached on this corpus",
+      f"{len(_not_reached)} not reached: {_not_reached}")
 _banded = [r[0] for r in rows if r[1] == "BANDS"]
 _noband = [r[0] for r in rows if r[1] == "COMPUTES, NO BAND"]
 print(f"\n  BANDS: {len(_banded)}  {_banded}")
