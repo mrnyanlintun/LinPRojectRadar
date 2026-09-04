@@ -23,13 +23,41 @@ from __future__ import annotations
 
 from typing import Any
 
+from .simulation.band_display import band_figure
 from .training_engine import (
     PERIODS_TOTAL, advance, build_disclaimer, initial_state,
 )
 
 
-def _spend_summary(state: dict[str, Any]) -> dict[str, Any]:
+def _cpi(state: dict[str, Any]) -> float | None:
+    return (state["ev"] / state["ac"]) if state["ac"] else None
+
+
+def _spi(state: dict[str, Any]) -> float | None:
+    return (state["ev"] / state["pv"]) if state["pv"] else None
+
+
+def _spend_summary(state: dict[str, Any],
+                   against: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The position, with the two ratios PRINTED rather than decided at three decimals.
+
+    RUN 136, F3. This carried two faults of the H1 family. `round` is half-to-EVEN and every
+    other `_round3` on this platform is `js_round`, half-UP, so a CPI of 0.8995 read 0.899 here
+    and 0.900 everywhere else -- two algebraically equivalent paths to one ratio, which R1
+    forbids. And the debrief exists to set the played position BESIDE the replayed one: two
+    ratios that genuinely differ printed as the same figure, so a real difference between the
+    run played and the run that might have been read as no difference at all.
+
+    `against` is the other state in that comparison. The ratios are computed at full precision
+    and printed through the shared `band_display` rule, treating the other side's ratio as the
+    boundary the figure must stay on its own side of -- so the printed figures grow a decimal
+    exactly when they would otherwise collapse onto each other, and are unchanged otherwise.
+    Nothing here compares with a tolerance and nothing rounds a decision.
+    """
     baseline = state["baseline_contract_sum"]
+    cpi, spi = _cpi(state), _spi(state)
+    other_cpi = _cpi(against) if against is not None else None
+    other_spi = _spi(against) if against is not None else None
     return {
         "float_spent_days": state["float_consumed_days"],
         "float_total_days": state["float_total_days"],
@@ -40,8 +68,10 @@ def _spend_summary(state: dict[str, Any]) -> dict[str, Any]:
         "recovered_by_change_order": round(state["revised_contract_sum"] - baseline, 2),
         "owner_credibility": state["owner_credibility"],
         "liquidated_damages_exposure": state["liquidated_damages_exposure"],
-        "cpi": round(state["ev"] / state["ac"], 3) if state["ac"] else None,
-        "spi": round(state["ev"] / state["pv"], 3) if state["pv"] else None,
+        "cpi": None if cpi is None else band_figure(
+            cpi, () if other_cpi is None else (other_cpi,), 3),
+        "spi": None if spi is None else band_figure(
+            spi, () if other_spi is None else (other_spi,), 3),
     }
 
 
@@ -159,7 +189,10 @@ def _counterfactual(run_meta: dict[str, Any], state: dict[str, Any]) -> dict[str
         "description": ("The engine replayed your run with one change: escalating at the "
                         "first decision, when the recommendation first appeared, with every "
                         "later decision of yours unchanged."),
-        "position": _spend_summary(replayed),
+        "position": _spend_summary(replayed, against=state),
+        # The played state's own summary is built in `build_debrief`, which needs this state
+        # to print the two positions against each other. Popped there; never served.
+        "_replayed_state": replayed,
         "claim": _matter_outcome(replayed.get("dispute"), "the change"),
         "site_condition": _matter_outcome(replayed.get("dsc"), "the site condition"),
         "quality": _quality_outcome(replayed.get("quality")),
@@ -172,9 +205,11 @@ def build_debrief(run_meta: dict[str, Any], state: dict[str, Any]) -> dict[str, 
     The full debrief for a COMPLETE run. `run_meta` carries contract_form, contract_value,
     conditions, facility. Pure: same run, same debrief, on any machine on any day.
     """
+    counterfactual = _counterfactual(run_meta, state)
+    replayed = counterfactual.pop("_replayed_state", None)
     return {
         "periods_played": min(state["period"] - 1, PERIODS_TOTAL),
-        "spent": _spend_summary(state),
+        "spent": _spend_summary(state, against=replayed),
         "closed": [m for m in (
             _matter_outcome(state.get("dispute"), "the change"),
             _matter_outcome(state.get("dsc"), "the site condition"),
@@ -183,6 +218,6 @@ def build_debrief(run_meta: dict[str, Any], state: dict[str, Any]) -> dict[str, 
         "resources": _resource_outcome(state),
         "incidents": _incident_findings(state),
         "decisions": list(state.get("decisions") or []),
-        "counterfactual": _counterfactual(run_meta, state),
+        "counterfactual": counterfactual,
         "disclaimer": build_disclaimer(run_meta["contract_form"]),
     }
