@@ -4679,7 +4679,17 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 .detail-catspecs .dcat-headline-figure {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 22px; font-weight: 700; letter-spacing: -.01em;
-  color: var(--heading, var(--text));
+  /* RUN 128. WAS `var(--heading, var(--text))`, AND THAT MADE THE FIGURE INVISIBLE ON THE DARK
+     THEMES. `--heading` is declared on `:root` as #141a26 -- a near-black tuned for the warm
+     light field -- and NYC (`newyork`) and the archived Gotham (`dark`) do not redeclare it, so
+     the fallback never fires and a near-black numeral was painted on a near-black panel.
+     Measured in a rendered page, sampling the painted background pixel: 1.11:1 on NYC and
+     1.11:1 on Gotham; 1.01:1 for the row name and the per-row figure below. `--text` is
+     declared by every theme and is the ink the rest of this sentence already uses, so the
+     figure now inherits the theme's own foreground. SIZE AND WEIGHT ARE UNCHANGED: the
+     de-emphasis was never the intent -- the comment above says this figure is the largest
+     thing in the panel on purpose -- only the colour is raised. */
+  color: var(--text);
 }
 .detail-catspecs .dcat-headline-words { font-weight: 600; }
 .detail-catspecs .dcat-headline-rest { color: var(--muted); }
@@ -4688,7 +4698,10 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
    given weight and the site's foreground colour while the four state counts stay muted, which is
    what makes the headline figure the one the eye lands on rather than "0 failed". */
 .detail-catspecs .dcat-produced {
-  white-space: nowrap; font-weight: 700; color: var(--heading, var(--text));
+  /* RUN 128: `var(--heading, ...)` -> `var(--text)`, same defect as the headline figure above,
+     measured at 1.01:1 on NYC. The comment's own words are "the site's foreground colour",
+     which is `--text`; weight and placement are unchanged. */
+  white-space: nowrap; font-weight: 700; color: var(--text);
 }
 
 .detail-catspecs .dcat-actions {
@@ -4725,7 +4738,9 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
   background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font: inherit;
 }
 .detail-catspecs .dcat-name {
-  display: block; font-weight: 600; font-size: 13px; color: var(--heading, var(--text));
+  /* RUN 128: `var(--heading, ...)` -> `var(--text)`; the module/category name measured 1.01:1
+     on NYC and 1.15:1 on Gotham, i.e. unreadable. Weight and size unchanged. */
+  display: block; font-weight: 600; font-size: 13px; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .detail-catspecs .dcat-toggle:hover .dcat-name { text-decoration: underline; }
