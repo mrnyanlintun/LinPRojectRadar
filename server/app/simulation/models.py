@@ -1072,7 +1072,20 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # it. What changed is which quantity is compared against those edges, and to what precision the
 # figure beside them is printed. No migration was added. No model call was made or simulated:
 # there is no model key in this environment.
-SIMULATION_VERSION = "sim-2026.09-v69"
+# RUN 136, F1. THE STAMP MOVES TO v70 BECAUSE B2.18 AND B2.19 NOW BAND ON THE SCORE ITSELF.
+# Run 135 fixed the rounded-before-banding defect (H1) at A6.3, C1.3 and A3.4 and left four
+# copies it found but did not own. Two of those are `models_fuzzy.py:378` and `:418`: MARCOS and
+# CRITIC-TOPSIS each formed a score, passed it through `_round3` -- half-up -- and banded the
+# ROUNDED figure. Any score in [cut - 0.0005, cut) was lifted onto its own cut and published a
+# rung too high, so 0.6495 read Green where the score is Yellow, on all three of that ladder's
+# edges. Neither module is in `CAT7_CANONICAL`, so the path executes and the readings were
+# published. A 400,001-point sweep of MARCOS and a 12,003-point sweep of the closeness
+# coefficient found 940 and 1,500 misbanded inputs before the change and none after.
+# NO EDGE MOVED: 0.65, 0.50 and 0.35 are exactly where they were. What changed is that the band
+# is taken from the full-precision score and `_round3` is now only the printed figure, grown by
+# `band_display.band_figure` where an edge is near. Rows stamped v69 and earlier keep their own
+# stamp; B2.18 and B2.19 readings are not comparable across v69 and v70.
+SIMULATION_VERSION = "sim-2026.09-v70"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1348,6 +1361,11 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # names -- where they were Amber and Red. EVERY WHOLE-DAY OUTCOME OF THAT RULE IS UNCHANGED and
  # no edge moved there either.
  "sim-2026.09-v69",
+ # RUN 136: the two remaining live copies of H1 outside Run 135's ownership. B2.18 MARCOS and
+ # B2.19 CRITIC-TOPSIS banded a `_round3`'d score and now band the score itself, printing the
+ # figure through the shared `band_display` rule. Two more favourable flips removed; no edge
+ # moved. Rows stamped v69 and earlier remain valid under their own stamp.
+ "sim-2026.09-v70",
 )
 
 

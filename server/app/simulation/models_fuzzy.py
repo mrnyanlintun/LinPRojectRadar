@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
+from .band_display import band_figure
 from .canonical import (
     StructureAbsent,
     critic_topsis as critic_topsis_decision,
@@ -25,6 +26,18 @@ from .models_gov import _jsdiv
 from .rng import js_round, round2
 
 _round3 = lambda v: js_round(v * 1000) / 1000  # noqa: E731
+
+#: RUN 136, F1. The ladder B2.18 and B2.19 both band against, named once so the band and the
+#: printed figure cannot drift apart. Both methods used to band on a `_round3`'d score, which is
+#: the H1 defect: `_round3` is half-up, so any score in [cut - 0.0005, cut) was lifted ONTO the
+#: cut and banded a rung too high -- 0.6495 read Green where the score is Yellow. The boundaries
+#: are not moved here; the band is simply taken from the score itself.
+_MCDM_BAND_CUTS = (0.65, 0.50, 0.35)
+
+
+def _mcdm_color(score: float) -> str:
+    return ("Green" if score >= 0.65 else "Yellow" if score >= 0.50
+            else "Amber" if score >= 0.35 else "Red")
 
 
 def _clamp01(v):
@@ -375,9 +388,10 @@ def run_marcos(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, 
     utility_ideal = k_ideal
     score = _jsdiv(denom_k,
                    1 + _jsdiv(1 - f_ideal, f_ideal) + _jsdiv(1 - f_anti, f_anti))
-    score = _round3(score)
-    color = ("Green" if score >= 0.65 else "Yellow" if score >= 0.50
-             else "Amber" if score >= 0.35 else "Red")
+    # RUN 136, F1. The band is taken from the full-precision score; `_round3` is used only to
+    # print. See `_MCDM_BAND_CUTS` above and `band_display` for the shared rule.
+    color = _mcdm_color(score)
+    score = band_figure(score, _MCDM_BAND_CUTS, 3)
     return {
         "method_class": "MARCOS",
         "status_color": color,
@@ -415,9 +429,10 @@ def run_critic_topsis(si: dict, rand: Callable[[], float], period_cutoff) -> dic
         except StructureAbsent as absent:
             return insufficient("CRITIC_TOPSIS", absent.sentence,
                                 ABSTAIN_DECISION_STRUCTURE_ABSENT)
-        score = _round3(reading["closeness"])
-        color = ("Green" if score >= 0.65 else "Yellow" if score >= 0.50
-                 else "Amber" if score >= 0.35 else "Red")
+        # RUN 136, F1. As B2.18: the closeness coefficient bands at full precision and is
+        # rounded only for the reader.
+        color = _mcdm_color(reading["closeness"])
+        score = band_figure(reading["closeness"], _MCDM_BAND_CUTS, 3)
         return {
             "method_class": "CRITIC_TOPSIS",
             "status_color": color,
