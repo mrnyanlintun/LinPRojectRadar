@@ -866,6 +866,79 @@
       for (var hs2 = 0; hs2 < 6; hs2++) ctx.fillText(String(sys.health || "no status"), hp.x, hp.y + 12);
       ctx.restore();
 
+      /* ── THE BAND KEY, DRAWN INSIDE THE CHART FRAME ───────────────────────────────
+         This surface stated every one of its verdicts by colour and shape alone and carried
+         no key of any kind. (The `.lnf-legend` strip is the SIGNAL FLOW panel's, a different
+         section on the page; it is not moved or copied here, because a second copy of it
+         would be free to drift away from what this canvas paints.)
+
+         EVERY COLOUR BELOW IS READ FROM `C` AND `TH` -- the same `colors()` map and the same
+         runtime theme read that `bandColor()` and the moon/planet/sun painters above take
+         their ink from. Nothing here is a literal hex, so a token that moves moves in both
+         the chart and its key or in neither.
+
+         EVERY TREATMENT THIS SURFACE PAINTS IS COVERED, and the shapes are the drawing code's
+         own, not approximations of it:
+           filled disc      -- a module or category that asserted a band (Green/Yellow/Amber/
+                               Red/Complete; Complete is a published project status, not a
+                               severity, which is why it is listed after the four bands)
+           rimmed body      -- computed and asserted no band  (`computed_unbanded`)
+           dark filled body -- nothing to report              (`abstained`, filled C.None)
+           dashed outline   -- not relevant to this project   (`not_relevant`, C.NotRelevant)
+           dotted outline   -- not called                     (`not_called`, TH.line)
+         The sun's own unlit state is the same "no band issued" fact as the rimmed body and is
+         not given a sixth entry; the sun says it in words on the node itself.
+
+         PLACEMENT: bottom-left of the frame, the corner the system does not occupy -- the
+         planets are laid out around a centred sun and the summary sentence is a DOM paragraph
+         BELOW the canvas, so neither is crossed at rest. It is drawn before nothing and after
+         everything, in screen space, so pan and zoom do not move it. It is NOT collision-proof
+         under user interaction: this chart can be dragged and zoomed by hand, and a reader who
+         drags a planet into the corner will put it behind the key. That is stated rather than
+         defended -- the alternative is a legend that moves when the chart is dragged, which is
+         worse. */
+      (function drawBandKey() {
+        var rows = [
+          ["disc",   C.Green,       "Green"],
+          ["disc",   C.Yellow,      "Yellow"],
+          ["disc",   C.Amber,       "Amber"],
+          ["disc",   C.Red,         "Red"],
+          ["disc",   C.Complete,    "Complete"],
+          ["rim",    TH.muted,      "Computed, no band asserted"],
+          ["filled", C.None,        "Nothing to report"],
+          ["dashed", C.NotRelevant, "Not relevant to this project"],
+          ["dotted", TH.line,       "Not called"]
+        ];
+        var lh = 14, pad = 10, sw = 9, x0 = pad + 8;
+        var y0 = size.h - pad - (rows.length - 1) * lh - 4;
+        ctx.save();
+        ctx.font = "500 10.5px system-ui, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        rows.forEach(function (r, i) {
+          var y = y0 + i * lh, kind = r[0], col = r[1];
+          ctx.beginPath(); ctx.arc(x0, y, sw / 2, 0, Math.PI * 2);
+          if (kind === "disc" || kind === "filled") {
+            ctx.fillStyle = col; ctx.fill();
+            if (kind === "filled") { ctx.strokeStyle = TH.faint; ctx.lineWidth = 1; ctx.stroke(); }
+          } else {
+            ctx.strokeStyle = col;
+            ctx.lineWidth = kind === "rim" ? 1.6 : 1.2;
+            if (kind === "dashed") ctx.setLineDash([2, 2]);
+            if (kind === "dotted") ctx.setLineDash([1, 2.2]);
+            ctx.stroke(); ctx.setLineDash([]);
+          }
+          /* The words carry the same shadow the status label now uses, for the same reason and
+             measured the same way: a key sitting on the page gradient, not on a plate. */
+          ctx.shadowColor = alpha(TH.surface, 0.95);
+          ctx.shadowBlur = 4;
+          ctx.fillStyle = TH.muted;
+          for (var k = 0; k < 4; k++) ctx.fillText(r[2], x0 + sw, y);
+          ctx.shadowBlur = 0;
+        });
+        ctx.restore();
+      })();
+
       ctx.textAlign = "left";
       LAST_SCENE = scene;
       container.setAttribute("data-scene-bodies", String(scene.bodies.length));
