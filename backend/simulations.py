@@ -3,6 +3,8 @@ lin-project-radar backend — simulations.py  (Sprint 0 items 25-29)
 Python port of the five client-side JS simulation models. Pure functions
 over a project's extracted signalInputs; no network, no OpenAI.
 """
+import math
+
 import numpy as np
 
 
@@ -42,6 +44,35 @@ def _abstain(method_class: str, needs: list) -> dict:
     }
 
 
+# ---------------------------------------------------------------- percentile
+# Run 135B / S6. There were three percentile definitions across two files that this
+# module's own docstring says are a port of each other:
+#
+#   backend run_rcf   multipliers[int(len(multipliers) * 0.8)]  -> index 7 -> 1.45
+#   backend run_pert  np.percentile(durations, 80)              -> linear interpolation
+#   browser pctile()  floor(q * (n - 1)) clamped                -> index 6 -> 1.38
+#
+# On a BAC of 10,000,000 the first overstated the P80 cost prior by about $700,000
+# against the second, and the overstatement is not a rounding artefact — it is a
+# different order statistic.
+#
+# The naming authority is this file's own header: "Python port of the five
+# client-side JS simulation models". A port matches its original, so the browser
+# definition in assets/js/simulations.js:38-42 is canonical and this is a
+# transcription of it. Nothing here is a new threshold.
+#
+# backend/test_run135b_percentile_parity.py evaluates both implementations on a
+# shared fixture grid and fails if they ever disagree.
+def _pctile(sorted_asc, q):
+    """Nearest-rank-below order statistic. Transcribes assets/js/simulations.js:38-42."""
+    n = len(sorted_asc)
+    if n == 0:
+        return float("nan")
+    i = int(math.floor(q * (n - 1)))
+    i = max(0, min(n - 1, i))
+    return sorted_asc[i]
+
+
 def _sample_triangular(a, m, b):
     if b <= a:  # degenerate guard
         return float(a)
@@ -72,7 +103,8 @@ def run_pert(signal_inputs: dict) -> dict:
         durations.append(max(p1, p2))
         if p1 >= p2:
             p1_critical += 1
-    p80 = float(np.percentile(durations, 80))
+    durations.sort()
+    p80 = float(_pctile(durations, 0.80))
     criticality = round(p1_critical / iterations * 100, 1)
     status = "Red" if p80 > 45 else ("Amber" if p80 > 35 else "Green")
     return {
@@ -138,9 +170,10 @@ def run_rcf(signal_inputs: dict) -> dict:
     if why:
         return _abstain("Reference_Class_Forecasting", [why])
     multipliers = [1.00, 1.04, 1.10, 1.14, 1.15, 1.26, 1.38, 1.45, 1.52]
-    p50 = bac * multipliers[len(multipliers) // 2]
-    p80 = bac * multipliers[int(len(multipliers) * 0.8)]
-    debias = multipliers[int(len(multipliers) * 0.8)]
+    multipliers.sort()
+    p50 = bac * _pctile(multipliers, 0.50)
+    debias = _pctile(multipliers, 0.80)
+    p80 = bac * debias
     pct_over = round((debias - 1) * 100, 1)
     status = "Red" if pct_over > 25 else ("Amber" if pct_over > 10 else "Green")
     return {
