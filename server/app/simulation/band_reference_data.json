@@ -1,5 +1,6 @@
 {
   "_note": "CONFIGURED REFERENCE DATA, NOT CODE. Run 101 section 12.3 fails the run for storing a revisable published industry figure as a literal in code, because it is revised annually and a literal cannot carry the year it belongs to. Every entry here carries its value, its unit, the year it describes, the source, and ITS VERIFICATION STATUS. Nothing in this file is a boundary the platform invented. THE TWO RESEARCH REPORTS THAT SUPPLY THESE FIGURES BOTH STATE THAT A PRIMARY-SOURCE VERIFICATION PASS WAS NOT COMPLETED, so every figure taken from them carries verified: false and names what must be checked. A reader can therefore say which numbers are locked and which still need checking against the source documents, which is the whole point of section 3's provenance requirement.",
+  "_removed_run136": "RUN 136, F7. TWO ENTRIES WERE REMOVED FROM THIS FILE. `construction_frequency_band_cutoffs` (green_below 1.2, yellow_at_or_below 2.4, red_at_or_above 4.8, recordable cases per 200,000 employee hours) and `milestone_slip_ratio_bands` (green_at_or_below 0.02, yellow_at_or_below 0.05, amber_at_or_below 0.1, red_above 0.1, slip ratio). Both were owner-calibrated tolerances supplied by the Run 102 orders and both had become true orphans: the safety module bands on `safety_benchmark_ratio_bands` against the `construction_industry_recordable_rate` anchor, and A2.7 was re-banded at Run 103 onto the same hybrid slip rule A2.12 uses (`critical_path_control_bands`). Run 135 A established that nothing in `app/`, `tools/`, `tests/` or any driver read either entry, and Run 136 confirmed it by a search of the whole repository before removing them. THEIR FIGURES ARE RECORDED HERE RATHER THAN DELETED WITHOUT TRACE, because a configured owner tolerance that once existed is part of this file's record even after it stops being read. `pert_criticality_bands` is NOT removed and is not an orphan: `tools/drive_run104.py:160` reads it deliberately, to re-apply the Run 102 rule to a Run 104 reading so the reversal is measured rather than asserted. It stays, with its `superseded_by` mark.",
   "construction_industry_recordable_rate": {
     "value": 2.4,
     "unit": "total recordable cases per 100 full-time equivalent workers, which is the same quantity as per 200,000 employee hours",
@@ -78,18 +79,6 @@
     "how_obtained": "RUN 108 RESTATED THIS. Every figure in this file was supplied to the platform by the owner through his numbered orders. Earlier runs recorded two research reports, `RESEARCH_1_threshold_bands_eight_metrics.md` and `RESEARCH_2_safety_and_environmental_severity.md`, as the authority for them. NEITHER FILE IS IN THIS REPOSITORY AND NEITHER WAS EVER READ BY ANY RUN -- their content reached the platform relayed in prose -- so every citation to them named a document no reader of this code could check. The owner's ruling at Run 108 is that the research INFORMED these numbers and is NOT THEIR AUTHORITY: the boundaries are his stated tolerances, supplied by his orders. The citations are therefore removed rather than the documents supplied. Where the underlying measure or formula genuinely is codified -- the OSHA incidence-rate identity, the BLS construction benchmark, the EPA Construction General Permit deadline, DOE Order 413.3B and GAO-20-195G -- that part keeps its own accurate provenance and is named by the instrument itself, not by a report about it.",
     "verification_still_outstanding": "Removing an unverifiable citation does not verify a figure. Every entry below that carries verified: false STILL CARRIES IT, and the primary sources named in each source string have still not been checked by any run."
   },
-  "construction_frequency_band_cutoffs": {
-    "green_below": 1.2,
-    "yellow_at_or_below": 2.4,
-    "red_at_or_above": 4.8,
-    "unit": "recordable cases per 200,000 employee hours",
-    "derivation": "half the industry average, the industry average itself, and twice the industry average. All three are derived from the one anchor above and introduce no figure that is not already in it.",
-    "source": "THE OWNER'S STATED TOLERANCE, supplied by his own order: Green below half the industry average; Yellow at or below the BLS construction average; Amber above the industry average; Red at twice the industry average or higher. Only the ANCHOR -- the BLS construction average -- is sourced; the half and double multipliers are the owner's.",
-    "provenance_class": "OWNER-CALIBRATED",
-    "why_not_codified": "THERE IS NO RECOGNISED STANDARD GOVERNING HOW A NUMBER MAPS TO A GREEN/YELLOW/AMBER/RED BAND. Frequency is banded against the published industry average rather than an invented cutoff, and ONLY THAT INDUSTRY-AVERAGE ANCHOR IS SOURCED: the intermediate cutoffs are the OWNER'S STATED TOLERANCE, supplied by his order, with no published basis. The ANCHOR is codified; these CUTOFFS are not, and the reading says so in both fields.",
-    "configured": true,
-    "verified": false
-  },
   "p80_gap_boundary": {
     "yellow_gap_at_or_below": 0.1,
     "unit": "fraction, gap = (P80 total cost - budget at completion) / budget at completion",
@@ -126,19 +115,6 @@
     "source": "the owner's Run 104 order, section 4. OWNER-CALIBRATED: the academic basis supports what a criticality index means; it does not prescribe these boundaries. They are a documented owner tolerance and are not presented as a construction standard.",
     "hard_override": "Red if the deterministic CPM forecast is later than an approved contractual milestone, or the controlling path has negative total float.",
     "band_basis_id": "owner_configured_PERT_path_concentration_tolerance",
-    "provenance_class": "OWNER-CALIBRATED",
-    "threshold_source": "owner_configured_default",
-    "configured": true,
-    "verified": false
-  },
-  "milestone_slip_ratio_bands": {
-    "green_at_or_below": 0.02,
-    "yellow_at_or_below": 0.05,
-    "amber_at_or_below": 0.1,
-    "red_above": 0.1,
-    "unit": "slip ratio = (current forecast finish - approved baseline finish) / remaining planned duration",
-    "source": "the owner's Run 102 order and the threshold table and configuration-precedence appendix attached to it. OWNER-CONFIGURED: these are a documented owner tolerance structure, not a published construction standard. A stricter figure stated in a project document overrides them -- see the precedence order. Run 102 section 3, Milestone Trend Analysis. The owner states in terms: 'The 2%, 5%, and 10% values are not universal construction standards; they are a documented owner tolerance structure that avoids treating a five-day slip identically on a 20-day package and a 1,000-day capital program.'",
-    "hard_override": "Red if any contractual, regulatory, turnover or owner-committed milestone is forecast later than its approved date and no approved baseline change exists.",
     "provenance_class": "OWNER-CALIBRATED",
     "threshold_source": "owner_configured_default",
     "configured": true,
