@@ -650,12 +650,30 @@
        which stopped being true when the owner replaced worst-wins at project level with his
        weighted vote. The wording now names the rule the platform actually applied, and the
        arithmetic goes with it so a reader can check the sum rather than trust it. */
+    /* RUN 134, GOAL TWO. THE BAND AND THE ARITHMETIC MOVE, THE POSTURE STAYS.
+
+       The card used to open with the weighted-vote band and its sum. That is SYSTEM
+       PROVENANCE: it explains how the code executed, not what a reviewer is being asked to
+       decide. Both lines move into "How official posture was formed", one click away and
+       verbatim -- the same sentence, the same arithmetic, composed by the same server.
+
+       THE POSTURE ITSELF DOES NOT MOVE, and neither does `status_reason`. Run 106's ruling
+       stands: a withheld posture must carry the sentence saying which required category was
+       not assessed, and that sentence is above the fold where it always was. */
+    return briefBlock("Project posture", body);
+  }
+
+  //: The provenance half of the posture, for the drawer. Read back off the same composed
+  //: block; nothing here is re-derived and no figure is restated in different words.
+  function renderPostureFormation(p) {
+    if (!p) return "";
+    var body = "";
     if (p.fused_band) {
       body += para("Band from the weighted vote over the categories that were assessed: " +
                    p.fused_band + ".");
     }
     if (p.project_arithmetic) body += para(p.project_arithmetic);
-    return briefBlock("Project posture", body);
+    return body;
   }
 
   /* THE FORECAST LINES. One line per figure a module actually computed. A line that did not
@@ -805,21 +823,105 @@
     return briefBlock("Audit record", '<table class="dc-brief-table"><tbody>' + rows + "</tbody></table>");
   }
 
+  /* RUN 134, GOAL TWO. THE DRAWER, on the same reasoning as `detail.js`'s: `<details>` needs
+     no wiring, is reachable by keyboard and by a screen reader, and cannot hide evidence when a
+     script fails. Nothing that was on this card has left it. */
+  function dcDrawer(head, inner) {
+    if (!inner) return "";
+    return '<details class="dc-drawer"><summary class="dc-drawer-head">' + esc(head) +
+      '</summary><div class="dc-drawer-body">' + inner + "</div></details>";
+  }
+
+  /* ============================================================
+     RUN 134, GOAL TWO. THE SUGGESTED DECISION.
+     ============================================================
+     WHAT THE LABEL PERMITS AND WHAT IT FORBIDS. The platform may suggest the TYPE OF REVIEW
+     DECISION and nothing else. It never suggests a construction remedy, and it never names an
+     owner, an authority, a deadline, a corrective action or an escalation route. The sentence
+     below offers three kinds of review response and stops; it is fixed text, it names no party,
+     and it is not composed from any figure, so it cannot drift into a recommendation.
+
+     THE REASONS ARE THE SERVER'S OWN ADVERSE READINGS, in the server's own order. See the note
+     on the summary in `detail.js`: `decision_brief._adverse_readings` sorts by severity before
+     serving, so taking three is a truncation of an existing order and not a new ranking rule.
+     Every one of them states a figure, its unit or denominator, and the named item it belongs
+     to, because the composer already required that of the reading. Where more exist, the count
+     is stated and the full list is one click away under "All adverse findings". */
+  function renderSuggestedDecision(brief) {
+    var rows = (brief && brief.adverse_readings && Array.isArray(brief.adverse_readings.rows))
+      ? brief.adverse_readings.rows : [];
+    var body = '<p class="dc-suggested-lead">Suggested decision</p>'
+      + '<p class="dc-suggested-text">Review and confirm whether the current posture requires '
+      + 'a project-control response, further analysis, or a documented deferral.</p>';
+    if (rows.length) {
+      var shown = rows.slice(0, 3);
+      body += '<p class="dc-suggested-why">Why this decision is suggested</p><ul class="dc-why-list">'
+        + shown.map(function (r) {
+            var who = [r.module_id, r.category_name || r.category].filter(Boolean).join(" \u00b7 ");
+            return "<li>" + (r.band ? '<span class="dc-band">' + esc(String(r.band)) + "</span> " : "")
+              + "<strong>" + esc(who) + "</strong> "
+              + esc(r.reading ? String(r.reading) : "no figure stated on this reading") + "</li>";
+          }).join("")
+        + "</ul>";
+      var rest = rows.length - shown.length;
+      if (rest > 0) {
+        body += '<p class="dc-note">' + esc(rest + " further adverse reading"
+          + (rest === 1 ? " is" : "s are") + " listed under All adverse findings below.") + "</p>";
+      }
+    } else {
+      body += '<p class="dc-note">No module reading is adverse this period. That is a '
+        + 'statement about the readings this period produced and not a clearance of the '
+        + "project.</p>";
+    }
+    /* ONE LIMITATION, IN PLAIN LANGUAGE, IN THE SERVER'S WORDS. The full list of assessment
+       limitations keeps its own drawer below; this is the first of them, surfaced so that a
+       reader who expands nothing still knows what the assessment does not rest on. */
+    var lims = (brief && Array.isArray(brief.limitations)) ? brief.limitations : [];
+    if (lims.length) {
+      body += '<p class="dc-suggested-why">Important limitation</p>'
+        + '<p class="dc-limitation">' + esc(String(lims[0]))
+        + (lims.length > 1
+            ? " " + esc((lims.length - 1) + " further limitation"
+                + (lims.length === 2 ? " is" : "s are") + " listed under Assessment limitations below.")
+            : "")
+        + "</p>";
+    }
+    return briefBlock("Suggested decision", body);
+  }
+
   function renderDecisionBrief(brief) {
     if (!brief) return "";
-    // THE PLAYBOOK'S ORDER. `alternatives` is deliberately absent from this list; see above.
+    /* RUN 134, GOAL TWO. WHAT IS ON THE FIRST SCREEN AND WHAT IS BEHIND A DRAWER.
+
+       NOTHING IS DELETED AND NOTHING IS NARROWED. Every block the card carried is still
+       composed by the same function from the same served field; the ones a reviewer does not
+       need in order to answer the question are one click away instead of ten screens down.
+
+       WHAT STAYS ABOVE THE FOLD: the posture (with Run 106's withheld-posture sentence), the
+       suggested decision with its three reasons and its limitation, and the decision question.
+       That is the choice being put to the reviewer.
+
+       WHAT MOVES: the weighted-vote arithmetic ("How official posture was formed"), the module
+       narrative and every adverse reading ("All adverse findings"), the forecast table and the
+       drivers ("Category details"), the source and provenance text ("Evidence"), the
+       completeness methodology ("Data coverage"), the full weighted-voting block and the
+       reviewer and audit blocks ("Internal audit view only").
+
+       THE AUDIT RECORD IS NOT TOUCHED. `renderReviewer` and `renderAudit` are called with the
+       same arguments and render the same fields; only their position changed. */
     return renderPosture(brief.posture) +
-      briefBlock("Decision-support finding", para(brief.finding)) +
-      briefBlock("Why this finding was produced", para(brief.why)) +
-      renderForecast(brief.forecast) +
-      renderDrivers(brief.drivers) +
-      renderAdverse(brief.adverse_readings) +
-      renderEvidence(brief.evidence) +
-      renderLimitations(brief.limitations) +
+      renderSuggestedDecision(brief) +
       briefBlock("Decision question", para(brief.question)) +
-      renderVoting(brief.weighted_voting) +
-      renderReviewer(brief.reviewer) +
-      renderAudit(brief.audit);
+      dcDrawer("How official posture was formed",
+        renderPostureFormation(brief.posture) + para(brief.why)) +
+      dcDrawer("All findings", para(brief.finding)) +
+      dcDrawer("All adverse findings", renderAdverse(brief.adverse_readings)) +
+      dcDrawer("Category details", renderForecast(brief.forecast) + renderDrivers(brief.drivers)) +
+      dcDrawer("Evidence", renderEvidence(brief.evidence)) +
+      dcDrawer("Data coverage", renderLimitations(brief.limitations)) +
+      dcDrawer("Internal audit view only",
+        renderVoting(brief.weighted_voting) + renderReviewer(brief.reviewer) +
+        renderAudit(brief.audit));
   }
 
   function renderPackage(pkg, revealAt) {

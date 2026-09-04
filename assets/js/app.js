@@ -1544,19 +1544,33 @@
       : `<p class="disposition-absent">The served result carries no disposition list, so no
          decision can be recorded on this screen. Nothing is assumed in its place.</p>`;
 
+    /* RUN 134, GOAL TWO. THE CARD IS RENAMED AND THE REVIEWER'S CONTROLS ARE GROUPED.
+
+       THE DISPOSITION LIST IS UNTOUCHED. It is still `row.decision_dispositions`, still served
+       from `research_decision.PROJECT_DECISION_DISPOSITIONS`, still rendered whole, and every
+       stored `code` is written through unchanged. This run was asked for four reviewer options;
+       the server offers FIVE, and mapping four onto five would have dropped
+       `no_action_within_current_authority` and collapsed the `modify`/`reject` distinction --
+       narrowing the audit record. `research_decision.py` already records that two of these
+       reconciliations are imperfect and are left for a ruling. So nothing here is reduced,
+       relabelled or reordered: the five arrive and the five are offered, under a heading that
+       names what the reviewer is being asked for. The mismatch is reported, not resolved. */
     root.innerHTML =
       `<div class="dc-head">
          <div>
-           <p class="eyebrow">Governance decision</p>
-           <h2>Decision brief</h2>
+           <p class="eyebrow">Suggested decision</p>
+           <h2>Suggested decision</h2>
          </div>
          <span class="state-badge state-${esc(stateClass)}">${esc(d.healthState)}</span>
        </div>
        ${briefHtml}
        ${optionsHtml}
-       ${dispositionBlock}
-       <label class="rationale-label">Reviewer rationale <span class="req">(min 20 characters)</span>
-       <textarea class="rationale" placeholder="The reasoning behind the disposition recorded here. Entered by the reviewer and kept with the audit record."></textarea></label>
+       <div class="dc-reviewer-response">
+         <h3 class="dc-reviewer-head">Reviewer response</h3>
+         ${dispositionBlock}
+         <label class="rationale-label">Rationale <span class="req">(required, min 20 characters)</span>
+         <textarea class="rationale" placeholder="The reasoning behind the disposition recorded here. Entered by the reviewer and kept with the audit record."></textarea></label>
+       </div>
        <div class="dc-actions">
          <button class="btn primary record-btn" disabled>Record decision</button>
          <button class="btn export-btn">Export audit JSON</button>
