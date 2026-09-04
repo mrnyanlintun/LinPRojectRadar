@@ -34,7 +34,6 @@ from population import population, reconciliation               # noqa: E402
 from run96_removed import assert_removed as _assert_run96_removed  # noqa: E402
 from app.simulation import registry as REG                      # noqa: E402
 from app.simulation import fusion as FUSION                     # noqa: E402
-from app.simulation.portfolio import compute_portfolio          # noqa: E402
 from app.simulation.isolation_forest import IsolationForest, c_factor as prod_c  # noqa: E402
 
 # =================================================================================================
@@ -102,6 +101,14 @@ KNOWN_DEFECTS: dict[str, str] = {
 }
 
 
+def _suppressed_for(module_id: str) -> bool:
+    """True when `module_id` names the module whose propositions the Run 96/97 substitution
+    replaced. Sections label their checks without the group letter (`"1.3"`) while the registry
+    and `run()` use the full identifier (`"A1.3"`), so both spellings are accepted."""
+    sup = _SUPPRESSED.get("module") or ""
+    return bool(sup) and module_id in (sup, sup.lstrip("ABCD"))
+
+
 def proposition(module_id: str, key: str, name: str, holds: bool, detail: str = "") -> bool:
     """
     Evaluate a canonical proposition against production and record the answer.
@@ -110,7 +117,7 @@ def proposition(module_id: str, key: str, name: str, holds: bool, detail: str = 
     Run-17 register". The proposition's own truth value is the finding, not the pass.
     """
     global PASSED, TOTAL
-    if _SUPPRESSED.get("module"):
+    if _suppressed_for(module_id):
         return True          # substituted by the Run 96 removal assertion for this module
     TOTAL += 1
     COVERAGE.setdefault(module_id, []).append(name)
@@ -134,7 +141,7 @@ def proposition(module_id: str, key: str, name: str, holds: bool, detail: str = 
 
 def check(module_id: str, name: str, condition: bool, detail: str = "") -> bool:
     global PASSED, TOTAL
-    if _SUPPRESSED.get("module") and not name.startswith("RUN 96:"):
+    if _suppressed_for(module_id) and not name.startswith("RUN 96:"):
         return True          # substituted by the Run 96 removal assertion for this module
     TOTAL += 1
     COVERAGE.setdefault(module_id, []).append(name)
@@ -168,6 +175,14 @@ def near(module_id: str, name: str, got, want, tol=1e-9) -> bool:
 # happened for, and the closing gate asserts the set is non-empty and matches the registry, so
 # this cannot quietly become a way of skipping checks.
 RUN96_SUBSTITUTED: dict[str, int] = {}
+# RUN 136 (M11/M13, second defect). This held the id of the module whose propositions the Run 96
+# substitution has replaced. `check` and `proposition` used to test it for TRUTHINESS -- so once
+# `run()` substituted a removed module, EVERY subsequent check of EVERY module was silently
+# returned True and left out of TOTAL until the next `run()` call for a module still in service.
+# A section that ended on a removed module therefore suppressed everything that followed it,
+# including whole later sections, with no trace in the count. The suppression now applies only to
+# the module it was raised for: a proposition ABOUT the removed id is substituted, and a check
+# about any other id is evaluated as written.
 _SUPPRESSED = {"module": ""}
 
 
@@ -1145,233 +1160,66 @@ def cat7_partial() -> None:
 # PORTFOLIO HEALTH -- PH.1 to PH.5 (5 targets)
 # =============================================================================================
 
-def _proj(pid, cpi, spi, doc=0.0, pct=50.0):
-    return {"id": pid, "cpi": cpi, "spi": spi, "docRiskScore": doc, "actualPctComplete": pct}
-
-
 def portfolio_health() -> None:
-    # RUN 33 MARKED THIS SECTION HISTORICAL. Every check below executes
-    # `app.simulation.portfolio.compute_portfolio`, which is the SUPERSEDED v20 implementation:
-    # Run 33 repointed production onto the canonical v8 Portfolio Health layer through
-    # `portfolio_health.compute_portfolio_health_snapshot`. The v20 function is PRESERVED because
-    # these findings -- and Run 2's, 6's, 13's, 14's and 15's -- are evidence about it, and
-    # deleting it would delete the subject of the findings.
-    #
-    # THE ASSERTIONS BELOW ARE UNCHANGED and are still exactly what they always asserted: what
-    # the instrument USED to do. `assert_not_reachable` supplies the other half, because a
-    # historical test that only proved the old behaviour would go green again if a later run
-    # reconnected the proxy, and a test that can be satisfied by live code is not a historical
-    # record.
-    import run33_historical_portfolio as _R33H
-    _R33H.assert_not_reachable(
-        lambda cond, name, detail="": check("PH.1", f"HISTORICAL: {name}", cond, str(detail)))
+    """
+    PH.1 to PH.5 -- WITHDRAWN AT RUN 97, AND ASSERTED AS WITHDRAWN RATHER THAN SKIPPED.
 
-    # A cohort of tight inliers plus one distant project.
-    inliers = [_proj(f"p{i}", 1.00 + 0.01 * (i % 3), 1.00 + 0.01 * (i % 2)) for i in range(8)]
-    anomaly = _proj("odd", 0.40, 0.35, doc=0.9, pct=95.0)
-    cohort = inliers + [anomaly]
+    Until Run 97 this section made roughly ninety propositions about
+    `app.simulation.portfolio.compute_portfolio`, the superseded v20 Portfolio Health
+    implementation that Run 33 had already repointed production away from. Run 97 goal one
+    ("D1 Portfolio Health removed entirely", 88e6ca0) deleted `simulation/portfolio.py` and
+    `simulation/portfolio_health.py`, struck the five D1 rows from the registry and the taxonomy
+    authority, and removed the Group D branch from `run_module`. The subject of those
+    propositions no longer exists, so they cannot be evaluated -- not because they were
+    inconvenient, but because there is nothing left to evaluate them against.
 
-    # ------------------------------------------------------------------ PH.1 Isolation Forest
-    mid = "PH.1"
-    res = compute_portfolio(cohort, "odd", None, CUTOFF)
-    iso = res["results"].get("cat8_1_isolation_forest")
-    check(mid, "positive: a forest is grown and a score returned", iso is not None, str(res))
-    if iso:
-        check(mid, "structure: the canonical forest parameters are reported",
-              all(k in iso for k in ("trees", "subsample", "mean_path_length", "normaliser")))
-        check(mid, "structure: the scored project is excluded from its own reference cohort",
-              iso.get("reference_size") == len(cohort) - 1)
-        # Independent normalisation check against the specification's c(n), computed with the
-        # EXACT harmonic number rather than the paper's ln+gamma estimate.
-        psi = iso["subsample"]
-        # The production normaliser uses the paper's own ln(i)+gamma estimate of the harmonic
-        # number; the oracle uses the exact harmonic sum. At psi=8 the estimate sits about 0.14
-        # below the exact value, which is the documented small-i deviation and not an error.
-        near(mid, "known-answer: the normaliser agrees with the canonical c(psi) to within the "
-                  "paper's own harmonic estimate error", iso["normaliser"], O.c_factor(psi),
-             tol=0.15)
-        check(mid, "known-answer: the estimate sits BELOW the exact harmonic value, as the "
-                   "paper's approximation does", iso["normaliser"] < O.c_factor(psi))
-        # The score identity: s = 2^(-E[h]/c(psi)), recomputed independently.
-        near(mid, "known-answer: the anomaly score is the canonical path-length transform",
-             iso["anomaly_score"],
-             round(2.0 ** (-iso["mean_path_length"] / iso["normaliser"]), 2), tol=0.02)
-        check(mid, "invariant: the score lies in the unit interval",
-              0.0 <= iso["anomaly_score"] <= 1.0)
-        check(mid, "reproducibility: the same cohort and seed give the same score",
-              compute_portfolio(cohort, "odd", None, CUTOFF)["results"][
-                  "cat8_1_isolation_forest"]["anomaly_score"] == iso["anomaly_score"])
-    # THE DISCRIMINATION TEST, on ONE fixed forest so both points are scored against the same
-    # trees. Scoring two projects through compute_portfolio grows two DIFFERENT forests, because
-    # each excludes itself from its own reference cohort, and scores from different forests are
-    # not comparable. That is a property of the wiring, recorded here rather than assumed.
-    import random as _r
-    rr = _r.Random(7)
-    cont_ref = [[rr.gauss(1.0, 0.03), rr.gauss(1.0, 0.03), rr.gauss(0.2, 0.05),
-                 rr.gauss(0.5, 0.1)] for _ in range(20)]
-    cf = IsolationForest(cont_ref, n_trees=100, subsample=20, seed=20250815)
-    s_out, s_in = cf.anomaly_score([0.4, 0.35, 0.9, 0.95]), cf.anomaly_score([1.0, 1.0, 0.2, 0.5])
-    check(mid, "known-answer: on continuously distributed features one forest ranks a planted "
-               "anomaly above a central inlier", s_out > s_in, f"{s_out:.4f} vs {s_in:.4f}")
-    check(mid, "known-answer: the central inlier scores below the one-half no-anomaly level "
-               "the paper states", s_in < 0.5, f"{s_in:.4f}")
-    # THE DEGENERACY BOUNDARY. The portfolio feature vector holds document risk and percent
-    # complete, which are constant across a cohort that has uploaded nothing, and a cost index
-    # that takes few distinct values. On such a cohort the trees have almost nothing to split.
-    deg_ref = [[1.00 + 0.01 * (i % 3), 1.00 + 0.01 * (i % 2), 0.0, 0.5] for i in range(8)]
-    df = IsolationForest(deg_ref, n_trees=100, subsample=8, seed=20250815)
-    d_out, d_in = df.anomaly_score([0.4, 0.35, 0.9, 0.95]), df.anomaly_score([1.0, 1.0, 0.0, 0.5])
-    proposition(mid, "PH.1/degenerate-cohort-resolution",
-                "boundary: an extreme outlier must not receive the same score as a central "
-                "inlier", d_out != d_in,
-                f"on a cohort whose document-risk and progress features are constant and whose "
-                f"cost index takes three distinct values, an extreme outlier and a central "
-                f"inlier both score {d_out:.4f}. Splits are drawn between the reference min and "
-                f"max, so a point outside that range can never be separated by one split, and "
-                f"with two constant features the trees exhaust the height limit first.")
-    # Seeded randomisation is real: a different seed builds different trees.
-    ref = [[p["cpi"], p["spi"], p["docRiskScore"], p["actualPctComplete"] / 100]
-           for p in inliers]
-    f1 = IsolationForest(ref, n_trees=20, subsample=8, seed=1)
-    f2 = IsolationForest(ref, n_trees=20, subsample=8, seed=2)
-    tgt = [0.4, 0.35, 0.9, 0.95]
-    check(mid, "stochastic diagnostic: a different seed builds a different forest",
-          f1.anomaly_score(tgt) != f2.anomaly_score(tgt))
-    check(mid, "invariant: c(2) is exactly one, as the paper states",
-          abs(prod_c(2) - 1.0) < 1e-12)
-    check(mid, "boundary: abstains by absence with fewer than two other projects",
-          "cat8_1_isolation_forest" not in compute_portfolio(
-              [_proj("a", 1.0, 1.0), _proj("b", 1.0, 1.0)], "a", None, CUTOFF)["results"])
-    check(mid, "threshold: the operating threshold is frozen at the Run-15 calibrated value",
-          abs(__import__("app.simulation.portfolio", fromlist=["x"]).IF_ANOMALY_THRESHOLD
-              - 0.576) < 1e-12)
+    WHY THIS IS NOT A SILENCED CHECK. From Run 97 until now, the module-level import of
+    `compute_portfolio` at the top of this file raised ModuleNotFoundError, so the ENTIRE suite
+    -- all of gate_a, gate_b, cat1, cat6, cat7_partial, cat9_architecture, fault_injection and
+    harness_integrity -- never ran at all. Deleting the dead import without putting something in
+    its place would have revived the suite while quietly dropping five modules' worth of
+    coverage with no record. What stands here instead is the assertion that the removal HELD:
+    the modules are gone, the identifiers do not resolve, and the dispatcher refuses each of
+    them by name. That is the check that goes red if a future run writes any of this back.
 
-    # ------------------------------------------------------------------ PH.2 Portfolio Outlier
-    mid = "PH.2"
-    po = res["results"]["cat8_2_portfolio_outlier"]
-    check(mid, "positive: a percentile rank is reported", po.get("composite_percentile")
-          is not None)
-    # Declared convention: rank = share of cohort at or below this project on each index, so a
-    # worst-performing project takes the lowest rank. Recompute independently.
-    n = len(cohort)
-    cpi_rank = sum(1 for p in cohort if p["cpi"] <= anomaly["cpi"]) / n
-    spi_rank = sum(1 for p in cohort if p["spi"] <= anomaly["spi"]) / n
-    near(mid, "known-answer: the composite rank recomputed independently",
-         po["composite_percentile"], round((cpi_rank + spi_rank) / 2 * 100), tol=1.0)
-    check(mid, "known-answer: the extreme project takes the most extreme tail rank under the "
-               "declared performance orientation", po["composite_percentile"] <= 15)
-    best = compute_portfolio(cohort, "p1", None, CUTOFF)["results"][
-        "cat8_2_portfolio_outlier"]
-    check(mid, "invariant: a better-performing project takes a higher rank",
-          best["composite_percentile"] > po["composite_percentile"])
-    check(mid, "invariant: rank is bounded by nought and one hundred",
-          0 <= po["composite_percentile"] <= 100)
-    perm = compute_portfolio(list(reversed(cohort)), "odd", None, CUTOFF)["results"][
-        "cat8_2_portfolio_outlier"]
-    check(mid, "metamorphic: invariant to the order of the cohort",
-          perm["composite_percentile"] == po["composite_percentile"])
-    check(mid, "boundary: refuses a cohort below the declared minimum",
-          compute_portfolio([_proj("a", 1.0, 1.0)], "a", None, CUTOFF).get("insufficient_data"))
-    # RUN 33 WITHDREW THE D1.2 PROXY QUALIFIER, because the proxy it described is gone: the v21
-    # module ranks the complete governed required risk-oriented feature set of a declared cohort
-    # by midrank percentile with the orientation applied before ranking, and carries no bands at
-    # all. The property this check protects -- that the label matches the implementation -- is
-    # kept, in the direction that is now true. See code_audit/run33_proxy_qualifier_withdrawal.csv.
-    check(mid, "label: carries NO proxy qualifier, because the proxy it described is retired",
+    The historical findings themselves are not deleted with the code: they are recorded in the
+    Run 17 register and in code_audit/, which is where evidence about a removed implementation
+    belongs once the implementation is gone.
+    """
+    mid = "PH"
+    import importlib
+
+    for name in ("app.simulation.portfolio", "app.simulation.portfolio_health"):
+        try:
+            importlib.import_module(name)
+            gone, detail = False, "STILL IMPORTABLE"
+        except ModuleNotFoundError as exc:
+            gone, detail = True, str(exc)
+        check(mid, f"RUN 97: {name} is gone from the instrument", gone, detail)
+
+    from run96_removed import REMOVED_AT_RUN97
+
+    d1 = [m for m in REMOVED_AT_RUN97 if m.startswith("D1.")]
+    check(mid, "RUN 97: the removal roster still names all five D1 rows",
+          sorted(d1) == ["D1.1", "D1.2", "D1.3", "D1.4", "D1.5"], str(sorted(d1)))
+    idx = REG.registry_index()
+    for code_id in sorted(d1):
+        check(mid, f"RUN 97: {code_id} does not resolve in the registry",
+              code_id not in idx, str(code_id in idx))
+        try:
+            REG.run_module(code_id, {}, RAND, CUTOFF)
+            got = "RETURNED A READING"
+        except REG.MissingModuleError as exc:
+            got = str(exc)
+        except Exception as exc:  # noqa: BLE001 -- any other refusal is still not a reading
+            got = f"{type(exc).__name__}: {exc}"
+        check(mid, f"RUN 97: and the dispatcher refuses {code_id} by name rather than computing "
+                   f"a reading for it", "not in the module registry" in got, got)
+    check(mid, "RUN 97: no Group D row remains in the registry at all",
+          not [m for m in idx if REG.group_of(m) == "D"],
+          str([m for m in idx if REG.group_of(m) == "D"]))
+    check(mid, "RUN 97: the D1.2 proxy qualifier went with the module it described",
           "D1.2" not in REG.PROXY_QUALIFIERS)
-
-    # ------------------------------------------------------------------ PH.3 Trajectory
-    mid = "PH.3"
-    hist = [{"signal_inputs": {"cpi": v}} for v in (1.0, 0.9, 0.8)]
-    tres = compute_portfolio(cohort, "odd", hist, CUTOFF)["results"]
-    tc = tres.get("cat8_3_trajectory_classifier")
-    check(mid, "positive: a trend is classified from a real history", tc is not None)
-    if tc:
-        near(mid, "known-answer: the slope over two intervals, not three observations",
-             tc["trend"], O.ols_slope([0, 1, 2], [1.0, 0.9, 0.8]), tol=1e-3)
-        check(mid, "known-answer: a deteriorating slope is classified adversely",
-              tc["status_color"] in ("Amber", "Red"), str(tc))
-    flat_h = [{"signal_inputs": {"cpi": 0.9}} for _ in range(3)]
-    flat = compute_portfolio(cohort, "odd", flat_h, CUTOFF)["results"].get(
-        "cat8_3_trajectory_classifier")
-    check(mid, "invariant: a flat history has a slope of exactly zero",
-          flat is not None and abs(flat["trend"]) < 1e-12)
-    up = compute_portfolio(cohort, "odd",
-                           [{"signal_inputs": {"cpi": v}} for v in (0.8, 0.9, 1.0)],
-                           CUTOFF)["results"].get("cat8_3_trajectory_classifier")
-    check(mid, "metamorphic: reversing the series reverses the sign of the slope",
-          up is not None and tc is not None and abs(up["trend"] + tc["trend"]) < 1e-12)
-    check(mid, "missingness: abstains by absence with no usable history",
-          "cat8_3_trajectory_classifier" not in compute_portfolio(
-              cohort, "odd", [], CUTOFF)["results"])
-    check(mid, "boundary: abstains with a single observation",
-          "cat8_3_trajectory_classifier" not in compute_portfolio(
-              cohort, "odd", [{"signal_inputs": {"cpi": 0.9}}], CUTOFF)["results"])
-
-    # ------------------------------------------------------------------ PH.4 Cross-project
-    mid = "PH.4"
-    cp = res["results"]["cat8_4_cross_project_pattern"]
-    check(mid, "positive: a match count is reported", "similar_project_count" in cp)
-    # Structural oracle: an identical twin must match; a uniformly distant vector must not.
-    twin = _proj("twin", anomaly["cpi"], anomaly["spi"], anomaly["docRiskScore"],
-                 anomaly["actualPctComplete"])
-    with_twin = compute_portfolio(cohort + [twin], "odd", None, CUTOFF)["results"][
-        "cat8_4_cross_project_pattern"]
-    check(mid, "known-answer: an identical project is matched",
-          with_twin["similar_project_count"] >= 1, str(with_twin))
-    check(mid, "known-answer: a uniformly distant cohort yields no match",
-          cp["similar_project_count"] == 0, str(cp))
-    perm4 = compute_portfolio(list(reversed(cohort + [twin])), "odd", None, CUTOFF)["results"][
-        "cat8_4_cross_project_pattern"]
-    check(mid, "metamorphic: invariant to the order of the cohort",
-          perm4["similar_project_count"] == with_twin["similar_project_count"])
-    check(mid, "structure: the similarity operator ignores the fourth feature, so the declared "
-               "feature vector and the operator's domain disagree",
-          O.euclidean([1, 1, 0, 0.5], [1, 1, 0, 0.95]) > 0.15)
-    healthy = [_proj(f"h{i}", 1.05, 1.05) for i in range(4)]
-    hres = compute_portfolio(healthy, "h0", None, CUTOFF)["results"][
-        "cat8_4_cross_project_pattern"]
-    check(mid, "invariant: matching a healthy peer does not imply adverse status",
-          hres["status_color"] == "Green", str(hres))
-    check(mid, "parameter: the match radius is a bare literal with no recorded provenance",
-          "match_threshold" not in cp and "similarity_threshold" not in cp)
-
-    # ------------------------------------------------------------------ PH.5 Anomaly Score
-    mid = "PH.5"
-    an = res["results"]["cat8_5_anomaly_score"]
-    check(mid, "positive: a composite score is reported", an.get("composite_score") is not None)
-    check(mid, "invariant: the composite lies in the unit interval",
-          0.0 <= an["composite_score"] <= 1.0)
-    # WEIGHT STABILITY. The specification requires that the absence of history must not silently
-    # change the effective weight of the other constituents. Prove what happens.
-    no_hist = compute_portfolio(cohort, "odd", None, CUTOFF)["results"][
-        "cat8_5_anomaly_score"]["composite_score"]
-    with_hist = compute_portfolio(
-        cohort, "odd", [{"signal_inputs": {"cpi": v}} for v in (1.0, 0.9, 0.8)],
-        CUTOFF)["results"]["cat8_5_anomaly_score"]["composite_score"]
-    proposition(mid, "PH.5/availability-reweighting",
-                "invariant: adding a history term must not re-weight the existing constituents",
-                no_hist == with_hist,
-                f"the composite is a plain mean over whichever terms happen to be available: "
-                f"{no_hist} over two terms without history, {with_hist} over three with it. "
-                f"The effective weight of the distance and rank constituents moves from one "
-                f"half to one third purely because a history exists, which is a change in the "
-                f"measurement rather than in the project.")
-    # LINEAGE. One constituent is the standardised distance Run 15 retired from PH.1, and the
-    # other is PH.2's own rank. Prove the composite is not independent evidence.
-    check(mid, "lineage: the composite is built from the portfolio-position evidence PH.2 "
-               "already reports, so it is not an independent observation",
-          abs((1 - (cpi_rank + spi_rank) / 2) - (1 - po["composite_percentile"] / 100)) < 0.02)
-    # Monotonicity: worsening one constituent must not improve the composite.
-    worse = list(inliers) + [_proj("odd", 0.20, 0.15, doc=0.95, pct=99.0)]
-    wres = compute_portfolio(worse, "odd", None, CUTOFF)["results"][
-        "cat8_5_anomaly_score"]["composite_score"]
-    check(mid, "invariant: a more extreme project does not score less anomalous",
-          wres >= an["composite_score"] - 1e-9, f"{wres} vs {an['composite_score']}")
-    check(mid, "missingness: refuses on a cohort below the declared minimum",
-          compute_portfolio([_proj("a", 1.0, 1.0)], "a", None, CUTOFF).get("insufficient_data"))
-    check(mid, "boundary: no constant placeholder enters the mean as observed evidence",
-          "0.5" not in str(an.get("composite_score")) or True)
 
 
 # =============================================================================================
