@@ -74,6 +74,26 @@ check(all(s["status_color"] in ("Green", "Amber", "Red") for s in full),
       "S3: a complete input set still produces canonical bands")
 
 
+# ---------------------------------------------------------------- S4
+# backend/main.py:180 — `if cpi is None and ev and ac` suppressed ev=0 (CPI 0.0).
+import main  # noqa: E402
+
+check(main._compute({"ev": 0, "ac": 100})["cpi"] == 0.0,
+      "S4: ev=0, ac=100 gives CPI 0.0, not None")
+check(main._compute({"ev": 0, "pv": 100})["spi"] == 0.0,
+      "S4: ev=0, pv=100 gives SPI 0.0, not None")
+check(main._compute({"ev": 90, "ac": 100})["cpi"] == 0.9,
+      "S4: an ordinary CPI still computes")
+check(main._compute({"ev": 100, "ac": 0})["cpi"] is None,
+      "S4: ac=0 abstains rather than dividing by zero")
+check(main._compute({"ev": 100, "pv": 0})["spi"] is None,
+      "S4: pv=0 abstains rather than dividing by zero")
+check(main._compute({"ac": 100})["cpi"] is None,
+      "S4: a genuinely absent EV still yields None")
+check(main._compute({"cpi": 1.2, "ev": 0, "ac": 100})["cpi"] == 1.2,
+      "S4: a supplied CPI is not overwritten")
+
+
 if __name__ == "__main__":
-    print("\n%d checks, %d failed" % (16, len(FAILED)))
+    print("\n%d checks, %d failed" % (23, len(FAILED)))
     sys.exit(1 if FAILED else 0)
