@@ -400,10 +400,39 @@ def run_rfi_velocity(si: dict, rand: Callable[[], float], period_cutoff) -> dict
 # naming which fields were absent. That is a disclosure, not a threshold.
 # =================================================================================================
 
+def _pct_cuts_from(entry_key: str) -> tuple[tuple[float, str], ...]:
+    """
+    RUN 135, GROUP 5. THE LADDER IS READ FROM THE CONFIGURATION IT WAS ALREADY CONFIGURED IN.
+
+    `band_reference_data.json` carried `submittal_first_review_rejection_bands` and
+    `ncr_rate_bands` -- the owner's Run 106 figures, with their unit, their source and their
+    provenance note attached -- and NO MODULE READ EITHER OF THEM. The two ladders below were
+    retyped as literals here instead, so the same numbers existed in two places with nothing
+    holding them equal: an owner editing the configured file would have changed nothing, and an
+    owner editing this file would have left the configuration stating something false. Run 135's
+    order names both as configured data no module reads, and asks whether each is an orphan to
+    remove or a ladder to wire. THEY ARE WIRED, because the figures are genuinely in service --
+    they are not orphans, they are a second copy of a live ladder, which is the more dangerous
+    of the two conditions.
+
+    Returns the worst-cut-first tuple the `_pct_band` helper reads, so the shape at the call
+    sites is unchanged and only the SOURCE of the numbers moves.
+    """
+    _e = _BR.entry(entry_key)
+    return tuple(sorted(
+        ((float(_e[k]), band) for k, band in (("red_at_or_above", "Red"),
+                                              ("amber_at_or_above", "Amber"),
+                                              ("yellow_at_or_above", "Yellow"))
+         if _e.get(k) is not None),
+        key=lambda cb: -cb[0]))
+
+
 #: The owner's Run 106 first-review submittal rejection ladder, in PER CENT, worst cut first.
 #: Each cut is read as "at or above this figure", and the Green arm is the open bottom.
-SUBMITTAL_REJECTION_CUTS: tuple[tuple[float, str], ...] = (
-    (35.0, "Red"), (20.0, "Amber"), (10.0, "Yellow"))
+#: RUN 135: read from `band_reference_data.json`, not retyped. Was
+#: `((35.0, "Red"), (20.0, "Amber"), (10.0, "Yellow"))`, which is what that file states.
+SUBMITTAL_REJECTION_CUTS: tuple[tuple[float, str], ...] = _pct_cuts_from(
+    "submittal_first_review_rejection_bands")
 
 SUBMITTAL_REJECTION_BOUNDARY = (
     "on the FIRST-REVIEW rejection rate -- submittals rejected or returned for revision on first "
@@ -426,8 +455,9 @@ SUBMITTAL_REJECTION_BASIS = (
     "precedence order")
 
 #: The owner's Run 106 NCR ladder, in PER CENT, worst cut first.
-NCR_RATE_CUTS: tuple[tuple[float, str], ...] = (
-    (10.0, "Red"), (5.0, "Amber"), (2.0, "Yellow"))
+#: RUN 135: read from `band_reference_data.json`, not retyped. Was
+#: `((10.0, "Red"), (5.0, "Amber"), (2.0, "Yellow"))`, which is what that file states.
+NCR_RATE_CUTS: tuple[tuple[float, str], ...] = _pct_cuts_from("ncr_rate_bands")
 
 #: The two denominators the owner's NCR percentage ladder is drawn over, and NOTHING ELSE. The
 #: ladder is a share of inspections (or, where inspections cannot be reliably identified, of

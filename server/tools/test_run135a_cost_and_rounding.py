@@ -270,6 +270,25 @@ def sweep_a34_material_variance_bands_raw() -> None:
               r["status_color"])
 
 
+def group5_wired_ladders_match_their_configuration() -> None:
+    """The two band sets Run 135 found configured-but-unread are now the source of the ladder.
+
+    SOURCE, under R2: `band_reference_data.json` itself -- the owner's Run 106 figures, stated
+    there with their unit and provenance -- compared against the module's ladder. The literals
+    the module carried before are quoted in the comments beside each and are the same figures,
+    so this check would have passed before the wiring too; what it holds is that the two cannot
+    now drift apart, which is what the finding is about.
+    """
+    from app.simulation import band_reference as _BR
+    from app.simulation.models_doc import NCR_RATE_CUTS, SUBMITTAL_REJECTION_CUTS
+    for key, cuts in (("submittal_first_review_rejection_bands", SUBMITTAL_REJECTION_CUTS),
+                      ("ncr_rate_bands", NCR_RATE_CUTS)):
+        e = _BR.entry(key)
+        want = ((e["red_at_or_above"], "Red"), (e["amber_at_or_above"], "Amber"),
+                (e["yellow_at_or_above"], "Yellow"))
+        check(cuts == want, f"GROUP 5 the ladder is read from `{key}`", f"{cuts} vs {want}")
+
+
 CHECKS = (
     h1_storage_is_unrounded,
     h1_band_reads_the_unrounded_value,
@@ -284,6 +303,7 @@ CHECKS = (
     s5_source_reliability_bands_raw,
     sweep_a34_material_variance_bands_raw,
     m3_a212_reads_all_six_edges,
+    group5_wired_ladders_match_their_configuration,
 )
 
 
