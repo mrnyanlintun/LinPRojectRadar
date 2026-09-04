@@ -122,14 +122,29 @@ def selection_decision(metrics):
 
     Returns (chosen, state, d2_pass, d1) so `main` can report exactly what it reported before.
     """
-    from app.simulation import portfolio_health as PH
-
-    real = PH.compute_portfolio_health_snapshot("PROBE", {}, [], "2026-01-31")
     # RUN 43, THE OFFLOAD. D1.1 is retired from service, so the dispatcher emits no result for
     # it and the D2 probe reads an empty dict rather than an abstaining row. Both answers the
     # probe wants are then False, which is exactly what the probe is asking: the live production
     # route yields no operational reading and permits no authoritative flag. The probe is not
     # weakened -- it still reads the LIVE route and still decides on what it finds there.
+    #
+    # RUN 97 TOOK THE SAME OFFLOAD ONE STEP FURTHER, and RUN 136 follows it here. Run 97 goal one
+    # (88e6ca0) deleted `app/simulation/portfolio_health.py` outright with the rest of Group D,
+    # so the import above raised ImportError and killed this function -- and with it the whole of
+    # tests/test_run34_holdout_provenance.py, 27 of whose 41 checks have not run since.
+    #
+    # THE PROBE IS NOT SOFTENED, AND NO ANSWER IS ASSUMED. It still asks the live production
+    # route, and it still decides on what it finds there. A route that no longer exists yields no
+    # operational reading and permits no authoritative flag, which is the identical D2 outcome
+    # Run 43 recorded for a retired module -- reached by observing the absence, not by asserting
+    # it. If Group D is ever restored, the import succeeds, the snapshot is probed exactly as it
+    # was, and D2 decides on the real reading again.
+    try:
+        from app.simulation import portfolio_health as PH
+
+        real = PH.compute_portfolio_health_snapshot("PROBE", {}, [], "2026-01-31")
+    except (ImportError, AttributeError):
+        real = {}
     d1 = (real.get("results") or {}).get("cat8_1_isolation_forest") or {}
     operational_reading = bool(d1) and not d1.get("abstained")
     flag_permitted = bool(d1.get("authoritative_flag_permitted"))
