@@ -176,9 +176,13 @@ pj = post({"action": "researchprejudgment", "session_token": p,
            "pre_action": "monitor", "pre_confidence": 55})
 check(pj.get("ok") is True, "preliminary judgment accepted", str(pj)[:160])
 check(pj.get("pre_judgment_locked") is True, "returned locked")
-check(pj.get("pre_submitted_at") == pj.get("pre_locked_at"),
-      "pre_submitted_at and pre_locked_at assigned in the same statement",
-      f"{pj.get('pre_submitted_at')} vs {pj.get('pre_locked_at')}")
+# RUN 135C, S8. This was an equality alone, and `None == None` is True: had the endpoint stopped
+# returning either timestamp the check would have gone on passing, and no adjacent check asserts
+# their presence. Both are now required to be non-empty before they are compared.
+check(bool(pj.get("pre_submitted_at")) and bool(pj.get("pre_locked_at"))
+      and pj.get("pre_submitted_at") == pj.get("pre_locked_at"),
+      "pre_submitted_at and pre_locked_at are both present and assigned in the same statement",
+      f"{pj.get('pre_submitted_at')!r} vs {pj.get('pre_locked_at')!r}")
 check(pj.get("current_stage") == "awaiting_reveal", "stage derives to 'awaiting_reveal'")
 
 resub = post({"action": "researchprejudgment", "session_token": p,
