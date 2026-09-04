@@ -1028,7 +1028,23 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # sent. Extraction, narration and recognition are UNMOVED and still default to Anthropic --
 # Runs 124 and 126 rest on extraction's behaviour. No model call was made or simulated: there
 # is no key in this environment.
-SIMULATION_VERSION = "sim-2026.09-v67"
+# RUN 132, sim-2026.09-v68. WHAT ``ac`` MEANS CHANGED, SO EVERY EVM RESULT RESTS ON A
+# DIFFERENT FIGURE. A pay application (G702) no longer emits the ``ac`` signal key at all:
+# ``amount_paid_to_date`` is completed-to-date LESS RETAINAGE, the sum released to the
+# contractor, and it is not what the work cost. It had been emitted AND ranked above the
+# monthly report's stated ``actual_cost`` by a WRITER_TIERS entry carrying no recorded reason,
+# so on PRJ-002 period 1 CPI read 1.111 (under cost) where the stated actual cost gives 0.955
+# (over) -- moving A1 Cost and EVM Performance from Yellow to Green and the project weighted
+# sum by 0.28. The stamp moves because the INPUT a computed result rests on moves in two ways:
+# where a monthly report states actual cost, ``ac`` is now that figure instead of the
+# retainage-net one; where no document states one, ``ac`` is ABSENT and the EVM modules ABSTAIN
+# where under v67 they computed on the net figure. NO BAND, THRESHOLD, WEIGHT, CATEGORY RULE,
+# PROJECT RULE OR MODULE POPULATION IS TOUCHED, no census figure moves, and no retainage
+# adjustment is invented -- adding retention back would compute a figure no document states.
+# The extraction prompt and field list are UNCHANGED, so the fingerprint is unstaled and
+# nothing cached is re-extracted. No model call was made or simulated: there is no key in this
+# environment.
+SIMULATION_VERSION = "sim-2026.09-v68"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1284,6 +1300,10 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # platform's determinism comes from recording the match, not from the sampling parameter.
  # NO MIGRATION WAS ADDED. No model call was made or simulated.
  "sim-2026.09-v67",
+ # RUN 132: actual cost is what the work cost. The pay application stops emitting ``ac``
+ # (amount-paid-to-date is earned value net of retainage); the monthly report's stated
+ # actual_cost is the only writer, and a period stating none makes the EVM modules abstain.
+ "sim-2026.09-v68",
 )
 
 

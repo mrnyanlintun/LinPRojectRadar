@@ -881,7 +881,18 @@ _NUMERIC_EMISSIONS: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     "schedule_of_values": (("completed_to_date", "ev"), ("scheduled_value_total", "bac")),
     "pay_application": (
-        ("amount_paid_to_date", "ac"), ("percent_complete_verified", "actualPctComplete"),
+        # RUN 132. NO ``ac`` EMISSION. ``amount_paid_to_date`` is the sum RELEASED to the
+        # contractor -- completed-to-date LESS RETAINAGE (ten per cent on the corpus). It is
+        # not what the work cost, and the difference is not noise: on PRJ-002 period 1 it
+        # made CPI read 1.111 (under cost) where the stated actual cost gives 0.955 (over).
+        # The error is one-directional and reassuring, which is the direction nothing
+        # downstream can catch. Nothing on a G702 is an actual cost: completed_to_date is
+        # earned value, amount_paid_to_date is earned value net of retention, and adding the
+        # retention back would compute a figure no document states. So the pay application
+        # does not write ``ac`` AT ALL -- not even as a fallback. A period with no document
+        # stating actual cost now has no ``ac`` and the EVM modules ABSTAIN, which is the
+        # visible answer; a ten-per-cent-optimistic CPI is the invisible one.
+        ("percent_complete_verified", "actualPctComplete"),
         ("original_contract_sum", "bac"), ("completed_to_date", "ev"),
         ("original_contingency", "originalContingency"),
         ("remaining_contingency", "remainingContingency"),
@@ -1507,8 +1518,18 @@ if __name__ == "__main__":
     rep = assembly_report([doc("zzz", "wedding_invitation", {"x": 1}), base[0]])
     assert [u["sha256"] for u in rep["unmapped"]] == ["zzz"]
     assert rep["fields_by_doc"]["zzz"] == []
-    assert rep["fields_by_doc"]["aaa"] == ["bac", "baselineContractSum",
-                                           "baselineStart", "baselineEnd"]
+    # RUN 132. PRE-EXISTING BREAKAGE, FIXED HERE BECAUSE IT HID THE DEFECT THIS RUN CAME FOR.
+    # This read == ["bac", "baselineContractSum", "baselineStart", "baselineEnd"] and had been
+    # failing at every commit since ``evidence:<doc_type>:<key>`` pseudo-fields joined
+    # fields_by_doc -- so the self-check DIED HERE and assertions 6 through 9 never ran, which
+    # is exactly how ``a["ac"] == 4400000`` (assertion 7) survived unexamined. The signal-input
+    # fields are asserted as before; the evidence pseudo-fields are asserted as a set.
+    assert [f for f in rep["fields_by_doc"]["aaa"] if not f.startswith("evidence:")] == [
+        "bac", "baselineContractSum", "baselineStart", "baselineEnd"]
+    assert {f for f in rep["fields_by_doc"]["aaa"] if f.startswith("evidence:")} == {
+        "evidence:contract_value:original_contract_sum",
+        "evidence:contract_value:project_end_date",
+        "evidence:contract_value:project_start_date"}
     assert assembly_report(list(reversed(base))) == assembly_report(base)
 
     # 6. quirks that the analytical layer depends on
@@ -1526,8 +1547,21 @@ if __name__ == "__main__":
     assert a["baselineContractSum"] == 10000000.0, "original baseline must persist"
     assert a["revisedContractSum"] == 10600000
     assert a["baselineEnd"] == "2026-03-31", a["baselineEnd"]   # effective end: the amendment
-    assert a["ev"] == 4000000 and a["ac"] == 4400000
-    assert a["cpi"] == 0.909, a["cpi"]
+    # RUN 132. THIS ASSERTION ENCODED THE DEFECT. It read ``a["ac"] == 4400000`` and
+    # ``a["cpi"] == 0.909`` -- an ``ac`` taken from the pay application's amount-paid-to-date,
+    # i.e. a figure net of retainage read as a cost. It is RE-POINTED, not deleted: ``base``
+    # holds no document stating an actual cost, so ``ac`` is absent and cpi does not compute.
+    assert a["ev"] == 4000000, a["ev"]
+    assert a["ac"] is None, "a pay application must not supply actual cost"
+    assert a["cpi"] is None, a["cpi"]
+    assert "ac" not in a["sources"]
+    # ...and a monthly report in the same evidence set does supply it, and decides cpi.
+    with_mr = assemble_signal_inputs(
+        base + [doc("mmm", "monthly_report", {"actual_cost": 4400000,
+                                              "report_period": "2024-09-30"})])
+    assert with_mr["ac"] == 4400000, with_mr["ac"]
+    assert with_mr["sources"]["ac"]["docType"] == "monthly_report"
+    assert with_mr["cpi"] == 0.909, with_mr["cpi"]
     # recency by the value's own date, not by content hash: "fff" < "ggg" alphabetically,
     # but swap their dates and the earlier-hash CO wins on its later as_of.
     swapped = [dict(d) for d in base]

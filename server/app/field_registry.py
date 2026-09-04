@@ -225,7 +225,21 @@ WRITER_TIERS: dict[str, dict[str, int]] = {
     "baselineEnd": {"change_order": 0, "contract_value": 1},
     "ev": {"schedule_of_values": 0, "pay_application": 1, "monthly_report": 2},
     "pv": {"schedule_update": 0, "time_phased_schedule": 1, "monthly_report": 2},
-    "ac": {"pay_application": 0, "monthly_report": 1},
+    # RUN 132. ``ac`` HAS NO ENTRY, AND MUST NOT REGAIN ONE. It had
+    # {"pay_application": 0, "monthly_report": 1} -- introduced with this file and, alone
+    # among these entries, carrying NO recorded reason -- which ranked a pay application's
+    # amount-paid-to-date ABOVE a monthly report's stated actual cost. Amount paid is earned
+    # value net of retainage, not a cost. The pay application no longer emits ``ac`` at all
+    # (extraction_merge._NUMERIC_EMISSIONS), so ``ac`` has ONE writer, the monthly report,
+    # and needs no tier. Reinstating a tier here would only reinstate a wrong fallback.
+    #
+    # ``actualPctComplete`` KEEPS its pay-application preference, and that is NOT the same
+    # defect: percent_complete_verified is the owner's/architect's certified completion
+    # percentage on the G702, computed as completed-to-date over the contract sum BEFORE any
+    # retainage is withheld -- retention reduces the payment, never the percentage certified.
+    # It is therefore the SAME quantity as the monthly report's actual_percent_complete, only
+    # independently verified rather than self-reported by the contractor, and preferring the
+    # verified figure is right. Checked deliberately in Run 132 and left as it stands.
     "actualPctComplete": {"pay_application": 0, "monthly_report": 1},
     "plannedPctComplete": {"schedule_update": 0, "time_phased_schedule": 1,
                            "monthly_report": 2},
