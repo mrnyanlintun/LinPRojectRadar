@@ -31,6 +31,7 @@ from __future__ import annotations
 from datetime import date as _date
 from typing import Any, Callable
 
+from .band_display import band_figure
 from .canonical import StructureAbsent
 from .canonical_v4 import (
     V4_STRUCTURE_KEYS,
@@ -592,8 +593,15 @@ def run_submittal_rejection(si: dict, rand: Callable[[], float], period_cutoff) 
         _ov = _override_words(_fire_names, _absent, len(SUBMITTAL_OVERRIDE_FIELDS))
         return banded(
             "Submittal_Rejection",
+            # RUN 135, FINDING M2. `round(_pct, 1)` printed a figure ON a boundary the rate
+            # had not reached: 249 of 2,500 is 9.96 per cent, which is GREEN, and the row read
+            # "(10.0 per cent)" beside a boundary sentence reading "at or above 10 per cent is
+            # Yellow". The band was right; the sentence beside it said the opposite. The printed
+            # figure now carries the shared Run 135 rule against THIS ladder's own cuts.
             (f"{_js_str(_fr_r)} of {_js_str(_fr_n)} submittals receiving a first review were "
-             f"rejected or returned for revision ({round(_pct, 1)} per cent), from "
+             f"rejected or returned for revision "
+             f"({_js_str(band_figure(_pct, [c for c, _ in SUBMITTAL_REJECTION_CUTS], 1))} "
+             f"per cent), from "
              f"{_js_str(reading['assessed'])} assessed decisions in all and "
              f"{_js_str(reading['resubmission_cycles'])} resubmission cycles. " + _ov),
             status_color=_colour,
@@ -780,7 +788,11 @@ def run_ncr_rate(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str
     _ov = _override_words(_fire_names, _absent, len(NCR_OVERRIDE_FIELDS))
     return banded(
         "NCR_Rate",
-        _msg + f" That is {round(_pct, 1)} per cent of {NCR_DENOMINATOR_TYPES[_unit_key]}. " + _ov,
+        # RUN 135, FINDING M2, the same defect on the same shape: 49 of 2,500 is 1.96 per cent,
+        # which is GREEN, and the row read "That is 2.0 per cent" beside "at or above 2 per cent
+        # is Yellow". Same shared rule, against this ladder's own cuts.
+        _msg + f" That is {_js_str(band_figure(_pct, [c for c, _ in NCR_RATE_CUTS], 1))} per "
+               f"cent of {NCR_DENOMINATOR_TYPES[_unit_key]}. " + _ov,
         status_color=_colour,
         boundary=NCR_RATE_BOUNDARY,
         basis=NCR_RATE_BASIS,
@@ -2837,17 +2849,39 @@ def run_environmental_compliance(si: dict, rand: Callable[[], float],
             "Environmental_Compliance",
             f"A compliance rate of {_js_str(round1(rate))} per cent is outside the range a "
             f"proportion of permit conditions can take")
-    rate = round1(rate)
+    # RUN 135, FINDING S1 (and L1, which names this line and A6.4's together). THE BAND CAME
+    # OFF A ROUNDED FIGURE, so the rounding decided the answer and not merely its appearance.
+    #
+    # `rate = round1(rate)` ran BEFORE the ladder. A compliance rate of 94.95 per cent is BELOW
+    # the 95 Green boundary; half-up rounding made it 95.0 and the module published GREEN. The
+    # same upward flip sat on both remaining edges, at 84.95 and at 69.95. In every case the
+    # error is favourable, because half-up moves a figure toward the boundary above it.
+    #
+    # The band is now taken from the rate the arithmetic produced. The DISPLAY carries the
+    # shared Run 135 rule -- print at the fewest decimals, never fewer than the one `round1`
+    # gave, that keep the printed figure on the same side of every edge of this ladder as the
+    # rate itself -- so 94.95 bands Yellow and prints "94.95%" rather than banding Green or
+    # printing a 95 that contradicts a Yellow band. See `band_display`; the same rule is on
+    # A1.7, A1.8, A2.8, A3.3, A3.5, A4.3, A4.4 and A6.4.
+    #
+    # WHETHER THIS PATH EXECUTES TODAY is reported separately and is not assumed here: the two
+    # hunts disagreed on this module's severity precisely over that question, and a defect on a
+    # path is repaired whether or not the path is currently reached.
     color = ("Green" if rate >= 95 else "Yellow" if rate >= 85
              else "Amber" if rate >= 70 else "Red")
+    rate_display = band_figure(rate, (95.0, 85.0, 70.0), 1)
     violations = si.get("environmentalViolations") or 0
-    evidence = f"Environmental compliance: {_js_str(rate)}%"
+    evidence = f"Environmental compliance: {_js_str(rate_display)}%"
     if violations:
         evidence += f", {_js_str(violations)} violations recorded"
     return {
         "method_class": "Environmental_Compliance",
         "status_color": color,
+        # RUN 135, S1. The RAW rate is stored, for the reason H1 established one layer up: a
+        # stored analytical field is never a rounded one, because something downstream will
+        # eventually band on it. The boundary-safe presentation figure is stored beside it.
         "compliance_rate": rate,
+        "compliance_rate_display": rate_display,
         "issues_discussed": si["environmentalIssuesDiscussed"],
         "violations": violations,
         "evidence_metric": evidence,
@@ -2893,17 +2927,39 @@ def run_contractor_performance(si: dict, rand: Callable[[], float],
     worst = min(rated)
     color = ("Green" if worst >= 4.0 else "Yellow" if worst >= 3.5
              else "Amber" if worst >= 3.0 else "Red")
+    # RUN 135, FINDING L1. THE DISPLAY/DECISION SPLIT ON A6.4, WHICH IS THE SECOND HALF OF S1.
+    #
+    # This module's BAND was already correct -- it comes off `worst` at full precision -- and its
+    # ROW said otherwise: `min_rating` was stored as `round1(worst)` and the sentence printed the
+    # same rounding, so a worst rating of 3.9501 banded Yellow and the row recorded and printed
+    # 4.0, which is the Green edge. The stored figure and the stored band disagreed.
+    #
+    # `min_rating` now carries the raw rating and the boundary-safe figure is stored and printed
+    # beside it, by the shared Run 135 rule -- the fewest decimals, never fewer than the one
+    # `round1` gave, that keep the figure on the same side of every edge of this ladder as the
+    # rating itself. THE INDIVIDUAL RATINGS TAKE THE SAME RULE, on the ladder the worst of them
+    # is banded against: each of them is a CANDIDATE for `worst`, so printing one of them at a
+    # coarser precision than the worst puts two figures for the same number in one sentence --
+    # "overall 4 ... (worst 3.95)". Like A6.3 above, this path is overridden in production by
+    # `CAT89_CANONICAL`; it is repaired regardless, and whether it executes is reported.
+    def _rating_display(v):
+        return band_figure(v, (4.0, 3.5, 3.0), 1)
+
+    _worst_display = _rating_display(worst)
     return {
         "method_class": "Contractor_Performance",
         "status_color": color,
-        "min_rating": round1(worst),
-        "quality_rating": (round1(quality) if quality is not None else None),
+        "min_rating": worst,
+        "min_rating_display": _worst_display,
+        "quality_rating": (quality if quality is not None else None),
+        "quality_rating_display": (_rating_display(quality) if quality is not None else None),
         "ratings_read": len(rated),
         "evidence_metric": (
-            f"Ratings: overall {_js_str(round1(overall))}, schedule {_js_str(round1(sched))}, "
-            f"cost {_js_str(round1(cost))}"
-            + (f", quality {_js_str(round1(quality))}" if quality is not None else "")
-            + f" (worst {_js_str(round1(worst))}/5)"
+            f"Ratings: overall {_js_str(_rating_display(overall))}, "
+            f"schedule {_js_str(_rating_display(sched))}, "
+            f"cost {_js_str(_rating_display(cost))}"
+            + (f", quality {_js_str(_rating_display(quality))}" if quality is not None else "")
+            + f" (worst {_js_str(_worst_display)}/5)"
         ),
     }
 
