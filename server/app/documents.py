@@ -2971,13 +2971,20 @@ def _run69_structures(session: Session, project: Project, period: int,
                                         "completed_on_time", "milestones_on_time",
                                         "on_time_completions",
                                         "packages_completed_by_committed_date")),
+        # RUN 135, H5. "inspections_passed" AND "commitments_met" ARE REMOVED FROM THESE TWO
+        # ALIAS LISTS. Both are TOTALS over every attempt; the ladder these columns feed is
+        # FIRST OUTCOME ONLY (see `contractor_factors.py`, A6.4). A total is a SUPERSET of the
+        # first-pass count and is always greater or equal, so accepting it banded a firm
+        # FAVOURABLY on a number that answers a different question. A document that prints only
+        # a total now reaches NOTHING here and the column is absent, which is the honest
+        # NOT TESTED rather than a Green bought with the wrong figure.
         ("inspections_passed_first", ("inspections_passed_first", "passed_first_inspection",
-                                      "first_pass_inspections", "inspections_passed",
+                                      "first_pass_inspections",
                                       "first_time_pass", "passed_on_first")),
         ("commitments_due", ("commitments_due", "commitments", "submittals_due", "rfis_due",
                              "responses_due", "obligations_due")),
         ("commitments_met_on_time", ("commitments_met_on_time", "commitments_on_time",
-                                     "commitments_met", "on_time_commitments",
+                                     "on_time_commitments",
                                      "responses_on_time")),
     )
     #: RUN 120. `active_work` IS NOT SUMMED. Every column above is a COUNT and two documents
