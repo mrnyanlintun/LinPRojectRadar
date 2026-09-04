@@ -31,6 +31,8 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any
 
+from .simulation.band_display import band_figure
+
 # ---------------------------------------------------------------- run geometry (designed)
 
 PERIOD_DAYS = 30          # one reporting period
@@ -433,7 +435,21 @@ LOW_CREDIBILITY_AT_OR_BELOW = 2
 
 
 def _round3(v: float) -> float:
-    return round(v, 3)
+    """RUN 136, F2. PRESENTATION ONLY. Never call this on a quantity a band, a branch or a sum
+    is about to read -- that is the H1 defect, and this module carried three copies of it.
+
+    It also carried a SECOND fault, fixed here: `round` is half-to-even, and every other
+    `_round3` on this platform (`models_fuzzy`, `models_evm`, `extraction_merge`) is `js_round`,
+    half-up. The same CPI therefore printed 0.899 in a training run and 0.900 on the document
+    path. `band_figure` with no ladder is the platform's half-up rule at three decimals, so the
+    two layers now round a ratio the same way.
+    """
+    return band_figure(v, (), 3)
+
+
+def _display3(value: float | None, boundaries: tuple[float, ...] = ()) -> float | None:
+    """The figure to PRINT for a ratio that was decided at full precision. See `band_display`."""
+    return None if value is None else band_figure(value, boundaries, 3)
 
 
 def derive_ld_per_day(contract_value: float, facility: str = DEFAULT_FACILITY) -> float:
@@ -1280,8 +1296,11 @@ def signal_inputs_from_state(state: dict[str, Any]) -> tuple[dict[str, Any], dat
     si["ac"] = state["ac"]
     si["pv"] = state["pv"]
     if state["bac"]:
-        si["actualPctComplete"] = _round3(state["ev"] / state["bac"] * 100)
-        si["plannedPctComplete"] = _round3(state["pv"] / state["bac"] * 100)
+        # RUN 136, F2. FULL PRECISION, NOT A ROUNDED COPY. These two go straight into the
+        # signal inputs the whole analytical layer bands on, so rounding them here is the H1
+        # defect one layer upstream of every band that reads them.
+        si["actualPctComplete"] = state["ev"] / state["bac"] * 100
+        si["plannedPctComplete"] = state["pv"] / state["bac"] * 100
     si["baselineStart"] = SCHEDULE_START.isoformat()
     si["baselineEnd"] = (SCHEDULE_START
                          + timedelta(days=PERIODS_TOTAL * PERIOD_DAYS - 1)).isoformat()
@@ -1298,8 +1317,12 @@ def signal_inputs_from_state(state: dict[str, Any]) -> tuple[dict[str, Any], dat
     si["changeOrderCount"] = state["change_order_count"] or None
 
     si["sources"] = {}
-    si["cpi"] = _round3(state["ev"] / state["ac"]) if state["ac"] else None
-    si["spi"] = _round3(state["ev"] / state["pv"]) if state["pv"] else None
+    # RUN 136, F2. THE TWO RATIOS EVERY MODULE BANDS ON, AT FULL PRECISION. Rounding them here
+    # decided bands on a presentation value: measured on this engine, ev/ac = 0.89951 was handed
+    # on as 0.900 and B2.20 published Yellow "fair-fair-low" where the ratio itself is Amber
+    # "poor-fair-low". No boundary is touched; the modules simply receive the ratio.
+    si["cpi"] = (state["ev"] / state["ac"]) if state["ac"] else None
+    si["spi"] = (state["ev"] / state["pv"]) if state["pv"] else None
 
     cutoff = date.fromisoformat(dates["decision"])
     return si, cutoff
@@ -1374,8 +1397,12 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
     """
     form = CONTRACT_FORMS[state["contract_form"]]
     form_name = state["contract_form"]
-    cpi = _round3(state["ev"] / state["ac"]) if state["ac"] else None
-    spi = _round3(state["ev"] / state["pv"]) if state["pv"] else None
+    # RUN 136, F2. The recommendation's recorded basis carries the ratios themselves; the
+    # sentences below print them. `cpi_shown` is what a reader sees, `cpi` is what is recorded.
+    cpi = (state["ev"] / state["ac"]) if state["ac"] else None
+    spi = (state["ev"] / state["pv"]) if state["pv"] else None
+    cpi_shown = _display3(cpi)
+    spi_shown = _display3(spi)
     float_left = state["float_total_days"] - state["float_consumed_days"]
 
     if form_name == "A201-2017":
@@ -1450,7 +1477,7 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
                 what = (f"Absorb {label}: draw the estimated {_fmt_money(cost)} from "
                         "contingency and close it.")
                 headline = f"Close out {label} from contingency"
-                why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+                why = (f"Cost performance stands at {cpi_shown} and schedule performance at {spi_shown}, "
                        f"with {float_left} days of float remaining. {window_text.capitalize()}. "
                        "Carrying the matter open only accrues drift.")
                 next_step = ("Record the absorption this period and notify the owner's "
@@ -1463,7 +1490,7 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
                 what = (f"Serve written notice of claim for {label}, with the current cost "
                         f"record attached, for an estimated {_fmt_money(cost)}.")
                 headline = f"Serve notice of claim for {label}"
-                why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+                why = (f"Cost performance stands at {cpi_shown} and schedule performance at {spi_shown}, "
                        f"with {float_left} days of float remaining; {window_text}. Notice "
                        "now preserves the entitlement whatever the final quantum proves.")
                 next_step = (f"Serve the notice by {_deadline_for(state, position)}; the "
@@ -1481,7 +1508,7 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
             what = (f"Give written notice of {label} now, with the affected work stopped and "
                     f"the condition left undisturbed, for an estimated {_fmt_money(cost)}.")
             headline = f"Notice {label} today"
-            why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+            why = (f"Cost performance stands at {cpi_shown} and schedule performance at {spi_shown}, "
                    f"with {float_left} days of float remaining. {position['citation']} sets "
                    "no day count: the duty is prompt written notice, and prompt means now. "
                    + ("This is the first opportunity, so notice today preserves the "
@@ -1497,7 +1524,7 @@ def build_recommendation(state: dict[str, Any]) -> dict[str, Any] | None:
             what = (f"Give written notice of the change for {label} and open the cost "
                     f"record, currently estimated at {_fmt_money(cost)}.")
             headline = f"Notice the change for {label} today"
-            why = (f"Cost performance stands at {cpi} and schedule performance at {spi}, "
+            why = (f"Cost performance stands at {cpi_shown} and schedule performance at {spi_shown}, "
                    f"with {float_left} days of float remaining. There is no notice bar, but "
                    f"costs more than {position['lookback_days']} days old are unrecoverable: "
                    f"as of today {int(round(fraction * 100))} percent of the accrued cost is "
