@@ -475,8 +475,37 @@ for d in (_drv.get("collapsed") or []) + (_drv.get("expanded") or []):
 # THE PATTERNS BELOW ARE NOW READ OUT OF `drive_run98.py` ITSELF, so there is one authority for
 # them and a hand copy cannot drift from it again. Reading them is neither weakening the check
 # (section 12.7) nor strengthening it: it is the same check.
-_run98 = (HERE / "drive_run98.py").read_text()
-exec(_run98[_run98.index("IMPERATIVE_PATTERNS = ["):_run98.index("def scan_imperative(text):")])
+# RUN 135C. The slice was taken with two bare `str.index` calls. `str.index` does raise when a
+# marker is absent, but it raises `ValueError: substring not found` with no indication of WHICH
+# marker moved or which file it was being read out of -- and it says nothing at all about the
+# three ways this can go wrong while still "succeeding": the markers appearing in the reverse
+# order (an empty slice, exec'd silently, and a NameError several hundred lines later where the
+# cause is invisible), a marker appearing more than once (the wrong occurrence taken), or the
+# slice failing to define the name it exists to define. Each is now named where it happens.
+_run98_path = HERE / "drive_run98.py"
+_run98 = _run98_path.read_text()
+_START, _END = "IMPERATIVE_PATTERNS = [", "def scan_imperative(text):"
+for _marker in (_START, _END):
+    _n = _run98.count(_marker)
+    if _n != 1:
+        raise SystemExit(
+            f"RUN 103 CENSUS CANNOT START: the marker {_marker!r} appears {_n} times in "
+            f"{_run98_path}; this driver reads the imperative patterns out of that file by "
+            "locating the marker, and it must appear exactly once. Fix the marker or the read.")
+_a, _b = _run98.index(_START), _run98.index(_END)
+if _a >= _b:
+    raise SystemExit(
+        f"RUN 103 CENSUS CANNOT START: in {_run98_path} the marker {_START!r} (offset {_a}) no "
+        f"longer precedes {_END!r} (offset {_b}), so the slice between them is empty. The "
+        "imperative patterns have moved and this driver would silently scan for nothing.")
+_slice = _run98[_a:_b]
+exec(_slice)
+if not IMPERATIVE_PATTERNS:  # noqa: F821 -- defined by the exec above
+    raise SystemExit(
+        f"RUN 103 CENSUS CANNOT START: the slice read from {_run98_path} defined "
+        "IMPERATIVE_PATTERNS as empty, so every imperative check below would pass vacuously.")
+print(f"  read {len(IMPERATIVE_PATTERNS)} imperative patterns out of "  # noqa: F821
+      f"{_run98_path.name} between its two markers")
 
 
 def scan_imperative(text):
