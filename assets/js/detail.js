@@ -1079,8 +1079,8 @@
              false, hasCoordsFor(p) ? "located" : "no location")}
         ${cs("d-projnet", "Project Signal Network", `<div class="detail-projnet2d"></div>`, false, chartCatCount + " categories drawn")}
         ${cs("d-neural", "Signal Flow", `<div class="detail-neural-flow" data-project-id="${esc(p.id)}"></div>`, false, `${chartModuleCount} modules drawn`)}
-        ${cs("d-brief", "Executive Brief", executiveBriefHtml(p), false, "")}
-        ${cs("d-decision", "Governance Decision", `<section class="panel detail-decision" aria-label="Governance decision (project detail)"></section>`, false, pillBadge(overallState))}
+        ${cs("d-brief", "Period Analysis Summary", executiveBriefHtml(p), false, "")}
+        ${cs("d-decision", "Suggested Decision", `<section class="panel detail-decision" aria-label="Suggested decision (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-ledger", "Signal Inputs", `<section class="panel detail-ledger" aria-label="Signal ledger (project detail)"></section>`, false, pillBadge(overallState))}
         ${cs("d-docsignals", "Documents and Extracted Signals",
              uploadedDocsPanelHtml(p) +
@@ -1972,6 +1972,19 @@
     return "none";
   }
 
+  /* RUN 134, GOAL ONE. THE DRAWER. Nothing this run touches is deleted: every block that left
+     the first screen is inside one of these and is reachable in two clicks. `<details>` is used
+     rather than a scripted toggle because it is reachable by keyboard and by a screen reader
+     without any wiring, and because a drawer that depends on JavaScript is a drawer that can
+     hide evidence when the script fails. */
+  function ebDrawer(head, inner, opts) {
+    if (!inner) return "";
+    const o = opts || {};
+    return '<details class="eb-drawer"' + (o.open ? " open" : "") + '>'
+      + '<summary class="eb-drawer-head">' + esc(head) + "</summary>"
+      + '<div class="eb-drawer-body">' + inner + "</div></details>";
+  }
+
   function briefSectionsHtml(parsed, project) {
     const section = (head, inner) => inner
       ? `<div class="eb-section"><p class="eb-sec-head">${esc(head)}</p>${inner}</div>` : "";
@@ -2013,11 +2026,22 @@
     const driverItems = parsed.drivers.map((d) => `<li>${esc(d)}</li>`).join("");
     const actionItems = parsed.actions.map((a) => `<li>${esc(a)}</li>`).join("");
 
+    /* RUN 134, GOAL ONE. THE MODULE NARRATIVE MOVES INTO "All findings". The four blocks are
+       UNCHANGED -- same parser, same text, same order -- and are reached in one click instead
+       of occupying the first screen. Two headings are relabelled to the wording rule and
+       nothing else about them moves: "Recommendation" is the platform's SYSTEM FINDING, and
+       "Required Actions" is a DECISION REQUIRED, because the platform states a finding and a
+       question and never assigns an action, an owner, an authority or a deadline.
+
+       THE ROUTE TO THE DECISION CARD STAYS OUTSIDE THE DRAWER. Run 91 put it at the end of the
+       brief so a reader who finished the brief had somewhere to go; behind a drawer it would
+       be reachable only by a reader who already went looking, which is the opposite. */
     return `<div class="eb-body eb-structured">` +
-      section("Recommendation", recHtml) +
-      section("Signal Pattern", patItems ? `<ul class="eb-pattern">${patItems}</ul>` : "") +
-      section("Key Drivers", driverItems ? `<ul class="eb-drivers">${driverItems}</ul>` : "") +
-      section("Required Actions", actionItems ? `<ul class="eb-actions">${actionItems}</ul>` : "") +
+      ebDrawer("All findings",
+        section("System finding", recHtml) +
+        section("Signal Pattern", patItems ? `<ul class="eb-pattern">${patItems}</ul>` : "") +
+        section("Key Drivers", driverItems ? `<ul class="eb-drivers">${driverItems}</ul>` : "") +
+        section("Decision required", actionItems ? `<ul class="eb-actions">${actionItems}</ul>` : "")) +
       briefDecisionRouteHtml() +
       `</div>`;
   }
@@ -2106,10 +2130,15 @@
   function briefDecisionRouteHtml() {
     return '<div class="eb-section eb-decision-route">'
       + '<p class="eb-sec-head">Recording your judgement</p>'
-      + '<p class="eb-route-note">Your judgement on this recommendation is recorded on the '
-      + 'Governance Decision card, further down this page.</p>'
+      /* RUN 134, GOAL TWO. The destination was renamed, so the route's wording follows it.
+         Run 91's restraint is unchanged: this names a section that exists on this page and
+         promises nothing about what is inside it. The heading it points at now reads
+         SUGGESTED DECISION, and "system finding" replaces "recommendation" here because the
+         platform states a finding, not a recommendation. */
+      + '<p class="eb-route-note">Your judgement on this system finding is recorded on the '
+      + 'Suggested Decision card, further down this page.</p>'
       + '<button type="button" class="btn small eb-to-decision" data-brief-to-decision="1">'
-      + 'Go to the Governance Decision card \u2193</button></div>';
+      + 'Go to the Suggested Decision card \u2193</button></div>';
   }
 
   /* RUN 70, FIX 4. THE SCRIPTED BRIEF IS REBUILT ON THE STORED FIGURES.
@@ -2875,15 +2904,30 @@
     const sec = (head, inner) =>
       `<div class="eb-section"><p class="eb-sec-head">${esc(head)}</p>${inner}</div>`;
 
+    /* RUN 134, GOAL ONE. WHAT THE READER IS TOLD, AND WHAT MOVES BEHIND A DRAWER.
+
+       The sentence that stood here -- "The generated recommendation was rejected before it
+       rendered, because it did not meet the checks below" -- DESCRIBES SOFTWARE BEHAVIOUR, not
+       this project. A reader of an executive surface cannot act on it and should not have to
+       read it first. It becomes a short limitation in plain language; the validator's own
+       reasoning, which names the checks and quotes the failing sentences, is INTERNAL
+       DIAGNOSTIC and moves into a drawer under that name. It is not deleted and not softened:
+       every failure row still prints, in full, one click away.
+
+       The three evidence blocks below it are the substance the reader came for, so they are
+       drawered by what they hold rather than hidden: posture, the two positions, every figure
+       and its band, and what could not be computed. */
     return `<div class="eb-body eb-structured eb-rejected">`
-      + `<p class="eb-flag eb-flag-review">The generated recommendation was rejected before it `
-      + `rendered, because it did not meet the checks below. What the analysis actually holds is `
-      + `printed in its place.</p>`
-      + sec("Why it was rejected", `<ul class="eb-actions">${failRows}</ul>`)
-      + sec("Posture", postureLine)
-      + sec("Cost and schedule position", `<ul class="eb-drivers">${positions}</ul>`)
-      + sec("Every figure and the band it crossed", `<ul class="eb-drivers">${bandRows}</ul>`)
-      + sec("What could not be computed this period", `<ul class="eb-actions">${notComputed.join("")}</ul>`)
+      + `<p class="eb-limitation">No generated narrative is shown for this period. What the `
+      + `analysis holds is printed below instead of a summary of it.</p>`
+      + ebDrawer("How official posture was formed", sec("Posture", postureLine))
+      + ebDrawer("All adverse findings",
+          sec("Cost and schedule position", `<ul class="eb-drivers">${positions}</ul>`)
+          + sec("Every figure and the band it crossed", `<ul class="eb-drivers">${bandRows}</ul>`))
+      + ebDrawer("Data coverage",
+          sec("What could not be computed this period", `<ul class="eb-actions">${notComputed.join("")}</ul>`))
+      + ebDrawer("Internal diagnostic",
+          sec("Why the generated narrative was not shown", `<ul class="eb-actions">${failRows}</ul>`))
       + `</div>`;
   }
 
@@ -2995,6 +3039,147 @@
       + items + "</div>";
   }
 
+
+  /* ============================================================
+     RUN 134, GOAL ONE. THE PERIOD ANALYSIS SUMMARY.
+     ============================================================
+     ONE SCREEN BEFORE EXPANSION. What stood here was a dense audit narrative that led with
+     methodology: every module reading, the roll-up arithmetic and the caveats, in the order the
+     code produced them rather than the order a reviewer needs them. Nothing is deleted; the
+     narrative moves into the drawers below and this states the bounded version above it.
+
+     NOTHING HERE IS COMPUTED. Every figure is read off the served row -- `project_status`,
+     `information_completeness`, and `decision_brief.adverse_readings.rows` -- and printed. The
+     browser does not rank, threshold, band or total anything, for the Run 69 reason: a browser
+     that re-derives a figure is a browser that can state one the server does not stand behind.
+
+     THE ORDER OF THE CONDITIONS IS THE SERVER'S OWN. `decision_brief._adverse_readings` sorts
+     its rows by (severity, category, module id) before it serves them, so the most severe
+     reading is already first and a Red can never sit below an Amber or a Yellow. Taking the
+     first three is a TRUNCATION OF AN ORDER THAT ALREADY EXISTS, not a new ranking rule; the
+     full list stays reachable in the All adverse findings drawer and in the decision card.
+
+     LOW COMPLETENESS IS A LIMITATION OF THE ANALYSIS, NOT AN ADVERSE FINDING ABOUT THE PROJECT.
+     It is printed in the confidence line and in the limitation, in the server's own words, and
+     it carries no colour, no dot and no severity -- the same rule `briefCompletenessCaveatHtml`
+     already applied to the same figure lower down the card. */
+  function pasRow(project) {
+    try { return (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(project) : null; }
+    catch (e) { return null; }
+  }
+
+  //: The confidence line. The server's own figures, or a plain statement that it sent none.
+  //: A completeness the server did not compute is never printed as a percentage of nothing.
+  function pasConfidenceHtml(row) {
+    const ic = row && row.information_completeness;
+    if (!ic || ic.percent == null || ic.required == null) {
+      return '<p class="pas-line pas-confidence">Information confidence: not stated for this '
+        + 'period. The platform did not report how much of the required information this '
+        + 'assessment rests on, and no proportion is assumed in its place.</p>';
+    }
+    const avail = (ic.available == null) ? "no" : String(ic.available);
+    return '<p class="pas-line pas-confidence">Information confidence: '
+      + esc(avail + " of " + ic.required + " required figures available ("
+            + ic.percent + "%)") + "</p>";
+  }
+
+  /* The conditions requiring review. Each states a figure, its unit or denominator and the
+     named item it belongs to -- all three read off the row's own adverse reading, never
+     composed here. At most three; the count of what is not shown is stated rather than
+     silently dropped, so a reader can never mistake the short list for the whole list. */
+  function pasConditionsHtml(row) {
+    const ar = row && row.decision_brief && row.decision_brief.adverse_readings;
+    const rows = (ar && Array.isArray(ar.rows)) ? ar.rows : [];
+    if (!rows.length) {
+      return '<p class="pas-line pas-conditions-none">No module reading is adverse this '
+        + 'period. That is a statement about the readings this period produced and not a '
+        + 'clearance of the project.</p>';
+    }
+    const shown = rows.slice(0, 3);
+    const items = shown.map((r) => {
+      const who = [r.module_id, r.category_name || r.category].filter(Boolean).join(" · ");
+      const what = r.reading ? String(r.reading) : "no figure stated on this reading";
+      return '<li class="pas-condition"><span class="pas-band">' + esc(String(r.band || ""))
+        + '</span> <span class="pas-condition-item">' + esc(who) + '</span> '
+        + '<span class="pas-condition-figure">' + esc(what) + "</span></li>";
+    }).join("");
+    const rest = rows.length - shown.length;
+    const more = rest > 0
+      ? '<p class="pas-line pas-more">' + esc(rest + " further adverse reading"
+          + (rest === 1 ? " is" : "s are") + " listed under All adverse findings below.")
+        + "</p>"
+      : "";
+    return '<p class="pas-line pas-conditions-head">Conditions requiring review</p>'
+      + '<ul class="pas-conditions">' + items + "</ul>" + more;
+  }
+
+  //: The one limitation. The server's sentence, not ours: the completeness caveat where it sent
+  //: one, otherwise the first assessment limitation it composed. Where it sent neither, nothing
+  //: is printed rather than an invented reassurance.
+  function pasLimitationHtml(row) {
+    const ic = row && row.information_completeness;
+    if (ic && ic.caveat) {
+      return '<p class="pas-line pas-limitation">' + esc(String(ic.caveat)) + "</p>";
+    }
+    const lims = (row && row.decision_brief && Array.isArray(row.decision_brief.limitations))
+      ? row.decision_brief.limitations : [];
+    if (lims.length) {
+      return '<p class="pas-line pas-limitation">' + esc(String(lims[0])) + "</p>";
+    }
+    return "";
+  }
+
+  function periodAnalysisSummaryHtml(project) {
+    const row = pasRow(project);
+    if (!row) return "";
+    let period = null;
+    try { period = briefCurrentPeriod(project); } catch (e) { period = null; }
+    if (period == null) period = (row.period != null ? row.period : null);
+    /* THE OFFICIAL POSTURE, READ OFF THE ROW AND NOT RE-DERIVED.
+
+       MEASURED, and it caught a defect in this run before it shipped: `project_status_label`
+       is NOT the posture. On a real stored row it read "Cost Recovery Status" -- the NAME OF
+       THE KIND of status the row carries, served beside `project_status_scope`, which says
+       which lineage fused it. Printing it after "Official posture:" stated a label where a
+       band belongs. The value is `project_status`, the stored band, which on that same row read
+       "Awaiting analysis".
+
+       `decision_brief.posture` is preferred where the server composed one, because that is the
+       identical field the decision card prints and the two surfaces must not be able to state
+       different postures for one period. `official` is read from it and stated in words rather
+       than implied, on Run 106's rule: a reader must be able to tell a withheld posture from
+       one the instrument stands behind. Neither is re-derived here. */
+    const dbp = (row.decision_brief && row.decision_brief.posture) || null;
+    const posture = (dbp && dbp.status) || row.project_status || null;
+    const official = dbp ? !!dbp.official : null;
+    /* AN UNBANDED POSTURE NEVER ACQUIRES A COLOUR. `statusKeyFromText` returns a key only for
+       text it recognises as a band; anything else keys "none", which carries no colour in the
+       stylesheet. A withheld posture therefore prints its words and stays uncoloured. */
+    const key = posture ? statusKeyFromText(String(posture)) : "none";
+    const ident = [project && project.id ? String(project.id) : null,
+                   project && project.name ? String(project.name) : null,
+                   period != null ? String(period) : null].filter(Boolean).join(" · ");
+    return '<div class="pas" data-period-analysis-summary="1" aria-label="Period analysis summary">'
+      + '<p class="pas-eyebrow">Period analysis summary</p>'
+      + (ident ? '<p class="pas-ident">' + esc(ident) + "</p>" : "")
+      + '<p class="pas-line pas-posture">Official posture: '
+      + (posture
+          ? '<span class="pas-posture-band status-' + esc(key) + '">'
+            + esc(String(posture)) + "</span>"
+            + (official === false
+                ? ' <span class="pas-posture-none">(no official posture is issued for this '
+                  + 'period)</span>'
+                : "")
+          : '<span class="pas-posture-none">not issued for this period</span>')
+      + "</p>"
+      + pasConfidenceHtml(row)
+      + pasConditionsHtml(row)
+      + pasLimitationHtml(row)
+      + '<p class="pas-line pas-route"><button type="button" class="pas-evidence-btn" '
+      + 'data-brief-to-decision="1">View evidence &#9656;</button></p>'
+      + "</div>";
+  }
+
   function executiveBriefHtml(project) {
     // Every helper is wrapped — the card must ALWAYS render so the user
     // sees the loading shimmer (or the cached brief) regardless of whether
@@ -3017,14 +3202,27 @@
             + "accounts for")
       : esc("grouped analysis of this period's stored result");
     const state = cached ? "ready" : "loading";
-    return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Executive brief" data-eb-id="${esc(projectId)}">
+    /* RUN 134, GOAL ONE. The bounded summary leads; the dense narrative follows it inside
+       drawers. `setBriefState` replaces `.eb-body` and `.eb-foot` only, so the summary is
+       written once here and survives every regenerate, which is correct: it is read off the
+       stored row and a regenerated brief cannot change a stored figure. */
+    let pas = "";
+    try { pas = periodAnalysisSummaryHtml(project); } catch (e) { pas = ""; }
+    return `<section class="panel eb-panel eb-accent-${esc(accent)}" aria-label="Period analysis summary" data-eb-id="${esc(projectId)}">
       <div class="eb-head">
         <div>
-          <p class="eyebrow eb-eyebrow">Executive brief${project && project.name ? ": " + esc(project.name) : ""}</p>
+          <p class="eyebrow eb-eyebrow">Period analysis summary${project && project.name ? ": " + esc(project.name) : ""}</p>
           <p class="kn-sub eb-sub">${period ? "Reporting period: " + esc(period) + " · " : ""}${scopeClause}</p>
         </div>
         <button type="button" class="btn small eb-regen" data-eb-regen="${esc(projectId)}" aria-label="Regenerate brief">Regenerate ↺</button>
       </div>
+      ${pas}
+      ${/* RUN 134. THE FLAGS AND THE DISAGREEING FIGURES KEEP THEIR PLACE AND ARE NOT DRAWERED.
+           The Run 128 test applied: `briefFlagsHtml` is the ONLY statement of the Red-review
+           advisory and of the liability period anywhere on this surface, and
+           `briefConsistencyHtml` is the ONLY statement of a document disagreeing with itself.
+           Neither is restated in the decision card or in any drawer, so neither may be moved
+           behind one. They stay above the fold exactly as they stood. */""}
       ${flags}
       ${consistency}
       ${briefBodyHtml(state, cached, null, project)}

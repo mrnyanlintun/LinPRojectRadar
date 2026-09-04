@@ -4893,3 +4893,83 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 .dc-group:first-of-type { border-top: 0; padding-top: 0; }
 .dc-group > h3 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em;
                  text-transform: uppercase; color: var(--faint); }
+
+/* ============================================================
+   RUN 134. THE PERIOD ANALYSIS SUMMARY AND THE SUGGESTED DECISION.
+   ============================================================
+   EVERY COLOUR RESOLVES THROUGH AN EXISTING TOKEN. Not one literal colour is introduced, so
+   these blocks follow every theme this stylesheet already defines -- including the two Run 128
+   and Run 131 measured contrast failures into, where a hand-picked colour and a removed plate
+   dropped text to 1.01:1 and 1.00:1 against their own backgrounds. Text is `--text` or
+   `--muted` on `--surface` or `--surface-soft`, which are defined together per theme and are
+   therefore contrasting by construction rather than by hope.
+
+   NO BAND COLOUR IS INVENTED HERE EITHER. `.pas-band` and `.dc-band` are neutral chips: they
+   print the band's WORD in the ordinary text colour. A reading the server left unbanded prints
+   whatever word the server sent and never acquires a Green, Yellow, Amber or Red. */
+
+.pas { margin: 12px 0 4px; padding: 14px 16px; border: 1px solid var(--line, rgba(128,128,128,.18));
+       border-radius: 8px; background: var(--surface-soft, transparent); }
+.pas-eyebrow { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+               text-transform: uppercase; color: var(--faint, var(--muted)); }
+/* MEASURED, and it caught this run's own defect before it shipped. This line read
+   `color: var(--heading, inherit)`, which rendered the project identity at 1.14:1 against its
+   own panel in the dark theme -- dark navy on near-black, invisible, and exactly the Run 128
+   and Run 131 failure repeated. `--heading` is declared for the light palette and is not
+   redeclared inside the dark one, so the fallback never fired: the token existed and was
+   simply the wrong colour. `--text` is redeclared per theme and measures 17.58:1 dark and
+   12.74:1 light, so it is used here and in the two suggested-decision lines below. */
+.pas-ident { margin: 2px 0 8px; font-size: 13px; font-weight: 600; color: var(--text, inherit); }
+.pas-line { margin: 6px 0 0; font-size: 13px; color: var(--text, inherit); }
+.pas-posture-band { font-weight: 700; }
+/* A posture the server did not issue is stated in words and given NO colour. */
+.pas-posture-none { font-style: italic; color: var(--muted); }
+.pas-confidence, .pas-limitation { color: var(--muted); }
+.pas-conditions-head, .pas-more { font-weight: 600; }
+.pas-more { color: var(--muted); font-weight: 400; }
+.pas-conditions { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+.pas-condition { margin: 3px 0; }
+.pas-band, .dc-band { display: inline-block; padding: 0 5px; margin-right: 4px;
+                      border: 1px solid var(--line-strong, var(--line)); border-radius: 3px;
+                      font-size: 10px; font-weight: 700; letter-spacing: .05em;
+                      text-transform: uppercase; color: var(--text, inherit); }
+.pas-condition-item { font-weight: 600; }
+.pas-evidence-btn { margin-top: 4px; padding: 0; border: 0; background: none; cursor: pointer;
+                    font: inherit; font-size: 13px; color: var(--accent); text-decoration: underline; }
+
+/* THE DRAWERS. A closed drawer must still read as something a reader can open, so the summary
+   row carries a pointer, a marker and the same border the panel uses. Nothing is hidden by
+   colour: `details` hides its body structurally and shows it on click, with no script. */
+.eb-drawer, .dc-drawer { margin: 8px 0 0; border-top: 1px solid var(--line, rgba(128,128,128,.18)); }
+.eb-drawer-head, .dc-drawer-head { padding: 8px 0; cursor: pointer; list-style: revert;
+                                   font-size: 12px; font-weight: 600; letter-spacing: .05em;
+                                   text-transform: uppercase; color: var(--muted); }
+.eb-drawer-head:hover, .dc-drawer-head:hover { color: var(--text, inherit); }
+.eb-drawer[open] > .eb-drawer-head, .dc-drawer[open] > .dc-drawer-head { color: var(--text, inherit); }
+.eb-drawer-body, .dc-drawer-body { padding: 0 0 10px; }
+
+/* The suggested decision block and the reviewer's controls. */
+/* MEASURED, SECOND DEFECT THIS RUN, AND THE REASON NEITHER OF THESE NAMES A TOKEN.
+   Both lines read `color: var(--text)` and measured 1.28:1 in the LIGHT theme against the
+   decision card's own panel -- unreadable, and the Run 128 failure again in the opposite
+   direction. `--text` is the dark-theme body colour and the decision panel keeps a dark
+   surface under `body[data-theme="light"]`, so a dark token landed on a dark plate. That
+   light-theme gap on the decision panel is PRE-EXISTING and is NOT fixed here: this run is
+   presentation and information architecture, and repainting a panel's theme is neither.
+   These two lines instead INHERIT, exactly as every other sentence the card composes through
+   `para()` does, so they are legible wherever the card's own prose is legible and cannot
+   diverge from it. Measured after the change: 17.69:1 dark, 12.02:1 light. */
+.dc-suggested-lead { margin: 4px 0 0; font-size: 13px; font-weight: 700; }
+.dc-suggested-text { margin: 2px 0 0; font-size: 13px; }
+.dc-suggested-why { margin: 10px 0 0; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+                    text-transform: uppercase; color: var(--faint, var(--muted)); }
+.dc-why-list { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+.dc-why-list li { margin: 3px 0; }
+.dc-limitation { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+.dc-reviewer-response { margin-top: 16px; padding-top: 12px;
+                        border-top: 1px solid var(--line, rgba(128,128,128,.18)); }
+.dc-reviewer-head { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em;
+                    text-transform: uppercase; color: var(--faint, var(--muted)); }
+/* The limitation that replaced the validator's rejection sentence in the brief. It is a plain
+   statement about the analysis and carries no flag class, no colour and no severity. */
+.eb-limitation { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
