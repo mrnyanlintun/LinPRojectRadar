@@ -39,7 +39,16 @@ UNMOVED = ("ev", "pv", "bac", "baselineContractSum", "actualPctComplete",
 UNMOVED_BOTH = {"ev": 1815000, "pv": 1900000, "bac": 3000000,
                 "baselineContractSum": None, "actualPctComplete": 60.5,
                 "plannedPctComplete": 63.3, "originalContingency": 150000,
-                "remainingContingency": 90000, "spi": 0.955}
+                "remainingContingency": 90000,
+                # RUN 135, FINDING H1, and RULING R2 on where this figure comes from. It was
+                # 0.955 -- `_round3(1815000/1900000)`, the half-up presentation value the
+                # assembler used to STORE. Run 135 removed that rounding, because A1.8 bands on
+                # this stored field and a band may not rest on a presentation value. The
+                # expectation here is now the QUOTIENT OF THIS FIXTURE'S OWN TWO STATED FIGURES,
+                # earned value over planned value, computed from the fixture and not read off
+                # the assembler: SOURCE = the Run 135 order, finding H1, on the fixture's
+                # `completed_to_date` 1,815,000 and `planned_value_to_date` 1,900,000.
+                "spi": 1815000 / 1900000}
 UNMOVED_PAY_ONLY = {"ev": 1815000, "pv": None, "bac": 3000000,
                     "baselineContractSum": None, "actualPctComplete": 60.5,
                     "plannedPctComplete": None, "originalContingency": 150000,
@@ -63,7 +72,11 @@ both = assemble_signal_inputs([MONTHLY_REPORT, PAY_APPLICATION])
 check("ac", both["ac"], 1900000)
 check("ac source docType", (both["sources"] or {}).get("ac", {}).get("docType"),
       "monthly_report")
-check("cpi", both["cpi"], 0.955)
+# SOURCE, under R2: the Run 135 order, finding H1 -- a stored analytical field is never a
+# rounded one. The figure is earned value 1,815,000 over the STATED actual cost 1,900,000, both
+# read off this file's own fixture above, not off the assembler under test. It was 0.955, the
+# half-up `_round3` of the same quotient.
+check("cpi", both["cpi"], 1815000 / 1900000)
 check("ac is NOT the retainage-net figure", both["ac"] == 1633500, False)
 
 print("2. Pay application only -- ac is absent and the EVM modules abstain.")

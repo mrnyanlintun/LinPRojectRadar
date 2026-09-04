@@ -1504,20 +1504,42 @@ def select_signal_inputs(observations: list[dict], cutoff: date | None = None, *
         si["docDate"] = w["as_of"].isoformat()
         sources["docDate"] = {**_source_entry(w), "value": si["docDate"]}
 
-    # ---- derived indices, .gs 1065-1070, unchanged: several modules read si["cpi"].
+    # ---- derived indices, .gs 1065-1070. Several modules BAND on si["cpi"] and si["spi"].
+    #
+    # RUN 135, FINDING H1. THESE THREE LINES CARRIED `_round3` AND THEY NO LONGER DO.
+    #
+    # `_round3` is `floor(n*1000 + 0.5)/1000` -- half-up at the third decimal, a PRESENTATION
+    # helper. Rounding here rounded the stored ANALYTICAL field, and A1.8 (`models_evm.py`,
+    # `run_vac`) bands on exactly that stored field. The consequence was a wrong band, not a
+    # wrong-looking number:
+    #
+    #   true CPI 0.9995 -> stored 1.0   -> A1.8 Green, where the true index gives Yellow
+    #   true CPI 0.8995 -> stored 0.9   -> A1.8 Amber, where the true index gives Red
+    #
+    # BOTH ERRORS ARE FAVOURABLE, and they are favourable systematically: half-up widens the
+    # favourable side of every edge by half a rounding step, so every true index in
+    # [0.9995, 1.0) published as 1.00. Run 35 fixed the SAME defect one layer downstream, inside
+    # the module -- it separated the module's band from the module's display -- but it never
+    # reached the field the module reads, so the rounding simply moved upstream of the repair.
+    #
+    # THE RULE THIS ESTABLISHES, and it is the rule the whole Group-1 family rests on: a stored
+    # analytical field is never a rounded one. Rounding is a property of a rendered sentence, it
+    # is applied at the point of rendering, and no band ever reads its result. Nothing is stored
+    # rounded here in its place: the display helpers already round at render, so a second stored
+    # "rounded CPI" field would only be a second thing that could be banded on by mistake.
     cpi = None
     spi = None
     if si["ev"] is not None and si["ac"] is not None and si["ac"] != 0:
-        cpi = _round3(si["ev"] / si["ac"])
+        cpi = si["ev"] / si["ac"]
     if si["ev"] is not None and si["pv"] is not None and si["pv"] != 0:
-        spi = _round3(si["ev"] / si["pv"])
+        spi = si["ev"] / si["pv"]
     if (
         spi is None
         and si["actualPctComplete"] is not None
         and si["plannedPctComplete"] is not None
         and si["plannedPctComplete"] != 0
     ):
-        spi = _round3(si["actualPctComplete"] / si["plannedPctComplete"])
+        spi = si["actualPctComplete"] / si["plannedPctComplete"]
 
     # ---- Final assembly in FIXED key order. Do not sort, do not reorder: the simulation
     # ---- layer iterates insertion order. sources is rebuilt in key order too, so it is a

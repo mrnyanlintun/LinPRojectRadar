@@ -1044,7 +1044,35 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # The extraction prompt and field list are UNCHANGED, so the fingerprint is unstaled and
 # nothing cached is re-extracted. No model call was made or simulated: there is no key in this
 # environment.
-SIMULATION_VERSION = "sim-2026.09-v68"
+# RUN 135, GROUP 1. THE STAMP MOVES TO v69 AND THIS IS WHY.
+#
+# Four findings, all of them on WHAT A BAND RESTS ON, landed together as one change because
+# every one of them can move a published band and recomputing twice would be worse than
+# recomputing once:
+#
+#   H1  `extraction_merge` stored CPI and SPI through `_round3`, a half-up PRESENTATION helper,
+#       and A1.8 bands on the stored field. A true index of 0.9995 published as 1.00 and banded
+#       Green where the true index is Yellow; 0.8995 published as 0.90 and banded Amber where
+#       the true index is Red. Both errors favourable, systematically. The indices are now
+#       stored unrounded and no band anywhere reads a rounded field.
+#   H2  A1.8 compared ((BAC - BAC/CPI)/BAC)*100 against edges built as (1 - 1/x)*100. The two
+#       paths differ in the last places and the SIGN of the difference is set by the binary
+#       representation of the budget: at an index of exactly 0.90, 5.9 per cent of budgets from
+#       $1k to $200M banded Red, and the owner's 0.95 Yellow rung was reached by 0.8 per cent.
+#       There is now ONE quantity -- VAC% = (1 - 1/CPI) x 100, the Run 114 order's own
+#       identity -- and the budget is not in it.
+#   H6  A1.7 printed "TCPI: 1" under Yellow beside "Green at or below 1.00".
+#   H7  A1.8 printed "(0%)" under Yellow beside "Green at or above zero", with the display
+#       percentage STORED on the row, so the contradiction was in the record.
+#
+# H1 and H2 CHANGE PUBLISHED BANDS on the two modules that vote on project status, so results
+# computed under v68 and results computed under v69 are not comparable on A1.7 or A1.8 and rows
+# already stored keep their own stamp. NO BOUNDARY MOVED, no threshold was added, no tolerance
+# was introduced and no epsilon exists anywhere in the change: every edge is where Run 114 put
+# it. What changed is which quantity is compared against those edges, and to what precision the
+# figure beside them is printed. No migration was added. No model call was made or simulated:
+# there is no model key in this environment.
+SIMULATION_VERSION = "sim-2026.09-v69"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1304,6 +1332,22 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # (amount-paid-to-date is earned value net of retainage); the monthly report's stated
  # actual_cost is the only writer, and a period stating none makes the EVM modules abstain.
  "sim-2026.09-v68",
+ # RUN 135, GROUP 1: what a band rests on. CPI and SPI are stored unrounded and no band reads a
+ # value a `_round*` helper produced (H1); A1.8 bands on the single canonical quantity the Run
+ # 114 order names, VAC% = (1 - 1/CPI) x 100, so the Amber and Yellow edges no longer move with
+ # the binary representation of BAC (H2); and A1.7 and A1.8 print their figures at a precision
+ # that clears the boundary each was banded against, by one shared rule in `band_display`, so a
+ # row cannot contradict its own sentence (H6, H7). A1.7 and A1.8 are the two core voting
+ # modules, so H1 and H2 move published bands. NO EDGE MOVED and no tolerance was introduced.
+ # THE SAME STAMP ALSO CARRIES Run 135's Group-3 and Group-5 repairs, which are the same family
+ # and land in the same run: A6.3, C1.3 and A3.4 banded a value a `_round*` helper had produced
+ # and now band the raw one (three more favourable flips removed); A3.3, A2.8, A3.5, A4.3, A4.4,
+ # A6.4 and A1.7/A1.8 print a figure that clears the boundary it was banded against; and A2.12's
+ # float rule reads all six of its configured edges instead of three, so a fractional float of
+ # 10.5 working days is Yellow and 0.5 is Amber -- the bands that rule's own printed sentence
+ # names -- where they were Amber and Red. EVERY WHOLE-DAY OUTCOME OF THAT RULE IS UNCHANGED and
+ # no edge moved there either.
+ "sim-2026.09-v69",
 )
 
 

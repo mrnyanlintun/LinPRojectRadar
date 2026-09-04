@@ -27,6 +27,7 @@ from __future__ import annotations
 from datetime import date as _date
 from typing import Any, Callable
 
+from .band_display import band_figure
 from .canonical import StructureAbsent
 from .canonical_v3 import (
     bayesian_eac_model, budget_execution, cpi_reference_class, cpi_shrinkage,
@@ -710,7 +711,25 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
             if tcpi <= _TCPI_OWNER_YELLOW
             else "above the efficiency planned" if tcpi <= _TCPI_BEYOND_OBSERVED
             else "beyond the improvement a cumulative cost index is observed to make")
-    tcpi_display = _round3(tcpi)
+    # RUN 135, FINDING H6. THE SENTENCE PRINTS THE FIGURE THE BAND WAS MADE ON, TO A PRECISION
+    # THAT CLEARS THE BOUNDARY IT WAS MADE AGAINST.
+    #
+    # `tcpi_display` was `_round3(tcpi)` flat. Run 35 had already separated the band from the
+    # display, so the BAND was right -- and the sentence beside it said otherwise: a TCPI of
+    # 1.0004 bands Yellow and printed "TCPI: 1", directly beside a boundary reading "Green at or
+    # below 1.00". Likewise 1.0504 printed "1.05" under Amber and 1.1004 printed "1.1" under Red.
+    # Each of the three rounded ONTO an edge the value had crossed, so the row contradicted
+    # itself in the reader's hands on all three of this ladder's boundaries.
+    #
+    # THE BAND IS NOT ROUNDED TO MATCH THE DISPLAY -- that would be the Run 35 defect again, and
+    # `tcpi` above is untouched. The DISPLAY is given the precision it needs: `band_figure`
+    # returns the fewest decimals, never fewer than the three `_round3` gave, that keep the
+    # printed figure on the same side of every edge of this ladder as `tcpi` itself. A reading
+    # that is not near an edge renders exactly as it always did. The rule is shared with A1.8,
+    # A2.8, A3.3, A3.5, A4.3, A4.4 and A6.3 -- see `band_display` -- because Run 135 found this
+    # same contradiction at all of them and separate fixes would drift apart.
+    tcpi_display = band_figure(
+        tcpi, (_TCPI_PLANNED_EFFICIENCY, _TCPI_OWNER_YELLOW, _TCPI_BEYOND_OBSERVED), 3)
     return banded(
         "TCPI",
         (f"TCPI: {_js_str(tcpi_display)}, the cost efficiency the remaining work must achieve "
@@ -762,7 +781,11 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 #: module's input contract, which this run is not permitted to do. Recorded as a stated limit of
 #: the band rather than left for a reader to discover.
 _VAC_STABILITY_CPI = 0.90
-_VAC_BUDGET_MET_PCT = 0.0
+# RUN 135, H2, R1. EVERY EDGE IS EXPRESSED IN THE ONE CANONICAL QUANTITY. This was the literal
+# 0.0; it is the same number, written the way the Run 114 order names the quantity, so that a
+# reader can see all three edges are the same expression evaluated at 1.00, 0.95 and 0.90.
+_VAC_BUDGET_MET_CPI = 1.00
+_VAC_BUDGET_MET_PCT = (1 - 1 / _VAC_BUDGET_MET_CPI) * 100                       # 0.0
 _VAC_BEYOND_OBSERVED_PCT = (1 - 1 / _VAC_STABILITY_CPI) * 100
 
 # RUN 114, GOAL 4. THE YELLOW RUNG ON THIS MODULE'S OWN QUANTITY, AND HOW ITS NUMBER WAS SET.
@@ -815,11 +838,40 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
             "Awaiting a cost performance index above zero: the forecast at completion is the "
             "budget divided by that index, which cannot be formed here",
         )
+    if si["bac"] == 0:
+        # bac=0: the JS NaN fallthrough this module has always refused. The forecast at
+        # completion is the budget divided by the index, and there is no budget to divide.
+        return insufficient("VAC")
     eac = si["bac"] / si["cpi"]
     vac = si["bac"] - eac
-    vac_pct = (vac / si["bac"]) * 100 if si["bac"] != 0 else float("nan")
-    if vac_pct != vac_pct:
-        return insufficient("VAC")  # bac=0: JS NaN fallthrough, refused likewise
+    # RUN 135, FINDING H2, UNDER RULING R1 -- ONE CANONICAL DECISION QUANTITY, AND THIS IS IT.
+    #
+    # WHAT THIS LINE WAS: `vac_pct = (vac / si["bac"]) * 100`, that is,
+    # ((BAC - BAC/CPI) / BAC) x 100. Algebra says that is (1 - 1/CPI) x 100 and the budget
+    # cancels. FLOATING-POINT ARITHMETIC DOES NOT SAY SO. The two expressions differ by 1 to 9
+    # units in the last place, and WHICH WAY they differ is decided by the binary representation
+    # of the budget at completion. The band edges are themselves written as (1 - 1/x) x 100, so
+    # the comparison was between two algebraically equal quantities computed along two different
+    # paths, and the answer moved with a number that is not in the quantity at all:
+    #
+    #   CPI exactly 0.90:  BAC   1,000,000 -> Amber     BAC 330,000,000 -> Red
+    #                      BAC   4,400,000 -> Amber     BAC      15,000 -> Red
+    #
+    # A sweep of $1k to $200M found 5.9 per cent of budgets banding Red at an index that is
+    # exactly ON the inclusive Amber edge, and 0.8 per cent reaching the Yellow edge the same
+    # way. The project's cost posture depended on the size of its contract.
+    #
+    # THE FIX IS THE RULING, NOT AN EPSILON. A tolerance would have left both paths in place and
+    # added an unauthorised threshold on top of them. Instead there is now ONE quantity, and it
+    # is the one the RUN 114 ORDER NAMES -- quoted verbatim in commit `fc9d60c`:
+    #
+    #       VAC% = (1 - 1/CPI) x 100
+    #
+    # computed exactly that way, in the same expression every edge above is expressed in. The
+    # budget is not in it, so no band on it can move with the budget. `vac` -- the DOLLAR figure
+    # the sentence reports -- is still BAC - BAC/CPI, because that is a money amount and money
+    # amounts do depend on the budget; it is reported, and it is not what bands.
+    vac_pct = (1 - 1 / si["cpi"]) * 100
     color = ("Green" if vac_pct >= _VAC_BUDGET_MET_PCT
              else "Yellow" if vac_pct >= _VAC_OWNER_YELLOW_PCT
              else "Amber" if vac_pct >= _VAC_BEYOND_OBSERVED_PCT else "Red")
@@ -837,10 +889,39 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     # VOTING DIRECTION ARE UNCHANGED: negative is still a forecast overrun, the band edges are
     # the same two sourced boundaries, and the displayed sentence is byte-identical to what it
     # rendered before, because it was already built from the unrounded value.
+    # RUN 135, FINDING H7. THE SAME RULE AS A1.7, AND THE ANSWER TO "SHOULD A DISPLAY-ROUNDED
+    # FIGURE BE STORED AT ALL".
+    #
+    # `vac_pct_display` was `round1(vac_pct)` flat, and the sentence printed the same rounding.
+    # At a VAC percentage of -0.0100 the module bands Yellow and the row read
+    # "VAC: $100 over budget (0%)" beside a boundary reading "Green at or above zero" -- with
+    # `vac_pct_display` 0.0 STORED ON THE ROW, so the contradiction was not merely rendered, it
+    # was recorded, and anything reading the stored field read a figure on the wrong side of an
+    # edge from the band stored beside it.
+    #
+    # WHAT WAS DECIDED, and it is stated because the Run 135 order asks for it: THE DISPLAY
+    # FIGURE IS STILL STORED, and it is stored BOUNDARY-SAFE. It is not derived at render
+    # instead. Three existing guards -- `test_run35_closure_voter_identities` g06,
+    # `test_run36_fault_guards`, `drive_run37_browser` -- assert that the analytical field and
+    # the display field are SEPARATE OBJECTS with distinct values, which is the Run 35 closure
+    # they exist to hold; deriving the display at render would delete the field those guards
+    # read and the separation would stop being provable from a stored row. So the field stays,
+    # and the defect is removed from the field itself: `band_figure` gives it the fewest
+    # decimals, never fewer than the one `round1` gave, that keep it on the same side of every
+    # edge of this ladder as `vac_pct`. Where the reading is not near an edge the stored figure
+    # is byte-identical to what it was. Where it IS near an edge the stored figure now agrees
+    # with the stored band instead of contradicting it.
+    #
+    # The sentence prints the same boundary-safe figure, so the row and its own words cannot
+    # disagree. `abs()` is applied AFTER the rule, on the figure, never before it: the edges are
+    # signed and the rule has to see the sign to know which side of zero the value is on.
+    vac_pct_display = band_figure(
+        vac_pct,
+        (_VAC_BUDGET_MET_PCT, _VAC_OWNER_YELLOW_PCT, _VAC_BEYOND_OBSERVED_PCT), 1)
     return banded(
         "VAC",
         (f"VAC: {_money(abs(vac))} {'over' if vac < 0 else 'under'} budget "
-         f"({_js_str(round1(abs(vac_pct)))}%)"),
+         f"({_js_str(abs(vac_pct_display))}%)"),
         status_color=color,
         boundary=_evm_band_source("A1.8"),
         basis=_evm_band_source("A1.8") + " " + _EVM_BOUNDARY_LIMIT,
@@ -855,7 +936,7 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
         vac=vac,
         vac_pct=vac_pct,
         vac_display=int(js_round(vac)),
-        vac_pct_display=round1(vac_pct),
+        vac_pct_display=vac_pct_display,
     )
 
 

@@ -35,6 +35,7 @@ from .canonical_v3 import (
     require_v3_structure, s_curve_deviation, schedule_compression_index, schedule_risk_p80,
     time_phased_baseline,
 )
+from .band_display import band_figure
 from .models import (
     ABSTAIN_INVALID_DENOMINATOR, ABSTAIN_MALFORMED_INPUT, ABSTAIN_MISSING_INPUT,
     ABSTAIN_NOT_APPLICABLE, ABSTAIN_STRUCTURE_ABSENT,
@@ -467,12 +468,23 @@ def run_lookahead_health(si: dict, rand: Callable[[], float], period_cutoff) -> 
     _cuts = _BR.entry("lookahead_readiness_bands")
     _blocked = reading.get("blocked_critical_activities") or []
     _ready = reading["ready_fraction"]
+    # RUN 135, FINDING M2. 899 of 1,000 activities free of constraints is a ready fraction of
+    # 0.899, which bands Yellow, and this row stored and printed 0.9 beside a boundary reading
+    # "at or above 0.9 is Green". The band was right and the row said otherwise. The stored
+    # fraction is now raw (finding H1's rule: a stored analytical field is never a rounded one)
+    # and the printed figure carries the shared Run 135 rule against this ladder's own three
+    # configured edges. Where no readiness band is configured there is no edge to clear and the
+    # figure renders as it always did.
+    _ready_edges = tuple(_cuts[k] for k in ("green_at_or_above", "yellow_at_or_above",
+                                            "amber_at_or_above") if _cuts.get(k) is not None)
+    _ready_display = band_figure(_ready, _ready_edges, 2)
     _message = (
         f"{reading['planned'] - reading['constrained']} of {reading['planned']} activities "
         f"planned in the {reading['horizon']} look ahead window are free of open constraints, a "
-        f"ready fraction of {_js_str(round2(_ready))}")
+        f"ready fraction of {_js_str(_ready_display)}")
     _fields = dict(
-        ready_fraction=round2(_ready),
+        ready_fraction=_ready,
+        ready_fraction_display=_ready_display,
         planned=reading["planned"],
         constrained=reading["constrained"],
         constraint_categories=reading["constraint_categories"],
@@ -947,14 +959,29 @@ def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -
     # basis -- the numerator and denominator are both hours-normalised production, the time
     # basis is the reporting period for both, and one is favourable upward. Section 2 asks that
     # the quantity, denominator, time basis and direction match, and here they do.
+    # RUN 135, FINDING M1. THE STORED INDEX WAS THE ROUNDED ONE WHILE THE BAND WAS THE RAW ONE.
+    #
+    # The band was already correct -- `_pi` is raw -- and the ROW contradicted it: 9,499 hours
+    # against 10,000 gives an index of 0.9499, which bands Yellow, and the row stored
+    # `productivity_index` 0.95 and printed "a productivity index of 0.95" beside a boundary
+    # sentence reading "at or above 0.95 is Green". The comment on the block above states the
+    # rule the stored row broke, in terms: "which is what makes 0.95 Green and 0.9499 Yellow".
+    #
+    # THE STORED FIELD IS NOW RAW, for the reason finding H1 established one layer up -- a stored
+    # analytical field is never a rounded one, because something downstream eventually bands on
+    # it -- and the DISPLAYED figure carries the shared Run 135 rule: the fewest decimals, never
+    # fewer than the two `round2` gave, that keep it on the same side of every edge of this
+    # ladder as the index itself. The two productivity rates keep `round2`; no boundary is drawn
+    # on either of them.
     _pi = reading["productivity_index"]
     _color = ("Green" if _pi >= 0.95 else "Yellow" if _pi >= 0.90
               else "Amber" if _pi >= 0.85 else "Red")
+    _pi_display = band_figure(_pi, (0.95, 0.90, 0.85), 2)
     return banded(
         "Labor_Productivity",
         f"{_js_str(round2(reading['actual_productivity']))} {reading['output_unit']} an hour "
         f"installed against {_js_str(round2(reading['planned_productivity']))} planned, a "
-        f"productivity index of {_js_str(round2(reading['productivity_index']))}",
+        f"productivity index of {_js_str(_pi_display)}",
         status_color=_color,
         boundary=("a productivity index at or above 0.95 is Green; at or above 0.90 and below "
                   "0.95 is Yellow; at or above 0.85 and below 0.90 is Amber; below 0.85 is Red"),
@@ -972,7 +999,8 @@ def run_labor_productivity(si: dict, rand: Callable[[], float], period_cutoff) -
         # ADDRESSED BY NAME. Recording the class without an identifier left these bands
         # unaddressable: an owner could not say "raise this one" and be understood.
         band_basis_id="owner_configured_labor_productivity_tolerance",
-        productivity_index=round2(reading["productivity_index"]),
+        productivity_index=reading["productivity_index"],
+        productivity_index_display=_pi_display,
         actual_productivity=reading["actual_productivity"],
         planned_productivity=reading["planned_productivity"],
         output_unit=reading["output_unit"],
@@ -1023,9 +1051,22 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
             "material cost at this point to compare the cost to date against",
         )
     variance = (si["materialCostCurrent"] - expected) / expected
-    variance = _round3(variance)
+    # RUN 135, THE H1 SWEEP. A NEW INSTANCE OF THE SAME DEFECT, FOUND BY THE SWEEP THE ORDER
+    # REQUIRED AND NOT NAMED BY EITHER HUNT.
+    #
+    # `variance = _round3(variance)` ran here, BEFORE the ladder five lines below, so a
+    # presentation helper decided the band: a variance of 0.0504 -- above the 0.05 Green edge --
+    # rounded to 0.05 and published GREEN, and the same upward flip sits on the 0.12 and 0.20
+    # edges. The ladder is on the ABSOLUTE variance, so the favourable direction is toward zero
+    # and half-up rounding moves a figure onto the edge below it from above: the error is
+    # favourable here exactly as it is at A6.3, C1.3 and A1.8.
+    #
+    # The band is now taken from the variance the arithmetic produced. The displayed percentage
+    # carries the shared Run 135 rule against this ladder's own three edges expressed in per
+    # cent, so the printed figure cannot land on an edge the variance has crossed.
     is_derived = _derived(si, "materialCostBaseline")
     a = abs(variance)
+    _variance_pct_display = band_figure(variance * 100, (5.0, 12.0, 20.0, -5.0, -12.0, -20.0), 0)
     # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked. AACE International's cost
     # estimate classification recommended practice (18R-97) does publish numeric accuracy ranges
     # by estimate class, and it is tempting to read five and twenty per cent off them, but those
@@ -1039,10 +1080,11 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
     return {
         "method_class": "Material_Cost_Variance",
         "status_color": color,
-        "variance_pct": int(js_round(variance * 100)),
+        "variance": variance,
+        "variance_pct": _variance_pct_display,
         "evidence_metric": (
             f"Material cost variance: {'+' if variance >= 0 else ''}"
-            f"{int(js_round(variance * 100))}% vs expected at current progress"
+            f"{_js_str(_variance_pct_display)}% vs expected at current progress"
             + (" (estimated at 40% of BAC/AC; upload Cost Report for precise figures)"
                if is_derived else "")
         ),
@@ -1050,6 +1092,27 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
 
 
 # ------------------------------------------------------------ A3.5 Overhead Absorption Rate
+
+
+def _absorption_pct_display(_var: dict, _cuts: dict) -> float:
+    """
+    RUN 135, FINDING M2. A3.5's variance percentage, printed to a precision that clears its own
+    boundaries -- INCLUDING inside the boundary sentence itself, which is where the hunt found
+    it: a variance of 0.0504 bands Yellow and the sentence read "here 5.0 per cent: at or below
+    5.0 per cent is Green", stating the value as the very edge it had crossed.
+
+    Both the message and the boundary sentence render through this one function so the two
+    cannot drift apart, and it is the shared `band_figure` rule underneath. Where the variance
+    is not formed, or no tolerance is configured, there is no edge to clear.
+    """
+    _f = _var.get("absorption_variance_fraction")
+    if _f is None:
+        return _f
+    _edges = tuple(_cuts[k] * 100 for k in ("green_at_or_below_fraction",
+                                            "yellow_at_or_below_fraction",
+                                            "amber_at_or_below_fraction")
+                   if _cuts.get(k) is not None)
+    return band_figure(_f * 100, _edges, 1)
 
 
 def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any]:
@@ -1108,7 +1171,7 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
         f"planned, a rate variance of "
         f"{_js_str(round1(reading['relative_rate_variance'] * 100))} per cent"
         + (f"; against planned absorption for the period the variance is "
-           f"{_js_str(round1(_var['absorption_variance_fraction'] * 100))} per cent"
+           f"{_js_str(_absorption_pct_display(_var, _cuts))} per cent"
            if _var["absorption_variance_fraction"] is not None else ""))
     _fields = dict(
         planned_rate=reading["planned_rate"],
@@ -1156,7 +1219,8 @@ def run_overhead_absorption(si: dict, rand: Callable[[], float], period_cutoff) 
             f"on the OVERHEAD ABSORPTION VARIANCE -- (actual overhead incurred minus planned "
             f"overhead absorbed) divided by planned overhead absorbed, for the same period and "
             f"the same cost-code population, here "
-            f"{_js_str(round1(_v * 100))} per cent: at or below {_g * 100} per cent is Green; "
+            f"{_js_str(_absorption_pct_display(_var, _cuts))} per cent: at or below "
+            f"{_g * 100} per cent is Green; "
             f"above {_g * 100} and at or below {_y * 100} is Yellow; above {_y * 100} and at or "
             f"below {_a * 100} is Amber; above {_a * 100} is Red. A POSITIVE variance is "
             f"UNFAVOURABLE and a FAVOURABLE variance -- actual below planned -- is Green. "
@@ -1511,6 +1575,68 @@ A3_EXTENSIONS: dict[str, tuple[str, Callable]] = {
 _SEVERITY: dict[str, int] = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
 
 
+class FloatLadderInconsistent(Exception):
+    """The six configured float edges do not describe one continuous ladder."""
+
+
+def _float_rule_band(f: float, cuts: dict | None = None) -> str:
+    """
+    RUN 135, FINDING M3. A2.12's FLOAT RULE NOW READS ALL SIX CONFIGURED EDGES, NOT THREE.
+
+    WHAT IT DID. The band tested `float_green_above` (20), `float_yellow_at_or_above` (11) and
+    `float_amber_at_or_above` (1), and never looked at `float_yellow_at_or_below` (20),
+    `float_amber_at_or_below` (10) or `float_red_at_or_below` (0). Those three were configured,
+    were PRINTED in the boundary sentence the row carries, and decided nothing. On whole working
+    days the omission is invisible, because the ladder is integral and the pairs are adjacent.
+    Off a whole day it is not:
+
+        f = 10.5  ->  not > 20, not >= 11, >= 1  ->  AMBER,
+                      beside a sentence reading "11 to 20 is Yellow; 1 to 10 is Amber",
+                      which places 10.5 in NEITHER band.
+        f = 0.5   ->  not >= 1  ->  RED,
+                      beside a sentence reading "at or below 0 is Red", which 0.5 is not.
+
+    A float in working days need not be whole: a calendar conversion, a partial-day lag or a
+    fractional remaining duration all produce one, and the module answered from a ladder with
+    holes in it while printing a ladder without them.
+
+    WHICH OF THE ORDER'S TWO OPTIONS WAS TAKEN, AND WHY. The order allows reading all six or
+    removing the three. ALL SIX ARE READ. Removing them would have deleted the only statement in
+    the configuration of where each band ENDS, and the boundary sentence on every row prints
+    exactly those endings -- so removing them would have left the printed ladder unsourced,
+    which is the defect one layer along rather than a repair.
+
+    HOW THEY ARE READ. The ladder is banded as CONTINUOUS, from the `at_or_below` edges, so
+    there is no value between two bands. The three `at_or_above` edges are read as the
+    consistency statement they are: each must be exactly one working day above the `at_or_below`
+    edge beneath it, and the Yellow ceiling must be the Green floor. A configuration that fails
+    that is not a ladder with a gap, it is a ladder that disagrees with itself, and this raises
+    rather than picking one of the two readings.
+
+    EVERY WHOLE-DAY OUTCOME IS UNCHANGED. What changes is that 10.5 is now Yellow and 0.5 Amber
+    -- each the band its own printed sentence names.
+    """
+    if cuts is None:
+        from . import band_reference as _BRR
+        cuts = _BRR.entry("critical_path_control_bands")
+    _g_above = cuts["float_green_above"]
+    _y_at_or_above = cuts["float_yellow_at_or_above"]
+    _y_at_or_below = cuts["float_yellow_at_or_below"]
+    _a_at_or_above = cuts["float_amber_at_or_above"]
+    _a_at_or_below = cuts["float_amber_at_or_below"]
+    _r_at_or_below = cuts["float_red_at_or_below"]
+    if (_y_at_or_below != _g_above
+            or _y_at_or_above != _a_at_or_below + 1
+            or _a_at_or_above != _r_at_or_below + 1):
+        raise FloatLadderInconsistent(
+            f"the configured float edges do not describe one continuous ladder: Green above "
+            f"{_g_above}, Yellow {_y_at_or_above} to {_y_at_or_below}, Amber "
+            f"{_a_at_or_above} to {_a_at_or_below}, Red at or below {_r_at_or_below}")
+    return ("Green" if f > _g_above
+            else "Yellow" if f > _a_at_or_below
+            else "Amber" if f > _r_at_or_below else "Red")
+
+
 def hybrid_schedule_slip_band(cuts: dict, *, controlling_float_days: float | None,
                               slip_days: float | None,
                               remaining_planned_duration_days: float | None,
@@ -1534,9 +1660,7 @@ def hybrid_schedule_slip_band(cuts: dict, *, controlling_float_days: float | Non
                              "as a pass"})
     else:
         f = float(controlling_float_days)
-        colour = ("Green" if f > cuts["float_green_above"]
-                  else "Yellow" if f >= cuts["float_yellow_at_or_above"]
-                  else "Amber" if f >= cuts["float_amber_at_or_above"] else "Red")
+        colour = _float_rule_band(f, cuts)
         rules.append({"rule": "total float on the controlling path", "evaluable": True,
                       "value_days": f, "colour": colour,
                       "why": f"total float on the controlling path is {f} working days: above "
