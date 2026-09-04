@@ -1018,7 +1018,17 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # that distinguish absent ("not tested") from `[]` ("tested, did not hold") are excluded by name
 # and their semantics are unchanged. No model call was made or simulated: there is no key in
 # this environment.
-SIMULATION_VERSION = "sim-2026.09-v66"
+# RUN 130, sim-2026.09-v67. THE SPEC ROLE'S DEFAULT PROVIDER MOVED, IN CODE: with nothing set
+# in the environment, `ai_provider.load_provider("spec")` now resolves to Groq
+# (`openai/gpt-oss-120b`) rather than Anthropic, through the new `ROLE_DEFAULT_PROVIDERS` rung.
+# The stamp moves because a CATEGORY SPECIFICATION APPLICATION computed after this line was
+# served by a different model than one computed before it, and the stamp records what a
+# computed result rests on. NO BAND, THRESHOLD, WEIGHT, CATEGORY RULE, PROJECT RULE OR MODULE
+# POPULATION IS TOUCHED, no census figure moves, and `temperature=0.0` is unchanged and still
+# sent. Extraction, narration and recognition are UNMOVED and still default to Anthropic --
+# Runs 124 and 126 rest on extraction's behaviour. No model call was made or simulated: there
+# is no key in this environment.
+SIMULATION_VERSION = "sim-2026.09-v67"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1265,6 +1275,15 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # CATEGORY RULE, PROJECT RULE OR MODULE POPULATION CHANGED and no census figure moves.
  # NO MIGRATION WAS ADDED. No model call was made or simulated.
  "sim-2026.09-v65", "sim-2026.09-v66",
+ # RUN 130, THE SPEC ROLE'S PROVIDER DEFAULT. `ai_provider.ROLE_DEFAULT_PROVIDERS` adds a rung
+ # BELOW both `AI_<ROLE>_PROVIDER` and `AI_PROVIDER`, and puts `spec` on Groq there. The owner
+ # ruled the category call's provider belongs in the code, not in the Render environment where
+ # the keys live. `DEFAULT_PROVIDER` is untouched at "anthropic" and the other three roles
+ # resolve exactly as they did at v66, proven by executing the resolver. `temperature=0.0` was
+ # NOT removed: Groq rides the `openai` wire, which attaches it, and Run 129 established the
+ # platform's determinism comes from recording the match, not from the sampling parameter.
+ # NO MIGRATION WAS ADDED. No model call was made or simulated.
+ "sim-2026.09-v67",
 )
 
 

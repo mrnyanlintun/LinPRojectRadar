@@ -146,14 +146,35 @@ def main() -> int:
     print("\n1. THE DEFAULT IS THE CONFIGURED DEFAULT (nothing set; re-pointed by Run 113)")
     bare: dict[str, str] = {}
     # RUN 113: re-pointed to the owner's measured identifiers. See the docstring.
+    # RUN 130: `spec` LEFT THIS LOOP. The owner ruled that the category specification call's
+    # provider belongs in the code, so `spec` now defaults to Groq through
+    # `ai_provider.ROLE_DEFAULT_PROVIDERS` and is asserted separately below. The two roles
+    # left here still default to Anthropic and MUST: Runs 124 and 126 rest on extraction's
+    # behaviour. This is a re-pointing of an assertion the owner overruled, not a weakening --
+    # every property the loop checked for `spec` is still checked for `spec`, against Groq.
     for role, model in (("extraction", "claude-sonnet-5"),
-                        ("spec", "claude-sonnet-5"),
                         ("narration", "claude-haiku-4-5-20251001")):
         cfg = ap.load_provider(role, bare)
         check(f"{role} provider defaults to anthropic", cfg.provider, "anthropic")
         check(f"{role} model is the owner's measured identifier", cfg.model, model)
         check(f"{role} endpoint unchanged", cfg.url, "https://api.anthropic.com/v1/messages")
         check(f"{role} key variable", cfg.key_env, "ANTHROPIC_API_KEY")
+    # RUN 130: the same four properties, for `spec`, against the provider it now defaults to.
+    _spec = ap.load_provider("spec", bare)
+    check("spec provider defaults to groq", _spec.provider, "groq")
+    check("spec model is the groq table's spec identifier", _spec.model,
+          ap.PROVIDERS["groq"]["models"]["spec"])
+    check("spec endpoint is groq's", _spec.url,
+          "https://api.groq.com/openai/v1/chat/completions")
+    check("spec key variable is groq's", _spec.key_env, "GROQ_API_KEY")
+    # RUN 130: the new rung is the BOTTOM of the chain -- both environment rungs still beat it.
+    check("AI_SPEC_PROVIDER still overrides the role default",
+          ap.load_provider("spec", {"AI_SPEC_PROVIDER": "anthropic"}).provider, "anthropic")
+    check("AI_PROVIDER still sits between the variable and the role default",
+          ap.load_provider("spec", {"AI_PROVIDER": "anthropic"}).provider, "anthropic")
+    check("AI_SPEC_PROVIDER still beats AI_PROVIDER",
+          ap.load_provider("spec", {"AI_PROVIDER": "anthropic",
+                                    "AI_SPEC_PROVIDER": "groq"}).provider, "groq")
     # RUN 113: these two are no longer literals at all -- they are DERIVED from the provider
     # table, so they cannot go stale behind it. The assertion is kept and re-pointed.
     check("the module-level constants track the provider table",

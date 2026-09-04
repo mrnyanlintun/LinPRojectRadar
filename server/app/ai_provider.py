@@ -135,6 +135,34 @@ PROVIDERS: dict[str, dict[str, Any]] = {
 }
 
 DEFAULT_PROVIDER = "anthropic"
+
+#: RUN 130. THE PROVIDER A ROLE FALLS BACK TO WHEN THE ENVIRONMENT SAYS NOTHING, PER ROLE.
+#:
+#: THE WHOLE RESOLUTION ORDER, HIGHEST RUNG FIRST, so a reader does not have to derive it:
+#:     1. `AI_<ROLE>_PROVIDER`   -- this one role, set on the service
+#:     2. `AI_PROVIDER`          -- every role, set on the service
+#:     3. `ROLE_DEFAULT_PROVIDERS[role]`  -- this table, in code
+#:     4. `DEFAULT_PROVIDER`     -- the platform default, in code
+#: This table is RUNG 3. It adds a rung at the bottom of the chain and replaces none of it:
+#: both environment variables still win over it, in that order.
+#:
+#: `spec` is here because the owner ruled at Run 130 that the category specification call's
+#: provider belongs in the code rather than in the Render environment, where the keys live.
+#: It is NOT here to route around Anthropic's refusal of `temperature` -- that refusal is how
+#: the misrouting surfaced, not why the default moved. `temperature` is unchanged and still
+#: sent (`simulation/spec_apply.py:255`); Groq rides the `openai` wire, which attaches it.
+#:
+#: A role absent from this table falls straight through to `DEFAULT_PROVIDER`, which is what
+#: extraction, narration and recognition do -- deliberately. Runs 124 and 126 rest on
+#: extraction's current behaviour and this run does not move it.
+ROLE_DEFAULT_PROVIDERS: dict[str, str] = {
+    "spec": "groq",
+}
+
+assert set(ROLE_DEFAULT_PROVIDERS) <= set(ROLES), \
+    "a role default must name one of the platform's call sites"
+assert set(ROLE_DEFAULT_PROVIDERS.values()) <= set(PROVIDERS), \
+    "a role default must name a provider this platform knows how to call"
 ANTHROPIC_VERSION = "2023-06-01"
 
 
@@ -207,8 +235,12 @@ def load_provider(role: str, environ: dict[str, str] | None = None) -> ProviderC
             f"{role!r} is not one of the platform's model call sites {ROLES}.")
     env = _env(environ)
 
+    # The four rungs documented above `ROLE_DEFAULT_PROVIDERS`, in order. `configured_provider`
+    # is NOT used here: it folds rungs 2 and 4 together and would never let rung 3 be reached.
     name = ((env.get(f"AI_{role.upper()}_PROVIDER") or "").strip().lower()
-            or configured_provider(env))
+            or (env.get("AI_PROVIDER") or "").strip().lower()
+            or ROLE_DEFAULT_PROVIDERS.get(role)
+            or DEFAULT_PROVIDER)
     spec = PROVIDERS.get(name)
     if spec is None:
         raise ProviderConfigError(
