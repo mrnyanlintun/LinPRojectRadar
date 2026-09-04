@@ -263,15 +263,33 @@ def run_cross_doc_consistency(si: dict, rand: Callable[[], float],
         return insufficient("Cross_Doc_Consistency")
     inconsistencies = 0
     checks = 0
+    # RUN 135, FINDING H1, THE RE-EXAMINATION THE ORDER ASKED FOR. The two derived indices were
+    # formed here through `_round3` and compared to the stored index at a tolerance of 0.005.
+    #
+    # THAT TOLERANCE WAS TEN TIMES THE ROUNDING STEP, which is why this module -- the one whose
+    # whole purpose is to notice when two documents disagree -- could not see the defect H1
+    # names: a stored index rounded half-up differs from the true quotient by at most 0.0005,
+    # and this check allowed ten times that before it would say anything. The rounding is gone
+    # from storage now, so `_round3` is gone from here too and the derived index is the quotient
+    # itself, compared like with like.
+    #
+    # THE 0.005 STAYS AND ITS MEANING CHANGES, which is worth stating plainly. It is no longer a
+    # rounding allowance -- there is no rounding step left for it to absorb -- it is the
+    # CROSS-DOCUMENT AGREEMENT tolerance this method is defined over: where the index arrives
+    # from a document rather than from this platform's own arithmetic, two documents stating
+    # figures that agree to within half a per cent of index are not treated as contradicting
+    # each other. Where the index WAS derived here, the comparison is now exact and any
+    # disagreement is a real one. Narrowing it further is a question about what a document
+    # disagreement is, not a rounding question, and it is left for the owner.
     if (si.get("cpi") is not None and si.get("ev") is not None
             and si.get("ac") is not None and si["ac"] != 0):
-        derived_cpi = _round3(si["ev"] / si["ac"])
+        derived_cpi = si["ev"] / si["ac"]
         if abs(derived_cpi - si["cpi"]) > 0.005:
             inconsistencies += 1
         checks += 1
     if (si.get("spi") is not None and si.get("ev") is not None
             and si.get("pv") is not None and si["pv"] != 0):
-        derived_spi = _round3(si["ev"] / si["pv"])
+        derived_spi = si["ev"] / si["pv"]
         if abs(derived_spi - si["spi"]) > 0.005:
             inconsistencies += 1
         checks += 1

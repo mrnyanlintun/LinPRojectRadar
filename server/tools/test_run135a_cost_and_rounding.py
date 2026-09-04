@@ -43,7 +43,9 @@ from app.simulation.models_doc import (                           # noqa: E402
 )
 from app.simulation.models_dq import run_source_reliability       # noqa: E402
 from app.simulation.models_evm import run_tcpi, run_vac           # noqa: E402
-from app.simulation.models_ext import run_lookahead_health        # noqa: E402
+from app.simulation.models_ext import (                           # noqa: E402
+    run_lookahead_health, run_material_cost_variance,
+)
 
 PASS = 0
 FAIL = 0
@@ -247,6 +249,20 @@ def m3_a212_reads_all_six_edges() -> None:   # wired into CHECKS by the M3 commi
               str(got))
 
 
+def sweep_a34_material_variance_bands_raw() -> None:
+    # THE H1 SWEEP'S OWN FIND, named by neither hunt. SOURCE: Run 135 order, H1 -- "every stored
+    # field produced by a `_round*` call that any module bands, branches or sums on". A3.4's
+    # variance was rounded to three places before its ladder, whose edges the module publishes
+    # as 0.05, 0.12 and 0.20 on the ABSOLUTE variance; 0.0504 is above the first of them.
+    for cur, want in ((105.04, "Yellow"), (112.04, "Amber"), (120.04, "Red")):
+        r = run_material_cost_variance(
+            {"materialCostBaseline": 100.0, "materialCostCurrent": cur,
+             "actualPctComplete": 100.0}, _R(), None)
+        check(r["status_color"] == want,
+              f"SWEEP A3.4 at a variance of {cur - 100:.2f} per cent bands {want}",
+              r["status_color"])
+
+
 CHECKS = (
     h1_storage_is_unrounded,
     h1_band_reads_the_unrounded_value,
@@ -259,6 +275,7 @@ CHECKS = (
     l1_a64_display_matches_its_band,
     m1_a33_stores_raw,
     s5_source_reliability_bands_raw,
+    sweep_a34_material_variance_bands_raw,
 )
 
 

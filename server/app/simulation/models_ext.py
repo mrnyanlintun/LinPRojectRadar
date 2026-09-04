@@ -1051,9 +1051,22 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
             "material cost at this point to compare the cost to date against",
         )
     variance = (si["materialCostCurrent"] - expected) / expected
-    variance = _round3(variance)
+    # RUN 135, THE H1 SWEEP. A NEW INSTANCE OF THE SAME DEFECT, FOUND BY THE SWEEP THE ORDER
+    # REQUIRED AND NOT NAMED BY EITHER HUNT.
+    #
+    # `variance = _round3(variance)` ran here, BEFORE the ladder five lines below, so a
+    # presentation helper decided the band: a variance of 0.0504 -- above the 0.05 Green edge --
+    # rounded to 0.05 and published GREEN, and the same upward flip sits on the 0.12 and 0.20
+    # edges. The ladder is on the ABSOLUTE variance, so the favourable direction is toward zero
+    # and half-up rounding moves a figure onto the edge below it from above: the error is
+    # favourable here exactly as it is at A6.3, C1.3 and A1.8.
+    #
+    # The band is now taken from the variance the arithmetic produced. The displayed percentage
+    # carries the shared Run 135 rule against this ladder's own three edges expressed in per
+    # cent, so the printed figure cannot land on an edge the variance has crossed.
     is_derived = _derived(si, "materialCostBaseline")
     a = abs(variance)
+    _variance_pct_display = band_figure(variance * 100, (5.0, 12.0, 20.0, -5.0, -12.0, -20.0), 0)
     # THE BAND, AND WHAT IT IS SOURCED TO: NOTHING. Run 4 looked. AACE International's cost
     # estimate classification recommended practice (18R-97) does publish numeric accuracy ranges
     # by estimate class, and it is tempting to read five and twenty per cent off them, but those
@@ -1067,10 +1080,11 @@ def run_material_cost_variance(si: dict, rand: Callable[[], float],
     return {
         "method_class": "Material_Cost_Variance",
         "status_color": color,
-        "variance_pct": int(js_round(variance * 100)),
+        "variance": variance,
+        "variance_pct": _variance_pct_display,
         "evidence_metric": (
             f"Material cost variance: {'+' if variance >= 0 else ''}"
-            f"{int(js_round(variance * 100))}% vs expected at current progress"
+            f"{_js_str(_variance_pct_display)}% vs expected at current progress"
             + (" (estimated at 40% of BAC/AC; upload Cost Report for precise figures)"
                if is_derived else "")
         ),
