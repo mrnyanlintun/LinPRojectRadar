@@ -99,7 +99,27 @@ _BAND_WORDS = (
 )
 
 _PERCENT = re.compile(r"^(\d+(?:\.\d+)?)\s*(?:%|per\s*cent|percent|pct)$", re.IGNORECASE)
-_FRACTION = re.compile(r"^(0?\.\d+|0|1(?:\.0+)?)$")
+# RUN 135, M5. A FRACTION HAS A DECIMAL POINT. THE BARE INTEGERS 1 AND 0 ARE NOT FRACTIONS.
+#
+# This pattern was `^(0?\.\d+|0|1(?:\.0+)?)$` and it matched a bare "1" and a bare "0", which
+# reached `RiskProbability(value=1.0)` and `value=0.0` before the bare-number refusal below
+# could see them. Every other bare integer -- 2, 3, 4, 5 -- refuses, and refuses for a reason
+# that applies word for word to 1 and 0: the cell states no unit and an ordinal scale is the
+# commonest register convention. ON A 1-TO-5 LIKELIHOOD REGISTER THE LOWEST-LIKELIHOOD ROWS
+# THEREFORE READ AS CERTAIN, which is the reassuring direction and the one nothing downstream
+# catches. The register reader supplies no scale hint -- `risk_register.py` passes
+# `column_is_percent` and nothing else -- so there is no basis on which 1 could be told from a
+# 1 of 5, and refusing is the only honest answer.
+#
+# A SECOND READING WAS WRONG IN THE SAME PLACE. This branch is tested BEFORE the percent-column
+# branch, so on a column headed "Probability (%)" a stated "1" -- one per cent -- was read as
+# 1.0, CERTAINTY, rather than 0.01. With the bare integers gone it now falls through to that
+# branch and reads 0.01, as the heading says.
+#
+# A DECIMAL POINT IS THE UNIT STATEMENT. "0.4", ".4", "1.0" and "0.0" are written the way a
+# fraction is written and are all still accepted; "1" and "0" are written the way an ordinal is
+# written and now refuse with the same reason 2 through 5 refuse with.
+_FRACTION = re.compile(r"^(0?\.\d+|1\.0+)$")
 _ORDINAL_OF = re.compile(r"^(\d+)\s*(?:/|of|out of)\s*(\d+)$", re.IGNORECASE)
 
 

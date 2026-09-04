@@ -828,10 +828,26 @@ class ProviderExtractor:
         except ai_provider.ProviderTruncated as exc:
             # THE API SAYS SO ITSELF -- `stop_reason`/`finish_reason` is the authoritative
             # statement that the answer was cut off by the output cap rather than finished.
-            # `describe_json_truncation` is the fallback for a caller that never sees it.
-            cut = describe_json_truncation("")
+            # `describe_json_truncation` is the fallback for a caller that never sees it, and
+            # THIS CALLER DOES SEE IT, so the fallback has nothing to add here.
+            #
+            # RUN 135. A DEAD SUFFIX IS REMOVED. The line was `cut = describe_json_truncation("")`
+            # and that call CANNOT RETURN ANYTHING BUT None: the function's own `if not saw_value:
+            # return None` fires on an empty string before any of its describing runs. So
+            # `(": " + cut if cut else "")` appended nothing on every execution this code has
+            # ever had, while reading as though the message sometimes named where the JSON was
+            # cut off. It never did.
+            #
+            # REMOVED RATHER THAN MADE REACHABLE, deliberately. Making it reachable means
+            # carrying the PARTIAL BODY out on the exception -- `ai_provider` has that text in
+            # hand at both raise sites (`stop_reason == "max_tokens"` and
+            # `finish_reason == "length"`) and discards it -- which is a change to the provider
+            # boundary's exception contract, not to this line. It would also be describing a cut
+            # that the provider has ALREADY stated authoritatively in `str(exc)`: a second,
+            # inferred account of the same fact. If the owner wants the cut point named, the
+            # place to do it is `ProviderTruncated`, once, for every caller.
             raise TruncatedResponseError(
-                str(exc) + (": " + cut if cut else "") +
+                str(exc) +
                 " Retrying will stop in the same place; the answer has to be made smaller."
             ) from None
         except ai_provider.ProviderCallError as exc:

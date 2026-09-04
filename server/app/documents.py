@@ -62,7 +62,8 @@ from sqlalchemy.orm import Session
 from .extraction_client import build_extractor, extract_many, extraction_contract_fingerprint
 from .extraction_fields import UNMAPPED, is_mapped
 from .extraction_merge import (
-    assembly_report, document_as_of, emit_observations, select_signal_inputs,
+    assembly_report, document_as_of, document_ordering_key, emit_observations,
+    select_signal_inputs, unresolved_value_conflicts,
 )
 from .field_registry import IDENTITY_FIELDS, is_raw_field
 from .jdrive_tree import (
@@ -505,6 +506,18 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
         select(Document, DocumentUpload.supersedes_document_id)
         .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
         .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
+        # RUN 135, M4. THE QUERY CARRIED NO `ORDER BY` AND THE ROWS ARRIVED IN WHATEVER ORDER
+        # THE DATABASE CHOSE. Four Run-69 structures walk this list writing last-writer-wins, so
+        # two `oac_minutes` differing only in upload order gave a different `disputeRecord` and
+        # a different `as_of_day` -- A4.7's duration input -- from the same evidence. This
+        # `ORDER BY` is the STABLE BASE only: `doc_type` is a business key and `document_id` is
+        # the row identity, both columns, both available to SQL. The FULL business-key order the
+        # owner named needs the writer tier and the document's own `as_of`, and neither is a
+        # column -- the tier is a property of the type and the as-of lives inside the extraction
+        # JSON -- so the ordering proper is applied in Python below, over the assembled dicts,
+        # by `extraction_merge.document_ordering_key`. Ordering here as well means the input to
+        # that sort is itself deterministic rather than merely sorted afterwards.
+        .order_by(Document.doc_type, Document.document_id)
     ).all()
     seen: set[str] = set()
     out: list[dict] = []
@@ -522,7 +535,50 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
                     # 0014. The declared document-level revision edge, promoted onto every
                     # observation this document emits (`revision_of`).
                     "supersedes": supersedes})
+    # RUN 135, M4. THE BUSINESS-KEY ORDER, ascending, so the most authoritative document is
+    # LAST and a last-writer-wins consumer takes it: writer tier, dated over undated, `as_of`,
+    # document type, and sha256 ONLY as a final stabiliser between documents identical on every
+    # one of those. See `extraction_merge.document_ordering_key`, which is where the key is
+    # defined so this seam and the emission ordering cannot drift apart.
+    out.sort(key=document_ordering_key)
     return out
+
+
+def _live_document_ids(session: Session, project: Project, period: int) -> set[str]:
+    """
+    THE DOCUMENT IDS OF THIS PERIOD'S LIVE SET, taken FROM `_period_documents` ITSELF.
+
+    RUN 135, H4. The document control has two rules -- supersession and archival -- and
+    `_period_documents` was written as the ONE SEAM that applies them, in as many words: "no
+    module can hold a value that came only from an archived document, because the observations
+    were never emitted". That is true of the observation path and was FALSE EVERYWHERE ELSE.
+    Three projection stores (`_persist_schedule_activities`, `_persist_project_risks`,
+    `_persist_project_notices`) issued their own `Document`/`DocumentUpload` join with no
+    archive filter at all, and three readers (`_schedule_snapshot`, `_schedule_display`, and
+    `_milestone_history` through the first) filtered on supersession alone.
+
+    Measured: one ARCHIVED `schedule_update` gave `_period_documents` an EMPTY set while
+    `_persist_schedule_activities` inserted its two activities, `_schedule_snapshot` returned
+    them as THE ENTIRE PERIOD SNAPSHOT, and `milestoneHistory` -- A2.7's input -- carried it.
+    The uploads surface printed `contributes: False` for the same document at the same moment.
+
+    THIS IS NOT A SECOND COPY OF THE FILTER. It calls `_period_documents` and takes the ids of
+    what survives, so membership of the live set has exactly one definition and a future rule
+    added there reaches all seven callers without being remembered. It costs one extra read of a
+    set the same request has usually already assembled, and that is the price of not having the
+    rule written down twice.
+
+    ONE DELIBERATE CONSEQUENCE, STATED RATHER THAN DISCOVERED LATER. `_period_documents` also
+    excludes SUPERSEDED documents, so the three stores stop projecting rows for a document a
+    later upload in the same period replaced. Their docstrings previously said superseded
+    documents were projected on purpose, "because storage retains and selection excludes"; the
+    retention is untouched -- no row is ever deleted or updated in place, and every row already
+    stored stays readable -- and what changes is only that a NEW row is no longer written for a
+    document the document control has withdrawn from the period. The readers already excluded
+    superseded documents, so this makes the store agree with its own readers.
+    """
+    return {str(d["document_id"]) for d in _period_documents(session, project, period)
+            if d.get("document_id")}
 
 
 def _identity_observations_before(session: Session, project: Project,
@@ -763,8 +819,14 @@ def _persist_project_notices(session: Session, project: Project, period: int) ->
             .where(ProjectNotice.project_id == project.id, ProjectNotice.period == period)
         ).all()
     }
+    # RUN 135, H4. THE LIVE SET, from `_period_documents` and not from a filter copied here.
+    # This store issued its own join with NO archive filter, so an ARCHIVED document was
+    # projected into the store and read back out of it. See `_live_document_ids`.
+    live = _live_document_ids(session, project, period)
     inserted = 0
     for d, _supersedes in rows:
+        if d.document_id not in live:
+            continue
         if (d.doc_type or "") != "correspondence_notice" or d.document_id in existing:
             continue
         ex = d.extraction if isinstance(d.extraction, dict) else {}
@@ -847,8 +909,14 @@ def _persist_project_risks(session: Session, project: Project, period: int) -> i
             .where(ProjectRisk.project_id == project.id, ProjectRisk.period == period)
         ).all()
     }
+    # RUN 135, H4. THE LIVE SET, from `_period_documents` and not from a filter copied here.
+    # This store issued its own join with NO archive filter, so an ARCHIVED document was
+    # projected into the store and read back out of it. See `_live_document_ids`.
+    live = _live_document_ids(session, project, period)
     inserted = 0
     for d, _supersedes in rows:
+        if d.document_id not in live:
+            continue
         ex = d.extraction if isinstance(d.extraction, dict) else {}
         # THE READER TAKES THE ROWS, from the document's own stored bytes. Twenty risks and five
         # hundred cost the same, and no row can be silently mistyped on the way. There is
@@ -912,8 +980,14 @@ def _persist_schedule_activities(session: Session, project: Project, period: int
                    ScheduleActivity.period == period)
         ).all()
     }
+    # RUN 135, H4. THE LIVE SET, from `_period_documents` and not from a filter copied here.
+    # This store issued its own join with NO archive filter, so an ARCHIVED document was
+    # projected into the store and read back out of it. See `_live_document_ids`.
+    live = _live_document_ids(session, project, period)
     inserted = 0
     for d, _supersedes in rows:
+        if d.document_id not in live:
+            continue
         ex = d.extraction or {}
         if not isinstance(ex, dict):
             continue
@@ -965,7 +1039,12 @@ def _schedule_snapshot(session: Session, project: Project, period: int) -> dict 
     are two accounts of the same activities, not two populations to merge. Merging them would
     let one document's `D100` and another's `D200` describe a schedule that never existed.
     """
-    superseded = _superseded_document_ids(session, project, period)
+    # RUN 135, H4. `_superseded_document_ids` alone was HALF THE DOCUMENT CONTROL: an ARCHIVED
+    # document's activities were returned here as the entire period snapshot, and
+    # `milestoneHistory` -- A2.7's input -- carried them, while the uploads surface printed
+    # `contributes: False` for the same document. Membership of the live set is decided in
+    # `_period_documents` and read here through `_live_document_ids`, never restated.
+    live = _live_document_ids(session, project, period)
     rows = [
         r for r in session.scalars(
             select(ScheduleActivity).where(
@@ -973,7 +1052,7 @@ def _schedule_snapshot(session: Session, project: Project, period: int) -> dict 
                 ScheduleActivity.period == period,
             )
         ).all()
-        if r.document_id not in superseded
+        if r.document_id in live
     ]
     if not rows:
         return None
@@ -1021,7 +1100,9 @@ def _schedule_display(session: Session, project: Project, period: int) -> dict |
     The previous period's rows are read only to decide what MOVED, and only from periods
     strictly earlier than this one, which is the same bound `_milestone_history` keeps.
     """
-    superseded = _superseded_document_ids(session, project, period)
+    # RUN 135, H4. The live set, from the one seam. Same defect and same fix as
+    # `_schedule_snapshot` above: supersession was applied here and archival was not.
+    live = _live_document_ids(session, project, period)
 
     def rows_for(p: int) -> list[dict]:
         return [
@@ -1034,7 +1115,7 @@ def _schedule_display(session: Session, project: Project, period: int) -> dict |
                 select(ScheduleActivity).where(ScheduleActivity.project_id == project.id,
                                                ScheduleActivity.period == p)
             ).all()
-            if r.document_id not in superseded or p != period
+            if r.document_id in live or p != period
         ]
 
     current = rows_for(period)
@@ -2971,13 +3052,20 @@ def _run69_structures(session: Session, project: Project, period: int,
                                         "completed_on_time", "milestones_on_time",
                                         "on_time_completions",
                                         "packages_completed_by_committed_date")),
+        # RUN 135, H5. "inspections_passed" AND "commitments_met" ARE REMOVED FROM THESE TWO
+        # ALIAS LISTS. Both are TOTALS over every attempt; the ladder these columns feed is
+        # FIRST OUTCOME ONLY (see `contractor_factors.py`, A6.4). A total is a SUPERSET of the
+        # first-pass count and is always greater or equal, so accepting it banded a firm
+        # FAVOURABLY on a number that answers a different question. A document that prints only
+        # a total now reaches NOTHING here and the column is absent, which is the honest
+        # NOT TESTED rather than a Green bought with the wrong figure.
         ("inspections_passed_first", ("inspections_passed_first", "passed_first_inspection",
-                                      "first_pass_inspections", "inspections_passed",
+                                      "first_pass_inspections",
                                       "first_time_pass", "passed_on_first")),
         ("commitments_due", ("commitments_due", "commitments", "submittals_due", "rfis_due",
                              "responses_due", "obligations_due")),
         ("commitments_met_on_time", ("commitments_met_on_time", "commitments_on_time",
-                                     "commitments_met", "on_time_commitments",
+                                     "on_time_commitments",
                                      "responses_on_time")),
     )
     #: RUN 120. `active_work` IS NOT SUMMED. Every column above is a COUNT and two documents
@@ -3275,12 +3363,32 @@ def _reference_class_members(raw) -> list[dict]:
 #
 # The record describes the PERIOD'S EVIDENCE BASE, not one module's inputs, so it is written
 # flat: `declared_evidence` applies a flat declaration to every module that asks.
-def _evidence_qualification(period: int, observations: list[dict]) -> dict | None:
-    """This period's Category-9 assessment, built from the period's own observations. See above
-    for what is deliberately NOT stated in it."""
+def _evidence_qualification(period: int, observations: list[dict], *,
+                            carried: list[dict] | None = None) -> dict | None:
+    """This period's Category-9 assessment, built from the observation set SELECTION SEES. See
+    above for what is deliberately NOT stated in it.
+
+    RUN 135, H3. `carried` is the earlier periods' IDENTITY-field observations, the same
+    argument `select_signal_inputs` receives from the same caller, and it is supplied for the
+    same reason: SELECTION RESOLVES THE CARRY-FORWARD AND QUALIFICATION DID NOT LOOK AT IT, so a
+    conflict that selection settled ACROSS PERIODS was invisible to the gate. Two cost reports
+    in different periods, the same date, the same tier 0, `original_contingency` 500,000 against
+    300,000: 300,000 was selected on the higher sha256 and `material_conflicts` was EMPTY. The
+    identical pair inside ONE period reported the conflict correctly. The evidence base was the
+    same; only the reader's field of view differed, and the narrower view was the reassuring one.
+
+    ONLY THE CONFLICT SCAN WIDENS. `effective_date` stays derived from THIS PERIOD'S OWN
+    observations, for the reason `select_signal_inputs` gives about `docDate`: it answers "as of
+    when does this period speak", and a carried contract from an earlier period must not be able
+    to date it -- least of all in a period whose own documents are undated.
+    """
     if not observations:
         return None
     dates = sorted(str(o["as_of"]) for o in observations if o.get("as_of") is not None)
+    # The set the CONFLICT SCAN reads: the period's own observations plus what selection was
+    # entitled to carry into it. `select_signal_inputs` has already restricted `carried` to
+    # IDENTITY-classified fields, so a period field cannot enter through this door either.
+    scanned = list(observations) + list(carried or [])
     # WHAT COUNTS AS AN UNRESOLVED CONFLICT, AND WHY IT IS NOT SIMPLY "TWO DOCUMENTS DISAGREE".
     # Two documents stating different values for one field is the NORMAL case and is exactly what
     # `select_signal_inputs` exists to resolve: the lowest declared writer tier wins, and within
@@ -3325,7 +3433,7 @@ def _evidence_qualification(period: int, observations: list[dict]) -> dict | Non
     NOT_A_SHARED_ASSERTION: frozenset[str] = frozenset({"docRiskScore"})
 
     per_field: dict[str, list[dict]] = {}
-    for o in observations:
+    for o in scanned:
         if o.get("field") is None:
             continue
         if str(o["field"]) in NOT_A_SHARED_ASSERTION:
@@ -3372,6 +3480,31 @@ def _evidence_qualification(period: int, observations: list[dict]) -> dict | Non
                           "state different values for this field, so the declared precedence "
                           "rule cannot decide between them",
             })
+
+    # RUN 135, RULING R3. THE SECOND SOURCE OF CONFLICTS, AND IT IS NOT A DUPLICATE OF THE ONE
+    # ABOVE.
+    #
+    # The rule above is the one this record has always applied: same field, same lowest tier,
+    # same latest as-of, still two values. It is deliberately BROAD -- it stops at tier and date
+    # and never looks at document rank -- so for a SNAPSHOT field it already covers every case
+    # in which `_snap_pick` lets sha256 decide, and more besides.
+    #
+    # IT DOES NOT COVER PERMANENT FIELDS. `_perm_pick` takes the EARLIEST dated observation and
+    # nothing later replaces it; the rule above looks at the LATEST. Where two documents share
+    # the EARLIEST as-of and disagree, the hash picks the value a module reads and the rule
+    # above -- looking at a later date, where perhaps only one document speaks -- sees a single
+    # value and reports nothing. That is exactly the silence R3 forbids.
+    #
+    # `extraction_merge.unresolved_value_conflicts` applies EACH FIELD'S OWN precedence key, the
+    # very keys `_snap_pick` and `_perm_pick` use, and names every field where those keys are
+    # exhausted and the values still disagree. Taking the union rather than replacing the rule
+    # above means nothing this record reported before stops being reported: a broad rule and a
+    # kind-exact one, and a field named by either is named once.
+    _already = {c["field"] for c in conflicts}
+    for c in unresolved_value_conflicts(scanned):
+        if c["field"] not in _already:
+            conflicts.append(c)
+    conflicts.sort(key=lambda c: str(c["field"]))
     return {
         # THE RECORD IS A PURE FUNCTION OF THE PERIOD'S OWN EVIDENCE and carries no project
         # identity. Two projects that uploaded the same bytes into the same period must reach
@@ -3436,7 +3569,13 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # supplying it invents nothing. Attached here, on the DOCUMENT path only: a training period's
     # signal inputs are projected from a deterministic state rather than selected from uploaded
     # documents, so there is no evidence base to assess and none is asserted for it.
-    _eq = _evidence_qualification(period, observations)
+    _eq = _evidence_qualification(
+        period, observations,
+        # RUN 135, H3. THE SAME `carried` SET SELECTION RECEIVED a few lines above. Qualification
+        # asked about a NARROWER evidence base than the one the published figures came from, and
+        # the narrower answer was always the reassuring one: a cross-period disagreement that
+        # selection settled on a content hash reached `material_conflicts: []`.
+        carried=_identity_observations_before(session, project, period))
     if _eq is not None:
         si["evidenceQualification"] = _eq
 
