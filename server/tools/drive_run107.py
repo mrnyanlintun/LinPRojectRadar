@@ -692,7 +692,14 @@ try:
     _got = r.get("status_color")
 except Exception as exc:  # noqa
     _got = f"raised {exc}"
-check(True, "A4.9 an item with no stated criticality", repr(_got))
+# RUN 135C, L4. This was `check(True, ...)`: a literal PASS, counted in the total, asserting
+# nothing about `_got`. It is removed rather than given an invented expectation -- deciding what
+# an item with no stated criticality SHOULD band to is a ruling this file cannot make, and an
+# expectation derived here from what the function happens to return would breach R2. The
+# observation is still printed, so the evidence is not lost; it is simply no longer counted as a
+# check that passed. The suite total drops by one, which is the correction.
+print(f"  NOTE  A4.9 an item with no stated criticality -> {_got!r} "
+      "(recorded, not asserted: no order states the expected band)")
 _pr4 = copy.deepcopy(STRUCTURES["procurementItems"]); _pr4["day_basis"] = "calendar_days"
 r = run_procurement_lead_time(SI(procurementItems=_pr4), None, CUT)
 check(r.get("status_color") is None,
