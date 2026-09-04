@@ -28,6 +28,7 @@ from __future__ import annotations
 import math
 from typing import Any, Callable
 
+from .band_display import band_figure
 from .models import ABSTAIN_MALFORMED_INPUT, check_inputs, insufficient
 from .models_ext import _js_date_ms, _js_str
 from .rng import js_round, round2
@@ -127,7 +128,21 @@ def run_source_reliability(si: dict, rand: Callable[[], float], period_cutoff) -
             weights.append(_SOURCE_WEIGHTS.get(dt) or 0.50)
     if not weights:
         return insufficient("Source_Reliability_Weighting")
-    avg = round2(sum(weights) / len(weights))
+    # RUN 135, FINDING S5. THE BAND CAME OFF A ROUNDED AVERAGE, so the rounding decided the
+    # answer. `avg = round2(...)` ran before the ladder: 159 sources at 0.80 and one derived
+    # field at 0.40 average to 0.7975, which is BELOW the 0.80 Green boundary, and half-up
+    # rounding made it 0.80 and published GREEN. The same upward flip sits on the 0.65 and 0.50
+    # edges. The error is favourable, and its direction is not incidental -- half-up moves a
+    # figure toward the boundary above it, and on this ladder above is better.
+    #
+    # The band is now taken from the raw average. `avg_reliability` carries the raw average, for
+    # the reason finding H1 established: a stored analytical field is never a rounded one. The
+    # DISPLAYED figure carries the shared Run 135 rule -- the fewest decimals, never fewer than
+    # the two `round2` gave, that keep it on the same side of every edge of this ladder as the
+    # average itself -- and the per-cent sentence is rendered from that figure rather than from
+    # a second, coarser rounding of its own, so the sentence and the band cannot disagree.
+    avg = sum(weights) / len(weights)
+    avg_display = band_figure(avg, (0.80, 0.65, 0.50), 2)
     derived_count = sum(1 for k in sources if _doc_type(sources[k]) == "derived")
     color = ("Green" if avg >= 0.80 else "Yellow" if avg >= 0.65
              else "Amber" if avg >= 0.50 else "Red")
@@ -135,10 +150,12 @@ def run_source_reliability(si: dict, rand: Callable[[], float], period_cutoff) -
         "method_class": "Source_Reliability_Weighting",
         "status_color": color,
         "avg_reliability": avg,
+        "avg_reliability_display": avg_display,
         "derived_fields": derived_count,
         "total_sources": len(weights),
         "evidence_metric": (
-            f"Avg source reliability: {int(js_round(avg * 100))}%"
+            f"Avg source reliability: "
+            f"{_js_str(band_figure(avg_display * 100, (80.0, 65.0, 50.0), 0))}%"
             + (f" ({derived_count} estimated fields)" if derived_count > 0 else ", all measured")
         ),
     }
