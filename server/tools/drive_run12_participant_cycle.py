@@ -40,6 +40,9 @@ import time
 import urllib.request
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
+import os as _os_f10  # noqa: E402
+sys.path.insert(0, _os_f10.path.dirname(_os_f10.path.abspath(__file__)))  # Run 136 F10
+from artifact_write import artifact_out, report_artifact_write  # noqa: E402  Run 136 F10
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SHELL = "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell"
@@ -614,11 +617,11 @@ def main_drive() -> None:
         browser.close()
     server.should_exit = True
 
-    out = ROOT / "code_audit" / "run12_participant_cycle_evidence.csv"
+    out = artifact_out(ROOT / "code_audit" / "run12_participant_cycle_evidence.csv")
     out.write_text("outcome,check,detail\n"
                    + "\n".join(e.replace("\n", " ") for e in EVIDENCE) + "\n",
                    encoding="utf-8")
-    prov = ROOT / "code_audit" / "run12_participant_provisioning.csv"
+    prov = artifact_out(ROOT / "code_audit" / "run12_participant_provisioning.csv")
     prov.write_text("step,route,detail\n"
                     + "\n".join(p.replace(" | ", ",") for p in PROVISIONING) + "\n",
                     encoding="utf-8")

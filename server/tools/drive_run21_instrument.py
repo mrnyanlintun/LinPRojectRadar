@@ -71,6 +71,8 @@ import time
 import urllib.request
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # Run 136 F10: tools/ on the path
+from artifact_write import artifact_out, report_artifact_write  # noqa: E402  Run 136 F10
 
 import tools.drive_run16_final_flow as r16  # noqa: E402
 
@@ -289,7 +291,8 @@ def read_state(page, state: str, pid: str, shot: bool = True) -> dict:
     obs(state, "badges_with_numbers", json.dumps(badges))
     if shot:
         try:
-            page.screenshot(path=str(ROOT / "code_audit" / f"run21_shot_{state}.png"))
+            page.screenshot(path=str(artifact_out(
+                ROOT / "code_audit" / f"run21_shot_{state}.png")))
         except Exception as exc:                                        # pragma: no cover
             obs(state, "screenshot_error", str(exc)[:120])
     return {"flow": flow, "rail": rail, "badges": badges}
@@ -968,7 +971,8 @@ def main_drive() -> None:
                       f"RESPONSIVE {w}px: the numbered Signal rail is present and displayed",
                       json.dumps({k: rail[k] for k in ('present', 'buttons', 'display')}))
             try:
-                page.screenshot(path=str(ROOT / "code_audit" / f"run21_shot_width_{w}.png"))
+                page.screenshot(path=str(artifact_out(
+                    ROOT / "code_audit" / f"run21_shot_width_{w}.png")))
             except Exception:
                 pass
         page.set_viewport_size({"width": 1680, "height": 1400})
@@ -1041,7 +1045,7 @@ def main_drive() -> None:
 
 
 def _write(name: str, header: list[str], rows: list) -> None:
-    out = ROOT / "code_audit" / name
+    out = artifact_out(ROOT / "code_audit" / name)
     with out.open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(header)

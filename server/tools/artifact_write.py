@@ -29,7 +29,8 @@ import os
 import pathlib
 import sys
 
-__all__ = ["writing_committed_artifact", "artifact_target", "report_artifact_write"]
+__all__ = ["writing_committed_artifact", "artifact_target", "report_artifact_write",
+           "repo_root", "artifact_out"]
 
 
 def writing_committed_artifact(argv: list[str] | None = None) -> bool:
@@ -81,3 +82,40 @@ def report_artifact_write(committed: pathlib.Path, written: pathlib.Path) -> Non
              if same else
              "IT DIFFERS from what this run produced -- re-run with --write-artifact to "
              "re-baseline it deliberately"))
+
+
+# -------------------------------------------------------------------------------------------------
+# RUN 136, F10. THE ZERO-CONFIGURATION FORM.
+#
+# `artifact_target` needs the repository root passed in, which suited the two Run 135C generators
+# that already had one to hand. Routing the REST of the fleet meant threading a root through
+# scripts that compute their paths a dozen different ways, and every thread is a chance to point
+# one at the wrong place. `artifact_out` finds the root itself, so routing a write site is a
+# one-token wrap at the point of the write:
+#
+#     out = ROOT / "code_audit" / "x.csv"        ->   out = artifact_out(ROOT / "code_audit" / "x.csv")
+#
+# THIS IS NOT A SECOND MECHANISM. It is the same flag (--write-artifact), the same environment
+# variables (RUN135_WRITE_ARTIFACT, RUN135_ARTIFACT_SCRATCH), the same scratch root and the same
+# mirrored layout; `artifact_out` is a thin call through `artifact_target`.
+# -------------------------------------------------------------------------------------------------
+
+
+def repo_root(start: pathlib.Path | None = None) -> pathlib.Path:
+    """The repository root: the nearest ancestor holding a `.git` entry.
+
+    Falls back to two levels above this file (`server/tools/..` -> repo root), which is where
+    this module has always lived, so a checkout without `.git` -- an export, a tarball -- still
+    routes to the right place instead of raising.
+    """
+    here = pathlib.Path(start or __file__).resolve()
+    for d in (here, *here.parents):
+        if (d / ".git").exists():
+            return d
+    return pathlib.Path(__file__).resolve().parent.parent.parent
+
+
+def artifact_out(committed, argv: list[str] | None = None) -> pathlib.Path:
+    """Where THIS run should write `committed`: scratch by default, the file itself on request."""
+    committed = pathlib.Path(committed)
+    return artifact_target(committed, repo_root(committed), argv)

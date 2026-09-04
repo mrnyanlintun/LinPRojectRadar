@@ -55,6 +55,9 @@ import time
 import urllib.request
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
+import os as _os_f10  # noqa: E402
+sys.path.insert(0, _os_f10.path.dirname(_os_f10.path.abspath(__file__)))  # Run 136 F10
+from artifact_write import artifact_out, report_artifact_write  # noqa: E402  Run 136 F10
 
 import tools.drive_run12_participant_cycle as r12  # noqa: E402
 
@@ -980,7 +983,7 @@ def main_drive() -> None:
 
 
 def _write(name, header, rows):
-    out = ROOT / "code_audit" / name
+    out = artifact_out(ROOT / "code_audit" / name)
     with out.open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(header)

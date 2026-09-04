@@ -29,6 +29,9 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+import os as _os_f10  # noqa: E402
+sys.path.insert(0, _os_f10.path.dirname(_os_f10.path.abspath(__file__)))  # Run 136 F10
+from artifact_write import artifact_out, report_artifact_write  # noqa: E402  Run 136 F10
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 logging.disable(logging.INFO)
 
@@ -76,6 +79,10 @@ def attempt(label: str, fn, default=None):
 
 
 def write_csv(path: pathlib.Path, header: list[str], rows: list[list]) -> None:
+    # RUN 136 F10. Scratch by default; --write-artifact (or RUN135_WRITE_ARTIFACT=1) writes
+    # the committed artefact. Routed here, at the one chokepoint every CSV in this file
+    # passes through, so no call site had to be edited and none can be missed.
+    committed, path = path, artifact_out(path)
     with path.open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(header)

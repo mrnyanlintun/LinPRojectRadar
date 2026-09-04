@@ -27,6 +27,9 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent))
+import os as _os_f10  # noqa: E402
+sys.path.insert(0, _os_f10.path.dirname(_os_f10.path.abspath(__file__)))  # Run 136 F10
+from artifact_write import artifact_out, report_artifact_write  # noqa: E402  Run 136 F10
 sys.path.insert(0, str(HERE))
 
 from app.simulation import canonical_v5 as V5           # noqa: E402
@@ -431,7 +434,7 @@ fault(39, "disabled Hypersoft becomes active", V5, "hypersoft_lab",
 
 
 # The record, written where every other campaign in this programme writes one.
-_out = ROOT / "code_audit" / "run30_fault_injection.csv"
+_out = artifact_out(ROOT / "code_audit" / "run30_fault_injection.csv")
 with _out.open("w", encoding="utf-8", newline="\n") as fh:
     w = csv.writer(fh, lineterminator="\n")
     w.writerow(["fault", "name", "result", "detail"])
