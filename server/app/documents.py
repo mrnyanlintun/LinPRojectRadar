@@ -3062,7 +3062,25 @@ def _run69_structures(session: Session, project: Project, period: int,
         ("inspections_passed_first", ("inspections_passed_first", "passed_first_inspection",
                                       "first_pass_inspections",
                                       "first_time_pass", "passed_on_first")),
-        ("commitments_due", ("commitments_due", "commitments", "submittals_due", "rfis_due",
+        # RUN 136, F8. THE BARE HEADING "commitments" IS REMOVED FROM THIS DENOMINATOR.
+        # A6.4's denominator is `commitments_due`, "firm COMMITMENTS DUE in the reporting
+        # period" (`extraction_fields.py`). A column headed only "Commitments" states no period
+        # and no status, so it may be every commitment the firm holds -- a superset, in the same
+        # shape H5 removed from the two numerators just above.
+        #
+        # THE DIRECTION OF THE ERROR IS THE OPPOSITE ONE AND IT IS REMOVED ANYWAY. A larger
+        # denominator lowers the on-time percentage and bands the firm WORSE, so this fails
+        # unfavourably rather than favourably. That is not what decides it. The platform's
+        # recorded position on an adjacent quantity carries no direction: the extraction
+        # contract, at `extraction_client.py:696-698`, says a value "under a different label is
+        # never a substitute, even if it is a plausible value of the right type and in a
+        # sensible range", and `models_ext.py` at the contingency-burn band calls substituting a
+        # related quantity silently "the exact defect section 2 forbids". An unfavourable error
+        # is still a wrong answer, and A6.4 already has the honest alternative written into it:
+        # with no denominator the factor reads UNAVAILABLE and is "not treated as Green".
+        #
+        # Every heading that STATES the population is untouched and still lands.
+        ("commitments_due", ("commitments_due", "submittals_due", "rfis_due",
                              "responses_due", "obligations_due")),
         ("commitments_met_on_time", ("commitments_met_on_time", "commitments_on_time",
                                      "on_time_commitments",
