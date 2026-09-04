@@ -80,8 +80,10 @@ def registry_invariants() -> None:
     check(set(CORE_VOTING_MODULES) == {"A1.7", "A1.8"},
           "the voting set is exactly TCPI and Variance at Completion",
           str(sorted(CORE_VOTING_MODULES)))
-    check(len(CORE_VOTING_MODULES) == 2, "the voting set has exactly two members",
-          str(len(CORE_VOTING_MODULES)))
+    # RUN 135C, L5. `check(len(CORE_VOTING_MODULES) == 2, ...)` stood here. The line above it
+    # already asserts set equality with {"A1.7", "A1.8"}, from which the count of two follows;
+    # a count beside an identity cannot fail unless the identity has failed first, so it only
+    # inflated the total by one. Removed.
     check(len(DISABLED_CONCEPT_ONLY) == 8,
           "the eight concept-only methods remain operationally disabled",
           str(sorted(DISABLED_CONCEPT_ONLY)))
@@ -94,7 +96,32 @@ def registry_invariants() -> None:
 
 
 def main() -> int:
+    # ---------------------------------------------------------------- RUN 135C: the freeze gate
+    # This script reported the freeze broken by 43 added, 3 removed and 61 changed production
+    # files, and had done for a long time, with nothing re-baselining it. It was permanently red,
+    # and a check that is always red is read as scenery.
+    #
+    # BOTH OF THE FINDING'S OPTIONS ARE WRONG ON THEIR OWN. Re-baselining blesses whatever happens
+    # to be in the tree today and silently re-arms a gate nobody is watching. Retiring the whole
+    # script throws away the three registry invariants at the bottom, which are facts about the
+    # platform TODAY and all pass.
+    #
+    # So it is split. The FREEZE COMPARISON is retired: Run 18's baseline was frozen for the
+    # duration of Run 18's audit phase, that phase ended, and roughly a hundred and seventeen runs
+    # of authorised production change have happened since. It is now opt-in behind
+    # --verify-freeze, for someone deliberately auditing drift against Run 18's bytes, and
+    # --write still records a new baseline for a deliberate re-baseline. The REGISTRY INVARIANTS
+    # always run, because they are live and are the part of this script that still qualifies
+    # anything. Default mode therefore reports the retirement and checks what is checkable.
     write = "--write" in sys.argv
+    verify_freeze = "--verify-freeze" in sys.argv
+    if not write and not verify_freeze:
+        print("RETIRED (Run 135C): the Run 18 production freeze comparison. Run 18's audit phase "
+              "ended and its frozen bytes are historical; pass --verify-freeze to compare against "
+              "them anyway, or --write to record a new baseline deliberately.")
+        registry_invariants()
+        print(f"\nRESULT: {passed}/{total} checks passed")
+        return 0 if passed == total else 1
     now = manifest_now()
     if write:
         MANIFEST.parent.mkdir(parents=True, exist_ok=True)
