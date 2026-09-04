@@ -57,12 +57,21 @@ check("A1.7 bands full precision, not _round3", (_c, E._round3(_raw)), ("Yellow"
 print("=== A1.8 VAC: the ladder the code executes ===")
 _Y = E._VAC_OWNER_YELLOW_PCT          # -5.263157894736842
 _A = E._VAC_BEYOND_OBSERVED_PCT       # -11.11111111111111
-# NOTE THE 0.95 ROW. It is MEASURED, not intended. See the RUN 133 FINDING below: the module
-# reaches the Yellow edge by a DIFFERENT arithmetic path from the one the constant is built by,
-# so at an index of exactly 0.95 the computed percentage falls a few units in the last place
-# BELOW the edge and the reading is Amber rather than Yellow. This check pins what the running
-# instrument actually does so the defect cannot be lost.
-for cpi, want in ((1.0, "Green"), (0.99999999, "Yellow"), (0.95, "Amber"),
+# RUN 135, FINDING H2, AND RULING R2 ON WHERE THESE ROWS COME FROM.
+#
+# The 0.95 row used to read "Amber" and it was MEASURED, not intended: Run 133 recorded that the
+# module reached the Yellow edge by a different arithmetic path from the one the constant is
+# built by, so an index of exactly 0.95 fell a few units in the last place below the edge and
+# the reading was Amber. The row pinned the defect because Run 133 was forbidden to repair it.
+#
+# Run 135 repaired it under ruling R1: the module now computes the ONE canonical quantity the
+# RUN 114 ORDER NAMES -- VAC% = (1 - 1/CPI) x 100, quoted verbatim in commit `fc9d60c` -- in the
+# same expression the edges are built in. THE EXPECTATIONS BELOW ARE TAKEN FROM THAT ORDER, NOT
+# FROM THE LADDER OR THE FUNCTION UNDER TEST: the Run 114 order places the owner's Yellow rung
+# at an index of 0.95 and states each edge INCLUSIVE ON ITS FAVOURABLE SIDE ("at or above"), so
+# an index of exactly 0.95 IS Yellow and an index of exactly 0.90 IS Amber.
+# SOURCE: Run 114 order, quoted in `fc9d60c`; Run 135 order, finding H2, ruling R1.
+for cpi, want in ((1.0, "Green"), (0.99999999, "Yellow"), (0.95, "Yellow"),
                   (0.9499999, "Amber"), (0.90, "Amber"), (0.8999999, "Red")):
     _col, _pct = vac_band(cpi)
     check(f"VAC at CPI {cpi} (= {_pct:.10f} pct)", _col, want)
@@ -78,7 +87,14 @@ check("A1.8 CPI 1.00 is exactly 0.00 per cent", vac_band(1.0)[1], 0.0)
 # the two CORE VOTING MODULES, so this moves a project status, not a displayed number.
 # NOT REPAIRED IN THIS RUN: the repair sits inside `server/app/simulation/`, which this run is
 # forbidden to modify. Reported for the owner's decision.
-check("A1.8 DEFECT: CPI 0.95 does not attain the Yellow edge", vac_band(0.95)[1] >= _Y, False)
+# THE SAME ROW STATED AS THE PROPERTY IT IS, so a regression is named rather than merely
+# recoloured: the Yellow edge is ATTAINED, and it is attained at EVERY budget, because the
+# canonical quantity does not contain the budget. SOURCE: Run 114 order via `fc9d60c` (the
+# identity VAC% = (1 - 1/CPI) x 100 contains no BAC); Run 135 order, finding H2.
+check("A1.8 CPI 0.95 attains the Yellow edge", vac_band(0.95)[1] >= _Y, True)
+check("A1.8 CPI 0.95 bands identically at every budget $1k-$200M",
+      len({E.run_vac({"bac": float(b), "cpi": 0.95}, None, None)["status_color"]
+           for b in (1_000, 15_000, 1_000_000, 4_400_000, 330_000_000, 200_000_000)}), 1)
 check("A1.8 DEFECT is BAC-dependent (BAC 1.0 attains it)",
       ((1.0 - 1.0 / 0.95) / 1.0) * 100 >= _Y, True)
 check("A1.8 the 0.90 Amber edge IS correctly attained", vac_band(0.90)[1] >= _A, True)

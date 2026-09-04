@@ -762,7 +762,11 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
 #: module's input contract, which this run is not permitted to do. Recorded as a stated limit of
 #: the band rather than left for a reader to discover.
 _VAC_STABILITY_CPI = 0.90
-_VAC_BUDGET_MET_PCT = 0.0
+# RUN 135, H2, R1. EVERY EDGE IS EXPRESSED IN THE ONE CANONICAL QUANTITY. This was the literal
+# 0.0; it is the same number, written the way the Run 114 order names the quantity, so that a
+# reader can see all three edges are the same expression evaluated at 1.00, 0.95 and 0.90.
+_VAC_BUDGET_MET_CPI = 1.00
+_VAC_BUDGET_MET_PCT = (1 - 1 / _VAC_BUDGET_MET_CPI) * 100                       # 0.0
 _VAC_BEYOND_OBSERVED_PCT = (1 - 1 / _VAC_STABILITY_CPI) * 100
 
 # RUN 114, GOAL 4. THE YELLOW RUNG ON THIS MODULE'S OWN QUANTITY, AND HOW ITS NUMBER WAS SET.
@@ -815,11 +819,40 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
             "Awaiting a cost performance index above zero: the forecast at completion is the "
             "budget divided by that index, which cannot be formed here",
         )
+    if si["bac"] == 0:
+        # bac=0: the JS NaN fallthrough this module has always refused. The forecast at
+        # completion is the budget divided by the index, and there is no budget to divide.
+        return insufficient("VAC")
     eac = si["bac"] / si["cpi"]
     vac = si["bac"] - eac
-    vac_pct = (vac / si["bac"]) * 100 if si["bac"] != 0 else float("nan")
-    if vac_pct != vac_pct:
-        return insufficient("VAC")  # bac=0: JS NaN fallthrough, refused likewise
+    # RUN 135, FINDING H2, UNDER RULING R1 -- ONE CANONICAL DECISION QUANTITY, AND THIS IS IT.
+    #
+    # WHAT THIS LINE WAS: `vac_pct = (vac / si["bac"]) * 100`, that is,
+    # ((BAC - BAC/CPI) / BAC) x 100. Algebra says that is (1 - 1/CPI) x 100 and the budget
+    # cancels. FLOATING-POINT ARITHMETIC DOES NOT SAY SO. The two expressions differ by 1 to 9
+    # units in the last place, and WHICH WAY they differ is decided by the binary representation
+    # of the budget at completion. The band edges are themselves written as (1 - 1/x) x 100, so
+    # the comparison was between two algebraically equal quantities computed along two different
+    # paths, and the answer moved with a number that is not in the quantity at all:
+    #
+    #   CPI exactly 0.90:  BAC   1,000,000 -> Amber     BAC 330,000,000 -> Red
+    #                      BAC   4,400,000 -> Amber     BAC      15,000 -> Red
+    #
+    # A sweep of $1k to $200M found 5.9 per cent of budgets banding Red at an index that is
+    # exactly ON the inclusive Amber edge, and 0.8 per cent reaching the Yellow edge the same
+    # way. The project's cost posture depended on the size of its contract.
+    #
+    # THE FIX IS THE RULING, NOT AN EPSILON. A tolerance would have left both paths in place and
+    # added an unauthorised threshold on top of them. Instead there is now ONE quantity, and it
+    # is the one the RUN 114 ORDER NAMES -- quoted verbatim in commit `fc9d60c`:
+    #
+    #       VAC% = (1 - 1/CPI) x 100
+    #
+    # computed exactly that way, in the same expression every edge above is expressed in. The
+    # budget is not in it, so no band on it can move with the budget. `vac` -- the DOLLAR figure
+    # the sentence reports -- is still BAC - BAC/CPI, because that is a money amount and money
+    # amounts do depend on the budget; it is reported, and it is not what bands.
+    vac_pct = (1 - 1 / si["cpi"]) * 100
     color = ("Green" if vac_pct >= _VAC_BUDGET_MET_PCT
              else "Yellow" if vac_pct >= _VAC_OWNER_YELLOW_PCT
              else "Amber" if vac_pct >= _VAC_BEYOND_OBSERVED_PCT else "Red")
