@@ -8,12 +8,13 @@
 
 DECISION ORDER (fixed; the applied rule is written into `reason` so the counts are reproducible):
 
-  1. RETIRED  - the script references simulation module ids and EVERY id it references was removed
-                (Run 96's 51 or Run 97's 20, per tools/run96_removed.py), or the script is the
-                removal record itself being audited against a registry that no longer has them.
-                Referencing a removed feature is NOT on its own retirement: test_simulation.py
-                names PortfolioModuleError but 20 of its 23 checks are about live behaviour, so it
-                is an ACTIVE suite with a broken reference (H9), not a retired artefact.
+  3. RETIRED  - the script references simulation module ids, EVERY id it references was removed
+                (Run 96's 51 or Run 97's 20, per tools/run96_removed.py), AND it does not complete
+                when run. Both halves are required. Referencing a removed feature is not on its
+                own retirement -- test_simulation.py names PortfolioModuleError but 20 of its 23
+                checks are about live behaviour, so it is an ACTIVE suite with a broken reference
+                (H9). And a script that still runs to completion is still measuring something,
+                whatever ids it happens to mention, so it is not retired either.
   2. MIGRATION - name marks a one-time run-scoped builder/seeder/exporter.
   3. READER    - name marks a measurement/reconciliation/census over sealed artefacts.
   4. READER    - does not import app.* at all: it can only be reporting on files or text.
@@ -73,7 +74,7 @@ def main() -> int:
     live = live_ids()
 
     exits: dict[str, int] = {}
-    tsv = SCRATCH / "fleet_exit.tsv"
+    tsv = SCRATCH / "fleet2_exit.tsv"
     if tsv.exists():
         for line in tsv.read_text().splitlines():
             if "\t" in line:
@@ -92,15 +93,21 @@ def main() -> int:
         imports_app = bool(re.search(r"^\s*(from|import)\s+app[\s.]", src, re.M))
         asserts = bool(re.search(r"\bcheck\(|\bassert\b|\brequire\(", src))
         hardcoded = "/home/user/LinPRojectRadar/server" in src
+        code = exits.get(key)
 
-        if name.startswith(MIGRATION_PREFIXES) or any(s in name for s in MIGRATION_SUBSTR):
+        if name.startswith("run135c_") or name == "test_run135c_active_suite_completes.py":
+            kind, reason = "reader", ("rule0 Run 135C classification harness: it reports on the "
+                                      "fleet rather than qualifying the platform, so it is "
+                                      "excluded from coverage like any other reader")
+        elif name.startswith(MIGRATION_PREFIXES) or any(s in name for s in MIGRATION_SUBSTR):
             kind, reason = "migration", "rule1 one-time run-scoped builder/seeder/exporter by name"
         elif name.startswith(READER_PREFIXES) or any(s in name for s in READER_SUBSTR):
             kind, reason = "reader", "rule2 measurement/reconciliation/census over sealed artefacts"
-        elif ids_removed and not ids_live:
+        elif ids_removed and not ids_live and code not in (0, None):
             kind = "retired"
             reason = ("rule3 subject is removed modules only: references " +
-                      ",".join(sorted(ids_removed)[:6]) + " and no module in service")
+                      ",".join(sorted(ids_removed)[:6]) + " and no module in service, "
+                      f"and it does not complete (exit {code})")
         elif not imports_app:
             kind, reason = "reader", "rule4 does not import app.*; reports on files or text only"
         elif not asserts:
@@ -111,8 +118,7 @@ def main() -> int:
         if hardcoded:
             reason += "; hardcodes /home/user/LinPRojectRadar/server on sys.path"
 
-        code = exits.get(key)
-        err_path = SCRATCH / "fleet" / (key.replace("/", "_") + ".err")
+        err_path = SCRATCH / "fleet2" / (key.replace("/", "_") + ".err")
         err = err_path.read_text(errors="replace") if err_path.exists() else ""
         rows.append({
             "path": rel, "kind": kind, "reason": reason, "last_run_referenced": run_number(name),

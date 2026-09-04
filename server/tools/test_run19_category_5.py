@@ -11,6 +11,24 @@ TEST AND AUDIT ONLY. Production output is never the oracle.
 
 from __future__ import annotations
 
+# ---------------------------------------------------------------------------------------------
+# RUN 135C. RETIRED ARTEFACT. This script is kept for the record and is NOT executed.
+#
+# Ruling R4 requires a retired artefact to be retired EXPLICITLY rather than left to crash. Its
+# subject is A5.1,A5.2,A5.3,A5.4,A5.5,A5.6 -- 6 module ids removed from the registry at Run 96 or Run 97 and no module
+# in service -- so there is nothing here for it to qualify. Before this guard it died with
+# app.simulation.registry.MissingModuleError: A5.1 is not in the module registry
+# which prints no RESULT line and reads, in a scan of fleet output, exactly like a clean run.
+#
+# It exits 0 with the line below rather than raising, so a fleet run records a retirement rather
+# than a crash, and tools/TOOLS_CLASSIFICATION.csv excludes it from qualification coverage.
+# Delete the guard to run it again; expect it to fail, because the modules it measures are gone.
+import sys as _sys135c
+print("RETIRED: test_run19_category_5.py measures A5.1,A5.2,A5.3,A5.4,A5.5,A5.6, removed at Run 96/97 (88e6ca0); excluded from qualification coverage "
+      "by tools/TOOLS_CLASSIFICATION.csv")
+_sys135c.exit(0)
+# ---------------------------------------------------------------------------------------------
+
 import datetime
 import pathlib
 import sys
