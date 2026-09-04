@@ -889,10 +889,39 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
     # VOTING DIRECTION ARE UNCHANGED: negative is still a forecast overrun, the band edges are
     # the same two sourced boundaries, and the displayed sentence is byte-identical to what it
     # rendered before, because it was already built from the unrounded value.
+    # RUN 135, FINDING H7. THE SAME RULE AS A1.7, AND THE ANSWER TO "SHOULD A DISPLAY-ROUNDED
+    # FIGURE BE STORED AT ALL".
+    #
+    # `vac_pct_display` was `round1(vac_pct)` flat, and the sentence printed the same rounding.
+    # At a VAC percentage of -0.0100 the module bands Yellow and the row read
+    # "VAC: $100 over budget (0%)" beside a boundary reading "Green at or above zero" -- with
+    # `vac_pct_display` 0.0 STORED ON THE ROW, so the contradiction was not merely rendered, it
+    # was recorded, and anything reading the stored field read a figure on the wrong side of an
+    # edge from the band stored beside it.
+    #
+    # WHAT WAS DECIDED, and it is stated because the Run 135 order asks for it: THE DISPLAY
+    # FIGURE IS STILL STORED, and it is stored BOUNDARY-SAFE. It is not derived at render
+    # instead. Three existing guards -- `test_run35_closure_voter_identities` g06,
+    # `test_run36_fault_guards`, `drive_run37_browser` -- assert that the analytical field and
+    # the display field are SEPARATE OBJECTS with distinct values, which is the Run 35 closure
+    # they exist to hold; deriving the display at render would delete the field those guards
+    # read and the separation would stop being provable from a stored row. So the field stays,
+    # and the defect is removed from the field itself: `band_figure` gives it the fewest
+    # decimals, never fewer than the one `round1` gave, that keep it on the same side of every
+    # edge of this ladder as `vac_pct`. Where the reading is not near an edge the stored figure
+    # is byte-identical to what it was. Where it IS near an edge the stored figure now agrees
+    # with the stored band instead of contradicting it.
+    #
+    # The sentence prints the same boundary-safe figure, so the row and its own words cannot
+    # disagree. `abs()` is applied AFTER the rule, on the figure, never before it: the edges are
+    # signed and the rule has to see the sign to know which side of zero the value is on.
+    vac_pct_display = band_figure(
+        vac_pct,
+        (_VAC_BUDGET_MET_PCT, _VAC_OWNER_YELLOW_PCT, _VAC_BEYOND_OBSERVED_PCT), 1)
     return banded(
         "VAC",
         (f"VAC: {_money(abs(vac))} {'over' if vac < 0 else 'under'} budget "
-         f"({_js_str(round1(abs(vac_pct)))}%)"),
+         f"({_js_str(abs(vac_pct_display))}%)"),
         status_color=color,
         boundary=_evm_band_source("A1.8"),
         basis=_evm_band_source("A1.8") + " " + _EVM_BOUNDARY_LIMIT,
@@ -907,7 +936,7 @@ def run_vac(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, Any
         vac=vac,
         vac_pct=vac_pct,
         vac_display=int(js_round(vac)),
-        vac_pct_display=round1(vac_pct),
+        vac_pct_display=vac_pct_display,
     )
 
 
