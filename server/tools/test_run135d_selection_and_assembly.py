@@ -122,9 +122,83 @@ def m4() -> None:
           k1[:-1] == k2[:-1] and k1[-1] != k2[-1], f"{k1[-1][:4]} vs {k2[-1][:4]}")
 
 
+# ------------------------------- H3 + R3, qualification sees what selection sees
+def h3_r3() -> None:
+    from app.documents import _evidence_qualification
+    from app.extraction_merge import (
+        _perm_pick, _snap_pick, emit_observations, select_signal_inputs,
+        unresolved_value_conflicts,
+    )
+    from app.field_registry import IDENTITY_FIELDS
+
+    print()
+    print("H3 + R3. a cross-period conflict is visible to qualification, and sha256 no longer "
+          "settles a disagreement in silence")
+
+    # The owner's stated proof. Two cost reports in DIFFERENT periods, the SAME date, the SAME
+    # writer tier 0, `original_contingency` 500,000 against 300,000. The higher sha256 wins the
+    # selection; before Run 135 `material_conflicts` was EMPTY.
+    early = {"sha256": "a" * 64, "doc_type": "cost_report", "filename": "p1.pdf",
+             "extraction": {"report_date": "2026-03-31", "original_contingency": 500000}}
+    late = {"sha256": "f" * 64, "doc_type": "cost_report", "filename": "p2.pdf",
+            "extraction": {"report_date": "2026-03-31", "original_contingency": 300000}}
+    own = emit_observations(late)
+    carried = [o for o in emit_observations(early)
+               if str(o.get("field")) in IDENTITY_FIELDS]
+
+    si = select_signal_inputs(own, None, carried=carried)
+    eq = _evidence_qualification(2, own, carried=carried)
+    named = [c["field"] for c in eq["material_conflicts"]]
+    check("the cross-period disagreement is named in material_conflicts",
+          "originalContingency" in named, f"selected {si['originalContingency']}, conflicts {named}")
+    # The period's own view of "as of when does this period speak" must NOT widen with it.
+    check("effective_date is still derived from the period's own observations only",
+          eq["effective_date"] == "2026-03-31", str(eq["effective_date"]))
+    # A period with no carried set is unchanged, and an agreeing carried set raises nothing.
+    agree = [dict(o) for o in carried]
+    for o in agree:
+        if o.get("field") == "originalContingency":
+            o["value"] = 300000
+    eq_ok = _evidence_qualification(2, own, carried=agree)
+    check("carried evidence that AGREES reports no conflict",
+          not [c for c in eq_ok["material_conflicts"]
+               if c["field"] == "originalContingency"],
+          str([c["field"] for c in eq_ok["material_conflicts"]]))
+
+    # R3 directly. Two observations identical on every business key, differing only in value.
+    def _obs(field, value, sha, kind_tier=0, as_of=None, doc_type="cost_report"):
+        from datetime import date as _d
+        return {"field": field, "value": value, "sha256": sha, "tier": kind_tier,
+                "as_of": as_of or _d(2026, 3, 31), "rank": 1, "doc_type": doc_type,
+                "kind": None, "entity_key": "", "entity_state": None}
+
+    pair = [_obs("bac", 10_000_000, "1" * 64), _obs("bac", 12_000_000, "9" * 64)]
+    rep = unresolved_value_conflicts(pair)
+    check("keys exhausted and values disagree is REPORTED", [c["field"] for c in rep] == ["bac"],
+          str(rep and rep[0]["distinct_values"]))
+    same = [_obs("bac", 10_000_000, "1" * 64), _obs("bac", 10_000_000, "9" * 64)]
+    check("keys exhausted and values AGREE is not reported (R3 permits the hash here)",
+          unresolved_value_conflicts(same) == [], str(unresolved_value_conflicts(same)))
+    # Selection still returns a value rather than blanking the field.
+    check("selection still returns a figure on a reported disagreement",
+          _snap_pick(pair)["value"] in (10_000_000, 12_000_000))
+    # Order independence of the pick is retained -- the point of R3 is not that the pick moved.
+    check("the pick is the same in either argument order",
+          _snap_pick(pair)["value"] == _snap_pick(list(reversed(pair)))["value"])
+    check("the same holds for the PERMANENT pick",
+          _perm_pick(pair)["value"] == _perm_pick(list(reversed(pair)))["value"])
+    # A field decided by a BUSINESS key is not reported: the keys were not exhausted.
+    from datetime import date as _date
+    decided = [_obs("bac", 10_000_000, "9" * 64, as_of=_date(2026, 1, 1)),
+               _obs("bac", 12_000_000, "1" * 64, as_of=_date(2026, 3, 31))]
+    check("a disagreement the business keys DO settle is not reported as unresolved",
+          unresolved_value_conflicts(decided) == [], str(unresolved_value_conflicts(decided)))
+
+
 def main() -> int:
     h5()
     m4()
+    h3_r3()
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)}")

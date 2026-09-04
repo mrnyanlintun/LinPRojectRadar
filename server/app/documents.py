@@ -63,7 +63,7 @@ from .extraction_client import build_extractor, extract_many, extraction_contrac
 from .extraction_fields import UNMAPPED, is_mapped
 from .extraction_merge import (
     assembly_report, document_as_of, document_ordering_key, emit_observations,
-    select_signal_inputs,
+    select_signal_inputs, unresolved_value_conflicts,
 )
 from .field_registry import IDENTITY_FIELDS, is_raw_field
 from .jdrive_tree import (
@@ -3301,12 +3301,32 @@ def _reference_class_members(raw) -> list[dict]:
 #
 # The record describes the PERIOD'S EVIDENCE BASE, not one module's inputs, so it is written
 # flat: `declared_evidence` applies a flat declaration to every module that asks.
-def _evidence_qualification(period: int, observations: list[dict]) -> dict | None:
-    """This period's Category-9 assessment, built from the period's own observations. See above
-    for what is deliberately NOT stated in it."""
+def _evidence_qualification(period: int, observations: list[dict], *,
+                            carried: list[dict] | None = None) -> dict | None:
+    """This period's Category-9 assessment, built from the observation set SELECTION SEES. See
+    above for what is deliberately NOT stated in it.
+
+    RUN 135, H3. `carried` is the earlier periods' IDENTITY-field observations, the same
+    argument `select_signal_inputs` receives from the same caller, and it is supplied for the
+    same reason: SELECTION RESOLVES THE CARRY-FORWARD AND QUALIFICATION DID NOT LOOK AT IT, so a
+    conflict that selection settled ACROSS PERIODS was invisible to the gate. Two cost reports
+    in different periods, the same date, the same tier 0, `original_contingency` 500,000 against
+    300,000: 300,000 was selected on the higher sha256 and `material_conflicts` was EMPTY. The
+    identical pair inside ONE period reported the conflict correctly. The evidence base was the
+    same; only the reader's field of view differed, and the narrower view was the reassuring one.
+
+    ONLY THE CONFLICT SCAN WIDENS. `effective_date` stays derived from THIS PERIOD'S OWN
+    observations, for the reason `select_signal_inputs` gives about `docDate`: it answers "as of
+    when does this period speak", and a carried contract from an earlier period must not be able
+    to date it -- least of all in a period whose own documents are undated.
+    """
     if not observations:
         return None
     dates = sorted(str(o["as_of"]) for o in observations if o.get("as_of") is not None)
+    # The set the CONFLICT SCAN reads: the period's own observations plus what selection was
+    # entitled to carry into it. `select_signal_inputs` has already restricted `carried` to
+    # IDENTITY-classified fields, so a period field cannot enter through this door either.
+    scanned = list(observations) + list(carried or [])
     # WHAT COUNTS AS AN UNRESOLVED CONFLICT, AND WHY IT IS NOT SIMPLY "TWO DOCUMENTS DISAGREE".
     # Two documents stating different values for one field is the NORMAL case and is exactly what
     # `select_signal_inputs` exists to resolve: the lowest declared writer tier wins, and within
@@ -3351,7 +3371,7 @@ def _evidence_qualification(period: int, observations: list[dict]) -> dict | Non
     NOT_A_SHARED_ASSERTION: frozenset[str] = frozenset({"docRiskScore"})
 
     per_field: dict[str, list[dict]] = {}
-    for o in observations:
+    for o in scanned:
         if o.get("field") is None:
             continue
         if str(o["field"]) in NOT_A_SHARED_ASSERTION:
@@ -3398,6 +3418,31 @@ def _evidence_qualification(period: int, observations: list[dict]) -> dict | Non
                           "state different values for this field, so the declared precedence "
                           "rule cannot decide between them",
             })
+
+    # RUN 135, RULING R3. THE SECOND SOURCE OF CONFLICTS, AND IT IS NOT A DUPLICATE OF THE ONE
+    # ABOVE.
+    #
+    # The rule above is the one this record has always applied: same field, same lowest tier,
+    # same latest as-of, still two values. It is deliberately BROAD -- it stops at tier and date
+    # and never looks at document rank -- so for a SNAPSHOT field it already covers every case
+    # in which `_snap_pick` lets sha256 decide, and more besides.
+    #
+    # IT DOES NOT COVER PERMANENT FIELDS. `_perm_pick` takes the EARLIEST dated observation and
+    # nothing later replaces it; the rule above looks at the LATEST. Where two documents share
+    # the EARLIEST as-of and disagree, the hash picks the value a module reads and the rule
+    # above -- looking at a later date, where perhaps only one document speaks -- sees a single
+    # value and reports nothing. That is exactly the silence R3 forbids.
+    #
+    # `extraction_merge.unresolved_value_conflicts` applies EACH FIELD'S OWN precedence key, the
+    # very keys `_snap_pick` and `_perm_pick` use, and names every field where those keys are
+    # exhausted and the values still disagree. Taking the union rather than replacing the rule
+    # above means nothing this record reported before stops being reported: a broad rule and a
+    # kind-exact one, and a field named by either is named once.
+    _already = {c["field"] for c in conflicts}
+    for c in unresolved_value_conflicts(scanned):
+        if c["field"] not in _already:
+            conflicts.append(c)
+    conflicts.sort(key=lambda c: str(c["field"]))
     return {
         # THE RECORD IS A PURE FUNCTION OF THE PERIOD'S OWN EVIDENCE and carries no project
         # identity. Two projects that uploaded the same bytes into the same period must reach
@@ -3462,7 +3507,13 @@ def _compute_and_store(session: Session, project: Project, period: int,
     # supplying it invents nothing. Attached here, on the DOCUMENT path only: a training period's
     # signal inputs are projected from a deterministic state rather than selected from uploaded
     # documents, so there is no evidence base to assess and none is asserted for it.
-    _eq = _evidence_qualification(period, observations)
+    _eq = _evidence_qualification(
+        period, observations,
+        # RUN 135, H3. THE SAME `carried` SET SELECTION RECEIVED a few lines above. Qualification
+        # asked about a NARROWER evidence base than the one the published figures came from, and
+        # the narrower answer was always the reassuring one: a cross-period disagreement that
+        # selection settled on a content hash reached `material_conflicts: []`.
+        carried=_identity_observations_before(session, project, period))
     if _eq is not None:
         si["evidenceQualification"] = _eq
 

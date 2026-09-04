@@ -79,8 +79,10 @@ from .field_registry import (
 __all__ = [
     "assemble_signal_inputs",
     "assembly_report",
+    "document_ordering_key",
     "emit_observations",
     "select_signal_inputs",
+    "unresolved_value_conflicts",
     "DOC_RISK_DOC_TYPES",
     "DOC_RISK_SCORE_MAX",
     "DOC_RISK_SCORE_MIN",
@@ -1249,26 +1251,124 @@ def emit_observations(doc: dict) -> list[dict]:
 # --------------------------------------------------------------------------- selection
 
 
-def _snap_pick(group: list[dict]) -> dict:
-    """SNAPSHOT winner: lowest tier; within it, dated beats undated, latest as_of wins;
-    remaining ties resolve by the historical (rank, doc_type, sha256) last-write order."""
-    return max(group, key=lambda o: (
+# RUN 135, H3 + M4, UNDER RULING R3: SHA-256 STABILISES AN ORDER AND NEVER SELECTS A VALUE.
+#
+# `_snap_pick` and `_perm_pick` are UNCHANGED IN WHAT THEY RETURN. Every business key they ever
+# used is used in the same sequence and the same direction; sha256 remains the final element and
+# still decides the same ties it decided before. What changes is that THE CONDITION IN WHICH
+# SHA-256 DECIDES IS NOW A NAMED, ENUMERABLE THING rather than an accident of a comparison
+# tuple: `_snap_business_key` and `_perm_business_key` are the keys WITHOUT the hash, and the
+# set of observations sharing the winning business key is the tie set the hash then breaks.
+#
+# That factoring is what makes `unresolved_value_conflicts` below possible, and it is the whole
+# of the fix. R3 does not forbid the hash from breaking a tie -- it forbids the hash from
+# QUIETLY deciding which of two conflicting material figures a module reads. So the hash keeps
+# breaking the tie, the selection keeps returning a value rather than abstaining and blanking a
+# field, and every case in which the hash decided between DIFFERENT values is reported as a
+# material conflict on the period's Category-9 record. The disagreement becomes visible; it is
+# no longer settled in silence by a property of the bytes.
+def _snap_business_key(o: dict) -> tuple:
+    """The SNAPSHOT precedence keys, hash excluded. Larger wins."""
+    return (
         -int(o.get("tier") or 0),
         1 if o.get("as_of") is not None else 0,
         o.get("as_of") or date.min,
-        int(o.get("rank") or 0), str(o.get("doc_type") or ""), str(o.get("sha256") or ""),
-    ))
+        int(o.get("rank") or 0), str(o.get("doc_type") or ""),
+    )
+
+
+def _perm_business_key(o: dict) -> tuple:
+    """The PERMANENT precedence keys, hash excluded. Smaller wins."""
+    return (
+        int(o.get("tier") or 0),
+        o.get("as_of") or date.max,
+        int(o.get("rank") or 0), str(o.get("doc_type") or ""),
+    )
+
+
+def _snap_pick(group: list[dict]) -> dict:
+    """SNAPSHOT winner: lowest tier; within it, dated beats undated, latest as_of wins;
+    remaining ties resolve by the historical (rank, doc_type, sha256) last-write order."""
+    best = max(_snap_business_key(o) for o in group)
+    tied = [o for o in group if _snap_business_key(o) == best]
+    return max(tied, key=lambda o: str(o.get("sha256") or ""))
 
 
 def _perm_pick(group: list[dict]) -> dict:
     """PERMANENT winner: lowest tier; within it the EARLIEST dated observation, and nothing
     later ever replaces it. Undated observations lose to dated ones; wholly undated ties
     resolve by the historical first-non-null order (min rank/doc_type/sha)."""
-    return min(group, key=lambda o: (
-        int(o.get("tier") or 0),
-        o.get("as_of") or date.max,
-        int(o.get("rank") or 0), str(o.get("doc_type") or ""), str(o.get("sha256") or ""),
-    ))
+    best = min(_perm_business_key(o) for o in group)
+    tied = [o for o in group if _perm_business_key(o) == best]
+    return min(tied, key=lambda o: str(o.get("sha256") or ""))
+
+
+def _comparable(value: Any) -> Any:
+    """A value in a form two observations can be compared by. Scalars as they are; anything
+    structured by its canonical JSON, so a dict is not compared by object identity."""
+    if isinstance(value, (str, int, float, bool, type(None))):
+        return value
+    return json.dumps(value, sort_keys=True, default=str)
+
+
+def unresolved_value_conflicts(observations: list[dict]) -> list[dict]:
+    """
+    THE FIELDS WHERE THE DECLARED BUSINESS KEYS ARE EXHAUSTED AND THE VALUES STILL DISAGREE.
+
+    RUN 135, ruling R3. This is the report the ruling requires. For each declared field it takes
+    the SAME group `select_signal_inputs` would take, applies the SAME precedence key that
+    field's kind uses -- `_snap_business_key` for SNAPSHOT and EVENT, `_perm_business_key` for
+    PERMANENT -- and looks at the observations left tied on that key. If they all state the same
+    value, sha256 is choosing between records that are identical in the only respect that
+    matters, which R3 expressly permits and which needs no report. If they state DIFFERENT
+    values, sha256 is deciding which figure a module reads, and that is the case the ruling says
+    must be reported rather than settled.
+
+    It reports; it does not refuse. The selection still returns a value, because blanking a
+    field on a disagreement would replace a wrong figure with no figure and take every module
+    that reads it dark -- a false refusal, which this programme has repeatedly recorded as being
+    as much a defect as a false pass. The record travels to the caller, and
+    `documents._evidence_qualification` puts it on the period's Category-9
+    `material_conflicts`, where a REVIEW_REQUIRED assessment is already the platform's declared
+    answer to documents that contradict each other.
+
+    RAW evidence rows and the per-document self-descriptive fields are not shared assertions and
+    are excluded, for the reasons `_evidence_qualification` sets out at length.
+
+    Pure. Takes the observation set, returns records; knows nothing of projects or periods.
+    """
+    by_field: dict[str, list[dict]] = {}
+    for o in observations:
+        field = str(o.get("field") or "")
+        if not field or field not in FIELD_KINDS or is_raw_field(field):
+            continue
+        by_field.setdefault(field, []).append(o)
+
+    out: list[dict] = []
+    for field in sorted(by_field):
+        group = by_field[field]
+        if FIELD_KINDS.get(field) == PERMANENT:
+            best = min(_perm_business_key(o) for o in group)
+            tied = [o for o in group if _perm_business_key(o) == best]
+        else:
+            best = max(_snap_business_key(o) for o in group)
+            tied = [o for o in group if _snap_business_key(o) == best]
+        values = {_comparable(o.get("value")) for o in tied}
+        if len(values) <= 1:
+            continue
+        out.append({
+            "field": field,
+            "writer_tier": min(int(o.get("tier") or 0) for o in tied),
+            "distinct_values": len(values),
+            "documents": sorted({str(o.get("doc_type")) for o in tied}),
+            "reason": "the declared business keys -- writer tier, dated over undated, as-of, "
+                      "document rank and document type -- are exhausted and these documents "
+                      "still state different values for this field. A content hash breaks the "
+                      "remaining tie so a figure is still published, and under ruling R3 that "
+                      "hash may order records but may not decide between conflicting values, "
+                      "so the disagreement is reported here rather than settled silently",
+        })
+    return out
 
 
 def _source_entry(w: dict) -> dict:
