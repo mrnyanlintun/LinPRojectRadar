@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT / "server"))
 
 from app.simulation import registry as REG                       # noqa: E402
 from app.simulation import lineage as LIN                        # noqa: E402
-from app.simulation.portfolio import PORTFOLIO_VALIDATED         # noqa: E402
+from run97_removed_portfolio import PORTFOLIO_VALIDATED          # noqa: E402
 from app.simulation.canonical import CANONICAL_STRUCTURE_KEYS    # noqa: E402
 from app.simulation.canonical_v3 import V3_STRUCTURE_KEYS        # noqa: E402
 from app.simulation.canonical_v4 import V4_STRUCTURE_KEYS        # noqa: E402

@@ -50,7 +50,7 @@ from app.simulation.canonical_v5 import V5_STRUCTURE_KEYS as K5           # noqa
 from app.simulation.canonical_v6 import V6_STRUCTURE_KEYS as K6           # noqa: E402
 from app.simulation.canonical_v7 import V7_STRUCTURE_KEYS as K7           # noqa: E402
 from app.simulation.canonical_v8 import V8_STRUCTURE_KEYS as K8           # noqa: E402
-from app.simulation.portfolio import PORTFOLIO_VALIDATED                  # noqa: E402
+from run97_removed_portfolio import PORTFOLIO_VALIDATED                   # noqa: E402
 
 #: Every canonical layer's structure map, newest last. A module's defining structure is looked up
 #: here rather than by pattern-matching a source file, so a structure added to any layer cannot

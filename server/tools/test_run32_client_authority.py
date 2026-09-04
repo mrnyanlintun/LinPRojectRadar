@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT / "server"))
 sys.path.insert(0, str(HERE))
 
 from app.simulation import registry as REG                                  # noqa: E402
-from app.simulation.portfolio import PORTFOLIO_VALIDATED as PV              # noqa: E402
+from run97_removed_portfolio import PORTFOLIO_VALIDATED as PV               # noqa: E402
 import participant_packages as PP                                           # noqa: E402
 
 PASSED = FAILED = 0

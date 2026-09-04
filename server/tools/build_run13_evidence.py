@@ -38,7 +38,8 @@ import traceback
 
 sys.path.insert(0, __file__.rsplit("tools", 1)[0])
 
-from app.simulation import canonical, portfolio as portfolio_mod  # noqa: E402
+from app.simulation import canonical  # noqa: E402
+import run97_removed_portfolio as portfolio_mod  # noqa: E402
 from app.simulation.compute import compute_project  # noqa: E402
 from app.simulation.fusion import normalise_status  # noqa: E402
 from app.simulation.models import SIMULATION_VERSION, STOCHASTIC, VALIDATED  # noqa: E402

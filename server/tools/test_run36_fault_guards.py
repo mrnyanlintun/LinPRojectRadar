@@ -52,7 +52,7 @@ from app.simulation import lineage as LIN                        # noqa: E402
 from app.simulation import canonical_v8 as V8                    # noqa: E402
 from app.simulation import canonical_v7 as V7                    # noqa: E402
 from app.simulation.compute import contributes_to_project_status  # noqa: E402
-from app.simulation.portfolio import PORTFOLIO_VALIDATED         # noqa: E402
+from run97_removed_portfolio import PORTFOLIO_VALIDATED          # noqa: E402
 from app.simulation.qualification_contract import ASSESSMENT_MISSING  # noqa: E402
 import participant_packages as PP                                # noqa: E402
 
