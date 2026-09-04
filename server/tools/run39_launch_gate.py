@@ -108,16 +108,24 @@ def main_study_row_count(session: Session,
     no main-study observation *exists*.
     """
     reg = DC.load_registry() if registry is None else registry
-    main_codes = {pid for pid, cls in reg.items() if cls == DC.MAIN_STUDY}
-    if not main_codes:
-        return 0, []
+    # RUN 135C, M12. `if not main_codes: return 0, []` stood here, before any query. The registry
+    # holds zero MAIN_STUDY entries, so on the live path this function returned (0, []) WITHOUT
+    # TOUCHING THE DATABASE -- proved with a session whose .execute raises: it returned (0, [])
+    # rather than raising. The docstring's claim, that the measurement is "taken from the database
+    # rather than from the registry alone", was therefore false exactly when it mattered: at the
+    # zero state the gate exists to certify. A main-study observation persisted against a
+    # participant the registry does not list would have been invisible.
+    #
+    # The query now runs first and unconditionally, over every participant carrying decisions, and
+    # the MAIN_STUDY decision is taken per row by DC.classify -- the same classifier the rest of
+    # the gate uses -- rather than by an in-list built from a registry that may be empty or stale.
     rows = session.execute(
         select(Participant.pseudonymous_code, Decision.decision_id)
         .join(Assignment, Assignment.participant_id == Participant.participant_id)
         .join(Decision, Decision.assignment_id == Assignment.assignment_id)
-        .where(Participant.pseudonymous_code.in_(main_codes))
     ).all()
-    return len(rows), sorted({r[0] for r in rows})
+    main = [r for r in rows if DC.classify(r[0], reg) == DC.MAIN_STUDY]
+    return len(main), sorted({r[0] for r in main})
 
 
 def session_completeness(session: Session,
@@ -134,8 +142,13 @@ def session_completeness(session: Session,
         decisions = session.scalars(
             select(Decision).join(Assignment)
             .where(Assignment.participant_id == p.participant_id)).all()
-        if not decisions:
-            continue
+        # RUN 135C, L6. `if not decisions: continue` stood here. A participant with zero decisions
+        # was OMITTED from the completeness audit rather than reported as incomplete, so the set
+        # this function returns was not the participant set -- it was the subset that happened to
+        # have data, and "every participant in this list is complete" said nothing about the ones
+        # silently dropped. A zero-decision participant is now reported with observations 0 and
+        # complete_36 False, which is what an incomplete set looks like when it is reported rather
+        # than trimmed.
         keys = {(d.assignment_id, d.period) for d in decisions}
         out.append({
             "study_participant_id": p.pseudonymous_code,
@@ -153,7 +166,7 @@ def session_completeness(session: Session,
             "complete_36": len(keys) == 36 and all(
                 d.final_submitted_at is not None for d in decisions) and len(decisions) == 36,
         })
-    return sorted(out, key=lambda r: r["study_participant_id"])
+    return sorted(out, key=lambda r: str(r["study_participant_id"] or ""))
 
 
 def write_export(out_dir: pathlib.Path, stem: str, payload: bytes,
