@@ -28,6 +28,7 @@ from __future__ import annotations
 import csv
 import pathlib
 import re
+import subprocess
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -42,6 +43,67 @@ SPEC = (ROOT / "research" / "methodology"
             encoding="utf-8", errors="strict")
 RESULTS = HERE / "run17" / "scientific_results.csv"
 PRIOR_SUITE = (HERE / "test_run17_scientific_methods.py").read_text(encoding="utf-8")
+
+# ------------------------------------------------------- RUN 135C, M6 and M7: two vacuous proofs
+# M6. Oracle independence was proved by searching the WHOLE FILE for "O.<fn>". A trailing comment
+# anywhere in the suite that happened to mention the name satisfied it; in a sandbox a comment
+# mentioning O.worst_n_of_m flipped module 6.4 from INCOMPLETE to CONSISTENT. Modules 1.9 and 1.11
+# passed on evidence that sits in the 1.7 and 1.8 blocks -- they share the oracle functions tcpi
+# and vac, so the whole-file search could never tell whose block the call was in. The search is
+# now SCOPED to the module's own block.
+#
+# The prior suite marks a module's block by assigning `mid = "<id>"`, and a block runs to the next
+# such assignment. A module whose marker cannot be found is reported, not silently searched
+# file-wide: a missing marker is exactly the drift this check exists to notice.
+_MID_MARKER = re.compile(r'^\s*mid\s*=\s*"([0-9]+\.[0-9]+)"\s*$', re.M)
+
+
+def _suite_blocks() -> dict[str, str]:
+    marks = [(m.group(1), m.start()) for m in _MID_MARKER.finditer(PRIOR_SUITE)]
+    blocks: dict[str, str] = {}
+    for i, (mid, start) in enumerate(marks):
+        end = marks[i + 1][1] if i + 1 < len(marks) else len(PRIOR_SUITE)
+        blocks[mid] = blocks.get(mid, "") + PRIOR_SUITE[start:end]
+    return blocks
+
+
+SUITE_BLOCKS = _suite_blocks()
+
+
+def _reexecute_prior_suite() -> tuple[bool, str]:
+    """
+    M7. Re-execution was proved by `Path.exists()`. A suite that is present and FAILING read as
+    green, and every note in the artefact said "the prior suite re-executed green" without a
+    single execution ever having happened. It is executed here and its verdict read.
+    """
+    path = HERE / "test_run17_scientific_methods.py"
+    if not path.exists():
+        return False, "the prior suite is not present in the tree"
+    try:
+        proc = subprocess.run([sys.executable, str(path)], cwd=HERE.parent,
+                              capture_output=True, text=True, timeout=900)
+    except subprocess.TimeoutExpired:
+        return False, "the prior suite did not finish within 900s when re-executed"
+    tail = (proc.stdout or "").strip().splitlines()
+    verdict = next((l for l in reversed(tail) if "TOTAL" in l or "RESULT" in l), "")
+    if proc.returncode != 0:
+        err = (proc.stderr or "").strip().splitlines()
+        why = err[-1][:160] if err else f"exit {proc.returncode}"
+        return False, (f"the prior suite does NOT re-execute green: {why}"
+                       + (f" (last verdict line: {verdict})" if verdict else
+                          " and it printed no verdict line at all"))
+    return True, verdict
+
+
+_REEXEC: tuple[bool, str] | None = None
+
+
+def reexecute_prior_suite() -> tuple[bool, str]:
+    global _REEXEC
+    if _REEXEC is None:
+        _REEXEC = _reexecute_prior_suite()
+    return _REEXEC
+
 
 #: The independent-oracle function each prior module's block must call. Read out of
 #: run17/oracle/canonical_oracles.py, which is written from the specification's equations and
@@ -206,18 +268,27 @@ def main() -> int:
         # instead, and reported three modules as unproven because they cite their primary
         # literature source rather than the specification. That was a defect in the CHECK: all
         # three do call the oracle. Recorded here rather than quietly corrected.
-        oracle_independent = any(
-            f"O.{fn}" in PRIOR_SUITE for fn in ORACLE_USE.get(mid, ())
-        ) if mid in ORACLE_USE else ("O." in PRIOR_SUITE)
-        if not oracle_independent:
-            notes.append("the prior suite's block for this module does not call the independent "
-                         "oracle, so oracle independence is not mechanically proved")
+        # RUN 135C, M6. Scoped to this module's own block. Was a whole-file substring search.
+        _block = SUITE_BLOCKS.get(mid)
+        if _block is None:
+            oracle_independent = False
+            notes.append(f"the prior suite carries no `mid = \"{mid}\"` block marker, so this "
+                         "module's oracle use cannot be located and is not proved")
+        else:
+            oracle_independent = any(
+                f"O.{fn}" in _block for fn in ORACLE_USE.get(mid, ())
+            ) if mid in ORACLE_USE else ("O." in _block)
+            if not oracle_independent:
+                notes.append("the prior suite's block for this module does not call the "
+                             "independent oracle, so oracle independence is not mechanically "
+                             "proved")
 
         # The prior re-execution stayed green: the prior run's suite is in the tree and the
         # baseline this run recorded was 7207/7207 with that suite reporting 250/250.
-        reexecuted = (HERE / "test_run17_scientific_methods.py").exists()
+        # RUN 135C, M7. Executed, not existence-checked.
+        reexecuted, _why = reexecute_prior_suite()
         if not reexecuted:
-            notes.append("the prior suite is not present in the tree")
+            notes.append(_why)
 
         problems = bool(notes)
         hard = (not located) or (located and not definition_ok) or not disp_ok
@@ -238,10 +309,14 @@ def main() -> int:
             "disposition_allowed": "yes" if disp_ok else "no",
             "production_used_as_own_oracle": "no" if oracle_independent else "UNPROVEN",
             "prior_disposition": disp,
+            # RUN 135C, M7. The default note claimed "the prior suite re-executed green"
+            # unconditionally. It is now only reachable when reexecute_prior_suite() actually
+            # returned green, because a red re-execution puts its reason in `notes`.
             "notes": "; ".join(notes) or
                      "the committed specification's section, defining phrase and worked figures "
                      "all match the prior result, the disposition is in the allowed vocabulary, "
-                     "an independent oracle is evidenced, and the prior suite re-executed green",
+                     "an independent oracle is evidenced in this module's OWN block, and the "
+                     "prior suite was re-executed and reported green",
         })
 
     target = ROOT / "code_audit" / "run19_prior_21_spec_consistency.csv"
@@ -262,6 +337,12 @@ def main() -> int:
         if r["state"] != "CONSISTENT":
             print(f"  [{r['module_id']}] {r['state']}: {r['notes']}")
     print(f"written: {target}")
+    # RUN 135C, L2. `return 0` stood here regardless of what was found: a run that located
+    # contradictions exited 0 and any caller gating on the exit code was gated on nothing.
+    if contradictions or incomplete:
+        print(f"NON-ZERO EXIT: {contradictions} contradiction(s) and {incomplete} module(s) with "
+              "incomplete evidence")
+        return 1
     return 0
 
 
