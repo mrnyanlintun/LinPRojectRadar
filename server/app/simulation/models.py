@@ -1339,6 +1339,14 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # that clears the boundary each was banded against, by one shared rule in `band_display`, so a
  # row cannot contradict its own sentence (H6, H7). A1.7 and A1.8 are the two core voting
  # modules, so H1 and H2 move published bands. NO EDGE MOVED and no tolerance was introduced.
+ # THE SAME STAMP ALSO CARRIES Run 135's Group-3 and Group-5 repairs, which are the same family
+ # and land in the same run: A6.3, C1.3 and A3.4 banded a value a `_round*` helper had produced
+ # and now band the raw one (three more favourable flips removed); A3.3, A2.8, A3.5, A4.3, A4.4,
+ # A6.4 and A1.7/A1.8 print a figure that clears the boundary it was banded against; and A2.12's
+ # float rule reads all six of its configured edges instead of three, so a fractional float of
+ # 10.5 working days is Yellow and 0.5 is Amber -- the bands that rule's own printed sentence
+ # names -- where they were Amber and Red. EVERY WHOLE-DAY OUTCOME OF THAT RULE IS UNCHANGED and
+ # no edge moved there either.
  "sim-2026.09-v69",
 )
 

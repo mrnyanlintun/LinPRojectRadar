@@ -236,17 +236,24 @@ def s5_source_reliability_bands_raw() -> None:
           "S5 does not print the 80 per cent boundary", r["evidence_metric"])
 
 
-def m3_a212_reads_all_six_edges() -> None:   # wired into CHECKS by the M3 commit
+def m3_a212_reads_all_six_edges() -> None:
     # SOURCE: Run 135 order, M3 -- "11 to 20 is Yellow; 1 to 10 is Amber", "at or below 0 is
     # Red". A float of 10.5 lies strictly between the Amber top (10) and the Yellow floor (11);
     # a float of 0.5 lies strictly between the Red top (0) and the Amber floor (1). Neither may
     # band as though the configured upper edges did not exist.
     from app.simulation.models_ext import _float_rule_band
-    for f, forbidden in ((10.5, "Amber"), (0.5, "Red")):
+    for f, want in ((10.5, "Yellow"), (0.5, "Amber")):
         got = _float_rule_band(f)
-        check(got != forbidden,
-              f"M3 the float rule at {f} does not band {forbidden} against its printed words",
+        check(got == want,
+              f"M3 the float rule at {f} bands {want}, the band its own printed words name",
               str(got))
+    # Every whole-day outcome the three-edge ladder gave is unchanged. SOURCE: the printed
+    # boundary sentence itself -- "above 20 is Green; 11 to 20 is Yellow; 1 to 10 is Amber; at
+    # or below 0 is Red" -- read off the row, not off the band expression.
+    for f, want in ((25, "Green"), (20, "Yellow"), (11, "Yellow"), (10, "Amber"), (1, "Amber"),
+                    (0, "Red"), (-3, "Red")):
+        check(_float_rule_band(f) == want, f"M3 the float rule at {f} whole days is {want}",
+              _float_rule_band(f))
 
 
 def sweep_a34_material_variance_bands_raw() -> None:
@@ -276,6 +283,7 @@ CHECKS = (
     m1_a33_stores_raw,
     s5_source_reliability_bands_raw,
     sweep_a34_material_variance_bands_raw,
+    m3_a212_reads_all_six_edges,
 )
 
 

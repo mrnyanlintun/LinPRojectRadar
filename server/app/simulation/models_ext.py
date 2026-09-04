@@ -1575,6 +1575,68 @@ A3_EXTENSIONS: dict[str, tuple[str, Callable]] = {
 _SEVERITY: dict[str, int] = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
 
 
+class FloatLadderInconsistent(Exception):
+    """The six configured float edges do not describe one continuous ladder."""
+
+
+def _float_rule_band(f: float, cuts: dict | None = None) -> str:
+    """
+    RUN 135, FINDING M3. A2.12's FLOAT RULE NOW READS ALL SIX CONFIGURED EDGES, NOT THREE.
+
+    WHAT IT DID. The band tested `float_green_above` (20), `float_yellow_at_or_above` (11) and
+    `float_amber_at_or_above` (1), and never looked at `float_yellow_at_or_below` (20),
+    `float_amber_at_or_below` (10) or `float_red_at_or_below` (0). Those three were configured,
+    were PRINTED in the boundary sentence the row carries, and decided nothing. On whole working
+    days the omission is invisible, because the ladder is integral and the pairs are adjacent.
+    Off a whole day it is not:
+
+        f = 10.5  ->  not > 20, not >= 11, >= 1  ->  AMBER,
+                      beside a sentence reading "11 to 20 is Yellow; 1 to 10 is Amber",
+                      which places 10.5 in NEITHER band.
+        f = 0.5   ->  not >= 1  ->  RED,
+                      beside a sentence reading "at or below 0 is Red", which 0.5 is not.
+
+    A float in working days need not be whole: a calendar conversion, a partial-day lag or a
+    fractional remaining duration all produce one, and the module answered from a ladder with
+    holes in it while printing a ladder without them.
+
+    WHICH OF THE ORDER'S TWO OPTIONS WAS TAKEN, AND WHY. The order allows reading all six or
+    removing the three. ALL SIX ARE READ. Removing them would have deleted the only statement in
+    the configuration of where each band ENDS, and the boundary sentence on every row prints
+    exactly those endings -- so removing them would have left the printed ladder unsourced,
+    which is the defect one layer along rather than a repair.
+
+    HOW THEY ARE READ. The ladder is banded as CONTINUOUS, from the `at_or_below` edges, so
+    there is no value between two bands. The three `at_or_above` edges are read as the
+    consistency statement they are: each must be exactly one working day above the `at_or_below`
+    edge beneath it, and the Yellow ceiling must be the Green floor. A configuration that fails
+    that is not a ladder with a gap, it is a ladder that disagrees with itself, and this raises
+    rather than picking one of the two readings.
+
+    EVERY WHOLE-DAY OUTCOME IS UNCHANGED. What changes is that 10.5 is now Yellow and 0.5 Amber
+    -- each the band its own printed sentence names.
+    """
+    if cuts is None:
+        from . import band_reference as _BRR
+        cuts = _BRR.entry("critical_path_control_bands")
+    _g_above = cuts["float_green_above"]
+    _y_at_or_above = cuts["float_yellow_at_or_above"]
+    _y_at_or_below = cuts["float_yellow_at_or_below"]
+    _a_at_or_above = cuts["float_amber_at_or_above"]
+    _a_at_or_below = cuts["float_amber_at_or_below"]
+    _r_at_or_below = cuts["float_red_at_or_below"]
+    if (_y_at_or_below != _g_above
+            or _y_at_or_above != _a_at_or_below + 1
+            or _a_at_or_above != _r_at_or_below + 1):
+        raise FloatLadderInconsistent(
+            f"the configured float edges do not describe one continuous ladder: Green above "
+            f"{_g_above}, Yellow {_y_at_or_above} to {_y_at_or_below}, Amber "
+            f"{_a_at_or_above} to {_a_at_or_below}, Red at or below {_r_at_or_below}")
+    return ("Green" if f > _g_above
+            else "Yellow" if f > _a_at_or_below
+            else "Amber" if f > _r_at_or_below else "Red")
+
+
 def hybrid_schedule_slip_band(cuts: dict, *, controlling_float_days: float | None,
                               slip_days: float | None,
                               remaining_planned_duration_days: float | None,
@@ -1598,9 +1660,7 @@ def hybrid_schedule_slip_band(cuts: dict, *, controlling_float_days: float | Non
                              "as a pass"})
     else:
         f = float(controlling_float_days)
-        colour = ("Green" if f > cuts["float_green_above"]
-                  else "Yellow" if f >= cuts["float_yellow_at_or_above"]
-                  else "Amber" if f >= cuts["float_amber_at_or_above"] else "Red")
+        colour = _float_rule_band(f, cuts)
         rules.append({"rule": "total float on the controlling path", "evaluable": True,
                       "value_days": f, "colour": colour,
                       "why": f"total float on the controlling path is {f} working days: above "
