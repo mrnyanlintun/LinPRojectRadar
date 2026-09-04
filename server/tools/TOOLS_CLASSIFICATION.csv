@@ -1,5 +1,6 @@
 path,kind,reason,last_run_referenced,exit_code,first_error
 server/tools/apply_run20_dispositions.py,migration,rule1 one-time run-scoped builder/seeder/exporter by name,20,0,
+server/tools/artifact_write.py,reader,rule4 does not import app.*; reports on files or text only,,,
 server/tools/bootstrap_admin.py,migration,rule1 one-time run-scoped builder/seeder/exporter by name,,2,bootstrap_admin.py: error: the following arguments are required: --google-email
 server/tools/build_client_taxonomy.py,migration,rule1 one-time run-scoped builder/seeder/exporter by name,,0,
 server/tools/build_run13_evidence.py,migration,rule1 one-time run-scoped builder/seeder/exporter by name,13,1,ImportError: cannot import name 'portfolio' from 'app.simulation' (/home/user/LinPRojectRadar/.claude/worktrees/agent-af3ef56c9dde2a90e/server/app/simulation/__init__.py)
