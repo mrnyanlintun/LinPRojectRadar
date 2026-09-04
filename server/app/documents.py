@@ -62,7 +62,8 @@ from sqlalchemy.orm import Session
 from .extraction_client import build_extractor, extract_many, extraction_contract_fingerprint
 from .extraction_fields import UNMAPPED, is_mapped
 from .extraction_merge import (
-    assembly_report, document_as_of, emit_observations, select_signal_inputs,
+    assembly_report, document_as_of, document_ordering_key, emit_observations,
+    select_signal_inputs,
 )
 from .field_registry import IDENTITY_FIELDS, is_raw_field
 from .jdrive_tree import (
@@ -505,6 +506,18 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
         select(Document, DocumentUpload.supersedes_document_id)
         .join(DocumentUpload, DocumentUpload.document_id == Document.document_id)
         .where(DocumentUpload.project_id == project.id, DocumentUpload.period == period)
+        # RUN 135, M4. THE QUERY CARRIED NO `ORDER BY` AND THE ROWS ARRIVED IN WHATEVER ORDER
+        # THE DATABASE CHOSE. Four Run-69 structures walk this list writing last-writer-wins, so
+        # two `oac_minutes` differing only in upload order gave a different `disputeRecord` and
+        # a different `as_of_day` -- A4.7's duration input -- from the same evidence. This
+        # `ORDER BY` is the STABLE BASE only: `doc_type` is a business key and `document_id` is
+        # the row identity, both columns, both available to SQL. The FULL business-key order the
+        # owner named needs the writer tier and the document's own `as_of`, and neither is a
+        # column -- the tier is a property of the type and the as-of lives inside the extraction
+        # JSON -- so the ordering proper is applied in Python below, over the assembled dicts,
+        # by `extraction_merge.document_ordering_key`. Ordering here as well means the input to
+        # that sort is itself deterministic rather than merely sorted afterwards.
+        .order_by(Document.doc_type, Document.document_id)
     ).all()
     seen: set[str] = set()
     out: list[dict] = []
@@ -522,6 +535,12 @@ def _period_documents(session: Session, project: Project, period: int) -> list[d
                     # 0014. The declared document-level revision edge, promoted onto every
                     # observation this document emits (`revision_of`).
                     "supersedes": supersedes})
+    # RUN 135, M4. THE BUSINESS-KEY ORDER, ascending, so the most authoritative document is
+    # LAST and a last-writer-wins consumer takes it: writer tier, dated over undated, `as_of`,
+    # document type, and sha256 ONLY as a final stabiliser between documents identical on every
+    # one of those. See `extraction_merge.document_ordering_key`, which is where the key is
+    # defined so this seam and the emission ordering cannot drift apart.
+    out.sort(key=document_ordering_key)
     return out
 
 

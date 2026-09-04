@@ -85,8 +85,46 @@ def h5() -> None:
           d.get("inspections_performed") == 120.0, repr(d))
 
 
+# ------------------------------------------------- M4, business-key document ordering
+def m4() -> None:
+    from app.extraction_merge import document_ordering_key
+
+    print()
+    print("M4. document order is defined by business keys, not by upload order")
+
+    def _doc(sha, doc_type, ex):
+        return {"sha256": sha, "doc_type": doc_type, "filename": sha[:4], "extraction": ex}
+
+    early = _doc("f" * 64, "oac_minutes", {"document_date": "2026-03-10"})
+    late = _doc("a" * 64, "oac_minutes", {"document_date": "2026-03-31"})
+    undated = _doc("0" * 64, "oac_minutes", {})
+    # The LATER document sorts LAST -- the last-writer-wins consumers take it -- and it does so
+    # although its sha256 is the LOWER of the two. The business key decides, not the hash.
+    check("later as_of sorts last despite the lower sha256",
+          sorted([late, early], key=document_ordering_key)[-1] is late)
+    check("same, with the input list reversed",
+          sorted([early, late], key=document_ordering_key)[-1] is late)
+    # Dated over undated: an undated document never displaces a dated one.
+    check("undated sorts before dated and so never displaces it",
+          sorted([late, undated], key=document_ordering_key)[0] is undated)
+    check("same, reversed",
+          sorted([undated, late], key=document_ordering_key)[0] is undated)
+    # Writer tier: a revision beats what it revises, whatever the hashes are.
+    base = _doc("f" * 64, "contract_value", {})
+    rev = _doc("0" * 64, "change_order", {})
+    check("a revision-rank document sorts after a baseline-rank one",
+          sorted([rev, base], key=document_ordering_key)[-1] is rev)
+    # sha256 is the FINAL position only, and reaches a decision only between documents
+    # identical on every business key above it.
+    k1 = document_ordering_key(late)
+    k2 = document_ordering_key(_doc("b" * 64, "oac_minutes", {"document_date": "2026-03-31"}))
+    check("sha256 is the last element of the key and the only one that differs here",
+          k1[:-1] == k2[:-1] and k1[-1] != k2[-1], f"{k1[-1][:4]} vs {k2[-1][:4]}")
+
+
 def main() -> int:
     h5()
+    m4()
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)}")

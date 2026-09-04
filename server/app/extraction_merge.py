@@ -1027,6 +1027,44 @@ def document_as_of(doc_type: str, extraction: Any) -> date | None:
     return as_of
 
 
+def document_ordering_key(doc: dict) -> tuple:
+    """
+    THE BUSINESS-KEY ORDER FOR A SET OF DOCUMENTS. Ascending, so the MOST AUTHORITATIVE
+    document sorts LAST and a last-writer-wins consumer takes it.
+
+    RUN 135, M4. `documents._period_documents` returned its rows in whatever order the database
+    happened to hand back -- the query carried no `ORDER BY` -- and four Run-69 structures walk
+    that list writing last-writer-wins. Two `oac_minutes` differing only in UPLOAD ORDER
+    therefore produced a different `disputeRecord` and, worse, a different `as_of_day`, which is
+    A4.7's duration input. `documents.py`'s own header promises byte-identical `signalInputs`
+    for the same evidence; an undefined list order cannot keep that promise.
+
+    The key is the one the owner's order names, in that sequence:
+
+      1. WRITER TIER, as the document-level `_doc_rank` already declares it -- baseline first,
+         ordinary next, revision last, so a revision beats what it revises.
+      2. DATED OVER UNDATED. An undated document must never displace a dated one, so undated
+         sorts FIRST and loses.
+      3. `as_of`, by `document_as_of` -- the same date rule emission uses, so "which document is
+         later" has ONE answer on this platform.
+      4. DOCUMENT TYPE, lexical, a declared and readable key.
+      5. sha256, AND ONLY HERE. Under ruling R3 a content hash may STABILISE an order and may
+         never SELECT a value. Two documents that reach this position are identical on every
+         business key above, and the hash decides only which of them is written second. Where
+         two such documents state DIFFERENT values for one field, that disagreement is reported
+         rather than settled silently -- see `unresolved_value_conflicts` below.
+    """
+    doc_type = str(doc.get("doc_type") or "")
+    as_of = document_as_of(doc_type, doc.get("extraction"))
+    return (
+        _doc_rank(doc_type),
+        1 if as_of is not None else 0,
+        as_of or date.min,
+        doc_type,
+        str(doc.get("sha256") or ""),
+    )
+
+
 def emit_observations(doc: dict) -> list[dict]:
     """One stored document -> observation records. Pure; raises DocRiskScoreRangeError only.
 
