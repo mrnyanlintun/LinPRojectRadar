@@ -283,11 +283,86 @@ def h4() -> None:
         session.close()
 
 
+# ------------------------------------------------ M5, bare 1 and 0 as a probability
+def m5() -> None:
+    from app.risk_values import RiskProbability, ValueRefusal, parse_probability
+
+    print()
+    print("M5. bare 1 and 0 refuse as a probability, exactly as 2 through 5 do")
+
+    def _kind(cell, **kw):
+        return parse_probability(cell, **kw)
+
+    for cell in ("1", "0"):
+        r = _kind(cell)
+        check(f"bare {cell!r} refuses with no scale stated", isinstance(r, ValueRefusal),
+              type(r).__name__ + " " + str(getattr(r, "value", "")))
+    # The reason it refuses with is the SAME reason 2 through 5 refuse with. If the two
+    # diverged, one of them would be a special case rather than one rule.
+    check("the refusal reason is the one 2 through 5 already give",
+          getattr(_kind("1"), "reason", None) == getattr(_kind("5"), "reason", ""))
+    # A fraction is written with a decimal point, and every one of those still reads.
+    for cell, want in ((".4", 0.4), ("0.4", 0.4), ("1.0", 1.0), ("0.0", 0.0), ("0.999", 0.999)):
+        r = _kind(cell)
+        check(f"{cell!r} still reads as {want}",
+              isinstance(r, RiskProbability) and r.value == want, str(r))
+    # A stated unit still reads, and a stated 1 per cent is no longer certainty.
+    check("'100%' still reads as 1.0", _kind("100%").value == 1.0)
+    check("'1 %' reads as 0.01, not as certainty", _kind("1 %").value == 0.01)
+    check("a percent COLUMN reads a bare '1' as 0.01, not as certainty",
+          _kind("1", column_is_percent=True).value == 0.01,
+          str(_kind("1", column_is_percent=True)))
+    check("a percent COLUMN still reads a bare '30' as 0.3",
+          _kind("30", column_is_percent=True).value == 0.3)
+    # A band word is untouched by any of this.
+    check("'Low' is still a band, not a number", _kind("Low").band == "Low")
+
+
+# ---------------------------------- the two small ones named in the owner's order
+def small() -> None:
+    from app.compliance_register import _HEADINGS
+    from app.extraction_client import describe_json_truncation
+
+    print()
+    print("Also in scope: the dead truncation suffix and the duplicated register heading")
+
+    check("describe_json_truncation('') is None -- the branch the dead suffix depended on",
+          describe_json_truncation("") is None)
+    seen: dict[str, str] = {}
+    dupes: list[str] = []
+    for field, headings in _HEADINGS.items():
+        for h in headings:
+            if h in seen:
+                dupes.append(f"{h}: {seen[h]} and {field}")
+            seen[h] = field
+    check("no heading is claimed by two register fields", not dupes, "; ".join(dupes))
+    check("'status' is still read, by exactly one field",
+          seen.get("status") == "status", str(seen.get("status")))
+    # What the duplicate COST: a closure-status-only register made every row both assessed and
+    # satisfied, because `_row` derives `assessed` from `satisfied` when no assessed column was
+    # printed. A workflow state is not a conformance outcome.
+    from app.compliance_register import _row
+    r = _row({"Requirement ID": "R1", "Status": "Closed"})
+    check("a status-only register yields no `satisfied` and is NOT assessed",
+          "satisfied" not in r and r.get("assessed") is False, repr(r))
+    check("the status text is still carried, verbatim", r.get("status") == "Closed", repr(r))
+    # A closed nonconformance that FAILED reads as failed, not as satisfied.
+    r = _row({"Requirement ID": "R2", "Result": "Fail", "Status": "Closed"})
+    check("a CLOSED but FAILED row is satisfied False, not True",
+          r.get("satisfied") is False and r.get("assessed") is True, repr(r))
+    # A register that means to state an outcome still states one.
+    r = _row({"Requirement ID": "R3", "Result": "Pass"})
+    check("a stated outcome column still reads",
+          r.get("satisfied") is True and r.get("assessed") is True, repr(r))
+
+
 def main() -> int:
     h5()
     m4()
     h3_r3()
     h4()
+    m5()
+    small()
     print()
     if FAILURES:
         print(f"FAILED: {len(FAILURES)}")

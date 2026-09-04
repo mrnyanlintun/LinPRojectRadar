@@ -74,10 +74,32 @@ _HEADINGS: dict[str, tuple[str, ...]] = {
         "assessed", "inspected", "verified", "checked", "reviewed", "tested", "witnessed",
         "evaluated",
     ),
+    # RUN 135. THREE HEADINGS WERE CLAIMED BY BOTH `satisfied` AND `status`, AND THEY ARE
+    # REMOVED FROM HERE: "status", "closure status" and "disposition".
+    #
+    # `_pick` walks this table field by field, so a register printing only one of those columns
+    # had it read TWICE -- once as free descriptive text under `status`, which is harmless, and
+    # once through `_tri` as the row's two-state OUTCOME, which is not. A closure-status-only
+    # register therefore made every row both ASSESSED and SATISFIED: `_row` sets
+    # `assessed = satisfied is not None` when the document printed no assessed column, so one
+    # ambiguous heading decided both.
+    #
+    # WHY `status` KEEPS THEM AND `satisfied` LOSES THEM. A status is a WORKFLOW STATE and a
+    # satisfaction is a CONFORMANCE OUTCOME, and they are not the same fact. "Closed" is in
+    # `_AFFIRMATIVE`, so a nonconformance whose NCR has been dispositioned and closed out -- the
+    # ordinary end of a nonconformance -- read as a requirement that was SATISFIED. That is the
+    # favourable direction, and it is bought from a column that never claimed to state
+    # conformance at all. Under `status` the same cell is carried verbatim as text, quoted and
+    # not converted, which is what this reader does with everything it cannot turn into a state
+    # honestly.
+    #
+    # A register that means to state an outcome still has eleven headings to do it with, and a
+    # register that prints ONLY a status column now yields no `satisfied` and `assessed: False`
+    # -- NOT ASSESSED, which is the honest reading of a document that never said.
     "satisfied": (
         "satisfied", "result", "outcome", "conformance", "conformity", "compliant",
-        "compliance", "conforms", "pass fail", "pass or fail", "verdict", "disposition",
-        "finding", "closure", "closure status", "status",
+        "compliance", "conforms", "pass fail", "pass or fail", "verdict",
+        "finding", "closure",
     ),
     "criticality": (
         "criticality", "critical", "severity", "priority", "risk level", "classification",
