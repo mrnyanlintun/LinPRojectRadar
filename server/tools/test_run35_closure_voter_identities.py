@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import pathlib
 import subprocess
 import sys
@@ -133,9 +134,18 @@ def g01_tcpi_bands_from_full_precision():
         bad.append(f"boundary fixture banded {row.get('status_color')}, not {_expected}; the "
                    f"full-precision index {row.get('tcpi')} sits on the Run 114 rung "
                    f"{_expected} (source: fc9d60c report s6)")
-    if row.get("tcpi_display") == row.get("tcpi"):
-        bad.append("the display value equals the canonical value here, so this fixture no "
-                   "longer distinguishes the two and the guard would be vacuous")
+    # RUN 135 MERGE, H8 x H6. Run 135 A introduced `band_display.band_figure`, which grows the
+    # printed precision until the figure sits on the SAME side of every Run 114 rung as the
+    # canonical index. So no fixture can any longer separate display from decision, and the
+    # old clause here ("display != canonical, else vacuous") tested a property the platform no
+    # longer has. The guard's intent survives as its converse: the display figure, re-banded on
+    # the Run 114 rungs, must land on the band the canonical index earned. Reverting
+    # `band_figure` to `_round3` makes this fail (display 1.0 -> Green, canonical -> Yellow).
+    _disp_rung = band_from_run114_tcpi(row.get("tcpi_display"))
+    if _disp_rung != _expected:
+        bad.append(f"the DISPLAYED figure {row.get('tcpi_display')!r} re-bands to {_disp_rung} "
+                   f"but the canonical index earned {_expected}: the card prints a figure on the "
+                   f"wrong side of a Run 114 rung (source: fc9d60c; Run 135 M2/H6)")
     return not bad, "; ".join(bad[:3])
 
 
@@ -161,8 +171,11 @@ def g03_display_value_is_not_the_vote_input():
     # now go through the Run 114 rungs, whose source is recorded against each edge above.
     band_from_disp = band_from_run114_tcpi(disp)
     band_from_canon = band_from_run114_tcpi(canon)
-    if band_from_disp == band_from_canon:
-        bad.append("this fixture does not separate the two bands, so the guard is vacuous")
+    # RUN 135 MERGE, H8 x H6. See g01: under `band_figure` the display and canonical bands
+    # are equal BY DESIGN, so "not separated => vacuous" is inverted into the invariant itself.
+    if band_from_disp != band_from_canon:
+        bad.append(f"the display figure {disp!r} bands {band_from_disp} while the canonical "
+                   f"index bands {band_from_canon}: the two have come apart (Run 135 M2/H6)")
     if row["status_color"] != band_from_canon:
         bad.append(f"the emitted band {row['status_color']} follows the DISPLAY value, not the "
                    f"canonical one ({band_from_canon} expected)")
@@ -231,8 +244,14 @@ def g07_vac_identity_holds():
         ident = bac - bac / cpi
         if row["vac"] != ident:
             bad.append(f"bac={bac} cpi={cpi}: {row['vac']!r} != {ident!r}")
-        if row["vac_pct"] != (ident / bac) * 100:
-            bad.append(f"bac={bac} cpi={cpi}: percentage is not VAC/BAC")
+        # RUN 135 MERGE, H8 x H2 under R1/R2. Was `(ident / bac) * 100` -- the SECOND
+        # arithmetic path, the one whose ULP disagreement with the edge constant was H2. R1
+        # removed it; the one canonical quantity is the Run 114 order's own identity,
+        # VAC% = (1 - 1/CPI) x 100 (source: fc9d60c), and the expectation is that expression,
+        # not the function under test.
+        if row["vac_pct"] != (1 - 1 / cpi) * 100:
+            bad.append(f"bac={bac} cpi={cpi}: percentage is not (1 - 1/CPI) x 100 "
+                       f"(Run 114, fc9d60c)")
     return not bad, "; ".join(bad[:3])
 
 
@@ -273,9 +292,19 @@ def g09_cost_recovery_reads_analytical_results():
         bad.append(f"the analytical status reaching fusion is {row['status_color']}, not "
                    f"{_expected9}; the FORMATTED value 1 sits on rung "
                    f"{band_from_run114_tcpi(1.0)}")
-    if row["evidence_metric"].split(",")[0] != "TCPI: 1":
-        bad.append("this fixture no longer has a display string that disagrees with the "
-                   "analytical band, so the guard is vacuous")
+    # RUN 135 MERGE, H8 x H6. The fixture's formatted string was "TCPI: 1" and that disagreement
+    # with the analytical band was the proof. `band_figure` now prints enough precision that the
+    # string can no longer disagree -- so the guard asserts exactly that: the figure PARSED BACK
+    # out of the formatted string must re-band to the analytical band. A fusion reading the
+    # string could then not be misled. Fails under a `_round3` display.
+    _m = re.match(r"TCPI:\s*([-+]?\d+(?:\.\d+)?)", row["evidence_metric"])
+    if not _m:
+        bad.append(f"evidence_metric does not open with a parseable TCPI figure: "
+                   f"{row['evidence_metric'][:40]!r}")
+    elif band_from_run114_tcpi(float(_m.group(1))) != row["status_color"]:
+        bad.append(f"the formatted figure {_m.group(1)} re-bands to "
+                   f"{band_from_run114_tcpi(float(_m.group(1)))} but the analytical band is "
+                   f"{row['status_color']} (Run 135 M2/H6)")
     return not bad, "; ".join(bad[:3])
 
 
