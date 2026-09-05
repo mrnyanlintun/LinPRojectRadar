@@ -1721,7 +1721,15 @@ if __name__ == "__main__":
                                               "report_period": "2024-09-30"})])
     assert with_mr["ac"] == 4400000, with_mr["ac"]
     assert with_mr["sources"]["ac"]["docType"] == "monthly_report"
-    assert with_mr["cpi"] == 0.909, with_mr["cpi"]
+    # RUN 138. RE-POINTED, NOT DELETED. This read ``== 0.909`` -- the value the assembler
+    # stored back when it rounded, ``_round3(ev/ac)``. Run 135 H1 removed that rounding
+    # ("a stored analytical field is never a rounded one") and this assertion was left
+    # behind, so ``python -m app.extraction_merge`` had been failing on the very defect H1
+    # fixed: 4000000/4400000 is 0.9090909090909091, not its three-place presentation. The
+    # expectation is now the quotient of the fixture's OWN STATED FIGURES -- 4000000 above
+    # and the 4400000 actual cost on the monthly report -- and not a transcribed literal,
+    # so it cannot drift away from them again.
+    assert with_mr["cpi"] == 4000000 / 4400000, with_mr["cpi"]
     # recency by the value's own date, not by content hash: "fff" < "ggg" alphabetically,
     # but swap their dates and the earlier-hash CO wins on its later as_of.
     swapped = [dict(d) for d in base]
