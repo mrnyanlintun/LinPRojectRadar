@@ -1713,10 +1713,19 @@ var HEADERS = [
     function legSquare(color) {
       return '<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+color+';vertical-align:middle;margin-right:3px"></span>';
     }
+    // RUN 139B. THE LEGEND NAMES `Complete`. The surface paints it -- COL.Complete is a real
+    // node colour and `linStatusShape` gives it the RING, hollow where the other four verdicts
+    // are filled -- and the strip named the other five treatments and not this one. The marker
+    // drawn here is the ring the diagram draws, not a filled dot, so the key matches the render.
+    function legRing(color) {
+      return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;' +
+        'border:2px solid '+color+';box-sizing:border-box;vertical-align:middle;margin-right:3px"></span>';
+    }
     [['Green',COL.Green,true],['Yellow',COL.Yellow,true],['Amber',COL.Amber,true],
-     ['Red',COL.Red,true],['No data',COL.None,false]].forEach(function(t) {
+     ['Red',COL.Red,true],['Complete',COL.Complete,'ring'],
+     ['No data',COL.None,false]].forEach(function(t) {
       var s = document.createElement('span');
-      s.innerHTML = legDot(t[1],t[2]) + t[0];
+      s.innerHTML = (t[2] === 'ring' ? legRing(t[1]) : legDot(t[1],t[2])) + t[0];
       leg.appendChild(s);
     });
     (function() {
