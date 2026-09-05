@@ -101,12 +101,33 @@ KNOWN_DEFECTS: dict[str, str] = {
 }
 
 
+#: RUN 137, ITEM 3. THE SECTIONS RUN 43 RENUMBERED, AND THE REASON THE SUBSTITUTION MISSED THEM.
+#:
+#: `_suppressed_for` matched a section label to a registry identifier by stripping the group
+#: letter: section `"1.3"` against module `"A1.3"`. That holds only where Run 43's renumbering
+#: left the numeric part alone. It did not for the Category-6 ensembles: `p0-baseline/
+#: module_renumbering_map.csv` carries `6.2 -> B1.2`, and by the same group rule `6.3 -> B1.3`
+#: and `6.4 -> B1.4`. Stripping "B" from "B1.3" gives "1.3", which never matches the section
+#: label "6.3", so the Run 96 substitution set `_SUPPRESSED` and every check in those sections
+#: went on evaluating the `_AbsentReading` sentinel a removed module returns. Eight checks
+#: failed there, and could not have done anything else: `_Absent.__eq__` is False and
+#: `_Absent is None` is False, so those propositions could not distinguish a correct
+#: production from a broken one. They were vacuous, not adverse.
+#:
+#: The map is the authority for the pairing, not this file's arithmetic.
+SECTION_TO_MODULE: dict[str, str] = {"6.1": "B1.1", "6.2": "B1.2", "6.3": "B1.3", "6.4": "B1.4"}
+
+
 def _suppressed_for(module_id: str) -> bool:
     """True when `module_id` names the module whose propositions the Run 96/97 substitution
     replaced. Sections label their checks without the group letter (`"1.3"`) while the registry
-    and `run()` use the full identifier (`"A1.3"`), so both spellings are accepted."""
+    and `run()` use the full identifier (`"A1.3"`), so both spellings are accepted -- and where
+    Run 43 renumbered the section away from its module (`"6.3"` for `B1.3`), the pairing is read
+    from `SECTION_TO_MODULE` above rather than guessed from the digits."""
     sup = _SUPPRESSED.get("module") or ""
-    return bool(sup) and module_id in (sup, sup.lstrip("ABCD"))
+    if not sup:
+        return False
+    return module_id in (sup, sup.lstrip("ABCD")) or SECTION_TO_MODULE.get(module_id) == sup
 
 
 def proposition(module_id: str, key: str, name: str, holds: bool, detail: str = "") -> bool:
@@ -1047,6 +1068,15 @@ def cat6() -> None:
     _tie = _V5b.majority_rules([_mk("s1", "Green", "b1"), _mk("s2", "Red", "b2")])
     check(mid, "boundary: an even split returns NO unique winner and is reported as a conflict",
           _tie["unique_winner"] is False and _tie["conflict"] is True, str(_tie))
+    # RUN 137, ITEM 3. THE CANONICAL-ENGINE CHECKS ARE TAKEN FIRST, BEFORE THE DISPATCH.
+    # `B1.3` was removed at Run 96, so every dispatch below is replaced by the substitution and
+    # the checks that follow it are suppressed. `canonical_v5.majority_rules` is still in the
+    # tree and this lineage property is still live, so it is asserted BEFORE the substitution
+    # rather than after it, where it would be silently dropped. Nothing about the property
+    # changed; only where in the section it is taken.
+    check(mid, "lineage: duplicating one signal does NOT change the count",
+          _V5b.majority_rules([_mk("a", "Red", "bX"), _mk("a2", "Red", "bX"),
+                               _mk("g", "Green", "bY")])["counts"]["Red"] == 1)
     check(mid, "missingness: an absent signal is not counted as Green",
           run("B1.3", _pkg(cusum="Red", doc="Red")).get("counts", {}).get("Green") == 0)
     check(mid, "boundary: an unknown status is refused rather than counted",
@@ -1054,12 +1084,24 @@ def cat6() -> None:
     check(mid, "missingness: refuses when nothing qualifies", abstained(run("B1.3", _pkg())))
     check(mid, "quorum: a single signal is not a majority and the module says so",
           abstained(run("B1.3", _pkg(cusum="Red"))))
-    check(mid, "lineage: duplicating one signal does NOT change the count",
-          _V5b.majority_rules([_mk("a", "Red", "bX"), _mk("a2", "Red", "bX"),
-                               _mk("g", "Green", "bY")])["counts"]["Red"] == 1)
 
     # ------------------------------------------------------------------ 6.4 Worst-N-of-M
     mid = "6.4"
+    # RUN 137, ITEM 3. THE CANONICAL-ENGINE CHECK IS TAKEN FIRST, BEFORE THE DISPATCH, for the
+    # reason recorded in section 6.3: `B1.4` was removed at Run 96, so from the first dispatch
+    # onward this section is the substitution and its remaining checks are suppressed.
+    # `canonical_v5.worst_two_of_m` is still in the tree and this property is still live.
+    # THE SECOND-STAGE OPERATION IS THE MEAN, NOT THE MAXIMUM. Taking the maximum of the worst
+    # two collapses the module onto Conservative Dominance, which the contract forbids: on
+    # Green, Green, Red the mean is 1.5 where the maximum would be 3.
+    from app.simulation import canonical_v5 as _V5c
+    _mk4 = lambda i, st, b: {"signal_id": i, "status": st, "period": 1, "lineage_body": b}
+    _w2 = _V5c.worst_two_of_m([_mk4("a", "Green", "b1"), _mk4("b", "Green", "b2"),
+                               _mk4("c", "Red", "b3")])
+    check(mid, "known-answer: Green, Green, Red gives a Worst-2 mean of 1.5, so the module does "
+               "NOT collapse onto conservative dominance",
+          abs(_w2["mean_worst_2"] - 1.5) < 1e-12
+          and O.conservative_dominance(["Green", "Green", "Red"]) == "Red", str(_w2))
     out = run("B1.4", _pkg(mc="Red", cusum="Green", doc="Green"))
     # RUN 30 v15. N IS PREDECLARED AND FROZEN AT TWO, and the statistic is the MEAN of the worst
     # two severities. It asserts no band, so `abstained()` would read it as an abstention; what
@@ -1075,17 +1117,6 @@ def cat6() -> None:
     check(mid, "invariant: adding a benign signal does not lower the statistic",
           four.get("mean_worst_2") >= three.get("mean_worst_2"),
           f"{three.get('mean_worst_2')} then {four.get('mean_worst_2')}")
-    # THE SECOND-STAGE OPERATION IS THE MEAN, NOT THE MAXIMUM. Taking the maximum of the worst
-    # two collapses the module onto Conservative Dominance, which the contract forbids: on
-    # Green, Green, Red the mean is 1.5 where the maximum would be 3.
-    from app.simulation import canonical_v5 as _V5c
-    _mk4 = lambda i, st, b: {"signal_id": i, "status": st, "period": 1, "lineage_body": b}
-    _w2 = _V5c.worst_two_of_m([_mk4("a", "Green", "b1"), _mk4("b", "Green", "b2"),
-                               _mk4("c", "Red", "b3")])
-    check(mid, "known-answer: Green, Green, Red gives a Worst-2 mean of 1.5, so the module does "
-               "NOT collapse onto conservative dominance",
-          abs(_w2["mean_worst_2"] - 1.5) < 1e-12
-          and O.conservative_dominance(["Green", "Green", "Red"]) == "Red", str(_w2))
     check(mid, "missingness: refuses when nothing qualifies", abstained(run("B1.4", _pkg())))
     check(mid, "boundary: an unknown status is refused rather than dropped from a denominator",
           abstained(run("B1.4", _pkg(mc="banana", cusum="Red"))))
@@ -1242,8 +1273,16 @@ def cat9_architecture() -> None:
     # answer this proposition would mark a Category-9 finding resolved that Run 31 owns and
     # Run 30 has not touched. B1.3 still computes a project state from evidence that has passed
     # through no qualification step, which is exactly what this proposition is about.
-    raw = _pkg(mc="Red", cusum="Red", doc="Red")
-    out = run("B1.3", raw)
+    # RUN 137, ITEM 3. THE PROBE MOVES FROM B1.3 TO B1.1, FOR RUN 30'S OWN REASON AND BY ITS OWN
+    # TEST. Run 96 removed B1.3 from the registry, so from that run onward this probe was taken
+    # on an `_AbsentReading` sentinel: `abstained()` read False off it whatever production did,
+    # so the proposition was decided by the sentinel and not by the platform. The carrier must be
+    # a Category-6 ensemble that STILL COMPUTES a project state from evidence that has passed
+    # through no qualification step. Of the two ensembles left in the registry, B1.2 abstains at
+    # dispatch for an unrelated reason -- the same disqualification Run 30 recorded -- and B1.1
+    # computes, which section 6.1 above exercises directly. B1.1 is therefore the carrier.
+    raw = _pkg("Red", mc="Red", cusum="Red", doc="Red")
+    out = run("B1.1", raw)
     proposition(mid, "ARCH/raw-bypass",
                 "a Category-6 ensemble must refuse a raw status carrying no Category-9 "
                 "qualification", abstained(out),
@@ -1275,14 +1314,21 @@ def cat9_architecture() -> None:
           FUSION.normalise_status("RED") == "Red"
           and FUSION.normalise_status("light-amber") == "Yellow")
     # Double counting: the same underlying evidence reaching an ensemble more than once.
-    once = run("B1.3", _pkg(mc="Red", cusum="Green", doc="Green"))
-    twice = run("B1.3", _pkg(mc="Red", cusum="Green", doc="Green",
-                             array=[{"status_color": "Red"}]))
-    check(mid, "a second transform of the same adverse evidence does not increase the adverse "
-               "count (repaired in Run 30: every governed signal carries a lineage body and "
-               "duplicate lineage is collapsed before anything is counted)",
-          twice["counts"]["Red"] == once["counts"]["Red"],
-          f"{once['counts']['Red']} then {twice['counts']['Red']}")
+    #
+    # RUN 137, ITEM 3. THE DISPATCH-LEVEL PROBE IS RETIRED AND THE PROPERTY IS NOT LOST.
+    # This check counted `counts["Red"]` off a dispatch of B1.3, and Run 96 removed B1.3 from
+    # the registry. From that run onward it read the `_AbsentReading` sentinel, whose `__eq__`
+    # is False for everything, so it failed whatever production did and could not have passed:
+    # a check that cannot distinguish a correct platform from a broken one. There is no live
+    # carrier for it either -- a counting ensemble is what the property needs, and of the two
+    # Category-6 ensembles still registered B1.1 is a dominance rule that reports no counts and
+    # B1.2 abstains at dispatch. It is therefore RETIRED here rather than re-pointed at a
+    # module that cannot answer it.
+    #
+    # THE PROPERTY ITSELF IS STILL ASSERTED, on the canonical engine that implements it:
+    # section 6.3 above takes `canonical_v5.majority_rules` with one lineage body read twice and
+    # requires the Red count to stay at one. That check is live, is taken before the Run 96
+    # substitution, and goes red the moment duplicate lineage stops being collapsed.
 
 
 # =============================================================================================
@@ -1392,10 +1438,14 @@ def fault_injection() -> list[dict]:
     # 9. Category-9 raw bypass: a status with no qualification must not be silently accepted
     #    as though qualified. Prove the proposition is decidable, by showing an unqualified and
     #    a qualified package are indistinguishable to the ensemble.
-    unqual = run("B1.3", _pkg(mc="Red", cusum="Red", doc="Red"))
-    qual = _pkg(mc="Red", cusum="Red", doc="Red")
+    # RUN 137, ITEM 3. THE CARRIER MOVES FROM B1.3 TO B1.1, for the reason recorded beside the
+    # ARCH/raw-bypass proposition: Run 96 removed B1.3, so both sides of this comparison were
+    # `_Absent` sentinels whose `__eq__` is False, and the fault could not be shown decidable
+    # whatever the platform did. B1.1 is the Category-6 ensemble that still computes.
+    unqual = run("B1.1", _pkg("Red", mc="Red", cusum="Red", doc="Red"))
+    qual = _pkg("Red", mc="Red", cusum="Red", doc="Red")
     qual["signals"]["mc"]["signal_qualification"] = "QUALIFIED"
-    qual_out = run("B1.3", qual)
+    qual_out = run("B1.1", qual)
     record("Category-9 raw bypass", True,
            unqual.get("status_color") == qual_out.get("status_color"),
            "the ensemble returns the same answer with and without a qualification marker, so "
