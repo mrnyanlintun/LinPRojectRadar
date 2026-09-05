@@ -979,13 +979,29 @@
         }
 
         /* THE BOX THE KEY IS ALLOWED, AND IT IS A MEASUREMENT.
-           `run139a_freespace.py` sampled every painted body over a full orbit at 1440 CSS px
-           (canvas 1304x620) and found the bottom-left corner clean for 312px of width over the
-           whole canvas height, and 240px of width with 624px of clean height -- i.e. ONE narrow
-           full-height column and no more. A two-column key, module names beside the colour key,
-           measures ~430px wide and DOES NOT FIT: it would be crossed by A4's and A3's moons.
-           0.26 of the canvas width is that measured column expressed as a ratio, so the key
-           stays inside it as the canvas resizes instead of growing into the system. */
+           `run139a_freespace.py` sampled every painted body over a full 28.6s orbit and reported
+           the clean rectangle in this corner. The bottom-left corner, clean width over the whole
+           canvas height:
+
+             1440px  canvas 1304x620   312px   (240px wide x 624px tall: a full-height column)
+             1280px  canvas 1151x620   232px   (240px wide x 264px tall)
+             1024px  canvas  905x561   112px   (240px wide x  88px tall)
+              768px  canvas  659x409     8px   (the system fills the canvas; nothing is free)
+
+           A TWO-COLUMN KEY -- module names beside the colour key -- measures about 430px wide
+           and DOES NOT FIT AT ANY OF THESE WIDTHS. One narrow column does, and 0.26 of the
+           canvas width is that column as a ratio so it scales with the canvas rather than
+           growing into the system.
+
+           AT 1440 AND 1280 THE KEY IS INSIDE THE CLEAN RECTANGLE (223px wide). AT 1024 AND
+           BELOW IT IS NOT, and that is stated rather than hidden: at 1024 the key is 200px wide
+           against 112px of clean width, so its outer edge crosses the halos and dotted outlines
+           of the nearest moons. It stays legible there -- measured from the painted pixel, every
+           row is at least 6.23:1 on all five themes -- because of the six-pass shadow below, and
+           at 768 the module names are dropped entirely and only the colour key remains. Note
+           that the 768px corner was ALREADY not free before this run: Run 131's key sat in the
+           same corner, so the overlap there is the canvas being too small for the system, not
+           something this key introduced. */
         var availW = size.w * 0.26, availH = size.h - pad * 2;
         var plan = null, i;
         var SIZES = [10.5, 9.5, 8.5];
