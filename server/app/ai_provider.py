@@ -57,7 +57,23 @@ from typing import Any
 # against any provider's catalogue and Run 111 has no key with which to verify them either;
 # inventing a fourth unverified name per provider would have added three more things for the
 # owner to check for no gain. `AI_RECOGNITION_MODEL` overrides it.
-ROLES = ("extraction", "spec", "narration", "recognition")
+#
+# RUN 140 ADDED "mitigation": the step that composes, ONCE PER MODULE-READING PER PERIOD, the
+# text suggesting how to move a non-Green reading one band up (Red toward Amber, Amber toward
+# Yellow, Yellow toward Green). It is its own call site because the owner ruled it is served by
+# a different model from every other call site -- Opus, not Sonnet and not Groq -- and because a
+# stored mitigation must record WHICH model composed it, exactly as a reading does.
+#
+# IT IS THE ONE ROLE WHOSE DETERMINISM DOES NOT COME FROM SAMPLING. The composition happens once
+# and is stored with the audit record; every later render, export and print replays the stored
+# text and makes no call at all. That is the argument `recognition.py:44-64` records:
+# determinism comes from recording the result and replaying it. Consequently NO CALLER PASSES A
+# `temperature` FOR THIS ROLE. Both boundaries below attach `temperature` only when a caller
+# supplies one (`if temperature is not None`, AnthropicClient and OpenAICompatClient alike), so
+# not passing one is sufficient -- and Run 128 established that `claude-sonnet-5` rejects
+# `temperature` outright with a 400. Whether the Opus identifier accepts it is UNVERIFIED here
+# and is deliberately never depended upon.
+ROLES = ("extraction", "spec", "narration", "recognition", "mitigation")
 
 # --------------------------------------------------------------------------- provider table
 #
@@ -92,6 +108,29 @@ ROLES = ("extraction", "spec", "narration", "recognition")
 # and recognition. `claude-haiku-4-5-20251001` is taken from his OWN measured availability list
 # and is the only entry on it in the same small/fast tier as the `claude-3-5-haiku-latest` it
 # replaces; nothing was invented and `AI_NARRATION_MODEL` overrides it in one variable.
+#
+# RUN 140, THE ONE NEW IDENTIFIER IN THIS TABLE, AND WHERE IT CAME FROM, SAID PLAINLY.
+#
+# The owner ruled that `mitigation` is served by Opus. BEFORE THIS RUN THE TABLE CARRIED NO OPUS
+# ENTRY AT ALL: `claude-opus-4-6` appears only in the Run 113 note above, where the owner
+# himself records it as "real but two generations old". So an identifier had to be added.
+#
+# `claude-opus-5` is that identifier. IT WAS NOT READ FROM ANTHROPIC'S CATALOGUE. Its source is
+# the runtime model-identity information of the Claude Opus 5 model that performed Run 140 --
+# the current Opus of the Claude 5 family, and the sibling of the `claude-sonnet-5` this table
+# already carries for extraction, spec and recognition. No date-suffixed variant was invented.
+# IT IS THEREFORE CATALOGUE-UNVERIFIED, exactly as the OpenAI entries above are, and is marked
+# so for the same reason: no key exists in the verification environment. The owner checks it the
+# way he checked the others, with the command this file already documents:
+#     curl -s https://api.anthropic.com/v1/models -H "x-api-key: $ANTHROPIC_API_KEY" \
+#          -H "anthropic-version: 2023-06-01"
+# `AI_MITIGATION_MODEL` re-points it in one variable if the catalogue says otherwise.
+#
+# THE OTHER TWO PROVIDERS INTRODUCE NO NEW NAME. `mitigation` on openai and groq is, exactly as
+# Run 111 did for `recognition`, the SAME STRING as that provider's `spec` default. Those keys
+# exist because `load_provider` reads `spec["models"][role]` directly: a role missing from a
+# provider's table is a KeyError the moment anyone sets `AI_MITIGATION_PROVIDER=groq`. They are
+# reachable only by that deliberate setting; the code default is anthropic/Opus.
 
 PROVIDERS: dict[str, dict[str, Any]] = {
     "anthropic": {
@@ -105,6 +144,8 @@ PROVIDERS: dict[str, dict[str, Any]] = {
             "recognition": "claude-sonnet-5",   # same string as `spec`; see ROLES
             # NOT NAMED BY THE OWNER. See the note above the table.
             "narration": "claude-haiku-4-5-20251001",
+            # RUN 140. CATALOGUE-UNVERIFIED. See the note above the table for its source.
+            "mitigation": "claude-opus-5",
         },
     },
     "openai": {
@@ -118,6 +159,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
             "spec": "gpt-4o",
             "recognition": "gpt-4o",   # same string as `spec`; see ROLES
             "narration": "gpt-4o-mini",
+            "mitigation": "gpt-4o",   # same string as `spec`; see ROLES
         },
     },
     "groq": {
@@ -130,6 +172,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
             "spec": "openai/gpt-oss-120b",
             "recognition": "openai/gpt-oss-120b",   # same string as `spec`; see ROLES
             "narration": "openai/gpt-oss-20b",
+            "mitigation": "openai/gpt-oss-120b",   # same string as `spec`; see ROLES
         },
     },
 }
@@ -155,8 +198,21 @@ DEFAULT_PROVIDER = "anthropic"
 #: A role absent from this table falls straight through to `DEFAULT_PROVIDER`, which is what
 #: extraction, narration and recognition do -- deliberately. Runs 124 and 126 rest on
 #: extraction's current behaviour and this run does not move it.
+#:
+#: RUN 140 PUT `mitigation` HERE EXPLICITLY, EVEN THOUGH `DEFAULT_PROVIDER` IS ALREADY
+#: "anthropic" AND FALLING THROUGH WOULD RESOLVE THE SAME PROVIDER TODAY. The two designs are
+#: indistinguishable in this file's current state and differ entirely in what happens to the
+#: OWNER'S DECISION when someone later edits one line. `DEFAULT_PROVIDER` is the platform-wide
+#: default for roles that have no opinion; the owner's ruling for `mitigation` is not an absence
+#: of opinion but a positive choice of Opus over Groq, made for this call site alone. Left to
+#: fall through, a future run moving `DEFAULT_PROVIDER` to groq -- a change about the platform,
+#: not about mitigations -- would silently reverse that ruling and route mitigations to Groq
+#: with nothing failing and no line mentioning mitigation edited. Named here, the same edit
+#: leaves `mitigation` on anthropic, and moving it off Opus requires editing a line that says
+#: `mitigation`. The rung is chosen for which mistake it makes impossible, not for brevity.
 ROLE_DEFAULT_PROVIDERS: dict[str, str] = {
     "spec": "groq",
+    "mitigation": "anthropic",
 }
 
 assert set(ROLE_DEFAULT_PROVIDERS) <= set(ROLES), \
