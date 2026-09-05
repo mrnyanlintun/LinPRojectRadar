@@ -704,7 +704,9 @@ def compose_decision_brief(*,
                            status_basis: Mapping[str, Any],
                            row: Mapping[str, Any] | None = None,
                            project: Mapping[str, Any] | None = None,
-                           source_documents: Any = None) -> dict[str, Any]:
+                           source_documents: Any = None,
+                           mitigations: Sequence[Mapping[str, Any]] | None = None,
+                           ) -> dict[str, Any]:
     """
     Compose the twelve blocks of the Governance Decision card, in the playbook's order.
 
@@ -728,6 +730,19 @@ def compose_decision_brief(*,
         "posture", "finding", "why", "forecast", "drivers", "adverse_readings", "evidence",
         "limitations", "question", "weighted_voting", "reviewer", "audit",
     ]}
+
+    # RUN 140. THE MITIGATIONS, WHEN THE CALLER SUPPLIES THEM, AND ONLY THEN.
+    #
+    # NOTHING IS COMPOSED HERE and no model is called here. This function stays what its module
+    # docstring says it is: a pure function of the stored row. The list arrives already composed
+    # and already REVEAL-GATED by `documents._result_view`, which is the one place that knows
+    # whether the reader's preliminary judgment is locked. Passing None -- every caller that is
+    # not that one, and every withheld read -- OMITS THE KEY ENTIRELY rather than serving an
+    # empty list, because an empty list would say "mitigations were composed and none applied",
+    # which is a different and false statement from "this reader is not shown them".
+    if mitigations is not None:
+        card["mitigations"] = list(mitigations)
+        card["order"].insert(card["order"].index("adverse_readings") + 1, "mitigations")
 
     card["posture"] = _posture(basis)
 
