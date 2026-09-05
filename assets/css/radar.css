@@ -4966,6 +4966,26 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 .dc-why-list { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
 .dc-why-list li { margin: 3px 0; }
 .dc-limitation { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+/* ============================================================
+   RUN 140. THE MITIGATION BLOCK.
+   ============================================================
+   NO COLOUR IS INTRODUCED AND NO SEVERITY IS IMPLIED. The block sits under the reading it
+   belongs to, set apart by a rule and an indent and nothing else, exactly as `.dc-limitation`
+   is. A mitigation that is styled as a warning is asserting an urgency the platform did not
+   compute, and the band chip beside the reading is the only severity signal on this card.
+
+   THE LABELS ARE `--faint` AND THE VALUES ARE BODY COLOUR, so the figure a reviewer must be
+   able to trace is the most legible thing in the block. Every token used here is already
+   resolved elsewhere in this file; not one literal colour is added. */
+.dc-mitigation { margin: 6px 0 2px; padding: 6px 0 2px 10px;
+                 border-left: 2px solid var(--line, rgba(128,128,128,.18)); }
+.dc-mit-line { font-size: 12px; line-height: 1.5; margin: 0; }
+.dc-mit-label { font-weight: 600; color: var(--faint, var(--muted)); }
+.dc-mit-value { color: inherit; }
+.dc-mit-cands { margin-top: 5px; font-size: 12px; }
+.dc-mit-list { margin: 2px 0 0; padding-left: 16px; font-size: 12px; line-height: 1.5; }
+.dc-mit-list li { margin: 2px 0; }
+.dc-mit-absent { margin-top: 5px; font-style: italic; }
 .dc-reviewer-response { margin-top: 16px; padding-top: 12px;
                         border-top: 1px solid var(--line, rgba(128,128,128,.18)); }
 .dc-reviewer-head { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em;

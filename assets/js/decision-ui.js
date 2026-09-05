@@ -750,8 +750,83 @@
      that averaged to Yellow, or a fifth adverse row, could be absent from the visible card
      entirely. Every non-Green module reading is listed here, in severity order, none collapsed.
      The rule is printed with the list, so a reader can check the list against the rule. */
-  function renderAdverse(a) {
+  /* ============================================================
+     RUN 140. THE MITIGATION BLOCK.
+     ============================================================
+     THE STANCE CHANGED ON 2026-09-05, BY THE OWNER'S DECISION, WITH RUN 140 AS ITS ORIGIN.
+     Until this run the card stated findings and asked a question and suggested no response at
+     all. From this run it also suggests how to mitigate each non-Green reading, aimed exactly
+     one band up: Red toward Amber, Amber toward Yellow, Yellow toward Green.
+
+     WHAT THIS FUNCTION DOES AND, MORE IMPORTANTLY, WHAT IT DOES NOT. It renders four parts that
+     the server composed: the reading restated in the module's own sentence, the next band's
+     boundary read from the same constant the band decision reads, the gap at full precision
+     from the canonical quantity, and the stored candidates with the date they were composed.
+     NOT ONE FIGURE IS COMPUTED, ROUNDED OR REFORMATTED HERE. `gap` and `next_band` are printed
+     verbatim, because every number on this card must remain traceable to the constant that
+     decided it, and a renderer that reformats a figure has broken that trace.
+
+     THREE SHAPES HAVE NO CONTINUOUS GAP -- `ordinal`, `derived`, and an override that has
+     fired -- so for those the server puts what fired and what clears it into `gap` instead of a
+     distance. That is why this function must not parse `gap`: it is not always a number.
+
+     THE KEY MAY BE ABSENT, AND THAT IS THE NORMAL CASE, NOT AN ERROR. Mitigations are
+     reveal-gated and served only where the recommendation package is visible, because
+     `decision_brief` is otherwise ungated and putting a composed remedy in front of a
+     participant before their pre-judgment is locked would contaminate the repeated-measures
+     design. When `brief.mitigations` is absent, `mitigationIndex` returns null, every call
+     below yields the empty string, and the card renders exactly as it did before this run.
+     `server/tools/test_run140r_render.py` asserts that byte for byte.
+
+     NO BAND STRING IS COMPARED ANYWHERE IN THIS FILE. Lookup is by `module_id` alone. A1.2
+     returns lowercase bands and A6.1 can name Green as the next band up from Red; neither can
+     be dropped by a renderer that never tests a band for equality. */
+  function mitigationIndex(brief) {
+    var list = (brief && Array.isArray(brief.mitigations)) ? brief.mitigations : null;
+    if (!list) return null;
+    var out = {};
+    list.forEach(function (m) {
+      if (m && m.module_id !== null && m.module_id !== undefined) out[String(m.module_id)] = m;
+    });
+    return out;
+  }
+
+  function mitLine(label, value) {
+    if (value === null || value === undefined || value === "") return "";
+    return '<div class="dc-mit-line"><span class="dc-mit-label">' + esc(label) +
+      '</span> <span class="dc-mit-value">' + esc(String(value)) + "</span></div>";
+  }
+
+  function renderMitigation(m) {
+    if (!m) return "";
+    var body = mitLine("Current:", m.reading) +
+      mitLine("Next band:", m.next_band) +
+      mitLine("Gap:", m.gap);
+    var cands = Array.isArray(m.candidates) ? m.candidates : [];
+    if (cands.length) {
+      /* THE PROVENANCE IS PART OF THE CLAIM, not a footnote. A composed sentence with no
+         composition date and no named model is an assertion of unknown origin. */
+      var prov = "Candidate mitigations";
+      if (m.composed_at) prov += " (composed " + m.composed_at + ", stored)";
+      body += '<div class="dc-mit-label dc-mit-cands">' + esc(prov) +
+        '</div><ul class="dc-mit-list">' +
+        cands.map(function (c) { return "<li>" + esc(String(c)) + "</li>"; }).join("") + "</ul>";
+    } else {
+      body += '<div class="dc-note dc-mit-absent">' +
+        esc(m.absent_reason || "no mitigation composed for this reading") + "</div>";
+    }
+    if (!body) return "";
+    return '<div class="dc-mitigation">' + body + "</div>";
+  }
+
+  function renderAdverse(a, mitIdx, alreadyShown) {
     if (!a || !a.rows || !a.rows.length) return "";
+    /* RUN 140. THE DRAWER CARRIES THE MITIGATIONS THE FIRST SCREEN DID NOT. The three findings
+       under "Why this decision is suggested" already carry theirs inline; repeating them here
+       would make the same claim twice in one card, so `alreadyShown` names them and they are
+       skipped. The drawer's own order is untouched -- it is the server's severity order from
+       `decision_brief.py`, and this function still does not rank anything. */
+    var skip = alreadyShown || {};
     var body = '<ul class="dc-drivers">' + a.rows.map(function (r) {
       return "<li><span class=\"dc-band\">" + esc(r.band) + "</span> <strong>" +
         esc(r.module_id || "") + "</strong>" +
@@ -762,6 +837,8 @@
           "</div>" : "") +
         (r.visible_above ? '<div class="dc-note" style="font-size:12px; margin-top:2px;">' +
           esc(r.visible_above) + "</div>" : "") +
+        ((mitIdx && !skip[String(r.module_id)])
+          ? renderMitigation(mitIdx[String(r.module_id)]) : "") +
         "</li>";
     }).join("") + "</ul>";
     body += para(a.rule);
@@ -855,12 +932,19 @@
       + 'a project-control response, further analysis, or a documented deferral.</p>';
     if (rows.length) {
       var shown = rows.slice(0, 3);
+      /* RUN 140. THE THREE FINDINGS ON THE FIRST SCREEN GAIN THEIR MITIGATION BLOCKS INLINE.
+         The rest gain theirs under "All adverse findings", so the first screen does not grow
+         without bound. The split is a split of PLACEMENT ONLY: `shown` is still the same
+         truncation of the server's severity order, nothing is re-ranked here, and no reading
+         loses its block -- it moves one click away. */
+      var mitIdx = mitigationIndex(brief);
       body += '<p class="dc-suggested-why">Why this decision is suggested</p><ul class="dc-why-list">'
         + shown.map(function (r) {
             var who = [r.module_id, r.category_name || r.category].filter(Boolean).join(" \u00b7 ");
             return "<li>" + (r.band ? '<span class="dc-band">' + esc(String(r.band)) + "</span> " : "")
               + "<strong>" + esc(who) + "</strong> "
-              + esc(r.reading ? String(r.reading) : "no figure stated on this reading") + "</li>";
+              + esc(r.reading ? String(r.reading) : "no figure stated on this reading")
+              + (mitIdx ? renderMitigation(mitIdx[String(r.module_id)]) : "") + "</li>";
           }).join("")
         + "</ul>";
       var rest = rows.length - shown.length;
@@ -889,6 +973,20 @@
     return briefBlock("Suggested decision", body);
   }
 
+  /* RUN 140. WHICH MODULES THE FIRST SCREEN ALREADY SHOWED. One definition, read by both the
+     inline blocks and the drawer, so the two cannot drift apart into a card that either
+     repeats a mitigation twice or drops one entirely. It is the same `slice(0, 3)` of the same
+     server-ordered rows that `renderSuggestedDecision` takes. */
+  function shownAdverseIds(brief) {
+    var rows = (brief && brief.adverse_readings && Array.isArray(brief.adverse_readings.rows))
+      ? brief.adverse_readings.rows : [];
+    var out = {};
+    rows.slice(0, 3).forEach(function (r) {
+      if (r && r.module_id !== null && r.module_id !== undefined) out[String(r.module_id)] = true;
+    });
+    return out;
+  }
+
   function renderDecisionBrief(brief) {
     if (!brief) return "";
     /* RUN 134, GOAL TWO. WHAT IS ON THE FIRST SCREEN AND WHAT IS BEHIND A DRAWER.
@@ -915,7 +1013,9 @@
       dcDrawer("How official posture was formed",
         renderPostureFormation(brief.posture) + para(brief.why)) +
       dcDrawer("All findings", para(brief.finding)) +
-      dcDrawer("All adverse findings", renderAdverse(brief.adverse_readings)) +
+      dcDrawer("All adverse findings",
+        renderAdverse(brief.adverse_readings, mitigationIndex(brief),
+                      shownAdverseIds(brief))) +
       dcDrawer("Category details", renderForecast(brief.forecast) + renderDrivers(brief.drivers)) +
       dcDrawer("Evidence", renderEvidence(brief.evidence)) +
       dcDrawer("Data coverage", renderLimitations(brief.limitations)) +
@@ -1116,6 +1216,9 @@
   window.LinDecisionUI.renderBrief = renderDecisionBrief;
   window.LinDecisionUI.__cardForTest = {
     renderDecisionBrief: renderDecisionBrief,
+    renderMitigation: renderMitigation,
+    mitigationIndex: mitigationIndex,
+    shownAdverseIds: shownAdverseIds,
     renderPosture: renderPosture,
     renderDrivers: renderDrivers,
     renderForecast: renderForecast,
