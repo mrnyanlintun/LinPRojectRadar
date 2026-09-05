@@ -433,6 +433,9 @@
   /* RUN 94b. The identity palette the last build actually used, so a check reads the object
      the chart drew with instead of recomputing one. */
   var LAST_PALETTE = null;
+  /* RUN 139A. The key the last frame actually drew -- every entry, its text, its swatch colour
+     and where it was painted -- so a check reads what a reader sees instead of re-deriving it. */
+  var LAST_LEGEND = null;
 
   function render(container, project) {
     if (!container) return;
@@ -510,6 +513,8 @@
        nothing else. A drag, a wheel or a resize redraws at the SAME `orbitT`, so interacting
        with the chart never jumps the moons. */
     var orbitT = 0;
+    /* RUN 139A. The key's packing, cached across frames; see drawKey. */
+    var KEY_PLAN = null;
 
     function draw() {
       if (!size.w) resize();
@@ -866,77 +871,260 @@
       for (var hs2 = 0; hs2 < 6; hs2++) ctx.fillText(String(sys.health || "no status"), hp.x, hp.y + 12);
       ctx.restore();
 
-      /* ── THE BAND KEY, DRAWN INSIDE THE CHART FRAME ───────────────────────────────
-         This surface stated every one of its verdicts by colour and shape alone and carried
-         no key of any kind. (The `.lnf-legend` strip is the SIGNAL FLOW panel's, a different
-         section on the page; it is not moved or copied here, because a second copy of it
-         would be free to drift away from what this canvas paints.)
+      /* ── THE KEY: WHICH MODULE EACH SATELLITE IS, AND WHAT THE COLOURS MEAN ───────────
+         RUN 139A. Run 131 put a nine-row BAND KEY in this corner. It stated what the colours
+         meant and nothing else, so a reader looking at twenty-eight satellites could see that
+         one of them was Green and still not know WHICH MODULE it was. The five category
+         planets have carried their names since Run 95; the moons carried nothing at all.
 
-         EVERY COLOUR BELOW IS READ FROM `C` AND `TH` -- the same `colors()` map and the same
-         runtime theme read that `bandColor()` and the moon/planet/sun painters above take
-         their ink from. Nothing here is a literal hex, so a token that moves moves in both
-         the chart and its key or in neither.
+         WHAT IS DRAWN NOW: the band key, unchanged in wording and in ink, and UNDER it every
+         module the panel draws, NAMED, grouped under its category -- as one narrow column in
+         the only part of this canvas that measurement showed to be free. Both, wherever both
+         fit; the band key alone, and said so, where they do not. See "WHAT FITS" below.
 
-         EVERY TREATMENT THIS SURFACE PAINTS IS COVERED, and the shapes are the drawing code's
-         own, not approximations of it:
-           filled disc      -- a module or category that asserted a band (Green/Yellow/Amber/
-                               Red/Complete; Complete is a published project status, not a
-                               severity, which is why it is listed after the four bands)
-           rimmed body      -- computed and asserted no band  (`computed_unbanded`)
-           dark filled body -- nothing to report              (`abstained`, filled C.None)
-           dashed outline   -- not relevant to this project   (`not_relevant`, C.NotRelevant)
-           dotted outline   -- not called                     (`not_called`, TH.line)
-         The sun's own unlit state is the same "no band issued" fact as the rimmed body and is
-         not given a sixth entry; the sun says it in words on the node itself.
+         WHERE EVERY STRING AND EVERY COLOUR COMES FROM, and there is no second list of either:
+           category name   `p.name`  -- the same planet object the planet painter above set its
+                           label from, which came from `performanceCategories()`.
+           module name     `m.name`  -- the same moon object the moon painter above drew, built
+                           in `buildSystem` from `cat.modules`, which is the GENERATED client
+                           registry. A module renamed or retired in the registry changes here on
+                           the next build with nothing edited in this file. A hardcoded list is
+                           exactly the defect `test_run35_closure_voter_identities` was written
+                           for, and there is none here.
+           module colour   `m.color` -- the identity colour `LIN_IDENTITY_PALETTE` generated for
+                           that module id, i.e. the very rim the moon is drawn with.
+           band colour     `C` and `TH`, the same `colors()` map and runtime theme read by
+                           `bandColor()` and by every painter above. NO LITERAL HEX.
 
-         PLACEMENT: bottom-left of the frame, the corner the system does not occupy -- the
-         planets are laid out around a centred sun and the summary sentence is a DOM paragraph
-         BELOW the canvas, so neither is crossed at rest. It is drawn before nothing and after
-         everything, in screen space, so pan and zoom do not move it. It is NOT collision-proof
-         under user interaction: this chart can be dragged and zoomed by hand, and a reader who
-         drags a planet into the corner will put it behind the key. That is stated rather than
-         defended -- the alternative is a legend that moves when the chart is dragged, which is
-         worse. */
-      (function drawBandKey() {
-        var rows = [
-          ["disc",   C.Green,       "Green"],
-          ["disc",   C.Yellow,      "Yellow"],
-          ["disc",   C.Amber,       "Amber"],
-          ["disc",   C.Red,         "Red"],
-          ["disc",   C.Complete,    "Complete"],
-          ["rim",    TH.muted,      "Computed, no band asserted"],
-          ["filled", C.None,        "Nothing to report"],
-          ["dashed", C.NotRelevant, "Not relevant to this project"],
-          ["dotted", TH.line,       "Not called"]
+         HOW A READER MATCHES AN ENTRY TO A DOT -- and this is the part order matters for.
+         The moons are built in a DETERMINISTIC order (categories in `performanceCategories()`
+         order, modules in each category's `modules` array order) and the legend is emitted in
+         that same order from the same arrays. But ORDER IS NOT THE MATCHING RULE and must not
+         be sold as one: `drawables.sort` above re-orders the bodies BY DEPTH for painter's
+         order, and every moon is on a moving orbit (`orbitAt`), so the nth dot on screen is
+         not the nth entry here and does not stay put. THE MATCH IS BY THE SWATCH: each entry
+         is drawn as that moon is drawn -- its state's fill and dash, rimmed in its own identity
+         colour, which `LIN_IDENTITY_PALETTE` keeps at least dE*ab 25 from every band colour and
+         from every other module's. The swatch is the module's fingerprint and it holds however
+         the dots move.
+
+         WHAT FITS, MEASURED RATHER THAN ASSUMED. `server/tools/run139a_freespace.py` sampled
+         every painted body over a full 28.6-second orbit at 1440/1280/1024/768 CSS px and
+         reported the clean rectangle in this corner; `run139a_measure.py` measured every name
+         with `measureText` in the panel's own 2D context. The block below is therefore laid out
+         FROM MEASUREMENT AT DRAW TIME rather than from constants: it tries 10.5px, then 9.5px,
+         then 8.5px inside the measured free column, and takes the first that holds. If even
+         8.5px cannot hold the module names -- which is what happens once the canvas is short
+         enough -- the BAND KEY IS STILL DRAWN, never silently dropped, and
+         `data-legend-modules` reads "omitted" so a check and a reader can both see it.
+
+         PLACEMENT is Run 131's, for Run 131's reason: bottom-left, in screen space, so pan and
+         zoom do not move it. It is still not collision-proof under a hand drag. */
+      (function drawKey() {
+        var pad = 10;
+        /* The nine treatments, verbatim from Run 131, and every colour still read from C/TH. */
+        var bandRows = [
+          { g: "disc",   col: C.Green,       text: "Green" },
+          { g: "disc",   col: C.Yellow,      text: "Yellow" },
+          { g: "disc",   col: C.Amber,       text: "Amber" },
+          { g: "disc",   col: C.Red,         text: "Red" },
+          { g: "disc",   col: C.Complete,    text: "Complete" },
+          { g: "rim",    col: TH.muted,      text: "Computed, no band asserted" },
+          { g: "filled", col: C.None,        text: "Nothing to report" },
+          { g: "dashed", col: C.NotRelevant, text: "Not relevant to this project" },
+          { g: "dotted", col: TH.line,       text: "Not called" }
         ];
-        var lh = 14, pad = 10, sw = 9, x0 = pad + 8;
-        var y0 = size.h - pad - (rows.length - 1) * lh - 4;
+        var bandGroup = { head: "WHAT A COLOUR MEANS", kind: "band", rows: bandRows };
+        var modGroups = sys.planets.map(function (p) {
+          return { head: p.key + "  " + String(p.name || p.key), kind: "modules", key: p.key,
+                   rows: p.moons.map(function (m) {
+                     return { g: "moon", moon: m, id: m.id, text: String(m.name || m.id) };
+                   }) };
+        });
+
+        /* ONE ATTEMPT AT A LAYOUT, at one font size, against one permitted height. Returns the
+           packed columns and the total box, or null when it does not fit. Nothing is drawn. */
+        function layout(groups, fs, availW, availH) {
+          var lh = fs * 1.32, gap = 16, glyph = fs + 3;
+          var maxRows = Math.floor(availH / lh);
+          if (maxRows < 4) return null;
+          var cols = [], cur = null;
+          for (var i = 0; i < groups.length; i++) {
+            var gr = groups[i], need = gr.rows.length + 1;      /* its head plus its rows */
+            if (need > maxRows) return null;                    /* one group cannot be split */
+            var extra = cur && cur.groups.length ? 0.5 : 0;     /* half a row between groups */
+            if (!cur || cur.rows + extra + need > maxRows) {
+              cur = { groups: [], rows: 0 }; cols.push(cur); extra = 0;
+            }
+            cur.rows += extra + need;
+            cur.groups.push({ gr: gr, lead: extra });
+          }
+          var total = 0, tallest = 0;
+          cols.forEach(function (c) {
+            var w = 0;
+            c.groups.forEach(function (e) {
+              ctx.font = "700 " + fs + "px system-ui, sans-serif";
+              w = Math.max(w, ctx.measureText(e.gr.head).width);
+              ctx.font = "500 " + fs + "px system-ui, sans-serif";
+              e.gr.rows.forEach(function (r) {
+                w = Math.max(w, glyph + 4 + ctx.measureText(r.text).width);
+              });
+            });
+            c.w = Math.ceil(w); total += c.w + gap; tallest = Math.max(tallest, c.rows);
+          });
+          total -= gap;
+          if (total > availW) return null;
+          return { cols: cols, fs: fs, lh: lh, gap: gap, glyph: glyph,
+                   w: total, h: Math.ceil(tallest * lh) };
+        }
+
+        /* THE BOX THE KEY IS ALLOWED, AND IT IS A MEASUREMENT.
+           `run139a_freespace.py` sampled every painted body over a full orbit at 1440 CSS px
+           (canvas 1304x620) and found the bottom-left corner clean for 312px of width over the
+           whole canvas height, and 240px of width with 624px of clean height -- i.e. ONE narrow
+           full-height column and no more. A two-column key, module names beside the colour key,
+           measures ~430px wide and DOES NOT FIT: it would be crossed by A4's and A3's moons.
+           0.26 of the canvas width is that measured column expressed as a ratio, so the key
+           stays inside it as the canvas resizes instead of growing into the system. */
+        var availW = size.w * 0.26, availH = size.h - pad * 2;
+        var plan = null, i;
+        var SIZES = [10.5, 9.5, 8.5];
+        /* THE PACKING IS CACHED, and this is a frame-budget matter rather than a nicety: the
+           ladder costs a few hundred `measureText` calls and the canvas redraws sixty times a
+           second. Nothing in the packing depends on a band, a state or the clock -- only on the
+           canvas size and the words -- so the signature is exactly those, and a resize or a
+           roster change misses the cache and re-measures. */
+        var sig = size.w + "x" + size.h + "|" +
+          [bandGroup].concat(modGroups).map(function (g) {
+            return g.head + ">" + g.rows.map(function (r) { return r.text; }).join(",");
+          }).join("|");
+        if (KEY_PLAN && KEY_PLAN.sig === sig) {
+          plan = KEY_PLAN.plan;
+        } else {
+          for (i = 0; i < SIZES.length && !plan; i++) {
+            plan = layout([bandGroup].concat(modGroups), SIZES[i], availW, availH);
+          }
+        }
+        var modulesDrawn = !!plan;
+        if (!plan) {
+          /* THE MODULE NAMES DO NOT FIT IN THE FREE COLUMN AT THIS CANVAS SIZE -- which is the
+             case at the narrower viewports, where the canvas is shorter and the system fills
+             it. The band key is NOT dropped with them: it is the only thing on this surface
+             that says what the colours mean, and `data-legend-modules` records the omission. */
+          if (KEY_PLAN && KEY_PLAN.sig === sig) {
+            plan = KEY_PLAN.bandOnly;
+          } else {
+            for (i = 0; i < SIZES.length && !plan; i++) {
+              plan = layout([bandGroup], SIZES[i], availW, availH);
+            }
+          }
+          KEY_PLAN = { sig: sig, plan: null, bandOnly: plan };
+        } else if (!KEY_PLAN || KEY_PLAN.sig !== sig) {
+          KEY_PLAN = { sig: sig, plan: plan, bandOnly: null };
+        }
+        if (!plan) {
+          container.setAttribute("data-legend-entries", "0");
+          container.setAttribute("data-legend-modules", "omitted");
+          container.setAttribute("data-legend-band-key", "omitted");
+          LAST_LEGEND = null;
+          return;
+        }
+
+        var entries = [];
         ctx.save();
-        ctx.font = "500 10.5px system-ui, sans-serif";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        rows.forEach(function (r, i) {
-          var y = y0 + i * lh, kind = r[0], col = r[1];
-          ctx.beginPath(); ctx.arc(x0, y, sw / 2, 0, Math.PI * 2);
-          if (kind === "disc" || kind === "filled") {
-            ctx.fillStyle = col; ctx.fill();
-            if (kind === "filled") { ctx.strokeStyle = TH.faint; ctx.lineWidth = 1; ctx.stroke(); }
-          } else {
-            ctx.strokeStyle = col;
-            ctx.lineWidth = kind === "rim" ? 1.6 : 1.2;
-            if (kind === "dashed") ctx.setLineDash([2, 2]);
-            if (kind === "dotted") ctx.setLineDash([1, 2.2]);
-            ctx.stroke(); ctx.setLineDash([]);
-          }
-          /* The words carry the same shadow the status label now uses, for the same reason and
-             measured the same way: a key sitting on the page gradient, not on a plate. */
-          ctx.shadowColor = alpha(TH.surface, 0.95);
-          ctx.shadowBlur = 4;
-          ctx.fillStyle = TH.muted;
-          for (var k = 0; k < 4; k++) ctx.fillText(r[2], x0 + sw, y);
-          ctx.shadowBlur = 0;
+        var x = pad, bottom = size.h - pad;
+        plan.cols.forEach(function (c) {
+          var y = bottom - c.rows * plan.lh + plan.lh / 2;
+          c.groups.forEach(function (e) {
+            y += e.lead * plan.lh;
+            /* THE GROUP'S NAME. `--text`, not `--heading`: Run 94 recorded that `--heading`
+               resolves to the :root near-black on themes that redeclare only `--text`, and
+               Run 134 shipped exactly that defect again. Measured per theme in the report. */
+            ctx.font = "700 " + plan.fs + "px system-ui, sans-serif";
+            ctx.shadowColor = alpha(TH.surface, 0.95); ctx.shadowBlur = 6;
+            ctx.fillStyle = TH.text;
+            for (var s = 0; s < 6; s++) ctx.fillText(e.gr.head, x, y);
+            ctx.shadowBlur = 0;
+            entries.push({ group: e.gr.key || "band", kind: "head", text: e.gr.head,
+                           x: Math.round(x), y: Math.round(y) });
+            y += plan.lh;
+
+            ctx.font = "500 " + plan.fs + "px system-ui, sans-serif";
+            e.gr.rows.forEach(function (r) {
+              var cx = x + plan.glyph / 2, rr = plan.glyph / 2 - 1, ink = null;
+              if (r.g === "moon") {
+                /* THE MOON, IN MINIATURE, EXACTLY AS THE PAINTER DREW IT: state in the fill and
+                   the dash, identity in the rim. No halo -- a halo at this size is a smudge. */
+                var m = r.moon, midc = m.color || null;
+                ctx.beginPath(); ctx.arc(cx, y, rr, 0, Math.PI * 2);
+                if (m.state === "computed") {
+                  ctx.fillStyle = bandColor(m.band) || C.Complete; ctx.fill();
+                  ctx.strokeStyle = midc || TH.faint; ctx.lineWidth = 1.2; ctx.stroke();
+                } else if (m.state === "computed_unbanded") {
+                  ctx.fillStyle = DARK ? shade(TH.surface, 0.10) : shade(TH.soft, -0.02);
+                  ctx.fill();
+                  ctx.strokeStyle = midc || TH.muted; ctx.lineWidth = 1.6; ctx.stroke();
+                } else if (m.state === "abstained") {
+                  ctx.fillStyle = C.None; ctx.fill();
+                  ctx.strokeStyle = midc || TH.faint; ctx.lineWidth = 1.2; ctx.stroke();
+                } else if (m.state === "not_relevant") {
+                  ctx.strokeStyle = midc || C.NotRelevant; ctx.lineWidth = 1.3;
+                  ctx.setLineDash([2, 2]); ctx.stroke(); ctx.setLineDash([]);
+                } else {
+                  ctx.strokeStyle = midc || TH.line; ctx.lineWidth = 1.1;
+                  ctx.setLineDash([1, 2.2]); ctx.stroke(); ctx.setLineDash([]);
+                }
+                ink = midc || null;
+              } else {
+                ctx.beginPath(); ctx.arc(cx, y, rr, 0, Math.PI * 2);
+                if (r.g === "disc" || r.g === "filled") {
+                  ctx.fillStyle = r.col; ctx.fill();
+                  if (r.g === "filled") {
+                    ctx.strokeStyle = TH.faint; ctx.lineWidth = 1; ctx.stroke();
+                  }
+                } else {
+                  ctx.strokeStyle = r.col;
+                  ctx.lineWidth = r.g === "rim" ? 1.6 : 1.2;
+                  if (r.g === "dashed") ctx.setLineDash([2, 2]);
+                  if (r.g === "dotted") ctx.setLineDash([1, 2.2]);
+                  ctx.stroke(); ctx.setLineDash([]);
+                }
+                ink = r.col;
+              }
+              /* The words carry the same shadow the status label uses, for the same reason and
+                 measured the same way: a key sitting on the page gradient, not on a plate.
+                 RUN 139A raised it from four passes at blur 4 to SIX AT BLUR 6, which is the
+                 PROJECT STATUS label's own treatment. MEASURED: at 768px the canvas is 659x409,
+                 the system fills it, and the key's rows land ON a planet -- the `newyork` band
+                 rows read 2.02:1 and `dark` 2.94:1 from the painted pixel at four/4. At six/6
+                 they clear 3:1 on every theme. No plate: a plate would hide the body behind it,
+                 and Run 131 chose the shadow for that reason. */
+              ctx.shadowColor = alpha(TH.surface, 0.95); ctx.shadowBlur = 6;
+              ctx.fillStyle = TH.muted;
+              for (var k = 0; k < 6; k++) ctx.fillText(r.text, x + plan.glyph + 4, y);
+              ctx.shadowBlur = 0;
+              entries.push({ group: e.gr.key || "band", kind: e.gr.kind === "band" ? "band" : "module",
+                             id: r.id || null, text: r.text, swatch: ink,
+                             state: r.moon ? r.moon.state : null,
+                             band: r.moon ? (r.moon.band || null) : null,
+                             x: Math.round(x + plan.glyph + 4), y: Math.round(y) });
+              y += plan.lh;
+            });
+          });
+          x += c.w + plan.gap;
         });
         ctx.restore();
+
+        LAST_LEGEND = { font: plan.fs, columns: plan.cols.length, modulesDrawn: modulesDrawn,
+                        box: { x: pad, y: size.h - pad - plan.h, w: plan.w, h: plan.h },
+                        entries: entries };
+        container.setAttribute("data-legend-entries", String(entries.length));
+        container.setAttribute("data-legend-modules", modulesDrawn ? "drawn" : "omitted");
+        container.setAttribute("data-legend-band-key", "drawn");
+        container.setAttribute("data-legend-columns", String(plan.cols.length));
+        container.setAttribute("data-legend-font", String(plan.fs));
       })();
 
       ctx.textAlign = "left";
@@ -1041,6 +1229,7 @@
     /* THE SCENE GRAPH THE LAST FRAME WAS DRAWN FROM. Exposed so a check can assert on what was
        drawn rather than on the model it was given -- the canvas equivalent of reading the DOM. */
     lastScene: function () { return LAST_SCENE; },
+    lastLegend: function () { return LAST_LEGEND; },
     lastPalette: function () { return LAST_PALETTE; }
   };
 })();
