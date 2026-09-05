@@ -95,8 +95,24 @@ KNOWN_DEFECTS: dict[str, str] = {
     # mark it resolved: the ensembles still consume evidence that has passed through no
     # qualification step, and the probe below is deliberately taken on a module that still
     # computes rather than on one that happens to abstain for an unrelated reason.
-    "PH.5/availability-reweighting": "IMPLEMENTATION_DEFECT",
-    "PH.1/degenerate-cohort-resolution": "METHOD_PASS_CALIBRATION_PENDING",
+    #
+    # RUN 137, ITEM 3. THE TWO PORTFOLIO-HEALTH ENTRIES ARE RETIRED FROM THIS REGISTER, because
+    # RUN 97 DELETED THEIR SUBJECT. `PH.5/availability-reweighting` (IMPLEMENTATION_DEFECT) and
+    # `PH.1/degenerate-cohort-resolution` (METHOD_PASS_CALIBRATION_PENDING) were findings about
+    # `simulation/portfolio.py` and `simulation/portfolio_health.py`. Run 97 goal one, commit
+    # 88e6ca0, deleted both files, struck the five D1 rows from the registry and removed the
+    # Group D branch from `run_module`. From that run onward NO PROPOSITION IN THIS SUITE COULD
+    # REACH EITHER FINDING, so the closing gate -- "every register entry was actually exercised
+    # this run" -- could never be satisfied again: it was asking a register to be exercised
+    # against code that no longer exists.
+    #
+    # NOTHING IS FORGIVEN BY THIS. The register's purpose is that a defect cannot pass silently
+    # and a repaired one cannot fossilise; a DELETED subject is neither. What replaced these two
+    # propositions is stronger and is asserted in `portfolio_health()` below: the two modules are
+    # gone, the five identifiers do not resolve, and the dispatcher refuses each by name -- which
+    # goes red the moment a future run writes any of it back. The findings themselves are not
+    # erased with the code: they stand in the Run 17 register and in `code_audit/`, which is
+    # where evidence about a removed implementation belongs.
     "ARCH/raw-bypass": "MISSING_CANONICAL_DATA_STRUCTURE",
 }
 
@@ -393,10 +409,31 @@ def gate_a() -> None:
     # the specification does not name, still fails here -- so this is a narrowing of what is
     # tolerated, not a suspension of the check.
     _problems = list(rec["mapping_problems"])
+    #
+    # RUN 137, ITEM 3. RE-POINTED, AND NARROWLY. A SECOND KIND IS NOW EXPECTED AND EXACTLY ONE
+    # MODULE IS ALLOWED TO BE IT. Run 103 registered A2.12 Critical Path Analysis, and the Run-17
+    # supervisory specification is SEALED HISTORICAL EVIDENCE that cannot name a module registered
+    # after it -- so `A2.12 -> 2.12: no owner-specification module at that key` is a fact about
+    # the specification's date, not drift. Run 103 settled this shape already and its report
+    # records the settlement: `test_run26_counts_and_wiring` was re-pointed the same way, "a
+    # post-audit roster naming A2.12 and its run replaces the 'nothing is outside the population'
+    # assertion, and an unrostered new module still fails".
+    #
+    # The roster is NAMED here rather than the class tolerated: any OTHER registry row the
+    # specification does not name still fails this gate, as does any name mismatch.
+    _POST_AUDIT_ROSTER = {"A2.12": "Run 103, Critical Path Analysis"}
     _unexpected = [p for p in _problems
-                   if "in specification, absent from registry" not in str(p)]
-    check("GATE", "the only registry/specification mapping problems are modules Run 96 removed",
+                   if "in specification, absent from registry" not in str(p)
+                   and not any(str(p).startswith(f"{code} ->") and
+                               "no owner-specification module at that key" in str(p)
+                               for code in _POST_AUDIT_ROSTER)]
+    check("GATE", "the only registry/specification mapping problems are modules Run 96 removed "
+                  "and the post-audit roster this suite names",
           _unexpected == [], str(_unexpected))
+    check("GATE", "and every post-audit roster entry is genuinely in the registry -- the roster "
+                  "is not a licence to ignore a name that is simply gone",
+          all(code in REG.registry_index() for code in _POST_AUDIT_ROSTER),
+          str(sorted(_POST_AUDIT_ROSTER)))
     check("GATE", "and Run 96 genuinely removed some of them -- the tolerance is not vacuous",
           len(_problems) > 0, str(len(_problems)))
 
@@ -416,9 +453,24 @@ def gate_a() -> None:
         except ValueError:
             return False        # not a number at all -- text is the only faithful carrier
     _would_lose = [t["module_id"] for t in population() if not _round_trips(t["module_id"])]
+    # RUN 137, ITEM 3. THIS CLAUSE WAS VACUOUS AND IS REPAIRED, NOT DELETED.
+    # It asserted that at least one identifier IN THE POPULATION would lose information under
+    # float coercion. Run 96 removed every colliding member -- the check three lines below is
+    # exactly that fact -- so the surviving population happens to hold none, `_would_lose` is
+    # empty, and the clause failed while nothing at all was wrong. Worse, it could not have done
+    # otherwise: it is a statement about which rows survived a removal, not about whether the
+    # instrument carries its identifiers faithfully, so it could not distinguish a correct
+    # platform from a broken one.
+    #
+    # The DURABLE property is asserted instead, on the trap itself rather than on the census:
+    # float coercion loses "1.10", which is why identifiers are carried as text. That is true
+    # whatever the registry currently holds, and the check above -- every identifier IS text --
+    # is the property this one exists to keep non-vacuous.
     check("GATE", "and coercing an identifier to a number would not round-trip back to it, "
           "which is why they are never coerced",
-          len(_would_lose) > 0, str(_would_lose[:6]))
+          not _round_trips("1.10") and not _round_trips("A1.10")
+          and _round_trips("1.1"),
+          f"population members that would lose information today: {_would_lose[:6]}")
     check("GATE", "Run 96 removed every identifier that COLLIDED under float coercion, so the "
           "collision no longer arises in this population",
           rec["float_coercion_would_collide"] == [],
@@ -1060,8 +1112,26 @@ def cat6() -> None:
     _second = _wvr({"A1": {"status": "Green"}, "A2": {"status": "Green"},
                     "A3": {"status": "Green"}, "A4": {"status": "Green"},
                     "A6": {"status": "Red"}})
-    check(mid, "the second pass weighs the postures and declares the owner's authority",
-          _second["status_color"] == "Green"
+    # RUN 137, ITEM 3. RE-POINTED. RUN 106 CHANGED WHAT `status_color` IS ON THIS ROW.
+    # The check expected Green, which was the band class holding a PLURALITY OF THE WEIGHT:
+    # four Greens hold 0.84 of the profile against A6 Red's 0.16. Run 106 replaced that with the
+    # PROJECT RULE'S OWN BAND, and `models_gov.weighted_voting_result` says so in as many words:
+    # "`status_color` IS THE PROJECT RULE'S OWN BAND. Before this run it was the band class
+    # holding a plurality of the weight, which is a different quantity". The stamp for the change
+    # is `sim-2026.09-v52`, "RUN 106: the weights set the status".
+    #
+    # THE EXPECTATION IS COMPUTED FROM THE OWNER'S RULE, NOT READ OFF THE MODULE (R2). His
+    # profile is A1 0.28, A2 0.28, A3 0.17, A4 0.11, A6 0.16 and his scores are Green +2,
+    # Yellow +1, Amber -1, Red -2. Four Greens and one Red give
+    #   2*(0.28+0.28+0.17+0.11) + (-2*0.16) = 1.68 - 0.32 = 1.36,
+    # and his cuts band at or above 1.5 Green, at or above 0.5 and below 1.5 Yellow. 1.36 is
+    # Yellow. This is the very case Run 106 recorded as the one where the two quantities
+    # disagree, which is why it is the case this check takes.
+    check(mid, "the second pass weighs the postures on the owner's Run 106 rule -- four Greens "
+               "and one Red weigh to +1.36, which is Yellow, not the plurality's Green -- and "
+               "declares his authority",
+          _second["status_color"] == "Yellow"
+          and abs(_second["weighted_sum"] - 1.36) < 1e-9
           and "owner's stated authority" in _second["weight_provenance"], str(_second))
     check(mid, "known-answer: the canonical weighted severity score on the specification's own "
                "example", abs(O.weighted_severity_score(["Green", "Amber", "Red"],
