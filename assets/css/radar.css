@@ -756,6 +756,13 @@ body.t-light .theme-switch button.active { color: #fff; }
    the "No data" grey, so it visually pairs with the pill above it rather than reading as a
    computed finding. */
 .cat-mod-reason { margin: 0 0 6px 66px; font-size: 12px; color: var(--status-nodata-mod-text); font-family: var(--font-mono); font-style: italic; }
+/* RUN 142. The absence line on the COLLAPSED category row: which kind of absence a category
+   with no posture is. It reuses --status-nodata-mod-text, the token already measured for the
+   reason lines it summarises -- 5.79 on surface / 5.94 on page in light and 8.75 / 9.08 in
+   dark, both clear of AA with margin -- rather than introducing an unmeasured colour. Run 128
+   found text sitting at 1.01:1 behind a stylesheet check that passed, so this takes a token
+   whose contrast is recorded above and is confirmed by observation in the browser. */
+.cat-row-absence { font-size: 12px; color: var(--status-nodata-mod-text); font-style: italic; }
 /* ---------- per-module inline charts (Signal Ledger) ---------- */
 .mchart { margin: 2px 0 12px 66px; padding: 10px 12px; border: 1px solid var(--line, rgba(128,140,168,.25));
   border-radius: 8px; background: var(--panel-2, rgba(128,140,168,.06)); max-width: 420px; }

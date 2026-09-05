@@ -103,10 +103,35 @@ def _awaiting_reason(required_missing, category_statuses) -> str:
     cats = category_statuses if isinstance(category_statuses, dict) else {}
     parts = []
     for key in missing:
+        # RUN 142. THE SENTENCE NOW SAYS WHAT THE TEST ACTUALLY ESTABLISHES.
+        #
+        # This branch is a test of KEY PRESENCE in the category mapping, and nothing more. It
+        # was worded "no module in this category was run for this period", which asserts a fact
+        # about DISPATCH that nothing here checked -- and which was, on the case Run 141
+        # diagnosed, false: PRJ-002 period 2's four A3 modules had run, had abstained, and had
+        # their reasons on the stored row, and the card said they were not run. The card
+        # asserted something it did not check, which is the one direction this platform has
+        # consistently refused to fail in.
+        #
+        # FIXED HERE, AT THE ONE AUTHORITY, AND NOT FORKED. `spec_projection` calls this same
+        # function precisely so the two status paths cannot word the same fact differently, and
+        # writing a second copy at the projection seam would recreate the two-authorities-for-
+        # one-fact defect this codebase has closed nine times. Only the two strings move.
+        #
+        # WHAT EACH BRANCH MAY NOW CLAIM. Absent: the mapping holds nothing for the category,
+        # so nothing is recorded about it either way -- that, and only that, is established.
+        # Present: an entry is held and it carries no posture. The finer three-way fact, and
+        # each abstaining module's own reason, travel on `required_missing_detail` and on the
+        # carried module rows, which is where a per-category truth belongs.
+        #
+        # NO BAND, THRESHOLD, WEIGHT, POSTURE RULE OR CATEGORY RULE IS TOUCHED, and no stored
+        # byte moves: `ComputedResult` has no column for the basis and this sentence is
+        # recomputed at read time on every request, so `SIMULATION_VERSION` does not move.
         if key not in cats:
-            why = ("no module in this category was run for this period")
+            why = ("no reading of any kind is held for this category this period, so nothing "
+                   "is recorded about whether its modules ran")
         else:
-            why = ("the category was called and no module in it asserted a band")
+            why = ("a reading is held for this category and no module in it asserted a band")
         parts.append(f"{category_name(key)} ({key}) has not been assessed \u2014 {why}")
     return ("No project posture is issued this period, because a required category could not be "
             "assessed: " + "; ".join(parts) + ". The project status is withheld rather than "

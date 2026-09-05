@@ -692,6 +692,75 @@ def merge_python_row(spec: dict[str, Any] | None,
         if key not in merged:
             merged[key] = dict(entry)
     filled.sort()
+    wanted_filled = set(filled)
+
+    # ------------------------------------------------------------------ RUN 142, THE CATEGORY
+    # THAT RAN AND ABSTAINED. Before this run the Python rows below were carried over ONLY for
+    # categories in `filled` -- that is, only for categories that CARRY A POSTURE. A category
+    # in which every module ran and abstained never gets one: `simulation.compute` builds
+    # `by_category` from `run["computed"]` alone, so a category with no banded module has no key
+    # in `category_statuses`, so it is not in `row_cats`, so it is not in `filled`. Its modules
+    # had run, had abstained, and were recorded on the stored row with their reasons -- and
+    # reached the card as nothing at all. No row, no reason, no trace. PRJ-002 period 2
+    # published "Awaiting analysis" over four A3 modules whose stated reasons were on the row
+    # the whole time and unreachable from the surface.
+    #
+    # That is the one direction this platform has consistently refused to fail in: an absence is
+    # reported as an absence WITH ITS REASON. So the categories whose evidence is carried are
+    # every category the specification layer did not answer for which the Python row holds
+    # rows -- not merely the ones that produced a posture. The specification layer still wins
+    # every category it ANSWERED (section 2.3): `answered` is excluded, unchanged.
+    #
+    # NO POSTURE IS MANUFACTURED. The entry recorded below carries no `status`, so
+    # `required_core_missing` still counts the category as missing, `contributes_to_project_
+    # status` is absent so the weighted vote never sees it, and the required-core gate withholds
+    # the project status exactly as it did. This changes what is VISIBLE, not what is computed.
+    #
+    # AND IT MAKES THE CARD'S SENTENCE TRUE. `_awaiting_reason` -- the same function the Python
+    # rollup uses, deliberately not forked -- distinguishes the two cases BY KEY PRESENCE:
+    # absent means "no module in this category was run for this period", present means "the
+    # category was called and no module in it asserted a band". Both readings were previously
+    # false for an all-abstaining category because it had no key. Now the key exists exactly
+    # when the category was in fact called, so the test the code performs and the sentence it
+    # emits say the same thing. A category that genuinely never dispatched still has no rows,
+    # still gets no entry, and still reads "was not run".
+    # THE TEST IS "NO POSTURE", NOT "NO KEY". On the owner's keyless route
+    # `projectcategoryapply` stores an entry for ALL TEN categories -- state `failed`, zero
+    # modules -- so every category already has a key in `merged` by the loop above while
+    # carrying no posture at all. Run 79's first build made exactly this mistake in the
+    # neighbouring test and the fallback never fired. So a category is served here when the
+    # specification layer did not ANSWER it and the Python layer gave it no posture, whether or
+    # not an unanswered entry is sitting on it.
+    _RAN_NO_BAND_CLAUSE = ("every module in this category ran and abstained this period, so the "
+                           "category carries no posture; each module's own reason is listed "
+                           "with the category")
+    _ran_no_band: list[str] = []
+    for _row in list(row_module_results or []) + list(row_abstained or []):
+        if not isinstance(_row, dict):
+            continue
+        _key = _python_category_of(_row, _row.get("module_id"))
+        if not _key or _key in answered or _key in wanted_filled or _key in _ran_no_band:
+            continue
+        _ran_no_band.append(_key)
+    _ran_no_band.sort()
+    for _key in _ran_no_band:
+        # An unanswered specification entry is ANNOTATED, never replaced: what the specification
+        # layer said about the category is a separate fact from what the Python modules did, and
+        # this programme has closed the same defect before by keeping both rather than choosing.
+        _e = dict(merged.get(_key) or {})
+        _prior = _e.get("reason")
+        _e["reason"] = (f"{_prior}; {_RAN_NO_BAND_CLAUSE}" if _prior else _RAN_NO_BAND_CLAUSE)
+        _e.setdefault("state", "ran_without_band")
+        _e["modules_ran_without_band"] = True
+        # `posture_layer` IS DELIBERATELY NOT SET. It names the layer that PRODUCED A POSTURE,
+        # and `decision_brief` reads it to write "these categories' postures came from the
+        # Python module layer". This category produced none, so claiming a layer for it would
+        # be an over-claim of exactly the kind section 12.1 fails a run for. The separate key
+        # below says the true and narrower thing: the Python layer is where its modules ran.
+        _e["modules_ran_in_layer"] = POSTURE_LAYER_PYTHON
+        _e.pop("status", None)          # belt and braces: nothing here may become a posture.
+        _e.pop("contributes_to_project_status", None)
+        merged[_key] = _e
 
     # The module rows follow their category, so no category's evidence is split across layers.
     modules: list[dict[str, Any]] = [dict(m) for m in (spec.get("module_results") or [])]
@@ -699,8 +768,11 @@ def merge_python_row(spec: dict[str, Any] | None,
         m.setdefault("posture_layer", POSTURE_LAYER_SPEC)
         m.setdefault("posture_layer_words", POSTURE_LAYER_WORDS[POSTURE_LAYER_SPEC])
     abstained: list[dict[str, Any]] = [dict(a) for a in (spec.get("abstained") or [])]
-    if filled:
-        wanted = set(filled)
+    # RUN 142. `filled` alone dropped every row of a category that ran and abstained; see the
+    # block above. The categories whose evidence travels are the ones served from the Python
+    # layer -- those it gave a posture, and those in which it ran and produced none.
+    wanted = wanted_filled | set(_ran_no_band)
+    if wanted:
         for m in (row_module_results or []):
             if not isinstance(m, dict):
                 continue
