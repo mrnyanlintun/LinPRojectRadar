@@ -1108,13 +1108,15 @@ def emit_observations(doc: dict) -> list[dict]:
     out: list[dict] = []
 
     def emit(field: str, value: Any, *, kind: str | None = None,
-             entity_key: str = "", entity_state: str | None = None) -> None:
+             entity_key: str = "", entity_state: str | None = None,
+             source: str | None = None) -> None:
         declared = FIELD_KINDS.get(field)
         if declared is None:
             raise ValueError(f"field {field!r} has no kind declared in field_registry")
         out.append({**base, "field": field, "value": value,
                     "kind": kind or declared, "tier": writer_tier(field, doc_type),
-                    "as_of": as_of, "entity_key": entity_key, "entity_state": entity_state})
+                    "as_of": as_of, "entity_key": entity_key, "entity_state": entity_state,
+                    "source_field": source})
 
     # Doc risk: refuse out-of-range before anything from this document is emitted.
     if doc_type in DOC_RISK_DOC_TYPES:
@@ -1131,11 +1133,16 @@ def emit_observations(doc: dict) -> list[dict]:
         # None for it, so the field is simply not emitted.
         v = _coerce_numeric(read_ordinal_word(src, ex.get(src)))
         if v is not None:
-            emit(field, v)
+            # RUN 138. ``source`` IS THE RAW EXTRACTION KEY THE VALUE WAS READ FROM, carried so
+            # `_source_entry` can record WHICH SENTENCE OF THE DOCUMENT a selected field came
+            # from -- not merely which document. The declared mappings above are the only place
+            # that pairing exists, so it is passed from here rather than reconstructed later,
+            # where a second mapping would be a second authority for the same fact.
+            emit(field, v, source=src)
     for src, field in _DATESTR_EMISSIONS.get(doc_type, ()):
         v = ex.get(src)
         if not _is_blank_date(v):
-            emit(field, str(v))
+            emit(field, str(v), source=src)
 
     if doc_type == "change_order":
         # The executed amendment. Effective values win by declared tier; the ORIGINAL
@@ -1409,6 +1416,15 @@ def _source_entry(w: dict) -> dict:
     revision_of = w.get("revision_of")
     if revision_of:
         entry["revisionOf"] = str(revision_of)
+    # RUN 138. THE RAW EXTRACTION KEY, when the observation carries one. The owner's invariant
+    # asks that a selected field name its source field, and until now the record stopped at the
+    # document: a reader could see that ``ac`` came from DOC-MR1 but not that it was read from
+    # ``actual_cost``. Omitted rather than written null when absent, exactly as the four keys
+    # above are, so an observation emitted through a hand-written call still produces an honest
+    # record instead of a null that reads like a missing value.
+    source_field = w.get("source_field")
+    if source_field:
+        entry["sourceField"] = str(source_field)
     return entry
 
 
