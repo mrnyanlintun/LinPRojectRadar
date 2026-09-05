@@ -18,6 +18,10 @@ almost everywhere, which is the honest answer for an instrument with no labelled
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import datetime
 import math
@@ -1605,7 +1609,7 @@ def main() -> int:
 
     # Write the fault-injection evidence beside the other Run-17 artifacts.
     import csv
-    out = HERE.parent.parent / "code_audit" / "run17_fault_injection.csv"
+    out = artifact_out(HERE.parent.parent / "code_audit" / "run17_fault_injection.csv")
     with out.open("w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=["fault", "mutation_applied", "check_turned_red",
                                            "detail"])
@@ -1613,7 +1617,7 @@ def main() -> int:
         w.writerows(faults)
 
     # The scientific propositions that did not hold, which are the run's findings.
-    dpath = HERE.parent.parent / "code_audit" / "run17_failed_propositions.csv"
+    dpath = artifact_out(HERE.parent.parent / "code_audit" / "run17_failed_propositions.csv")
     with dpath.open("w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=["module_id", "key", "proposition", "disposition",
                                            "detail"])
@@ -1638,7 +1642,7 @@ def main() -> int:
           f"exercised {sorted({d['key'] for d in DEFECTS})}")
 
     # And the per-module coverage the results matrix cites.
-    cov = HERE / "run17" / "coverage.csv"
+    cov = artifact_out(HERE / "run17" / "coverage.csv")
     with cov.open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["module_id", "checks", "check_names"])
