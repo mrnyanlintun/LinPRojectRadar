@@ -48,3 +48,27 @@ def portfolio_validated() -> frozenset[str]:
 #: PORTFOLIO_VALIDATED` keep the exact shape they used (a set of ids, tested with `in` and
 #: `sorted()`), with only the source of the name changed.
 PORTFOLIO_VALIDATED = portfolio_validated()
+
+
+# -------------------------------------------------------------------------------------------------
+# RUN 137. `PortfolioModuleError`, AFTER THE BRANCH THAT RAISED IT WAS REMOVED.
+#
+# Until Run 97 `registry.run_module` carried a Group D branch that refused a portfolio-level
+# identifier on a single-project call with `PortfolioModuleError`. Run 97 deleted the branch AND
+# the five D1 rows, so such an identifier is now refused one step earlier and by a different name:
+# it is not in the registry at all, and `MissingModuleError` is raised.
+#
+# The REFUSAL still happens, and every caller that names this class is asserting that it happens --
+# `test_run13_module_evidence.py:251` wraps the dispatch in `except PortfolioModuleError` to prove
+# the runner will not compute a portfolio module on a single project. That assertion is still true
+# and is now true more strongly. The alias keeps it evaluable instead of dying at import.
+#
+# THIS IS AN ALIAS, NOT A NEW EXCEPTION. Defining a fresh class would silently stop those handlers
+# catching anything: the refusal would go uncaught and the check would die rather than pass, or --
+# worse -- a bare `except` upstream would swallow it and the check would pass having proved
+# nothing. The alias is the removed name pointing at the refusal that replaced it.
+# -------------------------------------------------------------------------------------------------
+
+PortfolioModuleError = _REG.MissingModuleError
+
+__all__ = [n for n in dir() if not n.startswith("_")]

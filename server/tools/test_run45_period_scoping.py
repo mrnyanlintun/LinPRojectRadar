@@ -44,7 +44,17 @@ from app.field_registry import (  # noqa: E402
 from app.models import Project  # noqa: E402
 from app.research_identity import hash_access_token  # noqa: E402
 from app.research_models import Participant  # noqa: E402
-from app.simulation.portfolio_health import live_portfolio_modules  # noqa: E402
+# RUN 137. `live_portfolio_modules` came from `app.simulation.portfolio_health`, which Run 97
+# DELETED along with the five D1 rows (88e6ca0). The check below asked whether Portfolio Health
+# computes anywhere on a production path and expected the empty tuple. It is not deleted: it is
+# replaced by the stronger fact that is now true -- the module that would have computed does not
+# exist to be imported at all -- and it goes RED the moment the module is written back.
+def _portfolio_health_importable() -> bool:  # noqa: E402
+    try:
+        import app.simulation.portfolio_health  # noqa: F401
+        return True
+    except ModuleNotFoundError:
+        return False
 from app.simulation.registry import (  # noqa: E402
     CORE_VOTING_MODULES, registry_index, service_index,
 )
@@ -423,9 +433,10 @@ try:
     check(len(registry_index()) == 101, f"101 in the registry, not {len(registry_index())}")
     check(len(registry_index()) - len(service_index()) == 38,
           "the 38 retired identifiers reconcile 63 + 38 = 101")
-    check(live_portfolio_modules() == (),
-          "Portfolio Health computes nowhere on any production path",
-          str(live_portfolio_modules()))
+    check(not _portfolio_health_importable(),
+          "Portfolio Health computes nowhere on any production path -- since Run 97 the module "
+          "that would compute it does not exist",
+          "app.simulation.portfolio_health is importable")
 
 finally:
     print()

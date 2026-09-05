@@ -49,8 +49,9 @@ import run97_removed_portfolio as portfolio_mod  # noqa: E402
 from app.simulation.compute import compute_project  # noqa: E402
 from app.simulation.fusion import normalise_status  # noqa: E402
 from app.simulation.models import SIMULATION_VERSION, STOCHASTIC, VALIDATED  # noqa: E402
+from run97_removed_portfolio import PortfolioModuleError  # noqa: E402  Run 137
 from app.simulation.registry import (  # noqa: E402
-    CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, MissingModuleError, PortfolioModuleError,
+    CORE_VOTING_MODULES, DISABLED_CONCEPT_ONLY, MissingModuleError,
     PROXY_QUALIFIERS, load_registry, registry_index, run_module,
 )
 from app.simulation.signal_package import NESTED_INPUT_MODULES  # noqa: E402
