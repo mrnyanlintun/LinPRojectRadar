@@ -337,6 +337,12 @@ function deriveDecision(project) {
   // assigned authority and a required documentation list. An action plan absent from the card
   // but present in the exported record is the same claim in a different place.
   //
+  // RUN 140. Still gone, and `mitigations` is not their replacement: it carries no assigned
+  // owner, no deadline, no documentation list and no authority, it is served only where the
+  // recommendation package is visible, and it reaches the export through `buildAuditRecord`'s
+  // new `brief` argument rather than through anything derived here. This function composes no
+  // mitigation and never will -- the card's figures are the server's.
+  //
   // `healthState`, `conflictType` and `fairnessGateRequired` are UNCHANGED: the first two are
   // read by the card's state badge and by the charts, and the third is left as the boolean it
   // was so nothing downstream that reads it changes shape.
@@ -348,9 +354,16 @@ function deriveDecision(project) {
    ------------------------------------------------------------
    `CATEGORY_ACTIONS` and `deriveActionPlan` are removed. They produced rows with the columns
    Trigger / What / Who / How / When / Inform -- an assigned actor, a prescribed method, a
-   deadline and a notification list. The card's premise is that the platform states a finding
+   deadline and a notification list. The card's premise was that the platform states a finding
    and never issues an action, and the footer's "recommendation only" did not change what the
    table said.
+
+   RUN 140 NARROWS THAT PREMISE AND LEAVES THIS REMOVAL EXACTLY WHERE IT IS. The card now
+   suggests candidate mitigations for each non-Green reading. What it still does not do is the
+   whole of what this table did: it assigns NO owner, sets NO deadline, names NO authority and
+   lists NO required document. Those four prohibitions are not a leftover of the old stance --
+   they are this feature's design constraint, written into the composer, the validator and the
+   renderer. `deriveActionPlan` is not coming back under the name `mitigations`.
 
    MEASURED BEFORE REMOVAL: `deriveActionPlan` already returned an empty list on every real
    project and had since Run 90 -- `CATEGORY_ACTIONS` was keyed cat1..cat11 while
@@ -364,7 +377,23 @@ function deriveDecision(project) {
 /* ------------------------------------------------------------
    5. Audit-record assembly
    ------------------------------------------------------------ */
-function buildAuditRecord(project, decision, reviewerInput) {
+/* RUN 140. THE EXPORTED RECORD CARRIES THE MITIGATIONS THE CARD SHOWED.
+   ------------------------------------------------------------
+   WHY THE BRIEF IS NOW AN ARGUMENT. This function is built from the project and the derived
+   decision, never from the served brief, so until this run it could not see a mitigation at
+   all. `brief` is OPTIONAL and defaults to null: the audit record must still be exportable
+   from a card that was rendered without one, which is every ungated card.
+
+   WHAT IS COPIED AND WHAT IS NOT. The stored entries are copied through unchanged, figures and
+   all, with their composition date, model and provider. Nothing is re-composed, re-worded or
+   re-ordered here, because the record's whole purpose is to preserve WHAT THE REVIEWER SAW; a
+   record that improved on the card would be a record of something that never happened.
+
+   THE RUN 98 REMOVALS STAND. `recommended_action`, `authority`, `documentation_required` and
+   `action_plan` are still gone and are not coming back under another name. A mitigation
+   candidate is not one of them: it assigns nobody, sets no date and lists no document, and
+   `mitigations` is absent from the record entirely when the card carried none. */
+function buildAuditRecord(project, decision, reviewerInput, brief) {
   return {
     pceif_version: PCEIF_VERSION,
     data_boundary: DATA_BOUNDARY,
@@ -385,6 +414,24 @@ function buildAuditRecord(project, decision, reviewerInput) {
     human_review: {
       rationale: reviewerInput.rationale,
       recorded_at: reviewerInput.recordedAt
-    }
+    },
+    // RUN 140. Present only when the card carried mitigations. An absent key and an empty
+    // list are different claims: absent means none were served, and the export says so by
+    // saying nothing rather than by writing `[]`.
+    ...(brief && Array.isArray(brief.mitigations) && brief.mitigations.length
+        ? { mitigations: brief.mitigations.map((m) => ({
+              module_id: m.module_id,
+              band: m.band,
+              shape: m.shape,
+              reading: m.reading,
+              next_band: m.next_band,
+              gap: m.gap,
+              candidates: Array.isArray(m.candidates) ? m.candidates.slice() : [],
+              absent_reason: m.absent_reason == null ? null : m.absent_reason,
+              composed_at: m.composed_at,
+              model: m.model,
+              provider: m.provider
+            })) }
+        : {})
   };
 }

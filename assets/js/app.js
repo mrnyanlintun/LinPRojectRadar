@@ -1657,7 +1657,14 @@
         rationale: rationale.value.trim() || "(not recorded at export time)",
         recordedAt: new Date().toISOString()
       };
-      const record = buildAuditRecord(p, d, reviewerInput);
+      /* RUN 140. THE EXPORTED RECORD MUST CARRY WHAT THE CARD SHOWED, so the served brief is
+         read here from the same place the card reads it -- `LinResults.rowFor(p).decision_brief`
+         -- and handed to `buildAuditRecord`, which is built from the project and the derived
+         decision and could not otherwise see a mitigation. It is `null` on any card rendered
+         without a brief, and the record then has no `mitigations` key at all. */
+      const briefRow = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(p) : null;
+      const servedBrief = briefRow && briefRow.decision_brief;
+      const record = buildAuditRecord(p, d, reviewerInput, servedBrief);
       // Display timestamps in the selected timezone; the record's
       // exported_at / recorded_at stay UTC ISO for integrity.
       record.exported_at_local = LinTZ.format(record.exported_at);
@@ -1677,7 +1684,12 @@
     if (xlsxBtn) xlsxBtn.addEventListener("click", () => {
       try {
         if (window.LinExport && typeof LinExport.exportProjectReport === "function") {
-          LinExport.exportProjectReport(p);
+          // RUN 140. Same brief, same reason: the workbook's fifth sheet records the
+          // mitigations the reviewer was shown. Read here rather than closed over, because
+          // this handler is wired in `wireDecisionControls` and the card's own `brief` is
+          // local to `renderDecisionCard`.
+          const xr = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(p) : null;
+          LinExport.exportProjectReport(p, xr && xr.decision_brief);
         } else {
           alert("XLSX export not available: the SheetJS library failed to load.");
         }
