@@ -687,8 +687,20 @@ def cat1() -> None:
     flat = run("A1.5", {**BASE_EVM, "cpiHistory": [0.9] * 10})
     near(mid, "invariant: a constant series forecasts itself",
          flat.get("forecast_cpi"), 0.9, tol=1e-9)
-    check(mid, "calibration: the forecast carries no status band, which is Run 33's work",
-          out.get("status_color") is None and out.get("calibration_pending") is True)
+    # RUN 137, ITEM 3. RE-POINTED. RUN 107 GAVE THIS MODULE A BAND, DELIBERATELY.
+    # The check asserted no status band and `calibration_pending`, which was true until Run 107.
+    # `SIMULATION_VERSION_HISTORY` records the change at `sim-2026.09-v53`: "RUN 107: the eight
+    # thresholds. A1.5, A1.6, A1.9, A1.11, A4.5, A4.7, A4.8 and A4.9 band for the first time on
+    # the owner's supplied ladders". The expectation is taken from that ruling and not from the
+    # module: a band is asserted, the calibration is no longer pending, and the reading declares
+    # where the boundary came from -- an OWNER-CALIBRATED provenance and a stated threshold
+    # source -- which is what stops an unsourced ladder passing as a calibrated one.
+    check(mid, "calibration: the forecast bands on the owner's Run 107 ladder and declares its "
+               "provenance",
+          out.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+          and not out.get("calibration_pending")
+          and out.get("band_provenance_class") == "OWNER-CALIBRATED"
+          and bool(out.get("threshold_source")), str(out.get("status_color")))
 
     # ------------------------------------------------------------------ 1.6 Earned Schedule
     mid = "1.6"
@@ -730,8 +742,20 @@ def cat1() -> None:
           abstained(run("A1.6", {**BASE_EVM, "ev": 50, "timePhasedBaseline": {
               **curve, "periods": [{"period_index": i, "period": f"P{i}", "cumulative_pv": v}
                                    for i, v in enumerate([0, 40, 20, 60])]}})))
-    check(mid, "calibration: the time based index carries no status band",
-          out.get("status_color") is None and out.get("calibration_pending") is True)
+    # RUN 137, ITEM 3. RE-POINTED. RUN 107 GAVE THIS MODULE A BAND, DELIBERATELY.
+    # The check asserted no status band and `calibration_pending`, which was true until Run 107.
+    # `SIMULATION_VERSION_HISTORY` records the change at `sim-2026.09-v53`: "RUN 107: the eight
+    # thresholds. A1.5, A1.6, A1.9, A1.11, A4.5, A4.7, A4.8 and A4.9 band for the first time on
+    # the owner's supplied ladders". The expectation is taken from that ruling and not from the
+    # module: a band is asserted, the calibration is no longer pending, and the reading declares
+    # where the boundary came from -- an OWNER-CALIBRATED provenance and a stated threshold
+    # source -- which is what stops an unsourced ladder passing as a calibrated one.
+    check(mid, "calibration: the time based index bands on the owner's Run 107 ladder and "
+               "declares its provenance",
+          out.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+          and not out.get("calibration_pending")
+          and out.get("band_provenance_class") == "OWNER-CALIBRATED"
+          and bool(out.get("threshold_source")), str(out.get("status_color")))
 
     # ------------------------------------------------------------------ 1.7 TCPI
     mid = "1.7"
@@ -813,8 +837,20 @@ def cat1() -> None:
                  })["execution_ratio"])
     check(mid, "label: the proxy qualifier is gone, because the proxy is gone",
           "A1.9" not in REG.PROXY_QUALIFIERS)
-    check(mid, "calibration: no status band is asserted, and the contract supplies none",
-          out.get("status_color") is None and out.get("calibration_pending") is True)
+    # RUN 137, ITEM 3. RE-POINTED. RUN 107 GAVE THIS MODULE A BAND, DELIBERATELY.
+    # The check asserted no status band and `calibration_pending`, which was true until Run 107.
+    # `SIMULATION_VERSION_HISTORY` records the change at `sim-2026.09-v53`: "RUN 107: the eight
+    # thresholds. A1.5, A1.6, A1.9, A1.11, A4.5, A4.7, A4.8 and A4.9 band for the first time on
+    # the owner's supplied ladders". The expectation is taken from that ruling and not from the
+    # module: a band is asserted, the calibration is no longer pending, and the reading declares
+    # where the boundary came from -- an OWNER-CALIBRATED provenance and a stated threshold
+    # source -- which is what stops an unsourced ladder passing as a calibrated one.
+    check(mid, "calibration: the execution ratio bands on the owner's Run 107 ladder and "
+               "declares its provenance",
+          out.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+          and not out.get("calibration_pending")
+          and out.get("band_provenance_class") == "OWNER-CALIBRATED"
+          and bool(out.get("threshold_source")), str(out.get("status_color")))
 
     # -------------------------------------------------------- 1.10 CPI Shrinkage Forecast
     mid = "1.10"
