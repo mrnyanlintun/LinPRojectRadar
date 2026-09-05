@@ -3046,7 +3046,23 @@ def _run69_structures(session: Session, project: Project, period: int,
         # first-pass numerator. See `extraction_fields` for the sentence each comes from. The
         # A6.4 quality and safety factors need NOTHING NEW -- `inspections_performed`,
         # `exposure_hours` and `recordable_incidents` are already above and are reused.
-        ("packages_due", ("packages_due", "work_packages_due", "packages", "milestones_due",
+        # RUN 137, ITEM 4. THE BARE HEADING "packages" IS REMOVED FROM THIS DENOMINATOR.
+        # Settled by the precedent of RUN 136's F8, immediately below, and given the identical
+        # treatment. `packages_due` is "firm work packages or milestones DUE in the reporting
+        # period" (`extraction_fields.py`), the schedule reliability factor's denominator. A
+        # column headed only "Packages" states no period and no status, so it may be every
+        # package in the scope of work -- a superset, in the same shape H5 removed from the two
+        # A6.4 numerators and F8 removed from the `commitments_due` denominator.
+        #
+        # THE DIRECTION OF THE ERROR IS THE UNFAVOURABLE ONE AND IT IS REMOVED ANYWAY, for the
+        # reason F8 records below: the platform's recorded position on an adjacent quantity
+        # carries no direction. A larger denominator lowers the on-time percentage and bands the
+        # firm WORSE; an unfavourable error is still a wrong answer, and the honest alternative
+        # is already written into the factor -- with no denominator it reads UNAVAILABLE and is
+        # not treated as Green.
+        #
+        # Every heading that STATES the population is untouched and still lands.
+        ("packages_due", ("packages_due", "work_packages_due", "milestones_due",
                           "activities_due", "workfronts_due", "planned_packages")),
         ("packages_completed_on_time", ("packages_completed_on_time", "packages_on_time",
                                         "completed_on_time", "milestones_on_time",
