@@ -849,6 +849,14 @@
        asserts on. 8.0 is used with a small margin so a wider metric on another platform still
        clears the gutter. */
     var MOD_FONT_PX = 13, MOD_CHAR_W = 8.0;
+    /* RUN 139B. THE MODULE COLUMN'S ONE LEFT EDGE. The labels are drawn at
+       `COL_MOD + MOD_LABEL_INDENT` -- a single shared left edge with a constant indent from
+       the node column -- and NOT at each dot's own x. The two happen to be equal today
+       because every module's in-port sits at COL_MOD; reading the column's left edge off a
+       per-node value is what would let the column go ragged if a dot ever moved, and the dots
+       are what the flow lines terminate on. The indent is measured from the dot CENTRE; the
+       dot's radius is 4 and its identity ring 6.5, so 12 leaves 5.5px of clear air. */
+    var MOD_LABEL_INDENT = 12;
     var CAT_LABEL_GUTTER = 358;
     var longestModName = MODULES.reduce(function (a, m) {
       return Math.max(a, String(m.name || '').length); }, 0);
@@ -923,6 +931,32 @@
       return TOP + ci * CAT_PITCH;
     });
     var PRJ_X = COL_PRJ, PRJ_Y = TOP + (BODY_BOTTOM - TOP) / 2;
+
+    /* RUN 139B. Put a text element's RENDERED box centre on the row `cy`. Measured, never
+       inferred: `getBBox()` reports zero height where the element has not been laid out (a
+       collapsed panel), and there the label keeps the y it was given. The 6px ceiling stops a
+       nonsense measurement from throwing a label across the frame. */
+    var rowCentred = [];
+    function centreTextOnRow(t, cy) { rowCentred.push([t, cy]); }
+    function applyRowCentring(tries) {
+      var laidOut = false;
+      rowCentred.forEach(function (p) {
+        var t = p[0], cy = p[1], b = null;
+        try { b = t.getBBox(); } catch (e) { return; }
+        if (!b || !b.height) return;          /* not laid out yet: leave the y it was given */
+        laidOut = true;
+        var d = cy - (b.y + b.height / 2);
+        if (!isFinite(d) || Math.abs(d) < 0.01 || Math.abs(d) > 6) return;
+        var y0 = parseFloat(t.getAttribute('y'));
+        if (!isFinite(y0)) return;
+        t.setAttribute('y', String(y0 + d));
+      });
+      /* A panel that is still display:none measures zero. Try again on the next frame, a
+         bounded number of times, and stop as soon as a real measurement comes back. */
+      if (!laidOut && tries > 0 && typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(function () { applyRowCentring(tries - 1); });
+      }
+    }
 
     /* A MIND-MAP BRANCH. Leaves its parent horizontally, arrives at its child horizontally.
        The control points sit on the two endpoints' own rows, so the curve never wanders above
@@ -1368,7 +1402,7 @@ var HEADERS = [
       if (info.status === 'Red') circle.classList.add('lnf-red-pulse');
 
       var lbl = se('text', {
-        x:modXs[mi] + 12, y:modY[mi], 'text-anchor':'start',
+        x:COL_MOD + MOD_LABEL_INDENT, y:modY[mi], 'text-anchor':'start',
         fill:live ? 'var(--muted, #5a7898)' : 'var(--faint, #1e2c44)',
         'font-size':'13', 'font-family':'monospace',
         'dominant-baseline':'middle', 'pointer-events':'none', class:'lnf-halo'
@@ -1376,6 +1410,13 @@ var HEADERS = [
       if (!live) lbl.setAttribute('opacity','0.55');
       /* RUN 94b. THE WHOLE NAME. The column is sized to it above; nothing is cut. */
       lbl.textContent = m.name;
+      /* RUN 139B. CENTRED ON ITS OWN DOT, MEASURED. `dominant-baseline:middle` centres on the
+         font's MIDDLE baseline (half the x-height), not on the glyph box, and was measured
+         leaving every module label 1.25px high of its dot at 13px monospace. The correction is
+         read from the rendered box, not assumed: the label's own bounding box is centred on the
+         row. Dimmed labels take the same path, so they align on the same rule as the live ones.
+         Nothing but the text's own y moves -- the dots and the lines into them are untouched. */
+      centreTextOnRow(lbl, modY[mi]);
 
       circle.style.transformOrigin = modXs[mi] + 'px ' + modY[mi] + 'px';
       g.addEventListener('mouseenter', (function(m, mi, info, circle) {
@@ -1727,6 +1768,9 @@ var HEADERS = [
       leg.appendChild(s);
     });
     container.appendChild(leg);
+    /* RUN 139B. The module labels are centred on their rows once the whole panel is in the
+       document and measurable. Nothing but each label's own y is touched. */
+    applyRowCentring(30);
     return { empty: projectIsEmpty, retainedBeforeReset: retainedBeforeReset,
              governedLabel: governedLabel };
   }
