@@ -55,7 +55,14 @@ from .risk_exposure import register_exposure
 # key tells them nothing. Displayed identifiers are permitted; they are simply not useful here.
 #
 # `singular`/`plural` are formatted with the integer value. They are written to read as a
-# statement of fact and never as advice: this module reports, it does not recommend.
+# statement of fact and never as advice: THIS MODULE reports, it does not recommend.
+#
+# RUN 140 SCOPES THAT SENTENCE AND DOES NOT DELETE IT. It is true of this module and stays true:
+# nothing here composes a response to anything it counts, and these strings are read straight
+# into a band decision, so advice in one of them would contaminate the evidence. It is NOT a
+# platform-wide claim any more. From 2026-09-05 the Suggested Decision card carries candidate
+# mitigations for every non-Green reading, composed elsewhere (`decision_brief.py`), gated
+# elsewhere, and never from these sentences.
 
 _FINDINGS: tuple[dict[str, Any], ...] = (
     # Unresolved scope questions.

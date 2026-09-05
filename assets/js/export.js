@@ -16,6 +16,19 @@
      4. Signal History — present only when project.history has
         more than one period; one row per period with the
         per-category status across time.
+     5. Mitigations — RUN 140, present only when the card the
+        reviewer saw carried mitigations. One row per non-Green
+        reading with its band, reading, next-band boundary, gap
+        and each candidate, plus the composition date, model and
+        provider.
+
+   RUN 140: WHY A FIFTH SHEET AND NOT WIDER SUMMARY ROWS. The
+   Executive Summary is a two-column label/value list; a
+   mitigation is five fields and a variable number of candidate
+   bullets, and forcing it into that shape would either truncate
+   the candidates or restructure a sheet three other blocks read.
+   A new sheet adds nothing to what the existing four carry, so
+   nothing that reads them can be broken by it.
 
    Globals (no ES modules), exported as window.LinExport.
    ============================================================ */
@@ -23,7 +36,13 @@
 (function () {
   "use strict";
 
-  function exportProjectReport(project) {
+  /* RUN 140. `decisionBrief` is the SERVED decision brief (NOT `brief`, which is
+     the executive brief a few lines down; measured -- the first attempt collided with it), optional and defaulting to null.
+     The workbook is otherwise built entirely from the latest stored snapshot on
+     `project.history`, which has never carried a mitigation and still does not. Mitigations are
+     reveal-gated, so a card rendered without them exports a four-sheet workbook exactly as it
+     did before this run -- the fifth sheet is not appended empty. */
+  function exportProjectReport(project, decisionBrief) {
     if (!project) {
       alert("No project provided to the report exporter.");
       return;
@@ -80,9 +99,17 @@
       ["Generated:",     snapshot.computed_at || ""],
       [""],
       // RUN 98. Authority / Recommended Action / Documentation Required are removed from the
-      // exported report. They came from `deriveDecision`, which no longer composes them: the
-      // platform states a finding and issues no action, no remedy and no authority, and an
-      // export that carried them made the claim the card had already stopped making.
+      // exported report. That history stands: they came from `deriveDecision`, which no longer
+      // composes them, and an export that carried them made the claim the card had already
+      // stopped making.
+      //
+      // RUN 140 NARROWS THE GENERAL CLAUSE THAT USED TO SIT HERE. It read "the platform states
+      // a finding and issues no action, no remedy and no authority". The first two thirds of
+      // that are no longer true: from 2026-09-05 the card suggests candidate mitigations for
+      // every non-Green reading, and the "Mitigations" sheet of this workbook now carries the
+      // ones the reviewer was shown, verbatim and with their composition date. What remains
+      // exactly true, and is why these three rows stay removed, is the last third: the platform
+      // holds NO authority, assigns NO owner, sets NO deadline and requires NO document.
       ["GOVERNANCE DECISION"],
       ["State:",                  gov.state || ""],
       ["Fairness Gate:",          gov.fairness_gate ? "Required" : "Not required"],
@@ -176,6 +203,53 @@
       const wsHist = XLSX.utils.aoa_to_sheet(histRows);
       wsHist["!cols"] = new Array(10).fill({ wch: 16 });
       XLSX.utils.book_append_sheet(wb, wsHist, "Signal History");
+    }
+
+    // ----- Sheet 5: Mitigations (RUN 140; only when the card carried them) -----
+    //
+    // THE RECORD PRESERVES WHAT THE REVIEWER SAW. Every cell below is a stored string copied
+    // through unchanged. Nothing is recomputed, rounded or re-ordered: the rows are in the
+    // server's severity order, and the figures are the ones the constant that decided the band
+    // produced. A workbook that improved on the card would document a card that never existed.
+    //
+    // THE PROVENANCE TRAVELS WITH THE TEXT. A spreadsheet leaves the platform and is read
+    // without any surrounding context, so a composed sentence in it that did not carry its
+    // composition date, model and provider would be an assertion of unknown origin.
+    const mits = (decisionBrief && Array.isArray(decisionBrief.mitigations))
+      ? decisionBrief.mitigations : [];
+    if (mits.length) {
+      const mitRows = [[
+        "Module", "Band", "Reading", "Next Band", "Gap", "Candidate Mitigation",
+        "Composed", "Model", "Provider"
+      ]];
+      mits.forEach((m) => {
+        const cands = Array.isArray(m.candidates) ? m.candidates : [];
+        // NO CANDIDATE, NO BLANK ROW. The absence line is the server's fixed text and is
+        // written where a candidate would be, so the sheet states the absence rather than
+        // leaving a reader to infer it from an empty cell.
+        const cells = cands.length ? cands
+          : [m.absent_reason || "no mitigation composed for this reading"];
+        cells.forEach((c, idx) => {
+          mitRows.push([
+            idx === 0 ? (m.module_id || "") : "",
+            idx === 0 ? (m.band || "") : "",
+            idx === 0 ? (m.reading || "") : "",
+            idx === 0 ? (m.next_band || "") : "",
+            idx === 0 ? (m.gap || "") : "",
+            c,
+            idx === 0 ? (m.composed_at || "") : "",
+            idx === 0 ? (m.model || "") : "",
+            idx === 0 ? (m.provider || "") : ""
+          ]);
+        });
+        mitRows.push(["", "", "", "", "", "", "", "", ""]);
+      });
+      const wsMit = XLSX.utils.aoa_to_sheet(mitRows);
+      wsMit["!cols"] = [
+        { wch: 10 }, { wch: 10 }, { wch: 52 }, { wch: 52 }, { wch: 52 },
+        { wch: 60 }, { wch: 12 }, { wch: 18 }, { wch: 12 }
+      ];
+      XLSX.utils.book_append_sheet(wb, wsMit, "Mitigations");
     }
 
     const filename = "OpusGubernatio_Project" + (snapshot.project_id || project.id) +

@@ -1577,7 +1577,20 @@
          <button class="btn export-xlsx-btn">Export Report (XLSX)</button>
        </div>
        <p class="dc-record-note"></p>
-       <p class="dc-note">The platform states a finding and a question. A named human reviewer records the decision; nothing here triggers any action on its own.</p>`;
+       <!-- RUN 140, 2026-09-05. THE FOOTER IS THE ONE PLACE THE STANCE IS STATED TO THE
+            READER RATHER THAN TO A MAINTAINER, so it is the one that had to change first. It
+            read: "The platform states a finding and a question. A named human reviewer records
+            the decision; nothing here triggers any action on its own." The first sentence
+            became false the moment the card began carrying candidate mitigations; leaving it
+            would have been the platform telling a reviewer it was not doing the thing it was
+            visibly doing three inches above.
+
+            WHAT THE NEW TEXT KEEPS. The second sentence is untouched, because it is still
+            exactly true and is the whole point: the platform records nothing and triggers
+            nothing, and the decision is a named person's. What is added is the narrow, honest
+            description of what a mitigation is -- a candidate, not an instruction, naming
+            nobody and dating nothing. -->
+       <p class="dc-note">The platform states a finding, asks a question, and offers candidate mitigations for each reading that is not Green. A candidate is a suggestion to weigh, not an instruction: it names no owner, no authority and no date. A named human reviewer records the decision; nothing here triggers any action on its own.</p>`;
 
     wireDecisionControls(p, d, root);
   }
@@ -1657,7 +1670,14 @@
         rationale: rationale.value.trim() || "(not recorded at export time)",
         recordedAt: new Date().toISOString()
       };
-      const record = buildAuditRecord(p, d, reviewerInput);
+      /* RUN 140. THE EXPORTED RECORD MUST CARRY WHAT THE CARD SHOWED, so the served brief is
+         read here from the same place the card reads it -- `LinResults.rowFor(p).decision_brief`
+         -- and handed to `buildAuditRecord`, which is built from the project and the derived
+         decision and could not otherwise see a mitigation. It is `null` on any card rendered
+         without a brief, and the record then has no `mitigations` key at all. */
+      const briefRow = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(p) : null;
+      const servedBrief = briefRow && briefRow.decision_brief;
+      const record = buildAuditRecord(p, d, reviewerInput, servedBrief);
       // Display timestamps in the selected timezone; the record's
       // exported_at / recorded_at stay UTC ISO for integrity.
       record.exported_at_local = LinTZ.format(record.exported_at);
@@ -1677,7 +1697,12 @@
     if (xlsxBtn) xlsxBtn.addEventListener("click", () => {
       try {
         if (window.LinExport && typeof LinExport.exportProjectReport === "function") {
-          LinExport.exportProjectReport(p);
+          // RUN 140. Same brief, same reason: the workbook's fifth sheet records the
+          // mitigations the reviewer was shown. Read here rather than closed over, because
+          // this handler is wired in `wireDecisionControls` and the card's own `brief` is
+          // local to `renderDecisionCard`.
+          const xr = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(p) : null;
+          LinExport.exportProjectReport(p, xr && xr.decision_brief);
         } else {
           alert("XLSX export not available: the SheetJS library failed to load.");
         }
