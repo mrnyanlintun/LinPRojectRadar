@@ -184,7 +184,7 @@ def rail_guard(r: dict, p: dict) -> tuple[bool, str]:
 
 
 def write_facts() -> None:
-    out = ROOT / "code_audit" / f"run25_rail_removal_{LABEL}.csv"
+    out = artifact_out(ROOT / "code_audit" / f"run25_rail_removal_{LABEL}.csv")
     with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["state", "observation", "value"])

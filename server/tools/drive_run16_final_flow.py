@@ -283,7 +283,7 @@ def server_state(pm: str, pid: str, period: int = 1) -> dict:
 
 def write_facts() -> None:
     import csv
-    out = ROOT / "code_audit" / f"run16_final_flow_{LABEL}.csv"
+    out = artifact_out(ROOT / "code_audit" / f"run16_final_flow_{LABEL}.csv")
     with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["state", "observation", "value"])

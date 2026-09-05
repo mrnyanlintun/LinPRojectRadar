@@ -430,7 +430,7 @@ def main_drive() -> None:
                          "", e["cls"], "yes" if allowed else "no", "PASS" if allowed else "FAIL"])
             if not allowed:
                 non_grey_edges.append(f"{e['type'] or '(unnamed)'}:{e['src']}->{e['dst']}:{e['stroke']}")
-        out = ROOT / "code_audit" / f"run26_empty_project_colours_{LABEL}.csv"
+        out = artifact_out(ROOT / "code_audit" / f"run26_empty_project_colours_{LABEL}.csv")
         with out.open("w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["label", "element_class", "element_type", "element_name", "shape",
@@ -502,7 +502,7 @@ def main_drive() -> None:
             derived_rows.append([bare(cnode["name"]), "yes" if is_derived else "no",
                                  cnode["fill"], cnode["opacity"], cnode["status"],
                                  "FAIL" if (is_derived and coloured) else "PASS"])
-        out2 = ROOT / "code_audit" / f"run26_derived_categories_empty_{LABEL}.csv"
+        out2 = artifact_out(ROOT / "code_audit" / f"run26_derived_categories_empty_{LABEL}.csv")
         with artifact_out(out2).open("w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["category", "derived", "rendered_fill", "rendered_opacity",
@@ -543,7 +543,7 @@ def main_drive() -> None:
         rec("wiring", "fabricated_edge_count", len(fabricated))
         rec("wiring", "wrong_direction_edges", json.dumps(wrong_dir[:20]))
         rec("wiring", "wrong_direction_edge_count", len(wrong_dir))
-        out3 = ROOT / "code_audit" / f"run26_rendered_edges_{LABEL}.csv"
+        out3 = artifact_out(ROOT / "code_audit" / f"run26_rendered_edges_{LABEL}.csv")
         with artifact_out(out3).open("w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["edge_type", "upstream", "downstream", "in_authoritative_inventory"])
@@ -600,7 +600,7 @@ def main_drive() -> None:
         check(not errors, "no uncaught page error during the run", json.dumps(errors[:3]))
         b.close()
 
-    out = ROOT / "code_audit" / f"run26_browser_facts_{LABEL}.csv"
+    out = artifact_out(ROOT / "code_audit" / f"run26_browser_facts_{LABEL}.csv")
     with out.open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["state", "observation", "value"])

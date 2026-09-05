@@ -102,8 +102,27 @@ def _fresh_database(db_dir: pathlib.Path, stem: str) -> str | None:
     return url
 
 
+def _drives_a_browser(script: pathlib.Path) -> bool:
+    """True when this script starts its own browser, so the 120s cap is a COST, not a fault.
+
+    RUN 137. All ten scripts in Run 136's timeout bucket are Playwright drivers, and every one of
+    them was cut off MID-WORK, not spinning: their captured output ends inside a viewport sweep
+    (`drive_run86_panel_widths`, `drive_run90_charts`, `drive_run91_brief` at "VIEWPORT 1024px"),
+    a theme sweep (`drive_run94_charts` at "THEME dark"), or a page walk with passes already
+    recorded (`drive_run38_browser`, `drive_run39_pilot_browser`). The work is real and it is
+    bounded -- a fixed list of viewports, themes and pages -- so the cap is the wrong instrument
+    for them and NOT ONE of the ten is repaired by editing the script.
+    """
+    try:
+        src = script.read_text(errors="replace")
+    except OSError:
+        return False
+    return "playwright" in src or "sync_playwright" in src
+
+
 def run_active(paths: list[str], fleet_dir: pathlib.Path, timeout: int,
-               exit_tsv: pathlib.Path, db_dir: pathlib.Path | None = None) -> None:
+               exit_tsv: pathlib.Path, db_dir: pathlib.Path | None = None,
+               browser_timeout: int = 0) -> None:
     fleet_dir.mkdir(parents=True, exist_ok=True)
     lines = []
     for i, p in enumerate(paths, 1):
@@ -115,8 +134,11 @@ def run_active(paths: list[str], fleet_dir: pathlib.Path, timeout: int,
             url = _fresh_database(db_dir, stem)
             if url:
                 env["DATABASE_URL"] = url
+        cap = timeout
+        if browser_timeout and _drives_a_browser(SERVER / k):
+            cap = browser_timeout
         try:
-            proc = subprocess.run([sys.executable, k], cwd=SERVER, timeout=timeout,
+            proc = subprocess.run([sys.executable, k], cwd=SERVER, timeout=cap,
                                   capture_output=True, env=env)
             code, out, err = proc.returncode, proc.stdout, proc.stderr
         except subprocess.TimeoutExpired as exc:
@@ -138,6 +160,11 @@ def main() -> int:
                     help="directory to hold the per-script SQLite databases. Defaults to "
                          "<fleet-dir>/../fresh_db. Per-script databases are the STANDING MODE as "
                          "of Run 137; pass --shared-db to turn them off.")
+    ap.add_argument("--browser-timeout", type=int, default=0, metavar="SECONDS",
+                    help="a separate, longer cap for the scripts that drive a browser. Default 0 "
+                         "= use --timeout for everything, which is what Runs 135 and 136 measured "
+                         "and what keeps a figure comparable with theirs. See run_active for what "
+                         "the eleven timeouts were actually doing when the 120s cap cut them off.")
     ap.add_argument("--shared-db", action="store_true",
                     help="let all 237 scripts share whatever DATABASE_URL names, as the fleet did "
                          "before Run 137. Kept only for taking a figure like-for-like against Run "
@@ -165,7 +192,8 @@ def main() -> int:
         db_dir = None if args.shared_db else (
             pathlib.Path(args.fresh_db) if args.fresh_db else fleet_dir.parent / "fresh_db")
         print(f"  database mode: {'SHARED (one database, pre-Run-137)' if db_dir is None else f'fresh per script under {db_dir}'}")
-        run_active(paths, fleet_dir, args.timeout, exit_tsv, db_dir)
+        run_active(paths, fleet_dir, args.timeout, exit_tsv, db_dir,
+                   args.browser_timeout)
 
     if fleet_dir is None or exit_tsv is None or not exit_tsv.exists():
         print("FAIL  no fleet evidence: pass --fleet-dir and --exit-tsv, or --run")

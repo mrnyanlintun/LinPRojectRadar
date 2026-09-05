@@ -312,7 +312,7 @@ def guard_marker_distinct(s: dict) -> tuple[bool, str]:
 # --------------------------------------------------------------------------- main
 
 def write_facts() -> None:
-    out = ROOT / "code_audit" / f"run24_empty_project_diagram_{LABEL}.csv"
+    out = artifact_out(ROOT / "code_audit" / f"run24_empty_project_diagram_{LABEL}.csv")
     with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["state", "observation", "value"])
