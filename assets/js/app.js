@@ -1577,7 +1577,20 @@
          <button class="btn export-xlsx-btn">Export Report (XLSX)</button>
        </div>
        <p class="dc-record-note"></p>
-       <p class="dc-note">The platform states a finding and a question. A named human reviewer records the decision; nothing here triggers any action on its own.</p>`;
+       <!-- RUN 140, 2026-09-05. THE FOOTER IS THE ONE PLACE THE STANCE IS STATED TO THE
+            READER RATHER THAN TO A MAINTAINER, so it is the one that had to change first. It
+            read: "The platform states a finding and a question. A named human reviewer records
+            the decision; nothing here triggers any action on its own." The first sentence
+            became false the moment the card began carrying candidate mitigations; leaving it
+            would have been the platform telling a reviewer it was not doing the thing it was
+            visibly doing three inches above.
+
+            WHAT THE NEW TEXT KEEPS. The second sentence is untouched, because it is still
+            exactly true and is the whole point: the platform records nothing and triggers
+            nothing, and the decision is a named person's. What is added is the narrow, honest
+            description of what a mitigation is -- a candidate, not an instruction, naming
+            nobody and dating nothing. -->
+       <p class="dc-note">The platform states a finding, asks a question, and offers candidate mitigations for each reading that is not Green. A candidate is a suggestion to weigh, not an instruction: it names no owner, no authority and no date. A named human reviewer records the decision; nothing here triggers any action on its own.</p>`;
 
     wireDecisionControls(p, d, root);
   }

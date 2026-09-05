@@ -403,9 +403,13 @@ function buildAuditRecord(project, decision, reviewerInput, brief) {
     reporting_period: project.reportingPeriod,
     signal_package: project.signals,
     // RUN 98. `recommended_action`, `authority`, `documentation_required` and `action_plan`
-    // are removed from the exported record for the reason written at `deriveDecision`: the
-    // platform states a finding, and an action recommendation in the export is the same claim
-    // the card no longer makes.
+    // are removed from the exported record for the reason written at `deriveDecision`, and
+    // RUN 140 NARROWS THAT REASON WITHOUT WEAKENING IT. It used to read "the platform states a
+    // finding, and an action recommendation in the export is the same claim the card no longer
+    // makes". The card now does make a suggestion, so the reason is no longer that -- it is
+    // that those four fields each assign something the platform holds none of: an authority, an
+    // owner, a deadline and a documentation requirement. `mitigations` below assigns none of
+    // them, which is precisely why it may be exported where those four may not.
     derived_decision: {
       health_state: decision.healthState,
       conflict_type: decision.conflictType,

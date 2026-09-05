@@ -587,15 +587,27 @@
 
      WHAT THIS RENDERS AND WHAT IT WILL NOT.
 
-     The platform produces a PERFORMANCE FINDING and a DECISION QUESTION. It does NOT produce an
-     action recommendation: no prescribed remedy, no deadline, no approval authority and no
-     corrective-action template appear anywhere below, because each needs an approved knowledge
-     base the platform does not have.
+     The platform produces a PERFORMANCE FINDING, a DECISION QUESTION and -- from RUN 140,
+     2026-09-05, by the owner's decision, this run being the origin of the change -- CANDIDATE
+     MITIGATIONS for every reading that is not Green, aimed one band up.
+
+     WHAT IS STILL REFUSED: no deadline, no approval authority, no assigned owner and no
+     corrective-action template appears anywhere below, because each needs an approved knowledge
+     base the platform does not have. What made a mitigation permissible is not a knowledge base
+     but a RECORDED, REPLAYABLE MODEL COMPOSITION -- composed against a code-built context,
+     validated, stored with its date, model and provider, and rendered verbatim from storage.
+     This paragraph mirrors `server/app/decision_brief.py`'s module docstring on purpose; amend
+     the two together or they drift apart.
 
      NOTHING HERE DECIDES ANYTHING. Every sentence is composed in Python by
      `server/app/decision_brief.py` from stored readings, thresholds, trends, category results
      and provenance, and arrives on `decision_brief`. This file lays it out. No model chooses a
-     status, a driver, a threshold, an action, an authority, or whether evidence was adequate.
+     status, a driver, a threshold, an authority, or whether evidence was adequate.
+
+     THE ONE CARVE-OUT, RUN 140: a model composes the CANDIDATE MITIGATION SENTENCES, and only
+     those, against a context built in code from the deciding constant and the canonical
+     quantity. It chooses no figure. This file computes none either -- `renderMitigation` prints
+     `reading`, `next_band` and `gap` verbatim.
 
      RENDER ONLY WHAT CAN BE POPULATED TRUTHFULLY. `field()` already prints nothing for an empty
      value, and the composer omits a block it cannot fill, so an absent block is absent -- there
@@ -912,11 +924,21 @@
   /* ============================================================
      RUN 134, GOAL TWO. THE SUGGESTED DECISION.
      ============================================================
-     WHAT THE LABEL PERMITS AND WHAT IT FORBIDS. The platform may suggest the TYPE OF REVIEW
-     DECISION and nothing else. It never suggests a construction remedy, and it never names an
-     owner, an authority, a deadline, a corrective action or an escalation route. The sentence
-     below offers three kinds of review response and stops; it is fixed text, it names no party,
-     and it is not composed from any figure, so it cannot drift into a recommendation.
+     WHAT THE LABEL PERMITS AND WHAT IT FORBIDS. RUN 140, 2026-09-05, WIDENED THIS, and the
+     old wording is preserved here because what it forbade still binds. It read: "The platform
+     may suggest the TYPE OF REVIEW DECISION and nothing else. It never suggests a construction
+     remedy... it is fixed text, it names no party, and it is not composed from any figure, so
+     it cannot drift into a recommendation."
+
+     THE FINAL CLAUSE IS NOW FALSE AND IS WITHDRAWN. The mitigation blocks ARE composed from
+     figures, and they DO suggest a response to the reading. The safeguard is no longer that
+     nothing is composed; it is that what is composed is validated before storage, stored with
+     its provenance, rendered verbatim, and reveal-gated.
+
+     WHAT STILL BINDS, UNCHANGED. A suggestion never names an owner, an authority, a role, a
+     team or a person; never sets a deadline or a date; never invents a figure; and never
+     reaches across modules the evidence does not join. THE SENTENCE BELOW is still fixed text
+     that offers three kinds of review response and stops, and it still names no party.
 
      THE REASONS ARE THE SERVER'S OWN ADVERSE READINGS, in the server's own order. See the note
      on the summary in `detail.js`: `decision_brief._adverse_readings` sorts by severity before
@@ -1100,8 +1122,13 @@
       '<input id="dc-owner" class="dc-input" placeholder="Who carries this out">' +
       /* RUN 96 REMOVED THE "Deciding authority" INPUT. Asking the reviewer to name who
          authorises an action implied the platform holds or allocates authority, and it does
-         not. Authority models are out of scope, and the card states a finding and a question
-         rather than an action needing approval. `authority_role` is no longer sent. */
+         not. Authority models are out of scope and `authority_role` is no longer sent.
+
+         RUN 140 DOES NOT REOPEN THIS, and the distinction is worth stating because the fields
+         either side of this note are an OWNER and a BY WHEN. Those are the REVIEWER'S OWN
+         response, typed by a named person and recorded as theirs. The card now offers candidate
+         mitigations, but it still assigns no owner and sets no date -- it never fills these two
+         boxes, and nothing composed by a model is ever written into them. */
       '<label class="dc-label" for="dc-deadline">By when</label>' +
       '<input id="dc-deadline" class="dc-input" placeholder="e.g. next reporting cycle">' +
       '<label class="dc-label" for="dc-residual">Residual risk</label>' +

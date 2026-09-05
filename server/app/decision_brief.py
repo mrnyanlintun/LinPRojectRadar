@@ -3,21 +3,50 @@ THE GOVERNANCE DECISION CARD, COMPOSED IN PYTHON FROM STORED READINGS.
 
 WHAT THIS PRODUCES, AND WHAT IT REFUSES TO PRODUCE.
 
-The platform produces a PERFORMANCE FINDING and a DECISION QUESTION. It does not produce an
-action recommendation. There is no prescribed remedy here, no deadline, no approval authority and
-no corrective-action template, because each of those requires an approved knowledge base the
-platform does not have. A card that told a reviewer what to do would be asserting an authority
-the instrument has never been given.
+The platform produces a PERFORMANCE FINDING, a DECISION QUESTION and -- from RUN 140,
+2026-09-05, BY THE OWNER'S DECISION, THIS RUN BEING THE ORIGIN OF THE CHANGE -- CANDIDATE
+MITIGATIONS for every reading that is not Green, aimed exactly one band up: Red toward Amber,
+Amber toward Yellow, Yellow toward Green.
+
+WHAT IS STILL REFUSED, AND IT IS MOST OF IT. There is no deadline here, no approval authority,
+no assigned owner and no corrective-action template. Every one of those requires an approved
+knowledge base the platform does not have, and that reason is unchanged. A card that named who
+must act, or by when, would be asserting an authority the instrument has never been given.
+
+WHAT CHANGED IS THE REASON A MITIGATION CAN BE OFFERED AT ALL, and the distinction is the whole
+defence. It is NOT that the platform acquired an approved knowledge base -- it did not. It is
+that a candidate mitigation is a RECORDED, REPLAYABLE MODEL COMPOSITION: it is composed against
+a context built in code from the deciding constant and the canonical quantity, validated before
+storage, stored with its composition date, model and provider, and rendered verbatim from
+storage. It can be replayed, attributed and refuted. A deadline or an authority cannot be, which
+is why those stay refused. The mitigations are also reveal-gated, served only where the
+recommendation package is visible, so a participant never meets one before their pre-judgment
+is locked.
 
 WHY IT IS PYTHON AND NOT A MODEL. This follows the owner's Run 76 ruling: fusion stays in code,
 because identical evidence must yield the same posture. No model decides a status, chooses a
-driver, creates a threshold, prescribes an action, assigns an authority, or judges evidence
-adequate. Every sentence below is assembled from figures already stored by the compute path, and
+driver, creates a threshold, assigns an authority, or judges evidence adequate.
+
+THE ONE CARVE-OUT, RUN 140. A model COMPOSES CANDIDATE MITIGATIONS, and only those. It is handed
+a context built entirely in code -- the band the code decided, the boundary read from the same
+constant the band decision reads, and the gap computed from the canonical quantity -- and it
+writes prose against figures it did not choose and cannot change. It still decides no status,
+no driver, no threshold and no authority. Every figure in a mitigation block is the code's; only
+the sentence around it is composed, and that sentence is validated and stored before it is ever
+rendered. Every sentence below is assembled from figures already stored by the compute path, and
 every one of them names the figure it rests on.
 
-THE LANGUAGE IS DECLARATIVE, NEVER IMPERATIVE. "The Schedule category shows a material adverse
-condition against the approved baseline" is a finding. "Resequence work now" is an instruction,
-and this module does not write one.
+THE FINDING IS DECLARATIVE AND THE MITIGATION IS UNADDRESSED. "The Schedule category shows a
+material adverse condition against the approved baseline" is a finding, and every sentence in
+the finding, the posture and the question reads like that one.
+
+THE COUNTER-EXAMPLE HAD TO BE REPLACED AT RUN 140, because "Resequence work now" is no longer
+far from something the card might carry -- "Resequence the affected work against the verified
+critical path" IS a permissible candidate mitigation. The line is not imperative mood; it is
+WHO AND WHEN. A candidate names no person, role, team or authority and no date: "the PM should
+resequence work by Friday" is forbidden three times over, and "Resequence the affected work
+against the verified critical path" is not, because it addresses nobody and dates nothing. A
+candidate also invents no figure and reaches across no module the evidence does not join.
 
 WHAT IS RENDERED IS ONLY WHAT CAN BE POPULATED TRUTHFULLY. A block with no honest content and no
 defined source is OMITTED -- it is not rendered with "not established", "not available" or any
@@ -611,8 +640,13 @@ def _question(basis: Mapping[str, Any], cats: Mapping[str, Mapping[str, Any]]) -
     """
     THE QUESTION PUT TO THE REVIEWER. It is a question, not an instruction.
 
-    It asks what the reviewer makes of the finding. It does not ask them to approve a remedy,
-    because no remedy is offered, and it names no authority, because the platform holds none.
+    It asks what the reviewer makes of the finding. THE QUESTION ITSELF IS UNCHANGED BY RUN 140
+    and was deliberately left alone: the card now offers candidate mitigations, so "no remedy is
+    offered" is no longer true, but the question still does not ask the reviewer to APPROVE one.
+    It asks what they make of the finding, and the mitigations are material for that judgment,
+    not a thing to sign. It names no authority, because the platform holds none -- that reason is
+    untouched. The disposition set is out of scope for this run and the question at :484-494
+    stays open.
     """
     missing = list(basis.get("required_missing") or [])
     assessed_adverse = [k for k in (basis.get("required_assessed") or [])

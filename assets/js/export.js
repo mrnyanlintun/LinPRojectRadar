@@ -99,8 +99,9 @@
       ["Generated:",     snapshot.computed_at || ""],
       [""],
       // RUN 98. Authority / Recommended Action / Documentation Required are removed from the
-      // exported report. They came from `deriveDecision`, which no longer composes them, and an
-      // export that carried them made the claim the card had already stopped making.
+      // exported report. That history stands: they came from `deriveDecision`, which no longer
+      // composes them, and an export that carried them made the claim the card had already
+      // stopped making.
       //
       // RUN 140 NARROWS THE GENERAL CLAUSE THAT USED TO SIT HERE. It read "the platform states
       // a finding and issues no action, no remedy and no authority". The first two thirds of
