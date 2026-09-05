@@ -1457,11 +1457,64 @@
         ? `<p class="cat-row-na-note">Some modules are construction-phase only and are excluded for ${esc(secName)}-sector projects.</p>`
         : "";
 
+      /* ==================================================================================
+         RUN 142. A CATEGORY WITH NO POSTURE SAYS, ON THE COLLAPSED ROW, WHICH KIND OF
+         ABSENCE IT IS.
+
+         WHY THIS IS HERE AND NOT ONLY IN THE MODULE LIST. Run 142 made the projection carry
+         a fully-abstaining category's module rows and their reasons, and this ledger already
+         has the code to print them (`cat-mod-reason`, above). But that code lives inside
+         `.cat-mod-list`, inside this `<details>`, and this `<details>` is OPEN only for b3 --
+         every other category is closed on arrival. So a reader who does not click saw the
+         same thing for a category whose four modules ran and abstained as for one in which
+         nothing ran at all: a row with no pill. Run 141 established that a collapsed element
+         shows nothing regardless of content, and carrying the rows through without this line
+         would have reproduced exactly that defect one layer up.
+
+         IT COUNTS, IT DOES NOT JUDGE. The numerator is how many of this category's modules
+         have an entry in the stored row's `abstained` list -- the same list the reason lines
+         are read from, by module id, with nothing derived and nothing invented. The
+         denominator is the category's roster in `LIN_CATEGORIES`, which is generated from
+         `registry.py`. NA modules (sector exclusions and the disabled concept-only modules)
+         are excluded from both: they did not abstain, they were never applicable.
+
+         IT RENDERS ONLY WHERE THERE IS NO POSTURE. A category that banded shows its pill and
+         is unchanged, byte for byte. No band, threshold, weight, posture rule or category
+         rule is read or written here; this is a count of stored rows. */
+      const _absRow = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(p) : null;
+      const _absList = (_absRow && Array.isArray(_absRow.abstained)) ? _absRow.abstained : null;
+      let _applicable = 0;
+      cat.modules.forEach((m) => {
+        if (window.isModuleDisabled && window.isModuleDisabled(m.method_class)) return;
+        if (window.isModuleSectorNA && window.isModuleSectorNA(m.method_class, p)) return;
+        _applicable += 1;
+      });
+      /* The category an abstaining row belongs to, resolved EXACTLY as the server resolves it
+         in `spec_projection._python_category_of`: the row's own `category` field, and failing
+         that the prefix of its module id. Deliberately not routed through the method-class
+         map, so this count cannot disagree with the rows the server carried. */
+      const _ranCount = (_absList || []).filter((a) => {
+        if (!a) return false;
+        const k = String(a.category || String(a.module_id || "").split(".")[0]);
+        return k.toLowerCase() === String(cat.id).toLowerCase();
+      }).length;
+      let absenceNote = "";
+      if (!status && _applicable) {
+        absenceNote = _ranCount
+          ? `<span class="cat-row-absence" data-absence="ran_without_band" `
+            + `data-ran="${_ranCount}" data-of="${_applicable}">${_ranCount} of `
+            + `${_applicable} modules ran and had nothing to report — each says why below`
+            + `</span>`
+          : `<span class="cat-row-absence" data-absence="never_called" data-ran="0" `
+            + `data-of="${_applicable}">no module in this category has a stored result for `
+            + `this period</span>`;
+      }
+
       return `<details class="cat-row" data-cat="${esc(cat.id)}"${open}>
         <summary class="cat-row-head">
           <span class="cat-row-swatch" style="background:${esc(cat.color)}" aria-hidden="true"></span>
           <span class="cat-row-name">${esc(cat.name)}</span>
-          ${rowPill}
+          ${rowPill}${absenceNote}
         </summary>
         <p class="cat-row-desc">${desc}</p>
         ${naNote}
