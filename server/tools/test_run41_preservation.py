@@ -217,10 +217,35 @@ print("-" * 78)
 # RUN 59. RESTATED AGAIN, same scope: no markdown document carries authority, six production-tree
 # members moved, and one of them -- assets/js/decision-ui.js -- is SEQUENCE-BEARING, so v38 is
 # SUPERSEDED rather than amended. Run 41's boundary is untouched and is still asserted below.
-check(SIMULATION_VERSION == "sim-2026.08-v41", "the live stamp is Run 63's successor "
-      "sim-2026.08-v41", SIMULATION_VERSION)
-check(SIMULATION_VERSION_SUPERSEDED == "sim-2026.08-v40",
-      "and it records v40, Run 62's stamp, as the stamp it supersedes",
+# RUN 137, ITEM 3. THE THREE CLAUSES BELOW PINNED THE TAIL OF A LADDER THAT IS DESIGNED TO GROW.
+#
+# What this section is for is Run 41's BOUNDARY -- that the history is append-only, that v26 still
+# directly follows v25, and that no stamp is removed, replaced or inserted in the middle. That
+# property is untouched and is still asserted, position for position, below.
+#
+# What the three clauses actually asserted was that the ladder had STOPPED at v41. Every run since
+# Run 63 that changed published analytical behaviour appended a stamp with its own recorded
+# reason, as `SIMULATION_VERSION_HISTORY` in `app/simulation/models.py` shows one reason per line
+# from v25 to v70 -- v53 for Run 107's eight thresholds, v52 for Run 106's weighted vote, v70 for
+# Run 136's full-precision banding of B2.18 and B2.19. Each of those is the change the stamp
+# exists to record. The suite went red for the mechanism working.
+#
+# RE-POINTED UNDER R2 to the invariants rather than to today's values, so this section cannot go
+# stale again on the next legitimate stamp and cannot pass while the boundary is broken:
+#   * the live stamp is the LAST row of the history, and appears exactly once;
+#   * the superseded stamp is a MEMBER of the history and strictly EARLIER than the live one --
+#     `models.py` defines it as "the immediately preceding AUDIT BASELINE", not the previous row,
+#     which is why it reads v48 while the live stamp is v70;
+#   * the v25..v41 block still stands in the history contiguously and in order.
+check(SIMULATION_VERSION == SIMULATION_VERSION_HISTORY[-1]
+      and SIMULATION_VERSION_HISTORY.count(SIMULATION_VERSION) == 1,
+      "the live stamp is the last row of the append-only history and appears once",
+      f"{SIMULATION_VERSION} / last {SIMULATION_VERSION_HISTORY[-1]}")
+check(SIMULATION_VERSION_SUPERSEDED in SIMULATION_VERSION_HISTORY
+      and SIMULATION_VERSION_HISTORY.index(SIMULATION_VERSION_SUPERSEDED)
+      < SIMULATION_VERSION_HISTORY.index(SIMULATION_VERSION),
+      "and the audit baseline it records as superseded is a stamp the history holds, earlier "
+      "than the live one",
       SIMULATION_VERSION_SUPERSEDED)
 _i26 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v26")
 check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-2026.08-v26"),
@@ -255,20 +280,16 @@ check(SIMULATION_VERSION_HISTORY[_i26 - 1:_i26 + 1] == ("sim-2026.08-v25", "sim-
 # SILENTLY DROP ONE STAMP from the check while still passing. The twelfth clause is added so v30
 # is still reached after the shift, rather than falling off the bottom of the ladder. NOT ONE
 # STAMP IS REMOVED, NOT ONE IS REPLACED, AND NOT ONE IS INSERTED IN THE MIDDLE.
-check(SIMULATION_VERSION_HISTORY[-1] == "sim-2026.08-v41"
-      and SIMULATION_VERSION_HISTORY[-2] == "sim-2026.08-v40"
-      and SIMULATION_VERSION_HISTORY[-3] == "sim-2026.08-v39"
-      and SIMULATION_VERSION_HISTORY[-4] == "sim-2026.08-v38"
-      and SIMULATION_VERSION_HISTORY[-5] == "sim-2026.08-v37"
-      and SIMULATION_VERSION_HISTORY[-6] == "sim-2026.08-v36"
-      and SIMULATION_VERSION_HISTORY[-7] == "sim-2026.08-v35"
-      and SIMULATION_VERSION_HISTORY[-8] == "sim-2026.08-v34"
-      and SIMULATION_VERSION_HISTORY[-9] == "sim-2026.08-v33"
-      and SIMULATION_VERSION_HISTORY[-10] == "sim-2026.08-v32"
-      and SIMULATION_VERSION_HISTORY[-11] == "sim-2026.08-v31"
-      and SIMULATION_VERSION_HISTORY[-12] == "sim-2026.08-v30",
+# RUN 137, ITEM 3. ANCHORED AT v26 AND READ FORWARD, instead of counted back from the end.
+# The block v25..v41 is asserted contiguously and IN ORDER from the position v26 holds, so
+# appending a legitimate stamp no longer shifts every clause by one and no stamp can fall off the
+# bottom of the ladder as the history grows. Removing, replacing or reordering any member of that
+# block still turns this red, which is what Run 41's boundary is.
+_v25_to_v41 = tuple(f"sim-2026.08-v{n}" for n in range(25, 42))
+_i25 = SIMULATION_VERSION_HISTORY.index("sim-2026.08-v25")
+check(SIMULATION_VERSION_HISTORY[_i25:_i25 + len(_v25_to_v41)] == _v25_to_v41,
       "and v27 to v41 were appended after v26 rather than replacing it",
-      str(SIMULATION_VERSION_HISTORY[-3:]))
+      str(SIMULATION_VERSION_HISTORY[_i25:_i25 + len(_v25_to_v41)]))
 check(len(SIMULATION_VERSION_HISTORY) == len(set(SIMULATION_VERSION_HISTORY)),
       "no stamp appears twice in the history")
 
@@ -317,9 +338,29 @@ check(len(rec) > 60, "the v13 participant-package record names its governed file
 # the union. RESTATED AGAIN BY RUN 49 for v18. Nothing here is loosened -- the union is still
 # exactly what the successors declare, so a file that moved without being declared at some link
 # is still red.
-_declared_since_v13 = sorted(set(PP.V13_TO_V14_CHANGED) | set(PP.V14_TO_V15_CHANGED)
-                            | set(PP.V15_TO_V16_CHANGED) | set(PP.V16_TO_V17_CHANGED)
-                            | set(PP.V17_TO_V18_CHANGED) | set(PP.V18_TO_V19_CHANGED))
+# RUN 137, ITEM 3. THE UNION IS DERIVED FROM THE DECLARED LINKS RATHER THAN TYPED TO v19.
+# The construction is unchanged and is the one every restatement above describes: the files that
+# moved must be exactly the ones the successors DECLARE, so a file that moved without being
+# declared at some link is still red. What was stale is where the chain stopped. It was written
+# out link by link to `V18_TO_V19_CHANGED`, and the participant package has since been superseded
+# to og-participant-2026.08-v26 -- the check further down asserts that -- with each later link
+# declaring its own delta in `participant_packages.py` exactly as v14..v19 did. Measuring the live
+# tree against a union that stops at v19 reports every later declared supersession as drift, which
+# is the defect Run 43 had to correct in the freeze gate's B11 and is named in the note above.
+#
+# The links are now READ from `participant_packages` by name, from v13 forward, so minting the
+# next successor cannot leave this line behind. A DELETED file counts as moved (see `_sha_or_gone`
+# below), so the DELETED tuples join the union alongside the CHANGED ones.
+# The union is restricted to the files the v13 record GOVERNS. A later link may declare a file
+# that record never named -- `research/deepdive.html` is one -- and such a file can never appear
+# on the left-hand side, so leaving it in the union would fail this check for a declaration
+# rather than for drift.
+_declared_since_v13 = sorted({
+    _f
+    for _n in range(13, 40)
+    for _attr in (f"V{_n}_TO_V{_n + 1}_CHANGED", f"V{_n}_TO_V{_n + 1}_DELETED")
+    for _f in getattr(PP, _attr, ())
+} & set(rec))
 # RUN 54. A DELETED FILE MUST COUNT AS MOVED, NOT CRASH. `assets/js/deepdive.js` was DELETED on
 # the owner's ruling at section 8 of the Run 54 order, and hashing a path that does not exist
 # raised FileNotFoundError, which is a crash and a crash is not a pass. A missing file now hashes
@@ -333,8 +374,10 @@ def _sha_or_gone(path):
 moved_pkg = sorted(p for p, h in rec.items()
                    if _sha_or_gone(ROOT / p) != h)
 check(moved_pkg == _declared_since_v13,
-      f"of the {len(rec)} governed participant-package bytes, exactly the {len(moved_pkg)} the "
-      f"v14, v15, v16, v17, v18 and v19 successors declare between them moved, and no others",
+      f"of the {len(rec)} governed participant-package bytes, exactly the "
+      f"{len(_declared_since_v13)} the successors from v14 onward declare between them moved, "
+      f"and no others -- moved but declared at no link: "
+      f"{sorted(set(moved_pkg) - set(_declared_since_v13))}",
       str(moved_pkg[:8]))
 # THE SEQUENCE. Run 44 moves ONE sequence-bearing file on the owner's order at its section 4.4,
 # and it is named rather than tolerated. Every other one is still held to byte-identity against

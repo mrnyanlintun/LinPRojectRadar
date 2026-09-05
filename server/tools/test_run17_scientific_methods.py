@@ -95,18 +95,55 @@ KNOWN_DEFECTS: dict[str, str] = {
     # mark it resolved: the ensembles still consume evidence that has passed through no
     # qualification step, and the probe below is deliberately taken on a module that still
     # computes rather than on one that happens to abstain for an unrelated reason.
-    "PH.5/availability-reweighting": "IMPLEMENTATION_DEFECT",
-    "PH.1/degenerate-cohort-resolution": "METHOD_PASS_CALIBRATION_PENDING",
+    #
+    # RUN 137, ITEM 3. THE TWO PORTFOLIO-HEALTH ENTRIES ARE RETIRED FROM THIS REGISTER, because
+    # RUN 97 DELETED THEIR SUBJECT. `PH.5/availability-reweighting` (IMPLEMENTATION_DEFECT) and
+    # `PH.1/degenerate-cohort-resolution` (METHOD_PASS_CALIBRATION_PENDING) were findings about
+    # `simulation/portfolio.py` and `simulation/portfolio_health.py`. Run 97 goal one, commit
+    # 88e6ca0, deleted both files, struck the five D1 rows from the registry and removed the
+    # Group D branch from `run_module`. From that run onward NO PROPOSITION IN THIS SUITE COULD
+    # REACH EITHER FINDING, so the closing gate -- "every register entry was actually exercised
+    # this run" -- could never be satisfied again: it was asking a register to be exercised
+    # against code that no longer exists.
+    #
+    # NOTHING IS FORGIVEN BY THIS. The register's purpose is that a defect cannot pass silently
+    # and a repaired one cannot fossilise; a DELETED subject is neither. What replaced these two
+    # propositions is stronger and is asserted in `portfolio_health()` below: the two modules are
+    # gone, the five identifiers do not resolve, and the dispatcher refuses each by name -- which
+    # goes red the moment a future run writes any of it back. The findings themselves are not
+    # erased with the code: they stand in the Run 17 register and in `code_audit/`, which is
+    # where evidence about a removed implementation belongs.
     "ARCH/raw-bypass": "MISSING_CANONICAL_DATA_STRUCTURE",
 }
+
+
+#: RUN 137, ITEM 3. THE SECTIONS RUN 43 RENUMBERED, AND THE REASON THE SUBSTITUTION MISSED THEM.
+#:
+#: `_suppressed_for` matched a section label to a registry identifier by stripping the group
+#: letter: section `"1.3"` against module `"A1.3"`. That holds only where Run 43's renumbering
+#: left the numeric part alone. It did not for the Category-6 ensembles: `p0-baseline/
+#: module_renumbering_map.csv` carries `6.2 -> B1.2`, and by the same group rule `6.3 -> B1.3`
+#: and `6.4 -> B1.4`. Stripping "B" from "B1.3" gives "1.3", which never matches the section
+#: label "6.3", so the Run 96 substitution set `_SUPPRESSED` and every check in those sections
+#: went on evaluating the `_AbsentReading` sentinel a removed module returns. Eight checks
+#: failed there, and could not have done anything else: `_Absent.__eq__` is False and
+#: `_Absent is None` is False, so those propositions could not distinguish a correct
+#: production from a broken one. They were vacuous, not adverse.
+#:
+#: The map is the authority for the pairing, not this file's arithmetic.
+SECTION_TO_MODULE: dict[str, str] = {"6.1": "B1.1", "6.2": "B1.2", "6.3": "B1.3", "6.4": "B1.4"}
 
 
 def _suppressed_for(module_id: str) -> bool:
     """True when `module_id` names the module whose propositions the Run 96/97 substitution
     replaced. Sections label their checks without the group letter (`"1.3"`) while the registry
-    and `run()` use the full identifier (`"A1.3"`), so both spellings are accepted."""
+    and `run()` use the full identifier (`"A1.3"`), so both spellings are accepted -- and where
+    Run 43 renumbered the section away from its module (`"6.3"` for `B1.3`), the pairing is read
+    from `SECTION_TO_MODULE` above rather than guessed from the digits."""
     sup = _SUPPRESSED.get("module") or ""
-    return bool(sup) and module_id in (sup, sup.lstrip("ABCD"))
+    if not sup:
+        return False
+    return module_id in (sup, sup.lstrip("ABCD")) or SECTION_TO_MODULE.get(module_id) == sup
 
 
 def proposition(module_id: str, key: str, name: str, holds: bool, detail: str = "") -> bool:
@@ -372,10 +409,31 @@ def gate_a() -> None:
     # the specification does not name, still fails here -- so this is a narrowing of what is
     # tolerated, not a suspension of the check.
     _problems = list(rec["mapping_problems"])
+    #
+    # RUN 137, ITEM 3. RE-POINTED, AND NARROWLY. A SECOND KIND IS NOW EXPECTED AND EXACTLY ONE
+    # MODULE IS ALLOWED TO BE IT. Run 103 registered A2.12 Critical Path Analysis, and the Run-17
+    # supervisory specification is SEALED HISTORICAL EVIDENCE that cannot name a module registered
+    # after it -- so `A2.12 -> 2.12: no owner-specification module at that key` is a fact about
+    # the specification's date, not drift. Run 103 settled this shape already and its report
+    # records the settlement: `test_run26_counts_and_wiring` was re-pointed the same way, "a
+    # post-audit roster naming A2.12 and its run replaces the 'nothing is outside the population'
+    # assertion, and an unrostered new module still fails".
+    #
+    # The roster is NAMED here rather than the class tolerated: any OTHER registry row the
+    # specification does not name still fails this gate, as does any name mismatch.
+    _POST_AUDIT_ROSTER = {"A2.12": "Run 103, Critical Path Analysis"}
     _unexpected = [p for p in _problems
-                   if "in specification, absent from registry" not in str(p)]
-    check("GATE", "the only registry/specification mapping problems are modules Run 96 removed",
+                   if "in specification, absent from registry" not in str(p)
+                   and not any(str(p).startswith(f"{code} ->") and
+                               "no owner-specification module at that key" in str(p)
+                               for code in _POST_AUDIT_ROSTER)]
+    check("GATE", "the only registry/specification mapping problems are modules Run 96 removed "
+                  "and the post-audit roster this suite names",
           _unexpected == [], str(_unexpected))
+    check("GATE", "and every post-audit roster entry is genuinely in the registry -- the roster "
+                  "is not a licence to ignore a name that is simply gone",
+          all(code in REG.registry_index() for code in _POST_AUDIT_ROSTER),
+          str(sorted(_POST_AUDIT_ROSTER)))
     check("GATE", "and Run 96 genuinely removed some of them -- the tolerance is not vacuous",
           len(_problems) > 0, str(len(_problems)))
 
@@ -395,9 +453,24 @@ def gate_a() -> None:
         except ValueError:
             return False        # not a number at all -- text is the only faithful carrier
     _would_lose = [t["module_id"] for t in population() if not _round_trips(t["module_id"])]
+    # RUN 137, ITEM 3. THIS CLAUSE WAS VACUOUS AND IS REPAIRED, NOT DELETED.
+    # It asserted that at least one identifier IN THE POPULATION would lose information under
+    # float coercion. Run 96 removed every colliding member -- the check three lines below is
+    # exactly that fact -- so the surviving population happens to hold none, `_would_lose` is
+    # empty, and the clause failed while nothing at all was wrong. Worse, it could not have done
+    # otherwise: it is a statement about which rows survived a removal, not about whether the
+    # instrument carries its identifiers faithfully, so it could not distinguish a correct
+    # platform from a broken one.
+    #
+    # The DURABLE property is asserted instead, on the trap itself rather than on the census:
+    # float coercion loses "1.10", which is why identifiers are carried as text. That is true
+    # whatever the registry currently holds, and the check above -- every identifier IS text --
+    # is the property this one exists to keep non-vacuous.
     check("GATE", "and coercing an identifier to a number would not round-trip back to it, "
           "which is why they are never coerced",
-          len(_would_lose) > 0, str(_would_lose[:6]))
+          not _round_trips("1.10") and not _round_trips("A1.10")
+          and _round_trips("1.1"),
+          f"population members that would lose information today: {_would_lose[:6]}")
     check("GATE", "Run 96 removed every identifier that COLLIDED under float coercion, so the "
           "collision no longer arises in this population",
           rec["float_coercion_would_collide"] == [],
@@ -666,8 +739,20 @@ def cat1() -> None:
     flat = run("A1.5", {**BASE_EVM, "cpiHistory": [0.9] * 10})
     near(mid, "invariant: a constant series forecasts itself",
          flat.get("forecast_cpi"), 0.9, tol=1e-9)
-    check(mid, "calibration: the forecast carries no status band, which is Run 33's work",
-          out.get("status_color") is None and out.get("calibration_pending") is True)
+    # RUN 137, ITEM 3. RE-POINTED. RUN 107 GAVE THIS MODULE A BAND, DELIBERATELY.
+    # The check asserted no status band and `calibration_pending`, which was true until Run 107.
+    # `SIMULATION_VERSION_HISTORY` records the change at `sim-2026.09-v53`: "RUN 107: the eight
+    # thresholds. A1.5, A1.6, A1.9, A1.11, A4.5, A4.7, A4.8 and A4.9 band for the first time on
+    # the owner's supplied ladders". The expectation is taken from that ruling and not from the
+    # module: a band is asserted, the calibration is no longer pending, and the reading declares
+    # where the boundary came from -- an OWNER-CALIBRATED provenance and a stated threshold
+    # source -- which is what stops an unsourced ladder passing as a calibrated one.
+    check(mid, "calibration: the forecast bands on the owner's Run 107 ladder and declares its "
+               "provenance",
+          out.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+          and not out.get("calibration_pending")
+          and out.get("band_provenance_class") == "OWNER-CALIBRATED"
+          and bool(out.get("threshold_source")), str(out.get("status_color")))
 
     # ------------------------------------------------------------------ 1.6 Earned Schedule
     mid = "1.6"
@@ -709,8 +794,20 @@ def cat1() -> None:
           abstained(run("A1.6", {**BASE_EVM, "ev": 50, "timePhasedBaseline": {
               **curve, "periods": [{"period_index": i, "period": f"P{i}", "cumulative_pv": v}
                                    for i, v in enumerate([0, 40, 20, 60])]}})))
-    check(mid, "calibration: the time based index carries no status band",
-          out.get("status_color") is None and out.get("calibration_pending") is True)
+    # RUN 137, ITEM 3. RE-POINTED. RUN 107 GAVE THIS MODULE A BAND, DELIBERATELY.
+    # The check asserted no status band and `calibration_pending`, which was true until Run 107.
+    # `SIMULATION_VERSION_HISTORY` records the change at `sim-2026.09-v53`: "RUN 107: the eight
+    # thresholds. A1.5, A1.6, A1.9, A1.11, A4.5, A4.7, A4.8 and A4.9 band for the first time on
+    # the owner's supplied ladders". The expectation is taken from that ruling and not from the
+    # module: a band is asserted, the calibration is no longer pending, and the reading declares
+    # where the boundary came from -- an OWNER-CALIBRATED provenance and a stated threshold
+    # source -- which is what stops an unsourced ladder passing as a calibrated one.
+    check(mid, "calibration: the time based index bands on the owner's Run 107 ladder and "
+               "declares its provenance",
+          out.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+          and not out.get("calibration_pending")
+          and out.get("band_provenance_class") == "OWNER-CALIBRATED"
+          and bool(out.get("threshold_source")), str(out.get("status_color")))
 
     # ------------------------------------------------------------------ 1.7 TCPI
     mid = "1.7"
@@ -792,8 +889,20 @@ def cat1() -> None:
                  })["execution_ratio"])
     check(mid, "label: the proxy qualifier is gone, because the proxy is gone",
           "A1.9" not in REG.PROXY_QUALIFIERS)
-    check(mid, "calibration: no status band is asserted, and the contract supplies none",
-          out.get("status_color") is None and out.get("calibration_pending") is True)
+    # RUN 137, ITEM 3. RE-POINTED. RUN 107 GAVE THIS MODULE A BAND, DELIBERATELY.
+    # The check asserted no status band and `calibration_pending`, which was true until Run 107.
+    # `SIMULATION_VERSION_HISTORY` records the change at `sim-2026.09-v53`: "RUN 107: the eight
+    # thresholds. A1.5, A1.6, A1.9, A1.11, A4.5, A4.7, A4.8 and A4.9 band for the first time on
+    # the owner's supplied ladders". The expectation is taken from that ruling and not from the
+    # module: a band is asserted, the calibration is no longer pending, and the reading declares
+    # where the boundary came from -- an OWNER-CALIBRATED provenance and a stated threshold
+    # source -- which is what stops an unsourced ladder passing as a calibrated one.
+    check(mid, "calibration: the execution ratio bands on the owner's Run 107 ladder and "
+               "declares its provenance",
+          out.get("status_color") in ("Green", "Yellow", "Amber", "Red")
+          and not out.get("calibration_pending")
+          and out.get("band_provenance_class") == "OWNER-CALIBRATED"
+          and bool(out.get("threshold_source")), str(out.get("status_color")))
 
     # -------------------------------------------------------- 1.10 CPI Shrinkage Forecast
     mid = "1.10"
@@ -1003,8 +1112,26 @@ def cat6() -> None:
     _second = _wvr({"A1": {"status": "Green"}, "A2": {"status": "Green"},
                     "A3": {"status": "Green"}, "A4": {"status": "Green"},
                     "A6": {"status": "Red"}})
-    check(mid, "the second pass weighs the postures and declares the owner's authority",
-          _second["status_color"] == "Green"
+    # RUN 137, ITEM 3. RE-POINTED. RUN 106 CHANGED WHAT `status_color` IS ON THIS ROW.
+    # The check expected Green, which was the band class holding a PLURALITY OF THE WEIGHT:
+    # four Greens hold 0.84 of the profile against A6 Red's 0.16. Run 106 replaced that with the
+    # PROJECT RULE'S OWN BAND, and `models_gov.weighted_voting_result` says so in as many words:
+    # "`status_color` IS THE PROJECT RULE'S OWN BAND. Before this run it was the band class
+    # holding a plurality of the weight, which is a different quantity". The stamp for the change
+    # is `sim-2026.09-v52`, "RUN 106: the weights set the status".
+    #
+    # THE EXPECTATION IS COMPUTED FROM THE OWNER'S RULE, NOT READ OFF THE MODULE (R2). His
+    # profile is A1 0.28, A2 0.28, A3 0.17, A4 0.11, A6 0.16 and his scores are Green +2,
+    # Yellow +1, Amber -1, Red -2. Four Greens and one Red give
+    #   2*(0.28+0.28+0.17+0.11) + (-2*0.16) = 1.68 - 0.32 = 1.36,
+    # and his cuts band at or above 1.5 Green, at or above 0.5 and below 1.5 Yellow. 1.36 is
+    # Yellow. This is the very case Run 106 recorded as the one where the two quantities
+    # disagree, which is why it is the case this check takes.
+    check(mid, "the second pass weighs the postures on the owner's Run 106 rule -- four Greens "
+               "and one Red weigh to +1.36, which is Yellow, not the plurality's Green -- and "
+               "declares his authority",
+          _second["status_color"] == "Yellow"
+          and abs(_second["weighted_sum"] - 1.36) < 1e-9
           and "owner's stated authority" in _second["weight_provenance"], str(_second))
     check(mid, "known-answer: the canonical weighted severity score on the specification's own "
                "example", abs(O.weighted_severity_score(["Green", "Amber", "Red"],
@@ -1047,6 +1174,15 @@ def cat6() -> None:
     _tie = _V5b.majority_rules([_mk("s1", "Green", "b1"), _mk("s2", "Red", "b2")])
     check(mid, "boundary: an even split returns NO unique winner and is reported as a conflict",
           _tie["unique_winner"] is False and _tie["conflict"] is True, str(_tie))
+    # RUN 137, ITEM 3. THE CANONICAL-ENGINE CHECKS ARE TAKEN FIRST, BEFORE THE DISPATCH.
+    # `B1.3` was removed at Run 96, so every dispatch below is replaced by the substitution and
+    # the checks that follow it are suppressed. `canonical_v5.majority_rules` is still in the
+    # tree and this lineage property is still live, so it is asserted BEFORE the substitution
+    # rather than after it, where it would be silently dropped. Nothing about the property
+    # changed; only where in the section it is taken.
+    check(mid, "lineage: duplicating one signal does NOT change the count",
+          _V5b.majority_rules([_mk("a", "Red", "bX"), _mk("a2", "Red", "bX"),
+                               _mk("g", "Green", "bY")])["counts"]["Red"] == 1)
     check(mid, "missingness: an absent signal is not counted as Green",
           run("B1.3", _pkg(cusum="Red", doc="Red")).get("counts", {}).get("Green") == 0)
     check(mid, "boundary: an unknown status is refused rather than counted",
@@ -1054,12 +1190,24 @@ def cat6() -> None:
     check(mid, "missingness: refuses when nothing qualifies", abstained(run("B1.3", _pkg())))
     check(mid, "quorum: a single signal is not a majority and the module says so",
           abstained(run("B1.3", _pkg(cusum="Red"))))
-    check(mid, "lineage: duplicating one signal does NOT change the count",
-          _V5b.majority_rules([_mk("a", "Red", "bX"), _mk("a2", "Red", "bX"),
-                               _mk("g", "Green", "bY")])["counts"]["Red"] == 1)
 
     # ------------------------------------------------------------------ 6.4 Worst-N-of-M
     mid = "6.4"
+    # RUN 137, ITEM 3. THE CANONICAL-ENGINE CHECK IS TAKEN FIRST, BEFORE THE DISPATCH, for the
+    # reason recorded in section 6.3: `B1.4` was removed at Run 96, so from the first dispatch
+    # onward this section is the substitution and its remaining checks are suppressed.
+    # `canonical_v5.worst_two_of_m` is still in the tree and this property is still live.
+    # THE SECOND-STAGE OPERATION IS THE MEAN, NOT THE MAXIMUM. Taking the maximum of the worst
+    # two collapses the module onto Conservative Dominance, which the contract forbids: on
+    # Green, Green, Red the mean is 1.5 where the maximum would be 3.
+    from app.simulation import canonical_v5 as _V5c
+    _mk4 = lambda i, st, b: {"signal_id": i, "status": st, "period": 1, "lineage_body": b}
+    _w2 = _V5c.worst_two_of_m([_mk4("a", "Green", "b1"), _mk4("b", "Green", "b2"),
+                               _mk4("c", "Red", "b3")])
+    check(mid, "known-answer: Green, Green, Red gives a Worst-2 mean of 1.5, so the module does "
+               "NOT collapse onto conservative dominance",
+          abs(_w2["mean_worst_2"] - 1.5) < 1e-12
+          and O.conservative_dominance(["Green", "Green", "Red"]) == "Red", str(_w2))
     out = run("B1.4", _pkg(mc="Red", cusum="Green", doc="Green"))
     # RUN 30 v15. N IS PREDECLARED AND FROZEN AT TWO, and the statistic is the MEAN of the worst
     # two severities. It asserts no band, so `abstained()` would read it as an abstention; what
@@ -1075,17 +1223,6 @@ def cat6() -> None:
     check(mid, "invariant: adding a benign signal does not lower the statistic",
           four.get("mean_worst_2") >= three.get("mean_worst_2"),
           f"{three.get('mean_worst_2')} then {four.get('mean_worst_2')}")
-    # THE SECOND-STAGE OPERATION IS THE MEAN, NOT THE MAXIMUM. Taking the maximum of the worst
-    # two collapses the module onto Conservative Dominance, which the contract forbids: on
-    # Green, Green, Red the mean is 1.5 where the maximum would be 3.
-    from app.simulation import canonical_v5 as _V5c
-    _mk4 = lambda i, st, b: {"signal_id": i, "status": st, "period": 1, "lineage_body": b}
-    _w2 = _V5c.worst_two_of_m([_mk4("a", "Green", "b1"), _mk4("b", "Green", "b2"),
-                               _mk4("c", "Red", "b3")])
-    check(mid, "known-answer: Green, Green, Red gives a Worst-2 mean of 1.5, so the module does "
-               "NOT collapse onto conservative dominance",
-          abs(_w2["mean_worst_2"] - 1.5) < 1e-12
-          and O.conservative_dominance(["Green", "Green", "Red"]) == "Red", str(_w2))
     check(mid, "missingness: refuses when nothing qualifies", abstained(run("B1.4", _pkg())))
     check(mid, "boundary: an unknown status is refused rather than dropped from a denominator",
           abstained(run("B1.4", _pkg(mc="banana", cusum="Red"))))
@@ -1242,8 +1379,16 @@ def cat9_architecture() -> None:
     # answer this proposition would mark a Category-9 finding resolved that Run 31 owns and
     # Run 30 has not touched. B1.3 still computes a project state from evidence that has passed
     # through no qualification step, which is exactly what this proposition is about.
-    raw = _pkg(mc="Red", cusum="Red", doc="Red")
-    out = run("B1.3", raw)
+    # RUN 137, ITEM 3. THE PROBE MOVES FROM B1.3 TO B1.1, FOR RUN 30'S OWN REASON AND BY ITS OWN
+    # TEST. Run 96 removed B1.3 from the registry, so from that run onward this probe was taken
+    # on an `_AbsentReading` sentinel: `abstained()` read False off it whatever production did,
+    # so the proposition was decided by the sentinel and not by the platform. The carrier must be
+    # a Category-6 ensemble that STILL COMPUTES a project state from evidence that has passed
+    # through no qualification step. Of the two ensembles left in the registry, B1.2 abstains at
+    # dispatch for an unrelated reason -- the same disqualification Run 30 recorded -- and B1.1
+    # computes, which section 6.1 above exercises directly. B1.1 is therefore the carrier.
+    raw = _pkg("Red", mc="Red", cusum="Red", doc="Red")
+    out = run("B1.1", raw)
     proposition(mid, "ARCH/raw-bypass",
                 "a Category-6 ensemble must refuse a raw status carrying no Category-9 "
                 "qualification", abstained(out),
@@ -1275,14 +1420,21 @@ def cat9_architecture() -> None:
           FUSION.normalise_status("RED") == "Red"
           and FUSION.normalise_status("light-amber") == "Yellow")
     # Double counting: the same underlying evidence reaching an ensemble more than once.
-    once = run("B1.3", _pkg(mc="Red", cusum="Green", doc="Green"))
-    twice = run("B1.3", _pkg(mc="Red", cusum="Green", doc="Green",
-                             array=[{"status_color": "Red"}]))
-    check(mid, "a second transform of the same adverse evidence does not increase the adverse "
-               "count (repaired in Run 30: every governed signal carries a lineage body and "
-               "duplicate lineage is collapsed before anything is counted)",
-          twice["counts"]["Red"] == once["counts"]["Red"],
-          f"{once['counts']['Red']} then {twice['counts']['Red']}")
+    #
+    # RUN 137, ITEM 3. THE DISPATCH-LEVEL PROBE IS RETIRED AND THE PROPERTY IS NOT LOST.
+    # This check counted `counts["Red"]` off a dispatch of B1.3, and Run 96 removed B1.3 from
+    # the registry. From that run onward it read the `_AbsentReading` sentinel, whose `__eq__`
+    # is False for everything, so it failed whatever production did and could not have passed:
+    # a check that cannot distinguish a correct platform from a broken one. There is no live
+    # carrier for it either -- a counting ensemble is what the property needs, and of the two
+    # Category-6 ensembles still registered B1.1 is a dominance rule that reports no counts and
+    # B1.2 abstains at dispatch. It is therefore RETIRED here rather than re-pointed at a
+    # module that cannot answer it.
+    #
+    # THE PROPERTY ITSELF IS STILL ASSERTED, on the canonical engine that implements it:
+    # section 6.3 above takes `canonical_v5.majority_rules` with one lineage body read twice and
+    # requires the Red count to stay at one. That check is live, is taken before the Run 96
+    # substitution, and goes red the moment duplicate lineage stops being collapsed.
 
 
 # =============================================================================================
@@ -1392,10 +1544,14 @@ def fault_injection() -> list[dict]:
     # 9. Category-9 raw bypass: a status with no qualification must not be silently accepted
     #    as though qualified. Prove the proposition is decidable, by showing an unqualified and
     #    a qualified package are indistinguishable to the ensemble.
-    unqual = run("B1.3", _pkg(mc="Red", cusum="Red", doc="Red"))
-    qual = _pkg(mc="Red", cusum="Red", doc="Red")
+    # RUN 137, ITEM 3. THE CARRIER MOVES FROM B1.3 TO B1.1, for the reason recorded beside the
+    # ARCH/raw-bypass proposition: Run 96 removed B1.3, so both sides of this comparison were
+    # `_Absent` sentinels whose `__eq__` is False, and the fault could not be shown decidable
+    # whatever the platform did. B1.1 is the Category-6 ensemble that still computes.
+    unqual = run("B1.1", _pkg("Red", mc="Red", cusum="Red", doc="Red"))
+    qual = _pkg("Red", mc="Red", cusum="Red", doc="Red")
     qual["signals"]["mc"]["signal_qualification"] = "QUALIFIED"
-    qual_out = run("B1.3", qual)
+    qual_out = run("B1.1", qual)
     record("Category-9 raw bypass", True,
            unqual.get("status_color") == qual_out.get("status_color"),
            "the ensemble returns the same answer with and without a qualification marker, so "

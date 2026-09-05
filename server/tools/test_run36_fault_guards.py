@@ -142,16 +142,45 @@ print("=" * 94)
 
 # ---------------------------------------------------------------- 1-3 the inventory
 _ids = [r["module_id"] for r in TARGETS]
-check("run36.fault01.inventory_complete", set(_ids) == SCIENTIFIC,
-      "the 100-target inventory holds every scientific target derived from the registry; "
-      "a target is missing",
-      str(sorted(SCIENTIFIC - set(_ids)))[:200])
+# RUN 137, ITEM 3. THE INVENTORY IS SEALED RUN-36 EVIDENCE AND THE REGISTRY HAS MOVED UNDER IT.
+# `run36_100_target_scientific_reaudit.csv` is the population Run 36 audited. Three later owner
+# rulings changed the registry and none of them edits that file, which is evidence and is not
+# rewritten:
+#   * RUN 96 removed 51 retired rows outright, and RUN 97 removed 20 more with the B2, B3, B4
+#     and D1 categories. `tools/run96_removed.py` is the roster of both, and it is the authority
+#     used here rather than a list typed into this file.
+#   * RUN 103 registered A2.12 Critical Path Analysis, AFTER the audit. Run 103 settled exactly
+#     this shape for `test_run26_counts_and_wiring`: the audit population is sealed historical
+#     evidence and cannot name a module registered after it, so a NAMED post-audit roster
+#     replaces the bare assertion "and an unrestered new module still fails".
+#
+# Both directions stay closed. A registered scientific target that is neither in the inventory
+# nor on the post-audit roster still fails fault01; an inventory row that is neither registered
+# nor on the removal roster still fails fault03.
+from run96_removed import REMOVED as _REMOVED_96_97          # noqa: E402
+_POST_AUDIT_ROSTER = {"A2.12": "Run 103, Critical Path Analysis"}
+_missing = sorted(SCIENTIFIC - set(_ids) - set(_POST_AUDIT_ROSTER))
+check("run36.fault01.inventory_complete", not _missing,
+      "the sealed 100-target inventory holds every scientific target the registry still carries, "
+      "except the post-audit roster this suite names; a target is missing",
+      str(_missing)[:200])
+check("run36.fault01b.post_audit_roster_is_real",
+      all(m in IDX for m in _POST_AUDIT_ROSTER),
+      "every post-audit roster entry is genuinely registered; the roster is not a licence to "
+      "ignore a target that is simply gone",
+      str(sorted(_POST_AUDIT_ROSTER)))
 check("run36.fault02.no_duplicate_target", len(_ids) == len(set(_ids)),
       "no scientific target appears twice; a duplicate row would inflate the population",
       str(sorted({m for m in _ids if _ids.count(m) > 1}))[:200])
-check("run36.fault03.no_fake_target", set(_ids) <= set(IDX),
-      "every row in the inventory is a registered module; an unregistered target is fabricated",
-      str(sorted(set(_ids) - set(IDX)))[:200])
+_fabricated = sorted(set(_ids) - set(IDX) - set(_REMOVED_96_97))
+check("run36.fault03.no_fake_target", not _fabricated,
+      "every row in the inventory is a registered module or is on the Run 96/97 removal roster; "
+      "an unregistered target is fabricated",
+      str(_fabricated)[:200])
+check("run36.fault03b.removal_roster_held",
+      not sorted(m for m in _REMOVED_96_97 if m in IDX),
+      "and not one module on the Run 96/97 removal roster has come back into the registry",
+      str(sorted(m for m in _REMOVED_96_97 if m in IDX))[:200])
 
 # ---------------------------------------------------------------- 4-5 A1.1
 _ds = text("assets/js/ds_defensibility_evidence.js")
@@ -246,13 +275,26 @@ for _n, _mid, _label in ((13, "A3.4", "Material Cost Variance"),
                          (14, "B2.7", "Plithogenic Sets"),
                          (15, "B2.20", "Hypersoft Sets"),
                          (16, "B2.9", "Quantum Probability")):
+    # RUN 137, ITEM 3. RE-POINTED: "DISABLED AND STILL REGISTERED" BECAME "REMOVED" AT RUN 96.
+    # Run 36 froze these four as disabled rows that stayed in the registry so a reader could see
+    # them held down. The owner's Run 96 ruling struck the retired rows OUT of the registry
+    # instead, and all four are on `run96_removed.REMOVED_AT_RUN96`. `_mid in IDX` has been false
+    # ever since, so this check failed on a removal that was the point rather than a
+    # reactivation, while the thing it guards against -- an operational reading -- was never
+    # observed. What is asserted now is the state each module is actually in, and it is the
+    # stronger of the two: the identifier does not resolve at all, the dispatcher refuses it by
+    # name, and it is still named on the disabled roster so the historical decision stays
+    # readable. A row written back into the registry turns this red, which is what the check is
+    # for.
     _r = run(_mid)
+    _removed = _mid in _REMOVED_96_97
     check(f"run36.fault{_n}.{_mid.replace('.', '_').lower()}_not_operational",
-          _mid in REG.DISABLED_MODULES and _mid in IDX and not _r.get("status_color")
-          and _r.get("__state__") != "CRASHED",
-          f"{_label} is disabled, still registered, and produces no operational reading; it has "
-          f"been reactivated",
-          f"disabled={_mid in REG.DISABLED_MODULES} state={_r.get('__state__')} "
+          _mid in REG.DISABLED_MODULES and _removed and _mid not in IDX
+          and _r.get("__state__") == "SUPPLIED" and not _r.get("status_color"),
+          f"{_label} is on the disabled roster, was removed from the registry at Run 96, does "
+          f"not resolve, and produces no operational reading; it has been reactivated",
+          f"disabled={_mid in REG.DISABLED_MODULES} removed={_removed} "
+          f"registered={_mid in IDX} state={_r.get('__state__')} "
           f"colour={_r.get('status_color')!r}")
 
 # ---------------------------------------------------------------- 17-23 Portfolio Health
