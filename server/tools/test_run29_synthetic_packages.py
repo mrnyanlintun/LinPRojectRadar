@@ -21,6 +21,10 @@ A crash is not accepted as red: every red observation is a boolean over a value 
 """
 
 from __future__ import annotations
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import datetime
 import hashlib
@@ -75,7 +79,7 @@ def head(title: str) -> None:
 
 
 def run(mid: str, si: dict) -> dict:
-    return REG.run_module(mid, si, RAND, CUTOFF)
+    return _R96.dispatch(REG.run_module, globals(), mid, si, RAND, CUTOFF)
 
 
 def abstains(out: dict) -> bool:

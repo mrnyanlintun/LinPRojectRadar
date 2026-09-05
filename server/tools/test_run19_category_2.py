@@ -14,6 +14,16 @@ a registered proposition that starts holding turns this suite red so the finding
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import datetime
 import pathlib
@@ -74,7 +84,7 @@ O = oracle_gate(A, "oracles_cat_2")
 
 
 def run(code_id: str, si: dict) -> dict:
-    return REG.run_module(code_id, si, RAND, CUTOFF)
+    return _R96.dispatch(REG.run_module, globals(), code_id, si, RAND, CUTOFF)
 
 
 def abstained(out: dict) -> bool:
@@ -648,7 +658,7 @@ def m_2_10() -> None:
     # a constant draw is not a simulation, and every trial would return the same finish: the
     # check would then read 5.0 and would be measuring nothing. The seed is fixed so the run is
     # reproducible.
-    out = REG.run_module("A2.10", _network(single), REG.make_rng(20260828), CUTOFF)
+    out = _R96.dispatch(REG.run_module, globals(), "A2.10", _network(single), REG.make_rng(20260828), CUTOFF)
     A.check("2.10", "positive: executes on a governed network with duration distributions",
             not abstained(out))
     A.near("2.10", "known-answer: the simulated P80 converges on the true 8, within the 0.5 "
@@ -909,7 +919,7 @@ def main() -> int:
     m_2_1(); m_2_1_v3(); m_2_2(); m_2_3(); m_2_4(); m_2_5(); m_2_6()
     m_2_7(); m_2_8(); m_2_9(); m_2_10(); m_2_11()
     rows = ROWS()
-    write_results(HERE / "run17" / "categories" / "category_2_results.csv",
+    write_results(artifact_out(HERE / "run17" / "categories" / "category_2_results.csv"),
                   RESULT_HEADER, rows)
     A.check("ROWS", "eleven Category 2 result rows were written", len(rows) == 11)
     A.check("ROWS", "every row carries an allowed disposition and no production change",

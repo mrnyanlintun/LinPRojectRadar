@@ -32,6 +32,10 @@ THE PRE-FIX MEASUREMENTS ARE PINNED AS HISTORICAL DEFECTS, never as expected ans
 """
 
 from __future__ import annotations
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import pathlib
 import sys
@@ -198,7 +202,7 @@ FOUR = ("A4.6", "B3.5", "A5.2", "A5.3")
 
 
 def run(mid, si):
-    return registry.run_module(mid, si, lambda: 0.5, None)
+    return _R96.dispatch(registry.run_module, globals(), mid, si, lambda: 0.5, None)
 
 
 def abstained(out) -> bool:

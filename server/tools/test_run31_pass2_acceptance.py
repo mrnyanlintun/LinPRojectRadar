@@ -5,6 +5,10 @@ Nothing calls a qualification helper directly to prove the boundary: section 13 
 Run 30's defect is what it forbids. The gated set is read from the boundary's own derivation
 against the shipped registry CSV, so this file contains no hand-written route list.
 """
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 import pathlib
 import sys
 
@@ -51,7 +55,7 @@ REFUSED = "evidence_not_qualified_for_use"
 
 
 def run(mid, si):
-    return REG.run_module(mid, dict(si), NOOP, CUT)
+    return _R96.dispatch(REG.run_module, globals(), mid, dict(si), NOOP, CUT)
 
 
 head("1. RAW BYPASS = 0 THROUGH THE REAL DISPATCHER, ROUTES DERIVED FROM THE REGISTRY")
@@ -114,7 +118,7 @@ check(not any(gate_installed_for(VALIDATED[m][1]) for m in CAT89_CANONICAL if m.
 head("1b. MISSING-ASSESSMENT BYPASS = 0 (owner closure: absence fails closed)")
 _miss = {}
 for mid, cat in sorted(gated.items()):
-    r = REG.run_module(mid, dict(SI), NOOP, CUT)          # NO assessment supplied at all
+    r = _R96.dispatch(REG.run_module, globals(), mid, dict(SI), NOOP, CUT)          # NO assessment supplied at all
     disabled = r.get("activation_state") in ("DISABLED_UNSAFE",
                                              "DISABLED_EVIDENCE_UNDER_REVIEW")
     ok = r.get("abstention_reason_code") == "CATEGORY9_ASSESSMENT_MISSING" or disabled
@@ -122,7 +126,7 @@ for mid, cat in sorted(gated.items()):
 for cat, rws in sorted(_miss.items()):
     bad = [m for m, ok in rws if not ok]
     check(not bad, f"{cat}: missing-assessment bypass = 0 across {len(rws)} routes", str(bad))
-_probe = REG.run_module("B4.3", dict(SI), NOOP, CUT)
+_probe = _R96.dispatch(REG.run_module, globals(), "B4.3", dict(SI), NOOP, CUT)
 _pq = _probe.get("qualification") or {}
 check(_probe.get("consumer_executed") is False
       and _pq.get("qualification_state") == "UNASSESSED"
@@ -301,7 +305,7 @@ head("7. PASS-1 RESULTS DO NOT REGRESS")
 # assessment their modules now require -- the ordinary declaration a real caller supplies. The
 # GATE itself is proved in sections 1 and 2 above, which deliberately supply nothing.
 def run(mid, si):                                                    # noqa: F811
-    return REG.run_module(mid, dict(si, evidenceQualification=dict(QUAL)), NOOP, CUT)
+    return _R96.dispatch(REG.run_module, globals(), mid, dict(si, evidenceQualification=dict(QUAL)), NOOP, CUT)
 s = run("A6.2", {"oshaRecordableIncidents": 3, "totalManhours": 200000})
 check(s.get("incidence_rate") == 3.0, "safety 3 cases / 200,000 h = 3.0", str(s.get("incidence_rate")))
 s99 = run("A6.2", {"oshaRecordableIncidents": 3, "totalManhours": 200000,

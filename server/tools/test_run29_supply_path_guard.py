@@ -33,6 +33,10 @@ WHAT THIS SUITE PROVES, and it is the mechanical form of that requirement.
 """
 
 from __future__ import annotations
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import csv
 import datetime
@@ -146,11 +150,11 @@ for _key in _keys:
               f"{_key}: and production reads it where the signal inputs are assembled, recording "
               f"the derivation on the stored row")
         continue
-    _out = REG.run_module(_mid, dict(_si), RAND, CUTOFF)
+    _out = _R96.dispatch(REG.run_module, globals(), _mid, dict(_si), RAND, CUTOFF)
     check(not _out.get("insufficient_data"),
           f"{_key}: {_mid} COMPUTES from what the governed intake delivered, through the "
           f"registry rather than through a direct call", str(_out.get("evidence_metric"))[:70])
-    _absent = REG.run_module(_mid, {}, RAND, CUTOFF)
+    _absent = _R96.dispatch(REG.run_module, globals(), _mid, {}, RAND, CUTOFF)
     check(bool(_absent.get("insufficient_data")),
           f"{_key}: and {_mid} abstains when nothing was supplied, so the reading really came "
           f"from the structure")
@@ -161,7 +165,7 @@ _doc53 = PD.add_revision({}, "sensitivityModel", FX.tornado_model(), effective_p
                          at="2026-06-30T00:00:00Z")
 _si53: dict = {}
 PD.apply_to_signal_inputs(_si53, _doc53, 1)
-_t = REG.run_module("A5.3", _si53, RAND, CUTOFF)
+_t = _R96.dispatch(REG.run_module, globals(), "A5.3", _si53, RAND, CUTOFF)
 check(not _t.get("insufficient_data") and _t.get("ranked_inputs") == ["A", "C", "B"],
       "A5.3 computes from the SAME governed key A5.2 does, which is the parsimony decision",
       str(_t.get("ranked_inputs")))

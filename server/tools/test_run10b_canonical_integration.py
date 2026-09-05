@@ -22,6 +22,10 @@ Run:
 """
 
 from __future__ import annotations
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import csv
 import datetime as _dt
@@ -221,7 +225,7 @@ for project in PROJECTS:
         sf = min(w["start_day"] for w in follow)
         locations = sorted({w["location_sequence"] for w in structure["work_packages"]})
         expected = min((sf + u / rf) - (sl + u / rl) for u in locations)
-        got = run_module("A2.2", {"lobStructure": structure}, NOOP, CUTOFF)
+        got = _R96.dispatch(run_module, globals(), "A2.2", {"lobStructure": structure}, NOOP, CUTOFF)
         if not close(got.get("minimum_buffer_days"), round(expected, 1), 0.051):
             _lob_ok = False
             check(False, f"A2.2 {project}/{period}: separation disagrees",
@@ -259,7 +263,7 @@ for project in PROJECTS:
         buf = [b for b in structure["buffers"] if b["buffer_type"] == "PROJECT"][0]
         expected_consumed = ((buf["original_buffer_days"] - buf["remaining_buffer_days"])
                              / buf["original_buffer_days"] * 100.0)
-        got = run_module("A2.3", {"ccpmStructure": structure}, NOOP, CUTOFF)
+        got = _R96.dispatch(run_module, globals(), "A2.3", {"ccpmStructure": structure}, NOOP, CUTOFF)
         if not close(got.get("pct_buffer_consumed"), round(expected_consumed, 1), 0.051):
             check(False, f"A2.3 {project}/{period}: consumption disagrees",
                   f"{got.get('pct_buffer_consumed')} vs {expected_consumed}")
@@ -320,31 +324,31 @@ for _mid, _key, _builder in (("A4.4", "auditedNonconformanceCohort",
                              ("A5.6", "queueStructure", lambda: PS.queues(PROJECTS[0])),
                              ("A5.7", "abmStructure", lambda: PS.agents(PROJECTS[0]))):
     _structure = _builder()
-    _out = run_module(_mid, {_key: _structure}, NOOP, CUTOFF)
+    _out = _R96.dispatch(run_module, globals(), _mid, {_key: _structure}, NOOP, CUTOFF)
     check(bool(_out.get("insufficient_data")),
           f"{_mid}: the synthetic package's v2 structure produces no reading, because it is not "
           f"the structure the canonical method is defined on",
           str(_out.get("evidence_metric"))[:80])
 
-_ncr_out = run_module("A4.4", {"ncrExposureRecord": _r29_ncr()}, NOOP, CUTOFF)
+_ncr_out = _R96.dispatch(run_module, globals(), "A4.4", {"ncrExposureRecord": _r29_ncr()}, NOOP, CUTOFF)
 check(_ncr_out.get("ncr_rate") == 0.04,
       "A4.4: four nonconformances against one hundred inspections is a rate of 0.04, the "
       "supplied contract's own answer", str(_ncr_out.get("ncr_rate")))
 record("A4.4", "yes", "abstain", "the supplied contract's own known answer", "advisory only")
 
-_q_out = run_module("A5.6", {"queueModel": _r29_queue()}, NOOP, CUTOFF)
+_q_out = _R96.dispatch(run_module, globals(), "A5.6", {"queueModel": _r29_queue()}, NOOP, CUTOFF)
 check(close(_q_out.get("utilisation"), 2 / 3, 1e-5) and close(_q_out.get("L"), 2.0, 1e-5)
       and close(_q_out.get("W"), 1.0, 1e-5) and close(_q_out.get("Lq"), 4 / 3, 1e-5)
       and close(_q_out.get("Wq"), 2 / 3, 1e-5),
       "A5.6: an arrival rate of two against a service rate of three on one server gives a "
       "utilisation of two thirds, L of two, W of one, Lq of four thirds and Wq of two thirds, "
       "the supplied contract's own answers", str(_q_out.get("utilisation")))
-check(bool(run_module("A5.6", {"queueModel": _r29_queue(arrival=3.0, service=3.0)},
+check(bool(_R96.dispatch(run_module, globals(), "A5.6", {"queueModel": _r29_queue(arrival=3.0, service=3.0)},
                       NOOP, CUTOFF).get("insufficient_data")),
       "A5.6: and an unstable queue is refused rather than given a reassuring finite steady state")
 record("A5.6", "yes", "abstain", "the supplied contract's own known answer", "advisory only")
 
-_a_out = run_module("A5.7", {"agentSupplyChainModel": _r29_abm()}, NOOP, CUTOFF)
+_a_out = _R96.dispatch(run_module, globals(), "A5.7", {"agentSupplyChainModel": _r29_abm()}, NOOP, CUTOFF)
 check(_a_out.get("received") == 2 and _a_out.get("backordered") == 0,
       "A5.7: the one supplier, one carrier, one project model delivers both units by the fourth "
       "step, which is the hand-computed trace", str(_a_out.get("received")))
@@ -360,7 +364,7 @@ for project in PROJECTS:
         _env_cases += 1
         expected = (sum(1 for a in audit["assessments"] if a["result"] == "COMPLIANT")
                     / len(audit["assessments"]) * 100.0)
-        got = run_module("A6.3", {"auditedPermitCompliance": audit}, NOOP, CUTOFF)
+        got = _R96.dispatch(run_module, globals(), "A6.3", {"auditedPermitCompliance": audit}, NOOP, CUTOFF)
         if not close(got.get("compliance_rate"), expected, 0.051):
             check(False, f"A6.3 {project}/{period}: compliance rate disagrees",
                   f"{got.get('compliance_rate')} vs {expected}")
@@ -384,7 +388,7 @@ RICH = {"bac": 12_000_000.0, "ev": 4e6, "ac": 4.4e6, "pv": 4.5e6, "cpi": 0.909, 
         "longLeadAtRisk": 3, "ncrIssued": 4, "ncrClosed": 2, "ncrOpen": 6,
         "environmentalIssuesDiscussed": 2, "totalFloat": 40, "consumedFloat": 16}
 for mid in SIX:
-    out = run_module(mid, dict(RICH), NOOP, CUTOFF)
+    out = _R96.dispatch(run_module, globals(), mid, dict(RICH), NOOP, CUTOFF)
     check(abstains(out),
           f"{mid}: a fully reported project with no canonical structure still abstains, so "
           f"nothing degrades into a proxy to keep output flowing",
@@ -411,13 +415,13 @@ MALFORMED = {
 for mid, cases in MALFORMED.items():
     key = canonical.CANONICAL_STRUCTURE_KEYS[mid]
     for i, bad in enumerate(cases):
-        out = run_module(mid, {key: bad}, NOOP, CUTOFF)
+        out = _R96.dispatch(run_module, globals(), mid, {key: bad}, NOOP, CUTOFF)
         check(abstains(out),
               f"{mid}: malformed structure case {i + 1} abstains rather than computing",
               str(out.get("status_color")))
-    out = run_module(mid, {key: "not a structure at all"}, NOOP, CUTOFF)
+    out = _R96.dispatch(run_module, globals(), mid, {key: "not a structure at all"}, NOOP, CUTOFF)
     check(abstains(out), f"{mid}: a structure that is not a structure abstains")
-    out = run_module(mid, {key: None}, NOOP, CUTOFF)
+    out = _R96.dispatch(run_module, globals(), mid, {key: None}, NOOP, CUTOFF)
     check(abstains(out), f"{mid}: a structure reported as nothing abstains")
 
 # RUN 29. A4.4, A5.6 and A5.7 are no longer in the malformed-structure table above, because the
@@ -434,19 +438,19 @@ for _mid, _key, _bad_cases in (
          [{}, _r29_abm(steps=1), dict(_r29_abm(), agents=[]),
           dict(_r29_abm(), travel_delay_steps=-1)])):
     for _i, _bad in enumerate(_bad_cases):
-        _out = run_module(_mid, {_key: _bad}, NOOP, CUTOFF)
+        _out = _R96.dispatch(run_module, globals(), _mid, {_key: _bad}, NOOP, CUTOFF)
         check(abstains(_out),
               f"{_mid}: malformed governed structure case {_i + 1} abstains rather than "
               f"computing", str(_out.get("status_color")))
-    check(abstains(run_module(_mid, {_key: "not a structure at all"}, NOOP, CUTOFF)),
+    check(abstains(_R96.dispatch(run_module, globals(), _mid, {_key: "not a structure at all"}, NOOP, CUTOFF)),
           f"{_mid}: a structure that is not a structure abstains")
-    check(abstains(run_module(_mid, {_key: None}, NOOP, CUTOFF)),
+    check(abstains(_R96.dispatch(run_module, globals(), _mid, {_key: None}, NOOP, CUTOFF)),
           f"{_mid}: a structure reported as nothing abstains")
 
 # The four that used to compute from a proxy name the ABSENT STRUCTURE as the reason, which is a
 # different reason from a missing figure and says so.
 for mid in ("A2.2", "A2.3", "A5.6", "A5.7"):
-    out = run_module(mid, dict(RICH), NOOP, CUTOFF)
+    out = _R96.dispatch(run_module, globals(), mid, dict(RICH), NOOP, CUTOFF)
     check(out.get("abstention_reason_code") == ABSTAIN_STRUCTURE_ABSENT,
           f"{mid}: and the reason code names the absent canonical structure",
           str(out.get("abstention_reason_code")))
@@ -473,11 +477,11 @@ DP = "DP-01"
 #      exercised through B2.19, but one of the two modules that exercised them no longer does.
 BAC = 10_000_000.0
 _scenario = PS.scenario_decision(DP)
-check(abstains(run_module("A5.4", {"bac": BAC, "scenarioDecisionStructure": _scenario},
+check(abstains(_R96.dispatch(run_module, globals(), "A5.4", {"bac": BAC, "scenarioDecisionStructure": _scenario},
                           NOOP, CUTOFF)),
       "A5.4: the decision object produces no reading, because choosing between courses of action "
       "is not the question this module answers")
-_scn_out = run_module("A5.4", {"scenarioSet": _r29_scn()}, NOOP, CUTOFF)
+_scn_out = _R96.dispatch(run_module, globals(), "A5.4", {"scenarioSet": _r29_scn()}, NOOP, CUTOFF)
 check(_scn_out.get("responses") == {"BASE": 5.0, "ADVERSE": 8.0, "RECOVERY": 4.0},
       "A5.4: the three coherent states give five, eight and four through the declared response "
       "model, which are the supplied contract's own answers", str(_scn_out.get("responses")))
@@ -500,7 +504,7 @@ check(len(_alternatives["alternatives"]) == len(_matrix["alternatives"])
       "own decision matrix, so nothing was added or dropped in the translation",
       f"{len(_alternatives['alternatives'])} alternatives, "
       f"{len(_alternatives['criteria'])} criteria")
-got_ct = run_module("B2.19", {"decisionAlternatives": _alternatives}, NOOP, CUTOFF)
+got_ct = _R96.dispatch(run_module, globals(), "B2.19", {"decisionAlternatives": _alternatives}, NOOP, CUTOFF)
 check(got_ct.get("result_source") == "CANONICAL_V5_LAYER"
       and got_ct.get("canonical_disposition") == "CANONICAL_RESULT",
       "B2.19: and the answer came from the canonical layer through the production dispatcher",
@@ -531,7 +535,7 @@ for mid, key, builder in (("B2.19", "decisionAlternatives", PS.decision_alternat
     base = {}
 
     locked = dict(builder(DP, split="LOCKED_HOLDOUT"))
-    out = run_module(mid, dict(base, **{key: locked}), NOOP, CUTOFF)
+    out = _R96.dispatch(run_module, globals(), mid, dict(base, **{key: locked}), NOOP, CUTOFF)
     check(abstains(out),
           f"{mid}: material from the locked holdout is refused outright, which is the whole "
           f"point of locking it", str(out.get("status_color")))
@@ -541,28 +545,28 @@ for mid, key, builder in (("B2.19", "decisionAlternatives", PS.decision_alternat
     speakable(out, f"{mid} locked holdout")
 
     for split in ("DEVELOPMENT", "VALIDATION"):
-        ok = run_module(mid, dict(base, **{key: builder(DP, split=split)}), NOOP, CUTOFF)
+        ok = _R96.dispatch(run_module, globals(), mid, dict(base, **{key: builder(DP, split=split)}), NOOP, CUTOFF)
         check(not abstains(ok), f"{mid}: the {split.lower()} split is readable", str(ok)[:80])
 
     unsplit = dict(builder(DP))
     unsplit["split"] = ""
-    check(abstains(run_module(mid, dict(base, **{key: unsplit}), NOOP, CUTOFF)),
+    check(abstains(_R96.dispatch(run_module, globals(), mid, dict(base, **{key: unsplit}), NOOP, CUTOFF)),
           f"{mid}: material that does not say which split it belongs to is refused, because it "
           f"cannot be shown to be material this module may read")
 
     unversioned = dict(builder(DP))
     unversioned["asset_version"] = ""
-    check(abstains(run_module(mid, dict(base, **{key: unversioned}), NOOP, CUTOFF)),
+    check(abstains(_R96.dispatch(run_module, globals(), mid, dict(base, **{key: unversioned}), NOOP, CUTOFF)),
           f"{mid}: material that does not say which version it came from is refused, because a "
           f"result taken from it could not be interpreted later")
 
     selftrain = dict(builder(DP))
     selftrain["reference_member_project_ids"] = [selftrain["evaluated_project_id"], "OTHER"]
-    check(abstains(run_module(mid, dict(base, **{key: selftrain}), NOOP, CUTOFF)),
+    check(abstains(_R96.dispatch(run_module, globals(), mid, dict(base, **{key: selftrain}), NOOP, CUTOFF)),
           f"{mid}: a project that is itself part of the material it would be compared against "
           f"is refused, so nothing trains on itself")
 
-    missing = run_module(mid, dict(base), NOOP, CUTOFF)
+    missing = _R96.dispatch(run_module, globals(), mid, dict(base), NOOP, CUTOFF)
     if mid == "B2.19":
         check(abstains(missing) or missing.get("status_color") is not None,
               "B2.19: with no decision matrix the single-project form is what remains, and it "
@@ -578,14 +582,14 @@ for mid, key, builder in (("B2.19", "decisionAlternatives", PS.decision_alternat
 # A single alternative is the degeneracy Run 8 recorded, and it is refused rather than weighted.
 one_alt = dict(PS.decision_matrix(DP))
 one_alt["alternatives"] = one_alt["alternatives"][:1]
-check(abstains(run_module("B2.19", {"decisionMatrix": one_alt}, NOOP, CUTOFF)),
+check(abstains(_R96.dispatch(run_module, globals(), "B2.19", {"decisionMatrix": one_alt}, NOOP, CUTOFF)),
       "B2.19: one alternative is refused, because a weighting defined by how much alternatives "
       "differ cannot be formed from one of them")
 flat = dict(PS.decision_matrix(DP))
 flat["alternatives"] = [{"alternative_id": f"A{i}",
                          "values": {c["criterion_id"]: 1.0 for c in flat["criteria"]}}
                         for i in range(3)]
-check(abstains(run_module("B2.19", {"decisionMatrix": flat}, NOOP, CUTOFF)),
+check(abstains(_R96.dispatch(run_module, globals(), "B2.19", {"decisionMatrix": flat}, NOOP, CUTOFF)),
       "B2.19: alternatives that are identical on every criterion are refused, because there is "
       "nothing for a weighting to be formed from")
 
@@ -603,7 +607,7 @@ check("cost_elements" not in _src and "cost_risk_ground_truth" not in _src,
       "and no cost register asset is named anywhere in the production layer")
 # What the production module reads is unchanged: a budget, two indices and a document risk score,
 # and it reads neither actual cost nor earned value.
-_mc_full = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3},
+_mc_full = _R96.dispatch(run_module, globals(), MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3},
                       lambda: 0.5, CUTOFF)
 # RUN 36 CLOSURE. The claim this section exists to protect is that the bottom-up cost register and
 # the forecast module are NOT given one identity. That claim is unchanged. What changed is the
@@ -617,7 +621,7 @@ check(abstains(_mc_full)
       "the production forecast is operationally disabled for insufficient canonical input, and "
       "names the ungoverned driver-to-EAC mapping rather than a missing value",
       f"{_mc_full.get('insufficient_data')!r} / {_mc_full.get('abstention_reason_code')!r}")
-_mc_no_ac = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3,
+_mc_no_ac = _R96.dispatch(run_module, globals(), MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3,
                             "ac": 999_999_999.0, "ev": 1.0}, lambda: 0.5, CUTOFF)
 check(_mc_full.get("status_color") == _mc_no_ac.get("status_color"),
       "and an actual cost and an earned value change nothing about it, because it reads neither",
@@ -627,7 +631,7 @@ check(_mc_full.get("status_color") == _mc_no_ac.get("status_color"),
 # gone red for a reason that has nothing to do with the cost register. THE ORACLE IS NOW THE
 # THING THE SENTENCE ACTUALLY CLAIMS -- that handing it a cost register changes NOTHING -- which
 # is a strictly stronger test than the presence of a band.
-_mc_register = run_module(MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3,
+_mc_register = _R96.dispatch(run_module, globals(), MC, {"bac": 1e6, "cpi": 0.9, "spi": 0.95, "docRiskScore": 0.3,
                                "cost_register": [{"low": 1, "mode": 2, "high": 3}]},
                           lambda: 0.5, CUTOFF)
 check(_mc_register == _mc_full,
@@ -641,7 +645,7 @@ section("5. BUCKET 5 REMAINS DISABLED, AND VOTING AND STATUS DO NOT MOVE")
 
 for mid in BUCKET_5:
     for label, si in (("an empty input", {}), ("a fully reported project", dict(RICH))):
-        out = run_module(mid, dict(si), NOOP, CUTOFF)
+        out = _R96.dispatch(run_module, globals(), mid, dict(si), NOOP, CUTOFF)
         check(abstains(out), f"{mid}: abstains unconditionally on {label}")
     check(mid not in CORE_VOTING_MODULES, f"{mid}: is not a voting module")
     check(mid not in canonical.CANONICAL_STRUCTURE_KEYS
@@ -792,35 +796,35 @@ def mutation(label: str, fn) -> None:
 
 # Perturb the structure and the reading must move.
 _p = PS.line_of_balance("PRJ-HWY", "P01")
-_base = run_module("A2.2", {"lobStructure": _p}, NOOP, CUTOFF)["minimum_buffer_days"]
+_base = _R96.dispatch(run_module, globals(), "A2.2", {"lobStructure": _p}, NOOP, CUTOFF)["minimum_buffer_days"]
 _perturbed = {**_p, "work_packages": [
     dict(w, start_day=w["start_day"] + 10.0)
     if w["work_type_id"] == _p["following_work_type"] else dict(w)
     for w in _p["work_packages"]]}
 mutation("moving the following line ten days later moves the separation by ten days",
-         lambda: close(run_module("A2.2", {"lobStructure": _perturbed}, NOOP,
+         lambda: close(_R96.dispatch(run_module, globals(), "A2.2", {"lobStructure": _perturbed}, NOOP,
                                   CUTOFF)["minimum_buffer_days"], _base + 10.0, 0.11))
 mutation("claiming the queue reading is unchanged when the service rate halves would fail",
-         lambda: run_module("A5.6", {"queueModel": _r29_queue()}, NOOP,
+         lambda: _R96.dispatch(run_module, globals(), "A5.6", {"queueModel": _r29_queue()}, NOOP,
                             CUTOFF)["utilisation"]
-         != run_module("A5.6", {"queueModel": _r29_queue(service=6.0)}, NOOP,
+         != _R96.dispatch(run_module, globals(), "A5.6", {"queueModel": _r29_queue(service=6.0)}, NOOP,
                        CUTOFF)["utilisation"])
 mutation("emptying the supplier's stock leaves the whole demand backordered",
-         lambda: run_module("A5.7", {"agentSupplyChainModel": _r29_abm(inventory=0.0)}, NOOP,
+         lambda: _R96.dispatch(run_module, globals(), "A5.7", {"agentSupplyChainModel": _r29_abm(inventory=0.0)}, NOOP,
                             CUTOFF)["backordered"] == 2.0)
 _cc = PS.ccpm("PRJ-AIR", "P03")
 _spent = {**_cc, "buffers": [dict(b, remaining_buffer_days=0.0) for b in _cc["buffers"]]}
 mutation("a fully consumed buffer reads a hundred per cent consumed",
-         lambda: close(run_module("A2.3", {"ccpmStructure": _spent}, NOOP,
+         lambda: close(_R96.dispatch(run_module, globals(), "A2.3", {"ccpmStructure": _spent}, NOOP,
                                   CUTOFF)["pct_buffer_consumed"], 100.0, 0.051))
 mutation("claiming a locked holdout is readable would fail",
-         lambda: abstains(run_module("B2.19",
+         lambda: abstains(_R96.dispatch(run_module, globals(), "B2.19",
                                      {"decisionAlternatives": PS.decision_alternatives(
                                          DP, split="LOCKED_HOLDOUT")}, NOOP, CUTOFF)))
 mutation("claiming the six are in the voting set would fail",
          lambda: not set(SIX) & set(CORE_VOTING_MODULES))
 mutation("claiming an absent structure still computes would fail",
-         lambda: all(abstains(run_module(m, dict(RICH), NOOP, CUTOFF)) for m in SIX))
+         lambda: all(abstains(_R96.dispatch(run_module, globals(), m, dict(RICH), NOOP, CUTOFF)) for m in SIX))
 
 # A real injection into the production layer, applied and removed, proving these checks read the
 # shipped code rather than a copy of it.
@@ -834,7 +838,7 @@ _orig = (canonical_v5.READABLE_SPLITS, canonical_v5.LOCKED_SPLIT)
 canonical_v5.READABLE_SPLITS = ("DEVELOPMENT", "VALIDATION", "LOCKED_HOLDOUT")
 canonical_v5.LOCKED_SPLIT = "NOTHING_IS_LOCKED"
 _applied = canonical_v5.LOCKED_SPLIT == "NOTHING_IS_LOCKED"     # re-read, never assumed
-_leaked = run_module("B2.19",
+_leaked = _R96.dispatch(run_module, globals(), "B2.19",
                      {"decisionAlternatives": PS.decision_alternatives(
                          DP, split="LOCKED_HOLDOUT")}, NOOP, CUTOFF)
 canonical_v5.READABLE_SPLITS, canonical_v5.LOCKED_SPLIT = _orig
@@ -842,7 +846,7 @@ check(_applied, "the split-rule injection actually applied before the answer was
 check(not abstains(_leaked),
       "an injected split rule does change the answer, so the leakage checks are reading the "
       "shipped guard rather than a description of it", str(_leaked.get("status_color")))
-check(abstains(run_module("B2.19",
+check(abstains(_R96.dispatch(run_module, globals(), "B2.19",
                           {"decisionMatrix": PS.decision_matrix(DP, split="LOCKED_HOLDOUT")},
                           NOOP, CUTOFF)),
       "and the injection is restored, so the holdout is locked again")

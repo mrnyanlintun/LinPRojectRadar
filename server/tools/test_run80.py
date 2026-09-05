@@ -8,6 +8,10 @@ during Run 80 (see the report). Nothing is asserted by grep over prose: the asse
 returned structures, stored dictionaries and raised exceptions.
 """
 from __future__ import annotations
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 import pathlib, sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -51,7 +55,7 @@ _BASE = {"bac": 4_000_000, "ev": 1_000_000, "ac": 1_050_000, "pv": 1_020_000}
 def _gate_refusals(si: dict) -> int:
     n = 0
     for mid in GATED:
-        r = run_module(mid, si, lambda: 0.5, _dt.date(2026, 3, 31))
+        r = _R96.dispatch(run_module, globals(), mid, si, lambda: 0.5, _dt.date(2026, 3, 31))
         if r.get("abstention_reason_code") == "CATEGORY9_ASSESSMENT_MISSING":
             n += 1
     return n
@@ -211,7 +215,7 @@ _SI["externalCostIndex"] = {**_S["externalCostIndex"], "cost_exposure": 1_800_00
 for mid, want in (("A3.1", "completed comparable projects"),
                   ("A3.7", "Cascade Hall Renewal"),
                   ("A3.9", "ENR Building Cost Index")):
-    _r = run_module(mid, _SI, lambda: 0.5, _dt.date(2026, 3, 31))
+    _r = _R96.dispatch(run_module, globals(), mid, _SI, lambda: 0.5, _dt.date(2026, 3, 31))
     check(f"{mid} produces a reading from the assembled structure",
           not _r.get("insufficient_data") and want in str(_r.get("evidence_metric")),
           str(_r.get("evidence_metric"))[:160])

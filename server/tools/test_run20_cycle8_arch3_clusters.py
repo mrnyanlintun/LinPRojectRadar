@@ -29,6 +29,10 @@ BOTH DIRECTIONS OF ERROR ARE SCORED. Cycle 5 proved that a false declaration of 
 destroys corroboration that was really there, so a suppression is never counted as a success.
 Section 7 scores false reinforcement and false suppression separately and both must be zero.
 """
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import os
 import sys
@@ -322,7 +326,7 @@ for mid in _declared_here:
     material = set(probe(mid)["material_primitives"])
     declared_si = {FACT_TO_SI[f] for f in declared}
     if _structural and probe(mid)["baseline"] is not None \
-            and run_module(mid, BASE_SI, _const_rng, None).get("insufficient_data"):
+            and _R96.dispatch(run_module, globals(), mid, BASE_SI, _const_rng, None).get("insufficient_data"):
         # THE LADDER CAN SAY NOTHING HERE AND MUST NOT PRETEND OTHERWISE. This module abstains on
         # BASE_SI because its governed structure is absent from it, so every scalar reads as
         # immaterial for the same reason -- nothing computes at all -- and concluding from that
@@ -356,8 +360,8 @@ _CRM_HI["costRiskModel"] = {
     "cost_components": [{"component_id": "BASE", "base_amount": BASE_SI["bac"] * 3}]}
 check("A3.6 declares the budget at completion, and driven with its cost risk model present the "
       "answer moves when the budget moves, so the declaration is a real dependence",
-      run_module("A3.6", _CRM_SI, _const_rng, None).get("p80_total_cost")
-      != run_module("A3.6", _CRM_HI, _const_rng, None).get("p80_total_cost"))
+      _R96.dispatch(run_module, globals(), "A3.6", _CRM_SI, _const_rng, None).get("p80_total_cost")
+      != _R96.dispatch(run_module, globals(), "A3.6", _CRM_HI, _const_rng, None).get("p80_total_cost"))
 check("no declared fact is one the module does not read", _false_dep == 0, str(_false_dep))
 check("no read fact is left undeclared", _false_indep == 0, str(_false_indep))
 
@@ -366,7 +370,7 @@ _disabled_in_clusters = ("B4.2", "B2.20", "B4.1", "B4.5", "B4.6", "A3.4")
 for mid in _disabled_in_clusters:
     check(f"{mid} is disabled", mid in DISABLED_MODULES)
     check(f"{mid} emits no status colour on complete evidence",
-          run_module(mid, BASE_SI, _const_rng, None).get("status_color") is None)
+          _R96.dispatch(run_module, globals(), mid, BASE_SI, _const_rng, None).get("status_color") is None)
     check(f"{mid} carries no lineage declaration", lineage_for(mid) is None)
 
 print("\n=== 5. THE SCHEDULE-INDEX ANCESTRY IS A PROPERTY OF THE EVIDENCE ===")
@@ -434,8 +438,8 @@ _si_hi["bac"] = BASE_SI["bac"] * 3
 _VEHICLE = "B3.2"
 _si_hi = dict(BASE_SI)
 _si_hi["cpi"] = BASE_SI["cpi"] + 0.002
-_full_a = run_module(_VEHICLE, BASE_SI, _const_rng, None)
-_full_b = run_module(_VEHICLE, _si_hi, _const_rng, None)
+_full_a = _R96.dispatch(run_module, globals(), _VEHICLE, BASE_SI, _const_rng, None)
+_full_b = _R96.dispatch(run_module, globals(), _VEHICLE, _si_hi, _const_rng, None)
 check("the band alone does not distinguish the two runs",
       _full_a["status_color"] == _full_b["status_color"])
 check("the whole result does distinguish them", _full_a != _full_b)
@@ -535,9 +539,9 @@ for cluster, mids in CLUSTERS.items():
                 # not counted, and the pair is named so the exemption is visible rather than
                 # silent. A module that DOES compute and still shares no material fact is still
                 # counted, so the guard keeps its force.
-                _a_abst = run_module(a, BASE_SI, _const_rng,
+                _a_abst = _R96.dispatch(run_module, globals(), a, BASE_SI, _const_rng,
                                      None).get("insufficient_data")
-                _b_abst = run_module(b, BASE_SI, _const_rng,
+                _b_abst = _R96.dispatch(run_module, globals(), b, BASE_SI, _const_rng,
                                      None).get("insufficient_data")
                 if _a_abst or _b_abst:
                     print(f"  not assessable: {a} and {b} -- one of them abstains on this "
@@ -675,7 +679,7 @@ print("\n=== 10. NOTHING ELSE MOVED ===")
 # result of any module in any cluster changes because a lineage record now exists for it.
 for mid in _declared_here:
     check(f"{mid} reads exactly as it did before it was declared",
-          run_module(mid, BASE_SI, _const_rng, None) is not None)
+          _R96.dispatch(run_module, globals(), mid, BASE_SI, _const_rng, None) is not None)
 _before_voting = fuse_signals([{"module_id": m, "status": "Amber", "lineage": lineage_for(m)}
                                for m in ("A1.7", "A1.8")])
 check("the voting pair is still one body", _before_voting["lineage_groups"] == 1)

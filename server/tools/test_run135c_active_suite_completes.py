@@ -80,10 +80,13 @@ def _fresh_database(db_dir: pathlib.Path, stem: str) -> str | None:
     their own (test_auth_session 52/52, test_run40_serve_content_security 11/11,
     test_run41_security_acceptance 11/11, drive_run21_participant 73/77).
 
-    OFF BY DEFAULT, DELIBERATELY. Turning it on changes what the coverage figure measures, and a
-    figure taken under a different harness cannot be compared with the run that went before it.
-    Run 136 reports the shared-database figure so it is like-for-like with its own baseline; the
-    next run should take one measurement each way and then adopt this as the default.
+    RUN 137: THIS IS NOW THE STANDING FLEET MODE, ON BY DEFAULT. The owner ruled that a script
+    starting from an empty migrated database is the correct environment for the fleet and that the
+    ~36 drivers that bootstrap an admin by role are not to be repaired individually: each gets its
+    own database, so the collision cannot occur. `--shared-db` restores the old single-database
+    behaviour, and is kept only so a figure can be re-taken like-for-like against Run 136's
+    baseline. When no directory is named, the databases go beside the fleet directory in
+    `<fleet-dir>/../fresh_db`, which is scratch, never the repository.
     """
     db_dir.mkdir(parents=True, exist_ok=True)
     db = db_dir / f"{stem}.db"
@@ -132,9 +135,13 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--fresh-db", default=None, metavar="DIR",
-                    help="give every script its own migrated SQLite database under DIR, instead "
-                         "of letting all 237 share whatever DATABASE_URL names. Off by default: "
-                         "see _fresh_database for why, and for the measurement that motivates it.")
+                    help="directory to hold the per-script SQLite databases. Defaults to "
+                         "<fleet-dir>/../fresh_db. Per-script databases are the STANDING MODE as "
+                         "of Run 137; pass --shared-db to turn them off.")
+    ap.add_argument("--shared-db", action="store_true",
+                    help="let all 237 scripts share whatever DATABASE_URL names, as the fleet did "
+                         "before Run 137. Kept only for taking a figure like-for-like against Run "
+                         "136's baseline; see _fresh_database for why it is no longer the default.")
     args = ap.parse_args()
 
     if not CSV_PATH.exists():
@@ -152,8 +159,13 @@ def main() -> int:
         if fleet_dir is None:
             print("FAIL  --run requires --fleet-dir")
             return 2
-        run_active(paths, fleet_dir, args.timeout, exit_tsv,
-                   pathlib.Path(args.fresh_db) if args.fresh_db else None)
+        if args.shared_db and args.fresh_db:
+            print("FAIL  --shared-db and --fresh-db contradict each other")
+            return 2
+        db_dir = None if args.shared_db else (
+            pathlib.Path(args.fresh_db) if args.fresh_db else fleet_dir.parent / "fresh_db")
+        print(f"  database mode: {'SHARED (one database, pre-Run-137)' if db_dir is None else f'fresh per script under {db_dir}'}")
+        run_active(paths, fleet_dir, args.timeout, exit_tsv, db_dir)
 
     if fleet_dir is None or exit_tsv is None or not exit_tsv.exists():
         print("FAIL  no fleet evidence: pass --fleet-dir and --exit-tsv, or --run")

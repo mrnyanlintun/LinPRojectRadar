@@ -11,6 +11,16 @@ specification's worked answers at import. Production output is never the oracle.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import datetime
 import pathlib
@@ -58,7 +68,7 @@ O = oracle_gate(A, "oracles_cat_3")
 
 
 def run(code_id: str, si: dict) -> dict:
-    return REG.run_module(code_id, si, RAND, CUTOFF)
+    return _R96.dispatch(REG.run_module, globals(), code_id, si, RAND, CUTOFF)
 
 
 def abstained(out: dict) -> bool:
@@ -361,7 +371,7 @@ def m_3_6() -> None:
     A.near("3.6", "known-answer: and a P80 of 120 under the right-continuous convention",
            O.empirical_quantile_right_continuous(sample, 0.80), 120.0)
     # A REAL GENERATOR: a simulation driven by a constant draw is not a simulation.
-    out = REG.run_module("A3.6", _costrisk(), REG.make_rng(20260828), CUTOFF)
+    out = _R96.dispatch(REG.run_module, globals(), "A3.6", _costrisk(), REG.make_rng(20260828), CUTOFF)
     A.check("3.6", "positive: executes on a stochastic cost risk model", not abstained(out))
     A.near("3.6", "known-answer: the simulated P80 is the specification's 120",
            out.get("p80_total_cost"), 120.0, 1e-9)
@@ -372,10 +382,10 @@ def m_3_6() -> None:
             out.get("trials") == 20000
             and out.get("quantile_convention") == "right-continuous empirical inverse")
     A.check("3.6", "invariant: a risk that cannot occur leaves the total at the base cost",
-            REG.run_module("A3.6", _costrisk(prob=0.0), REG.make_rng(1),
+            _R96.dispatch(REG.run_module, globals(), "A3.6", _costrisk(prob=0.0), REG.make_rng(1),
                            CUTOFF).get("p80_total_cost") == 100.0)
     A.check("3.6", "invariant: a risk that must occur puts the whole impact on every trial",
-            REG.run_module("A3.6", _costrisk(prob=1.0), REG.make_rng(1),
+            _R96.dispatch(REG.run_module, globals(), "A3.6", _costrisk(prob=1.0), REG.make_rng(1),
                            CUTOFF).get("p80_total_cost") == 120.0)
     A.check("3.6", "missingness: with no stochastic cost risk model the answer is not "
                    "estimable, and a deterministic uplift on the cost index is not used in its "
@@ -709,7 +719,7 @@ def main() -> int:
     gate()
     m_3_1(); m_3_2(); m_3_3(); m_3_5(); m_3_6(); m_3_7(); m_3_8(); m_3_9()
     rows = ROWS()
-    write_results(HERE / "run17" / "categories" / "category_3_results.csv", RESULT_HEADER, rows)
+    write_results(artifact_out(HERE / "run17" / "categories" / "category_3_results.csv"), RESULT_HEADER, rows)
     A.check("ROWS", "eight Category 3 result rows were written, with 3.4 excluded",
             len(rows) == 8 and "3.4" not in {r["module_id"] for r in rows})
     # RUN 20. Run 19 changed no production file and this check refused any row that claimed

@@ -11,6 +11,10 @@ abstention.
 """
 
 from __future__ import annotations
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import csv
 import json
@@ -58,7 +62,7 @@ SI = {"bac": 1_000_000.0, "ev": 400_000.0, "ac": 440_000.0, "pv": 450_000.0,
 
 def run(mid):
     try:
-        r = REG.run_module(mid, dict(SI), (lambda: 0.5), "2026-06-30")
+        r = _R96.dispatch(REG.run_module, globals(), mid, dict(SI), (lambda: 0.5), "2026-06-30")
     except Exception as exc:                                     # noqa: BLE001
         return {"__state__": "CRASHED", "__why__": f"{type(exc).__name__}: {exc}"[:160]}
     r["__state__"] = "ABSTAINS" if r.get("insufficient_data") else "COMPUTES"

@@ -16,6 +16,10 @@ only that a consumer stopped working. What makes it a GATE rather than a disable
 QUALIFIED version of the same evidence still runs where it is otherwise eligible. Both are
 asserted below on the same module and the same package.
 """
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import hashlib
 import pathlib
@@ -152,7 +156,7 @@ CUT = "2026-06-30"
 
 def run(line, mid, si=None):
     try:
-        return line.run_module(mid, dict(si or SI), NOOP, CUT)
+        return _R96.dispatch(line.run_module, globals(), mid, dict(si or SI), NOOP, CUT)
     except Exception as exc:                                       # noqa: BLE001
         return {"__error__": f"{type(exc).__name__}: {exc}"}
 
@@ -333,7 +337,7 @@ for mid, cat in (("B1.1", "Category 6"), ("B2.1", "Category 7"),
                  ("B3.2", "Category 8"), ("B4.3", "Category 10")):
     r18 = run(V18, mid, NO_ASSESSMENT)
     r19 = run(V18 and V18, mid, NO_ASSESSMENT) if False else run(V18, mid, NO_ASSESSMENT)
-    live = REGLIVE.run_module(mid, dict(NO_ASSESSMENT), NOOP, CUT)
+    live = _R96.dispatch(REGLIVE.run_module, globals(), mid, dict(NO_ASSESSMENT), NOOP, CUT)
     check(r18.get("abstention_reason_code") != "CATEGORY9_ASSESSMENT_MISSING",
           f"{cat} {mid}: v18 does NOT block a package with no Category-9 assessment",
           str(r18.get("abstention_reason_code")))
@@ -353,7 +357,7 @@ for mid, cat in (("B4.3", "Category 10"),):
     # result, with the governed structure supplied through the real intake.
     _with_si = dict(WITH)
     _pd.apply_to_signal_inputs(_with_si, _CSP_DOC, 6)
-    ok = REGLIVE.run_module(mid, _with_si, NOOP, CUT)
+    ok = _R96.dispatch(REGLIVE.run_module, globals(), mid, _with_si, NOOP, CUT)
     check(ok.get("abstention_reason_code") != "CATEGORY9_ASSESSMENT_MISSING"
           and ok.get("canonical_disposition") == "CANONICAL_RESULT",
           f"band={ok.get('status_color')}")

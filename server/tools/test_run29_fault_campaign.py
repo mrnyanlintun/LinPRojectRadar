@@ -24,6 +24,16 @@ The results are written to `code_audit/run29_fault_injection.csv`.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import csv
 import datetime
@@ -81,7 +91,7 @@ def check(ok: bool, label: str, detail: str = "") -> bool:
 
 
 def run(mid: str, si: dict) -> dict:
-    return REG.run_module(mid, si, RAND, CUTOFF)
+    return _R96.dispatch(REG.run_module, globals(), mid, si, RAND, CUTOFF)
 
 
 def abstains(out: dict) -> bool:
@@ -612,7 +622,7 @@ ROWS.append({"fault": 20, "name": "duplicate simulation version stamp",
 
 
 # ---------------------------------------------------------------- the artefact
-_out = ROOT / "code_audit" / "run29_fault_injection.csv"
+_out = artifact_out(ROOT / "code_audit" / "run29_fault_injection.csv")
 with io.open(_out, "w", encoding="utf-8", newline="") as fh:
     w = csv.DictWriter(fh, fieldnames=list(ROWS[0]), lineterminator="\n")
     w.writeheader()

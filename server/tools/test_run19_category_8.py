@@ -33,6 +33,16 @@ Oracles come from run17/oracle/oracles_cat_8.py, self proved at import.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import datetime
 import pathlib
@@ -103,7 +113,7 @@ SNAPSHOT = "REGULATORY_SNAPSHOT_2026-08-12"
 
 
 def run(code_id: str, si: dict) -> dict:
-    return REG.run_module(code_id, si, RAND, CUTOFF)
+    return _R96.dispatch(REG.run_module, globals(), code_id, si, RAND, CUTOFF)
 
 
 def abstained(out: dict) -> bool:
@@ -1006,7 +1016,7 @@ def main() -> int:
     gate()
     m_8_1(); m_8_2(); m_8_3(); m_8_4(); m_8_5(); m_8_6(); m_8_7(); m_8_8(); m_8_9()
     rows = ROWS()
-    write_results(HERE / "run17" / "categories" / "category_8_results.csv", RESULT_HEADER, rows)
+    write_results(artifact_out(HERE / "run17" / "categories" / "category_8_results.csv"), RESULT_HEADER, rows)
     A.check("ROWS", "nine Category 8 result rows were written", len(rows) == 9)
     A.check("ROWS", "every row is tied to the dated regulatory snapshot rather than to current law",
             all(r["regulatory_snapshot"] == SNAPSHOT for r in rows))

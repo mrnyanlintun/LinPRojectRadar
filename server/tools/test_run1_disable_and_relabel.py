@@ -24,6 +24,10 @@ Covers the run's own "Verify" section:
     non-CORE-only perturbation.
 """
 from __future__ import annotations
+# Run 137, Item 1: a removed module identifier is SUBSTITUTED, not dispatched.
+import os as _r96_os, sys as _r96_sys  # noqa: E402
+_r96_sys.path.insert(0, _r96_os.path.dirname(_r96_os.path.abspath(__file__)))
+from run96_removed_substitution import substitution as _R96  # noqa: E402
 
 import json
 import sys
@@ -72,7 +76,7 @@ print("RUN 1: the eight disabled modules are non-executable and vote nowhere")
 print("=" * 78)
 
 for new_id, name in sorted(DISABLED_CONCEPT_ONLY.items()):
-    out = run_module(new_id, FULL_INPUTS, make_rng(1), CUTOFF)
+    out = _R96.dispatch(run_module, globals(), new_id, FULL_INPUTS, make_rng(1), CUTOFF)
     check(out.get("status_color") is None and out.get("insufficient_data") is True,
           f"{new_id} ({name}) abstains unconditionally on a fully-populated input",
           str(out))
@@ -112,8 +116,8 @@ for new_id in sorted(PROXY_QUALIFIERS):
 
 # Two independent runs of the same module with the same inputs must be byte-identical: this run
 # touched no arithmetic, so nothing about a module's own numeric output can have moved.
-a = run_module("A1.2", FULL_INPUTS, make_rng(7), CUTOFF)   # CUSUM, one of the 30 proxies
-b = run_module("A1.2", FULL_INPUTS, make_rng(7), CUTOFF)
+a = _R96.dispatch(run_module, globals(), "A1.2", FULL_INPUTS, make_rng(7), CUTOFF)   # CUSUM, one of the 30 proxies
+b = _R96.dispatch(run_module, globals(), "A1.2", FULL_INPUTS, make_rng(7), CUTOFF)
 check(json.dumps(a, sort_keys=True, default=str) == json.dumps(b, sort_keys=True, default=str),
       "a proxy module's own computed output is reproducible/unchanged under identical inputs "
       "(A1.2, CUSUM)")
