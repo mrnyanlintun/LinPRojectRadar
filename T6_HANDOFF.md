@@ -11,6 +11,24 @@
 > FIRST" is at line 8005; the ordering is by run number, not by date. Runs 48 through 58 each
 > left them and were right to. Moving them rewrites history. This is the ONE addition Run 59
 > made to this file, at the top, which the file's own rule permits; nothing below it was edited.
+>
+> **THIS FILE STOPPED BEING MAINTAINED AT RUN 89, ON 2026-08-30.** Run 139 checked and is
+> recording it rather than leaving the next reader to discover it. Fifty runs have landed since
+> the last section below was written, and not one of them appended here. The file is therefore
+> not merely without authority, which it has said of itself since Run 59 -- it is INCOMPLETE AS
+> HISTORY, and a reader who takes its last section as the current state of the instrument will
+> be fifty runs wrong about the version stamp, the module roster, the category weights and the
+> status rules alike.
+>
+> **WHERE THE HISTORY SINCE RUN 89 ACTUALLY LIVES:** the `REPORT_*.md` files at the repository
+> root, one or more per run, 226 of them at the time of writing, plus the sealed
+> `code_audit/REPORT_*.md` set. Those are evidence and they are current. Read those, not this,
+> for anything after Run 89.
+>
+> **NOTHING BELOW WAS EDITED, AND NO RUN SECTIONS WERE BACK-FILLED.** Writing fifty sections now
+> from the reports would manufacture a record nobody kept, which is a different and worse defect
+> than the staleness it would hide. This block is an addition at the top, of exactly the kind
+> Run 59 made and the file's own rule permits.
 
 # 2026-08-30 - Run 89: the status architecture. Weighted Voting reads the six category postures; Data Integrity is an eligibility gate; Indeterminate is a real status; three structure-defined modules left service. sim-2026.08-v43, no migration, gate BLOCKED.
 
