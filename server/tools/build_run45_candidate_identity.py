@@ -18,6 +18,12 @@ and a frozen list would silently stop covering it.
 Usage: python tools/build_run45_candidate_identity.py [--candidate <commit>]
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import argparse
 import hashlib
@@ -158,7 +164,7 @@ def main() -> int:
     out["candidate_identity_digest"] = hashlib.sha256(body.encode()).hexdigest()
 
     target = FREEZE / "run45_freeze_candidate_identity.json"
-    target.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    artifact_out(target).write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {target.relative_to(ROOT)}")
     print(f"  candidate            {candidate}")
     print(f"  supersedes           {out['supersedes_candidate']}")

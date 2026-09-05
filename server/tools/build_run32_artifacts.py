@@ -16,6 +16,12 @@ Run with PYTHONIOENCODING=utf-8 from server/tools.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import os
@@ -87,7 +93,7 @@ def route(mid: str):
 
 def w(name: str, header: list[str], rows: list[list]) -> None:
     p = OUT / name
-    with p.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(p).open("w", newline="", encoding="utf-8") as fh:
         c = csv.writer(fh)
         c.writerow(header)
         c.writerows(rows)

@@ -16,6 +16,12 @@ no such input existed, this file would say so.
 Writes code_audit/run35_voter_prechange_measurement.json.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import json
 import pathlib
@@ -189,7 +195,7 @@ def main():
         "voting_set_at_measurement": sorted(REG.CORE_VOTING_MODULES),
     }
     p = ROOT / "code_audit" / "run35_voter_prechange_measurement.json"
-    p.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    artifact_out(p).write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {p.relative_to(ROOT)}")
     print(f"  A1.7 discrepancy {out['A1.7']['discrepancy_exact']}  "
           f"(band assigned {out['A1.7']['band_status_assigned']}, "

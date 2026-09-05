@@ -24,6 +24,12 @@ The four root causes found, and they are distinct in kind rather than in wording
                      lineage declarations assert the opposite as a precondition, so the
                      declaration table is stale against production.
 """
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -322,7 +328,7 @@ CURRENT_GUARD: dict[str, str] = {
 def main() -> None:
     out = pathlib.Path(__file__).resolve().parents[2] / "code_audit" / \
         "run31_historical_suite_reconciliation.csv"
-    with out.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(HEADER)
         for r in ROWS:

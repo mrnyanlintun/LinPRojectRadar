@@ -20,6 +20,12 @@ test_run20_cycle12_fault_evidence.py, which reads the emitted rows and proves th
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -216,8 +222,8 @@ def main() -> int:
         print(f"{mid}: {'DETECTED' if detected else 'VACUOUS'} -- {observed}; "
               f"restored={'yes' if restored else 'NO'}")
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUT.open("w", newline="", encoding="utf-8") as fh:
+    artifact_out(OUT.parent).mkdir(parents=True, exist_ok=True)
+    with artifact_out(OUT).open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)

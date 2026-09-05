@@ -14,6 +14,12 @@ repoints every one of them.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import datetime as dt
 import hashlib
@@ -375,7 +381,7 @@ def build() -> None:
         "report_sha256": sha(REPORT),
     }
 
-    STAGE1.parent.mkdir(parents=True, exist_ok=True)
+    artifact_out(STAGE1.parent).mkdir(parents=True, exist_ok=True)
     STAGE1.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {STAGE1.relative_to(ROOT)}")
     print(f"  production files: {len(prod)}  changed since parent: {len(RUN30_CHANGED)}")
@@ -385,7 +391,7 @@ def build() -> None:
 def finalise() -> None:
     digest = hashlib.sha256(STAGE1.read_bytes()).hexdigest()
     commit = git("rev-parse", "HEAD")
-    STAGE2.write_text(
+    artifact_out(STAGE2).write_text(
         f"{digest}  {STAGE1.relative_to(ROOT)}\n"
         f"# freeze identifier: {RELEASE_ID}\n"
         f"# supersedes:        {PARENT_ID}\n"

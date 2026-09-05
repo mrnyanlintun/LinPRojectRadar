@@ -30,6 +30,12 @@ Run:
 so the same instrument produces the before and the after.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -307,7 +313,7 @@ def guard_marker_distinct(s: dict) -> tuple[bool, str]:
 
 def write_facts() -> None:
     out = ROOT / "code_audit" / f"run24_empty_project_diagram_{LABEL}.csv"
-    with out.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["state", "observation", "value"])
         w.writerows(FACTS)
@@ -402,7 +408,7 @@ def main_drive() -> None:
         print("=" * 78)
         open_detail(page, EMPTY)
         a = surface(page, "A-empty-as-shown")
-        page.screenshot(path=str(ROOT / "code_audit" / f"run24_{LABEL}_A-empty.png"),
+        page.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run24_{LABEL}_A-empty.png")),
                         full_page=False)
         pager_a = page.evaluate(READ_PAGER)
         rec("A-empty-as-shown", "pager", json.dumps(pager_a, sort_keys=True))
@@ -412,7 +418,7 @@ def main_drive() -> None:
         print("STATE A2 — empty project after the participant asks for the architecture")
         print("=" * 78)
         a2 = surface(page, "A2-empty-revealed", reveal=not BASELINE)
-        page.screenshot(path=str(ROOT / "code_audit" / f"run24_{LABEL}_A2-empty-revealed.png"))
+        page.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run24_{LABEL}_A2-empty-revealed.png")))
 
         # ---------------------------------------------------------- COMPUTED
         print("\n" + "=" * 78)
@@ -420,7 +426,7 @@ def main_drive() -> None:
         print("=" * 78)
         open_detail(page, FULL)
         c = surface(page, "C-computed")
-        page.screenshot(path=str(ROOT / "code_audit" / f"run24_{LABEL}_C-computed.png"))
+        page.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run24_{LABEL}_C-computed.png")))
         pager_c = page.evaluate(READ_PAGER)
         rec("C-computed", "pager", json.dumps(pager_c, sort_keys=True))
 

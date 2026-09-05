@@ -28,6 +28,12 @@ Run 28 left open, and it cannot be done by editing anything.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import hashlib
@@ -260,7 +266,7 @@ def main() -> None:
         print(f"{fid} {verdict}: {base_before[1]} -> {observed[0]} {observed[1]} -> "
               f"{base_after[1]}")
 
-    with OUT.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(OUT).open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, list(rows[0].keys()))
         w.writeheader()
         for r in rows:

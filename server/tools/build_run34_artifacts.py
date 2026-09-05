@@ -18,6 +18,12 @@ Writes:
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -389,5 +395,5 @@ def main() -> int:
 if __name__ == "__main__":
     if "--out" in sys.argv:
         OUT_DIR = pathlib.Path(sys.argv[sys.argv.index("--out") + 1]).resolve()
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
+        artifact_out(OUT_DIR).mkdir(parents=True, exist_ok=True)
     raise SystemExit(main())

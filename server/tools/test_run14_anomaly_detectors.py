@@ -26,6 +26,12 @@ Run:
     PYTHONIOENCODING=utf-8 python tools/test_run14_anomaly_detectors.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import inspect
@@ -536,7 +542,7 @@ COLS = ["module_id", "canonical_name", "run13_not_testable_reason", "actual_meth
         "false_positive_result", "detection_result", "detection_delay_if_applicable",
         "roc_auc_if_applicable", "pr_auc_if_applicable", "parameter_basis", "threshold_basis",
         "mutation_proof", "limitations", "final_detection_verdict"]
-with open(AUDIT / "run14_anomaly_detector_validation.csv", "w", newline="",
+with open(artifact_out(AUDIT / "run14_anomaly_detector_validation.csv"), "w", newline="",
           encoding="utf-8") as fh:
     w = csv.DictWriter(fh, fieldnames=COLS)
     w.writeheader()

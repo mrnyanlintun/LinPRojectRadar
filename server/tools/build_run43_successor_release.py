@@ -20,6 +20,12 @@ anything computed under those stamps and a successor that edited them would dest
 Usage: python tools/build_run43_successor_release.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import datetime
@@ -187,7 +193,7 @@ def main() -> int:
         },
         "governed_files_moved_since_v27": moved,
     }
-    (FREEZE / "RUN43_SUCCESSOR_FREEZE_RECORD.json").write_text(
+    (artifact_out(FREEZE / "RUN43_SUCCESSOR_FREEZE_RECORD.json")).write_text(
         json.dumps(rec, indent=2) + "\n", encoding="utf-8")
 
     report = f"""# Run-43 successor freeze report
@@ -257,7 +263,7 @@ decision Run 42 reported, and Run 43 did not overturn it either.
 
 The v25, v26 and v27 release records are preserved unchanged and still record their own stamps.
 """
-    (FREEZE / "RUN43_SUCCESSOR_FREEZE_REPORT.md").write_text(report, encoding="utf-8")
+    (artifact_out(FREEZE / "RUN43_SUCCESSOR_FREEZE_REPORT.md")).write_text(report, encoding="utf-8")
 
     print("wrote RUN43_SUCCESSOR_FREEZE_CHECKSUMS.csv:", len(rows), "rows")
     print("wrote RUN43_SUCCESSOR_FREEZE_RECORD.json")

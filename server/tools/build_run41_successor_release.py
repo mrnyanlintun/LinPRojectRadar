@@ -19,6 +19,12 @@ under v25 and a successor that edited them would destroy it.
 Usage: python tools/build_run41_successor_release.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import datetime
@@ -193,7 +199,7 @@ def main() -> int:
         "governed_files_moved_since_v25": moved,
     }
     out_rec = FREEZE / "RUN41_SUCCESSOR_FREEZE_RECORD.json"
-    out_rec.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
+    artifact_out(out_rec).write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
 
     # ---------------------------------------------------------------- the report
     report = f"""# Run-41 successor freeze report
@@ -280,7 +286,7 @@ computed under v25 remains interpretable against the v25 records.
 - candidate behaviour digest: `{behav['behaviour_digest']}`
 - release content digest: `{release_digest}`
 """
-    (FREEZE / "RUN41_SUCCESSOR_FREEZE_REPORT.md").write_text(report, encoding="utf-8")
+    (artifact_out(FREEZE / "RUN41_SUCCESSOR_FREEZE_REPORT.md")).write_text(report, encoding="utf-8")
 
     print(f"wrote {out_rec.relative_to(ROOT)}")
     print(f"wrote {out_sums.relative_to(ROOT)}: {len(rows)} governed files")

@@ -25,6 +25,12 @@ participant ever runs the mutated tree.
 Writes code_audit/run39_fault_campaign_results.csv.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import os
@@ -386,7 +392,7 @@ def main() -> int:
         print(f"fault {num:2d}  {blocker[:44]:44s} {oracle_name:17s} {verdict:6s} "
               f"-> restored {v2:6s}  {outcome}")
 
-    with (AUDIT / "run39_fault_campaign_results.csv").open("w", encoding="utf-8",
+    with (artifact_out(AUDIT / "run39_fault_campaign_results.csv")).open("w", encoding="utf-8",
                                                            newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(["fault", "blocker_class", "mutated_file", "oracle", "applied",

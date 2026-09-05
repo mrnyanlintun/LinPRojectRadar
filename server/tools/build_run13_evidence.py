@@ -27,6 +27,12 @@ have different strengths here:
 Writes code_audit/run13_101_module_evidence.csv and run13_failures_and_anomalies.csv.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import inspect
@@ -792,7 +798,7 @@ def main() -> int:
                  "the nominal value, so the reading itself is unverified")
         out_rows.append(row)
 
-    with (AUDIT / "run13_101_module_evidence.csv").open("w", encoding="utf-8", newline="") as fh:
+    with (artifact_out(AUDIT / "run13_101_module_evidence.csv")).open("w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=EVIDENCE_COLUMNS)
         w.writeheader()
         w.writerows(out_rows)
@@ -811,7 +817,7 @@ def main() -> int:
                 "every module was exercised on every input it reads, so this class was swept "
                 "exhaustively rather than sampled")
 
-    with (AUDIT / "run13_failures_and_anomalies.csv").open("w", encoding="utf-8",
+    with (artifact_out(AUDIT / "run13_failures_and_anomalies.csv")).open("w", encoding="utf-8",
                                                            newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=ANOMALY_COLUMNS)
         w.writeheader()

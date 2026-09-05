@@ -14,6 +14,12 @@ is never contacted.
 Writes code_audit/run32_proxy_qualifier_browser_verification.csv.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv, json, os, pathlib, re, sys, urllib.request
 
@@ -164,7 +170,7 @@ def main() -> int:
         b.close()
 
     out = ROOT / "code_audit" / "run32_proxy_qualifier_browser_verification.csv"
-    with out.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["page/route", "module", "consumer", "current method class",
                     "qualifier key requested", "qualifier key resolved", "rendered qualifier",

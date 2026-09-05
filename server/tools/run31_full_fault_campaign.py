@@ -18,6 +18,12 @@ __pycache__ IS DROPPED ON BOTH SIDES. A restore inside the same clock second cha
 mtime nor size, so a cached compiled mutant can otherwise survive the restore and poison the
 baseline recheck.
 """
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import csv, os, pathlib, re, shutil, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -360,7 +366,7 @@ for fid, sysname, inv, path, old, new, guard, reason in F:
                  "YES", "YES" if restored else "NO", status, ""])
 
 out = ROOT / "code_audit" / "run31_fault_injection_results.csv"
-with out.open("w", newline="", encoding="utf-8") as fh:
+with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
     w = csv.writer(fh, lineterminator="\n")
     w.writerow(["fault_id", "module_system", "protected_invariant", "baseline_command",
                 "baseline_result", "mutation_target", "mutation_description",

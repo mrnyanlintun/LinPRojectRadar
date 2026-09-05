@@ -19,6 +19,12 @@ CHECKSUMS.sha256 manifest covering every file in that directory.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import argparse
 import csv
@@ -232,7 +238,7 @@ def write_manifest() -> str:
             rel = p.relative_to(OUT_DIR)
             entries.append(f"{digest}  {rel}")
     manifest = "".join(manifest_lines) + "\n".join(entries) + "\n"
-    (OUT_DIR / "CHECKSUMS.sha256").write_text(manifest, encoding="utf-8")
+    (artifact_out(OUT_DIR / "CHECKSUMS.sha256")).write_text(manifest, encoding="utf-8")
     return manifest
 
 
@@ -283,7 +289,7 @@ def main() -> int:
 
     for group, text in rendered.items():
         out_path = OUT_DIR / GROUP_FILES[group]
-        out_path.write_text(text, encoding="utf-8")
+        artifact_out(out_path).write_text(text, encoding="utf-8")
         print(f"wrote {out_path}")
 
     manifest = write_manifest()

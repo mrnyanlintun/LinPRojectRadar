@@ -23,6 +23,12 @@ every P0B and P0C item. Each override names the reason, so nothing is promoted s
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -160,7 +166,7 @@ def main() -> int:
     cols = ["priority", "module_id", "module_name", "category", "scientific_disposition",
             "voting_status", "operational_activation", "reason_for_priority",
             "required_action", "finding_summary"]
-    with OUT.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(OUT).open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=cols)
         w.writeheader()
         for r in out:

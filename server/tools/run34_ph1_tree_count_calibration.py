@@ -18,6 +18,12 @@ Writes:
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -280,7 +286,7 @@ def main() -> int:
                  "established why: at t=100 the implementation agrees with itself across seeds "
                  "(0.986049) essentially as closely as with scikit-learn (0.986057)."])
 
-    with OUT.open("w", encoding="utf-8", newline="") as fh:
+    with artifact_out(OUT).open("w", encoding="utf-8", newline="") as fh:
         csv.writer(fh, lineterminator="\n").writerows(rows)
     print(f"wrote {OUT.relative_to(ROOT)}   selected t={chosen}  ({state})")
 
@@ -320,7 +326,7 @@ def main() -> int:
     hrows.append(["BOUNDARY", "-", "operational_threshold_created", "NONE",
                   "No operational anomaly threshold is created by this run. PH.1 emits a "
                   "continuous score and no flag."])
-    with OUT_HOLD.open("w", encoding="utf-8", newline="") as fh:
+    with artifact_out(OUT_HOLD).open("w", encoding="utf-8", newline="") as fh:
         csv.writer(fh, lineterminator="\n").writerows(hrows)
     print(f"wrote {OUT_HOLD.relative_to(ROOT)}")
     return 0

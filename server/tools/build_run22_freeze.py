@@ -25,6 +25,12 @@ whole tree and reimplementing it would be a second, worse implementation of the 
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import datetime as dt
@@ -219,7 +225,7 @@ def main() -> None:
     }
 
     out_dir = ROOT / "research" / "freeze"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    artifact_out(out_dir).mkdir(parents=True, exist_ok=True)
     out = out_dir / "FINAL_RESEARCH_INSTRUMENT_FREEZE_2026-08-14.json"
     # sort_keys=False keeps the document's own reading order; the determinism that matters is the
     # file list's, and that is byte-sorted by the walk.

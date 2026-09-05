@@ -35,6 +35,12 @@ Run:
         python tools/drive_run16_final_flow.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import base64
 import hashlib
@@ -278,7 +284,7 @@ def server_state(pm: str, pid: str, period: int = 1) -> dict:
 def write_facts() -> None:
     import csv
     out = ROOT / "code_audit" / f"run16_final_flow_{LABEL}.csv"
-    with out.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["state", "observation", "value"])
         w.writerows(FACTS)
@@ -388,8 +394,8 @@ def main_drive() -> None:
             fact(state, "rail_visible", str(rail["visible"]))
             fact(state, "rail_buttons", str(rail["buttons"]))
             fact(state, "collapse_suspects", json.dumps(rail["suspects"]))
-            page.screenshot(path=str(ROOT / "code_audit" /
-                                     f"run16_shot_{LABEL}_{state}.png"), full_page=False)
+            page.screenshot(path=artifact_out(str(ROOT / "code_audit" /
+                                     f"run16_shot_{LABEL}_{state}.png")), full_page=False)
             return {"flow": flow, "rail": rail}
 
         print()

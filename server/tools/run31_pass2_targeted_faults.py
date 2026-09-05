@@ -10,6 +10,12 @@ evidence, so every fault records the guard it turned and why that guard is the r
 __pycache__ is dropped on BOTH sides of every injection: a restore inside the same clock second
 changes neither mtime nor size, so a cached compiled mutant can otherwise survive the restore.
 """
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import csv, pathlib, re, shutil, subprocess, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -193,7 +199,7 @@ for n, desc, path, old, new, guard, reason in FAULTS:
                  guard, reason, "PASS" if (landed and red and ok2) else "FAIL"])
 
 out = ROOT / "code_audit" / "run31_pass2_targeted_faults.csv"
-with out.open("w", newline="", encoding="utf-8") as fh:
+with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
     cw = csv.writer(fh, lineterminator="\n")
     cw.writerow(["fault", "description", "injection", "guard_result_under_fault", "guard_suite",
                  "intended_reason", "status"])

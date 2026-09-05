@@ -49,6 +49,12 @@ test_*.py so the suite runner never executes it.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -216,7 +222,7 @@ def main() -> int:
                  "tree-count calibration is Run-34 work. Raising the tree count to cross a test "
                  "threshold would be tuning production to a fixture."])
 
-    with OUT.open("w", encoding="utf-8", newline="") as fh:
+    with artifact_out(OUT).open("w", encoding="utf-8", newline="") as fh:
         csv.writer(fh, lineterminator="\n").writerows(rows)
     print(f"wrote {OUT.relative_to(ROOT)}")
     return 0

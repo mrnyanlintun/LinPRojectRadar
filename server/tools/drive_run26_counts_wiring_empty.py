@@ -27,6 +27,12 @@ Run:
 `--baseline` records the pre-change reading and does not assert the post-change acceptance.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -497,7 +503,7 @@ def main_drive() -> None:
                                  cnode["fill"], cnode["opacity"], cnode["status"],
                                  "FAIL" if (is_derived and coloured) else "PASS"])
         out2 = ROOT / "code_audit" / f"run26_derived_categories_empty_{LABEL}.csv"
-        with out2.open("w", newline="", encoding="utf-8") as fh:
+        with artifact_out(out2).open("w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["category", "derived", "rendered_fill", "rendered_opacity",
                         "rendered_status", "verdict"])
@@ -538,7 +544,7 @@ def main_drive() -> None:
         rec("wiring", "wrong_direction_edges", json.dumps(wrong_dir[:20]))
         rec("wiring", "wrong_direction_edge_count", len(wrong_dir))
         out3 = ROOT / "code_audit" / f"run26_rendered_edges_{LABEL}.csv"
-        with out3.open("w", newline="", encoding="utf-8") as fh:
+        with artifact_out(out3).open("w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["edge_type", "upstream", "downstream", "in_authoritative_inventory"])
             for e in sorted(rendered):

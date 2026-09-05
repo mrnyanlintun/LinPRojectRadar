@@ -31,6 +31,12 @@ Run:
         python tools/drive_run23_signal_flow_ui.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import json
 import os
@@ -278,7 +284,7 @@ def main_drive() -> None:
         a = report(page, "A-empty")
         ok, detail = guard_empty_no_active(a)
         check(ok, f"STATE A: {GUARD_NAME} — no Signal Flow node or edge is active", detail)
-        page.screenshot(path=str(ROOT / "code_audit" / f"run23_{r16.LABEL}_A-empty.png"))
+        page.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run23_{r16.LABEL}_A-empty.png")))
 
         # ---------------------------------------------------------- STATE B: one doc
         print("\n" + "=" * 78)
@@ -404,7 +410,7 @@ def main_drive() -> None:
         check((e.get("headers") or []) == (d.get("headers") or []),
               "STATE E: and the live page after the reset says exactly the same thing",
               f"live={' | '.join(d.get('headers') or [])} / reloaded={e_hdr}")
-        page2.screenshot(path=str(ROOT / "code_audit" / f"run23_{r16.LABEL}_E-reloaded.png"))
+        page2.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run23_{r16.LABEL}_E-reloaded.png")))
         b2.close()
 
         # ------------------------------------------------ NON-VACUITY MUTATION
@@ -513,8 +519,8 @@ def main_drive() -> None:
             check(all(h["hit"] for h in r["hit"]),
                   f"NAV {name} ({w}px): every control is reachable, nothing overlays it",
                   json.dumps([h for h in r["hit"] if not h["hit"]])[:200])
-            page.screenshot(path=str(ROOT / "code_audit" /
-                                     f"run23_{r16.LABEL}_nav-{name}.png"))
+            page.screenshot(path=artifact_out(str(ROOT / "code_audit" /
+                                     f"run23_{r16.LABEL}_nav-{name}.png")))
         page.set_viewport_size({"width": 1680, "height": 1400})
 
         fact("browser", "page_errors", json.dumps(errors[:5]))

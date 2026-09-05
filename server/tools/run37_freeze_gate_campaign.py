@@ -19,6 +19,12 @@ RULES ENFORCED ON ITSELF, unchanged from Runs 35, 36 and the Run-36 closure:
 Writes research/freeze/run37_freeze_gate_campaign.csv.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import os
@@ -260,8 +266,8 @@ def main():
         print(f"fault {num:2d}  applied  blocker {state:5s}  intended-reason "
               f"{'YES' if intended else 'NO ':3s}  restored-green {'YES' if good else 'NO'}")
 
-    FREEZE.mkdir(parents=True, exist_ok=True)
-    with (FREEZE / "run37_freeze_gate_campaign.csv").open("w", encoding="utf-8",
+    artifact_out(FREEZE).mkdir(parents=True, exist_ok=True)
+    with (artifact_out(FREEZE / "run37_freeze_gate_campaign.csv")).open("w", encoding="utf-8",
                                                           newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(["fault", "blocker_class", "injection", "named_blocker", "gate_state",

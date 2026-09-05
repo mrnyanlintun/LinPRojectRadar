@@ -19,6 +19,12 @@ Writes:
   code_audit/run35_validation_metric_contract.csv
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -106,7 +112,7 @@ PROPOSED_REFERENCES = {
 
 def write(name, header, rows):
     p = OUT_DIR / name
-    with p.open("w", encoding="utf-8", newline="") as fh:
+    with artifact_out(p).open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
@@ -426,7 +432,7 @@ def main():
     assert sum(1 for r in scope_rows if r[13] == "YES") == 2, "voting must be exactly 2"
     print(f"scope rows total {len(scope_rows)}; scientific {len(sci_rows)}; "
           f"registered-not-scientific {len(scope_rows) - len(sci_rows)}")
-    (OUT_DIR / "run35_eligibility.json").write_text(
+    (artifact_out(OUT_DIR / "run35_eligibility.json")).write_text(
         json.dumps(eligibility, indent=0, sort_keys=True), encoding="utf-8")
     print("OK")
 

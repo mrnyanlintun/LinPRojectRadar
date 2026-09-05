@@ -7,6 +7,12 @@ running `registry.run_module` -- the real production entry point -- and reading 
 the gated set is read from the shipped registry CSV through the boundary's own derivation; the
 regulatory snapshot is read from the frozen rule register.
 """
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import csv, pathlib, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -43,7 +49,7 @@ def run(mid, si):
 
 def w(name, header, rows):
     p = ROOT / "code_audit" / name
-    with p.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(p).open("w", newline="", encoding="utf-8") as fh:
         cw = csv.writer(fh, lineterminator="\n")
         cw.writerow(header)
         cw.writerows(rows)

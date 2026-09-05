@@ -29,6 +29,12 @@ TEST AND AUDIT ONLY. This file computes nothing that any production surface read
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 # ---------------------------------------------------------------------------------------------
 # RUN 135C. RETIRED ARTEFACT. This script is kept for the record and is NOT executed.
@@ -630,8 +636,8 @@ def audit() -> list[dict]:
             not [r for r in rows if r["scientific_disposition"] == "METHOD_LABEL_MISMATCH"])
 
     # ------------------------------------------------------------------ emit
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUT.open("w", newline="", encoding="utf-8") as fh:
+    artifact_out(OUT.parent).mkdir(parents=True, exist_ok=True)
+    with artifact_out(OUT).open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)

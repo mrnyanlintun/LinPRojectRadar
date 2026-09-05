@@ -12,6 +12,12 @@ Writes:
   code_audit/run35_a1_1_run36_handoff.json
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -145,7 +151,7 @@ def main():
 
     rec = a1_1_record()
     q = OUT_DIR / "run35_a1_1_run36_handoff.json"
-    q.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
+    artifact_out(q).write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {q.relative_to(ROOT)}: consumers_found={rec['consumers_found']}, "
           f"intake_accepts_it={rec['intake_accepts_it']}")
 

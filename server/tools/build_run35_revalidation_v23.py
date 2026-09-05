@@ -14,6 +14,12 @@ IEEE-754 representation and not a rounding the implementation chose.
 Writes code_audit/run35_partial_reference_revalidation_v23.csv.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -83,7 +89,7 @@ def main():
             "reference-supported analytical result, NOT an empirical field validation.",
         ])
     p = AUDIT / "run35_partial_reference_revalidation_v23.csv"
-    with p.open("w", encoding="utf-8", newline="") as fh:
+    with artifact_out(p).open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(["module_id", "reference_standard_id", "published_identity",
                     "v22_verdict_original_run35", "v22_measurement_original_run35",

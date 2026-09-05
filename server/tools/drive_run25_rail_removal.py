@@ -21,6 +21,12 @@ Run:
         python tools/drive_run25_rail_removal.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -179,7 +185,7 @@ def rail_guard(r: dict, p: dict) -> tuple[bool, str]:
 
 def write_facts() -> None:
     out = ROOT / "code_audit" / f"run25_rail_removal_{LABEL}.csv"
-    with out.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["state", "observation", "value"])
         w.writerows(FACTS)
@@ -279,7 +285,7 @@ def main_drive() -> None:
                   "animated"):
             rec("A-empty", k, a.get(k))
         rec("A-empty", "reveal", json.dumps(a.get("reveal")))
-        page.screenshot(path=str(ROOT / "code_audit" / f"run25_{LABEL}_empty_1680.png"))
+        page.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run25_{LABEL}_empty_1680.png")))
         check(bool(a.get("emptyPanel")) and not a.get("svgShown")
               and a.get("drawnShapes") == 0 and a.get("drawnPaths") == 0
               and a.get("activeNodes") == 0 and a.get("animated") == 0
@@ -304,7 +310,7 @@ def main_drive() -> None:
                   "animated"):
             rec("C-computed", k, c.get(k))
         rec("C-computed", "headers", " | ".join(c.get("headers") or []))
-        page.screenshot(path=str(ROOT / "code_audit" / f"run25_{LABEL}_computed_1680.png"))
+        page.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run25_{LABEL}_computed_1680.png")))
         check(not c.get("emptyPanel") and c.get("svgShown")
               and (c.get("activeNodes") or 0) > 0 and (c.get("animated") or 0) > 0,
               "the computed project draws the diagram directly and carries activity",
@@ -440,7 +446,7 @@ def main_drive() -> None:
         check(okF2, "FINAL: and on the computed project", detF2)
         page.set_viewport_size({"width": 390, "height": 1000})
         page.wait_for_timeout(800)
-        page.screenshot(path=str(ROOT / "code_audit" / f"run25_{LABEL}_computed_390.png"))
+        page.screenshot(path=artifact_out(str(ROOT / "code_audit" / f"run25_{LABEL}_computed_390.png")))
         okF3, detF3 = rail_guard(page.evaluate(READ_RAIL), page.evaluate(READ_PAGER))
         check(okF3, "FINAL: and at phone width", detF3)
 

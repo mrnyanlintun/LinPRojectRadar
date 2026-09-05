@@ -16,6 +16,12 @@ record. Nothing is regenerated in place.
 Writes code_audit/run35_closure_package_decision.csv.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import hashlib
@@ -186,7 +192,7 @@ def main():
          "analytical value changes no package byte; nothing was regenerated in place"],
     ]
     p = AUDIT / "run35_closure_package_decision.csv"
-    with p.open("w", encoding="utf-8", newline="") as fh:
+    with artifact_out(p).open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(["question", "package", "measurement", "finding", "decision", "evidence"])
         w.writerows(out)

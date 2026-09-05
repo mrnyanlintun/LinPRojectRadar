@@ -24,6 +24,12 @@ registry rather than from a copy: voting is exactly {A1.7, A1.8}; the eight conc
 are DISABLED_UNSAFE; Material Cost Variance is DISABLED_EVIDENCE_UNDER_REVIEW and is not voting.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import hashlib
 import pathlib
@@ -124,7 +130,7 @@ def main() -> int:
         return 0 if passed == total else 1
     now = manifest_now()
     if write:
-        MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        artifact_out(MANIFEST.parent).mkdir(parents=True, exist_ok=True)
         MANIFEST.write_text("".join(f"{h}  {p}\n" for p, h in sorted(now.items())),
                             encoding="utf-8")
         print(f"wrote {MANIFEST} covering {len(now)} production files")

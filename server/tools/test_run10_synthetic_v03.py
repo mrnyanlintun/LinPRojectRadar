@@ -33,6 +33,12 @@ Run:
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 # ---------------------------------------------------------------------------------------------
 # RUN 135C. RETIRED ARTEFACT. This script is kept for the record and is NOT executed.
@@ -87,8 +93,8 @@ def check(ok: bool, label: str, detail: str = "") -> None:
 
 
 def write_csv(name: str, header: list[str], rows: list[list]) -> None:
-    CODE_AUDIT.mkdir(parents=True, exist_ok=True)
-    with (CODE_AUDIT / name).open("w", newline="", encoding="utf-8") as fh:
+    artifact_out(CODE_AUDIT).mkdir(parents=True, exist_ok=True)
+    with (artifact_out(CODE_AUDIT / name)).open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
         writer.writerow(header)
         writer.writerows(rows)

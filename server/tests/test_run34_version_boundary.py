@@ -13,6 +13,12 @@ Writes code_audit/run34_simulation_version_execution_proof.csv.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import json
@@ -301,7 +307,7 @@ check(_d >= 2, f"AT LEAST TWO GENUINE DIVERGENCES observed by execution: {_d} fo
 ROWS.append(["SUMMARY", "-", "-", f"v21 at {V21_COMMIT}", "v22 current",
              f"{_d} divergences, 2 non-divergences", "execution of both lines",
              "PASS" if _d >= 2 and _same_abs and _same_t else "FAIL"])
-with OUT.open("w", encoding="utf-8", newline="") as fh:
+with artifact_out(OUT).open("w", encoding="utf-8", newline="") as fh:
     csv.writer(fh, lineterminator="\n").writerows(ROWS)
 print(f"\nwrote {OUT.relative_to(ROOT)}")
 

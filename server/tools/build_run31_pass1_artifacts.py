@@ -6,6 +6,12 @@ BOTH ARE GENERATED FROM MECHANICAL INSPECTION AND EXECUTION, not from memory. Th
 reads the shipped extraction field lists and the shipped tier map; the safety proof EXECUTES
 `emit_observations` on constructed inputs and records what came back.
 """
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import csv, pathlib, sys
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -75,7 +81,7 @@ def safety_proof():
 
 def main():
     o=ROOT/"code_audit"/"run31_orphan_field_reconciliation.csv"
-    with o.open("w",newline="",encoding="utf-8") as fh:
+    with artifact_out(o).open("w",newline="",encoding="utf-8") as fh:
         w=csv.writer(fh,lineterminator="\n")
         w.writerow(["document_type","actual_field","semantic_meaning","project_period",
                     "reaches_signal_inputs","reaches_project_data","defining_for_8.6_8.7_8.8",
@@ -84,7 +90,7 @@ def main():
         w.writerows(orphan_rows())
     print(f"wrote {o.relative_to(ROOT)}")
     s=ROOT/"code_audit"/"run31_safety_upstream_identity_proof.csv"
-    with s.open("w",newline="",encoding="utf-8") as fh:
+    with artifact_out(s).open("w",newline="",encoding="utf-8") as fh:
         w=csv.writer(fh,lineterminator="\n")
         w.writerow(["case","numerator_source","denominator_source","upstream_arithmetic",
                     "hand_computed","upstream_emitted","agreement","production_incidence_rate",

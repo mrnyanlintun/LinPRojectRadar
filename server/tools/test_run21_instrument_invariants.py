@@ -33,6 +33,12 @@ Run:
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import os
 import pathlib
@@ -273,7 +279,7 @@ guard("abstention contract", "a non-abstaining module is unaffected",
 # ---------------------------------------------------------------- the evidence file
 import csv  # noqa: E402
 out = ROOT / "code_audit" / "run21_guard_nonvacuity_results.csv"
-with out.open("w", newline="", encoding="utf-8") as fh:
+with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
     w = csv.writer(fh)
     w.writerow(["guard", "protected_invariant", "how_the_violation_was_introduced",
                 "observed", "result", "why_it_matters"])

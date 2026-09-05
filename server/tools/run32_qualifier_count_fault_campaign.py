@@ -4,6 +4,12 @@ Each fault is applied alone to a byte-restored tree. The guard must go RED **for
 reason** -- matched against the guard's OWN failing check sentences, never against this file's
 prose -- and must return GREEN once the bytes are restored. A crash is not RED.
 """
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import csv, os, re, shutil, subprocess, sys, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -144,7 +150,7 @@ def main():
         print("fault %d  applied=%s  %s  reason=%s  restored=%s" % (
             num, rows[-1]["applied"], state, rows[-1]["intended_reason_matched"], back))
 
-    with open(OUT, "w", encoding="utf-8", newline="") as fh:
+    with open(artifact_out(OUT), "w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)

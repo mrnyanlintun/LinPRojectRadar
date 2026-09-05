@@ -23,6 +23,12 @@ OUTPUTS
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -168,9 +174,9 @@ def main() -> int:
     print(f"\nwrote {RESULTS} with {len(final)} rows")
 
     # ---------------------------------------------------------------- audit artefacts
-    AUDIT.mkdir(exist_ok=True)
+    artifact_out(AUDIT).mkdir(exist_ok=True)
 
-    with (AUDIT / "run19_final_100_reconciliation.csv").open(
+    with (artifact_out(AUDIT / "run19_final_100_reconciliation.csv")).open(
             "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["module_id", "module_name", "category", "assessed_in",
@@ -181,7 +187,7 @@ def main() -> int:
                         r["scientific_disposition"], r["operational_activation"],
                         r["voting_status"]])
 
-    with (AUDIT / "run19_remaining_79_results.csv").open(
+    with (artifact_out(AUDIT / "run19_remaining_79_results.csv")).open(
             "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=RESULT_HEADER)
         w.writeheader()
@@ -196,7 +202,7 @@ def main() -> int:
         for r in read(path):
             r["category_file"] = path.name
             faults.append(r)
-    with (AUDIT / "run19_fault_injection_results.csv").open(
+    with (artifact_out(AUDIT / "run19_fault_injection_results.csv")).open(
             "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=cols + ["category_file"])
         w.writeheader()

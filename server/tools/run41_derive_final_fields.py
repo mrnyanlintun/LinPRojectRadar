@@ -19,6 +19,12 @@ be cleared is bypassable in two statements.
 Writes code_audit/run41_final_judgment_field_derivation.csv and prints the derived set.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import ast, csv, os, pathlib, sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -82,7 +88,7 @@ substantive = [r["field"] for r in rows if r["role"] != "final lock timestamp"]
 protected = [r["field"] for r in rows]
 
 out = ROOT / "code_audit" / "run41_final_judgment_field_derivation.csv"
-with out.open("w", newline="", encoding="utf-8") as fh:
+with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
     w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
     w.writeheader(); w.writerows(rows)
 

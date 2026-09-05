@@ -17,6 +17,12 @@ Writes code_audit/run34_provenance_fault_injection_results.csv.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -226,7 +232,7 @@ check(CRASHES == 0, f"crashes accepted as RED = {CRASHES}")
 check(all(r[-1] == "PASS" for r in _rows), "every fault row PASSES")
 ROWS.append(["TOTALS", "-", "-", str(APPLIED), "-", "-", str(REDS), str(CRASHES), str(RESTORED),
              "PASS" if (APPLIED == REDS == RESTORED == REQUIRED and CRASHES == 0) else "FAIL"])
-with OUT.open("w", encoding="utf-8", newline="") as fh:
+with artifact_out(OUT).open("w", encoding="utf-8", newline="") as fh:
     csv.writer(fh, lineterminator="\n").writerows(ROWS)
 print(f"\nwrote {OUT.relative_to(ROOT)}")
 

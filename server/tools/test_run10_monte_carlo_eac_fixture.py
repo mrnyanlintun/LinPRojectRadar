@@ -8,6 +8,12 @@ this file was produced by running the production module.
 The bottom-up triangular cost-risk family in OG-SYNTH-0.3 is a different conceptual model and is
 deliberately NOT read here; test_run10_synthetic_integration and the Run 9 suite keep it separate.
 """
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import csv
 import math
 import os
@@ -133,7 +139,7 @@ for cid in ["MC-03-cpi-driven", "MC-06-deteriorating", "MC-08-spread-upper-regio
         check(f"{cid} ordered percentiles at {n}",
               pctile(ordered, 0.50) <= pctile(ordered, 0.80) <= pctile(ordered, 0.90))
 
-with (ROOT / "code_audit" / "run10_mc_eac_statistical_acceptance.csv").open("w", encoding="utf-8", newline="") as fh:
+with (artifact_out(ROOT / "code_audit" / "run10_mc_eac_statistical_acceptance.csv")).open("w", encoding="utf-8", newline="") as fh:
     w = csv.writer(fh, lineterminator="\n")
     w.writerow(["case_id", "iterations", "analytic_mean", "simulated_mean", "difference",
                 "standard_error", "tolerance", "result"])

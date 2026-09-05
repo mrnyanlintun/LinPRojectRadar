@@ -9,6 +9,12 @@ the voting set, the canonical-structure and reference-object contracts, and the 
 Writes code_audit/run13_master_101_inventory.csv (exactly 101 rows).
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import inspect
@@ -126,8 +132,8 @@ def main() -> int:
             "simulation_version": SIMULATION_VERSION,
         })
 
-    OUT.parent.mkdir(exist_ok=True)
-    with OUT.open("w", encoding="utf-8", newline="") as fh:
+    artifact_out(OUT.parent).mkdir(exist_ok=True)
+    with artifact_out(OUT).open("w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
         w.writeheader()
         w.writerows(out_rows)

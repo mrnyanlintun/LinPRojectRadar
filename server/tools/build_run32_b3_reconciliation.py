@@ -9,6 +9,12 @@ code_audit/run32_b3_pre_change_lookup_evidence.json; once the identifiers are pr
 cannot be reproduced.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv, json, pathlib, re, sys
 
@@ -54,7 +60,7 @@ def main() -> int:
             if pre[mid]["emptyLookup"] else "NO",
             "YES", "PASS" if client == server else "FAIL"])
     out = ROOT / "code_audit" / "run32_b3_method_class_reconciliation.csv"
-    with out.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["module ID", "authoritative current name", "old identifier",
                     "canonical identifier", "current server identifier",

@@ -18,6 +18,12 @@ The pre-change lookup behaviour is measured by EXECUTION and read from
 code_audit/run32_pre_change_qualifier_measurement.json, captured before any edit.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv, json, pathlib, sys
 
@@ -124,7 +130,7 @@ def main() -> int:
                      "server-side entry with no client key; accounted for here", "PASS"])
 
     out = ROOT / "code_audit" / "run32_proxy_qualifier_reconciliation.csv"
-    with out.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["module ID", "current authoritative module name", "current method class",
                     "client qualifier key", "current server qualifier key",

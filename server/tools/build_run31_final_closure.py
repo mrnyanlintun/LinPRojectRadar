@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """RUN 31 FINAL 16-ROW CLOSURE, generated mechanically from the shipped registry and scope."""
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 import csv, pathlib, sys
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -58,7 +64,7 @@ for mid in sorted(CAT89_CANONICAL):
         SIMULATION_VERSION])
 
 out = ROOT / "code_audit" / "run31_cat8_9_final_closure.csv"
-with out.open("w", newline="", encoding="utf-8") as fh:
+with artifact_out(out).open("w", newline="", encoding="utf-8") as fh:
     w = csv.writer(fh, lineterminator="\n")
     w.writerow(["module_id", "authoritative_current_name", "category",
                 "canonical_structure_implemented", "canonical_method_rule_implemented",

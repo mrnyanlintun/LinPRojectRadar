@@ -17,6 +17,12 @@ Run:
     PYTHONIOENCODING=utf-8 python tools/drive_run26_faults.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import os
@@ -209,7 +215,7 @@ def main() -> None:
             shutil.rmtree(tree.parent, ignore_errors=True)
 
     out_path = ROOT / "code_audit" / "run26_browser_fault_injection.csv"
-    with out_path.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(out_path).open("w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["fault", "file_mutated", "rendered_dom_fact_under_fault",
                     "verdict_under_fault", "verdict_after_restore", "non_vacuity_proved"])

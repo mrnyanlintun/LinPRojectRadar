@@ -22,6 +22,12 @@ destroy it.
 Usage: python tools/build_run44_successor_release.py
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import datetime
@@ -214,7 +220,7 @@ def main() -> int:
         },
         "governed_files_moved_since_v28": moved,
     }
-    (FREEZE / "RUN44_SUCCESSOR_FREEZE_RECORD.json").write_text(
+    (artifact_out(FREEZE / "RUN44_SUCCESSOR_FREEZE_RECORD.json")).write_text(
         json.dumps(rec, indent=2) + "\n", encoding="utf-8")
 
     report = f"""# Run-44 successor freeze report
@@ -294,7 +300,7 @@ needs read access to stored rows that this run did not have and did not take.
 The v25, v26, v27 and v28 release records are preserved unchanged and still record their own
 stamps.
 """
-    (FREEZE / "RUN44_SUCCESSOR_FREEZE_REPORT.md").write_text(report, encoding="utf-8")
+    (artifact_out(FREEZE / "RUN44_SUCCESSOR_FREEZE_REPORT.md")).write_text(report, encoding="utf-8")
 
     print("wrote RUN44_SUCCESSOR_FREEZE_CHECKSUMS.csv:", len(rows), "rows")
     print("wrote RUN44_SUCCESSOR_FREEZE_RECORD.json")

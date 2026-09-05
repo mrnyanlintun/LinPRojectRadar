@@ -25,6 +25,12 @@ and compare byte for byte.
 """
 
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -219,8 +225,8 @@ def main() -> int:
     width = len(header)
     body = [r + [""] * (width - len(r)) for r in body]
     out = OUT_DIR / HOLDOUT_ARTIFACT
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with out.open("w", encoding="utf-8", newline="") as fh:
+    artifact_out(out.parent).mkdir(parents=True, exist_ok=True)
+    with artifact_out(out).open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(header)
         w.writerows(body)

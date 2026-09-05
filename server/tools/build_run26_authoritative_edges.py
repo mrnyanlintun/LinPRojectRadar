@@ -35,6 +35,12 @@ NOT part of the oracle. Every such row is a finding. Choosing an interpretation 
 implementation could proceed is exactly what Addition A forbids.
 """
 from __future__ import annotations
+# Run 137, Item 2: artefact writes route to the Run 135C scratch root by default.
+import os as _f10_os, sys as _f10_sys  # noqa: E402
+_f10_sys.path.insert(0, _f10_os.path.join(
+    _f10_os.path.dirname(_f10_os.path.abspath(__file__)), "..", "tools"))
+_f10_sys.path.insert(0, _f10_os.path.dirname(_f10_os.path.abspath(__file__)))
+from artifact_write import artifact_out  # noqa: E402
 
 import csv
 import pathlib
@@ -333,7 +339,7 @@ def main() -> None:
     cols = ["upstream_type", "upstream_name", "downstream_type", "downstream_name",
             "edge_type", "authority_source", "authority_section_or_location",
             "authority_status", "notes"]
-    with OUT.open("w", newline="", encoding="utf-8") as fh:
+    with artifact_out(OUT).open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=cols)
         w.writeheader()
         for r in rows:
