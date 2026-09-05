@@ -23,8 +23,8 @@ import time
 from datetime import date, datetime
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Integer, LargeBinary, String,
-    Text, UniqueConstraint, Uuid, func,
+    Boolean, CheckConstraint, Date, DateTime, Float, ForeignKey, Index, Integer, LargeBinary,
+    String, Text, UniqueConstraint, Uuid, func,
 )
 from sqlalchemy.dialects.postgresql import BYTEA, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -1168,4 +1168,59 @@ class RecognitionMatch(Base):
     __table_args__ = (
         UniqueConstraint("project_id", "quantity_id", "evidence_fingerprint",
                          name="uq_recognition_match_key"),
+    )
+
+
+class ModuleMitigation(Base):
+    """
+    ONE COMPOSED MITIGATION FOR ONE NON-GREEN MODULE READING. Run 140.
+
+    APPEND-ONLY. No row here is ever overwritten or deleted by the platform. The single
+    permitted UPDATE sets `superseded_by`, which POINTS AT the row that replaced this one and
+    leaves the replaced text exactly as it was composed -- so "why did this suggestion change?"
+    is answerable from this table alone, which is the whole reason the composition is not a
+    column on `computed_results` (a recompute REPLACES that row and the history would be gone).
+
+    THE KEY IS A CONTENT FINGERPRINT, not a foreign key to a reading, and that is forced by the
+    platform's two source layers: `spec_projection.merge_python_row` serves a category from
+    `specification_readings` or from `computed_results` per period, so there IS no single
+    reading id to key on. `reading_fingerprint` covers the band, the evidence sentence, the
+    boundary, the basis, the threshold source, both provenance classes, every override flag,
+    every worst-of component, the code-built context, the template version, the provider and the
+    model. Identical reading, no call at all; changed reading, fresh row, old row superseded.
+
+    `context` HOLDS WHAT THE MODEL WAS GIVEN and `mitigations` HOLDS WHAT IT RETURNED -- an
+    ordered list of candidate sentences, or the single fixed absence line. NOTHING HERE IS A
+    SOURCE OF A FIGURE: the reading, boundary and gap lines the card renders are composed in
+    code from the stored module row on every render, never read out of this table.
+    """
+
+    __tablename__ = "module_mitigations"
+
+    mitigation_id: Mapped[str] = mapped_column(ULID, primary_key=True, default=new_ulid)
+    project_id: Mapped[str] = mapped_column(
+        Uuid(), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    period: Mapped[int] = mapped_column(Integer, nullable=False)
+    module_id: Mapped[str] = mapped_column(Text, nullable=False)
+    reading_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    band: Mapped[str] = mapped_column(Text, nullable=True)
+    #: threshold | override | worst_of | ordinal | derived -- established from the module's own
+    #: stored flags, never from a table of module ids.
+    shape: Mapped[str] = mapped_column(Text, nullable=True)
+    context: Mapped[dict] = mapped_column(JSONType, nullable=True)
+    provider: Mapped[str] = mapped_column(Text, nullable=False)
+    model: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    template_version: Mapped[str] = mapped_column(Text, nullable=False)
+    mitigations: Mapped[list] = mapped_column(JSONType, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    superseded_by: Mapped[str] = mapped_column(ULID, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("project_id", "period", "module_id", "reading_fingerprint",
+                         name="uq_module_mitigation_key"),
+        Index("ix_module_mitigations_project", "project_id", "period"),
     )

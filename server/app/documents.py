@@ -93,7 +93,7 @@ from .research_models import (
 )
 from .document_evidence import document_evidence
 from .evm_consistency import consistency_findings
-from .decision_brief import compose_decision_brief
+from .decision_brief import _adverse_readings, compose_decision_brief
 from .information_completeness import information_completeness
 from .simulation.compute import budget_rebasing
 from .recommendation_basis import recommendation_basis
@@ -4117,7 +4117,8 @@ def _redact_module_actions(modules) -> list:
 
 def _result_view(row: ComputedResult, *, include_recommendation: bool,
                  package=None, project_legacy_id: str | None = None,
-                 spec: dict | None = None) -> dict:
+                 spec: dict | None = None, session=None, project_id=None,
+                 mitigation_caller=None) -> dict:
     """
     The stored result as returned to a member.
 
@@ -4274,10 +4275,40 @@ def _result_view(row: ComputedResult, *, include_recommendation: bool,
     # `category_statuses`, which are read from the stored row above. It states a FINDING and a
     # QUESTION and never an action, a deadline, an authority or a remedy.
     #
-    # It is NOT gated by the reveal. The card is composed from the project's own computed
-    # readings, which the project manager is already shown; the researcher-authored
-    # recommendation package above is the thing the reveal gate withholds, and it is separate.
+    # THE FINDING AND THE QUESTION ARE NOT GATED BY THE REVEAL. They are composed from the
+    # project's own computed readings, which the project manager is already shown; the
+    # researcher-authored recommendation package above is the thing the reveal gate withholds,
+    # and it is separate. That is unchanged.
+    #
+    # RUN 140 AMENDS THIS COMMENT, BECAUSE ITS JUSTIFICATION STOPPED BEING TRUE FOR ONE BLOCK.
+    # The sentence above used to cover the WHOLE card, and it could, while the card carried only
+    # readings and a question. The card now also carries MITIGATIONS -- composed prose suggesting
+    # how to move a non-Green reading one band up. That is a TREATMENT, in exactly the sense
+    # `_ACTION_KEYS` and `_WITHHELD_NARRATIVE` above exist to withhold: "the model says
+    # re-baseline the draws" is the intervention whatever field it arrives in, and
+    # `_redact_module_actions` cannot catch it, because it strips keys from MODULE ROWS while the
+    # brief is composed AFTER redaction, out of the unredacted specification projection.
+    #
+    # Serving it ungated would put a composed remedy in front of a participant BEFORE their
+    # preliminary judgment is locked, which is precisely the contamination the reveal gate was
+    # written to close, and it would compromise the controlled repeated-measures design this
+    # instrument exists to run.
+    #
+    # SO THE MITIGATIONS -- AND ONLY THE MITIGATIONS -- ARE GATED, on the SAME predicate that
+    # already gates the recommendation package: `include_recommendation`, from
+    # `recommendation_visible`. On a withheld read the key is ABSENT from the brief entirely, not
+    # present and empty. Nothing else about the brief changes, and this is reversible with one
+    # predicate if the owner rules otherwise.
+    _mitigations = None
+    if include_recommendation and session is not None and project_id is not None:
+        from .mitigation import mitigations_for_card
+        _kw = {"caller": mitigation_caller} if mitigation_caller is not None else {}
+        _mitigations = mitigations_for_card(
+            session, project_id, row.period,
+            _adverse_readings(_spec_cats or {}, _spec_modules or []),
+            _spec_modules or [], **_kw)
     view["decision_brief"] = compose_decision_brief(
+        mitigations=_mitigations,
         category_statuses=_spec_cats or {},
         module_results=_spec_modules or [],
         status_basis=_spec_basis or {},
@@ -5530,6 +5561,7 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
     # projection and the row can never describe two different periods.
     view = _result_view(row, include_recommendation=visible, package=package,
                         project_legacy_id=project.legacy_id,
+                        session=session, project_id=project.id,
                         spec=spec_projection.projection(session, project.id, row.period,
                                                         row.signal_inputs or {}))
 
