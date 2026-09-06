@@ -3601,16 +3601,28 @@
      sim-2026.09-v71 has no such key and renders exactly as it renders today. The period is
      NAMED -- never "the previous period", because a removed period is invisible to the
      look-back and after a removal those differ. */
+  /* RUN 144, RULING 3. The AGE is on the chip itself, in the same words the card and the
+     network use -- the look-back is unbounded by owner ruling, so the age is the whole of the
+     mechanism and it must be readable without hovering and without clicking. "STORED periods
+     back" because the count is of stored periods, which period removal makes different from
+     calendar distance. No threshold, no colour change and no warning at any age. */
   function specCarriedChip(m) {
     if (!m || m.carried !== true) return "";
     const from = (m.carried_from_period === null || m.carried_from_period === undefined)
       ? "" : String(m.carried_from_period);
+    const age = (typeof m.carried_from_age === "number" && m.carried_from_age > 0)
+      ? m.carried_from_age : null;
+    const ageWords = age ? (", " + age + " stored period" + (age === 1 ? "" : "s") + " back")
+      : "";
     const title = "This reading was not taken from this period's evidence. It is carried "
-      + "forward" + (from ? " from " + from : "") + "."
+      + "forward" + (from ? " from " + from : "")
+      + (age ? " (" + age + " stored period" + (age === 1 ? "" : "s") + " back)" : "") + "."
       + (m.carried_evidence ? " That period said: " + m.carried_evidence : "")
       + (m.carried_reason ? " This period: " + m.carried_reason : "");
+    const label = (from ? "Carried from " + from : "Carried forward") + ageWords;
     return `<span class="dcat-carried" data-carried="1" data-from-period="${esc(from)}"`
-      + ` title="${esc(title)}">${esc(from ? "Carried from " + from : "Carried forward")}</span>`;
+      + ` data-from-age="${esc(age === null ? "" : String(age))}"`
+      + ` title="${esc(title)}">${esc(label)}</span>`;
   }
 
   function specModuleRowHtml(m) {
@@ -3679,17 +3691,31 @@
          A COUNT OF STORED ROWS: how many of this category's stored module entries carry
          `carried: true`, over how many carry a band. Nothing derived. */
       + ((() => {
+          /* RUN 144, RULING 3. The OLDEST age is stated here as well as the count. This span
+             is what the specification panel shows a reader who does not open it -- the body is
+             built display:none -- and with the look-back unbounded by owner ruling the age is
+             the whole of the mechanism. A maximum over stored `carried_from_age` values; no
+             threshold, no colour change, identical words at every age. */
           const _mods = (reading && reading.modules) || [];
-          let _c = 0, _b = 0;
+          let _c = 0, _b = 0, _oldest = 0;
           for (let i = 0; i < _mods.length; i++) {
             const _m = _mods[i];
             if (!_m) continue;
             if (_m.band || _m.status_color) _b += 1;
-            if (_m.carried === true) _c += 1;
+            if (_m.carried === true) {
+              _c += 1;
+              if (typeof _m.carried_from_age === "number" && _m.carried_from_age > _oldest) {
+                _oldest = _m.carried_from_age;
+              }
+            }
           }
           return _c
-            ? `<span class="dcat-carried-count" data-carried="${_c}" data-of="${_b}">`
-              + `${_c} of ${_b} carried from an earlier period</span>`
+            ? `<span class="dcat-carried-count" data-carried="${_c}" data-of="${_b}"`
+              + ` data-oldest-age="${_oldest}">`
+              + `${_c} of ${_b} carried from an earlier period`
+              + (_oldest ? `, the oldest ${_oldest} stored period`
+                           + (_oldest === 1 ? "" : "s") + " back" : "")
+              + `</span>`
             : "";
         })())
       + specStateChip(rowState)

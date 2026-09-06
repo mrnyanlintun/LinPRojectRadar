@@ -298,7 +298,12 @@ def build_context(mod: Mapping[str, Any]) -> dict[str, Any] | None:
     if mod.get("band_asserted") is False or mod.get("band_withheld_reason"):
         return None
     # ------------------------------------------------- RUN 143, PART 2. A CARRIED READING GETS
-    # NO MITIGATION, AND THIS IS A DIRECTION OF THIS RUN'S, REPORTED FOR AN OWNER RULING.
+    # NO MITIGATION. RUN 144 RULING 2: THE OWNER RULED, AND THE RULING IS NO CHANGE. Replaying
+    # an earlier period's mitigation verbatim against a reading nobody produced this period
+    # would present stale advice as current. The exclusion below is unedited; what Run 144 added
+    # is `tools/test_run144_ruling2.py`, which proves it by COUNTING PROVIDER CALLS at the
+    # `caller=` boundary rather than inferring no call from a None return -- including for the
+    # A6 measures that only began carrying under ruling 1.
     #
     # TWO REASONS, AND EITHER ALONE IS ENOUGH.
     #
@@ -321,7 +326,7 @@ def build_context(mod: Mapping[str, Any]) -> dict[str, Any] | None:
     # precise instruction than any mitigation would be. Widening the fingerprint to include the
     # period would compose a NEW suggestion per period for an unchanged reading, which is a
     # provider call and a stored row for a finding that did not move; that is the alternative,
-    # and it is the owner's call, not this run's.
+    # and the owner considered it and did not take it.
     if mod.get("carried") is True:
         return None
     mid = str(mod.get("module_id") or "")

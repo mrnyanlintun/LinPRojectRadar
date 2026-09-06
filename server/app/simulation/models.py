@@ -1098,15 +1098,23 @@ from .carry_words import CARRY_CLAUSE
 # module arithmetic. A carried reading enters the rollup as a band, and `category_posture` and
 # `project_posture` are byte-for-byte unchanged. What changed is WHICH readings reach them.
 #
-# WHAT IS EXEMPT (see carry_forward.py, which is the single authority): a failed module, a
-# Category-9 qualification refusal, C1.5 Information Completeness Ratio, B1.1 and B1.2, and the
-# arms whose abstention is a judgment about THIS period's evidence rather than a missing input
-# -- A6.2's exposure floor and near-miss-healthy arms, A1.5's and A1.2's short-history arms.
-# Those arms declare themselves ineligible at the arm; they are not matched by sentence text.
+# WHAT IS EXEMPT (see carry_forward.py, which is the single authority): a failed module, C1.5
+# Information Completeness Ratio, B1.1 and B1.2, and the arms whose abstention is a judgment
+# about THIS period's evidence rather than a missing input -- A6.2's exposure floor and
+# near-miss-healthy arms, A1.5's and A1.2's short-history arms. Those arms declare themselves
+# ineligible at the arm; they are not matched by sentence text.
+#
+# RUN 144 RULING 1 removed the Category-9 `CATEGORY9_ASSESSMENT_MISSING` exemption from that
+# list. That code means no Category-9 assessment EXISTED -- a missing input -- and is a
+# different code from `evidence_not_qualified_for_use`, which is the gate judging evidence it
+# did see. Only the second is a refusal about this period's evidence, and it was never exempt
+# by reason code.
 #
 # A row stamped v70 or earlier carries no carried readings and its counts are not comparable
 # with a v71 row: abstention counts fall and banded counts rise on any project with history.
-SIMULATION_VERSION = "sim-2026.09-v71"
+# A v71 row is not comparable with a v72 row either, on any project whose Category-9 assessment
+# is absent: under v71 those measures abstained, and under v72 they carry and vote.
+SIMULATION_VERSION = "sim-2026.09-v72"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1392,6 +1400,15 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # marked carried, with the source period and that period's own evidence sentence. No band,
  # boundary, posture rule or weight moved. The exemptions are listed in carry_forward.py.
  "sim-2026.09-v71",
+ # RUN 144 RULING 1: the Category-9 exclusion on carry-forward is lifted by the owner. A measure
+ # whose evidence carries NO Category-9 assessment (`CATEGORY9_ASSESSMENT_MISSING`, the
+ # `ev is None` path) is unassessed, not judged unfit, so it is a missing input and it carries
+ # like every other missing input. The gate's own refusal path for evidence it DID assess and
+ # found not qualified (`evidence_not_qualified_for_use`) is untouched. No band, boundary,
+ # posture rule, weight or threshold moved; what moved is which readings vote. On a package with
+ # no Category-9 assessment this is the difference between four of five required categories and
+ # five, and therefore between a withheld status and a published one.
+ "sim-2026.09-v72",
 )
 
 
