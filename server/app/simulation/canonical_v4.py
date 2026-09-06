@@ -49,6 +49,8 @@ from typing import Any, Sequence
 from .canonical import StructureAbsent
 from .canonical_v3 import _f, _provenance, _rows
 from .rng import num
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 # =================================================================================================
 # THE GOVERNED v4 STRUCTURES.
@@ -130,7 +132,7 @@ def require_v4_structure(si: dict, module_id: str) -> dict:
     if structure is None:
         raise StructureAbsent(
             f"Awaiting {words}. This measure is named for a method that cannot be carried out "
-            f"without it, so no reading is reported and no other figure is used in its place.")
+            f"without it, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     if not isinstance(structure, dict):
         raise StructureAbsent(
             f"The information provided for this project in place of {words} is not in a form "

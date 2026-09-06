@@ -73,6 +73,8 @@ from .models import (
 )
 from .models_ext import _derived, _js_str
 from .rng import js_round, num, round1, round2
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 _RANK = {"Green": 0, "Yellow": 1, "Amber": 2, "Red": 3}
 
@@ -1307,7 +1309,7 @@ def run_dispute_escalation(si: dict, rand: Callable[[], float], period_cutoff) -
                 "state the disputes they record, or the project supplies its own governed "
                 "claim and dispute register with the escalation stage each dispute has "
                 "reached. No dispute count is read from any other document, and silence is "
-                "never read as no dispute.",
+                "never read as no dispute. " + CARRY_CLAUSE,
                 ABSTAIN_STRUCTURE_ABSENT)
         # ============================ RUN 119, GOAL 3. THE MEASURE IS A DURATION, NOT A COUNT.
         #

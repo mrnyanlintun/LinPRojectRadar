@@ -41,6 +41,8 @@ from .canonical_v3 import (
 )
 from . import band_reference as _BR
 from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 # Stamped on every result set, so a later change to this layer is detectable in already-collected
 # data rather than being invisible in the analysis.
@@ -1473,7 +1475,8 @@ def insufficient(method_class: str, message: str | None = None,
         "method_class": method_class,
         "status_color": None,
         "insufficient_data": True,
-        "evidence_metric": message or "Insufficient data: upload required documents",
+        "evidence_metric": (message or ("Insufficient data: upload required documents. "
+                                        + CARRY_CLAUSE)),
     }
     if reason_code is not None:
         out["abstention_reason_code"] = reason_code
@@ -1754,15 +1757,18 @@ def eligible(si: dict, required: tuple[tuple[str, str], ...] = (),
         raw = si.get(key)
         if raw is None:
             return (ABSTAIN_MISSING_INPUT,
-                    f"Insufficient data: {words} has not been reported for this period.")
+                    f"Insufficient data: {words} has not been reported for this period. "
+                    + CARRY_CLAUSE)
         if num(raw, None) is None:
             return (ABSTAIN_MALFORMED_INPUT,
-                    f"Insufficient data: {words} was reported in a form that is not a number.")
+                    f"Insufficient data: {words} was reported in a form that is not a number. "
+                    + CARRY_CLAUSE)
     for key, words in positive:
         if num(si.get(key), 0.0) <= 0:
             return (ABSTAIN_INVALID_DENOMINATOR,
                     f"Insufficient data: {words} is zero or below, and a rate cannot be formed "
-                    f"on it. No substitute figure is used in its place.")
+                    f"on it, so no reading is taken from this period's evidence. "
+                    + CARRY_CLAUSE)
     # RUN 14. The upper end of the domain, for the declared inputs that have one. The numeric
     # contract now refuses an impossible figure at every entry point, so in a corpus ingested
     # after this run nothing here can fire; it fires on a figure stored BEFORE the contract
@@ -1778,8 +1784,8 @@ def eligible(si: dict, required: tuple[tuple[str, str], ...] = (),
         if value is not None and value > upper:
             return (ABSTAIN_MALFORMED_INPUT,
                     f"Insufficient data: {words} was reported as a figure this quantity cannot "
-                    f"take, so it is not read as evidence of anything. No substitute figure is "
-                    f"used in its place.")
+                    f"take, so it is not read as evidence of anything and no reading is taken "
+                    f"from this period's evidence. " + CARRY_CLAUSE)
     return None
 
 

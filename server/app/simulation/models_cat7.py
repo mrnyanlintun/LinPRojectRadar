@@ -65,6 +65,8 @@ from .lineage import (
 )
 from .models import ABSTAIN_DECISION_STRUCTURE_ABSENT, ABSTAIN_STRUCTURE_ABSENT
 from .signal_package import SIGNAL_QUALIFICATION
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 #: Stamped on every Category-7 ledger row this file produces, computed or abstaining. The ledger
 #: is the operational truth surface, so a reader can tell from the row itself which line produced
@@ -211,7 +213,7 @@ def _route(module_id: str, method_class: str, canonical_name: str,
             # nothing is substituted and no earlier arithmetic is consulted.
             reason = out.get("reason") or (
                 "this measure cannot be carried out on the information provided for this "
-                "project, so no reading is reported")
+                "project, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
             blocked = out.get("state") in ("AGGREGATION_BLOCKED", "TOTAL_CONFLICT",
                                            "DEPENDENCE_UNRESOLVED", "INFEASIBLE", "NOT_SOLVED")
             row = _abstain(method_class, module_id, reason,

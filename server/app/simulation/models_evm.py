@@ -59,6 +59,8 @@ def _run107_basis(section: str, numbers: str) -> str:
             f"has uploaded")
 from .models_ext import _js_date_ms, _js_str, _money
 from .rng import clamp, js_round, num, round1
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 _round3 = lambda v: js_round(v * 1000) / 1000  # noqa: E731
 
@@ -206,7 +208,8 @@ def run_arima_forecast(si: dict, rand: Callable[[], float], period_cutoff) -> di
     """
     history = _history(si, "cpiHistory", "cpi")
     if not history:
-        return insufficient("ARIMA_Forecast", "Awaiting a cost performance history",
+        return insufficient("ARIMA_Forecast",
+                            "Awaiting a cost performance history. " + CARRY_CLAUSE,
                             ABSTAIN_INSUFFICIENT_HISTORY)
     try:
         model = identify_arima(history)
@@ -661,8 +664,8 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
         if _v is None or not _ok(_v):
             return insufficient(
                 "TCPI",
-                f"No cost efficiency is measurable for the remaining work: {_words}. No "
-                f"substitute figure is used in its place.",
+                f"No cost efficiency is measurable for the remaining work: {_words}, so no "
+                f"reading is taken from this period's evidence. " + CARRY_CLAUSE,
                 ABSTAIN_MALFORMED_INPUT)
     if num(si["ev"], None) > num(si["bac"], None):
         return insufficient(
@@ -977,7 +980,7 @@ def run_budget_execution(si: dict, rand: Callable[[], float], period_cutoff) -> 
     if not check_inputs(si, ("ac",)):
         return insufficient("Budget_Execution_Rate",
                             "Insufficient data: the actual cost has not been reported for this "
-                            "period.", ABSTAIN_MISSING_INPUT)
+                            "period. " + CARRY_CLAUSE, ABSTAIN_MISSING_INPUT)
     try:
         structure = require_v3_structure(si, "A1.9")
         period_index = num(structure.get("status_period_index"), None)
@@ -1329,7 +1332,7 @@ def run_independent_eac_reconciliation(si: dict, rand: Callable[[], float],
             "through, so it needs a change order register stating, for every change, its value "
             "and whether the owner has approved it. A project that instead holds two "
             "separately prepared forecasts of the cost at completion is read on those. Neither "
-            "was provided, and no other figure is used in their place.",
+            "was provided, so no reading is taken from this period's evidence. " + CARRY_CLAUSE,
             ABSTAIN_STRUCTURE_ABSENT)
     try:
         structure = require_v3_structure(si, "A1.11")

@@ -51,6 +51,8 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from .canonical import StructureAbsent
 from .canonical_v5 import decision_problem
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 #: The governed structure key each Category-10 module reads, and the reader's words for it.
 V7_STRUCTURE_KEYS: dict[str, str] = {
@@ -103,7 +105,7 @@ def v7_structure(si: dict, module_id: str) -> dict:
     if structure is None:
         raise StructureAbsent(
             f"Awaiting {words}. This measure is named for a method that cannot be carried out "
-            f"without it, so no reading is reported and no other figure is used in its place.")
+            f"without it, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     if not isinstance(structure, dict):
         raise StructureAbsent(
             f"The information provided for this project in place of {words} is not in a form "
@@ -116,7 +118,7 @@ def _rows(structure: Mapping[str, Any], key: str, words: str) -> list[dict]:
     if not isinstance(rows, list) or not rows:
         raise StructureAbsent(
             f"Awaiting {words}. No entries are recorded, so there is nothing to solve and no "
-            f"figure is produced in place of one.")
+            f"figure is produced from this period's evidence. " + CARRY_CLAUSE)
     for r in rows:
         if not isinstance(r, dict):
             raise StructureAbsent(

@@ -352,7 +352,9 @@ def _why(basis: Mapping[str, Any]) -> str | None:
             f"{len(basis.get('required_missing') or [])} of them assert no band, so the "
             "posture is withheld rather than imputed. The band the weighted vote produced over "
             "the categories that were assessed is recorded beside it and is not used in its "
-            "place.")
+            "place. A category can carry a posture on readings carried forward from an earlier "
+            "period of this project; those readings are marked as carried wherever they are "
+            "shown, and a category with none stays unassessed.")
     return (
         "The project posture is the WEIGHTED VOTE over the five category postures, on the "
         "owner's weight profile: each posture scores Green +2, Yellow +1, Amber -1, Red -2, the "
@@ -629,8 +631,10 @@ def _limitations(basis: Mapping[str, Any],
                    f"own reason on its row.")
     if basis.get("required_missing"):
         out.append(
-            "No value was imputed for any category that could not be assessed, and no "
-            "substitute figure was used in place of one.")
+            "No value was imputed for any category that could not be assessed. Where a "
+            "measure produced no reading from this period's evidence and this project holds an "
+            "earlier reading of it, that earlier reading is shown and votes, marked as carried "
+            "and naming the period it came from; nothing else is used in place of one.")
     return out
 
 

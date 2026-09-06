@@ -300,12 +300,19 @@ def install(validated: dict[str, tuple[str, Callable]]) -> dict[str, list[str]]:
                         mid, method_class, use, ASSESSMENT_MISSING,
                         "The evidence offered to this measure carries no Category-9 assessment, "
                         "so it is unassessed and not eligible for this use. No reading is "
-                        "produced and no figure is used in its place.")
+                        "produced and no figure is used in its place. This measure is one of "
+                        "the exceptions to carry-forward: an earlier reading is not shown here "
+                        "either, because the refusal is about whether this evidence may be used "
+                        "at all, and republishing a reading the gate has just declared "
+                        "ineligible would defeat the gate.")
                 if not ev.eligible_for(use):
                     return _refuse(
                         mid, method_class, ev, use,
                         "The evidence supplied for this measure has not been qualified for this "
-                        "use, so it is not read and no figure is produced in its place. "
+                        "use, so it is not read and no figure is produced in its place. No "
+                        "earlier reading is carried forward in its place either: the refusal is "
+                        "about whether this evidence may be used at all, not about a missing "
+                        "input. "
                         + ("; ".join(ev.qualification_reasons) if ev.qualification_reasons
                            else ""))
                 result = inner(si, rand, period_cutoff)

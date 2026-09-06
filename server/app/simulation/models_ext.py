@@ -45,6 +45,8 @@ from .models import (
 )
 from . import band_reference as _BR
 from .rng import clamp, js_round, num, round1, round2
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 _DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 
@@ -804,7 +806,7 @@ def run_contingency_burn(si: dict, rand: Callable[[], float], period_cutoff) -> 
         return insufficient("Contingency_Burn_Rate",
                             "Insufficient data: the original and remaining contingency amounts "
                             "are needed, and at least one of them has not been reported for "
-                            "this period.", ABSTAIN_MISSING_INPUT)
+                            "this period. " + CARRY_CLAUSE, ABSTAIN_MISSING_INPUT)
     # ABSENT AND IMPOSSIBLE ARE NOT THE SAME THING, and Run 14's finding is why they are kept
     # apart here. A progress figure that was never reported means the progress-normalised burn
     # cannot be formed, and the contract conditions only that second figure on progress, so the
@@ -1675,7 +1677,9 @@ def hybrid_schedule_slip_band(cuts: dict, *, controlling_float_days: float | Non
         rules.append({"rule": "forecast completion slip", "evaluable": False, "colour": None,
                       "why": "no approved baseline finish is stated for this schedule, so the "
                              "forecast finish has nothing to be measured against and no slip is "
-                             "formed. Nothing is inferred in its place"})
+                             "formed from this period's evidence. Nothing is inferred in its "
+                             "place; where this measure produced a reading in an earlier period "
+                             "of this project, that reading is shown and votes, marked carried"})
     else:
         s = float(slip_days)
         colour = ("Green" if s <= cuts["slip_green_at_or_below"]

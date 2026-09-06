@@ -37,6 +37,8 @@ from typing import Any, Callable, Sequence
 
 from .canonical import StructureAbsent
 from .rng import num
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 # =================================================================================================
 # THE GOVERNED v3 STRUCTURES.
@@ -138,7 +140,7 @@ def require_v3_structure(si: dict, module_id: str) -> dict:
     if structure is None:
         raise StructureAbsent(
             f"Awaiting {words}. This measure is named for a method that cannot be carried out "
-            f"without it, so no reading is reported and no other figure is used in its place.")
+            f"without it, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     if not isinstance(structure, dict):
         raise StructureAbsent(
             f"The information provided for this project in place of {words} is not in a form "
@@ -164,7 +166,7 @@ def _rows(structure: dict, key: str, words: str) -> list[dict]:
     if not isinstance(rows, list) or not rows:
         raise StructureAbsent(
             f"No {words} has been provided for this project, so the method this measure is "
-            f"named for cannot be carried out. No substitute reading is reported in its place.")
+            f"named for cannot be carried out on this period's evidence. " + CARRY_CLAUSE)
     for r in rows:
         if not isinstance(r, dict):
             raise StructureAbsent(
@@ -576,7 +578,13 @@ def arima_one_step(series: Sequence[float], p: int, d: int, q: int,
     if len(w) < max(p, q) + 1:
         raise StructureAbsent(
             "The cost performance history is too short for the model stated to be run over it, "
-            "so no forecast is reported.")
+            "so no forecast is reported. This is a statement about the history now held rather "
+            "than a missing input, so no earlier reading of this measure is carried forward in "
+            "its place either.",
+            carry_forward_eligible=False,
+            carry_forward_ineligible_reason=(
+                "the history is present and too short to run the identified model over, so the "
+                "refusal is about this period's evidence"))
     errors: list[float] = []
     for t in range(len(w)):
         fitted = c
@@ -1035,7 +1043,8 @@ def independent_eac_reconciliation(management: dict, independent: dict) -> dict[
         if not isinstance(side, dict):
             raise StructureAbsent(
                 "Two separately prepared forecasts of the cost at completion were not provided, "
-                "so there is nothing to reconcile and no reading is reported.")
+                "so there is nothing to reconcile and no reading is taken from this period's "
+                "evidence. " + CARRY_CLAUSE)
         _provenance(side, words, *_IER_LINEAGE_FIELDS)
     m = _f(management, "eac", words)
     i = _f(independent, "eac", words)

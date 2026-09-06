@@ -731,9 +731,17 @@ def merge_python_row(spec: dict[str, Any] | None,
     # neighbouring test and the fallback never fired. So a category is served here when the
     # specification layer did not ANSWER it and the Python layer gave it no posture, whether or
     # not an unanswered entry is sitting on it.
-    _RAN_NO_BAND_CLAUSE = ("every module in this category ran and abstained this period, so the "
-                           "category carries no posture; each module's own reason is listed "
-                           "with the category")
+    # RUN 143 PART 2. RUN 142's SENTENCE BECAME FALSE and this is the correction. It said a
+    # category whose modules all abstained "carries no posture". Since sim-2026.09-v71 such a
+    # category CAN carry one, formed entirely from readings carried forward. The clause now
+    # states the condition rather than the outcome. A naive grep for the substitution promise
+    # never found this site, because it never made one.
+    _RAN_NO_BAND_CLAUSE = ("every module in this category ran and abstained this period; each "
+                           "module's own reason is listed with the category. Where this project "
+                           "holds an earlier reading of a module, that reading is shown and "
+                           "votes, marked as carried, and the category's posture is formed from "
+                           "the carried readings alone; where it holds none, the category "
+                           "carries no posture")
     _ran_no_band: list[str] = []
     for _row in list(row_module_results or []) + list(row_abstained or []):
         if not isinstance(_row, dict):
