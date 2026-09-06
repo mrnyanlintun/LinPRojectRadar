@@ -1455,6 +1455,70 @@ def _derive_cutoff(documents: list[dict], reuse: ComputedResult | None) -> date:
     return latest or datetime.now(timezone.utc).date()
 
 
+def _carry_forward_history(session: Session, project: Project, period: int) -> list[dict]:
+    """
+    This project's live earlier periods, newest first, in the shape `select_carried` reads.
+
+    RUN 143, PART 2. THE ONE PLACE THE LOOK-BACK IS ASSEMBLED, and the only layer that can
+    assemble it: `carry_forward` is pure and knows nothing of a session, a project or a table,
+    which is what keeps the rule testable without a database.
+
+    TWO STORES, NOT ONE, and this is the half that a look-back over `computed_results` alone
+    would silently miss. `spec_projection.merge_python_row` serves a category from
+    `specification_readings` where the specification layer answered it and from
+    `computed_results` where it did not, so the SAME module's period-2 reading may sit in one
+    store and its period-4 reading in the other, DEPENDING ON CATEGORY. A look-back over one
+    store would therefore miss readings asymmetrically by category, which reads like a data
+    problem rather than a code one. Specification rows are normalised through
+    `spec_projection.module_rows` -- the shape `taxonomy.js` already reads -- rather than
+    re-derived here, so both stores arrive at the pure layer in ONE shape and there is no second
+    normalisation to drift from the first.
+
+    THE ORDER, and why the tiebreak is stated rather than left to the database. Period
+    descending is the rule; `computed_at` descending settles a recompute of the same period; and
+    `result_id` descending settles the rest, because `result_id` is a ULID and is monotonic in
+    creation time. `computed_at` ALONE IS NOT SUFFICIENT -- it is a server default, and two rows
+    written in one transaction can share it, which would leave which reading is carried a matter
+    of row order.
+
+    LIVE ROWS ONLY, in both stores. A superseded row is no longer the project's account of that
+    period. That is also the whole answer to a period removed under Part 1 of this run: removal
+    supersedes rather than deletes, so a removed period is simply ABSENT here and the look-back
+    reaches past it to the most recent period the project still has. No gap logic exists because
+    none is needed -- and it is why a carried reading names the period it came from rather than
+    "the previous period", which after a removal is reliably a different thing.
+    """
+    rows = list(session.scalars(
+        select(ComputedResult)
+        .where(
+            ComputedResult.project_id == project.id,
+            ComputedResult.period < period,
+            ComputedResult.superseded_by.is_(None),
+        )
+        .order_by(
+            ComputedResult.period.desc(),
+            ComputedResult.computed_at.desc(),
+            ComputedResult.result_id.desc(),
+        )
+    ).all())
+
+    out: list[dict] = []
+    for row in rows:
+        # Specification rows go FIRST: `_prior_index` walks in order and takes the first match
+        # per module, and the specification layer is the one that wins a category it answered,
+        # exactly as `merge_python_row` has it on the serving path.
+        try:
+            spec_rows = spec_projection.module_rows(
+                spec_projection.live_readings(session, project.id, row.period))
+        except Exception:
+            # A malformed or absent specification reading must not stop the look-back reading
+            # the Python store. It is the weaker of the two claims here, not the gate.
+            spec_rows = []
+        out.append({"period": row.period,
+                    "modules": list(spec_rows) + list(row.module_results or [])})
+    return out
+
+
 def _earlier_live_results(session: Session, project: Project,
                           period: int) -> list[ComputedResult]:
     """
@@ -4007,7 +4071,8 @@ def run_and_store(session: Session, project: Project, period: int, si: dict,
             }
 
     run = compute_project(si, project.legacy_id, f"P{period}", cutoff,
-                          project_id=project.legacy_id)
+                          project_id=project.legacy_id,
+                          prior_readings=_carry_forward_history(session, project, period))
 
     # RUN 97, GOAL ONE. PORTFOLIO-LEVEL COMPUTATION IS GONE FROM THIS PATH.
     #
