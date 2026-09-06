@@ -297,6 +297,33 @@ def build_context(mod: Mapping[str, Any]) -> dict[str, Any] | None:
         return None
     if mod.get("band_asserted") is False or mod.get("band_withheld_reason"):
         return None
+    # ------------------------------------------------- RUN 143, PART 2. A CARRIED READING GETS
+    # NO MITIGATION, AND THIS IS A DIRECTION OF THIS RUN'S, REPORTED FOR AN OWNER RULING.
+    #
+    # TWO REASONS, AND EITHER ALONE IS ENOUGH.
+    #
+    # THE FINGERPRINT WOULD REPLAY THE WRONG ANSWER. `reading_fingerprint` covers the module,
+    # the band, the evidence sentence, the boundary, the basis and the flags -- and NOT the
+    # period and NOT any carrying marker. A carried reading reproduces the earlier period's
+    # figures exactly, so it hashes to the earlier period's fingerprint and REPLAYS that
+    # period's stored mitigation verbatim, with nothing anywhere saying the finding it
+    # addresses is stale. A reviewer would read a fresh-looking suggestion about a reading no
+    # document of this period produced.
+    #
+    # AND THE HONEST ACTION IS NOT A BAND-MOVEMENT SUGGESTION. What a reviewer should do about
+    # an adverse reading carried from two periods back is upload this period's evidence for it.
+    # This composer's entire contract is to suggest what would move a band toward the next rung
+    # on the module's own ladder; "obtain the missing document" is not that, and dressing it as
+    # that would be the composer answering a question it was not asked.
+    #
+    # THE CARD IS NOT LEFT SILENT. The carried chip states the period, the source period's own
+    # evidence sentence and this period's reason for producing nothing -- which is a more
+    # precise instruction than any mitigation would be. Widening the fingerprint to include the
+    # period would compose a NEW suggestion per period for an unchanged reading, which is a
+    # provider call and a stored row for a finding that did not move; that is the alternative,
+    # and it is the owner's call, not this run's.
+    if mod.get("carried") is True:
+        return None
     mid = str(mod.get("module_id") or "")
     shape = classify_shape(mod)
     next_band = _next_band_up(mod)
