@@ -86,9 +86,10 @@ from .research_membership import (
 )
 from .research_models import (
     AuditEvent,
-    ComputedResult, Decision, Document, DocumentUpload, Observation, ProjectNotice,
+    ComputedResult, Decision, Document, DocumentUpload, ModuleMitigation, Observation,
+    ProjectNotice,
     ProjectRisk,
-    ScheduleActivity,
+    ScheduleActivity, SpecificationReading,
     UploadAttempt, new_ulid,
 )
 from .document_evidence import document_evidence
@@ -6405,6 +6406,415 @@ def latest_module_reviews(session: Session, project: Project, period: Any) -> di
     return latest
 
 
+
+# --------------------------------------------------------------------------- Run 143, Part 1
+#
+# REMOVING A REPORTING PERIOD.
+#
+# THE GAP THIS CLOSES. A mis-keyed upload opens a period that nothing could then remove.
+# Deleting the `documents` rows by hand -- what was done to PRJ-002 -- removes the BYTES and
+# leaves the PERIOD: `_highest_period` reads `document_uploads`, not `documents`, so the
+# project still listed period 3; `_computed_periods` reads `computed_results`, so it still
+# computed against it; and the picker still offered it. Observed on a throwaway database
+# before this endpoint was written: four periods, period 3's `documents` rows deleted, and
+# `projectperiods` still answered periods 1, 2, 3, 4 with computed_periods [1, 2, 3, 4].
+#
+# THE TABLES THIS TOUCHES were enumerated from the migrated schema itself (`pragma
+# foreign_key_list` over all 32 tables at head 0034), not from a list carried in a report,
+# because the deletion is only as good as that enumeration.
+#
+#   FIVE tables carry a declared foreign key to `documents.document_id`:
+#     document_uploads, observations, project_notices, project_risks, schedule_activities
+#   TWO more reference a document WITHOUT a declared foreign key, and both are checked here:
+#     document_uploads.supersedes_document_id -- a bare ULID (migration 0013), new -> old
+#     computed_results.source_documents       -- JSON [{document_id, sha256, ...}]
+#
+#   ELEVEN tables hold per-(project, period) rows. This deletes EIGHT of them plus the
+#   uploads, and deliberately leaves three:
+#     DELETED  computed_results, specification_readings, module_mitigations, observations,
+#              schedule_activities, project_risks, project_notices, upload_attempts,
+#              document_uploads
+#     KEPT     project_snapshots -- its `period` is a TEXT calendar key ("2026-09", written by
+#              `writes.w_savehistory`), NOT the reporting-period integer. Matching "3" against
+#              it would either match nothing or match something unrelated, so it is not a
+#              per-reporting-period store at all and is left alone.
+#     KEPT     training_runs -- one row per training project (`project_id` is UNIQUE), whose
+#              `period` is the run's own cursor. A training project holds no documents and has
+#              no reporting period to remove.
+#     KEPT     decisions -- the governance record, and the reason for the first guard below.
+#
+#   recognition_matches has NO period column at all: it is keyed by project, quantity and an
+#   evidence fingerprint, and it is the platform's determinism cache. There is no per-period
+#   subset of it to delete, and deleting rows from it would break replay for periods that are
+#   staying. It is append-only by its own stance and is left untouched.
+#
+#   audit_events is append-only and is where the removal RECORDS itself.
+#
+# THE SUPERSEDE CHAIN, NOT THE LIVE ROW. `computed_results`, `specification_readings` and
+# `module_mitigations` each carry a self-referencing `superseded_by`. Deleting only the live
+# row of a chain would leave the superseded rows pointing at an id no row bears. All three are
+# therefore deleted for the period WHOLE -- every row, superseded or live.
+#
+# NO RENUMBERING. Periods 1, 2 and 4 stay 1, 2 and 4. Every stored result, observation and
+# audit row names its period by number, and renumbering would silently change what all of them
+# refer to.
+
+
+def _period_census(session: Session, project: Project, period: int) -> dict[str, Any]:
+    """
+    What removing this period would actually destroy, COUNTED FROM THE DATABASE.
+
+    Every figure here is a query. Nothing is taken from the caller's payload, which is the
+    whole point: the confirmation the person is shown has to be the truth about the rows, not
+    a restatement of what the client believed when it drew the dialog.
+
+    `computed_results` is counted WHOLE -- superseded rows included -- because the whole chain
+    is what gets deleted, and a count of only the live row would understate it by however many
+    recomputations the period has been through.
+    """
+    upload_rows = session.scalars(
+        select(DocumentUpload).where(
+            DocumentUpload.project_id == project.id,
+            DocumentUpload.period == period,
+        )
+    ).all()
+    document_ids = sorted({r.document_id for r in upload_rows if r.document_id})
+
+    results = session.scalars(
+        select(ComputedResult).where(
+            ComputedResult.project_id == project.id,
+            ComputedResult.period == period,
+        )
+    ).all()
+
+    decision_events = _period_decision_events(session, project, period)
+
+    # The research-side `decisions` table points at a stored result by `result_id`. A submitted
+    # research decision that names one of this period's rows is a second governance record and
+    # a second reason to refuse; it is counted here so the refusal can say how many.
+    result_ids = [r.result_id for r in results]
+    bound_decisions = []
+    if result_ids:
+        bound_decisions = session.scalars(
+            select(Decision).where(Decision.result_id.in_(result_ids))
+        ).all()
+
+    return {
+        "period": period,
+        "document_count": len(document_ids),
+        "document_ids": document_ids,
+        "upload_count": len(upload_rows),
+        "computed_result_count": len(results),
+        "live_result_count": sum(1 for r in results if r.superseded_by is None),
+        "decision_exists": bool(decision_events) or bool(bound_decisions),
+        "decision_count": len(decision_events),
+        "research_decision_count": len(bound_decisions),
+        "observation_count": _count_for_period(session, Observation, project, period),
+        "schedule_activity_count": _count_for_period(session, ScheduleActivity, project, period),
+        "project_risk_count": _count_for_period(session, ProjectRisk, project, period),
+        "project_notice_count": _count_for_period(session, ProjectNotice, project, period),
+        "specification_reading_count": _count_for_period(
+            session, SpecificationReading, project, period),
+        "module_mitigation_count": _count_for_period(
+            session, ModuleMitigation, project, period),
+        "upload_attempt_count": _count_for_period(session, UploadAttempt, project, period),
+    }
+
+
+def _count_for_period(session: Session, model, project: Project, period: int) -> int:
+    """How many rows of one per-(project, period) store this period holds."""
+    return int(session.scalar(
+        select(func.count()).select_from(model).where(
+            model.project_id == project.id, model.period == period)
+    ) or 0)
+
+
+def _period_decision_events(session: Session, project: Project, period: int) -> list[AuditEvent]:
+    """
+    The PM decisions recorded against this period, read from the append-only audit table.
+
+    THE RECORD ITSELF, NOT A PROXY FOR IT. `a_projectdecisionrecord` writes one
+    `project_decision_recorded` audit row carrying the project, the period and the disposition,
+    and that row IS the governance record -- there is no decision column on any project or
+    result row to consult instead. So this reads that event type and filters on the two fields
+    the writer stamps into `event_metadata`.
+
+    The period comparison goes through `_period_number` because the writer stores whatever the
+    caller sent as `period` once it has passed `int()`, and older rows in the wild may carry it
+    as a string.
+    """
+    rows = session.scalars(
+        select(AuditEvent).where(AuditEvent.event_type == "project_decision_recorded")
+    ).all()
+    out = []
+    for row in rows:
+        meta = row.event_metadata or {}
+        if meta.get("project_id") != project.legacy_id:
+            continue
+        if _period_number(meta.get("period")) != period:
+            continue
+        out.append(row)
+    return out
+
+
+def _documents_still_referenced(session: Session, document_ids: list[str]) -> set[str]:
+    """
+    Of these documents, which ones ANYTHING still points at.
+
+    CALL THIS ONLY AFTER the period's own rows are deleted and flushed. Doing it that way is
+    what makes the rule simple enough to be right: every reference this finds belongs to some
+    OTHER period or some OTHER project, so a document it names is shared content that must
+    survive, and a document it does not name is an orphan nobody can reach.
+
+    `documents` is content-addressed -- identical bytes uploaded twice are ONE row -- so this
+    is not a theoretical case. It is the ordinary one.
+
+    Seven reference sites, five declared foreign keys and two undeclared:
+      document_uploads.document_id, observations.document_id, schedule_activities.document_id,
+      project_risks.document_id, project_notices.document_id,
+      document_uploads.supersedes_document_id (a bare ULID, migration 0013),
+      computed_results.source_documents (JSON, migration 0013).
+
+    The JSON column has no index and no portable operator across SQLite and Postgres, so it is
+    scanned in Python over the rows that carry one. That is the honest cost of a reference the
+    schema does not declare, and it is paid on a delete, not on a read path.
+    """
+    if not document_ids:
+        return set()
+    wanted = set(document_ids)
+    still: set[str] = set()
+
+    for model, column in (
+        (DocumentUpload, DocumentUpload.document_id),
+        (DocumentUpload, DocumentUpload.supersedes_document_id),
+        (Observation, Observation.document_id),
+        (ScheduleActivity, ScheduleActivity.document_id),
+        (ProjectRisk, ProjectRisk.document_id),
+        (ProjectNotice, ProjectNotice.document_id),
+    ):
+        still.update(x for x in session.scalars(
+            select(column).where(column.in_(document_ids))).all() if x)
+
+    for stored in session.scalars(
+        select(ComputedResult.source_documents).where(
+            ComputedResult.source_documents.is_not(None))
+    ).all():
+        if not isinstance(stored, list):
+            continue
+        for entry in stored:
+            if isinstance(entry, dict) and entry.get("document_id") in wanted:
+                still.add(str(entry["document_id"]))
+
+    return still
+
+
+def _removal_sentence(census: dict) -> str:
+    """
+    The exact sentence the caller must send back to confirm, BUILT FROM THE COUNTED ROWS.
+
+    The caller cannot compose this without having been shown it, and it cannot be composed
+    from anything but the census, so a confirmation that matches is a confirmation of the
+    figures the database actually holds. A period whose contents changed between the dialog
+    opening and the confirmation arriving produces a different sentence and is refused.
+    """
+    return (f"Remove period {census['period']}: "
+            f"{census['document_count']} document(s), "
+            f"{census['computed_result_count']} computed result(s), "
+            f"decision recorded: {'yes' if census['decision_exists'] else 'no'}")
+
+
+def a_projectperiodpreview(session: Session, payload: dict, secret: str,
+                           ttl: int) -> dict[str, Any]:
+    """
+    The project's PM. READS ONLY. What removing a period would destroy, and the exact sentence
+    that would confirm it.
+
+    This exists so the confirmation the person reads is the same object the removal checks
+    against, produced by the same function. A dialog that composed its own sentence from
+    client-side counts could disagree with the database, and the removal would then refuse for
+    a reason the person could not see.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectperiodpreview")
+    if problem:
+        return problem
+    problem = _refuse_unless_pm(session, caller, member, project, "projectperiodpreview")
+    if problem:
+        return problem
+
+    period = _period_number(payload.get("period"))
+    if period is None or period < 1:
+        return err("choose the reporting period to remove")
+
+    census = _period_census(session, project, period)
+    refusal = _removal_refusal(census, period)
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "period": period,
+        "census": {k: v for k, v in census.items() if k != "document_ids"},
+        "confirmation_required": _removal_sentence(census),
+        # Stated up front rather than discovered on the destructive call, so the dialog can
+        # show the reason instead of offering a button that will be refused.
+        "would_refuse": refusal["error"] if refusal else None,
+        "server_time": now_iso(),
+    }
+
+
+def _removal_refusal(census: dict, period: int) -> dict | None:
+    """
+    The reasons a period may not be removed, each stating WHY. One place, so the preview and
+    the removal cannot drift apart.
+    """
+    if census["decision_count"]:
+        return err(
+            f"period {period} cannot be removed: a project manager decision has been recorded "
+            f"against it ({census['decision_count']} recorded). A decision is a governance "
+            f"record of what a person decided and when, and it is not the platform's to erase.")
+    if census["research_decision_count"]:
+        return err(
+            f"period {period} cannot be removed: {census['research_decision_count']} submitted "
+            f"research decision(s) reference a stored result of this period. Removing the "
+            f"result would leave those decisions pointing at nothing.")
+    if (census["upload_count"] == 0 and census["computed_result_count"] == 0
+            and census["upload_attempt_count"] == 0):
+        return err(f"period {period} holds no uploads, no computed results and no upload "
+                   f"attempts for this project; there is nothing to remove.")
+    return None
+
+
+def a_projectperiodremove(session: Session, payload: dict, secret: str,
+                          ttl: int) -> dict[str, Any]:
+    """
+    The project's PM. DESTRUCTIVE AND IRREVERSIBLE. Removes one reporting period entirely:
+    its computed results, its projection rows, its upload links, and any document those links
+    were the last reference to.
+
+    THE PERIOD IS THE ONE THE PERSON PICKED, and this deliberately does NOT go through
+    `_resolve_period`, for the same reason `a_projectdocumentarchive` does not: that helper
+    derives a period from the research assignment and ignores the payload, which is right for
+    an upload and wrong for an action on a period that already exists. Nothing new is reachable
+    by choosing a number -- every row touched is scoped to THIS project and THAT period.
+
+    THE CONFIRMATION IS CHECKED AGAINST THE DATABASE. `_period_census` counts the rows,
+    `_removal_sentence` states them, and the caller's `confirmation` must match that sentence
+    exactly. The caller's own idea of how many documents it is deleting is never consulted.
+
+    WHAT SURVIVES: a document whose bytes are also evidence somewhere else. The link row is
+    deleted unconditionally; the `documents` row is deleted only when `_documents_still
+    _referenced` finds nothing pointing at it after the period's rows are gone.
+
+    NO RENUMBERING. See the block comment above.
+
+    RECOMPUTATION IS NOT TRIGGERED. Removing a period changes what the project's other periods
+    are computed ALONGSIDE -- `_earlier_live_results`, `_period_history` and `_milestone
+    _history` all read earlier periods -- so every later period's stored result is now stale
+    with respect to a project that no longer contains the removed period. This endpoint states
+    that in its answer and in the audit row; it does not recompute.
+    """
+    caller, problem = resolve_caller(session, payload, secret)
+    if problem:
+        return problem
+    project, member, problem = require_member(session, caller, payload, "projectperiodremove")
+    if problem:
+        return problem
+    problem = _refuse_unless_pm(session, caller, member, project, "projectperiodremove")
+    if problem:
+        return problem
+
+    period = _period_number(payload.get("period"))
+    if period is None or period < 1:
+        return err("choose the reporting period to remove")
+
+    census = _period_census(session, project, period)
+
+    refusal = _removal_refusal(census, period)
+    if refusal:
+        audit(session, "period_removal_refused", participant_id=caller.participant_id,
+              project_id=project.legacy_id, period=period, reason=refusal.get("error"))
+        session.commit()
+        return refusal
+
+    required = _removal_sentence(census)
+    supplied = str(payload.get("confirmation") or "").strip()
+    if not supplied:
+        return err("this removal is irreversible and must be confirmed. Send the confirmation "
+                   f"sentence exactly: {required}")
+    if supplied != required:
+        return err("the confirmation does not match what this period actually holds, so "
+                   "nothing was removed. The database says: " + required)
+
+    document_ids = list(census["document_ids"])
+
+    # ORDER MATTERS. The period's own rows go first so that `_documents_still_referenced` sees
+    # only OTHER periods' and OTHER projects' references, and every projection row that names
+    # one of these documents is gone before the `documents` row it names is considered.
+    deleted: dict[str, int] = {}
+    for label, model in (
+        # The WHOLE supersede chain of each of the three chained stores, not the live row.
+        ("computed_results", ComputedResult),
+        ("specification_readings", SpecificationReading),
+        ("module_mitigations", ModuleMitigation),
+        # The four projection stores.
+        ("observations", Observation),
+        ("schedule_activities", ScheduleActivity),
+        ("project_risks", ProjectRisk),
+        ("project_notices", ProjectNotice),
+        # The attempt log.
+        ("upload_attempts", UploadAttempt),
+        # The links. Unconditional: these are per-(project, period) and belong to no one else.
+        ("document_uploads", DocumentUpload),
+    ):
+        rows = session.scalars(
+            select(model).where(model.project_id == project.id, model.period == period)
+        ).all()
+        for row in rows:
+            session.delete(row)
+        deleted[label] = len(rows)
+    session.flush()
+
+    still_referenced = _documents_still_referenced(session, document_ids)
+    orphans = [d for d in document_ids if d not in still_referenced]
+    shared = sorted(still_referenced & set(document_ids))
+    for doc_id in orphans:
+        doc = session.get(Document, doc_id)
+        if doc is not None:
+            session.delete(doc)
+    deleted["documents"] = len(orphans)
+    session.flush()
+
+    audit(session, "period_removed", participant_id=caller.participant_id,
+          project_id=project.legacy_id, period=period,
+          removed_by=caller.participant_id,
+          confirmation=required,
+          deleted=deleted,
+          documents_deleted=orphans,
+          documents_retained_shared=shared,
+          note=("the remaining periods are NOT renumbered, and the project's other periods "
+                "are now stale: their stored results were computed alongside this one"))
+    session.commit()
+
+    return {
+        "ok": True,
+        "project_id": project.legacy_id,
+        "period": period,
+        "confirmation": required,
+        "deleted": deleted,
+        # Named, not just counted: "which of my documents survived, and why" is the question a
+        # person asks after a delete that says it kept some.
+        "documents_deleted": orphans,
+        "documents_retained_shared": shared,
+        "renumbered": False,
+        "recompute_required": True,
+        "note": ("the remaining periods keep their numbers; the project's other periods should "
+                 "be recalculated, because their stored results were computed alongside this "
+                 "period"),
+        "server_time": now_iso(),
+    }
+
+
 DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     "projectupload": a_projectupload,
     # The calendar picker's read-only preview: a date in, the period it names out. Same rule the
@@ -6414,6 +6824,12 @@ DOCUMENT_ACTIONS: dict[str, Callable[[Session, dict, str, int], dict]] = {
     # The upload modal's period picker: which periods this project already holds, and the next
     # number it can open. READ ONLY.
     "projectperiods": a_projectperiods,
+    # RUN 143, PART 1. Removing a mis-keyed reporting period: what it would destroy (READ
+    # ONLY, PM), and the destructive removal itself (PM, confirmation checked against the
+    # database, refused where a decision has been recorded). Does NOT recompute and does NOT
+    # renumber the remaining periods.
+    "projectperiodpreview": a_projectperiodpreview,
+    "projectperiodremove": a_projectperiodremove,
     # The legacy one-document ingest, adapted onto projectupload. See a_extractsignals for why
     # it is an adapter and not a second extraction path.
     "extractsignals": a_extractsignals,
