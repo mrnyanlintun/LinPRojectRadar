@@ -3596,15 +3596,36 @@
       + `</span>`;
   }
 
+  /* RUN 143, PART 2. A carried reading's chip, from the stored row's own fields and nothing
+     else. `carried` is written only by `carry_forward.py`; a reading stored before
+     sim-2026.09-v71 has no such key and renders exactly as it renders today. The period is
+     NAMED -- never "the previous period", because a removed period is invisible to the
+     look-back and after a removal those differ. */
+  function specCarriedChip(m) {
+    if (!m || m.carried !== true) return "";
+    const from = (m.carried_from_period === null || m.carried_from_period === undefined)
+      ? "" : String(m.carried_from_period);
+    const title = "This reading was not taken from this period's evidence. It is carried "
+      + "forward" + (from ? " from " + from : "") + "."
+      + (m.carried_evidence ? " That period said: " + m.carried_evidence : "")
+      + (m.carried_reason ? " This period: " + m.carried_reason : "");
+    return `<span class="dcat-carried" data-carried="1" data-from-period="${esc(from)}"`
+      + ` title="${esc(title)}">${esc(from ? "Carried from " + from : "Carried forward")}</span>`;
+  }
+
   function specModuleRowHtml(m) {
     const st = String((m && m.state) || "");
-    if (st === "computed") {
-      const band = m.band ? `<span class="dcat-band" data-band="${esc(m.band)}">${esc(m.band)}</span>`
+    if (st === "computed" || (m && m.carried === true)) {
+      const _b = (m && (m.band || m.status_color)) || null;
+      const band = _b ? `<span class="dcat-band" data-band="${esc(_b)}">${esc(_b)}</span>`
                           : `<span class="dcat-band dcat-noband" data-band="none">no band</span>`;
-      return `<li class="dcat-mod" data-module="${esc(m.module_id)}" data-state="computed">`
+      /* THE CHIP GOES BEFORE THE BAND, not after it. A reader scanning a column of bands
+         must meet the qualifier before the colour it qualifies; a marker trailing the band
+         is read as a footnote to a fact already accepted. */
+      return `<li class="dcat-mod${m && m.carried === true ? " dcat-mod-carried" : ""}" data-module="${esc(m.module_id)}" data-state="${esc(st || "computed")}">`
         + `<span class="dcat-mid">${esc(m.module_id)}</span>`
         + `<span class="dcat-val">${esc(m.display != null ? m.display : String(m.value))}</span>`
-        + band + `</li>`;
+        + specCarriedChip(m) + band + `</li>`;
     }
     return `<li class="dcat-mod" data-module="${esc(m && m.module_id)}" data-state="${esc(st)}">`
       + `<span class="dcat-mid">${esc(m && m.module_id)}</span>`
@@ -3648,6 +3669,29 @@
          the stored row. `data-status` is unchanged, so nothing reading the marker moves. */
       + `<span class="dcat-status" data-status="${esc(status || "none")}">`
       + esc(status || noStatusWord) + `</span>`
+      /* RUN 143, PART 2. THE CARRY COUNT ON THE HEAD, BESIDE THE STATUS.
+
+         `.dcat-body` below is built with `style="display:none"` and is opened lazily on the
+         first expand, so a chip rendered only in the module list is invisible on arrival --
+         Run 142 established exactly this trap in this exact function. A category whose band
+         rests on carried readings must say so where the band is, on the collapsed row.
+
+         A COUNT OF STORED ROWS: how many of this category's stored module entries carry
+         `carried: true`, over how many carry a band. Nothing derived. */
+      + ((() => {
+          const _mods = (reading && reading.modules) || [];
+          let _c = 0, _b = 0;
+          for (let i = 0; i < _mods.length; i++) {
+            const _m = _mods[i];
+            if (!_m) continue;
+            if (_m.band || _m.status_color) _b += 1;
+            if (_m.carried === true) _c += 1;
+          }
+          return _c
+            ? `<span class="dcat-carried-count" data-carried="${_c}" data-of="${_b}">`
+              + `${_c} of ${_b} carried from an earlier period</span>`
+            : "";
+        })())
       + specStateChip(rowState)
       /* RUN 82, PART A1. The produced-out-of figure renders on EVERY row, including the ones
          with no reading at all: "0 of 7 produced a status" is precisely the fact the owner is

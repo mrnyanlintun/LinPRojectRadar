@@ -1445,10 +1445,42 @@
         const naTitle = disabledHere
           ? "Not available for production use: this module has no production implementation of the analytical structure its name claims."
           : `Not relevant: this module does not apply to ${secName}-sector projects`;
-        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}"${na ? ` title="${esc(naTitle)}"` : ""}>
+        /* ==============================================================================
+           RUN 143, PART 2. A CARRIED READING IS MARKED ON THE ROW THAT SHOWS ITS BAND.
+
+           The band beside a module name comes from `getModuleStatus`, which returns
+           `status_color` and nothing else. Without this chip a reading carried forward from
+           an earlier period renders here character for character as a reading taken from
+           this period's documents -- which the owner's order names as the defect this run
+           must not ship. The chip sits IMMEDIATELY BESIDE THE PILL, inside `.cat-mod-row`,
+           which is the element the band is in, so the two cannot be separated by any later
+           layout change.
+
+           IT NAMES THE PERIOD, never "the previous period": Part 1 supersedes removed
+           periods and the look-back skips them, so after a removal those differ.
+
+           IT IS READ, NOT DERIVED. `getModuleCarried` returns null unless the server wrote
+           `carried: true` on the stored row, so a row stored before sim-2026.09-v71 renders
+           exactly as it renders today and nothing here can invent a carrying claim. */
+        const carried = (!na && window.getModuleCarried)
+          ? getModuleCarried(m.method_class, p) : null;
+        const carriedChip = carried
+          ? `<span class="cat-mod-carried" data-carried="1"`
+            + ` data-from-period="${esc(carried.fromPeriod || "")}"`
+            + ` title="${esc(window.moduleCarriedTitle ? moduleCarriedTitle(carried) : "")}">`
+            + `${esc(window.moduleCarriedLabel ? moduleCarriedLabel(carried) : "Carried")}`
+            + `</span>` : "";
+        /* THIS period's own reason, shown UNDER a carried reading. A reader looking at a
+           carried band is entitled to know why nothing current exists, and the abstention
+           line below is skipped for this module because the module now has a band and is no
+           longer read as "no data". Verbatim from the stored row. */
+        const carriedWhy = (carried && carried.reason)
+          ? `<div class="cat-mod-reason cat-mod-carried-why">${esc(carried.reason)}</div>` : "";
+        return `<div class="cat-mod-row${na ? " cat-mod-na" : ""}${carried ? " cat-mod-is-carried" : ""}"${na ? ` title="${esc(naTitle)}"` : ""}>
           <span class="cat-mod-name">${esc(m.name)}</span>
+          ${carriedChip}
           ${statusPill(st, secName + "-sector", na ? naTitle : null)}
-        </div>${finding}${reasonHtml}${chart}`;
+        </div>${finding}${carriedWhy}${reasonHtml}${chart}`;
       }).join("");
       // Sector-abstention note — the category stays; only its construction-phase
       // modules abstain for this sector.
@@ -1510,11 +1542,42 @@
             + `this period</span>`;
       }
 
-      return `<details class="cat-row" data-cat="${esc(cat.id)}"${open}>
+      /* ==============================================================================
+         RUN 143, PART 2. THE CARRY COUNT ON THE COLLAPSED ROW HEAD.
+
+         WHY IT IS HERE AND NOT ONLY IN THE MODULE LIST. The `cat-mod-carried` chip above
+         lives inside `.cat-mod-list`, inside this `<details>`, and this `<details>` is OPEN
+         only for b3 -- every other category is closed on arrival. Run 141 established that a
+         collapsed element shows nothing regardless of its content, and Run 142 had to fix
+         exactly this shape one layer up. A category whose posture is formed ENTIRELY from
+         carried readings would otherwise show a confident pill and nothing else to a reader
+         who does not click, which is the owner's forbidden defect wearing a category's
+         clothes rather than a module's.
+
+         IT COUNTS, IT DOES NOT JUDGE. The numerator is how many of this category's modules
+         have `carried: true` on the stored row; the denominator is how many carry a band at
+         all. Both are counts of stored rows. No band, posture rule or weight is read here. */
+      let _carriedCount = 0, _bandedCount = 0;
+      cat.modules.forEach((m) => {
+        if (window.isModuleDisabled && window.isModuleDisabled(m.method_class)) return;
+        if (window.isModuleSectorNA && window.isModuleSectorNA(m.method_class, p)) return;
+        const _st = window.getModuleStatus ? getModuleStatus(m.method_class, p) : null;
+        if (!_st || _st === "NA" || _st === "NODATA") return;
+        _bandedCount += 1;
+        if (window.getModuleCarried && getModuleCarried(m.method_class, p)) _carriedCount += 1;
+      });
+      const carriedNote = _carriedCount
+        ? `<span class="cat-row-carried" data-carried="${_carriedCount}" `
+          + `data-of="${_bandedCount}">${_carriedCount} of ${_bandedCount} `
+          + `${_bandedCount === 1 ? "reading is" : "readings are"} carried from an earlier `
+          + `period, not this one</span>`
+        : "";
+
+      return `<details class="cat-row${_carriedCount ? " cat-row-has-carried" : ""}" data-cat="${esc(cat.id)}"${open}>
         <summary class="cat-row-head">
           <span class="cat-row-swatch" style="background:${esc(cat.color)}" aria-hidden="true"></span>
           <span class="cat-row-name">${esc(cat.name)}</span>
-          ${rowPill}${absenceNote}
+          ${rowPill}${absenceNote}${carriedNote}
         </summary>
         <p class="cat-row-desc">${desc}</p>
         ${naNote}
@@ -1608,6 +1671,41 @@
        reconciliations are imperfect and are left for a ruling. So nothing here is reduced,
        relabelled or reordered: the five arrive and the five are offered, under a heading that
        names what the reviewer is being asked for. The mismatch is reported, not resolved. */
+    /* ==================================================================================
+       RUN 143, PART 2. THE CONSEQUENCE THE OWNER ORDERED MADE VISIBLE ON THE CARD.
+
+       "A project can now publish a full status on a period where few or no documents were
+       uploaded. Not a defect, but it must be stated and visible on the card."
+
+       So it is stated at the TOP of the card, above the finding, not in a footnote and not
+       inside a disclosure. A reviewer reading a confident band is told, before the band's
+       reasoning, how much of the evidence under it was not taken from this period.
+
+       IT IS A COUNT OF STORED ROWS. The numerator is the stored `carried` flags; the
+       denominator is the stored bands. The oldest age comes from the server's own
+       `project_status_basis.carried_oldest_age`. Nothing is derived, and the block is
+       omitted entirely when nothing is carried, so a project whose readings are all current
+       looks exactly as it looks today.
+
+       IT IS NOT RECONCILED AWAY. The information-completeness figure does NOT move under
+       this change -- it counts document-field pairs, never readings -- so a full status
+       beside a low completeness figure is now possible and is the honest signal. This block
+       is the place a reader sees the two facts together. */
+    const _cf = window.projectCarriedCount ? projectCarriedCount(p) : null;
+    const _basis = (row && row.project_status_basis) || {};
+    const _oldest = Number(_basis.carried_oldest_age || 0);
+    const carriedBanner = (_cf && _cf.carried)
+      ? `<p class="dc-carried" data-carried="${_cf.carried}" data-of="${_cf.banded}"
+            data-oldest-age="${_oldest}">
+           <span class="dc-carried-figure">${_cf.carried} of ${_cf.banded}</span>
+           <span class="dc-carried-words">readings behind this status were not taken from this
+             period's evidence. They are carried forward from earlier periods of this project,
+             each marked and naming the period it came from${_oldest > 1
+               ? `; the oldest is ${_oldest} stored periods back` : ""}.
+             This status can therefore be published on a period in which few or no documents
+             were uploaded.</span>
+         </p>` : "";
+
     root.innerHTML =
       `<div class="dc-head">
          <div>
@@ -1616,6 +1714,7 @@
          </div>
          <span class="state-badge state-${esc(stateClass)}">${esc(d.healthState)}</span>
        </div>
+       ${carriedBanner}
        ${briefHtml}
        ${optionsHtml}
        <div class="dc-reviewer-response">

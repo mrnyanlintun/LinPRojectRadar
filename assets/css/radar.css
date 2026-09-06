@@ -5000,3 +5000,87 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
 /* The limitation that replaced the validator's rejection sentence in the brief. It is a plain
    statement about the analysis and carries no flag class, no colour and no severity. */
 .eb-limitation { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+
+/* ==================================================================================
+   RUN 143, PART 2. A CARRIED READING IS VISIBLY DISTINCT FROM A CURRENT ONE.
+
+   THE DEFECT THIS PREVENTS. `getModuleStatus` returns a band and nothing else, so a reading
+   carried forward from an earlier period renders identically to one taken from this period's
+   documents unless something says otherwise. The owner's order names that as the defect this
+   run must not ship, and it must be visible WITHOUT CLICKING -- so nothing below hides behind
+   a hover, a disclosure or a title attribute alone. Every rule here paints something a reader
+   sees on arrival.
+
+   THREE SIGNALS, NOT ONE, because any single one can be defeated by a theme, a narrow screen
+   or a colour-blind reader:
+     1. A CHIP carrying the word "Carried" and the NAMED source period. Words survive
+        greyscale, screen readers and a printed page.
+     2. A dashed LEFT RULE on the row, so the row is distinguishable in a column of rows at a
+        glance and before any text is read.
+     3. A muted BACKGROUND WASH, which is the only purely-decorative one and is the only one
+        that may be lost without the distinction being lost.
+   The band pill itself is NOT recoloured. A carried Amber is an Amber, it votes as an Amber,
+   and repainting it would misstate the reading rather than qualify it. */
+
+.cat-mod-carried,
+.dcat-carried {
+  display: inline-block;
+  margin: 0 8px 0 0;
+  padding: 1px 7px;
+  border: 1px dashed var(--status-nodata-mod-text, #8a8a8a);
+  border-radius: 9px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--status-nodata-mod-text, #8a8a8a);
+  background: transparent;
+  vertical-align: middle;
+}
+
+.cat-mod-row.cat-mod-is-carried,
+.dcat-mod.dcat-mod-carried {
+  border-left: 3px dashed var(--status-nodata-mod-text, #8a8a8a);
+  padding-left: 7px;
+  background: rgba(128, 128, 128, 0.07);
+}
+
+/* This period's own reason, printed UNDER a carried band. It is the answer to the question a
+   carried band provokes -- why is there nothing current? -- and it is the module's own
+   sentence, verbatim. */
+.cat-mod-carried-why { font-style: italic; }
+
+/* The counts on the COLLAPSED heads. Every ledger category but one is closed on arrival and
+   the specification panel's body is built display:none, so these two are what a reader who
+   does not click actually sees. They are counts of stored rows and they judge nothing. */
+.cat-row-carried,
+.dcat-carried-count {
+  margin-left: 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-style: italic;
+  color: var(--status-nodata-mod-text, #8a8a8a);
+}
+
+/* The card's own statement of the consequence the owner ordered made visible: a full status
+   can now be published on a period in which few or no documents were uploaded. It sits at the
+   top of the card, above the finding, and it is deliberately given more weight than the module
+   chips -- this is the sentence a reviewer must not miss. */
+.dc-carried {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px dashed var(--status-nodata-mod-text, #8a8a8a);
+  border-left-width: 4px;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.08);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.dc-carried-figure {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  margin-right: 6px;
+}
+.dc-carried-words { color: inherit; }

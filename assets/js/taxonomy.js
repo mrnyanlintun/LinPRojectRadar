@@ -620,6 +620,86 @@ window.performanceCategories = function () {
     return "NODATA";
   };
 
+  /* ==================================================================================
+     RUN 143, PART 2. THE CARRIED MARKING, AND WHY IT NEEDED ITS OWN ACCESSOR.
+
+     THE DEFECT THIS EXISTS TO PREVENT, stated plainly: `getModuleStatus` above returns
+     `status_color` AND NOTHING ELSE, and every client surface that renders a module band
+     goes through it. Append a carried reading to `module_results` and it renders as a
+     current one on every surface, with no marker, no code change and no error. That is
+     this codebase's DEFAULT behaviour, not a risk it runs -- and the owner's order names a
+     carried reading that renders identically to a current one as the defect this run must
+     not ship. So the marking cannot be a finishing touch; it is the work.
+
+     `getModuleStatus` IS DELIBERATELY UNCHANGED. It answers "what band", and a carried
+     reading's band is its band -- it votes with it, so a caller asking for the band must
+     get it. Changing its return would have moved every one of its call sites, most of
+     which are sorting, counting and colouring and are correct as they stand. What is added
+     is a SECOND question, asked beside the first: "and was this taken from this period?"
+
+     Both functions read the stored row and derive nothing. A row stored before
+     sim-2026.09-v71 carries no `carried` key, so `getModuleCarried` returns null for it and
+     every surface renders it exactly as it renders one today. There is no default of true
+     anywhere: a reading is current unless the server said it was carried. */
+
+  /* The carrying record for one module, or null when the reading is this period's own (or
+     there is no reading). Never fabricated, never inferred from the sentence: the fields are
+     the ones `carry_forward.py` writes and no others. */
+  window.getModuleCarried = function (methodClass, project) {
+    var r = window.getModuleResult ? getModuleResult(methodClass, project) : null;
+    if (!r || r.carried !== true) return null;
+    return {
+      fromPeriod: (r.carried_from_period === null || r.carried_from_period === undefined)
+        ? null : String(r.carried_from_period),
+      age: (typeof r.carried_from_age === "number") ? r.carried_from_age : null,
+      /* The source period's OWN evidence sentence, unaltered. This is the sentence the
+         reader is entitled to see beside a carried band, and it is stored separately from
+         `evidence_metric` precisely so that carrying cannot alter it. */
+      evidence: r.carried_evidence || null,
+      /* THIS period's own reason for producing nothing -- kept, because a reader shown a
+         carried band must also be told why nothing current exists. */
+      reason: r.carried_reason || null
+    };
+  };
+
+  /* The short words that go on a collapsed row head, beside the band. Deliberately short --
+     it must fit next to a pill without pushing the band off a narrow screen -- and it always
+     NAMES THE PERIOD rather than saying "the previous period": a removed period is invisible
+     to the look-back, so after a removal those two reliably differ. */
+  window.moduleCarriedLabel = function (carried) {
+    if (!carried) return "";
+    return carried.fromPeriod ? ("Carried from " + carried.fromPeriod) : "Carried forward";
+  };
+
+  /* The full sentence for a title/tooltip, assembled from stored text only. */
+  window.moduleCarriedTitle = function (carried) {
+    if (!carried) return "";
+    var out = "This reading was not taken from this period's evidence. It is carried forward"
+      + (carried.fromPeriod ? " from " + carried.fromPeriod : "")
+      + (carried.age ? " (" + carried.age + " stored period"
+         + (carried.age === 1 ? "" : "s") + " back)" : "") + ".";
+    if (carried.evidence) out += " That period said: " + carried.evidence;
+    if (carried.reason) out += " This period: " + carried.reason;
+    return out;
+  };
+
+  /* How many of a project's rendered module readings are carried, and out of how many
+     banded. A COUNT OF STORED ROWS: it asserts nothing and fills no gap. Used by the card
+     headline, which the owner requires to state -- visibly -- that a full status can now be
+     published on a period where few or no documents were uploaded. */
+  window.projectCarriedCount = function (project) {
+    var row = (window.LinResults && LinResults.rowFor) ? LinResults.rowFor(project)
+      : (window.rowFor ? rowFor(project) : null);
+    var mods = (row && Array.isArray(row.module_results)) ? row.module_results : [];
+    var carried = 0, banded = 0;
+    for (var i = 0; i < mods.length; i++) {
+      if (!mods[i]) continue;
+      if (mods[i].status_color) banded += 1;
+      if (mods[i].carried === true) carried += 1;
+    }
+    return { carried: carried, banded: banded };
+  };
+
   /* The module's own abstention message, read verbatim from the stored row's `abstained` list
      (registry.py run_all(): {module_id, reason}, reason=None when the module gave none).
      Returns null when there is no stored row, the row predates the column (abstained is NULL),
