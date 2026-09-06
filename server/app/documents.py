@@ -89,7 +89,7 @@ from .research_models import (
     ComputedResult, Decision, Document, DocumentUpload, ModuleMitigation, Observation,
     ProjectNotice,
     ProjectRisk,
-    ScheduleActivity, SpecificationReading,
+    ScheduleActivity, Scenario, SpecificationReading,
     UploadAttempt, new_ulid,
 )
 from .document_evidence import document_evidence
@@ -194,7 +194,32 @@ def _resolve_period(session: Session, project: Project, payload: dict) -> tuple[
     assignment, _decision, _package = project_decision_state(session, project)
     if assignment is not None:
         from .research_decision import current_period
-        derived = _period_number(current_period(session, assignment))
+        # RUN 146. THE SCENARIO WAS DROPPED HERE AND THAT IS WHY THE PAGE WENT BLANK.
+        #
+        # `current_period` takes an OPTIONAL scenario and uses it for exactly one thing: the
+        # cap. Its last two lines are `limit = (scenario.period_count if scenario else None) or
+        # nxt` and `return "P" + str(min(nxt, limit))`. Called WITHOUT the scenario -- as this
+        # line did -- `limit` becomes `nxt` itself, `min` is a no-op, and the derived period
+        # ADVANCES PAST THE LAST PERIOD THE SCENARIO HAS the moment the last period's decision
+        # is submitted and transitioned. `research_membership.project_decision_state`, three
+        # lines above in this same call, passes the scenario. So one module derived two
+        # different current periods for one assignment, and only the uncapped one reached the
+        # read route.
+        #
+        # WHAT THAT DID. `a_projectresults` resolved to a period holding no live computed row,
+        # returned `no computed result for period N`, and `detail.js primeAndRefresh` drops an
+        # `ok !== true` response and returns without a word. Nothing was grafted, so the page
+        # rendered `facade.live_statuses`'s four-field list projection ALONE -- which carries
+        # `category_statuses` and `project_status` and NOTHING ELSE. Five postures, a project
+        # status, a Signal Flow diagram, and no module row, no abstention, no signal input and
+        # no disposition list anywhere on the page. Reproduced on a throwaway database in
+        # `tools/test_run146_served_period.py` before this line was changed.
+        #
+        # NO AUTHORITY MOVES. The period is still SERVER-DERIVED and the payload is still
+        # ignored for a project under assignment; the derivation is only bounded by the
+        # scenario it belongs to, which makes it stricter, never looser.
+        scenario = session.get(Scenario, assignment.scenario_id) if assignment.scenario_id else None
+        derived = _period_number(current_period(session, assignment, scenario))
         if derived is not None:
             return derived, None
     supplied = _period_number(payload.get("period"))
@@ -5596,6 +5621,34 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
     else:
         row = _live_result(session, project, period)
 
+    # RUN 146, THE SECOND HALF. A READ THAT CANNOT ANSWER THE DERIVED PERIOD MUST NOT ANSWER
+    # NOTHING AT ALL.
+    #
+    # The scenario cap restored in `_resolve_period` keeps the derived period inside the
+    # scenario. It does NOT cover a period the scenario still counts but the project no longer
+    # holds -- exactly PRJ-002, whose period 3 was removed in Run 143 while whatever counts
+    # periods for it may still say three. In that state this route returned an error, and the
+    # detail page discards an errored response silently: the whole page then renders from the
+    # list projection, which carries the category postures and the project status and nothing
+    # else. That is not a stricter read, it is a blank one.
+    #
+    # THIS IS A READ. `_resolve_period`'s rule exists so a participant cannot WRITE into a
+    # period they have not reached -- its own docstring says so -- and no write happens here.
+    # So where the derived period holds no live computed row, the LATEST period that does is
+    # served instead, and the response SAYS SO: `result.period` already states which period is
+    # being shown, and `period_requested` / `period_substituted` state that a substitution
+    # happened and what was asked for. Nothing is silent and nothing is invented.
+    #
+    # IT DISCLOSES NOTHING NEW. `facade.live_statuses` -- the portfolio list, the header line
+    # and `storedResult` -- already publishes this exact row's period and status to this exact
+    # reader. The reveal gate below is applied to it unchanged.
+    substituted_for = None
+    if row is None and not wanted:
+        _available = _computed_periods(session, project)
+        if _available:
+            substituted_for, period = period, _available[-1]
+            row = _live_result(session, project, period)
+
     if row is None:
         return err(f"no computed result for period {period}; run projectcompute first")
 
@@ -5682,12 +5735,23 @@ def a_projectresults(session: Session, payload: dict, secret: str, ttl: int) -> 
     if _reb is not None:
         view["budget_rebasing"] = _reb
 
-    return {
+    out = {
         "ok": True,
         "project_id": project.legacy_id,
         "result": view,
         "server_time": now_iso(),
     }
+    # RUN 146. WHEN A SUBSTITUTION HAPPENED IT IS STATED, not left for a reader to notice by
+    # comparing two period numbers. `result.period` already says which period is being served;
+    # these two say that it is not the one the derivation named, and what that was.
+    if substituted_for is not None:
+        out["period_substituted"] = True
+        out["period_requested"] = substituted_for
+        out["period_substitution_reason"] = (
+            f"period {substituted_for} holds no live computed result for this project, so the "
+            f"latest period that does -- period {period} -- is served. Nothing was computed to "
+            f"answer this read.")
+    return out
 
 
 def a_adminrecompute(session: Session, payload: dict, secret: str, ttl: int) -> dict[str, Any]:
