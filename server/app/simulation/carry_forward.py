@@ -107,6 +107,19 @@ So exemption is decided three ways, in this order:
      category that gates the fifth vote -- each carried an earlier Green while the sentence on
      the same ledger denied anything was carried. The sentence was right; the behaviour moved.
 
+     THE FOURTH CODE, `QUALIFICATION_CONTRACT_MISSING` (`CONTRACT_MISSING`, `_refuse_missing`,
+     :288), fires when `requirement_for(mid)` returns `CONFIGURATION_MISSING` -- when the route
+     itself has NO governed qualification-requirement declaration. IT CARRIES, and is
+     deliberately not in this set. It goes through the SAME `_refuse_missing` primitive as
+     `CATEGORY9_ASSESSMENT_MISSING`, documented as "the governed abstention for a route blocked
+     before any evidence could be assessed"; it sets `qualification_state = UNASSESSED` and
+     `consumer_executed = False`, and it never touches an evidence object. Nothing was weighed,
+     so by the owner's test it is a missing input, like code 1, not a judgment, like code 2.
+     Its exposure is LATENT: `requirement_for` over `service_index()` returns a declared
+     contract for 31 of 31 in-service routes, so no route in service can reach this code today.
+     Two constants in `qualification_contract.py` share this one string -- `CONFIGURATION_MISSING`
+     is the requirement lookup's sentinel, `CONTRACT_MISSING` is the reason code -- and they are
+     not interchangeable in meaning even though the literal is one.
   c. A DECLARATION AT THE ARM, `carry_forward_eligible=False` on the module's own returned
      dict. This is how the per-arm cases are handled, and it is deliberately NOT a match on
      the sentence text: sentences are being rewritten by this very run, and an exclusion that
