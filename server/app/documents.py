@@ -5797,8 +5797,31 @@ def a_projectperiods(session: Session, payload: dict, secret: str, ttl: int) -> 
     # the picker's contract and `test_period_number_picker.py` asserts it exactly, so adding a
     # key to it would have changed a contract this run has no order to change.
     computed = set(_computed_periods(session, project))
+    # RUN 143, PART 1. THE PERIODS THIS PROJECT ACTUALLY HOLDS, READ FROM THE UPLOAD TABLE --
+    # not `range(1, highest + 1)`, which is what stood here and which FABRICATED a period the
+    # project no longer had. Observed on a throwaway database: a project with periods 1, 2 and
+    # 4 (period 3 removed) answered periods 1, 2, 3, 4, offering period 3 with a null ending
+    # date as though it were real, while `computed_periods` correctly said [1, 2, 4]. The
+    # picker's own comment in signals.js claims "the choices offered always match what the
+    # server would actually accept"; with a gap present that was no longer true.
+    #
+    # A gap is now shown as a gap. Removing period 3 of 1, 2, 3, 4 leaves 1, 2, 4 -- the
+    # remaining periods are NOT renumbered, because every stored result names its period by
+    # number and renumbering would silently change what all of them refer to.
+    #
+    # THE ROW SHAPE IS UNCHANGED and so is every other key: this decides WHICH periods appear,
+    # nothing about how one is described. The source is the same table `_highest_period` and
+    # `_stated_period_ends` already read, so the three cannot disagree. For a project with no
+    # gaps -- every project before a removal existed -- the list is identical to the range it
+    # replaces, which is why the picker's existing contract still holds.
+    held = sorted({int(p) for p in session.scalars(
+        select(DocumentUpload.period).where(
+            DocumentUpload.project_id == project.id,
+            DocumentUpload.period.is_not(None),
+        )
+    ).all()})
     periods = [{"period": p, "period_end": ends.get(p).isoformat() if ends.get(p) else None}
-               for p in range(1, highest + 1)]
+               for p in held]
 
     assignment, _decision, _package = project_decision_state(session, project)
     server_derived = None
