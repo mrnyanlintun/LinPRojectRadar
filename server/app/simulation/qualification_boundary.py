@@ -299,12 +299,12 @@ def install(validated: dict[str, tuple[str, Callable]]) -> dict[str, list[str]]:
                     return _refuse_missing(
                         mid, method_class, use, ASSESSMENT_MISSING,
                         "The evidence offered to this measure carries no Category-9 assessment, "
-                        "so it is unassessed and not eligible for this use. No reading is "
-                        "produced and no figure is used in its place. This measure is one of "
-                        "the exceptions to carry-forward: an earlier reading is not shown here "
-                        "either, because the refusal is about whether this evidence may be used "
-                        "at all, and republishing a reading the gate has just declared "
-                        "ineligible would defeat the gate.")
+                        "so it is unassessed and not eligible for this use. No reading is taken "
+                        "from this period's evidence and no figure is computed in its place. "
+                        "Where this project has an earlier period in which this measure "
+                        "produced a reading, that reading is shown and is voting, marked as "
+                        "carried and naming the period it came from; where it has none, this "
+                        "measure stays unassessed.")
                 if not ev.eligible_for(use):
                     return _refuse(
                         mid, method_class, ev, use,

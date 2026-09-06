@@ -132,7 +132,13 @@ check("trap one: the band test is a band test", normalise_band(None) is None
       and normalise_band("green") == "Green" and normalise_band("teal") is None)
 
 # ------------------------------------------------- PROOF 10: an excluded module does not carry
-for mid in sorted(NEVER_CARRY_MODULES) + ["A6.1"]:
+# RUN 144 RULING 1. "A6.1" was in this list because Run 143 excluded
+# `CATEGORY9_ASSESSMENT_MISSING`. The owner lifted that exclusion, so A6.1 now carries, and
+# asserting that it does not would assert the reversed stance. It is re-pointed rather than
+# deleted: `test_run144_ruling1.py` asserts the new behaviour, that A6.1 DOES carry and that the
+# five required categories are reached because of it. The three module-id exemptions below are
+# unchanged by all three of Run 144's rulings.
+for mid in sorted(NEVER_CARRY_MODULES):
     hist = [prior("P1", [{"module_id": mid, "category": mid.split(".")[0],
                           "status_color": "Green", "evidence_metric": "an earlier Green"}])]
     rr = compute_project({}, "run143p2", "P3", CUTOFF, project_id="PRJ-CF",

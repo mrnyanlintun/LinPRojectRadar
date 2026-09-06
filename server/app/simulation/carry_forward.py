@@ -73,11 +73,29 @@ So exemption is decided three ways, in this order:
      "NOTHING IS SUBSTITUTED for the missing reading -- no default, no band, no last-known
      value." That promise is KEPT. A module that crashed must never carry, because a carried
      band over a crash would report a defect as a reading.
-  b. A REASON CODE, where the arm already carries one. `CATEGORY9_ASSESSMENT_MISSING` is the
-     Category-9 gate refusing before the module runs; carrying a band over an
-     evidence-qualification refusal republishes a reading the gate has just declared
-     ineligible. NEEDS AN OWNER RULING -- the order does not name it, so it is built on the
-     conservative side and reported. Reversible by deleting one entry from this set.
+  b. A REASON CODE, where the arm already carries one. Only the FAILURE code is here.
+
+     RUN 144, RULING 1 -- THE CATEGORY-9 EXCLUSION IS LIFTED, BY THE OWNER, ON THE MECHANISM.
+     Run 143 excluded `CATEGORY9_ASSESSMENT_MISSING` conservatively and reported it. It is now
+     removed, and the reason is what the code at the refusal site actually does rather than
+     what the code's name suggests. There are TWO Category-9 refusal paths in
+     `qualification_boundary.py` and they carry DIFFERENT reason codes:
+
+       `CATEGORY9_ASSESSMENT_MISSING` (`_refuse_missing`, :299) fires when `ev is None` --
+       when NOTHING WAS EVER ASSESSED. It sets `qualification_state = UNASSESSED` and
+       `consumer_executed = False`, and it is built on the same `insufficient(...)` primitive
+       every missing-input module uses. Nothing was degraded, nothing was judged unfit,
+       nothing was rejected: the gate never got a verdict to give. That is the MISSING-INPUT
+       shape, which is exactly what the owner's stance says should carry. Lifting it does not
+       let a degraded reading vote as a full one, because a degraded reading never reaches
+       this code at all.
+
+       `evidence_not_qualified_for_use` (`_refuse`, :309) fires when evidence EXISTS and the
+       gate judged it not qualified for the use. THAT is the refusal a carried band would
+       defeat, and it is a different code, which this set has never contained.
+
+     Being unassessed is not the same as being found wanting, and only the second is a
+     judgment about this period's evidence.
   c. A DECLARATION AT THE ARM, `carry_forward_eligible=False` on the module's own returned
      dict. This is how the per-arm cases are handled, and it is deliberately NOT a match on
      the sentence text: sentences are being rewritten by this very run, and an exclusion that
@@ -130,12 +148,12 @@ __all__ = [
 NEVER_CARRY_MODULES: frozenset[str] = frozenset({"C1.5", "B1.1", "B1.2"})
 
 #: Reason codes whose abstention is a refusal about this period's evidence, not a missing input.
-#: `module_execution_failed` keeps `registry.py`'s written promise. `CATEGORY9_ASSESSMENT_MISSING`
-#: is this run's own direction and is REPORTED FOR AN OWNER RULING; removing it from this set is
-#: the whole of the reversal.
+#: `module_execution_failed` keeps `registry.py`'s written promise: a module that crashed gets no
+#: default, no band and no last-known value. RUN 144 RULING 1 removed
+#: `CATEGORY9_ASSESSMENT_MISSING` from this set -- see WHAT IS EXEMPT (b) above; that code means
+#: nothing was ever assessed, which is a missing input, not a refusal.
 NEVER_CARRY_REASON_CODES: frozenset[str] = frozenset({
     MODULE_FAILED_CODE,
-    "CATEGORY9_ASSESSMENT_MISSING",
 })
 
 #: Every key this layer writes onto a carried row. Surfaces key on `carried`; the rest is what
@@ -182,11 +200,15 @@ def is_carry_eligible(row: Mapping[str, Any]) -> tuple[bool, str | None]:
     if row.get("module_failed"):
         return False, "the module failed while computing; a failure is never substituted for"
     code = row.get("abstention_reason_code")
+    # RUN 144 RULING 1. This set now holds ONE code, the failure code, and the sentence below is
+    # that code's sentence. It is not a lookup table with one row by accident: a code added here
+    # later must bring its own words, so a future entry cannot borrow the failure's wording and
+    # tell a reader a module crashed when it did not.
     if code and code in NEVER_CARRY_REASON_CODES:
         if code == MODULE_FAILED_CODE:
             return False, "the module failed while computing; a failure is never substituted for"
-        return False, ("the Category-9 evidence gate refused this measure before it ran, so no "
-                       "reading of any period is eligible for this use")
+        return False, ("this abstention states a judgment about this period's evidence, not a "
+                       "missing input, so no earlier reading answers it")
     if row.get("carry_forward_eligible") is False:
         return False, (row.get("carry_forward_ineligible_reason")
                        or "this abstention states a judgment about this period's evidence, not "
