@@ -1297,6 +1297,70 @@
 
      NO CONTROL IS ADDED. This page has no period selector and this run does not give it one;
      what changes is only which row the page opens on. */
+  /* RUN 147, THE OWNER'S ITEM 5. A REFUSED OR ERRORED GRAFT MUST NEVER RENDER AS A BLANK PAGE.
+
+     The graft below is what puts the module readings, the abstentions, the extracted values,
+     the source documents, the recommendation basis and the disposition list on this page. It
+     is reached through TWO SEQUENTIAL REQUESTS -- `projectperiods` then `projectresults` --
+     and before this run EVERY way either one could fail returned silently:
+
+       1. `projectperiods` threw            -> console.warn only, no page state
+       2. `projectperiods` answered ok:false -> `return null`, NO LOG AT ALL
+       3. `latest_computed_period` was null  -> `return null`, no log
+       4. the results request was NEVER ISSUED because of 1-3
+       5. `projectresults` threw            -> console.warn only
+       6. `projectresults` answered ok:false -> `return`, no log
+       7. it answered ok:true with no `result` -> `return`, no log
+       8. it answered a DIFFERENT period than the projection states -> console.warn, no page state
+
+     In every one of those eight the page keeps the render it already produced from
+     `facade.live_statuses`'s six-key list projection: the five category postures, the project
+     status, the header driver and the Signal Flow diagram -- and NOTHING ELSE. That is the
+     symptom the owner has now chased across several runs, and the reason it took several runs
+     is that all eight look identical from the outside and none of them says a word.
+
+     So each one now SAYS WHICH IT WAS: an alert on the page naming the request that failed and
+     the server's own reason, and a console.error carrying the same. The page is never blank
+     without an explanation again. This is a REPORTING change only -- no band, threshold,
+     weight, posture rule or category rule is touched, and `SIMULATION_VERSION` does not move.
+
+     Case 3 is the one honest silence and it is kept a silence ON THE PAGE: a project that has
+     never been computed in any period has no analysis to fail to load, and render() has
+     already drawn its own empty state. It is logged, so a reader of the console can still tell
+     case 3 from case 2. */
+  function graftFailed(id, stage, detail) {
+    const line = "[detail] the stored analysis for " + id + " was not loaded: " + stage
+      + (detail ? " -- " + detail : "");
+    try { console.error(line); } catch (e) {}
+    // A failure for a project the page has already navigated away from must not write an alert
+    // into whatever project is now on screen.
+    if (currentRenderId !== id) return;
+    const root = document.getElementById("detail-root");
+    if (!root) return;
+    let el = root.querySelector(".detail-graft-error");
+    if (!el) {
+      el = document.createElement("p");
+      el.className = "store-banner warn detail-graft-error";
+      el.setAttribute("role", "alert");
+      root.insertBefore(el, root.firstChild);
+    }
+    el.textContent =
+      "The stored analysis for this project could not be loaded, so the module readings, the "
+      + "extracted values and the decision options below are missing rather than absent. "
+      + stage + (detail ? " (" + detail + ")" : "")
+      + " The category postures and the project status shown on this page come from the "
+      + "portfolio list and are unaffected.";
+  }
+
+  /* Clears the alert once a graft has actually succeeded, so a retry that works does not leave
+     a stale accusation on the page. */
+  function graftSucceeded(id) {
+    if (currentRenderId !== id) return;
+    const root = document.getElementById("detail-root");
+    const el = root && root.querySelector(".detail-graft-error");
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
+
   async function currentPeriod(id, tok) {
     let resp;
     try {
@@ -1304,12 +1368,30 @@
         { action: "projectperiods", id: id, session_token: tok }, 30000
       );
     } catch (e) {
-      console.warn("[detail] period determination failed for", id, e && e.message);
+      graftFailed(id, "the period request (projectperiods) could not be completed.",
+                  (e && e.message) || String(e));
       return null;
     }
-    if (!resp || resp.ok !== true) return null;
+    if (!resp || resp.ok !== true) {
+      // THE FIRST OF THE TWO SILENT EARLY EXITS, AND THE ONE THAT ABORTS BEFORE ANY RESULTS
+      // REQUEST EXISTS AT ALL. A refusal here -- membership, session, an unhandled server
+      // error -- left no console line and no page state, so the results request the whole
+      // graft depends on was never issued and nothing recorded that it had not been.
+      graftFailed(id, "the server refused the period request (projectperiods), so the analysis "
+                  + "was never requested.",
+                  (resp && resp.error) ? String(resp.error) : "no reason given");
+      return null;
+    }
     const latest = resp.latest_computed_period;
-    return (latest === null || latest === undefined) ? null : Number(latest);
+    if (latest === null || latest === undefined) {
+      // Case 3. Not a refusal: this project holds no computed result in any period, and
+      // render() has already drawn that empty state honestly. Logged, not alerted.
+      console.warn("[detail] " + id + " has no computed result in any period "
+        + "(projectperiods.latest_computed_period is null); nothing to graft. computed_periods="
+        + JSON.stringify(resp.computed_periods || []));
+      return null;
+    }
+    return Number(latest);
   }
 
   async function primeAndRefresh(id, p) {
@@ -1326,10 +1408,21 @@
         { action: "projectresults", id: id, period: period, session_token: tok }, 30000
       );
     } catch (e) {
-      console.warn("[detail] primeAndRefresh fetch failed for", id, e && e.message);
+      graftFailed(id, "the analysis request (projectresults, period " + period
+                  + ") could not be completed.", (e && e.message) || String(e));
       return;
     }
-    if (!resp || resp.ok !== true || !resp.result) return;
+    if (!resp || resp.ok !== true) {
+      graftFailed(id, "the server refused the analysis request (projectresults, period "
+                  + period + ").",
+                  (resp && resp.error) ? String(resp.error) : "no reason given");
+      return;
+    }
+    if (!resp.result) {
+      graftFailed(id, "the server accepted the analysis request (projectresults, period "
+                  + period + ") but returned no result row.", "ok:true with no result");
+      return;
+    }
     // The page may have moved to another project while this fetch was in flight. Priming the ROWS
     // cache for this id is still correct and harmless, but grafting onto p, rewriting badges and
     // re-running sections would write this project's data into whatever project is now on screen.
@@ -1364,8 +1457,18 @@
     const periodsAgree = (graftPeriod === null || projectionPeriod === null)
       ? true : graftPeriod === projectionPeriod;
     if (p.storedResult && !periodsAgree) {
-      console.warn("[detail] served row is period " + graftPeriod + " and the projection states period "
-        + projectionPeriod + "; not grafting one period's result onto another's row");
+      // RUN 147. The graft is REFUSED here, deliberately (Run 69, above) -- and a refused graft
+      // empties this page exactly as a refused request does. It said so only in the console.
+      graftFailed(id, "the analysis the server returned is for period " + graftPeriod
+                  + " and this page's row states period " + projectionPeriod
+                  + ", so it was not applied.",
+                  "two periods must not be mixed in one row");
+    }
+    if (!p.storedResult) {
+      // Nothing to graft onto. `rowFor` will fall back to the ROWS cache primed above, but the
+      // page was rendered without a projection and the reader is entitled to know it.
+      console.warn("[detail] " + id + " has no list projection to graft onto; "
+        + "the served row was primed into the results cache only");
     }
     if (p.storedResult && periodsAgree) {
       if (resp.result.module_results && !p.storedResult.module_results) {
@@ -1463,6 +1566,10 @@
       // row directly, not only through the ROWS cache prime above.
       p.storedResult = resp.result;
     }
+
+    // RUN 147. A graft that actually applied clears any alert an earlier attempt left, so a
+    // retry that succeeds does not leave a stale accusation on a page that is now complete.
+    if (p.storedResult && (periodsAgree || !graftPeriod)) graftSucceeded(id);
 
     // The collapsed-section badges above each panel were computed at render() from the
     // truncated row (and, for Ensemble, from the retired simulationSignals field the server
