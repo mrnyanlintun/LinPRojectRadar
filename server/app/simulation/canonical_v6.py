@@ -50,6 +50,8 @@ from .canonical import StructureAbsent
 from .qualified_evidence import (
     CONSISTENT, FUTURE_DATED, MATERIAL_CONFLICT, NOT_COMPARABLE, STALE, TIMELINESS_UNKNOWN, TIMELY,
 )
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 #: The governed structure key each Run-31 module reads off the signal inputs, and the reader's
 #: words for it. `project_data.governed_structure_keys()` unions this with the earlier four maps,
@@ -101,7 +103,7 @@ def v6_structure(si: dict, module_id: str) -> dict:
     if structure is None:
         raise StructureAbsent(
             f"Awaiting {words}. This measure is named for a method that cannot be carried out "
-            f"without it, so no reading is reported and no other figure is used in its place.")
+            f"without it, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     if not isinstance(structure, dict):
         raise StructureAbsent(
             f"The information provided for this project in place of {words} is not in a form "
@@ -1130,8 +1132,8 @@ def safety_performance(structure: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(cases, (int, float)) or not isinstance(hours, (int, float)):
         out.update({"incidence_rate": None, "lagging_disposition": "ABSTAIN_NO_EXPOSURE_DATA",
                     "lagging_reason": ("recordable cases and employee hours worked are not both "
-                                       "recorded, so no exposure-normalised rate is computed and "
-                                       "no substitute is used")})
+                                       "recorded, so no exposure-normalised rate is computed "
+                                       "from this period's evidence. " + CARRY_CLAUSE)})
     elif hours <= 0:
         out.update({"incidence_rate": None, "lagging_disposition": "INVALID_DENOMINATOR",
                     "lagging_reason": ("no employee hours worked are recorded for this period, "

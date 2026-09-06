@@ -65,6 +65,8 @@ from typing import Any, Mapping, Sequence
 
 from .canonical import StructureAbsent
 from .qualified_evidence import ELIGIBLE_STATES, UNASSESSED
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 # ---------------------------------------------------------------------------------------------
 # GOVERNED VOCABULARY
@@ -258,7 +260,7 @@ def _require_mapping(obj: Any, words: str) -> Mapping[str, Any]:
     if obj is None:
         raise PortfolioAbstention(
             f"Awaiting {words}. This measure is named for a method that cannot be carried out "
-            f"without it, so no reading is reported and no other figure is used in its place.")
+            f"without it, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     if not isinstance(obj, Mapping):
         raise PortfolioAbstention(
             f"The information provided in place of {words} is not in a form this measure can "

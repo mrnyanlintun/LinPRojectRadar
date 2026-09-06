@@ -684,6 +684,24 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                 adapted = None
             if adapted is not None:
                 reason = f"{reason} {adapted}" if reason else adapted
+            # RUN 143 PART 2. A MEASURE THAT DOES NOT CARRY MUST NOT PUBLISH THE CARRYING
+            # CLAUSE, and some of them reach a SHARED sentence builder that cannot know they are
+            # exempt -- C1.5 is the case: it abstains through the same structure-absent sentence
+            # every other Category-8 module uses, and that sentence now promises carry-forward.
+            # A reader would be told a measure that can never band will publish an earlier band.
+            # Corrected here, once, from `carry_forward`'s own exemption list rather than from a
+            # second opinion written at each site, and only ever by REPLACING the promise with
+            # the reason it does not apply -- never by deleting it silently.
+            from .carry_forward import is_carry_eligible as _cf_eligible
+            from .carry_words import CARRY_CLAUSE as _CARRY_CLAUSE
+            _probe = dict(out)
+            _probe["module_id"] = new_id
+            _ok, _why = _cf_eligible(_probe)
+            if not _ok and reason and _CARRY_CLAUSE in reason:
+                reason = reason.replace(
+                    _CARRY_CLAUSE,
+                    "This measure is one of the exceptions to carry-forward: no earlier reading "
+                    "of it is shown or voted with, because " + (_why or "it is exempt") + ".")
             entry = {
                 "module_id": new_id,
                 "reason": reason,
@@ -730,6 +748,13 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                        "structure_provenance", "abstention_reason", "lineage",
                        "canonical_state", "operational", "schedule_network_diagnostics",
                        "activities_without_three_point_durations",
+                       # RUN 143 PART 2. The arm's OWN declaration that its abstention is a
+                       # judgment about this period's evidence rather than a missing input, and
+                       # therefore that no earlier reading answers it. Set at the arm, read by
+                       # `carry_forward.is_carry_eligible`, and deliberately not inferred from
+                       # the sentence: this run rewrites those sentences, and an exclusion keyed
+                       # on wording would fail OPEN the moment someone rephrased one.
+                       "carry_forward_eligible", "carry_forward_ineligible_reason",
                        "module_failed", "module_failure"):
                 if out.get(_k) is not None:
                     entry[_k] = out[_k]
@@ -799,6 +824,15 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
     #   * The sentence a reader sees states plainly that the module failed and that no figure
     #     was produced or used in its place. NOTHING IS SUBSTITUTED for the missing reading --
     #     no default, no band, no last-known value. A failed module contributes nothing.
+    #
+    #     RUN 143 PART 2 NARROWED WHAT THAT SENTENCE IS ABOUT, AND KEPT IT HERE. As of
+    #     sim-2026.09-v71 an ABSTENTION does now carry its most recent earlier banded reading
+    #     forward, marked as carried. THE FAILURE PATH IS EXEMPT AND THIS PROMISE STANDS
+    #     UNCHANGED FOR IT. The distinction is the point: an abstention says the evidence was
+    #     absent, and an earlier reading is a defensible answer to that; a failure says the
+    #     module itself broke, and publishing a band over a defect would report the defect as
+    #     a reading. `carry_forward.is_carry_eligible` tests `module_failed` and
+    #     MODULE_FAILED_CODE first, before anything else, for exactly this reason.
     #   * The full traceback is logged at ERROR, so the defect is as visible in the logs as it
     #     was when it crashed the route.
     #   * `BaseException` is deliberately NOT caught. A KeyboardInterrupt or a MemoryError is
@@ -818,8 +852,10 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                 "status_color": None,
                 "evidence_metric": (
                     "This measure could not be produced: the module failed while it was being "
-                    "computed, so no figure was produced from the evidence supplied and no "
-                    "figure is used in its place."),
+                    "computed, so no figure was produced from the evidence supplied. No "
+                    "figure is used in its place and, unlike a measure that abstained for want "
+                    "of evidence, no earlier reading of this measure is carried forward "
+                    "either: a module that broke has not read this period at all."),
                 "module_failed": True,
                 "module_failure": {"type": type(exc).__name__, "message": str(exc)[:500]},
                 "abstention_reason_code": MODULE_FAILED_CODE,

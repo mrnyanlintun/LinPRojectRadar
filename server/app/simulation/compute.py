@@ -361,6 +361,7 @@ def delivery_complete(signal_inputs: dict | None) -> bool:
     rec = commissioning_clearance(si)
     return bool(rec and rec["all_cleared"])
 from .registry import CORE_VOTING_MODULES, registry_index, run_all
+from .carry_forward import carry_candidates, select_carried
 
 
 def contributes_to_project_status(group: str) -> bool:
@@ -378,7 +379,8 @@ def contributes_to_project_status(group: str) -> bool:
 
 
 def compute_project(si: dict, scenario_id: str, period: str,
-                    period_cutoff, project_id: str | None = None) -> dict[str, Any]:
+                    period_cutoff, project_id: str | None = None,
+                    prior_readings: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """
     Run the analytical layer and fuse it into a project status.
 
@@ -452,8 +454,55 @@ def compute_project(si: dict, scenario_id: str, period: str,
     # abstentions that say only "this module needs evidence this project does not carry", so it
     # stays narrow; the gate record for a vote is written by the computed loop, which now
     # writes one for every module that voted.
+    # =========================================================================================
+    # RUN 143, PART 2. CARRY-FORWARD, AND IT HAPPENS HERE BECAUSE HERE IS THE LAST PLACE THE
+    # ARITHMETIC BELOW NEEDS NO CHANGE AT ALL.
+    #
+    # THE STANCE CHANGE. A module abstaining in the current period now DISPLAYS AND VOTES WITH
+    # its most recent earlier banded reading from the same project, marked as carried, naming
+    # the period it came from and repeating that period's own evidence sentence. Until
+    # sim-2026.09-v71 this layer refused that in writing in thirty places.
+    #
+    # WHY THIS LINE. Everything below reads `run["computed"]`: the gate loop, `by_category`,
+    # `category_posture`, the project weights, `voting_module_ids`, the stored row. A carried
+    # reading appended here is a band like any other and every one of them counts it without a
+    # line changing. Every rule, boundary, weight and threshold in this file is untouched.
+    #
+    # WHY `run["abstained"]` IS NOT TOUCHED. Rule 6: the stored result for a period must still
+    # record what THAT period's evidence produced, with the carried reading recorded as carried
+    # alongside it and not replacing it. So an abstaining module that carries appears in BOTH
+    # lists, deliberately, and the research export was changed to say which row is which rather
+    # than emitting two and letting an analyst count the module twice.
+    #
+    # WHY A BANDLESS COMPUTED ROW IS REPLACED RATHER THAN JOINED. The order's rule 2 says
+    # "abstained OR PRODUCED NO BAND", and a calibration-pending row -- A6.2's arms among them --
+    # is a COMPUTED row with `status_color = None`. Two rows for one module in `module_results`
+    # would leave `getModuleStatus` returning whichever came first, which is the bandless one.
+    # So the carried row takes its place and carries the whole original verbatim in
+    # `period_record`, which loses nothing.
+    #
+    # WHAT SUPPLIES THE HISTORY. `prior_readings`: live earlier periods of THIS project only,
+    # newest first, fetched and ordered by the caller (period DESC, computed_at DESC,
+    # result_id DESC). Absent, the carry step is a no-op and this function behaves exactly as it
+    # did at v70 -- which is what every tool and test that calls it without history relies on.
+    _carried: list[dict[str, Any]] = []
+    if prior_readings:
+        _carried = select_carried(carry_candidates(run), prior_readings)
+        _replaced = {r["module_id"] for r in _carried
+                     if r.get("carried_origin") == "computed_bandless"}
+        if _replaced:
+            run["computed"] = [r for r in run["computed"]
+                               if r.get("module_id") not in _replaced]
+        run["computed"].extend(_carried)
+        run["computed"].sort(key=lambda r: str(r.get("module_id")))
+
     _abstained_voters = {r["module_id"] for r in run["abstained"]
                          if r["module_id"] in CORE_VOTING_MODULES}
+    # A module whose reading is carried is NOT reported to the gate as an abstention: it has a
+    # band this period and it is voting with it. Reporting it both ways would have the gate
+    # degrade the very signal this run created.
+    _carried_ids = {r["module_id"] for r in _carried}
+    _abstained_voters -= _carried_ids
     by_category: dict[str, list[QualifiedSignal]] = {}
     gate_reports: list[dict[str, Any]] = []
     for row in run["computed"]:
@@ -697,6 +746,40 @@ def compute_project(si: dict, scenario_id: str, period: str,
             "project_renormalised": _posture["renormalised"],
             "status_reason": _status_reason,
             "official": _complete or not _required_missing,
+            # ------------------------------------------------- RUN 143, PART 2. THE CARRY RECORD
+            #
+            # THE CONSEQUENCE THE OWNER ORDERED STATED PLAINLY, AND IT IS STATED HERE BECAUSE
+            # THIS IS THE OBJECT THE CARD READS. A project can now publish a full status on a
+            # period where few or no documents were uploaded. That is not a defect and it is not
+            # hidden: `carried_count` says how many of the readings behind this status were not
+            # taken from this period's evidence, and `carried_of_banded` says out of how many.
+            # A card showing "4 of 6 readings carried" beside an official Green is the honest
+            # signal, and it is deliberately more prominent than an argument for reconciling it
+            # away.
+            #
+            # `carried_oldest_age` IS THE STALENESS GATE'S JUDGMENT MADE VISIBLE WHERE IT CAN NO
+            # LONGER BE APPLIED. `qualification_gate` refuses stale EVIDENCE; a carried READING
+            # is re-admitted to a later period without the gate seeing it again, and there is NO
+            # HORIZON on the look-back. This run declines to invent one -- a horizon is the
+            # owner's number, not this layer's -- and reports the age instead so that nothing
+            # about the trade is concealed.
+            "carried_count": len(_carried),
+            "carried_of_banded": len([r for r in run["computed"]
+                                      if r.get("status_color")]),
+            "carried_modules": [
+                {"module_id": r["module_id"],
+                 "category": r.get("category"),
+                 "status_color": r.get("status_color"),
+                 "carried_from_period": r.get("carried_from_period"),
+                 "carried_from_age": r.get("carried_from_age")}
+                for r in _carried],
+            "carried_oldest_age": max(
+                [r.get("carried_from_age") or 0 for r in _carried], default=0),
+            "carried_stance": (
+                "A module that produced no reading from this period's evidence publishes and "
+                "votes with its most recent earlier reading from this project, marked as "
+                "carried and naming the period it came from. Readings marked carried were not "
+                "taken from this period's documents."),
             "delivery_complete": _complete,
             "delivery_complete_basis": _complete_basis,
             "commissioning_clearance": _cx,

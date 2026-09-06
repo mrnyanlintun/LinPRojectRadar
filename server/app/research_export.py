@@ -201,6 +201,40 @@ MODULE_RESULT_COLUMNS: tuple[str, ...] = (
     # on a row that computed. It is a code and it belongs HERE, in the export and the API, and
     # never on a participant surface: the sentence in evidence_metric is what a reader sees.
     "abstention_reason_code",
+    # ------------------------------------------------------------ RUN 143, PART 2. CARRYING.
+    #
+    # WHY THESE ARE FLAT COLUMNS AND NOT LEFT IN `result_json`. From sim-2026.09-v71 a module
+    # that produced no reading from a period's evidence publishes its most recent earlier
+    # banded reading, marked as carried. Without these three columns the carrying metadata
+    # would land only inside the JSON blob, and the FLAT COLUMNS AN ANALYST ACTUALLY GROUPS ON
+    # -- `status_color` and `evidence_metric` -- could not tell a carried reading from a
+    # current one. An analyst counting bands per period would count a reading from an earlier
+    # period as evidence of this one. That is the same defect as the rendering one, in a file.
+    #
+    #   carried              1 for a carried reading, empty otherwise.
+    #   carried_from_period  the period it came from, NAMED.
+    #   carried_from_age     how many stored live periods back that is.
+    "carried",
+    "carried_from_period",
+    "carried_from_age",
+    # RUN 143, PART 2. THE DOUBLE-COUNT FIX, AND IT IS A COLUMN RATHER THAN A DELETION.
+    #
+    # Rule 6 requires the period's own record to be kept, so a module that carried appears in
+    # BOTH `module_results` and `abstained` on the stored row -- and this export emits one row
+    # per entry in each. The same module-period would yield two rows and an analyst summing
+    # them would double-count it.
+    #
+    # NOTHING IS DROPPED to fix that: the abstention row still carries the module's own reason
+    # for producing nothing this period, which is exactly the fact the research needs. What is
+    # added is a column saying WHICH KIND OF RECORD each row is, so one row per module-period
+    # is a filter (`record_kind IN ('reading','carried_reading')`) rather than a guess:
+    #
+    #   reading                          a band this period's evidence produced
+    #   carried_reading                  a band carried from an earlier period
+    #   abstention                       produced nothing, and nothing was carried
+    #   abstention_superseded_by_carry   produced nothing, and a carried reading was published
+    #                                    for it -- the row that would otherwise double-count
+    "record_kind",
     "result_json",
 )
 
@@ -791,6 +825,11 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
         legacy = project.legacy_id if project else None
         if project_legacy_ids is not None and legacy not in project_legacy_ids:
             continue
+        # RUN 143 PART 2. Which modules published a CARRIED reading on this stored row, so the
+        # abstention loop below can mark its own row as the one that would double-count.
+        _carried_ids = {str(m.get("module_id"))
+                        for m in (result.module_results or [])
+                        if isinstance(m, dict) and m.get("carried") is True}
         for module in (result.module_results or []):
             if not isinstance(module, dict):
                 continue
@@ -798,6 +837,7 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
             group_letter = str(module.get("group") or "")
             extra = {k: v for k, v in module.items()
                     if k not in ("module_id", "group", "status_color", "evidence_metric")}
+            _is_carried = module.get("carried") is True
             canonical_name = names.get(module_id, module_id)
             rows.append({
                 "project": legacy,
@@ -811,6 +851,11 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
                 "status_color": module.get("status_color"),
                 "evidence_metric": module.get("evidence_metric"),
                 "abstention_reason_code": "",
+                "carried": 1 if _is_carried else "",
+                "carried_from_period": (module.get("carried_from_period")
+                                        if _is_carried else ""),
+                "carried_from_age": (module.get("carried_from_age") if _is_carried else ""),
+                "record_kind": "carried_reading" if _is_carried else "reading",
                 "result_json": json.dumps(extra, sort_keys=True, default=str),
             })
 
@@ -846,6 +891,13 @@ def build_module_results_rows(session: Session, project_legacy_ids: set[str] | N
                 "status_color": None,
                 "evidence_metric": entry.get("reason"),
                 "abstention_reason_code": entry.get("abstention_reason_code") or "",
+                "carried": "",
+                "carried_from_period": "",
+                "carried_from_age": "",
+                # The row that would otherwise double-count: this module abstained AND a carried
+                # reading was published for it. Both rows are true and both are kept.
+                "record_kind": ("abstention_superseded_by_carry"
+                                if module_id in _carried_ids else "abstention"),
                 "result_json": json.dumps({"abstained": True}, sort_keys=True),
             })
     return rows
@@ -1289,10 +1341,31 @@ def a_adminexportfetch(session: Session, payload: dict, secret: str, ttl: int) -
             audit(session, "export_checksum_mismatch", participant_id=caller.participant_id,
                   export_id=export_id, stored_checksum=record.checksum, recomputed=digest)
             session.commit()
+            # ---------------------------------------------- RUN 143, PART 2. SAY WHAT MOVED.
+            #
+            # THIS RUN INVALIDATES EVERY STORED MODULE-RESULTS CHECKSUM, and the sentence above
+            # is the platform accusing itself of tampering unless it says why. Two things
+            # changed the bytes: `MODULE_RESULT_COLUMNS` gained four columns (`carried`,
+            # `carried_from_period`, `carried_from_age`, `record_kind`), and the rows themselves
+            # change once a project is recomputed under sim-2026.09-v71, because a module that
+            # abstained now publishes a carried reading. The legacy re-check above cannot rescue
+            # a module-results export: it only re-serialises WITHOUT THE NOTICE, and the column
+            # set is not what it varies.
+            #
+            # The outstanding v70 recomputation already invalidates these same checksums, so the
+            # marginal harm is small -- but "the underlying data has changed" read alone invites
+            # the reading that someone edited the record, and nobody did. The addition names the
+            # two changes so an analyst can tell a schema change from a data one.
+            _v71 = (" If this is a module-results export taken before sim-2026.09-v71: that "
+                    "stamp added four columns (carried, carried_from_period, carried_from_age, "
+                    "record_kind) and carry-forward changes which readings a recomputed period "
+                    "holds, so a mismatch here is an expected consequence of that stamp and of "
+                    "the recomputation it requires, not evidence that a stored row was altered."
+                    ) if kind == "project_health" else ""
             return err(
                 f"checksum verification failed for export {export_id}: stored "
                 f"{record.checksum}, recomputed {digest}. The underlying data has changed since "
-                f"this export was taken; the payload is withheld."
+                f"this export was taken; the payload is withheld." + _v71
             )
 
     row_count = _row_count_for(session, kind, record.format or "json", start, end)

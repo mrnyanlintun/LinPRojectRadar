@@ -41,6 +41,8 @@ from .canonical_v3 import (
 )
 from . import band_reference as _BR
 from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 # Stamped on every result set, so a later change to this layer is detectable in already-collected
 # data rather than being invisible in the analysis.
@@ -1085,7 +1087,26 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # is taken from the full-precision score and `_round3` is now only the printed figure, grown by
 # `band_display.band_figure` where an edge is near. Rows stamped v69 and earlier keep their own
 # stamp; B2.18 and B2.19 readings are not comparable across v69 and v70.
-SIMULATION_VERSION = "sim-2026.09-v70"
+# RUN 143, PART 2. THE STANCE CHANGED. Until this stamp a module that abstained in a period
+# published nothing, and thirty places in this layer said so in writing: "no reading is reported
+# and no other figure is used in its place." That promise is withdrawn by the owner's order. A
+# module that abstains this period now DISPLAYS AND VOTES WITH its most recent earlier banded
+# reading from the same project, marked as carried, naming the period it came from and repeating
+# that period's own evidence sentence unaltered.
+#
+# WHAT DID NOT CHANGE: no band boundary, no threshold, no posture rule, no project weight, no
+# module arithmetic. A carried reading enters the rollup as a band, and `category_posture` and
+# `project_posture` are byte-for-byte unchanged. What changed is WHICH readings reach them.
+#
+# WHAT IS EXEMPT (see carry_forward.py, which is the single authority): a failed module, a
+# Category-9 qualification refusal, C1.5 Information Completeness Ratio, B1.1 and B1.2, and the
+# arms whose abstention is a judgment about THIS period's evidence rather than a missing input
+# -- A6.2's exposure floor and near-miss-healthy arms, A1.5's and A1.2's short-history arms.
+# Those arms declare themselves ineligible at the arm; they are not matched by sentence text.
+#
+# A row stamped v70 or earlier carries no carried readings and its counts are not comparable
+# with a v71 row: abstention counts fall and banded counts rise on any project with history.
+SIMULATION_VERSION = "sim-2026.09-v71"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1366,6 +1387,11 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # figure through the shared `band_display` rule. Two more favourable flips removed; no edge
  # moved. Rows stamped v69 and earlier remain valid under their own stamp.
  "sim-2026.09-v70",
+ # RUN 143 PART 2: carry-forward becomes a general rule. A module abstaining in the current
+ # period displays and votes with its most recent earlier banded reading from the same project,
+ # marked carried, with the source period and that period's own evidence sentence. No band,
+ # boundary, posture rule or weight moved. The exemptions are listed in carry_forward.py.
+ "sim-2026.09-v71",
 )
 
 
@@ -1449,7 +1475,8 @@ def insufficient(method_class: str, message: str | None = None,
         "method_class": method_class,
         "status_color": None,
         "insufficient_data": True,
-        "evidence_metric": message or "Insufficient data: upload required documents",
+        "evidence_metric": (message or ("Insufficient data: upload required documents. "
+                                        + CARRY_CLAUSE)),
     }
     if reason_code is not None:
         out["abstention_reason_code"] = reason_code
@@ -1730,15 +1757,18 @@ def eligible(si: dict, required: tuple[tuple[str, str], ...] = (),
         raw = si.get(key)
         if raw is None:
             return (ABSTAIN_MISSING_INPUT,
-                    f"Insufficient data: {words} has not been reported for this period.")
+                    f"Insufficient data: {words} has not been reported for this period. "
+                    + CARRY_CLAUSE)
         if num(raw, None) is None:
             return (ABSTAIN_MALFORMED_INPUT,
-                    f"Insufficient data: {words} was reported in a form that is not a number.")
+                    f"Insufficient data: {words} was reported in a form that is not a number. "
+                    + CARRY_CLAUSE)
     for key, words in positive:
         if num(si.get(key), 0.0) <= 0:
             return (ABSTAIN_INVALID_DENOMINATOR,
                     f"Insufficient data: {words} is zero or below, and a rate cannot be formed "
-                    f"on it. No substitute figure is used in its place.")
+                    f"on it, so no reading is taken from this period's evidence. "
+                    + CARRY_CLAUSE)
     # RUN 14. The upper end of the domain, for the declared inputs that have one. The numeric
     # contract now refuses an impossible figure at every entry point, so in a corpus ingested
     # after this run nothing here can fire; it fires on a figure stored BEFORE the contract
@@ -1754,8 +1784,8 @@ def eligible(si: dict, required: tuple[tuple[str, str], ...] = (),
         if value is not None and value > upper:
             return (ABSTAIN_MALFORMED_INPUT,
                     f"Insufficient data: {words} was reported as a figure this quantity cannot "
-                    f"take, so it is not read as evidence of anything. No substitute figure is "
-                    f"used in its place.")
+                    f"take, so it is not read as evidence of anything and no reading is taken "
+                    f"from this period's evidence. " + CARRY_CLAUSE)
     return None
 
 

@@ -568,12 +568,26 @@
         return { status: 'NotRelevant', na: true, disabled: isDis,
                  color: COL.NotRelevant, metric: null };
       }
+      /* RUN 143, PART 2. THE NETWORK IS ONE OF THE FOUR SURFACES THE ORDER NAMES, and a node
+         here is the most compressed presentation of a reading on the whole platform: a
+         coloured dot. A dot cannot carry a chip, so the marking goes where the node's own
+         words are -- the label the reader sees on hover -- and it goes there as its OWN
+         field, not merely inside the metric sentence, so the tooltip can lead with it rather
+         than bury it after the finding.
+
+         THE DOT'S COLOUR IS DELIBERATELY NOT CHANGED. A carried Amber is an Amber and votes
+         as one; recolouring the node would misstate the reading rather than qualify it, and
+         would put this surface at odds with the ledger's pill and the export's band column. */
+      var carried = null;
+      try {
+        if (window.getModuleCarried) carried = window.getModuleCarried(m.mc, project);
+      } catch (e) {}
       if (st) {
         var s = statusFromSig({ status_color: st });
-        return { status: s, color: colFor(s), metric: metric };
+        return { status: s, color: colFor(s), metric: metric, carried: carried };
       }
       var s2 = statusFromSig(r);
-      return { status: s2, color: colFor(s2), metric: metric };
+      return { status: s2, color: colFor(s2), metric: metric, carried: carried };
     }
 
     // RUN 16, WORKSTREAM A3. AN EDGE ANIMATES ONLY WHEN DATA CURRENTLY TRAVELS IT.
@@ -1423,8 +1437,19 @@ var HEADERS = [
         return function(evt) {
           circle.style.transform = 'scale(1.5)';
           var metStr = info.metric ? '<div class="sub">metric: '+escH(info.metric)+'</div>' : '';
+          /* RUN 143, PART 2. The carrying line leads, immediately under the status word,
+             because a reader must meet the qualifier before the reading it qualifies. It
+             NAMES the period -- never "the previous period", which a removed period makes
+             false -- and it is omitted entirely for a current reading, so nothing is
+             invented and a node with no carrying record reads exactly as it reads today. */
+          var carStr = info.carried
+            ? '<div class="sub" style="font-style:italic">'
+              + escH(window.moduleCarriedLabel ? window.moduleCarriedLabel(info.carried)
+                     : 'Carried forward')
+              + ' \u2014 not taken from this period\u2019s evidence</div>'
+            : '';
           var statusLabel = info.na ? escH(sectorNAText) : info.status;
-          showTT(evt,'<div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
+          showTT(evt,'<div class="n">'+escH(m.name)+'</div><div class="sub" style="color:'+info.color+'">'+statusLabel+'</div>'+carStr+metStr+'<div class="sub">'+escH(CATS[m.catI].name)+'</div>');
           modCatEls[mi].base.setAttribute('opacity','0.85');
           modCatEls[mi].dash.setAttribute('opacity','0.85');
           modCatEls[mi].base.setAttribute('stroke-width','2.2');

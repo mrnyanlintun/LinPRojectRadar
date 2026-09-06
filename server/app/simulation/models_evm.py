@@ -59,6 +59,8 @@ def _run107_basis(section: str, numbers: str) -> str:
             f"has uploaded")
 from .models_ext import _js_date_ms, _js_str, _money
 from .rng import clamp, js_round, num, round1
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 _round3 = lambda v: js_round(v * 1000) / 1000  # noqa: E731
 
@@ -206,12 +208,23 @@ def run_arima_forecast(si: dict, rand: Callable[[], float], period_cutoff) -> di
     """
     history = _history(si, "cpiHistory", "cpi")
     if not history:
-        return insufficient("ARIMA_Forecast", "Awaiting a cost performance history",
+        return insufficient("ARIMA_Forecast",
+                            "Awaiting a cost performance history. " + CARRY_CLAUSE,
                             ABSTAIN_INSUFFICIENT_HISTORY)
     try:
         model = identify_arima(history)
     except StructureAbsent as absent:
-        return insufficient("ARIMA_Forecast", absent.sentence, ABSTAIN_INSUFFICIENT_HISTORY)
+        # RUN 143 PART 2. The raise's own carry declaration travels onto the abstention row.
+        # `identify_arima` refuses on three different grounds and they do not agree about
+        # carrying: no usable history at all is a missing input and carries; a history that is
+        # present and too short is a judgment about this period's evidence and does not.
+        _extra: dict = {}
+        if getattr(absent, "carry_forward_eligible", True) is False:
+            _extra["carry_forward_eligible"] = False
+            _extra["carry_forward_ineligible_reason"] = \
+                absent.carry_forward_ineligible_reason
+        return insufficient("ARIMA_Forecast", absent.sentence, ABSTAIN_INSUFFICIENT_HISTORY,
+                            **_extra)
     # ------------------------------------------------- RUN 107. THREE PERIODS, WORST OF THREE.
     # The owner's order: "Forecast CPI for the next three periods; band the worst of the three.
     # ... A near-term Green does not offset a third-period Red." The three come from the SAME
@@ -651,8 +664,8 @@ def run_tcpi(si: dict, rand: Callable[[], float], period_cutoff) -> dict[str, An
         if _v is None or not _ok(_v):
             return insufficient(
                 "TCPI",
-                f"No cost efficiency is measurable for the remaining work: {_words}. No "
-                f"substitute figure is used in its place.",
+                f"No cost efficiency is measurable for the remaining work: {_words}, so no "
+                f"reading is taken from this period's evidence. " + CARRY_CLAUSE,
                 ABSTAIN_MALFORMED_INPUT)
     if num(si["ev"], None) > num(si["bac"], None):
         return insufficient(
@@ -967,7 +980,7 @@ def run_budget_execution(si: dict, rand: Callable[[], float], period_cutoff) -> 
     if not check_inputs(si, ("ac",)):
         return insufficient("Budget_Execution_Rate",
                             "Insufficient data: the actual cost has not been reported for this "
-                            "period.", ABSTAIN_MISSING_INPUT)
+                            "period. " + CARRY_CLAUSE, ABSTAIN_MISSING_INPUT)
     try:
         structure = require_v3_structure(si, "A1.9")
         period_index = num(structure.get("status_period_index"), None)
@@ -1319,7 +1332,7 @@ def run_independent_eac_reconciliation(si: dict, rand: Callable[[], float],
             "through, so it needs a change order register stating, for every change, its value "
             "and whether the owner has approved it. A project that instead holds two "
             "separately prepared forecasts of the cost at completion is read on those. Neither "
-            "was provided, and no other figure is used in their place.",
+            "was provided, so no reading is taken from this period's evidence. " + CARRY_CLAUSE,
             ABSTAIN_STRUCTURE_ABSENT)
     try:
         structure = require_v3_structure(si, "A1.11")

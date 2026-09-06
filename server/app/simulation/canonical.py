@@ -38,6 +38,8 @@ import math
 from typing import Any
 
 from .rng import num
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 #: Module id to the signal-inputs key carrying its defining structure. Read by the modules
 #: themselves, by the export and by the tests, so the contract is stated once.
@@ -68,9 +70,19 @@ CANONICAL_STRUCTURE_WORDS: dict[str, str] = {
 class StructureAbsent(Exception):
     """Raised with the reader's sentence when the required structure is not usable."""
 
-    def __init__(self, sentence: str) -> None:
+    def __init__(self, sentence: str, *, carry_forward_eligible: bool = True,
+                 carry_forward_ineligible_reason: str | None = None) -> None:
         super().__init__(sentence)
         self.sentence = sentence
+        # RUN 143 PART 2. WHETHER AN EARLIER READING ANSWERS THIS REFUSAL. Default True: most
+        # of these say a structure was never supplied, and the owner's rule is that a missing
+        # input carries. False where the refusal is a JUDGMENT ABOUT THIS PERIOD'S EVIDENCE --
+        # the structure IS here and is not fit to be read from -- because there an earlier
+        # reading answers a different question than the one the module refused. Declared at the
+        # raise, never inferred from the sentence: this run rewrites these sentences, and an
+        # exclusion keyed on wording would fail open the moment one was rephrased.
+        self.carry_forward_eligible = carry_forward_eligible
+        self.carry_forward_ineligible_reason = carry_forward_ineligible_reason
 
 
 def _rows(structure: Any, key: str, words: str) -> list[dict]:
@@ -78,7 +90,7 @@ def _rows(structure: Any, key: str, words: str) -> list[dict]:
     if not isinstance(rows, list) or not rows:
         raise StructureAbsent(
             f"No {words} has been provided for this project, so the method this measure is "
-            f"named for cannot be carried out. No substitute reading is reported in its place.")
+            f"named for cannot be carried out on this period's evidence. " + CARRY_CLAUSE)
     for r in rows:
         if not isinstance(r, dict):
             raise StructureAbsent(
@@ -95,7 +107,7 @@ def require_structure(si: dict, module_id: str) -> dict:
     if structure is None:
         raise StructureAbsent(
             f"Awaiting {words}. This measure is named for a method that cannot be carried out "
-            f"without it, so no reading is reported and no other figure is used in its place.")
+            f"without it, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     if not isinstance(structure, dict):
         raise StructureAbsent(
             f"The {words} provided for this project is not in a form this measure can read, so "
@@ -382,8 +394,8 @@ def require_reference_object(si: dict, module_id: str) -> dict:
     if obj is None:
         raise StructureAbsent(
             f"Awaiting {words}. This measure is named for a method that compares options that "
-            f"have been set out, and none has been provided, so no reading is reported and no "
-            f"other figure is used in its place.")
+            f"have been set out, and none has been provided, so no reading is taken from this "
+            f"period's evidence. " + CARRY_CLAUSE)
     if not isinstance(obj, dict):
         raise StructureAbsent(
             f"The decision information provided for this project is not in a form this measure "

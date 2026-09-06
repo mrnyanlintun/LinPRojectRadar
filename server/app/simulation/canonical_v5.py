@@ -62,6 +62,8 @@ from typing import Any, Iterable, Sequence
 
 from .canonical import StructureAbsent
 from .canonical_v3 import _f, _provenance, _rows
+# RUN 143 PART 2. The one clause every carrying abstention in this file now ends with.
+from .carry_words import CARRY_CLAUSE
 
 # =================================================================================================
 # THE GOVERNED v5 STRUCTURES.
@@ -133,7 +135,7 @@ def v5_structure(si: dict, module_id: str) -> dict:
     if structure is None:
         raise StructureAbsent(
             f"Awaiting {words}. This measure is named for a method that cannot be carried out "
-            f"without it, so no reading is reported and no other figure is used in its place.")
+            f"without it, so no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     if not isinstance(structure, dict):
         raise StructureAbsent(
             f"The information provided for this project in place of {words} is not in a form "
@@ -199,7 +201,7 @@ def eligible_signals(signals: Any) -> tuple[list[dict], list[dict]]:
     if not isinstance(signals, list) or not signals:
         raise SignalNotEligible(
             "No governed signals were supplied for this project, so there is nothing to "
-            "synthesise and no reading is reported.")
+            "synthesise and no reading is taken from this period's evidence. " + CARRY_CLAUSE)
     eligible: list[dict] = []
     abstaining: list[dict] = []
     for raw in signals:
@@ -508,7 +510,8 @@ def worst_two_of_m(signals: Any) -> dict[str, Any]:
     if len(independent) < 2:
         return {"estimable": False, "m": len(independent),
                 "reason": "fewer than two independent signals spoke for this project, so the "
-                          "worst two cannot be taken and no reading is reported",
+                          "worst two cannot be taken and no reading is taken from this "
+                          "period's evidence. " + CARRY_CLAUSE,
                 "abstaining": abstaining,
                 "duplicate_lineage_suppressed": [s["signal_id"] for s in suppressed]}
     ordered = sorted(independent, key=lambda s: (-s["severity"], s["signal_id"]))
@@ -1178,7 +1181,8 @@ def hesitant_fuzzy(structure: dict) -> dict[str, Any]:
     if not values:
         raise StructureAbsent(
             "No assessor gave a degree for this project, so there is nothing to take a hesitant "
-            "assessment over and no reading is reported in place of one.")
+            "assessment over and no reading is taken from this period's evidence. "
+            + CARRY_CLAUSE)
     degrees = []
     for idx, _v in enumerate(values):
         degrees.append(_unit({"degree": values[idx]}, "degree", words))
