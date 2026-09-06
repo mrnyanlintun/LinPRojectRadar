@@ -605,6 +605,38 @@ def _limitations(basis: Mapping[str, Any],
     # removed rather than kept "just in case". A reading that DOES withhold its band now does so
     # for exactly the reasons the two blocks below state, and `band_withheld_reason` -- which a
     # PM's own Defer or Override still writes -- is printed verbatim by the third.
+    # ------------------------------------------------ RUN 143, PART 2. THE CARRIED READINGS.
+    #
+    # THE FIRST LIMITATION THIS BLOCK STATES, AND IT LEADS FOR A REASON. Since sim-2026.09-v71
+    # a reading behind this finding may not have been taken from this period's evidence at all.
+    # Every other limitation here qualifies a reading that WAS taken; this one says which
+    # readings were not, and it must be read first or the others are read against the wrong
+    # picture. Each is NAMED, with the period it came from and how far back that is, because a
+    # count alone would let a reviewer suppose the carried ones were the unimportant ones.
+    #
+    # THE AGE IS STATED BECAUSE THE STALENESS GATE CANNOT ACT ON IT. `qualification_gate`
+    # refuses stale EVIDENCE; a carried READING is re-admitted to a later period without the
+    # gate seeing it again, and there is no horizon on the look-back. Printing the age is not a
+    # substitute for that judgment -- it is the judgment made visible where it can no longer be
+    # applied, which is the honest position while the horizon is an open question for the owner.
+    _carried = [m for m in modules if m.get("carried") is True]
+    if _carried:
+        _named = "; ".join(
+            f"{m.get('method_class') or m.get('module_id')} from "
+            f"{m.get('carried_from_period')}"
+            + (f" ({m['carried_from_age']} stored periods back)"
+               if m.get("carried_from_age") else "")
+            for m in sorted(_carried, key=lambda r: str(r.get("module_id")))[:8])
+        _rest = (f", and {len(_carried) - 8} more" if len(_carried) > 8 else "")
+        out.append(
+            f"{len(_carried)} of the readings behind this finding "
+            f"{'was' if len(_carried) == 1 else 'were'} NOT taken from this period's evidence. "
+            f"Each produced no reading this period and is showing, and "
+            f"voting with, its most recent earlier reading from this project: {_named}{_rest}. "
+            f"This finding can therefore stand on a period in which few or no documents were "
+            f"uploaded. Each carried reading states, on its own row, the period it came from "
+            f"and that period's own evidence sentence.")
+
     pending = [m for m in modules if m.get("calibration_pending")]
     if pending:
         names = ", ".join(sorted({str(m.get("method_class")) for m in pending}))
