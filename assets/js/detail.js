@@ -1239,7 +1239,36 @@
     // so Signal Ledger and Project Signal Network always showed "No data" for individual modules
     // even when the project had a fully computed result. This call is non-blocking: the page
     // renders immediately with whatever is available, and sections re-draw once the row arrives.
-    primeAndRefresh(id, p);
+    /* RUN 148, THE NINTH EXIT. THIS CALL IS A FLOATING PROMISE, AND THAT IS THE HOLE RUN 147'S
+       SURFACING COULD NOT SEE THROUGH.
+
+       Run 147 enumerated eight ways the graft could fail and gave every one of them a banner.
+       All eight are RETURNS -- paths where `primeAndRefresh` decides not to continue and says
+       so. NONE OF THEM IS A THROW. `primeAndRefresh` is async and was called here with neither
+       `await` nor `.catch()`, so any exception raised after the response has been read -- in
+       `LinResults.prime`, in the graft itself, in any of the second-pass refreshes below --
+       rejected a promise nobody was holding. An unhandled rejection writes nothing to this
+       page, never reaches `graftFailed`, and leaves render()'s empty state exactly as it stood.
+
+       MEASURED, tools/test_run148_ninth.py pass N4a, in real headless Chromium against real
+       uvicorn on a CONSTRUCTED fixture: one injected exception on that path produced, with NO
+       banner and not one line from Run 147's surfacing on the console, ALL FOUR PARTS of the
+       reported state -- module_results absent (not empty: absent), abstentions absent,
+       extracted values absent, the Signal Network line reading "0 of 28 modules in service
+       assert a band; ... and 28 have not been called." VERBATIM, and the category postures and
+       the project status still publishing from the six-key list projection. Of the six
+       candidates that run enumerated it is the only one that reproduced that sentence exactly
+       while requiring nothing of the server, which Run 147 measured as sending everything.
+
+       So the rejection is caught here and routed through the SAME reporter the eight surfaced
+       exits use. The ninth exit now says which it was, like the other eight. REPORTING ONLY:
+       it adds a `.catch`, changes no band, threshold, weight, posture rule or category rule,
+       touches nothing under server/app, and `SIMULATION_VERSION` does not move. */
+    primeAndRefresh(id, p).catch(function (e) {
+      graftFailed(id, "the stored analysis was read from the server but could not be applied "
+                  + "to this page: an error was raised while applying it.",
+                  (e && (e.stack || e.message)) || String(e));
+    });
   }
 
   /* ---------- lazy section initialisation (render-on-first-expand) ---------- */
