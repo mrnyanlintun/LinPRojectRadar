@@ -5034,7 +5034,15 @@ body[data-theme="plain"] .admin-pill-off { background: #fbdcdb; color: #8a0e16; 
   font-style: normal;
   letter-spacing: 0.02em;
   text-transform: none;
-  white-space: nowrap;
+  /* RUN 144, RULING 3. The chip now carries the AGE as well as the source period, so it is
+     longer, and `nowrap` would have made a long label push the band pill off a narrow screen
+     -- the exact failure the label's own comment in taxonomy.js warns about. It wraps instead:
+     the words stay readable and nothing is clipped or overflowed. `min-width: 0` lets it
+     shrink inside the flex row rather than forcing the row wider than its container. */
+  white-space: normal;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   color: var(--status-nodata-mod-text, #8a8a8a);
   background: transparent;
   vertical-align: middle;

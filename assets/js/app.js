@@ -1466,7 +1466,12 @@
           ? getModuleCarried(m.method_class, p) : null;
         const carriedChip = carried
           ? `<span class="cat-mod-carried" data-carried="1"`
+            /* RUN 144, RULING 3. The age is IN the label (`moduleCarriedLabel`), so it is
+               read without hovering and without opening the disclosure. It is repeated as an
+               attribute so a check can take it without parsing prose. */
             + ` data-from-period="${esc(carried.fromPeriod || "")}"`
+            + ` data-from-age="${esc(carried.age === null || carried.age === undefined
+                                     ? "" : String(carried.age))}"`
             + ` title="${esc(window.moduleCarriedTitle ? moduleCarriedTitle(carried) : "")}">`
             + `${esc(window.moduleCarriedLabel ? moduleCarriedLabel(carried) : "Carried")}`
             + `</span>` : "";
@@ -1556,21 +1561,36 @@
 
          IT COUNTS, IT DOES NOT JUDGE. The numerator is how many of this category's modules
          have `carried: true` on the stored row; the denominator is how many carry a band at
-         all. Both are counts of stored rows. No band, posture rule or weight is read here. */
-      let _carriedCount = 0, _bandedCount = 0;
+         all. Both are counts of stored rows. No band, posture rule or weight is read here.
+
+         RUN 144, RULING 3. THE AGE IS ON THIS NOTE TOO, and that is the whole reason this
+         edit exists. The owner rejected a look-back horizon: it is unbounded, and "the age
+         carries the weight instead". An age a reader must open a disclosure to reach carries
+         no weight at all, and this note is the ONLY carrying words a closed category shows.
+         The OLDEST age is the one stated, because it is the one a horizon would have bound;
+         it is a MAXIMUM over stored `carried_from_age` values and nothing is derived from it.
+         No threshold: the words and the styling are identical at every age. */
+      let _carriedCount = 0, _bandedCount = 0, _oldestAge = 0;
       cat.modules.forEach((m) => {
         if (window.isModuleDisabled && window.isModuleDisabled(m.method_class)) return;
         if (window.isModuleSectorNA && window.isModuleSectorNA(m.method_class, p)) return;
         const _st = window.getModuleStatus ? getModuleStatus(m.method_class, p) : null;
         if (!_st || _st === "NA" || _st === "NODATA") return;
         _bandedCount += 1;
-        if (window.getModuleCarried && getModuleCarried(m.method_class, p)) _carriedCount += 1;
+        const _c = window.getModuleCarried ? getModuleCarried(m.method_class, p) : null;
+        if (_c) {
+          _carriedCount += 1;
+          if (typeof _c.age === "number" && _c.age > _oldestAge) _oldestAge = _c.age;
+        }
       });
+      const _oldestWords = _oldestAge
+        ? `, the oldest ${_oldestAge} stored period${_oldestAge === 1 ? "" : "s"} back` : "";
       const carriedNote = _carriedCount
         ? `<span class="cat-row-carried" data-carried="${_carriedCount}" `
-          + `data-of="${_bandedCount}">${_carriedCount} of ${_bandedCount} `
+          + `data-of="${_bandedCount}" data-oldest-age="${_oldestAge}">`
+          + `${_carriedCount} of ${_bandedCount} `
           + `${_bandedCount === 1 ? "reading is" : "readings are"} carried from an earlier `
-          + `period, not this one</span>`
+          + `period, not this one${_oldestWords}</span>`
         : "";
 
       return `<details class="cat-row${_carriedCount ? " cat-row-has-carried" : ""}" data-cat="${esc(cat.id)}"${open}>
@@ -1700,8 +1720,9 @@
            <span class="dc-carried-figure">${_cf.carried} of ${_cf.banded}</span>
            <span class="dc-carried-words">readings behind this status were not taken from this
              period's evidence. They are carried forward from earlier periods of this project,
-             each marked and naming the period it came from${_oldest > 1
-               ? `; the oldest is ${_oldest} stored periods back` : ""}.
+             each marked and naming the period it came from${_oldest >= 1
+               ? `; the oldest is ${_oldest} stored period${_oldest === 1 ? "" : "s"} back`
+               : ""}.
              This status can therefore be published on a period in which few or no documents
              were uploaded.</span>
          </p>` : "";

@@ -665,10 +665,28 @@ window.performanceCategories = function () {
   /* The short words that go on a collapsed row head, beside the band. Deliberately short --
      it must fit next to a pill without pushing the band off a narrow screen -- and it always
      NAMES THE PERIOD rather than saying "the previous period": a removed period is invisible
-     to the look-back, so after a removal those two reliably differ. */
+     to the look-back, so after a removal those two reliably differ.
+
+     RUN 144, RULING 3. THE AGE IS PART OF THE LABEL, not part of the tooltip. The owner
+     rejected both a derived horizon and a fixed cap and ruled the look-back UNBOUNDED, so
+     "the age carries the weight instead" -- which makes the age the whole of the mechanism,
+     and a mechanism a reader must hover to see is not a mechanism. The DISTANCE is stated,
+     not left to be subtracted from the period name: a reader sees "Carried from P1, 8 stored
+     periods back", not "Carried from P1" beside a current period they must find first.
+
+     "STORED periods back", not "periods ago". The count is of periods this project has
+     STORED, and after Run 143's period removal that is not the same as calendar distance. The
+     shorter word would be the more confident one and it would be wrong.
+
+     NO THRESHOLD LIVES HERE. There is no age at which this label changes wording, changes
+     colour or gains a warning: any of those would be a limit nobody authorised. The age is
+     stated at every value and the reviewer judges it. */
   window.moduleCarriedLabel = function (carried) {
     if (!carried) return "";
-    return carried.fromPeriod ? ("Carried from " + carried.fromPeriod) : "Carried forward";
+    var where = carried.fromPeriod ? ("Carried from " + carried.fromPeriod) : "Carried forward";
+    if (typeof carried.age !== "number" || !(carried.age > 0)) return where;
+    return where + ", " + carried.age + " stored period"
+      + (carried.age === 1 ? "" : "s") + " back";
   };
 
   /* The full sentence for a title/tooltip, assembled from stored text only. */

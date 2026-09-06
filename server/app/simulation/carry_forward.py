@@ -118,12 +118,21 @@ THE ORDERING KEY. Most recent first, and deterministic:
 `result_id` is a ULID and is the total tiebreak; `computed_at` alone is not, being a server
 default two rows can share.
 
-WHAT IS NOT DECIDED HERE. There is NO HORIZON on the look-back and this file does not invent
-one. The staleness gate (`qualification_gate`) refuses stale EVIDENCE; a carried READING is
-re-admitted to a later period without the gate seeing it again. Rather than invent a number the
-owner did not give, every carried row surfaces `carried_from_age` and the caller surfaces the
-oldest age in `project_status_basis`, so the gate's judgment is at least VISIBLE where it can no
-longer be applied. A horizon is an owner decision.
+THE HORIZON, DECIDED. RUN 144 RULING 3: THERE IS NONE, AND THAT IS THE OWNER'S RULING, NOT THIS
+FILE'S SILENCE. A reading carries from ANY earlier period of the same project. Two options were
+put and both were rejected: a horizon derived from contract duration and approved extensions,
+rejected as complexity without benefit; and a fixed 60-month cap, rejected because it can never
+bind on any project this platform will carry, and a limit that cannot fire looks like a
+safeguard while being none -- the exact shape of defect this codebase keeps finding.
+
+SO THE AGE CARRIES THE WEIGHT INSTEAD, and that makes the age the WHOLE mechanism rather than a
+note beside one. The staleness gate (`qualification_gate`) refuses stale EVIDENCE; a carried
+READING is re-admitted to a later period without the gate seeing it again, so `carried_from_age`
+is the only place that judgment can still be made -- by the reviewer. Every carried row surfaces
+it, the caller surfaces the oldest in `project_status_basis`, and every surface that shows a
+carried reading states the DISTANCE and not merely the source period, without a click and
+without a hover. Nothing attaches a threshold, a warning or a colour change to any value of it:
+the age is stated at every value and the reviewer judges it.
 """
 
 from __future__ import annotations

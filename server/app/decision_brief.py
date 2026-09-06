@@ -616,15 +616,26 @@ def _limitations(basis: Mapping[str, Any],
     #
     # THE AGE IS STATED BECAUSE THE STALENESS GATE CANNOT ACT ON IT. `qualification_gate`
     # refuses stale EVIDENCE; a carried READING is re-admitted to a later period without the
-    # gate seeing it again, and there is no horizon on the look-back. Printing the age is not a
-    # substitute for that judgment -- it is the judgment made visible where it can no longer be
-    # applied, which is the honest position while the horizon is an open question for the owner.
+    # gate seeing it again. Printing the age is not a substitute for that judgment -- it is the
+    # judgment made visible where it can no longer be applied.
+    #
+    # RUN 144 RULING 3 SETTLED THE HORIZON: THERE IS NONE. A reading carries from any earlier
+    # period of the same project, unbounded. A horizon derived from contract duration and
+    # approved extensions was rejected as complexity without benefit, and a fixed 60-month cap
+    # was rejected because it could never bind on any project this platform will carry -- a
+    # limit that cannot fire looks like a safeguard and is not one. So the age is now the WHOLE
+    # mechanism, which is why it is stated here and on every other surface, and why no
+    # threshold, warning or colour change is attached to any value of it.
     _carried = [m for m in modules if m.get("carried") is True]
     if _carried:
         _named = "; ".join(
             f"{m.get('method_class') or m.get('module_id')} from "
             f"{m.get('carried_from_period')}"
-            + (f" ({m['carried_from_age']} stored periods back)"
+            # RUN 144 RULING 3: the plural agrees with the number. "1 stored periods back" was
+            # what a one-period-old reading read as, and the age is now the whole safeguard,
+            # so it does not get to look like a template that was not filled in.
+            + (f" ({m['carried_from_age']} stored period"
+               f"{'' if m['carried_from_age'] == 1 else 's'} back)"
                if m.get("carried_from_age") else "")
             for m in sorted(_carried, key=lambda r: str(r.get("module_id")))[:8])
         _rest = (f", and {len(_carried) - 8} more" if len(_carried) > 8 else "")
