@@ -228,16 +228,57 @@ def _boundary_figure(mod: Mapping[str, Any], next_band: str | None) -> str | Non
     """
     The figure the boundary sentence attaches to the band above, or None when it attaches none.
 
-    Read out of the sentence the module itself stored, nearest number after the band's name.
-    NOTHING IS COMPUTED and nothing is imported from `simulation/`; a sentence that states its
-    rung in words rather than in a number yields None, and the caller states the gap in words.
+    Read out of the sentence the module itself stored. NOTHING IS COMPUTED and nothing is
+    imported from `simulation/`; a sentence that states its rung in words rather than in a
+    number yields None, and the caller states the gap in words.
+
+    RUN 150, FINDING B1. THIS READ WAS SILENTLY WRONG ON THE CODEBASE'S DOMINANT SENTENCE FORM,
+    AND EVERY RUN 140 FIXTURE HAPPENED TO USE THE OTHER ONE.
+
+    Two forms are in service and both are real emissions of real modules:
+
+        NAME FIRST   "Green at or above 0.90; Yellow at or above 0.75; Amber at or above 0.60"
+        NAME LAST    "at or above 0.95 is Green; at or above 0.9 and below 0.95 is Yellow"
+
+    The old rule was "nearest number AFTER the band's name". On the name-first form that is
+    right. On the name-last form the band's own figure sits BEFORE its name, so the nearest
+    number after it is the NEXT clause's figure -- the rung below. A6.1, banded Amber at 0.85,
+    reported "the Yellow boundary is at 0.8": the Amber floor, a figure the reading was already
+    above, presented to a reviewer as the edge they had to reach. The name-last form is the
+    majority form here -- it appears in eight modules under `simulation/` against 26 uses of the
+    name-first form -- so this was not an edge case, and 342 passing checks did not see it
+    because every stored fixture row was written in the name-first form.
+
+    THE RULE NOW IS CLAUSE-SCOPED AND ENTRY-PHRASE-ANCHORED, which is correct on both forms and
+    reads no further than the clause that names the band:
+
+      1. the clause is the `;`-delimited fragment that names the band, so a figure can never be
+         borrowed from the rung below or the rung above;
+      2. within it, the figure is the one following the INCLUSIVE ENTRY phrase -- "at or above",
+         "at or below" -- because that is the edge a reading must reach to enter the band;
+      3. with no entry phrase in the clause ("Red below 0.60"), the clause's first figure;
+      4. with no figure in the clause at all, the next clause naming the band is tried, and
+         failing that None -- which is how an ordinal ladder still yields no invented number.
     """
     if not next_band:
         return None
     text = _boundary_text(mod)
-    for m in re.finditer(rf"\b{next_band}\b", text, re.I):
-        tail = text[m.end(): m.end() + 120]
-        num = _NUM.search(tail)
+    if not text:
+        return None
+    # Clause spans, so a band name can be located and then read ONLY within its own clause.
+    spans: list[tuple[int, int]] = []
+    start = 0
+    for sep in re.finditer(r";", text):
+        spans.append((start, sep.start()))
+        start = sep.end()
+    spans.append((start, len(text)))
+
+    for lo, hi in spans:
+        clause = text[lo:hi]
+        if not re.search(rf"\b{next_band}\b", clause, re.I):
+            continue
+        entry = re.search(r"\bat or (?:above|below)\b", clause, re.I)
+        num = _NUM.search(clause, entry.end()) if entry else _NUM.search(clause)
         if num:
             return num.group(0).replace(",", "").rstrip(".")
     return None
