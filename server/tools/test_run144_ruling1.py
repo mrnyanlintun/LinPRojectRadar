@@ -74,8 +74,13 @@ def run_once() -> dict:
 check("the two Category-9 refusal paths carry different reason codes",
       ASSESSMENT_MISSING != ABSTAIN_UNQUALIFIED,
       f"{ASSESSMENT_MISSING!r} vs {ABSTAIN_UNQUALIFIED!r}")
-check("the exclusion list now holds the failure code only",
-      set(NEVER_CARRY_REASON_CODES) == {MODULE_FAILED_CODE},
+# RUN 145 amended this assertion, and only this assertion's SCOPE. Ruling 1's substance is
+# that CATEGORY9_ASSESSMENT_MISSING is NOT on the list, and that is asserted below, unchanged.
+# Run 145 added a SECOND code, `evidence_not_qualified_for_use`, so "the failure code only" is
+# no longer the true state of the list and asserting it would fail for the right reason.
+check("ruling 1's code is off the exclusion list, and the list holds only codes ruled onto it",
+      ASSESSMENT_MISSING not in NEVER_CARRY_REASON_CODES
+      and set(NEVER_CARRY_REASON_CODES) == {MODULE_FAILED_CODE, ABSTAIN_UNQUALIFIED},
       f"list = {sorted(NEVER_CARRY_REASON_CODES)}")
 check("MODULE_FAILED_CODE stays excluded -- registry.py's promise is kept",
       is_carry_eligible({"module_id": "A1.1",
@@ -135,17 +140,19 @@ check("proof 2: with the exclusion restored A6.1 does not carry",
 check("proof 2: with the exclusion restored no governed status is published",
       before["status"] == "Awaiting analysis", f"status {before['status']!r}")
 check("proof 2: the injection was reverted -- the live list is the lifted one",
-      set(CF.NEVER_CARRY_REASON_CODES) == {MODULE_FAILED_CODE})
+      set(CF.NEVER_CARRY_REASON_CODES) == {MODULE_FAILED_CODE, ABSTAIN_UNQUALIFIED})
 check("proof 2: the two runs differ ONLY in the exclusion, and they differ",
       before != after)
 
 # --------------------------------------------------------------------------------- the stamp
-check("the stamp moved to sim-2026.09-v72", SIMULATION_VERSION == "sim-2026.09-v72",
-      SIMULATION_VERSION)
-check("the history tuple ends at the new stamp and v71 is still in it, unedited",
-      SIMULATION_VERSION_HISTORY[-1] == "sim-2026.09-v72"
-      and "sim-2026.09-v71" == SIMULATION_VERSION_HISTORY[-2],
-      str(SIMULATION_VERSION_HISTORY[-2:]))
+# RUN 145 moved the stamp again, so this file asserts what it can still assert honestly: that
+# RULING 1's stamp is IN the history, unedited, and that the history only ever grows.
+check("ruling 1's stamp sim-2026.09-v72 is in the history, unedited",
+      "sim-2026.09-v72" in SIMULATION_VERSION_HISTORY, SIMULATION_VERSION)
+check("the history tuple only grows: v71 and v72 are both still in it, in order",
+      SIMULATION_VERSION_HISTORY.index("sim-2026.09-v71")
+      + 1 == SIMULATION_VERSION_HISTORY.index("sim-2026.09-v72"),
+      str(SIMULATION_VERSION_HISTORY[-3:]))
 
 # ------------------------------------------------- the site's own sentence no longer contradicts
 row = next(r for r in base["abstained"]

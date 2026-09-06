@@ -92,10 +92,34 @@ So exemption is decided three ways, in this order:
 
        `evidence_not_qualified_for_use` (`_refuse`, :309) fires when evidence EXISTS and the
        gate judged it not qualified for the use. THAT is the refusal a carried band would
-       defeat, and it is a different code, which this set has never contained.
+       defeat, and it is a different code.
 
      Being unassessed is not the same as being found wanting, and only the second is a
      judgment about this period's evidence.
+
+     RUN 145 RULING -- `evidence_not_qualified_for_use` IS ADDED, one entry in the same set
+     ruling 1 removed one from. Run 144 found that the second code was carry-eligible while
+     its own refusal sentence promised verbatim that "No earlier reading is carried forward in
+     its place either: the refusal is about whether this evidence may be used at all, not
+     about a missing input." The code did not keep that promise, and the leak was ACTIVE, not
+     latent: one material conflict between two equal-precedence documents puts A6.1-A6.4,
+     B1.1 and B1.2 on this code, and the four A6 rows -- Delivery Quality Performance, the
+     category that gates the fifth vote -- each carried an earlier Green while the sentence on
+     the same ledger denied anything was carried. The sentence was right; the behaviour moved.
+
+     THE FOURTH CODE, `QUALIFICATION_CONTRACT_MISSING` (`CONTRACT_MISSING`, `_refuse_missing`,
+     :288), fires when `requirement_for(mid)` returns `CONFIGURATION_MISSING` -- when the route
+     itself has NO governed qualification-requirement declaration. IT CARRIES, and is
+     deliberately not in this set. It goes through the SAME `_refuse_missing` primitive as
+     `CATEGORY9_ASSESSMENT_MISSING`, documented as "the governed abstention for a route blocked
+     before any evidence could be assessed"; it sets `qualification_state = UNASSESSED` and
+     `consumer_executed = False`, and it never touches an evidence object. Nothing was weighed,
+     so by the owner's test it is a missing input, like code 1, not a judgment, like code 2.
+     Its exposure is LATENT: `requirement_for` over `service_index()` returns a declared
+     contract for 31 of 31 in-service routes, so no route in service can reach this code today.
+     Two constants in `qualification_contract.py` share this one string -- `CONFIGURATION_MISSING`
+     is the requirement lookup's sentinel, `CONTRACT_MISSING` is the reason code -- and they are
+     not interchangeable in meaning even though the literal is one.
   c. A DECLARATION AT THE ARM, `carry_forward_eligible=False` on the module's own returned
      dict. This is how the per-arm cases are handled, and it is deliberately NOT a match on
      the sentence text: sentences are being rewritten by this very run, and an exclusion that
@@ -140,6 +164,7 @@ from __future__ import annotations
 from typing import Any, Iterable, Mapping, Sequence
 
 from .fusion import BAND_SEVERITY
+from .qualification_boundary import ABSTAIN_UNQUALIFIED
 from .registry import MODULE_FAILED_CODE, service_index
 
 __all__ = [
@@ -161,8 +186,17 @@ NEVER_CARRY_MODULES: frozenset[str] = frozenset({"C1.5", "B1.1", "B1.2"})
 #: default, no band and no last-known value. RUN 144 RULING 1 removed
 #: `CATEGORY9_ASSESSMENT_MISSING` from this set -- see WHAT IS EXEMPT (b) above; that code means
 #: nothing was ever assessed, which is a missing input, not a refusal.
+#: RUN 145 RULING added `evidence_not_qualified_for_use` (`ABSTAIN_UNQUALIFIED`, the code
+#: `_refuse` writes when evidence EXISTS and the gate judged it unfit for this use). Its own
+#: refusal sentence already promises verbatim that "No earlier reading is carried forward in its
+#: place either", and until this entry existed the code did not keep that promise. The sentence
+#: is right and the behaviour was wrong, so the behaviour moved. Note the literal is imported
+#: from `qualification_boundary` rather than from `qualification_contract`: `CONTRACT_MISSING`
+#: and `CONFIGURATION_MISSING` there share one string but are a reason code and a lookup
+#: sentinel respectively, and neither is this one.
 NEVER_CARRY_REASON_CODES: frozenset[str] = frozenset({
     MODULE_FAILED_CODE,
+    ABSTAIN_UNQUALIFIED,
 })
 
 #: Every key this layer writes onto a carried row. Surfaces key on `carried`; the rest is what
@@ -209,13 +243,18 @@ def is_carry_eligible(row: Mapping[str, Any]) -> tuple[bool, str | None]:
     if row.get("module_failed"):
         return False, "the module failed while computing; a failure is never substituted for"
     code = row.get("abstention_reason_code")
-    # RUN 144 RULING 1. This set now holds ONE code, the failure code, and the sentence below is
-    # that code's sentence. It is not a lookup table with one row by accident: a code added here
-    # later must bring its own words, so a future entry cannot borrow the failure's wording and
-    # tell a reader a module crashed when it did not.
+    # RUN 144 RULING 1, THEN RUN 145. Every code in this set brings ITS OWN WORDS, so a reader
+    # is never told a module crashed when it did not, nor that evidence was judged unfit when
+    # nothing was ever assessed. The trailing generic sentence covers a code added to the set
+    # without one; adding a code without adding its words here is a defect, not a shortcut.
     if code and code in NEVER_CARRY_REASON_CODES:
         if code == MODULE_FAILED_CODE:
             return False, "the module failed while computing; a failure is never substituted for"
+        if code == ABSTAIN_UNQUALIFIED:
+            return False, ("the gate judged this period's evidence not qualified for this use, "
+                           "so no reading is taken from it and no earlier reading is carried "
+                           "forward in its place: the refusal is about whether this evidence may "
+                           "be used at all, not about a missing input")
         return False, ("this abstention states a judgment about this period's evidence, not a "
                        "missing input, so no earlier reading answers it")
     if row.get("carry_forward_eligible") is False:

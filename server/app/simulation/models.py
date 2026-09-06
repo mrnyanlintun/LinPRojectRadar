@@ -1114,7 +1114,13 @@ from .carry_words import CARRY_CLAUSE
 # with a v71 row: abstention counts fall and banded counts rise on any project with history.
 # A v71 row is not comparable with a v72 row either, on any project whose Category-9 assessment
 # is absent: under v71 those measures abstained, and under v72 they carry and vote.
-SIMULATION_VERSION = "sim-2026.09-v72"
+#
+# RUN 145 added `evidence_not_qualified_for_use` TO that list, closing the leak on the other
+# path: a measure whose evidence the gate DID assess and judged unfit no longer carries an
+# earlier reading, which its own refusal sentence had promised all along. A v72 row is not
+# comparable with a v73 row on any project carrying a material evidence conflict: under v72 the
+# four Delivery Quality measures carried and voted, and under v73 they are unassessed.
+SIMULATION_VERSION = "sim-2026.09-v73"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1409,6 +1415,17 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # no Category-9 assessment this is the difference between four of five required categories and
  # five, and therefore between a withheld status and a published one.
  "sim-2026.09-v72",
+ # RUN 145 RULING: the carry-forward leak on the OTHER Category-9 refusal path is closed.
+ # `evidence_not_qualified_for_use` -- the code the gate writes when evidence EXISTS and it
+ # judged that evidence not qualified for this use -- is added to the never-carry reason codes.
+ # Its own refusal sentence already promised that no earlier reading is carried in its place;
+ # the behaviour now matches the sentence. Ruling 1 is unaffected: `CATEGORY9_ASSESSMENT_MISSING`
+ # still carries, as does `QUALIFICATION_CONTRACT_MISSING`, both being routes blocked before any
+ # evidence was assessed. No band, boundary, posture rule, weight or threshold moved; what moved
+ # is which readings vote. On a project with one material conflict between two equal-precedence
+ # documents this is the difference between Delivery Quality voting on four carried Greens and
+ # Delivery Quality being unassessed, and therefore between a published status and a withheld one.
+ "sim-2026.09-v73",
 )
 
 
