@@ -68,9 +68,19 @@ CANONICAL_STRUCTURE_WORDS: dict[str, str] = {
 class StructureAbsent(Exception):
     """Raised with the reader's sentence when the required structure is not usable."""
 
-    def __init__(self, sentence: str) -> None:
+    def __init__(self, sentence: str, *, carry_forward_eligible: bool = True,
+                 carry_forward_ineligible_reason: str | None = None) -> None:
         super().__init__(sentence)
         self.sentence = sentence
+        # RUN 143 PART 2. WHETHER AN EARLIER READING ANSWERS THIS REFUSAL. Default True: most
+        # of these say a structure was never supplied, and the owner's rule is that a missing
+        # input carries. False where the refusal is a JUDGMENT ABOUT THIS PERIOD'S EVIDENCE --
+        # the structure IS here and is not fit to be read from -- because there an earlier
+        # reading answers a different question than the one the module refused. Declared at the
+        # raise, never inferred from the sentence: this run rewrites these sentences, and an
+        # exclusion keyed on wording would fail open the moment one was rephrased.
+        self.carry_forward_eligible = carry_forward_eligible
+        self.carry_forward_ineligible_reason = carry_forward_ineligible_reason
 
 
 def _rows(structure: Any, key: str, words: str) -> list[dict]:

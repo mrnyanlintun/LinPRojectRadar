@@ -635,9 +635,21 @@ def identify_arima(series: Sequence[float], max_p: int = 2, max_q: int = 1,
                 "series is not forecastable and no forecast is reported.")
         values.append(float(value))
     if len(values) < min_history:
+        # RUN 143 PART 2. THIS ARM DOES NOT CARRY, and its own sentence is why: a history IS
+        # present and is too short to identify a model from, so the refusal is a judgment about
+        # THIS period's evidence, not a missing input. The sentence already refuses a SHORTER
+        # substitute; a reading identified from an even shorter history in an earlier period is
+        # the shortest substitute of all, and publishing it would be the same act the sentence
+        # was written to forbid.
         raise StructureAbsent(
             "The cost performance history is too short for a time series model to be identified "
-            "from it, so no forecast is reported and no shorter substitute is used.")
+            "from it, so no forecast is reported. No shorter substitute is used, and because "
+            "this is a statement about the history now held rather than a missing input, no "
+            "earlier reading of this measure is carried forward in its place either.",
+            carry_forward_eligible=False,
+            carry_forward_ineligible_reason=(
+                "the history is present and too short to identify a model from, so the refusal "
+                "is about this period's evidence and an earlier reading does not answer it"))
     if any(v <= 0 for v in values):
         raise StructureAbsent(
             "The cost performance history contains a reading of zero or below, which no cost "

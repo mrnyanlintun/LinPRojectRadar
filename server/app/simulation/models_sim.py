@@ -340,7 +340,22 @@ def run_cusum(si: dict, rand, seed: int) -> dict[str, Any]:
 
     series = si.get("spiHistory")
     if not isinstance(series, list) or len(series) < 2:
-        return insufficient("CUSUM", "Awaiting history (2 periods needed)")
+        # RUN 143 PART 2. THIS ARM DOES NOT CARRY, for two reasons. The refusal is a judgment
+        # about the history now held rather than a missing input, exactly as A1.5's short-history
+        # arm is. And this module is STOCHASTIC: its result is seeded per (scenario_id, period),
+        # so a carried band comes from a different random stream than the seeding contract
+        # guarantees, and would be a figure this period could not have reproduced.
+        return insufficient(
+            "CUSUM",
+            "Awaiting history (2 periods needed). No earlier reading of this measure is carried "
+            "forward in its place: this is a statement about the history now held, and this "
+            "measure is seeded per period, so an earlier period's reading is not a figure this "
+            "period could reproduce.",
+            carry_forward_eligible=False,
+            carry_forward_ineligible_reason=(
+                "the refusal is about the history now held rather than a missing input, and the "
+                "measure is seeded per period so an earlier reading is from another random "
+                "stream"))
     cu = cusum_series(series)
     return {
         "method_class": "CUSUM",

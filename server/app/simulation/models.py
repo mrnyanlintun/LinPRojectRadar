@@ -1085,7 +1085,26 @@ from .rng import as_percent, clamp, js_round, num, pctile, round1, round2
 # is taken from the full-precision score and `_round3` is now only the printed figure, grown by
 # `band_display.band_figure` where an edge is near. Rows stamped v69 and earlier keep their own
 # stamp; B2.18 and B2.19 readings are not comparable across v69 and v70.
-SIMULATION_VERSION = "sim-2026.09-v70"
+# RUN 143, PART 2. THE STANCE CHANGED. Until this stamp a module that abstained in a period
+# published nothing, and thirty places in this layer said so in writing: "no reading is reported
+# and no other figure is used in its place." That promise is withdrawn by the owner's order. A
+# module that abstains this period now DISPLAYS AND VOTES WITH its most recent earlier banded
+# reading from the same project, marked as carried, naming the period it came from and repeating
+# that period's own evidence sentence unaltered.
+#
+# WHAT DID NOT CHANGE: no band boundary, no threshold, no posture rule, no project weight, no
+# module arithmetic. A carried reading enters the rollup as a band, and `category_posture` and
+# `project_posture` are byte-for-byte unchanged. What changed is WHICH readings reach them.
+#
+# WHAT IS EXEMPT (see carry_forward.py, which is the single authority): a failed module, a
+# Category-9 qualification refusal, C1.5 Information Completeness Ratio, B1.1 and B1.2, and the
+# arms whose abstention is a judgment about THIS period's evidence rather than a missing input
+# -- A6.2's exposure floor and near-miss-healthy arms, A1.5's and A1.2's short-history arms.
+# Those arms declare themselves ineligible at the arm; they are not matched by sentence text.
+#
+# A row stamped v70 or earlier carries no carried readings and its counts are not comparable
+# with a v71 row: abstention counts fall and banded counts rise on any project with history.
+SIMULATION_VERSION = "sim-2026.09-v71"
 
 #: THE LINE RUN 49 SUPERSEDED, kept addressable so a reader of this file can see which stamp the
 #: immediately preceding audit baseline is without reading the comment above. Every stamp from
@@ -1366,6 +1385,11 @@ SIMULATION_VERSION_HISTORY: tuple[str, ...] = (
  # figure through the shared `band_display` rule. Two more favourable flips removed; no edge
  # moved. Rows stamped v69 and earlier remain valid under their own stamp.
  "sim-2026.09-v70",
+ # RUN 143 PART 2: carry-forward becomes a general rule. A module abstaining in the current
+ # period displays and votes with its most recent earlier banded reading from the same project,
+ # marked carried, with the source period and that period's own evidence sentence. No band,
+ # boundary, posture rule or weight moved. The exemptions are listed in carry_forward.py.
+ "sim-2026.09-v71",
 )
 
 

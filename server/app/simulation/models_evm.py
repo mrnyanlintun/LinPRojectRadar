@@ -211,7 +211,17 @@ def run_arima_forecast(si: dict, rand: Callable[[], float], period_cutoff) -> di
     try:
         model = identify_arima(history)
     except StructureAbsent as absent:
-        return insufficient("ARIMA_Forecast", absent.sentence, ABSTAIN_INSUFFICIENT_HISTORY)
+        # RUN 143 PART 2. The raise's own carry declaration travels onto the abstention row.
+        # `identify_arima` refuses on three different grounds and they do not agree about
+        # carrying: no usable history at all is a missing input and carries; a history that is
+        # present and too short is a judgment about this period's evidence and does not.
+        _extra: dict = {}
+        if getattr(absent, "carry_forward_eligible", True) is False:
+            _extra["carry_forward_eligible"] = False
+            _extra["carry_forward_ineligible_reason"] = \
+                absent.carry_forward_ineligible_reason
+        return insufficient("ARIMA_Forecast", absent.sentence, ABSTAIN_INSUFFICIENT_HISTORY,
+                            **_extra)
     # ------------------------------------------------- RUN 107. THREE PERIODS, WORST OF THREE.
     # The owner's order: "Forecast CPI for the next three periods; band the worst of the three.
     # ... A near-term Green does not offset a third-period Red." The three come from the SAME

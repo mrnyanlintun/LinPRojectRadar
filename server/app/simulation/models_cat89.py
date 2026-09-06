@@ -552,11 +552,22 @@ def _band_safety(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
                  "happened, so it is applied before the exposure floor and before the ratio"),
                 "OWNER-CALIBRATED", None, THRESHOLD_SOURCE_OWNER)
     if isinstance(hours, (int, float)) and floor and hours < floor:
+        # RUN 143 PART 2. THE RULE-5 ANCHOR, AND THIS ARM DOES NOT CARRY. The owner's own
+        # example. Exposure IS recorded and is beneath the floor: the refusal is a statement
+        # about the quality of THIS period's evidence, not about a missing input. Its own words
+        # -- "none is published as though it were stable" -- are precisely what carrying an
+        # earlier band would do, and it would do it while this period's exposure says the
+        # figure cannot be stable.
+        result["carry_forward_eligible"] = False
+        result["carry_forward_ineligible_reason"] = (
+            "exposure this period is beneath the floor at which a rate is stable, so the "
+            "refusal is about this period's evidence and no earlier rate is published over it")
         return (None, None,
                 f"exposure for this period is {hours} employee hours, beneath the configured "
                 f"floor of {floor}. Beneath it a rate turns entirely on whether a single event "
                 f"happened, so no rate is banded and none is published as though it were "
-                f"stable. Total hours worked is displayed beside the rate for exactly this "
+                f"stable -- including an earlier period's rate, which is not carried forward "
+                f"here. Total hours worked is displayed beside the rate for exactly this "
                 f"reason", None, None, None)
     # ------------------------------------------- THE FREQUENCY LEG BANDS ON THE BENCHMARK RATIO
     _anchor = _BR.configured_value("construction_industry_recordable_rate")
@@ -602,11 +613,19 @@ def _band_safety(result: dict[str, Any], structure: Mapping[str, Any]) -> tuple:
                     "over the count and only the near-zero condition the order states in terms "
                     "is banded",
                     "OWNER-CALIBRATED", None, THRESHOLD_SOURCE_OWNER)
+        # RUN 143 PART 2. THIS ARM DOES NOT CARRY EITHER, and for a reason unlike the floor's:
+        # there is no calibrated ladder over this count at all, so no band exists to withhold
+        # and none existed in any earlier period. Carrying here would publish a band drawn from
+        # a different leg of this measure than the one that is speaking now.
+        result["carry_forward_eligible"] = False
+        result["carry_forward_ineligible_reason"] = (
+            "no published expected near-miss rate exists, so no ladder is drawn over this count "
+            "in any period and there is no comparable earlier band to carry")
         return (None, None,
                 f"{near} near-misses were reported on an active project, which is the healthy "
                 f"direction. No published expected near-miss rate exists for construction, so "
-                f"reporting activity above zero is displayed and no ladder is drawn over the "
-                f"count", None, None, None)
+                f"reporting activity above zero is displayed, no ladder is drawn over the "
+                f"count, and no earlier reading is carried forward over it", None, None, None)
     unconfigured = _BR.entry("construction_industry_recordable_rate")
     return (None, None,
             "the frequency rate is reported on both the OSHA 200,000-hour and the ILO "
@@ -1343,6 +1362,14 @@ def _route(module_id: str, method_class: str, fn: Callable[[dict], dict[str, Any
         # outcome rather than a failure.
         _colour, _boundary, _basis, _prov, _bprov, _tsrc = _a6_band(
             module_id, result, structure)
+        # RUN 143 PART 2. A BANDING ARM MAY DECLARE THAT ITS REFUSAL DOES NOT CARRY, and the
+        # declaration has to be copied here because `row.update(result)` ran BEFORE `_a6_band`
+        # was reached. Without these two lines A6.2's exposure-floor and near-miss arms would
+        # set the flag on a dict nothing reads, the exclusion would be dead code, and the
+        # owner's stated rule-5 example would carry -- which is the one outcome the order names.
+        for _cfk in ("carry_forward_eligible", "carry_forward_ineligible_reason"):
+            if _cfk in result:
+                row[_cfk] = result[_cfk]
         _bprov = _bprov or _prov
         if _colour is not None:
             row["status_color"] = _colour

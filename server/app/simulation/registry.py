@@ -730,6 +730,13 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                        "structure_provenance", "abstention_reason", "lineage",
                        "canonical_state", "operational", "schedule_network_diagnostics",
                        "activities_without_three_point_durations",
+                       # RUN 143 PART 2. The arm's OWN declaration that its abstention is a
+                       # judgment about this period's evidence rather than a missing input, and
+                       # therefore that no earlier reading answers it. Set at the arm, read by
+                       # `carry_forward.is_carry_eligible`, and deliberately not inferred from
+                       # the sentence: this run rewrites those sentences, and an exclusion keyed
+                       # on wording would fail OPEN the moment someone rephrased one.
+                       "carry_forward_eligible", "carry_forward_ineligible_reason",
                        "module_failed", "module_failure"):
                 if out.get(_k) is not None:
                     entry[_k] = out[_k]
@@ -799,6 +806,15 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
     #   * The sentence a reader sees states plainly that the module failed and that no figure
     #     was produced or used in its place. NOTHING IS SUBSTITUTED for the missing reading --
     #     no default, no band, no last-known value. A failed module contributes nothing.
+    #
+    #     RUN 143 PART 2 NARROWED WHAT THAT SENTENCE IS ABOUT, AND KEPT IT HERE. As of
+    #     sim-2026.09-v71 an ABSTENTION does now carry its most recent earlier banded reading
+    #     forward, marked as carried. THE FAILURE PATH IS EXEMPT AND THIS PROMISE STANDS
+    #     UNCHANGED FOR IT. The distinction is the point: an abstention says the evidence was
+    #     absent, and an earlier reading is a defensible answer to that; a failure says the
+    #     module itself broke, and publishing a band over a defect would report the defect as
+    #     a reading. `carry_forward.is_carry_eligible` tests `module_failed` and
+    #     MODULE_FAILED_CODE first, before anything else, for exactly this reason.
     #   * The full traceback is logged at ERROR, so the defect is as visible in the logs as it
     #     was when it crashed the route.
     #   * `BaseException` is deliberately NOT caught. A KeyboardInterrupt or a MemoryError is
@@ -818,8 +834,10 @@ def run_all(si: dict, scenario_id: str, period: str, period_cutoff,
                 "status_color": None,
                 "evidence_metric": (
                     "This measure could not be produced: the module failed while it was being "
-                    "computed, so no figure was produced from the evidence supplied and no "
-                    "figure is used in its place."),
+                    "computed, so no figure was produced from the evidence supplied. No "
+                    "figure is used in its place and, unlike a measure that abstained for want "
+                    "of evidence, no earlier reading of this measure is carried forward "
+                    "either: a module that broke has not read this period at all."),
                 "module_failed": True,
                 "module_failure": {"type": type(exc).__name__, "message": str(exc)[:500]},
                 "abstention_reason_code": MODULE_FAILED_CODE,
